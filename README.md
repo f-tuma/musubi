@@ -1,10 +1,14 @@
+<!-- markdownlint-disable MD013 -->
+
 # Musubi
 
 > A simple, open, self-hostable calendar to tie shared time with your partner, friends, and family.
 
 Musubi (結び) means *knot* or *tie* in Japanese. The app ties people's schedules together through shared calendars — and, eventually, ties together the calendars you already use elsewhere, becoming a single point of view across Google, Apple, and CalDAV.
 
-> ⚠️ **Status:** Early personal project. MVP-level features only, expect rough edges. Public for code-sharing and as a portfolio piece — not actively seeking users or contributors at this stage.
+> ⚠️ **Status:** Early stage. MVP-level features only, expect rough edges. Public for code-sharing and as a portfolio piece.
+
+## Motivation
 
 ## What works today
 
@@ -48,7 +52,15 @@ packages/
   types/            Shared TypeScript types
 ```
 
-## Getting started
+## Quick Start
+
+You can try the application for your self. **It will be accessible through google play store and apple app store in a few days, I will update here when process of adding is done.
+
+More info at [Musubi Wehsite](https://musubi.frgtn.dev).
+
+The application is setup to work with main server at the moment. Self-hostable options are on the way.
+
+## Usage
 
 ### Requirements
 
@@ -66,6 +78,8 @@ pnpm install
 # Configure environment
 cp .env.example .env
 # Edit .env — at minimum set DATABASE_URL and BETTER_AUTH_SECRET
+# You will need your own postgres db
+# Docker image for all in one is on the way
 
 # Run database migrations
 pnpm db:migrate
@@ -78,6 +92,10 @@ When testing the client on a real device (not a simulator), set `API_URL` in `.e
 
 For more detail, see [`packages/docs/`](./packages/docs/). A hosted version is planned at `musubi.frgtn.dev/docs`.
 
+## Contributing
+
+If you'd like to contribute, please fork the repository and open a pull request to the `main` branch.
+
 ## License
 
-[MIT](LICENSE) © 2026 Filip Tůma
+[MIT](LICENSE) © 2026 FRGTN.dev
