@@ -15,7 +15,10 @@ const expoConfig = {
   newArchEnabled: true,
   ios: {
     "supportsTablet": true,
-    "bundleIdentifier": "dev.frgtn.musubi"
+    "bundleIdentifier": "dev.frgtn.musubi",
+    "infoPlist": {
+      "ITSAppUsesNonExemptEncryption": false
+    }
   },
   android: {
     "package": "dev.frgtn.musubi",
