@@ -1,3 +1,5 @@
+import { Mode } from "react-native-big-calendar";
+
 export type User = {
   id: string;
   name: string;
@@ -31,3 +33,8 @@ export type Invite = {
   maxUses: number,
 };
 
+export type Settings = {
+  showKanji: boolean,
+  defaultCalendarView: Mode,
+  weekStartsOn: string,
+};

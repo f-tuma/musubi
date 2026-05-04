@@ -11,7 +11,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 
-export default function CalendarsScreen() {
+export default function CalendarsTab() {
   const { calendars, addCalendar, removeCalendar, updateCalendar } = useCalendarsStore();
   const { events } = useEventsStore();
   const [createModalVisible, setCreateModalVisible] = useState(false);

@@ -10,6 +10,7 @@ import { requireAuth } from "./middleware/require_auth";
 import { handlerCreateCalendarInvite } from "./handlers/invites";
 import { handlerStream } from "./handlers/stream";
 import { middlewareLogHandler } from "./middleware/log_handler";
+import { handlerGetSettings, handlerSaveSettings } from "./handlers/settings";
 
 const app = express()
 const port = config.api.port;
@@ -63,6 +64,13 @@ app.get("/api/stream", requireAuth, (
   res,
   next) => {
   Promise.resolve(handlerStream(req, res).catch(next));
+});
+
+app.get("/api/users/settings", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerGetSettings(req, res).catch(next));
 });
 
 //
@@ -120,6 +128,13 @@ app.put("/api/calendars", requireAuth, (
   res,
   next) => {
   Promise.resolve(handlerUpdateCalendar(req, res).catch(next));
+});
+
+app.put("/api/users/settings", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerSaveSettings(req, res).catch(next));
 });
 
 //

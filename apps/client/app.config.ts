@@ -13,7 +13,8 @@ const expoConfig = {
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
   ios: {
-    "supportsTablet": true
+    "supportsTablet": true,
+    "bundleIdentifier": "dev.frgtn.musubi"
   },
   android: {
     "package": "dev.frgtn.musubi",

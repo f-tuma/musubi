@@ -1,9 +1,11 @@
 
+import { Settings } from "@/constants/types";
 import { Mode } from "react-native-big-calendar";
 import { create } from "zustand";
 
 
 type SettingsStore = {
+  loadSettings: (settings: Settings) => void,
   defaultCalendarView: Mode,
   setDefaultCalendarView: (view: Mode) => void,
   weekStartsOn: string,
@@ -16,6 +18,7 @@ type SettingsStore = {
 
 
 export const useSettingsStore = create<SettingsStore>((set) => ({
+  loadSettings: (settings: Settings) => set(() => (settings)),
   defaultCalendarView: "week",
   setDefaultCalendarView: (view) => set(() => ({
     defaultCalendarView: view,

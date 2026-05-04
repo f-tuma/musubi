@@ -11,7 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 
 
-export default function Agenda() {
+export default function AgendaTab() {
   const { events, addEvent, updateEvent, removeEvent } = useEventsStore();
   const { calendars, activeCals, toggleCal, syncActiveCals } = useCalendarsStore();
   useEffect(() => {

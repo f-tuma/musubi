@@ -4,7 +4,8 @@ import * as schema from './schema';
 export * from './queries/calendars';
 export * from './queries/users';
 export * from './queries/events';
-export * from './queries/invites'
+export * from './queries/invites';
+export * from './queries/settings';
 export * from './schema';
 export * as schema from './schema';
 

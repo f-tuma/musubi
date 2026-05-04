@@ -14,7 +14,7 @@ import { useSettingsStore } from "@/store/useSettingsStore";
 import { useVisibleEvents } from "@/hooks/useVisibleEvents";
 
 
-export default function CalendarsView() {
+export default function MainTab() {
   const { events, addEvent, updateEvent, removeEvent } = useEventsStore();
 
   const { calendars, activeCals, toggleCal, syncActiveCals } = useCalendarsStore();

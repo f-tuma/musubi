@@ -1,4 +1,4 @@
-import { Calendar, Event, Invite } from "@/constants/types";
+import { Calendar, Event, Invite, Settings } from "@/constants/types";
 import Constants from "expo-constants";
 import { authClient } from "./auth-client";
 
@@ -28,6 +28,7 @@ export const api = {
 
     return newCalendar;
   },
+
   async getCalendars() {
     const { error, data } = await authClient.$fetch<Calendar[]>(`${url}/api/calendars`, {
       method: "GET",
@@ -36,6 +37,7 @@ export const api = {
     if (error) throw new Error(error.message ?? error.statusText);
     return data;
   },
+
   async getCalendar(calendarID: string) {
     const { error, data } = await authClient.$fetch<Calendar>(`${url}/api/calendars/${calendarID}`, {
       method: "GET",
@@ -44,6 +46,7 @@ export const api = {
     if (error) throw new Error(error.message ?? error.statusText);
     return data;
   },
+
   async getCalendarFromToken(token: string) {
     const { error, data } = await authClient.$fetch<Calendar>(`${url}/api/calendars/tokens/${token}`, {
       method: "GET",
@@ -52,6 +55,7 @@ export const api = {
     if (error) throw new Error(error.message ?? error.statusText);
     return data;
   },
+
   async createEvent(event: Event) {
     const { error, data } = await authClient.$fetch<Event>(`${url}/api/events`, {
       method: 'POST',
@@ -76,6 +80,7 @@ export const api = {
 
     return newEvent;
   },
+
   async updateCalendar(calendar: Calendar) {
     const { error, data } = await authClient.$fetch<Calendar>(`${url}/api/calendars`, {
       method: "PUT",
@@ -88,6 +93,7 @@ export const api = {
 
     return data;
   },
+
   async removeCalendar(calendar: Calendar) {
     const { error, data } = await authClient.$fetch<{ id: string }>(`${url}/api/calendars`, {
       method: "DELETE",
@@ -101,6 +107,7 @@ export const api = {
 
     return data.id;
   },
+
   async updateEvent(event: Event) {
     const { error, data } = await authClient.$fetch<Event>(`${url}/api/events`, {
       method: "PUT",
@@ -113,6 +120,7 @@ export const api = {
 
     return data;
   },
+
   async removeEvent(event: Event) {
     const { error, data } = await authClient.$fetch<{ id: string }>(`${url}/api/events`, {
       method: "DELETE",
@@ -126,6 +134,7 @@ export const api = {
 
     return data.id;
   },
+
   async getEvents() {
     const { error, data } = await authClient.$fetch<{ events: Event[] }>(`${url}/api/events`, {
       method: "GET",
@@ -138,6 +147,7 @@ export const api = {
 
     return data.events;
   },
+
   async createInvite(invite: Invite) {
     const { error, data } = await authClient.$fetch<Invite>(`${url}/api/calendars/invites`, {
       method: "POST",
@@ -151,6 +161,7 @@ export const api = {
 
     return data;
   },
+
   async acceptInvite(calendarID: string) {
     const { error, data } = await authClient.$fetch<Invite>(`${url}/api/calendars/members/${calendarID}`, {
       method: "POST",
@@ -160,9 +171,35 @@ export const api = {
 
     return data;
   },
+
   async leaveCalendar(calendarID: string) {
     const { error } = await authClient.$fetch(`${url}/api/calendars/members/${calendarID}`, {
       method: "DELETE",
+    });
+
+    if (error) throw new Error(error.message ?? error.statusText);
+
+    return true;
+  },
+
+  async getSettings() {
+    const { data, error } = await authClient.$fetch<Settings>(`${url}/api/users/settings`, {
+      method: "GET",
+    });
+
+    if (error) throw new Error(error.message ?? error.statusText);
+
+    return data;
+  },
+
+  async saveSettings(settings: Settings) {
+    console.log(settings);
+    const { error } = await authClient.$fetch(`${url}/api/users/settings`, {
+      method: "PUT",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(settings),
     });
 
     if (error) throw new Error(error.message ?? error.statusText);

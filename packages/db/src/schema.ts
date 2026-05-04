@@ -100,6 +100,28 @@ export const accountRelations = relations(account, ({ one }) => ({
 }));
 
 
+// User settings
+
+
+export const userSettings = pgTable("user_settings", {
+  id: text("id")
+    .references(() => user.id, {
+      onDelete: "cascade",
+    })
+    .notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at")
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+  // settings
+  showKanji: boolean("show_kanji").notNull().default(true),
+  defaultCalendarView: text("default_calendar_view").notNull().default("week"),
+  weekStartsOn: text("week_starts_on").notNull().default("monday"),
+});
+
+export type NewSettings = typeof userSettings.$inferInsert;
+
 
 // Calendars and Events
 

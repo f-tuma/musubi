@@ -1,12 +1,15 @@
 import { SettingRowOptions, SettingRowToggle } from "@/components/SettingRow";
 import { colors, fonts, styles } from "@/constants/theme";
+import { Settings } from "@/constants/types";
+import { api } from "@/services/api";
 import { authClient } from "@/services/auth-client";
 import { useSettingsStore } from "@/store/useSettingsStore";
+import { useState } from "react";
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 
-export default function Settings() {
+export default function SettingsTab() {
   const {
     defaultCalendarView, setDefaultCalendarView,
     weekStartsOn, setWeekStartsOn,
@@ -14,6 +17,12 @@ export default function Settings() {
   } = useSettingsStore();
 
   const userSession = authClient.useSession();
+  const [settingsChanged, setSettingsChanged] = useState(false);
+
+  const handleSave = async (settings: Settings) => {
+    await api.saveSettings(settings);
+    setSettingsChanged(false);
+  };
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
@@ -70,21 +79,43 @@ export default function Settings() {
         <SettingRowToggle
           label="Show Kanji"
           toggle={showKanji}
-          onToggle={() => setShowKanji(showKanji ? false : true)}
+          onToggle={() => {
+            setShowKanji(showKanji ? false : true);
+            setSettingsChanged(true);
+          }}
         />
         <SettingRowOptions
           label="Default Calendar View"
           value={defaultCalendarView}
           options={["month", "week", "day"]}
-          onChange={v => setDefaultCalendarView(v)}
+          onChange={v => {
+            setDefaultCalendarView(v);
+            setSettingsChanged(true);
+          }}
         />
         <SettingRowOptions
           label="Week Starts on"
           value={weekStartsOn}
           options={["sunday", "monday"]}
-          onChange={v => setWeekStartsOn(v)}
+          onChange={v => {
+            setWeekStartsOn(v);
+            setSettingsChanged(true);
+          }}
         />
       </ScrollView>
+      {settingsChanged &&
+        <Pressable
+          style={styles.fab}
+          disabled={!settingsChanged}
+          onPress={() => handleSave({
+            showKanji,
+            defaultCalendarView,
+            weekStartsOn,
+          })}
+        >
+          <Text style={{ color: colors.bg, fontSize: 16, lineHeight: 30 }}>Save Settings</Text>
+        </Pressable>
+      }
     </SafeAreaView >
   );
 }
