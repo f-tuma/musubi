@@ -10,4 +10,4 @@ RUN pnpm --filter @musubi/docs run build
 ENV HOST=0.0.0.0
 ENV PORT=4321
 EXPOSE 4321
-CMD ["node", "./dist/server/entry.mjs"]
+CMD ["node", "./packages/docs/dist/server/entry.mjs"]
