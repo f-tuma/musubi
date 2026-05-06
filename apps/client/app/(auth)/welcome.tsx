@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import InputModal from "@/components/TextInputModal";
 import * as SecureStore from "expo-secure-store";
 import { updateAuthClient } from "@/services/auth-client";
+import { updateApiUrl } from "@/constants/url";
 
 
 export default function Welcome() {
@@ -17,7 +18,7 @@ export default function Welcome() {
     let result;
 
     try {
-      result = await fetch(`${value}/api/server/ok`);
+      result = await fetch(`${value.toLowerCase()}/api/server/ok`);
     } catch (err) {
       return { ok: false, error: "Invalid URL..." }
     }
@@ -33,9 +34,10 @@ export default function Welcome() {
   }
 
   const handleSetServer = (server: string) => {
-    SecureStore.setItem("API_URL", server);
+    SecureStore.setItem("API_URL", server.toLowerCase());
+    updateApiUrl();
     updateAuthClient();
-    setApiServer(server);
+    setApiServer(server.toLowerCase());
   }
 
   return (

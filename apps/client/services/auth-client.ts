@@ -1,10 +1,11 @@
 import { createAuthClient } from "better-auth/react";
 import { expoClient } from "@better-auth/expo/client";
+import { apiUrl } from "@/constants/url";
 import * as SecureStore from "expo-secure-store";
 
 
 export let authClient = createAuthClient({
-  baseURL: SecureStore.getItem("API_URL")!,
+  baseURL: apiUrl,
   plugins: [
     expoClient({
       scheme: "musubi",
@@ -16,7 +17,7 @@ export let authClient = createAuthClient({
 
 export function updateAuthClient() {
   authClient = createAuthClient({
-    baseURL: SecureStore.getItem("API_URL")!,
+    baseURL: apiUrl,
     plugins: [
       expoClient({
         scheme: "musubi",

@@ -3,6 +3,8 @@ import { colors, fonts, styles } from "@/constants/theme";
 import { Settings } from "@/constants/types";
 import { api } from "@/services/api";
 import { authClient } from "@/services/auth-client";
+import { useCalendarsStore } from "@/store/useCalendarsStore";
+import { useEventsStore } from "@/store/useEventsStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { useState } from "react";
 import { View, Text, ScrollView, Pressable } from "react-native";
@@ -10,6 +12,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 
 export default function SettingsTab() {
+  const { loadCalendars } = useCalendarsStore();
+  const { loadEvents } = useEventsStore();
   const {
     defaultCalendarView, setDefaultCalendarView,
     weekStartsOn, setWeekStartsOn,
@@ -22,6 +26,12 @@ export default function SettingsTab() {
   const handleSave = async (settings: Settings) => {
     await api.saveSettings(settings);
     setSettingsChanged(false);
+  };
+
+  const handleSignOut = () => {
+    loadCalendars([]);
+    loadEvents([]);
+    authClient.signOut();
   };
 
   return (
@@ -69,7 +79,7 @@ export default function SettingsTab() {
           </View>
           <Pressable
             style={styles.btnRemove}
-            onPress={() => authClient.signOut()}
+            onPress={handleSignOut}
           >
             <Text style={styles.btnPrimaryText}>
               Sign Out

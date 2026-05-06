@@ -1,8 +1,7 @@
 import { Calendar, Event, Invite, Settings } from "@/constants/types";
 import { authClient } from "./auth-client";
-import * as SecureStore from "expo-secure-store";
+import { apiUrl } from "@/constants/url";
 
-const apiUrl = SecureStore.getItem("API_URL");
 
 export const api = {
   async createCalendar(calendar: Calendar) {
