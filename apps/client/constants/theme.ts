@@ -202,6 +202,18 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  btnDisabled: {
+    flex: 1,
+    maxHeight: 48,
+    minHeight: 48,
+    gap: 6,
+    backgroundColor: colors.fg3,
+    borderRadius: 10,
+    padding: 13,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   btnPrimaryText: {
     color: colors.bg,
     fontFamily: fonts.sansMedium,

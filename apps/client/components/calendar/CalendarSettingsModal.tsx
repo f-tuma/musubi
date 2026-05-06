@@ -1,4 +1,4 @@
-import { colors, fonts, styles } from "@/constants/theme";
+import { colors, styles } from "@/constants/theme";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
 import { Feather } from "@expo/vector-icons";
 import { Modal, Pressable, Text, View, ScrollView, Share } from "react-native"
@@ -8,6 +8,7 @@ import { Calendar, Invite } from "@/constants/types";
 import { api } from "@/services/api";
 import { authClient } from "@/services/auth-client";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
+import { useState } from "react";
 
 
 type Props = {
@@ -20,6 +21,8 @@ type Props = {
 }
 
 export default function CalendarSettingsModal({ calendar, visible, onClose, onDelete, onEdit, onLeave }: Props) {
+  const [waitingForInvite, setWaitingForInvite] = useState(false);
+
   const { slideStyle, fadeStyle, gesture, handleClose } = useModalAnimation(visible, onClose);
   const { loadCalendars } = useCalendarsStore();
   const { data: session } = authClient.useSession();
@@ -47,8 +50,10 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
               <View style={styles.container}>
                 <View style={{ gap: 8 }}>
                   <Pressable
-                    style={styles.btnPrimary}
+                    disabled={waitingForInvite}
+                    style={waitingForInvite ? styles.btnDisabled : styles.btnPrimary}
                     onPress={async () => {
+                      setWaitingForInvite(true);
                       const inviteTemplate: Invite = {
                         id: "create",
                         calendarID: calendar?.id!,
@@ -58,7 +63,8 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
                       const invite = await api.createInvite(inviteTemplate);
                       await Share.share({
                         message: `https://musubi.frgtn.dev/invite/${invite.id}`,
-                      })
+                      });
+                      setWaitingForInvite(false);
                     }}
                   >
                     <Feather size={14} name="send" color={colors.bg3} />
