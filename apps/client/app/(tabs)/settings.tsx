@@ -1,8 +1,8 @@
 import { SettingRowOptions, SettingRowToggle } from "@/components/SettingRow";
 import { colors, fonts, styles } from "@/constants/theme";
 import { Settings } from "@/constants/types";
-import { api } from "@/services/api";
-import { authClient } from "@/services/auth-client";
+import { useServer } from "@/contexts/ServerContext";
+import { useApi } from "@/services/api";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useEventsStore } from "@/store/useEventsStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
@@ -12,6 +12,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 
 export default function SettingsTab() {
+  const api = useApi();
+  const { authClient } = useServer();
   const { loadCalendars } = useCalendarsStore();
   const { loadEvents } = useEventsStore();
   const {

@@ -1,5 +1,5 @@
 import { colors, fonts, styles } from "@/constants/theme";
-import { authClient } from "@/services/auth-client";
+import { useServer } from "@/contexts/ServerContext";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, Alert } from "react-native";
@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 
 export default function SignUp() {
+  const { authClient } = useServer();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

@@ -7,7 +7,7 @@ import { useModalAnimation } from "@/hooks/useModalAnimation";
 import { Calendar, Event } from "@/constants/types";
 import { appColors } from "@/constants/colors";
 import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
-import { authClient } from "@/services/auth-client";
+import { useServer } from "@/contexts/ServerContext";
 
 type Props = {
   visible: boolean;
@@ -19,6 +19,7 @@ type Props = {
 };
 
 export function AddEventModal({ visible, onClose, onSave, onEdit, calendars, event }: Props) {
+  const { authClient } = useServer();
   const [newTitle, setNewTitle] = useState('');
   const [newStart, setNewStart] = useState(new Date());
   const [newEnd, setNewEnd] = useState(new Date());

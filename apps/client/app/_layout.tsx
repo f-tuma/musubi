@@ -1,6 +1,4 @@
-import * as SecureStore from "expo-secure-store";
-SecureStore.getItem("API_URL") ?? SecureStore.setItem("API_URL", "https://musubi.frgtn.dev");
-
+import { ServerProvider, useServer } from '@/contexts/ServerContext';
 import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SplashScreen } from 'expo-router';
@@ -8,12 +6,13 @@ import { useFonts } from 'expo-font';
 import { InterTight_400Regular, InterTight_500Medium } from '@expo-google-fonts/inter-tight';
 import { NotoSerif_400Regular } from '@expo-google-fonts/noto-serif';
 import { ShipporiMinchoB1_400Regular } from '@expo-google-fonts/shippori-mincho-b1';
-import { authClient } from '@/services/auth-client';
 
 
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function AppContent() {
+
+  const { isLoading, authClient } = useServer();
 
   const [loaded, error] = useFonts({
     InterTight_400Regular,
@@ -30,10 +29,10 @@ export default function RootLayout() {
   const { data: session, isPending } = authClient.useSession();
 
   useEffect(() => {
-    if ((loaded || error) && !isPending) {
+    if ((loaded || error) && !isPending && !isLoading) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, error, isPending]);
+  }, [loaded, error, isPending, isLoading]);
 
   useEffect(() => {
     if (isPending || !loaded) return;
@@ -49,5 +48,18 @@ export default function RootLayout() {
 
   return (
     < Stack screenOptions={{ headerShown: false }} />
+  );
+}
+
+function AppLoader() {
+  const { apiUrl } = useServer();
+  return <AppContent key={apiUrl ?? 'loading'} />;
+}
+
+export default function RootLayout() {
+  return (
+    <ServerProvider>
+      <AppLoader />
+    </ServerProvider>
   );
 }

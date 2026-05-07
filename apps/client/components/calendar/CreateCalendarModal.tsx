@@ -1,8 +1,8 @@
 import { appColors } from "@/constants/colors";
 import { colors, fonts, styles } from "@/constants/theme";
 import { Calendar } from "@/constants/types";
+import { useServer } from "@/contexts/ServerContext";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
-import { authClient } from "@/services/auth-client";
 import { useEffect, useState } from "react";
 import { Text, Modal, Pressable, ScrollView, View, TextInput } from "react-native";
 import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
@@ -19,6 +19,7 @@ type Props = {
 
 
 export default function CreateCalendarModal({ calendar, visible, onClose, onCreate, onEdit }: Props) {
+  const { authClient } = useServer();
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState(appColors[0].color);
 

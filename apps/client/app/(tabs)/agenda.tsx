@@ -3,6 +3,7 @@ import { CalendarFilterBar } from "@/components/calendar/CalendarFilterBar";
 import EventDetailModal from "@/components/calendar/EventDetailModal";
 import { colors, fonts, styles } from "@/constants/theme";
 import { Event } from "@/constants/types";
+import { useApi } from "@/services/api";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useEventsStore } from "@/store/useEventsStore";
 import { useEffect, useMemo, useState } from "react";
@@ -12,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 
 export default function AgendaTab() {
+  const api = useApi();
   const { events, addEvent, updateEvent, removeEvent } = useEventsStore();
   const { calendars, activeCals, toggleCal, syncActiveCals } = useCalendarsStore();
   useEffect(() => {
@@ -143,15 +145,15 @@ export default function AgendaTab() {
       <AddEventModal
         visible={newEventVisible}
         onClose={() => setNewEventVisible(false)}
-        onSave={addEvent}
-        onEdit={updateEvent}
+        onSave={(e) => addEvent(e, api)}
+        onEdit={(e) => updateEvent(e, api)}
         calendars={calendars}
         event={prefilledEvent}
       />
       <EventDetailModal
         visible={eventDetailVisible}
         onClose={() => setEventDetailVisible(false)}
-        onDelete={(event: Event) => removeEvent(event)}
+        onDelete={(event: Event) => removeEvent(event, api)}
         onEdit={(event: Event) => handlerEventEdit(event)}
         event={eventDetail}
       />

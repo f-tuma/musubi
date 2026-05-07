@@ -1,13 +1,14 @@
-import { authClient } from "@/services/auth-client";
 import { useEventsStore } from "@/store/useEventsStore";
 import Constants from "expo-constants";
 import { useEffect } from "react";
 import EventSource from "react-native-sse";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
+import { useServer } from "@/contexts/ServerContext";
 
 const apiUrl = Constants.expoConfig?.extra?.apiUrl;
 
 export function useConnectToEventStream() {
+  const { authClient } = useServer();
   const { localAddEvent, localUpdateEvent, localRemoveEvent } = useEventsStore();
   const { localUpdateCalendar, localRemoveCalendar } = useCalendarsStore();
 

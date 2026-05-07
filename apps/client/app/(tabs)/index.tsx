@@ -12,21 +12,26 @@ import { useEventsStore } from "@/store/useEventsStore";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { useVisibleEvents } from "@/hooks/useVisibleEvents";
+import { useApi } from "@/services/api";
 
 
 export default function MainTab() {
+  const api = useApi();
   const { events, addEvent, updateEvent, removeEvent } = useEventsStore();
+  const {
+    weekStartsOn,
+    defaultCalendarView,
+  } = useSettingsStore();
 
   const { calendars, activeCals, toggleCal, syncActiveCals } = useCalendarsStore();
   useEffect(() => {
     syncActiveCals(calendars);
   }, [calendars]);
 
+  useEffect(() => {
+    setCalMode(defaultCalendarView);
+  }, [defaultCalendarView]);
 
-  const {
-    weekStartsOn,
-    defaultCalendarView,
-  } = useSettingsStore();
 
   const [calHeight, setCalHeight] = useState(0);
   const [calMode, setCalMode] = useState<Mode>(defaultCalendarView);
@@ -104,15 +109,15 @@ export default function MainTab() {
       <AddEventModal
         visible={newEventVisible}
         onClose={() => setNewEventVisible(false)}
-        onSave={addEvent}
-        onEdit={updateEvent}
+        onSave={(e) => addEvent(e, api)}
+        onEdit={(e) => updateEvent(e, api)}
         calendars={calendars}
         event={prefilledEvent}
       />
       <EventDetailModal
         visible={eventDetailVisible}
         onClose={() => setEventDetailVisible(false)}
-        onDelete={(event: Event) => removeEvent(event)}
+        onDelete={(event: Event) => removeEvent(event, api)}
         onEdit={(event: Event) => handlerEventEdit(event)}
         event={eventDetail}
       />

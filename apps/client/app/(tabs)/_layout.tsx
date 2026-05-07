@@ -1,6 +1,6 @@
 import { colors, fonts } from '@/constants/theme';
 import { useConnectToEventStream } from '@/hooks/useEventsStream';
-import { api } from '@/services/api';
+import { useApi } from '@/services/api';
 import { useCalendarsStore } from '@/store/useCalendarsStore';
 import { useEventsStore } from '@/store/useEventsStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
@@ -11,6 +11,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 
 export default function TabLayout() {
+  const api = useApi();
   const { loadSettings } = useSettingsStore();
   const { loadCalendars } = useCalendarsStore();
   const { loadEvents } = useEventsStore();

@@ -5,10 +5,10 @@ import { Modal, Pressable, Text, View, ScrollView, Share } from "react-native"
 import Animated from "react-native-reanimated";
 import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import { Calendar, Invite } from "@/constants/types";
-import { api } from "@/services/api";
-import { authClient } from "@/services/auth-client";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useState } from "react";
+import { useApi } from "@/services/api";
+import { useServer } from "@/contexts/ServerContext";
 
 
 type Props = {
@@ -21,6 +21,8 @@ type Props = {
 }
 
 export default function CalendarSettingsModal({ calendar, visible, onClose, onDelete, onEdit, onLeave }: Props) {
+  const api = useApi();
+  const { authClient } = useServer();
   const [waitingForInvite, setWaitingForInvite] = useState(false);
 
   const { slideStyle, fadeStyle, gesture, handleClose } = useModalAnimation(visible, onClose);

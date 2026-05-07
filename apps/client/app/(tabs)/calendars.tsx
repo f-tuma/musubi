@@ -3,6 +3,7 @@ import CreateCalendarModal from "@/components/calendar/CreateCalendarModal";
 import { colors, fonts, styles } from "@/constants/theme";
 import { Calendar } from "@/constants/types";
 import { useVisibleEvents } from "@/hooks/useVisibleEvents";
+import { useApi } from "@/services/api";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useEventsStore } from "@/store/useEventsStore";
 import { Feather } from "@expo/vector-icons";
@@ -12,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 
 export default function CalendarsTab() {
+  const api = useApi();
   const { calendars, addCalendar, removeCalendar, updateCalendar } = useCalendarsStore();
   const { events } = useEventsStore();
   const [createModalVisible, setCreateModalVisible] = useState(false);
@@ -64,9 +66,9 @@ export default function CalendarsTab() {
       </ScrollView>
       <CreateCalendarModal
         visible={createModalVisible}
-        onCreate={(calendar) => addCalendar(calendar)}
+        onCreate={(calendar) => addCalendar(calendar, api)}
         onClose={() => setCreateModalVisible(false)}
-        onEdit={updateCalendar}
+        onEdit={(c) => updateCalendar(c, api)}
       />
       <CalendarDetail
         calendar={prefilledCalendar}
@@ -75,7 +77,7 @@ export default function CalendarsTab() {
         onEdit={(cal) => setPrefilledCalendar(cal)}
         onDelete={(calendar) => {
           setPrefilledCalendar(null);
-          removeCalendar(calendar);
+          removeCalendar(calendar, api);
         }}
       />
     </SafeAreaView >

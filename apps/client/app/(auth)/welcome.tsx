@@ -4,13 +4,11 @@ import { useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import InputModal from "@/components/TextInputModal";
-import * as SecureStore from "expo-secure-store";
-import { updateAuthClient } from "@/services/auth-client";
-import { updateApiUrl } from "@/constants/url";
+import { useServer } from "@/contexts/ServerContext";
 
 
 export default function Welcome() {
-  const [apiServer, setApiServer] = useState(SecureStore.getItem("API_URL"));
+  const { apiUrl, setNewServerUrl } = useServer();
   const [inputModalVisible, setInputModalVisible] = useState(false);
   const router = useRouter();
 
@@ -31,13 +29,6 @@ export default function Welcome() {
     }
 
     return { ok: false, error: "Invalid Api Server Url..." };
-  }
-
-  const handleSetServer = (server: string) => {
-    SecureStore.setItem("API_URL", server.toLowerCase());
-    updateApiUrl();
-    updateAuthClient();
-    setApiServer(server.toLowerCase());
   }
 
   return (
@@ -82,7 +73,7 @@ export default function Welcome() {
             onPress={() => setInputModalVisible(true)}
           >
             <Text style={styles.btnSecondaryText}>
-              Server: {apiServer}
+              Server: {apiUrl}
             </Text>
           </Pressable>
           <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg4, textAlign: "center" }}>
@@ -96,7 +87,7 @@ export default function Welcome() {
         placeholder="https://your.api.server"
         onClose={() => setInputModalVisible(false)}
         onTest={(value) => testApiUrl(value)}
-        onConfirm={handleSetServer}
+        onConfirm={setNewServerUrl}
       />
     </SafeAreaView >
   );

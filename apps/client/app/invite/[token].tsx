@@ -1,6 +1,6 @@
 import { colors, fonts, styles } from "@/constants/theme";
 import { Calendar } from "@/constants/types";
-import { api } from "@/services/api";
+import { useApi } from "@/services/api";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -16,6 +16,7 @@ function Avatar({ label, size = 36 }: { label: string; size?: number }) {
 }
 
 export default function Invite() {
+  const api = useApi();
   const { loadCalendars } = useCalendarsStore();
   const { token } = useLocalSearchParams();
   const router = useRouter();

@@ -1,6 +1,6 @@
 import { Calendar } from "@/constants/types";
+import { useApi } from "@/services/api";
 import { create } from "zustand";
-import { api } from "@/services/api";
 
 
 type CalendarStore = {
@@ -8,11 +8,11 @@ type CalendarStore = {
   activeCals: Set<string>;
   toggleCal: (id: string) => void;
   syncActiveCals: (calendars: Calendar[]) => void;
-  addCalendar: (calendar: Calendar) => Promise<void>;
+  addCalendar: (calendar: Calendar, api: ReturnType<typeof useApi>) => Promise<void>;
   loadCalendars: (calendars: Calendar[]) => void;
-  removeCalendar: (calendar: Calendar) => Promise<void>;
+  removeCalendar: (calendar: Calendar, api: ReturnType<typeof useApi>) => Promise<void>;
   localRemoveCalendar: (calendar: Calendar) => void;
-  updateCalendar: (calendar: Calendar) => Promise<Calendar>;
+  updateCalendar: (calendar: Calendar, api: ReturnType<typeof useApi>) => Promise<Calendar>;
   localUpdateCalendar: (calendar: Calendar) => Calendar;
 }
 
@@ -34,7 +34,7 @@ export const useCalendarsStore = create<CalendarStore>((set, get) => ({
       activeCals: now,
     }))
   },
-  addCalendar: async (calendar: Calendar) => {
+  addCalendar: async (calendar, api) => {
     const result = await api.createCalendar(calendar);
     set((state) => ({
       calendars: [...state.calendars, result],
@@ -43,7 +43,7 @@ export const useCalendarsStore = create<CalendarStore>((set, get) => ({
   loadCalendars: (calendars: Calendar[]) => set(() => ({
     calendars: calendars,
   })),
-  removeCalendar: async (calendar) => {
+  removeCalendar: async (calendar, api) => {
     const result = await api.removeCalendar(calendar);
     set((state) => {
       const next = new Set(state.activeCals);
@@ -64,7 +64,7 @@ export const useCalendarsStore = create<CalendarStore>((set, get) => ({
       }
     });
   },
-  updateCalendar: async (calendar) => {
+  updateCalendar: async (calendar, api) => {
     const result = await api.updateCalendar(calendar);
     set((state) => ({
       calendars: [...state.calendars.filter(c => c.id !== result.id), result],

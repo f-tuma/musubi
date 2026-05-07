@@ -17,6 +17,7 @@ import { Feather } from "@expo/vector-icons";
 import CalendarSettingsModal from "./CalendarSettingsModal";
 import CreateCalendarModal from "./CreateCalendarModal";
 import { useVisibleEvents } from "@/hooks/useVisibleEvents";
+import { useApi } from "@/services/api";
 
 
 type Props = {
@@ -30,6 +31,7 @@ type Props = {
 const calendarSpace = Dimensions.get("screen").height * 0.7;
 
 export default function CalendarDetail({ calendar, visible, onClose, onDelete, onEdit }: Props) {
+  const api = useApi();
   const { events, addEvent, updateEvent, removeEvent } = useEventsStore();
   const { calendars, updateCalendar } = useCalendarsStore();
   const {
@@ -206,15 +208,15 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
       <AddEventModal
         visible={newEventVisible}
         onClose={() => setNewEventVisible(false)}
-        onSave={addEvent}
-        onEdit={updateEvent}
+        onSave={(e) => addEvent(e, api)}
+        onEdit={(e) => updateEvent(e, api)}
         calendars={calendars}
         event={prefilledEvent}
       />
       <EventDetailModal
         visible={eventDetailVisible}
         onClose={() => setEventDetailVisible(false)}
-        onDelete={(event: Event) => removeEvent(event)}
+        onDelete={(event: Event) => removeEvent(event, api)}
         onEdit={(event: Event) => handlerEventEdit(event)}
         event={eventDetail}
       />
@@ -232,7 +234,7 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
         onClose={() => setNewCalendarVisible(false)}
         onCreate={() => { }} // Keep empty... should not create new calendars ever...
         onEdit={async (cal) => {
-          await updateCalendar(cal);
+          await updateCalendar(cal, api);
           onEdit(cal);
         }}
       />
