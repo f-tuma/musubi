@@ -4,7 +4,7 @@ import nodemailer from "nodemailer";
 export async function sendEmail(to: string, subject: string, html: string) {
   try {
     // Create transport
-    console.log("Creating transporter...");
+    console.log(config.smtp);
     const transporter = nodemailer.createTransport({
       host: config.smtp.host,
       port: config.smtp.port,
