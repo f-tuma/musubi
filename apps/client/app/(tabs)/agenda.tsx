@@ -68,7 +68,7 @@ export default function AgendaTab() {
         calendars={calendars}
         activeCals={activeCals}
       />
-      <ScrollView style={{ zIndex: -1, paddingHorizontal: 16 }}>
+      <ScrollView style={{ paddingHorizontal: 16 }}>
         {
           groups.map(g => (
             <View key={g.date.toISOString()}>

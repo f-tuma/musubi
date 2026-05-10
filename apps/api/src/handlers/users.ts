@@ -16,6 +16,7 @@ export async function handlerDeleteUser(req: Request, res: Response) {
   res.sendStatus(200);
 }
 
+
 // DEV ONLY
 
 export async function handlerResetUsers(req: Request, res: Response) {

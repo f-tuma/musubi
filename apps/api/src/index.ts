@@ -2,6 +2,7 @@ import { config } from "@musubi/config";
 import { auth } from "@musubi/auth";
 import { toNodeHandler } from "better-auth/node";
 import express from "express";
+import cors from "cors";
 import { middlewareErrorHandler } from "./middleware/error_handler";
 import { handlerCreateCalendar, handlerGetCalendars, handlerGetCalendar, handlerRemoveCalendar, handlerUpdateCalendar, handlerJoinCalendar, handlerLeaveCalendar, handlerGetCalendarFromToken } from "./handlers/calendars";
 import { handlerDeleteUser, handlerResetUsers } from "./handlers/users";
@@ -16,9 +17,24 @@ import { handlerServerStatus } from "./handlers/server";
 const app = express()
 const port = config.api.port;
 
+const allowedOrigins = [
+  "https://musubi.frgtn.dev",
+  "https://dev-musubi.frgtn.dev",
+  ...(config.api.environment === "dev" ? ["http://localhost:3000", "http://localhost:8081"] : []),
+];
 
 //MIDDLEWARE
 
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+}));
 app.use(express.json());
 app.use(middlewareLogHandler);
 

@@ -1,4 +1,5 @@
 import { colors, fonts } from '@/constants/theme';
+import { useServer } from '@/contexts/ServerContext';
 import { useConnectToEventStream } from '@/hooks/useEventsStream';
 import { useApi } from '@/services/api';
 import { useCalendarsStore } from '@/store/useCalendarsStore';
@@ -12,22 +13,25 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function TabLayout() {
   const api = useApi();
+  const { apiUrl, isLoading } = useServer();
   const { loadSettings } = useSettingsStore();
   const { loadCalendars } = useCalendarsStore();
   const { loadEvents } = useEventsStore();
 
   useEffect(() => {
+    if (isLoading || !apiUrl) return;
+
     const fetch = async () => {
       try {
         loadSettings(await api.getSettings());
         loadCalendars(await api.getCalendars());
         loadEvents(await api.getEvents());
-      } catch {
-        console.error("Could not fetch calendars and events...");
+      } catch (e: any) {
+        console.error("Could not fetch calendars and events...", e?.message, e?.status, e);
       }
     };
     fetch();
-  }, [])
+  }, [apiUrl, isLoading])
 
   useConnectToEventStream();
 
