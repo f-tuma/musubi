@@ -16,7 +16,7 @@ export function useApi() {
         body: JSON.stringify(calendar),
       });
 
-      if (error) throw new Error(error.message ?? error.statusText);
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
 
 
       const newCalendar: Calendar = {
@@ -36,7 +36,7 @@ export function useApi() {
         method: "GET",
       });
 
-      if (error) throw new Error(error.message ?? error.statusText);
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
       return data;
     },
 
@@ -45,7 +45,7 @@ export function useApi() {
         method: "GET",
       });
 
-      if (error) throw new Error(error.message ?? error.statusText);
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
       return data;
     },
 
@@ -54,7 +54,7 @@ export function useApi() {
         method: "GET",
       });
 
-      if (error) throw new Error(error.message ?? error.statusText);
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
       return data;
     },
 
@@ -67,7 +67,7 @@ export function useApi() {
         body: JSON.stringify(event),
       });
 
-      if (error) throw new Error(error.message ?? error.statusText);
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
 
 
       const newEvent: Event = {
@@ -91,7 +91,7 @@ export function useApi() {
         },
         body: JSON.stringify(calendar),
       });
-      if (error) throw new Error(error.message ?? error.statusText);
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
 
       return data;
     },
@@ -105,7 +105,7 @@ export function useApi() {
 
         body: JSON.stringify(calendar),
       });
-      if (error) throw new Error(error.message ?? error.statusText);
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
 
       return data.id;
     },
@@ -118,7 +118,7 @@ export function useApi() {
         },
         body: JSON.stringify(event),
       });
-      if (error) throw new Error(error.message ?? error.statusText);
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
 
       return data;
     },
@@ -132,7 +132,7 @@ export function useApi() {
 
         body: JSON.stringify(event),
       });
-      if (error) throw new Error(error.message ?? error.statusText);
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
 
       return data.id;
     },
@@ -145,7 +145,7 @@ export function useApi() {
         },
       });
 
-      if (error) throw new Error(error.message ?? error.statusText);
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
 
       return data.events;
     },
@@ -159,7 +159,7 @@ export function useApi() {
         body: JSON.stringify(invite),
       });
 
-      if (error) throw new Error(error.message ?? error.statusText);
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
 
       return data;
     },
@@ -169,7 +169,7 @@ export function useApi() {
         method: "POST",
       });
 
-      if (error) throw new Error(error.message ?? error.statusText);
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
 
       return data;
     },
@@ -179,7 +179,7 @@ export function useApi() {
         method: "DELETE",
       });
 
-      if (error) throw new Error(error.message ?? error.statusText);
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
 
       return true;
     },
@@ -189,7 +189,7 @@ export function useApi() {
         method: "GET",
       });
 
-      if (error) throw new Error(error.message ?? error.statusText);
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
 
       return data;
     },
@@ -203,7 +203,7 @@ export function useApi() {
         body: JSON.stringify(settings),
       });
 
-      if (error) throw new Error(error.message ?? error.statusText);
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
 
       return true;
     },
@@ -213,7 +213,7 @@ export function useApi() {
         method: "DELETE",
       });
 
-      if (error) throw new Error(error.message ?? error.statusText);
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
 
       return true;
     }
