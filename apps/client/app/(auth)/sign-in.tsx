@@ -1,14 +1,17 @@
+import InputModal from "@/components/TextInputModal";
 import { colors, fonts, styles } from "@/constants/theme";
 import { useServer } from "@/contexts/ServerContext";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, Alert } from "react-native";
+import { View, Text, TextInput, Pressable, Alert, Modal } from "react-native";
 
 
 export default function SignIn() {
   const { authClient } = useServer();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const [isPasswordResetVisible, setIsPasswordResetVisible] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -50,6 +53,10 @@ export default function SignIn() {
       }
     }
   };
+
+  const handlePasswordReset = async (email: string) => {
+    authClient.requestPasswordReset({ email });
+  }
 
   return (
     <View style={styles.screen}>
@@ -95,7 +102,7 @@ export default function SignIn() {
           <Pressable
             style={isLoading ? styles.btnDisabled : styles.btnSecondary}
             disabled={isLoading}
-            onPress={() => { }}
+            onPress={() => setIsPasswordResetVisible(true)}
           >
             <Text style={styles.btnSecondaryText}>
               Forgotten password?
@@ -104,7 +111,7 @@ export default function SignIn() {
           <Pressable
             style={isLoading ? styles.btnDisabled : styles.btnPrimary}
             disabled={isLoading}
-            onPress={() => handleSignIn()}
+            onPress={handleSignIn}
           >
             <Text style={styles.btnPrimaryText}>
               Continue
@@ -112,6 +119,13 @@ export default function SignIn() {
           </Pressable>
         </View>
       </View>
+      <InputModal
+        visible={isPasswordResetVisible}
+        placeholder="your@email.com"
+        title="Enter your account email..."
+        onConfirm={handlePasswordReset}
+        onClose={() => setIsPasswordResetVisible(false)}
+      />
     </View>
   );
 }

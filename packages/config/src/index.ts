@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
-function envOrThrow(key: string) {
+export function envOrThrow(key: string) {
   const value = process.env[key];
   if (!value) {
     throw new Error(`Missing value from ENV on KEY: ${key}`);

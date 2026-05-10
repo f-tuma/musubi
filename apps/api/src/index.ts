@@ -4,7 +4,7 @@ import { toNodeHandler } from "better-auth/node";
 import express from "express";
 import { middlewareErrorHandler } from "./middleware/error_handler";
 import { handlerCreateCalendar, handlerGetCalendars, handlerGetCalendar, handlerRemoveCalendar, handlerUpdateCalendar, handlerJoinCalendar, handlerLeaveCalendar, handlerGetCalendarFromToken } from "./handlers/calendars";
-import { handlerDeleteUser, handlerResetUsers } from "./handlers/users";
+import { handlerDeleteUser, handlerResetPassword, handlerResetUsers } from "./handlers/users";
 import { handlerCreateEvent, handlerGetEvents, handlerRemoveEvent, handlerUpdateEvent } from "./handlers/events";
 import { requireAuth } from "./middleware/require_auth";
 import { handlerCreateCalendarInvite } from "./handlers/invites";
@@ -114,6 +114,13 @@ app.post("/api/calendars/invites", requireAuth, (
   next) => {
   Promise.resolve(handlerCreateCalendarInvite(req, res).catch(next));
 });
+
+// app.post("/api/users/reset-password", requireAuth, (
+//   req,
+//   res,
+//   next) => {
+//   Promise.resolve(handlerResetPassword(req, res).catch(next));
+// });
 
 //
 

@@ -1,10 +1,17 @@
-import { db } from "..";
-import { user } from "../schema";
+import { eq } from "drizzle-orm";
+import { db, user } from "..";
 import { config } from "@musubi/config";
-import { ForbiddenError } from "@musubi/types";
+import { ForbiddenError, NotFoundError } from "@musubi/types";
 
 
 
+export async function getUserFromEmail(email: string) {
+  const [result] = await db.select().from(user).where(eq(user.email, email));
+
+  if (!result) throw new NotFoundError(`User with email "${email}" not found...`);
+
+  return result.name;
+}
 
 
 

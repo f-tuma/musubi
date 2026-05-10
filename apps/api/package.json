@@ -15,11 +15,13 @@
     "@musubi/config": "workspace:*",
     "@musubi/db": "workspace:*",
     "@musubi/types": "workspace:*",
-    "better-auth": "^1.6.5",
+    "@types/nodemailer": "^8.0.0",
+    "better-auth": "^1.6.10",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "nodemailer": "^8.0.7",
     "tsx": "^4.21.0",
-    "zod": "^4.3.6"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/express": "^5.0.6"
