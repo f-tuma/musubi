@@ -23,6 +23,7 @@ export default function EventDetailModal({ event, visible, onClose, onDelete, on
   const insets = useSafeAreaInsets();
   const { slideStyle, fadeStyle, gesture, handleClose } = useModalAnimation(visible, onClose);
 
+
   return (
     <Modal
       visible={visible}
@@ -63,25 +64,48 @@ export default function EventDetailModal({ event, visible, onClose, onDelete, on
               <Text style={styles.modalTitle}>{event?.title}</Text>
             </View>
             <ScrollView>
-              <View style={{ paddingTop: 10, marginBottom: 10 }}>
+              <View style={styles.fieldContainer}>
                 <View style={styles.modalDetailRow}>
                   <Feather size={20} name="calendar" color={colors.fg4} />
-                  <Text style={{ color: colors.fg2 }}>{event?.start.toLocaleString("en-UK", { weekday: "long", month: "long", day: "numeric" })}</Text>
-                </View>
-                <View style={styles.modalDetailRow}>
-                  <Feather size={20} name="clock" color={colors.fg4} />
                   <Text style={{ color: colors.fg2 }}>
-                    {event?.start.toLocaleString("en-UK", { hour: "2-digit", minute: "2-digit" })} – {event?.end.toLocaleString("en-UK", { hour: "2-digit", minute: "2-digit" })}
+                    {event?.start.toLocaleString("en-UK", { weekday: "long", month: "long", day: "numeric" })}
+                    {new Date(new Date(event?.start!).setHours(0, 0, 0, 0)).getTime()
+                      === new Date(new Date(event?.end!).setHours(0, 0, 0, 0)).getTime() ? ""
+                      : " – " + event?.end.toLocaleString("en-UK", { weekday: "long", month: "long", day: "numeric" })
+                    }
                   </Text>
                 </View>
+                {!event?.isAllDay &&
+                  <View style={styles.modalDetailRow}>
+                    <Feather size={20} name="clock" color={colors.fg4} />
+                    <Text style={{ color: colors.fg2 }}>
+                      {event?.start.toLocaleString("en-UK", { hour: "2-digit", minute: "2-digit" })}
+                      {" – "}
+                      {event?.end.toLocaleString("en-UK", { hour: "2-digit", minute: "2-digit" })}
+                    </Text>
+                  </View>
+                }
               </View>
+              {
+                event?.description &&
+                <View style={styles.fieldContainer}>
+                  <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Note</Text>
+                  <View style={{
+                    padding: 12,
+                    backgroundColor: colors.bg3,
+                    borderColor: colors.line,
+                    borderWidth: 1,
+                    borderRadius: 8
+                  }}>
+                    <Text style={{ fontFamily: fonts.serif, color: colors.fg2 }}>{event?.description}</Text>
+                  </View>
+                </View>
+              }
             </ScrollView>
             <View
               style={{
                 flexDirection: "row",
                 justifyContent: "space-between",
-                borderTopWidth: 1,
-                borderColor: colors.line,
                 paddingBottom: insets.bottom,
               }}
             >

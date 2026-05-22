@@ -117,9 +117,7 @@ export const styles = StyleSheet.create({
   modalDetailRow: {
     flexDirection: "row",
     gap: 10,
-    paddingLeft: 20,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingVertical: 10,
   },
   container: {
     paddingHorizontal: 16,
