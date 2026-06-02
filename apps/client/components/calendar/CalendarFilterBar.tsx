@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { colors, fonts } from "@/constants/theme";
-import { View } from "react-native";
-import { Pressable, ScrollView, Text } from "react-native";
+import { View, Pressable, ScrollView, Text } from "react-native";
+import * as Haptics from "expo-haptics";
 
 type Calendar = { id: string; name: string; color: string };
 
@@ -22,10 +22,16 @@ export const CalendarFilterBar = memo(function CalendarFilterBar({ calendars, ac
       {calendars.map((cal) => (
         <Pressable
           key={cal.id}
-          onPress={() => onToggle(cal.id)}
+          onPress={() => {
+            if (process.env.EXPO_OS === 'ios') {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+            onToggle(cal.id);
+          }}
           style={{
             flexDirection: 'row', alignItems: 'center', gap: 6,
-            paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999,
+            paddingHorizontal: 12, paddingVertical: 6,
+            borderRadius: 999, borderCurve: 'continuous',
             borderWidth: 1,
             borderColor: activeCals.has(cal.id) ? colors.line3 : colors.line,
             backgroundColor: activeCals.has(cal.id) ? colors.bg2 : colors.line,

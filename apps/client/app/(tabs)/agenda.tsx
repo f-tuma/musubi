@@ -8,6 +8,8 @@ import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useEventsStore } from "@/store/useEventsStore";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View, Text, ScrollView, Pressable } from "react-native";
+import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 
 
 
@@ -77,8 +79,8 @@ export default function AgendaTab() {
       />
       <ScrollView style={{ paddingHorizontal: 16 }}>
         {
-          groups.map(g => (
-            <View key={g.date.toISOString()}>
+          groups.map((g, i) => (
+            <Animated.View key={g.date.toISOString()} entering={FadeInUp.delay(i * 40).duration(300).springify()}>
               <View style={styles.timelineRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.timelineDay}>
@@ -129,16 +131,19 @@ export default function AgendaTab() {
                   ))
                 }
               </View>
-            </View>
+            </Animated.View>
           ))
         }
       </ScrollView>
-      <Pressable style={styles.fab} onPress={() => {
-        setPrefilledEvent(undefined);
-        setNewEventVisible(true);
-      }}>
-        <Text style={{ color: colors.bg, fontSize: 28, lineHeight: 30 }}>+</Text>
-      </Pressable>
+      <Animated.View entering={FadeIn.duration(400)}>
+        <Pressable style={styles.fab} onPress={() => {
+          if (process.env.EXPO_OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          setPrefilledEvent(undefined);
+          setNewEventVisible(true);
+        }}>
+          <Text style={{ color: colors.bg, fontSize: 28, lineHeight: 30 }}>+</Text>
+        </Pressable>
+      </Animated.View>
       <AddEventModal
         visible={newEventVisible}
         onClose={() => setNewEventVisible(false)}

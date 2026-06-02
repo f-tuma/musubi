@@ -3,7 +3,6 @@ import dayjs from 'dayjs'
 import * as React from 'react'
 import {
   type AccessibilityProps,
-  Animated,
   Platform,
   Text,
   TouchableHighlight,
@@ -11,6 +10,7 @@ import {
   View,
   type ViewStyle,
 } from 'react-native'
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated'
 
 import { u } from '../commonStyles'
 import { useNow } from '../hooks/useNow'
@@ -382,36 +382,22 @@ function TouchableGradually({
   onLongPress: () => void
   onPress: () => void
 }) {
-  const backgroundColor = React.useRef(new Animated.Value(0)).current
+  const opacity = useSharedValue(0)
 
-  const handlePressIn = () => {
-    Animated.timing(backgroundColor, { toValue: 1, duration: 200, useNativeDriver: false }).start()
-  }
-
-  const handlePressOut = () => {
-    Animated.timing(backgroundColor, { toValue: 0, duration: 200, useNativeDriver: false }).start()
-  }
+  const animStyle = useAnimatedStyle(() => ({
+    backgroundColor: `rgba(0,0,0,${opacity.value * 0.2})`,
+  }))
 
   return (
     <TouchableHighlight
       onLongPress={onLongPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
+      onPressIn={() => { opacity.value = withTiming(1, { duration: 200 }) }}
+      onPressOut={() => { opacity.value = withTiming(0, { duration: 200 }) }}
       onPress={onPress}
       underlayColor="transparent"
       style={style}
     >
-      <Animated.View
-        style={[
-          {
-            backgroundColor: backgroundColor.interpolate({
-              inputRange: [0, 1],
-              outputRange: ['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0.2)'],
-            }),
-          },
-          style,
-        ]}
-      />
+      <Animated.View style={[style, animStyle]} />
     </TouchableHighlight>
   )
 }

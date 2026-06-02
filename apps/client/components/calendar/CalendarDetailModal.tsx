@@ -4,7 +4,7 @@ import { Calendar, Event } from "@musubi/types";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
 import { useEventsStore } from "@/store/useEventsStore";
 import { useCallback, useMemo, useState } from "react";
-import { Modal, Text, Pressable, View, Dimensions } from "react-native";
+import { Modal, Text, Pressable, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated from "react-native-reanimated";
 import { Calendar as BigCalendar, enrichEvents, expandRecurringEvents, type Mode } from "@musubi/calendar";
@@ -29,9 +29,9 @@ type Props = {
   onEdit: (event: Calendar) => void,
 }
 
-const calendarSpace = Dimensions.get("screen").height * 0.7;
-
 export default function CalendarDetail({ calendar, visible, onClose, onDelete, onEdit }: Props) {
+  const { height } = useWindowDimensions();
+  const calendarSpace = height * 0.7;
   const api = useApi();
   const { events, addEvent, updateEvent, removeEvent } = useEventsStore();
   const { calendars, updateCalendar } = useCalendarsStore();

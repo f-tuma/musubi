@@ -1,4 +1,5 @@
 import { colors, fonts } from '@/constants/theme';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { useServer } from '@/contexts/ServerContext';
 import { useConnectToEventStream } from '@/hooks/useEventsStream';
 import { useApi } from '@/services/api';
@@ -7,7 +8,7 @@ import { useEventsStore } from '@/store/useEventsStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { Feather } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 
@@ -17,20 +18,35 @@ export default function TabLayout() {
   const { loadSettings } = useSettingsStore();
   const { loadCalendars } = useCalendarsStore();
   const { loadEvents } = useEventsStore();
+  const [dataReady, setDataReady] = useState(false);
 
   useEffect(() => {
-    if (isLoading || !apiUrl) return;
+    // Server context is still hydrating — keep overlay visible
+    if (isLoading) return;
 
-    const fetch = async () => {
+    // No server URL configured — show the app empty rather than loading forever
+    if (!apiUrl) {
+      setDataReady(true);
+      return;
+    }
+
+    const load = async () => {
       try {
-        loadSettings(await api.getSettings());
-        loadCalendars(await api.getCalendars());
-        loadEvents(await api.getEvents());
+        const [settings, calendars, events] = await Promise.all([
+          api.getSettings(),
+          api.getCalendars(),
+          api.getEvents(),
+        ]);
+        loadSettings(settings);
+        loadCalendars(calendars);
+        loadEvents(events);
       } catch (e: any) {
-        console.error("Could not fetch calendars and events...", e?.message, e?.status, e);
+        console.error("Could not fetch initial data:", e?.message, e?.status, e);
+      } finally {
+        setDataReady(true);
       }
     };
-    fetch();
+    load();
   }, [apiUrl, isLoading]);
 
   useConnectToEventStream();
@@ -62,27 +78,25 @@ export default function TabLayout() {
           title: "Home",
           headerShown: false,
           tabBarIcon: ({ color }) => <Feather size={20} name='calendar' color={color} />,
-        }}
-        />
+        }} />
         <Tabs.Screen name="calendars" options={{
           title: "Calendars",
           headerShown: false,
           tabBarIcon: ({ color }) => <Feather size={20} name='layers' color={color} />,
-        }}
-        />
+        }} />
         <Tabs.Screen name="agenda" options={{
           title: "Agenda",
           headerShown: false,
           tabBarIcon: ({ color }) => <Feather size={20} name='list' color={color} />,
-        }}
-        />
+        }} />
         <Tabs.Screen name="settings" options={{
           title: "Settings",
           headerShown: false,
           tabBarIcon: ({ color }) => <Feather size={20} name='settings' color={color} />,
-        }}
-        />
+        }} />
       </Tabs>
+
+      <LoadingOverlay ready={dataReady} />
     </GestureHandlerRootView>
   );
 }

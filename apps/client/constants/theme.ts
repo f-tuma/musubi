@@ -41,6 +41,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line3,
     borderRadius: 999,
+    borderCurve: 'continuous',
     paddingHorizontal: 12,
     paddingVertical: 6,
     backgroundColor: colors.bg2,
@@ -52,6 +53,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: 999,
+    borderCurve: 'continuous',
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
@@ -95,6 +97,7 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.bg1,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    borderCurve: 'continuous',
     maxHeight: '88%',
   },
   modalHandle: {

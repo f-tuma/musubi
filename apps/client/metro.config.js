@@ -1,7 +1,23 @@
 const { getDefaultConfig } = require('expo/metro-config');
+const path = require('path');
+
+const projectRoot = __dirname;
+const monorepoRoot = path.resolve(projectRoot, '../..');
 
 /** @type {import('expo/metro-config').MetroConfig} */
-const config = getDefaultConfig(__dirname);
+const config = getDefaultConfig(projectRoot);
+
+// Allow Metro to watch and serve files from the entire monorepo root.
+// Without this, asset paths that traverse into the pnpm virtual store
+// (../../node_modules/.pnpm/...) are blocked because they fall outside
+// Metro's default project root.
+config.watchFolders = [monorepoRoot];
+
+// Tell the resolver where to look for node_modules in a pnpm monorepo.
+config.resolver.nodeModulesPaths = [
+  path.resolve(projectRoot, 'node_modules'),
+  path.resolve(monorepoRoot, 'node_modules'),
+];
 
 const defaultResolveRequest = config.resolver.resolveRequest;
 
