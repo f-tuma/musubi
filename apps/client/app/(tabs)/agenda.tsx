@@ -6,10 +6,12 @@ import { Event } from "@musubi/types";
 import { useApi } from "@/services/api";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useEventsStore } from "@/store/useEventsStore";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { View, Text, ScrollView, Pressable } from "react-native";
 
 
+
+const dateKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 
 export default function AgendaTab() {
   const api = useApi();
@@ -24,39 +26,42 @@ export default function AgendaTab() {
   const [prefilledEvent, setPrefilledEvent] = useState<Event | undefined>(undefined);
   const [eventDetail, setEventDetail] = useState<Event | null>(null);
 
+  const calendarById = useMemo(
+    () => new Map(calendars.map(c => [c.id, c])),
+    [calendars]
+  );
+
+  const todayKey = useMemo(() => dateKey(new Date()), []);
+
   const groups = useMemo(() => {
     const now = new Date();
     const sorted = events
-      .filter(e => e.start > now)
-      .filter(e => e.calendars.some(id => activeCals.has(id)))
+      .filter(e => e.start > now && e.calendars.some(id => activeCals.has(id)))
       .sort((a, b) => a.start.getTime() - b.start.getTime());
     const result: { date: Date, items: Event[] }[] = [];
-    sorted.forEach(e => {
-      const g = result[result.length - 1];
-      const eDate = e.start.toLocaleString("en-UK", { year: "numeric", month: "numeric", day: "numeric" });
-      if (g && g.date.toLocaleString("en-UK", { year: "numeric", month: "numeric", day: "numeric" }) === eDate) {
-        g.items.push(e);
+    let lastKey = "";
+    for (const e of sorted) {
+      const key = dateKey(e.start);
+      if (key === lastKey) {
+        result[result.length - 1].items.push(e);
       } else {
         result.push({ date: e.start, items: [e] });
+        lastKey = key;
       }
-    });
+    }
     return result;
   }, [events, activeCals]);
 
-  const handlerEventEdit = (event: Event) => {
+  const handlerEventEdit = useCallback((event: Event) => {
     setEventDetailVisible(false);
     setPrefilledEvent(event);
     setNewEventVisible(true);
-  };
+  }, []);
 
-  const openEventDetail = (event: Event) => {
+  const openEventDetail = useCallback((event: Event) => {
     setEventDetail(event);
     setEventDetailVisible(true);
-  };
-
-  const getCalendarFromId = (id: string) => {
-    return calendars.filter(cal => cal.id === id)[0];
-  }
+  }, []);
 
   return (
     <View style={styles.screen}>
@@ -87,17 +92,8 @@ export default function AgendaTab() {
                   <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg2 }} >
                     {g.date.toLocaleString("en-UK", { weekday: "long" })}
                   </Text>
-                  {
-                    new Date().toLocaleString("en-UK", {
-                      year: "numeric",
-                      month: "numeric",
-                      day: "numeric"
-                    }) === g.date.toLocaleString("en-UK", {
-                      year: "numeric",
-                      month: "numeric",
-                      day: "numeric"
-                    }) &&
-                    < Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg3 }}>
+                  {dateKey(g.date) === todayKey &&
+                    <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg3 }}>
                       TODAY
                     </Text>
                   }
@@ -122,8 +118,8 @@ export default function AgendaTab() {
                           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                             {e.calendars.map(c => (
                               <View key={c} style={{ flexDirection: "row", gap: 4, alignItems: "center" }}>
-                                <View style={[styles.colorDot, { backgroundColor: getCalendarFromId(c)?.color ?? "" }]} />
-                                <Text style={styles.timelineMeta}>{getCalendarFromId(c)?.name ?? ""}</Text>
+                                <View style={[styles.colorDot, { backgroundColor: calendarById.get(c)?.color ?? "" }]} />
+                                <Text style={styles.timelineMeta}>{calendarById.get(c)?.name ?? ""}</Text>
                               </View>
                             ))}
                           </View>

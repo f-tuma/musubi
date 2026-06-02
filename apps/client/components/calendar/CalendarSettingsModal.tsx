@@ -25,6 +25,7 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
   const api = useApi();
   const { authClient } = useServer();
   const [waitingForInvite, setWaitingForInvite] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
 
   const insets = useSafeAreaInsets();
   const { slideStyle, fadeStyle, gesture, handleClose } = useModalAnimation(visible, onClose);
@@ -116,16 +117,17 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
 
                 <Pressable
                   style={styles.modalActionBtn}
-                  disabled={calendar ? false : true}
+                  disabled={isLeaving || !calendar}
                   onPress={async () => {
+                    setIsLeaving(true);
                     await api.leaveCalendar(calendar?.id!);
                     loadCalendars(await api.getCalendars());
                     handleClose();
                     onLeave();
                   }}
                 >
-                  <Feather size={20} name="arrow-left-circle" color={colors.accent} />
-                  <Text style={{ color: colors.accent, fontSize: 10 }}>Leave</Text>
+                  <Feather size={20} name="arrow-left-circle" color={isLeaving ? colors.fg4 : colors.accent} />
+                  <Text style={{ color: isLeaving ? colors.fg4 : colors.accent, fontSize: 10 }}>Leave</Text>
                 </Pressable>
 
               }

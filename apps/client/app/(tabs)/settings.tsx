@@ -26,10 +26,13 @@ export default function SettingsTab() {
   const [confrimDeleteVisible, setConfirmDeleteVisible] = useState(false);
   const userSession = authClient.useSession();
   const [settingsChanged, setSettingsChanged] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async (settings: Settings) => {
+    setIsSaving(true);
     await api.saveSettings(settings);
     setSettingsChanged(false);
+    setIsSaving(false);
   };
 
   const handleSignOut = () => {
@@ -154,8 +157,8 @@ export default function SettingsTab() {
       </ScrollView>
       {settingsChanged &&
         <Pressable
-          style={styles.fab}
-          disabled={!settingsChanged}
+          style={[styles.fab, isSaving && { backgroundColor: colors.line }]}
+          disabled={isSaving}
           onPress={() => handleSave({
             showKanji,
             defaultCalendarView,

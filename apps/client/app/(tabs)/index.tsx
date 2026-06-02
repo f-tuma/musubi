@@ -4,7 +4,8 @@ import { CalendarFilterBar } from "@/components/calendar/CalendarFilterBar";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { Calendar, Mode } from "react-native-big-calendar";
+import { Calendar, enrichEvents, expandRecurringEvents, type Mode } from "@musubi/calendar";
+import dayjs from "dayjs";
 import EventDetailModal from "@/components/calendar/EventDetailModal";
 import { Event } from "@musubi/types";
 import { useEventsStore } from "@/store/useEventsStore";
@@ -13,6 +14,20 @@ import { useSettingsStore } from "@/store/useSettingsStore";
 import { useVisibleEvents } from "@/hooks/useVisibleEvents";
 import { useApi } from "@/services/api";
 
+
+function getViewRange(mode: Mode, anchor: Date): [Date, Date] {
+  const d = dayjs(anchor);
+  switch (mode) {
+    case 'day':
+      return [d.subtract(1, 'day').startOf('day').toDate(), d.add(2, 'day').endOf('day').toDate()];
+    case '3days':
+    case 'week':
+      return [d.subtract(2, 'week').startOf('day').toDate(), d.add(2, 'week').endOf('day').toDate()];
+    case 'month':
+    default:
+      return [d.subtract(2, 'month').startOf('month').toDate(), d.add(2, 'month').endOf('month').toDate()];
+  }
+}
 
 export default function MainTab() {
   const api = useApi();
@@ -42,23 +57,47 @@ export default function MainTab() {
   const [eventDetail, setEventDetail] = useState<Event | null>(null);
   const [startingDate, setStartingDate] = useState<Date | undefined>(new Date());
 
-  const handlerEventEdit = (event: Event) => {
+  const handlerEventEdit = useCallback((event: Event) => {
     setEventDetailVisible(false);
     setPrefilledEvent(event);
     setNewEventVisible(true);
-  };
-
-  const handleCreateEventOnCell = (date: Date) => {
-    setStartingDate(date);
-    setNewEventVisible(true);
-  }
-
-  const openEventDetail = useCallback((event: Event) => {
-    setEventDetail(event);
-    setEventDetailVisible(true);
   }, []);
 
+  const handleCreateEventOnCell = useCallback((date: Date) => {
+    setStartingDate(date);
+    setNewEventVisible(true);
+  }, []);
+
+  const openEventDetail = useCallback((event: Event) => {
+    // Recurring occurrences have synthetic ids like "<originalId>_<timestamp>".
+    // Display the occurrence's own start/end (the date the user tapped) but
+    // keep the original event's id so that edit/delete targets the full series.
+    const original = events.find(e => e.id === event.id)
+      ?? events.find(e => e.id === event.id?.replace(/_\d+$/, ''));
+    setEventDetail(
+      original && original.id !== event.id
+        ? { ...original, start: event.start, end: event.end }
+        : event,
+    );
+    setEventDetailVisible(true);
+  }, [events]);
+
   const { visibleEvents } = useVisibleEvents(events, activeCals);
+
+  const [rangeStart, rangeEnd] = useMemo(
+    () => getViewRange(calMode, anchorDate),
+    [calMode, anchorDate],
+  );
+
+  const expandedEvents = useMemo(
+    () => expandRecurringEvents(visibleEvents, rangeStart, rangeEnd),
+    [visibleEvents, rangeStart, rangeEnd],
+  );
+
+  const enrichedEventsByDate = useMemo(
+    () => enrichEvents(expandedEvents, true),
+    [expandedEvents],
+  );
 
   const scrollOffset = useMemo(() =>
     new Date().getHours() * 60 - 60,
@@ -87,8 +126,10 @@ export default function MainTab() {
       >
         {calHeight > 0 && (
           <Calendar
-            events={visibleEvents}
+            events={expandedEvents}
             eventsAreSorted={true}
+            enableEnrichedEvents={true}
+            enrichedEventsByDate={enrichedEventsByDate}
             height={calMode === "month" ? calHeight : calHeight + 95}
             theme={calendarTheme}
             eventCellStyle={eventCellStyle}

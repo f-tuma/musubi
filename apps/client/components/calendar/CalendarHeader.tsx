@@ -2,7 +2,7 @@ import { MONTH_KANJI } from "@/constants/const";
 import { colors, fonts, styles } from "@/constants/theme";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { Pressable, Text, View } from "react-native";
-import { Mode } from "react-native-big-calendar";
+import { Mode } from "@musubi/calendar";
 
 
 type Props = {

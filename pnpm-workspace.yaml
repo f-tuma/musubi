@@ -3,6 +3,7 @@ packages:
   - 'packages/*'
 allowBuilds:
   esbuild: false
+  msgpackr-extract: true
   sharp: false
   unrs-resolver: false
 overrides:

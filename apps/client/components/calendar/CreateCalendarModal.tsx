@@ -28,6 +28,7 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
   const [calendarHint, setCalendarHint] = useState(CALENDAR_HINTS[Math.floor(Math.random() * CALENDAR_HINTS.length)]);
 
   const [nameError, setNameError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const { data: session } = authClient.useSession();
   const userID = session?.user.id;
@@ -69,6 +70,7 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
       return;
     }
 
+    setIsLoading(true);
     if (calendar) {
       onEdit(newCalendar);
     } else {
@@ -84,6 +86,7 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
     setNameError("");
     setNewColor(appColors[0].color);
     setCalendarHint(CALENDAR_HINTS[Math.floor(Math.random() * CALENDAR_HINTS.length)]);
+    setIsLoading(false);
   };
 
   const { slideStyle, fadeStyle, gesture, handleClose } = useModalAnimation(visible, closeSequence);
@@ -154,7 +157,11 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                 <Pressable style={styles.btnSecondary} onPress={handleClose}>
                   <Text style={styles.btnSecondaryText}>Cancel</Text>
                 </Pressable>
-                <Pressable style={styles.btnPrimary} onPress={handleCreate}>
+                <Pressable
+                  style={isLoading ? [styles.btnPrimary, { backgroundColor: colors.line }] : styles.btnPrimary}
+                  disabled={isLoading}
+                  onPress={handleCreate}
+                >
                   <Text style={styles.btnPrimaryText}>{calendar ? "Save" : "Create"}</Text>
                 </Pressable>
               </View>

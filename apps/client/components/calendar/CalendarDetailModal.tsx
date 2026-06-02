@@ -7,8 +7,8 @@ import { useCallback, useMemo, useState } from "react";
 import { Modal, Text, Pressable, View, Dimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated from "react-native-reanimated";
-import { Mode } from "react-native-big-calendar";
-import { Calendar as BigCalendar } from "react-native-big-calendar";
+import { Calendar as BigCalendar, enrichEvents, expandRecurringEvents, type Mode } from "@musubi/calendar";
+import dayjs from "dayjs";
 import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import { AddEventModal } from "./AddEventModal";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
@@ -80,9 +80,15 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
   };
 
   const openEventDetail = useCallback((event: Event) => {
-    setEventDetail(event);
+    const original = events.find(e => e.id === event.id)
+      ?? events.find(e => e.id === event.id?.replace(/_\d+$/, ''));
+    setEventDetail(
+      original && original.id !== event.id
+        ? { ...original, start: event.start, end: event.end }
+        : event,
+    );
     setEventDetailVisible(true);
-  }, []);
+  }, [events]);
 
   const openCalendarSettings = (calendar: Calendar) => {
     setCallendarSettings(calendar);
@@ -99,6 +105,32 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
 
   const activeCal = useMemo(() => calendar ? new Set<string>([calendar.id]) : new Set<string>(), [calendar]);
   const { visibleEvents } = useVisibleEvents(events, activeCal);
+
+  const [rangeStart, rangeEnd] = useMemo(
+    () => {
+      const d = dayjs(anchorDate);
+      switch (calMode) {
+        case 'day':
+          return [d.subtract(1, 'day').startOf('day').toDate(), d.add(2, 'day').endOf('day').toDate()] as [Date, Date];
+        case '3days':
+        case 'week':
+          return [d.subtract(2, 'week').startOf('day').toDate(), d.add(2, 'week').endOf('day').toDate()] as [Date, Date];
+        default:
+          return [d.subtract(2, 'month').startOf('month').toDate(), d.add(2, 'month').endOf('month').toDate()] as [Date, Date];
+      }
+    },
+    [calMode, anchorDate],
+  );
+
+  const expandedEvents = useMemo(
+    () => expandRecurringEvents(visibleEvents, rangeStart, rangeEnd),
+    [visibleEvents, rangeStart, rangeEnd],
+  );
+
+  const enrichedEventsByDate = useMemo(
+    () => enrichEvents(expandedEvents, true),
+    [expandedEvents],
+  );
 
   return (
     <Modal
@@ -178,8 +210,10 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
               >
                 {calHeight > 0 && (
                   <BigCalendar
-                    events={visibleEvents}
+                    events={expandedEvents}
                     eventsAreSorted={true}
+                    enableEnrichedEvents={true}
+                    enrichedEventsByDate={enrichedEventsByDate}
                     height={calMode === "month" ? calHeight : calHeight + 95}
                     theme={calendarTheme}
                     eventCellStyle={eventCellStyle}

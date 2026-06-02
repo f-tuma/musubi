@@ -8,6 +8,8 @@ import { NotoSerif_400Regular } from '@expo-google-fonts/noto-serif';
 import { ShipporiMinchoB1_400Regular } from '@expo-google-fonts/shippori-mincho-b1';
 import { colors, styles } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 import semver from "semver";
 import Constants from "expo-constants";
 import UpdateRequiredModal from "@/components/UpdateRequiredModal";
@@ -77,14 +79,20 @@ function AppContent() {
   }
 
   return (
-    <Stack screenOptions={{ statusBarStyle: 'auto', navigationBarHidden: true, headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
+    <Stack screenOptions={{ statusBarStyle: 'light', navigationBarHidden: true, headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
   );
 }
 
 function AppLoader() {
   const { apiUrl } = useServer();
+
+  useEffect(() => {
+    SystemUI.setBackgroundColorAsync(colors.bg);
+  }, []);
+
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+      <StatusBar style="light" />
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <AppContent key={apiUrl ?? 'loading'} />
       </View>

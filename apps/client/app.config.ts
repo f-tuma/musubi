@@ -7,7 +7,7 @@ const expoConfig = {
   icon: "./assets/images/icon.png",
   scheme: "musubi",
   userInterfaceStyle: "automatic",
-  newArchEnabled: true,
+
   ios: {
     "supportsTablet": true,
     "bundleIdentifier": "dev.frgtn.musubi",
@@ -60,7 +60,9 @@ const expoConfig = {
     "expo-secure-store",
     "@react-native-community/datetimepicker",
     "expo-font",
-    "expo-web-browser"
+    "expo-web-browser",
+    "expo-build-properties",
+    "expo-image"
   ],
   experiments: {
     "typedRoutes": true,

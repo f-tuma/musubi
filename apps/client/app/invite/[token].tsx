@@ -21,6 +21,7 @@ export default function Invite() {
   const router = useRouter();
 
   const [calendarData, setCalendarData] = useState<CalendarWithEvents | null>(null);
+  const [isAccepting, setIsAccepting] = useState(false);
 
   useEffect(() => {
     const fetchCalendar = async () => {
@@ -108,8 +109,10 @@ export default function Invite() {
           <Text style={styles.btnSecondaryText}>Decline</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.btnPrimary, { flex: 2 }]}
+          style={[styles.btnPrimary, { flex: 2 }, isAccepting && { backgroundColor: colors.line }]}
+          disabled={isAccepting}
           onPress={async () => {
+            setIsAccepting(true);
             await api.acceptInvite(calendarData?.id!);
             loadCalendars(await api.getCalendars());
             router.canGoBack() ? router.back() : router.replace("/(tabs)");

@@ -1,14 +1,17 @@
 import { useEffect } from "react";
-import { Dimensions } from "react-native";
+import { Dimensions, Platform } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
-import { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import { useAnimatedKeyboard, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
+const isIOS = Platform.OS === 'ios';
 
 export function useModalAnimation(visible: boolean, onClose: () => void) {
   const offScreen = Dimensions.get("screen").height / 5;
   const slideAnim = useSharedValue(offScreen);
   const fadeAnim = useSharedValue(0);
+  const keyboard = useAnimatedKeyboard();
+
   const gesture = Gesture.Pan()
     .onChange((ev) => {
       if (ev.translationY > 0) {
@@ -37,12 +40,12 @@ export function useModalAnimation(visible: boolean, onClose: () => void) {
   }, [visible]);
 
   const slideStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: slideAnim.value }]
+    transform: [{ translateY: slideAnim.value - (isIOS ? keyboard.height.value : 0) }],
   }));
 
   const fadeStyle = useAnimatedStyle(() => ({
     opacity: fadeAnim.value,
   }));
 
-  return { slideStyle, fadeStyle, gesture, handleClose }
+  return { slideStyle, fadeStyle, gesture, handleClose };
 }

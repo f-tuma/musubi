@@ -1,0 +1,19 @@
+{
+  "name": "@musubi/calendar",
+  "version": "1.0.0",
+  "description": "Musubi calendar — forked from react-native-big-calendar with rrule recurrence support.",
+  "main": "./src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "private": true,
+  "dependencies": {
+    "calendarize": "^1.1.1",
+    "dayjs": "^1.11.13",
+    "rrule": "^2.8.1"
+  },
+  "peerDependencies": {
+    "react": ">=19.0.0",
+    "react-native": ">=0.85.0",
+    "react-native-gesture-handler": ">=2.0.0",
+    "react-native-infinite-pager": ">=0.3.0"
+  }
+}

@@ -2,7 +2,7 @@ import { colors } from "@/constants/theme";
 import { Feather } from "@expo/vector-icons";
 import { useState } from "react";
 import { Switch, View, Text, Pressable } from "react-native";
-import { Mode } from "react-native-big-calendar";
+import { Mode } from "@musubi/calendar";
 
 
 type ToggleProps = {
