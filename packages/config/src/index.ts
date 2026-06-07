@@ -1,10 +1,11 @@
 import dotenv from "dotenv";
+import { expand } from "dotenv-expand";
 import path from "path";
-import { env } from "process";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
+const parsed = dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
+expand(parsed);
 
 function envOrThrow(key: string) {
   const value = process.env[key];
@@ -43,7 +44,7 @@ const dbConfig: DBConfig = {
 }
 
 const apiConfig: APIConfig = {
-  port: Number(envOrThrow("API_SERVER_PORT")),
+  port: 7531,
   environment: envOrThrow("ENVIRONMENT"),
   url: envOrThrow("BETTER_AUTH_URL"),
 }

@@ -212,6 +212,23 @@ export const calendarInvitesRelations = relations(calendarInvites, ({ one }) => 
 
 // LINK TABLES
 
+
+export const userStatus = pgTable("user_status", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at")
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+  userID: text("user_id")
+    .references(() => user.id, {
+      onDelete: "cascade",
+    })
+    .notNull(),
+  isSponsor: boolean("is_sponsor").default(false),
+  isPremium: boolean("is_premium").default(false),
+})
+
 export const calendarMembers = pgTable("calendar_members", {
   id: uuid("id").primaryKey().defaultRandom(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
