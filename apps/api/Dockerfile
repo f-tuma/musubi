@@ -21,6 +21,7 @@ COPY packages/config packages/config
 WORKDIR /repo/apps/api
 ENV NODE_ENV=production
 
-EXPOSE 7531
+ARG API_SERVER_PORT=7531
+EXPOSE ${API_SERVER_PORT}
 
 CMD ["sh", "-c", "pnpm -F @musubi/db exec drizzle-kit migrate && pnpm exec tsx src/index.ts"]

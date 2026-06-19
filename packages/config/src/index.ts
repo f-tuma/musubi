@@ -44,7 +44,7 @@ const dbConfig: DBConfig = {
 }
 
 const apiConfig: APIConfig = {
-  port: 7531,
+  port: Number(process.env.API_SERVER_PORT) || 7531,
   environment: envOrThrow("ENVIRONMENT"),
   url: envOrThrow("BETTER_AUTH_URL"),
 }
