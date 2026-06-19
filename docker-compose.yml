@@ -12,8 +12,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - "${API_SERVER_PORT:-7531}:${API_SERVER_PORT:-7531}"
+    expose:
+      - "${API_SERVER_PORT:-7531}"
     networks:
       - dokploy-network
       - default
