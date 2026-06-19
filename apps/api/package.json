@@ -16,13 +16,13 @@
     "@musubi/db": "workspace:*",
     "@musubi/types": "workspace:*",
     "@types/cors": "^2.8.19",
-    "@types/nodemailer": "^8.0.0",
-    "better-auth": "^1.6.10",
+    "@types/nodemailer": "^8.0.1",
+    "better-auth": "^1.6.19",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "nodemailer": "^8.0.7",
-    "tsx": "^4.21.0",
+    "nodemailer": "^8.0.11",
+    "tsx": "^4.22.4",
     "zod": "^4.4.3"
   },
   "devDependencies": {

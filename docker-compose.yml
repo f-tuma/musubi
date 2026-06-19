@@ -10,9 +10,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      # - "${API_SERVER_PORT}:7531" # Use on local setup, I use dokploy, hence I want random free port :)
-      - 7531
+    # ports:
+    #   - "${API_SERVER_PORT}:7531" # Use on local setup, I use dokploy, hence I want random free port :)
     restart: unless-stopped
 
   db:

@@ -18,7 +18,7 @@
   "license": "MIT",
   "packageManager": "pnpm@11.5.2",
   "devDependencies": {
-    "turbo": "^2.9.14",
+    "turbo": "^2.9.18",
     "typescript": "~5.9.3"
   }
 }
