@@ -14,6 +14,9 @@ services:
         condition: service_healthy
     ports:
       - "${API_SERVER_PORT:-7531}:${API_SERVER_PORT:-7531}"
+    networks:
+      - dokploy-network
+      - default
     restart: unless-stopped
 
   db:
@@ -29,6 +32,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+networks:
+  dokploy-network:
+    external: true
 
 volumes:
   data:
