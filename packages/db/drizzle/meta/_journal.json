@@ -36,6 +36,13 @@
       "when": 1782043929267,
       "tag": "0004_legal_maestro",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782057217722,
+      "tag": "0005_green_vin_gonzales",
+      "breakpoints": true
     }
   ]
 }
