@@ -31,6 +31,8 @@ export default function SettingsTab() {
 
   const handleSave = async (settings: Settings) => {
     setIsSaving(true);
+    console.log(settings);
+    // LOG
     await api.saveSettings(settings);
     setSettingsChanged(false);
     setIsSaving(false);

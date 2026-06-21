@@ -29,6 +29,13 @@
       "when": 1780835617363,
       "tag": "0003_medical_sebastian_shaw",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782043929267,
+      "tag": "0004_legal_maestro",
+      "breakpoints": true
     }
   ]
 }

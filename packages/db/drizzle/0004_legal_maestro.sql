@@ -1,0 +1,1 @@
+ALTER TABLE "user_settings" ADD COLUMN "notifications_on_by_default" boolean DEFAULT true NOT NULL;
