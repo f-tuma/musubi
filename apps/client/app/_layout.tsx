@@ -13,6 +13,7 @@ import * as SystemUI from 'expo-system-ui';
 import semver from "semver";
 import Constants from "expo-constants";
 import UpdateRequiredModal from "@/components/UpdateRequiredModal";
+import { registerForPushNotificationsAsync } from '@/services/notifications';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -101,6 +102,12 @@ function AppLoader() {
 }
 
 export default function RootLayout() {
+
+  useEffect(() => {
+    registerForPushNotificationsAsync();
+  }, []);
+
+
   return (
     <ServerProvider>
       <AppLoader />

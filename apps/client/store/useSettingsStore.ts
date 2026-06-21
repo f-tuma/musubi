@@ -12,7 +12,9 @@ type SettingsStore = {
   accentColor: string,
   setAccentColor: (color: string) => void,
   showKanji: boolean,
-  setShowKanji: (show: boolean) => void,
+  setShowKanji: (value: boolean) => void,
+  notificationsOnByDefault: boolean,
+  setNotificationsOnByDefault: (value: boolean) => void,
 }
 
 
@@ -31,7 +33,11 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     accentColor: color,
   })),
   showKanji: true,
-  setShowKanji: (show) => set(() => ({
-    showKanji: show,
+  setShowKanji: (value) => set(() => ({
+    showKanji: value,
+  })),
+  notificationsOnByDefault: true,
+  setNotificationsOnByDefault: (value: boolean) => set(() => ({
+    notificationsOnByDefault: value,
   })),
 }));

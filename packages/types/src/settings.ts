@@ -5,6 +5,7 @@ export type CalendarView = z.infer<typeof CalendarViewSchema>;
 
 export const SettingsSchema = z.object({
   showKanji: z.boolean(),
+  notificationsOnByDefault: z.boolean(),
   defaultCalendarView: CalendarViewSchema,
   weekStartsOn: z.enum(["monday", "sunday"]),
 });

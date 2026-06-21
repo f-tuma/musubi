@@ -32,4 +32,7 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   return context.resolveRequest(context, moduleName, platform);
 };
 
+config.resolver.sourceExts.push('sql');
+
 module.exports = config;
+

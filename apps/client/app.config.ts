@@ -46,6 +46,10 @@ const expoConfig = {
   plugins: [
     "expo-router",
     [
+      "expo-sqlite",
+      {},
+    ],
+    [
       "expo-splash-screen",
       {
         "image": "./assets/images/splash-icon.png",

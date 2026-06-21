@@ -21,6 +21,7 @@ export default function SettingsTab() {
     defaultCalendarView, setDefaultCalendarView,
     weekStartsOn, setWeekStartsOn,
     showKanji, setShowKanji,
+    notificationsOnByDefault, setNotificationsOnByDefault,
   } = useSettingsStore();
 
   const [confrimDeleteVisible, setConfirmDeleteVisible] = useState(false);
@@ -127,6 +128,14 @@ export default function SettingsTab() {
             setSettingsChanged(true);
           }}
         />
+        <SettingRowToggle
+          label="Notifications On by Default"
+          toggle={notificationsOnByDefault}
+          onToggle={() => {
+            setNotificationsOnByDefault(notificationsOnByDefault ? false : true);
+            setSettingsChanged(true);
+          }}
+        />
         <View
           style={{
             paddingHorizontal: 16,
@@ -161,6 +170,7 @@ export default function SettingsTab() {
           disabled={isSaving}
           onPress={() => handleSave({
             showKanji,
+            notificationsOnByDefault,
             defaultCalendarView,
             weekStartsOn,
           })}
