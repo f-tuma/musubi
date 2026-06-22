@@ -31,7 +31,7 @@ export const useCalendarsStore = create<CalendarStore>((set, get) => ({
   },
 
   soloCalendar: (id) => {
-    const { activeCals, soloCalId, calendars } = get();
+    const { soloCalId, calendars } = get();
 
     if (soloCalId === id) {
       // Already soloed — revert to all calendars active

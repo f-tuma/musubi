@@ -8,6 +8,7 @@ export const SettingsSchema = z.object({
   notificationsOnByDefault: z.boolean(),
   defaultCalendarView: CalendarViewSchema,
   weekStartsOn: z.enum(["monday", "sunday"]),
+  timeLocale: z.enum(["en-UK", "cs-CZ"]),
 });
 
 export type Settings = z.infer<typeof SettingsSchema>;

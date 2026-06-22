@@ -1,5 +1,6 @@
 
 import { CalendarView, Settings } from "@musubi/types";
+import { timeLog } from "node:console";
 import { create } from "zustand";
 
 
@@ -15,6 +16,8 @@ type SettingsStore = {
   setShowKanji: (value: boolean) => void,
   notificationsOnByDefault: boolean,
   setNotificationsOnByDefault: (value: boolean) => void,
+  timeLocale: "en-UK" | "cs-CZ",
+  setTimeLocale: (value: "en-UK" | "cs-CZ") => void,
 }
 
 
@@ -39,5 +42,9 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   notificationsOnByDefault: true,
   setNotificationsOnByDefault: (value: boolean) => set(() => ({
     notificationsOnByDefault: value,
+  })),
+  timeLocale: "en-UK",
+  setTimeLocale: (value: "en-UK" | "cs-CZ") => set(() => ({
+    timeLocale: value,
   })),
 }));

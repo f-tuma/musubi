@@ -22,6 +22,7 @@ export default function SettingsTab() {
     weekStartsOn, setWeekStartsOn,
     showKanji, setShowKanji,
     notificationsOnByDefault, setNotificationsOnByDefault,
+    timeLocale, setTimeLocale,
   } = useSettingsStore();
 
   const [confrimDeleteVisible, setConfirmDeleteVisible] = useState(false);
@@ -130,6 +131,15 @@ export default function SettingsTab() {
             setSettingsChanged(true);
           }}
         />
+        <SettingRowOptions
+          label="Time Locale"
+          value={timeLocale}
+          options={["cs-CZ", "en-UK"]}
+          onChange={v => {
+            setTimeLocale(v as "en-UK" | "cs-CZ");
+            setSettingsChanged(true);
+          }}
+        />
         <SettingRowToggle
           label="Notifications On by Default"
           toggle={notificationsOnByDefault}
@@ -175,6 +185,7 @@ export default function SettingsTab() {
             notificationsOnByDefault,
             defaultCalendarView,
             weekStartsOn,
+            timeLocale,
           })}
         >
           <Text style={{ color: colors.bg, fontSize: 16, lineHeight: 30 }}>Save Settings</Text>

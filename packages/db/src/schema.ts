@@ -119,6 +119,7 @@ export const userSettings = pgTable("user_settings", {
   notificationsOnByDefault: boolean("notifications_on_by_default").notNull().default(true),
   defaultCalendarView: text("default_calendar_view").notNull().default("week"),
   weekStartsOn: text("week_starts_on").notNull().default("monday"),
+  timeLocale: text("time_locale").notNull().default("en-UK"),
 });
 
 export type NewSettings = typeof userSettings.$inferInsert;

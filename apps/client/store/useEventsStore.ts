@@ -40,6 +40,10 @@ export const useEventsStore = create<EventsStore>((set, get) => ({
     if (identifier !== null) {
       cancelEventPushNotification(identifier);
       removeNotification(event.id);
+      console.log("=== REMOVED NOTIFICATION ===");
+      console.log(identifier);
+      console.log(event.id);
+      console.log("============================");
     }
     set((state) => ({
       events: [...state.events.filter(e => e.id !== result)],
