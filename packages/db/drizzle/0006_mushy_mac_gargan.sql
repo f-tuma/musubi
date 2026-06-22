@@ -1,0 +1,1 @@
+ALTER TABLE "user_settings" ADD COLUMN "time_locale" text DEFAULT 'en-UK' NOT NULL;
