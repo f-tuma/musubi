@@ -36,6 +36,8 @@ yarn-error.*
 
 # local env files
 .env*.local
+# .env is a symlink to the monorepo root .env (single source of truth)
+.env
 
 # typescript
 *.tsbuildinfo

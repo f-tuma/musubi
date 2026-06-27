@@ -5,11 +5,10 @@ import { View, Text, Pressable, Linking } from "react-native";
 import InputModal from "@/components/TextInputModal";
 import { useServer } from "@/contexts/ServerContext";
 import { GoogleSignin, isSuccessResponse } from "@react-native-google-signin/google-signin";
-import Constants from "expo-constants";
 import Svg, { Path } from "react-native-svg";
 
 GoogleSignin.configure({
-  webClientId: Constants.expoConfig?.extra?.googleWebClientId,
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
 });
 
 function GoogleG({ size = 18 }: { size?: number }) {
@@ -26,22 +25,29 @@ function GoogleG({ size = 18 }: { size?: number }) {
 export default function Welcome() {
   const { authClient } = useServer();
   const handleGoogle = async () => {
+    const wc = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
     try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const response = await GoogleSignin.signIn();
-      if (isSuccessResponse(response) && response.data.idToken) {
+      if (isSuccessResponse(response)) {
+        if (!response.data.idToken) {
+          alert(`idToken NULL — webClientId=${wc ?? "UNDEFINED"}`);
+          return;
+        }
         const { error } = await authClient.signIn.social({
           provider: "google",
           idToken: { token: response.data.idToken },
         });
         if (error) {
-          alert("Google SignIn Failed...");
+          alert(`Server error: ${error.message ?? JSON.stringify(error)}`);
         } else {
           router.replace("/(tabs)");
         }
+      } else {
+        alert(`Not success: ${response?.type}`);
       }
-    } catch (e) {
-      alert("Google SignIn Failed...");
+    } catch (e: any) {
+      alert(`Native error: code=${e?.code} ${e?.message ?? String(e)}`);
     }
   };
 
