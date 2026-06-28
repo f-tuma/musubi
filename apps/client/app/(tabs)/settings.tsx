@@ -54,13 +54,13 @@ export default function SettingsTab() {
     router.replace('/(auth)/welcome');
   }
 
-  const handleGoogleSync = async () => {
+  const handleGoogleConnect = async () => {
     const { error, data } = await authClient.linkSocial({
       provider: "google",
       scopes: ["https://www.googleapis.com/auth/calendar"],
       callbackURL: "/(tabs)",   // kam se v appce vrátit po úspěchu
     });
-    alert(`ERROR: ${error} \nDATA: ${data}`);
+    alert(`ERROR: ${JSON.stringify(error)} \nDATA: ${JSON.stringify(data)}`);
   };
 
   const testDeleteConfirm = async (v: string) => {
@@ -139,7 +139,7 @@ export default function SettingsTab() {
             </Text>
             <Pressable
               style={{ borderColor: colors.line3, borderWidth: 1, paddingVertical: 8, paddingHorizontal: 12 }}
-              onPress={handleGoogleSync}
+              onPress={handleGoogleConnect}
             >
               <Text style={{ fontSize: 14, color: colors.fg2 }}>
                 Connect Google

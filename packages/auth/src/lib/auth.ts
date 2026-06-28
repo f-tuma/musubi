@@ -1,5 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { bearer } from "better-auth/plugins";
+import { expo } from "better-auth/expo";
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db, schema } from '@musubi/db';
 import { config } from '@musubi/config';
@@ -46,6 +47,7 @@ export const auth = betterAuth({
     }
   },
   plugins: [
-    bearer()
+    bearer(),
+    expo(),
   ],
 });
