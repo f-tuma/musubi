@@ -1,4 +1,4 @@
-import { Calendar, CalendarWithEvents, Event, Invite, Settings } from "@musubi/types";
+import { Calendar, CalendarWithEvents, Event, Invite, Settings, GoogleCheck } from "@musubi/types";
 import { useServer } from "@/contexts/ServerContext";
 import { apiVersion } from "@/constants/url";
 
@@ -213,6 +213,16 @@ export function useApi() {
       if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
 
       return true;
-    }
+    },
+
+    async checkGoogleStatus() {
+      const { error, data } = await authClient.$fetch<GoogleCheck>(`${apiUrl}/api/${apiVersion}/users/connections/google`, {
+        method: "GET",
+      });
+
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
+
+      return data;
+    },
   }
 };

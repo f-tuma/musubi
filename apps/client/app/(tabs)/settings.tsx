@@ -8,13 +8,13 @@ import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useEventsStore } from "@/store/useEventsStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, ScrollView, Pressable } from "react-native";
 
 
 export default function SettingsTab() {
   const api = useApi();
-  const { authClient } = useServer();
+  const { authClient, apiUrl } = useServer();
   const { loadCalendars } = useCalendarsStore();
   const { loadEvents } = useEventsStore();
   const {
@@ -29,6 +29,16 @@ export default function SettingsTab() {
   const userSession = authClient.useSession();
   const [settingsChanged, setSettingsChanged] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [googleCalendarLinked, setGoogleCalendarLinked] = useState(false);
+
+  useEffect(() => {
+    const setGCStatus = async () => {
+      const gStatus = await api.checkGoogleStatus();
+      console.log(gStatus);
+      setGoogleCalendarLinked(gStatus.calendarConnected);
+    }
+    setGCStatus();
+  }, [])
 
   const handleSave = async (settings: Settings) => {
     setIsSaving(true);
@@ -113,6 +123,14 @@ export default function SettingsTab() {
               {userSession.data?.user.email}
             </Text>
           </View>
+          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+            <Text style={{ fontSize: 14, color: colors.fg2 }}>
+              Server:
+            </Text>
+            <Text style={{ fontSize: 14, color: colors.fg2 }}>
+              {apiUrl?.slice(8)}
+            </Text>
+          </View>
         </View>
         <View
           style={{
@@ -131,18 +149,18 @@ export default function SettingsTab() {
               textDecorationLine: "underline"
             }}
           >
-            Socials
+            Sync
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
             <Text style={{ fontSize: 14, color: colors.fg2, alignSelf: "center" }}>
-              Google:
+              Google Calendar:
             </Text>
             <Pressable
               style={{ borderColor: colors.line3, borderWidth: 1, paddingVertical: 8, paddingHorizontal: 12 }}
-              onPress={handleGoogleConnect}
+              onPress={googleCalendarLinked ? () => { } : handleGoogleConnect}
             >
-              <Text style={{ fontSize: 14, color: colors.fg2 }}>
-                Connect Google
+              <Text style={{ fontSize: 14, color: googleCalendarLinked ? colors.accent : colors.fg2 }}>
+                {googleCalendarLinked ? "Google Connected" : "Connect Google"}
               </Text>
             </Pressable>
           </View>
