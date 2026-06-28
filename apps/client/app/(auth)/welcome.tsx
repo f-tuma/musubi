@@ -59,7 +59,7 @@ export default function Welcome() {
     let result;
 
     try {
-      result = await fetch(`${value.toLowerCase()}/api/server/ok`);
+      result = await fetch(`${value.toLowerCase()}/api/v1/server/ok`);
     } catch (err) {
       return { ok: false, error: "Invalid URL..." }
     }
