@@ -32,12 +32,7 @@ export default function SettingsTab() {
   const [googleCalendarLinked, setGoogleCalendarLinked] = useState(false);
 
   useEffect(() => {
-    const setGCStatus = async () => {
-      const gStatus = await api.checkGoogleStatus();
-      console.log(gStatus);
-      setGoogleCalendarLinked(gStatus.calendarConnected);
-    }
-    setGCStatus();
+    getGCStatus();
   }, [])
 
   const handleSave = async (settings: Settings) => {
@@ -68,10 +63,20 @@ export default function SettingsTab() {
     const { error, data } = await authClient.linkSocial({
       provider: "google",
       scopes: ["https://www.googleapis.com/auth/calendar"],
-      callbackURL: "/(tabs)",   // kam se v appce vrátit po úspěchu
+      callbackURL: "/(tabs)/settings",   // return on success
     });
-    alert(`ERROR: ${JSON.stringify(error)} \nDATA: ${JSON.stringify(data)}`);
+    if (error) {
+      alert(`ERROR: ${JSON.stringify(error)} \nDATA: ${JSON.stringify(data)}`);
+    }
+
+    await getGCStatus();
   };
+
+  const getGCStatus = async () => {
+    const gStatus = await api.checkGoogleStatus();
+    console.log(gStatus);
+    setGoogleCalendarLinked(gStatus.calendarConnected);
+  }
 
   const handleGoogleRevoke = async () => {
     const gStatus = await api.revokeGoogleConnection();
