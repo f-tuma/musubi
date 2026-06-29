@@ -157,7 +157,7 @@ export default function SettingsTab() {
             </Text>
             <Pressable
               style={{ borderColor: colors.line3, borderWidth: 1, paddingVertical: 8, paddingHorizontal: 12 }}
-              onPress={googleCalendarLinked ? () => { } : handleGoogleConnect}
+              onPress={googleCalendarLinked ? api.revogeGoogleConnection : handleGoogleConnect}
             >
               <Text style={{ fontSize: 14, color: googleCalendarLinked ? colors.accent : colors.fg2 }}>
                 {googleCalendarLinked ? "Google Connected" : "Connect Google"}

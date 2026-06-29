@@ -224,5 +224,14 @@ export function useApi() {
 
       return data;
     },
+
+    async revogeGoogleConnection() {
+      const { error, data } = await authClient.$fetch<GoogleCheck>(`${apiUrl}/api/${apiVersion}/users/connections/google`, {
+        method: "GET",
+      });
+
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
+      this.checkGoogleStatus();
+    }
   }
 };

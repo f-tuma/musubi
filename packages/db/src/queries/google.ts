@@ -1,7 +1,8 @@
 import { and, eq } from "drizzle-orm";
-import { account, db } from "../index"
+import { account, db, user } from "../index"
+import { GoogleCheck } from "@musubi/types";
 
-export async function googleCheck(userID: string) {
+export async function googleCheck(userID: string): Promise<GoogleCheck> {
   const [google] = await db.select()
     .from(account)
     .where(and(
@@ -12,6 +13,20 @@ export async function googleCheck(userID: string) {
   const isLinked = !!google;
   const calendarConnected = !!google?.refreshToken &&
     (google.scope ?? "").includes("https://www.googleapis.com/auth/calendar");
+  const refreshToken = google?.refreshToken;
 
-  return { isLinked, calendarConnected }
+  return { isLinked, calendarConnected, refreshToken }
+}
+
+export async function cleanUsersGoogleTokens(userID: string) {
+  db.update(account).set({
+    refreshToken: null,
+    accessToken: null,
+    accessTokenExpiresAt: null,
+    scope: null,
+  })
+    .where(and(
+      eq(account.userId, userID),
+      eq(account.providerId, "google"),
+    ));
 }

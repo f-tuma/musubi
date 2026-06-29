@@ -13,7 +13,7 @@ import { handlerStream } from "./handlers/stream";
 import { middlewareLogHandler } from "./middleware/log_handler";
 import { handlerGetSettings, handlerSaveSettings } from "./handlers/settings";
 import { handlerServer, handlerServerStatus } from "./handlers/server";
-import { handlerCheckGoogleStatus } from "./handlers/google";
+import { handlerCheckGoogleStatus, handlerRevokeGoogle } from "./handlers/google";
 
 const app = express()
 const port = config.api.port;
@@ -137,6 +137,13 @@ app.post("/api/v1/calendars/invites", requireAuth, (
   res,
   next) => {
   Promise.resolve(handlerCreateCalendarInvite(req, res).catch(next));
+});
+
+app.post("/api/v1/users/connections/google/revoke", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerRevokeGoogle(req, res).catch(next));
 });
 
 //
