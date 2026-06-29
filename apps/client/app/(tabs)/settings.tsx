@@ -73,6 +73,12 @@ export default function SettingsTab() {
     alert(`ERROR: ${JSON.stringify(error)} \nDATA: ${JSON.stringify(data)}`);
   };
 
+  const handleGoogleRevoke = async () => {
+    const gStatus = await api.revokeGoogleConnection();
+    console.log(gStatus);
+    setGoogleCalendarLinked(gStatus.calendarConnected);
+  }
+
   const testDeleteConfirm = async (v: string) => {
     if (v === userSession.data?.user.name!) {
       return { ok: true, error: "" }
@@ -157,7 +163,7 @@ export default function SettingsTab() {
             </Text>
             <Pressable
               style={{ borderColor: colors.line3, borderWidth: 1, paddingVertical: 8, paddingHorizontal: 12 }}
-              onPress={googleCalendarLinked ? api.revogeGoogleConnection : handleGoogleConnect}
+              onPress={googleCalendarLinked ? handleGoogleRevoke : handleGoogleConnect}
             >
               <Text style={{ fontSize: 14, color: googleCalendarLinked ? colors.accent : colors.fg2 }}>
                 {googleCalendarLinked ? "Google Connected" : "Connect Google"}

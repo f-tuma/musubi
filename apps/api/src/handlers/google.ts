@@ -14,4 +14,6 @@ export async function handlerRevokeGoogle(req: Request, res: Response) {
   });
 
   cleanUsersGoogleTokens(req.user!.id);
+
+  res.sendStatus(200);
 }

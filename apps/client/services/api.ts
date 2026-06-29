@@ -225,13 +225,16 @@ export function useApi() {
       return data;
     },
 
-    async revogeGoogleConnection() {
-      const { error, data } = await authClient.$fetch<GoogleCheck>(`${apiUrl}/api/${apiVersion}/users/connections/google`, {
-        method: "GET",
+    async revokeGoogleConnection() {
+      const { error } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/users/connections/google/revoke`, {
+        method: "POST",
       });
 
       if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
-      this.checkGoogleStatus();
+
+      const data = await this.checkGoogleStatus();
+
+      return data;
     }
   }
 };
