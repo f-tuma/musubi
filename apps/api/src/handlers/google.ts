@@ -1,4 +1,4 @@
-import { cleanUsersGoogleTokens, googleCheck } from "@musubi/db";
+import { cleanUsersGoogleTokens, getGoogleRefreshToken, googleCheck } from "@musubi/db";
 import { Request, Response } from "express";
 
 export async function handlerCheckGoogleStatus(req: Request, res: Response) {
@@ -7,11 +7,15 @@ export async function handlerCheckGoogleStatus(req: Request, res: Response) {
 }
 
 export async function handlerRevokeGoogle(req: Request, res: Response) {
-  await fetch("https://oauth2.googleapis.com/revoke", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `token=${(await googleCheck(req.user!.id)).refreshToken}`,
-  });
+  const refreshToken = await getGoogleRefreshToken(req.user!.id);
+
+  if (refreshToken) {
+    await fetch("https://oauth2.googleapis.com/revoke", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `token=${refreshToken}`,
+    });
+  }
 
   await cleanUsersGoogleTokens(req.user!.id);
 
