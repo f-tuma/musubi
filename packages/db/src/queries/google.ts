@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { account, calendars, db, googleCalendars, user } from "../index"
+import { account, calendarMembers, calendars, db, googleCalendars, user } from "../index"
 import { GoogleCheck } from "@musubi/types";
 
 export async function googleCheck(userID: string): Promise<GoogleCheck> {
@@ -56,5 +56,9 @@ export async function importGoogleCalendar(userID: string, g: { id: string, summ
       .values({ creatorID: userID, name: g.summary, color: g.backgroundColor }).returning();
     await tx.insert(googleCalendars)
       .values({ userID, calendarID: cal.id, googleCalendarID: g.id, syncToken: null });
+    await db.insert(calendarMembers).values({
+      userID: cal.creatorID,
+      calendarID: cal.id,
+    })
   });
 }
