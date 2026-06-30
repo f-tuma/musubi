@@ -1,7 +1,10 @@
 import { auth } from "@musubi/auth";
+import { doesGoogleCalIDExistsForUser, importGoogleCalendar } from "@musubi/db";
 
 
-export async function getGoogleCalendarList(accessToken: string) {
+export async function syncGoogleCalendarList(userID: string) {
+  const accessToken = await getGoogleAccessToken(userID);
+
   const res = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList", {
     method: "GET",
     headers: {
@@ -13,7 +16,11 @@ export async function getGoogleCalendarList(accessToken: string) {
 
   const data = await res.json();
 
-  console.log(data);
+  for (const cal of data.items) {
+    if (!(await doesGoogleCalIDExistsForUser(userID, cal.id))) {
+      await importGoogleCalendar(userID, cal)
+    }
+  }
 }
 
 

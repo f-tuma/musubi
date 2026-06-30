@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { account, db, user } from "../index"
+import { account, calendars, db, googleCalendars, user } from "../index"
 import { GoogleCheck } from "@musubi/types";
 
 export async function googleCheck(userID: string): Promise<GoogleCheck> {
@@ -39,4 +39,22 @@ export async function cleanUsersGoogleTokens(userID: string) {
       eq(account.userId, userID),
       eq(account.providerId, "google"),
     ));
+}
+
+export async function doesGoogleCalIDExistsForUser(userID: string, googleCalID: string) {
+  const [res] = await db.select().from(googleCalendars).where(and(
+    eq(googleCalendars.googleCalendarID, googleCalID),
+    eq(googleCalendars.userID, userID)
+  ))
+
+  return !!res;
+}
+
+export async function importGoogleCalendar(userID: string, g: { id: string, summary: string, backgroundColor: string }) {
+  await db.transaction(async (tx) => {
+    const [cal] = await tx.insert(calendars)
+      .values({ creatorID: userID, name: g.summary, color: g.backgroundColor }).returning();
+    await tx.insert(googleCalendars)
+      .values({ userID, calendarID: cal.id, googleCalendarID: g.id, syncToken: null });
+  });
 }

@@ -1,6 +1,6 @@
 import { cleanUsersGoogleTokens, getGoogleRefreshToken, googleCheck } from "@musubi/db";
 import { Request, Response } from "express";
-import { getGoogleAccessToken, getGoogleCalendarList } from "../sync/google_sync";
+import { syncGoogleCalendarList } from "../sync/google_sync";
 
 export async function handlerCheckGoogleStatus(req: Request, res: Response) {
   const result = await googleCheck(req.user!.id);
@@ -24,7 +24,7 @@ export async function handlerRevokeGoogle(req: Request, res: Response) {
 }
 
 export async function handlerGetGoogleCalendars(req: Request, res: Response) {
-  await getGoogleCalendarList(await getGoogleAccessToken(req.user!.id));
+  syncGoogleCalendarList(req.user!.id);
 
   res.sendStatus(200);
 }
