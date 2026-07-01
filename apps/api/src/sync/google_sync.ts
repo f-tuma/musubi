@@ -54,7 +54,7 @@ export async function pullGoogleCalendar(userID: string, link: {
 
     const res = await fetch(`${GCAL}/${encodeURIComponent(link.googleCalendarID)}/events?${params}`, {
       headers: {
-        "Authorization:": `Bearer ${accessToken}`,
+        "Authorization": `Bearer ${accessToken}`,
       }
     });
 
