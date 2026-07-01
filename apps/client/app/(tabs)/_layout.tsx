@@ -32,6 +32,10 @@ export default function TabLayout() {
 
     const load = async () => {
       try {
+        const gStatus = await api.checkGoogleStatus();
+        if (gStatus.calendarConnected) {
+          await api.getGoogleCalendars();
+        }
         const [settings, calendars, events] = await Promise.all([
           api.getSettings(),
           api.getCalendars(),

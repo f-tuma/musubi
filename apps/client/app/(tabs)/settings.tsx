@@ -33,7 +33,6 @@ export default function SettingsTab() {
 
   useEffect(() => {
     getGCStatus();
-    api.getGoogleCalendars();
   }, [])
 
   const handleSave = async (settings: Settings) => {
@@ -75,7 +74,6 @@ export default function SettingsTab() {
 
   const getGCStatus = async () => {
     const gStatus = await api.checkGoogleStatus();
-    console.log(gStatus);
     setGoogleCalendarLinked(gStatus.calendarConnected);
   }
 

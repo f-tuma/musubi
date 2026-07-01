@@ -24,7 +24,7 @@ export async function handlerRevokeGoogle(req: Request, res: Response) {
 }
 
 export async function handlerGetGoogleCalendars(req: Request, res: Response) {
-  syncGoogleCalendarList(req.user!.id);
+  await syncGoogleCalendarList(req.user!.id);
 
   res.sendStatus(200);
 }
