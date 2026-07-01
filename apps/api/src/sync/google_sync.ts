@@ -23,7 +23,6 @@ export async function syncGoogleCalendarList(userID: string) {
   }
 
   for (const cal of (await getUserGoogleCalendars(userID))) {
-    console.log(cal.googleCalendarID);
     await pullGoogleCalendar(userID, cal);
   }
 }
@@ -40,10 +39,11 @@ export async function getGoogleAccessToken(userID: string) {
 
 const GCAL = "https://www.googleapis.com/calendar/v3/calendars";
 
-export async function pullGoogleCalendar(userID: string, link: {
-  calendarID: string,
-  googleCalendarID: string; syncToken: string | null
-}) {
+export async function pullGoogleCalendar(
+  userID: string,
+  link: {
+    calendarID: string, googleCalendarID: string; syncToken: string | null, calColor: string
+  }) {
   const accessToken = await getGoogleAccessToken(userID);
   let pageToken: string | undefined;
   let nextSyncToken: string | undefined;
@@ -69,7 +69,7 @@ export async function pullGoogleCalendar(userID: string, link: {
 
     const data = await res.json();
     for (const item of data.items ?? []) {
-      await applyEvent(item, link.calendarID);
+      await applyEvent(userID, item, link.calendarID, link.googleCalendarID, link.calColor);
     }
     pageToken = data.nextPageToken;
     nextSyncToken = data.nextSyncToken;

@@ -1,5 +1,5 @@
-import { and, eq } from "drizzle-orm";
-import { account, calendarMembers, calendars, db, googleCalendars } from "../index"
+import { and, eq, inArray } from "drizzle-orm";
+import { account, calendarEvents, calendarMembers, calendars, db, events, googleCalendars, googleEvents } from "../index"
 import { GoogleCheck } from "@musubi/types";
 
 export async function googleCheck(userID: string): Promise<GoogleCheck> {
@@ -68,7 +68,10 @@ export async function getUserGoogleCalendars(userID: string) {
     calendarID: googleCalendars.calendarID,
     googleCalendarID: googleCalendars.googleCalendarID,
     syncToken: googleCalendars.syncToken,
-  }).from(googleCalendars).where(eq(googleCalendars.userID, userID));
+    calColor: calendars.color,
+  }).from(googleCalendars)
+    .innerJoin(calendars, eq(googleCalendars.calendarID, calendars.id))
+    .where(eq(googleCalendars.userID, userID));
 
   return cals;
 }
@@ -77,8 +80,51 @@ export async function setSyncToken(googleCalendarID: string, token: string | nul
   await db.update(googleCalendars).set({ syncToken: token }).where(eq(googleCalendars.googleCalendarID, googleCalendarID));
 }
 
-export async function clearGoogleCalendarEvents(googleCalendarID: string) { }
+export async function clearGoogleCalendarEvents(calendarID: string) {
+  await db.delete(events).where(inArray(events.id,
+    db.select({ id: calendarEvents.eventID }).from(calendarEvents)
+      .where(eq(calendarEvents.calendarID, calendarID))));
+}
 
-export async function applyEvent(event: { summary: string, id: string, color: string }, calendarID: string) {
-  console.log(event.summary);
+export async function applyEvent(userID: string, event: any, calendarID: string, googleCalendarID: string, calColor: string) {
+  if (event.status === "cancelled") {
+    await db.delete(events).where(inArray(events.id,
+      db.select({ id: googleEvents.eventID }).from(googleEvents)
+        .where(and(
+          eq(googleEvents.googleCalendarID, googleCalendarID),
+          eq(googleEvents.googleEventID, event.id)
+        ))));
+    return;
+  }
+
+  const isAllDay = !event.start.dateTime;
+  const values = {
+    title: event.summary ?? "(untitled)",
+    color: calColor,
+    start: new Date(event.start.dateTime ?? event.start.date),
+    end: new Date(event.end.dateTime ?? event.end.date),
+    isAllDay,
+    description: event.description ?? null,
+    location: event.location ?? null,
+    organizer: event.organizer?.email ?? "",
+    url: event.htmlLink ?? null,
+    recurrence: event.recurrence?.join("\n") ?? null,
+  };
+
+  await db.transaction(async (tx) => {
+    const [map] = await tx.select({
+      eventID: googleEvents.eventID,
+    }).from(googleEvents).where(and(
+      eq(googleEvents.googleCalendarID, googleCalendarID),
+      eq(googleEvents.googleEventID, event.id)
+    ));
+
+    if (map) {
+      await tx.update(events).set(values).where(eq(events.id, map.eventID));
+    } else {
+      const [ev] = await tx.insert(events).values({ id: crypto.randomUUID(), ...values, creatorID: userID }).returning();
+      await tx.insert(calendarEvents).values({ eventID: ev.id, calendarID });
+      await tx.insert(googleEvents).values({ eventID: ev.id, googleCalendarID, googleEventID: event.id });
+    }
+  });
 }
