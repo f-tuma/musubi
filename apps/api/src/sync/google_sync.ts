@@ -23,6 +23,7 @@ export async function syncGoogleCalendarList(userID: string) {
   }
 
   for (const cal of (await getUserGoogleCalendars(userID))) {
+    console.log(cal.googleCalendarID);
     await pullGoogleCalendar(userID, cal);
   }
 }
@@ -67,7 +68,7 @@ export async function pullGoogleCalendar(userID: string, link: {
     if (!res.ok) throw new Error(`Google ${res.status} ${res.statusText}`);
 
     const data = await res.json();
-    for (const item of data.itmes ?? []) {
+    for (const item of data.items ?? []) {
       await applyEvent(item, link.calendarID);
     }
     pageToken = data.nextPageToken;
