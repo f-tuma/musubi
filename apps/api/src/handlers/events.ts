@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import { NewEvent, createEvent, getCalendarMembers, getGoogleLinkForCalendar, getUsersEvents, removeEvent, updateEvent } from '@musubi/db';
+import { NewEvent, createEvent, getCalendarMembers, getGoogleEventID, getGoogleLinkForCalendar, getUsersEvents, removeEvent, updateEvent } from '@musubi/db';
 import { BadRequestError, Event, EventSchema, NotFoundError } from "@musubi/types";
 import { notifyCalendarMembers } from "./stream";
-import { pushEventCreateToGoogle, pushEventUpdateToGoogle } from "../sync/google_sync";
+import { pushEventCreateToGoogle, pushEventDeleteToGoogle, pushEventUpdateToGoogle } from "../sync/google_sync";
 
 export async function handlerCreateEvent(req: Request, res: Response) {
   let event: Event;
@@ -97,6 +97,20 @@ export async function handlerUpdateEvent(req: Request, res: Response) {
 export async function handlerRemoveEvent(req: Request, res: Response) {
   const event = EventSchema.parse(req.body);
   if (!event.id) throw new BadRequestError("Event id is required...");
+
+  try {
+    for (const cal of event.calendars) {
+      const link = await getGoogleLinkForCalendar(cal);
+      if (link) {
+        const googleEventID = await getGoogleEventID(event.id, link.googleCalendarID)
+        if (googleEventID) {
+          await pushEventDeleteToGoogle(link.userID, link.googleCalendarID, googleEventID);
+        }
+      }
+    }
+  } catch (e) {
+    console.error(e);
+  }
 
   const removedEvent = await removeEvent(event.id);
 

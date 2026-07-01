@@ -139,3 +139,20 @@ export async function pushEventUpdateToGoogle(
 
   if (!res.ok) throw new Error(`Google ${res.status} ${res.statusText}`);
 }
+
+export async function pushEventDeleteToGoogle(
+  userID: string,
+  googleCalendarID: string,
+  googleEventID: string
+) {
+  const accessToken = await getGoogleAccessToken(userID);
+
+  const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(googleCalendarID)}/events/${encodeURIComponent(googleEventID)}`, {
+    method: "DELETE",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!res.ok && res.status !== 404 && res.status !== 410) throw new Error(`Google ${res.status} ${res.statusText}`);
+}
