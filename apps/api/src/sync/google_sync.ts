@@ -1,5 +1,5 @@
 import { auth } from "@musubi/auth";
-import { applyGoogleEvent, clearGoogleCalendarEvents, doesGoogleCalIDExistsForUser, getGoogleEventID, getGoogleRefreshToken, getUserGoogleCalendars, importGoogleCalendar, importGoogleEvent, setGoogleSyncToken } from "@musubi/db";
+import { applyGoogleEvent, clearGoogleCalendarEvents, doesGoogleCalIDExistsForUser, getGoogleEventID, getGoogleRefreshToken, getUserGoogleCalendars, importGoogleCalendar, importGoogleEvent, removeCalendar, setGoogleSyncToken } from "@musubi/db";
 import { Event } from "@musubi/types";
 
 
@@ -16,6 +16,13 @@ export async function syncGoogleCalendarList(userID: string) {
   if (!res.ok) throw new Error(`Google ${res.status} ${res.statusText}`)
 
   const data = await res.json();
+
+  const googleIDs = new Set(data.items.map((c: any) => c.id));
+  for (const link of await getUserGoogleCalendars(userID)) {
+    if (!googleIDs.has(link.googleCalendarID)) {
+      await removeCalendar(link.calendarID);
+    }
+  }
 
   for (const cal of data.items) {
     if (!(await doesGoogleCalIDExistsForUser(userID, cal.id))) {

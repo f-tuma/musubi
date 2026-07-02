@@ -196,14 +196,14 @@ app.delete("/api/v1/events", requireAuth, (
   Promise.resolve(handlerRemoveEvent(req, res).catch(next));
 });
 
-app.delete("/api/calendars", requireAuth, (
+app.delete("/api/v1/calendars", requireAuth, (
   req,
   res,
   next) => {
   Promise.resolve(handlerRemoveCalendar(req, res).catch(next));
 });
 
-app.delete("/api/calendars/members/:calendarId", requireAuth, (
+app.delete("/api/v1/calendars/members/:calendarId", requireAuth, (
   req,
   res,
   next) => {
