@@ -1,4 +1,4 @@
-import { memo, startTransition, useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { colors, fonts } from "@/constants/theme";
 import { View, Pressable, ScrollView, Text } from "react-native";
 import * as Haptics from "expo-haptics";
@@ -37,8 +37,11 @@ export const CalendarFilterBar = memo(function CalendarFilterBar({
       return next;
     });
     if (process.env.EXPO_OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Defer the expensive filtering work
-    startTransition(() => onToggle(id));
+    // Let the pill's paint commit this frame; run the store update (and the
+    // filtering it triggers) on the next frame so the tap feels instant.
+    // startTransition can't help here — zustand uses useSyncExternalStore,
+    // whose updates are always urgent and can't be deferred by a transition.
+    requestAnimationFrame(() => onToggle(id));
   };
 
   const handleSolo = (id: string) => {
@@ -50,7 +53,7 @@ export const CalendarFilterBar = memo(function CalendarFilterBar({
         ? new Set(calendars.map(c => c.id))
         : new Set([id]),
     );
-    startTransition(() => onSolo(id));
+    requestAnimationFrame(() => onSolo(id));
   };
 
   return (

@@ -6,14 +6,9 @@ import { Event } from "@musubi/types";
 import { useApi } from "@/services/api";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useEventsStore } from "@/store/useEventsStore";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, ScrollView, Pressable } from "react-native";
-import Animated, {
-  FadeIn,
-  FadeInUp,
-  FadeOutDown,
-  LinearTransition,
-} from "react-native-reanimated";
+import Animated, { FadeIn } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { RefreshControl } from "react-native";
 import { useRefreshData } from "@/hooks/useRefreshData";
@@ -21,6 +16,8 @@ import { useRefreshData } from "@/hooks/useRefreshData";
 
 
 const dateKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+
+const PAGE = 20;
 
 export default function AgendaTab() {
   const api = useApi();
@@ -34,6 +31,15 @@ export default function AgendaTab() {
   const [eventDetailVisible, setEventDetailVisible] = useState<boolean>(false);
   const [prefilledEvent, setPrefilledEvent] = useState<Event | undefined>(undefined);
   const [eventDetail, setEventDetail] = useState<Event | null>(null);
+
+  const [shown, setShown] = useState(PAGE);
+  const scrollRef = useRef<ScrollView>(null);
+  // Filter changed → collapse to the first page and jump to top, so a toggle
+  // only ever re-renders PAGE rows instead of the whole (possibly huge) list.
+  useEffect(() => {
+    setShown(PAGE);
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [activeCals]);
 
   const refresh = useRefreshData();
   const [refreshing, setRefreshing] = useState(false);
@@ -95,16 +101,21 @@ export default function AgendaTab() {
         onSolo={soloCalendar}
       />
       <ScrollView
+        ref={scrollRef}
         style={{ paddingHorizontal: 16 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        scrollEventThrottle={16}
+        onScroll={({ nativeEvent }) => {
+          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+          const fromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height;
+          if (fromBottom < 400) setShown(s => Math.min(s + PAGE, groups.length));
+        }}
       >
         {
-          groups.map((g, i) => (
+          groups.slice(0, shown).map((g) => (
             <Animated.View
               key={g.date.toISOString()}
-              entering={FadeInUp.delay(i * 40).duration(300)}
-              exiting={FadeOutDown.duration(180)}
-              layout={LinearTransition.springify().damping(58).stiffness(350)}
+              entering={FadeIn.duration(250)}
             >
               <View style={styles.timelineRow}>
                 <View style={{ flex: 1 }}>

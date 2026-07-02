@@ -14,22 +14,19 @@ import { Event } from "@musubi/types";
 import { useEventsStore } from "@/store/useEventsStore";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
-import { useVisibleEvents } from "@/hooks/useVisibleEvents";
 import { useApi } from "@/services/api";
 
 
-function getViewRange(mode: Mode, anchor: Date): [Date, Date] {
-  const d = dayjs(anchor);
-  switch (mode) {
-    case 'day':
-      return [d.subtract(1, 'day').startOf('day').toDate(), d.add(2, 'day').endOf('day').toDate()];
-    case '3days':
-    case 'week':
-      return [d.subtract(2, 'week').startOf('day').toDate(), d.add(2, 'week').endOf('day').toDate()];
-    case 'month':
-    default:
-      return [d.subtract(2, 'month').startOf('month').toDate(), d.add(2, 'month').endOf('month').toDate()];
-  }
+// `monthStart` is anchorDate snapped to the start of its month (see rangeAnchorMs).
+// Snapping means swipes WITHIN a month produce an identical [start,end] and reuse
+// the expand/enrich memo below: day/3days/week swipe by < 1 month → cache hits.
+// Month view still shifts one bucket per swipe (already cheap after the month-view
+// memo fixes). Coverage is 3 months (non-month) / 5 months (month), enough to keep
+// the visible page populated across an in-window swipe.
+function getViewRange(mode: Mode, monthStart: Date): [Date, Date] {
+  const m = dayjs(monthStart);
+  const span = mode === 'month' ? 2 : 1;
+  return [m.subtract(span, 'month').toDate(), m.add(span, 'month').endOf('month').toDate()];
 }
 
 export default function MainTab() {
@@ -91,21 +88,37 @@ export default function MainTab() {
     setEventDetailVisible(true);
   }, [events]);
 
-  const { visibleEvents } = useVisibleEvents(events, activeCals);
-
+  // Snap the expansion anchor to its month; changes value only when the month
+  // changes, so the range memo below stays stable across in-month swipes.
+  const rangeAnchorMs = useMemo(
+    () => dayjs(anchorDate).startOf('month').valueOf(),
+    [anchorDate],
+  );
   const [rangeStart, rangeEnd] = useMemo(
-    () => getViewRange(calMode, anchorDate),
-    [calMode, anchorDate],
+    () => getViewRange(calMode, new Date(rangeAnchorMs)),
+    [calMode, rangeAnchorMs],
   );
 
-  const expandedEvents = useMemo(
-    () => expandRecurringEvents(visibleEvents, rangeStart, rangeEnd),
-    [visibleEvents, rangeStart, rangeEnd],
+  // Expand ALL events over the range — the expensive rrule work. Deps are
+  // [events, range] only, so toggling a calendar does NOT re-run it.
+  const expandedAll = useMemo(
+    () => expandRecurringEvents(events, rangeStart, rangeEnd)
+      .sort((a, b) => a.start.getTime() - b.start.getTime()),
+    [events, rangeStart, rangeEnd],
+  );
+
+  // Calendar visibility is applied as a cheap per-cell filter INSIDE the calendar
+  // (eventFilter prop), NOT by rebuilding the events array. So toggling a calendar
+  // no longer re-expands/re-enriches/re-buckets, and the day grid — memoized on
+  // [events, month] — stays put across the ~5 buffered pager pages.
+  const eventFilter = useCallback(
+    (e: Event) => e.calendars.some(id => activeCals.has(id)),
+    [activeCals],
   );
 
   const enrichedEventsByDate = useMemo(
-    () => enrichEvents(expandedEvents, true),
-    [expandedEvents],
+    () => enrichEvents(expandedAll, true),
+    [expandedAll],
   );
 
   const scrollOffset = useMemo(() =>
@@ -139,7 +152,8 @@ export default function MainTab() {
         {calReady && calHeight > 0 && (
           <Animated.View entering={FadeIn.duration(350)} style={{ flex: 1 }}>
           <Calendar
-            events={expandedEvents}
+            events={expandedAll}
+            eventFilter={eventFilter}
             eventsAreSorted={true}
             enableEnrichedEvents={true}
             enrichedEventsByDate={enrichedEventsByDate}
@@ -149,7 +163,7 @@ export default function MainTab() {
             mode={calMode}
             weekStartsOn={weekStartsOn === "sunday" ? 0 : 1}
             swipeEnabled={true}
-            showAllDayEventCell={false}
+            showAllDayEventCell={true}
             date={jumpDate}
             scrollOffsetMinutes={scrollOffset}
             onSwipeEnd={setAnchorDate}
