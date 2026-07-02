@@ -4,7 +4,7 @@ import { Calendar } from "@musubi/types";
 import { useServer } from "@/contexts/ServerContext";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
 import { useEffect, useState } from "react";
-import { Text, Modal, Pressable, ScrollView, View, TextInput } from "react-native";
+import { Text, Modal, Pressable, ScrollView, View, TextInput, Alert } from "react-native";
 import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated from "react-native-reanimated";
@@ -15,8 +15,8 @@ type Props = {
   calendar?: Calendar,
   visible: boolean,
   onClose: () => void,
-  onCreate: (calendar: Calendar) => void;
-  onEdit: (calendar: Calendar) => void;
+  onCreate: (calendar: Calendar) => Promise<void>;
+  onEdit: (calendar: Calendar) => Promise<void>;
 }
 
 
@@ -40,7 +40,7 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
     }
   }, [calendar, visible]);
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const newCalendar: Calendar = {
       id: calendar?.id ?? "create",
       creatorID: userID!,
@@ -71,12 +71,18 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
     }
 
     setIsLoading(true);
-    if (calendar) {
-      onEdit(newCalendar);
-    } else {
-      onCreate(newCalendar);
+    try {
+      if (calendar) {
+        await onEdit(newCalendar);
+      } else {
+        await onCreate(newCalendar);
+      }
+      handleClose();
+    } catch (e: any) {
+      Alert.alert("Failed to save", e?.message ?? "An unexpected error occured.");
+    } finally {
+      setIsLoading(false);
     }
-    handleClose();
   };
 
   const closeSequence = () => {

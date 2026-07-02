@@ -398,20 +398,19 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
 
     setIsLoading(true);
 
-    await setNotification(eventConstruct);
-
     try {
+      await setNotification(eventConstruct);
       if (event) {
-        onEdit(eventConstruct);
+        await onEdit(eventConstruct);
       } else {
-        onSave(eventConstruct);
+        await onSave(eventConstruct);
       }
+      handleClose();
     } catch (e: any) {
-      setIsLoading(false);
       Alert.alert("Failed to save", e?.message ?? "An unexpected error occured.");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
-    handleClose();
   };
 
   return (

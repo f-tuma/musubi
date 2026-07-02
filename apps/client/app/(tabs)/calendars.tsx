@@ -7,7 +7,8 @@ import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useEventsStore } from "@/store/useEventsStore";
 import { Feather } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { useRefreshData } from "@/hooks/useRefreshData";
 
 
 export default function CalendarsTab() {
@@ -17,6 +18,14 @@ export default function CalendarsTab() {
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [calendarDetailVisible, setCalendarDetailVisible] = useState(false);
   const [prefilledCalendar, setPrefilledCalendar] = useState<Calendar | null>(null);
+
+  const refresh = useRefreshData();
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try { await refresh(); } catch (e) { console.error(e); }
+    finally { setRefreshing(false); }
+  };
 
   const eventCountByCal = useMemo(() => {
     const map: Record<string, number> = {};
@@ -46,7 +55,7 @@ export default function CalendarsTab() {
           <Text style={styles.btnPrimaryText}>Create Calendar</Text>
         </Pressable>
       </View>
-      <ScrollView>
+      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <View style={{ height: 1, backgroundColor: colors.line }} />
         {calendars.map((c) => (
           <Pressable

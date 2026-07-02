@@ -2,7 +2,7 @@ import { calendarTheme, colors, styles } from "@/constants/theme";
 import { AddEventModal } from "@/components/calendar/AddEventModal";
 import { CalendarFilterBar } from "@/components/calendar/CalendarFilterBar";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Calendar, enrichEvents, expandRecurringEvents, type Mode } from "@musubi/calendar";
 import Animated, { FadeIn } from "react-native-reanimated";
@@ -15,6 +15,7 @@ import { useEventsStore } from "@/store/useEventsStore";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { useApi } from "@/services/api";
+import { useRefreshData } from "@/hooks/useRefreshData";
 
 
 // `monthStart` is anchorDate snapped to the start of its month (see rangeAnchorMs).
@@ -63,6 +64,19 @@ export default function MainTab() {
   const [eventDetail, setEventDetail] = useState<Event | null>(null);
   const [startingDate, setStartingDate] = useState<Date | undefined>(new Date());
 
+  // Pull-to-refresh (week/day timeline). Keep `refresh` in a ref so onRefresh —
+  // and thus the memoized refreshControl — stay stable and don't re-render the
+  // whole calendar on every render (only when `refreshing` toggles).
+  const refresh = useRefreshData();
+  const refreshRef = useRef(refresh);
+  useEffect(() => { refreshRef.current = refresh; });
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try { await refreshRef.current(); } catch (e) { console.error(e); }
+    finally { setRefreshing(false); }
+  }, []);
+
   const handlerEventEdit = useCallback((event: Event) => {
     setEventDetailVisible(false);
     setPrefilledEvent(event);
@@ -73,6 +87,19 @@ export default function MainTab() {
     setStartingDate(date);
     setNewEventVisible(true);
   }, []);
+
+  const goToDay = useCallback((date: Date) => {
+    setCalMode('day');
+    setAnchorDate(date);
+    setJumpDate(date);
+  }, []);
+
+  // Quick tap on a day drills into its day view (week/month); in day view a tap
+  // creates an event. Long-press always creates (wired to onLongPressCell).
+  const handleCellPress = useCallback((date: Date) => {
+    if (calMode === 'day') handleCreateEventOnCell(date);
+    else goToDay(date);
+  }, [calMode, goToDay, handleCreateEventOnCell]);
 
   const openEventDetail = useCallback((event: Event) => {
     // Recurring occurrences have synthetic ids like "<originalId>_<timestamp>".
@@ -140,6 +167,8 @@ export default function MainTab() {
         calMode={calMode}
         onModeChange={setCalMode}
         onTodayPress={() => setJumpDate(new Date())}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
       />
       <CalendarFilterBar
         calendars={calendars}
@@ -173,7 +202,8 @@ export default function MainTab() {
             scrollOffsetMinutes={scrollOffset}
             onSwipeEnd={setAnchorDate}
             onPressEvent={openEventDetail}
-            onPressCell={handleCreateEventOnCell}
+            onPressCell={handleCellPress}
+            onLongPressCell={handleCreateEventOnCell}
           />
           </Animated.View>
         )}

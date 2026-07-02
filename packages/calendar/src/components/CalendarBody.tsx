@@ -77,6 +77,7 @@ interface CalendarBodyProps<T extends ICalendarEventBase> {
   /** Actual height of the all-day header row (grows with # of all-day events);
    *  the timeline viewport subtracts whatever exceeds one cellHeight. */
   allDayEventCellHeight?: number
+  refreshControl?: React.ReactElement
   eventsAreSorted?: boolean
   timeslots?: number
   hourComponent?: HourRenderer
@@ -116,6 +117,7 @@ function _CalendarBody<T extends ICalendarEventBase>({
   enableEnrichedEvents = false,
   eventFilter,
   allDayEventCellHeight,
+  refreshControl,
   eventsAreSorted = false,
   timeslots = 0,
   hourComponent,
@@ -239,6 +241,7 @@ function _CalendarBody<T extends ICalendarEventBase>({
         showsVerticalScrollIndicator={showVerticalScrollIndicator}
         scrollEnabled={scrollEnabled}
         nestedScrollEnabled
+        refreshControl={refreshControl}
         contentOffset={Platform.OS === 'ios' ? { x: 0, y: scrollOffsetMinutes } : { x: 0, y: 0 }}
       >
         <View style={[u['flex-1'], theme.isRTL ? u['flex-row-reverse'] : u['flex-row']]}>

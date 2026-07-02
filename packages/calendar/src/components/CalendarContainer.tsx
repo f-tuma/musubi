@@ -2,6 +2,7 @@ import dayjs from 'dayjs'
 import React, { useLayoutEffect, useRef } from 'react'
 import type { AccessibilityProps, TextStyle, ViewStyle } from 'react-native'
 import InfinitePager, { type InfinitePagerImperativeApi } from 'react-native-infinite-pager'
+import { ScrollView } from 'react-native-gesture-handler'
 
 import { ALL_DAY_EVENT_HEIGHT, MIN_HEIGHT } from '../commonStyles'
 import type {
@@ -113,6 +114,8 @@ export interface CalendarContainerProps<T extends ICalendarEventBase> {
   timeslots?: number
   hourComponent?: HourRenderer
   scheduleMonthSeparatorStyle?: TextStyle
+  /** RefreshControl element for the scrollable timeline (week/day view). */
+  refreshControl?: React.ReactElement
 }
 
 // Stable empty default so a memoized event cell's accessibility prop doesn't get
@@ -192,6 +195,7 @@ function _CalendarContainer<T extends ICalendarEventBase>({
   timeslots = 0,
   hourComponent,
   scheduleMonthSeparatorStyle = {},
+  refreshControl,
 }: CalendarContainerProps<T>) {
   const dateString = date?.toString()
   const calendarRef = useRef<InfinitePagerImperativeApi>(null)
@@ -322,9 +326,8 @@ function _CalendarContainer<T extends ICalendarEventBase>({
         ref={calendarRef}
         style={{ flex: 1 }}
         pageWrapperStyle={{ flex: 1 }}
-        renderPage={({ index }) => (
-          <React.Fragment>
-            <HeaderComponentForMonthView {...headerProps} dateRange={getDateRange(getCurrentDate(index))} />
+        renderPage={({ index }) => {
+          const monthBody = (
             <CalendarBodyForMonthView<T>
               {...commonProps}
               style={bodyContainerStyle}
@@ -355,8 +358,30 @@ function _CalendarContainer<T extends ICalendarEventBase>({
               disableMonthEventCellPress={disableMonthEventCellPress}
               showSixWeeks={showSixWeeks}
             />
-          </React.Fragment>
-        )}
+          )
+          return (
+            <React.Fragment>
+              <HeaderComponentForMonthView {...headerProps} dateRange={getDateRange(getCurrentDate(index))} />
+              {refreshControl ? (
+                // The month grid can't host a RefreshControl itself, so wrap it in
+                // a ScrollView. The grid keeps its explicit containerHeight, so it
+                // renders as before; alwaysBounceVertical lets the pull register on
+                // iOS even though the grid doesn't really scroll.
+                <ScrollView
+                  style={{ flex: 1 }}
+                  contentContainerStyle={{ flexGrow: 1 }}
+                  refreshControl={refreshControl}
+                  alwaysBounceVertical
+                  showsVerticalScrollIndicator={false}
+                >
+                  {monthBody}
+                </ScrollView>
+              ) : (
+                monthBody
+              )}
+            </React.Fragment>
+          )
+        }}
         onPageChange={handlePageChange}
         pageBuffer={1}
       />
@@ -456,6 +481,7 @@ function _CalendarContainer<T extends ICalendarEventBase>({
             isEventOrderingEnabled={isEventOrderingEnabled}
             showVerticalScrollIndicator={showVerticalScrollIndicator}
             scrollEnabled={verticalScrollEnabled}
+            refreshControl={refreshControl}
             eventFilter={eventFilter}
             enrichedEventsByDate={enrichedEventsByDate}
             enableEnrichedEvents={enableEnrichedEvents}

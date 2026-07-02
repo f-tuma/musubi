@@ -11,6 +11,7 @@ import {
 import { ALL_DAY_EVENT_HEIGHT, eventCellCss, u } from '../commonStyles'
 import type { ICalendarEventBase } from '../interfaces'
 import { useTheme } from '../theme/ThemeContext'
+import { getContrastColor } from '../utils/color'
 import { eventDay, isToday } from '../utils/datetime'
 import { objHasContent, stringHasContent } from '../utils/object'
 import { typedMemo } from '../utils/react'
@@ -187,6 +188,10 @@ function _CalendarHeader<T extends ICalendarEventBase>({
                     typeof allDayEventCellStyle === 'function'
                       ? allDayEventCellStyle
                       : () => allDayEventCellStyle
+                  const allDayBg = (getEventStyle(event) as ViewStyle)?.backgroundColor as string | undefined
+                  const allDayTextColor =
+                    allDayEventCellTextColor ||
+                    getContrastColor(allDayBg ?? theme.palette.primary.main)
                   return (
                     <TouchableOpacity
                       style={[eventCellCss.style, primaryBg, u['mt-2'], { height: ALL_DAY_EVENT_HEIGHT }, getEventStyle(event)]}
@@ -196,7 +201,7 @@ function _CalendarHeader<T extends ICalendarEventBase>({
                     >
                       <Text
                         numberOfLines={1}
-                        style={{ fontSize: theme.typography.sm.fontSize, color: allDayEventCellTextColor || theme.palette.primary.contrastText }}
+                        style={{ fontSize: theme.typography.sm.fontSize, color: allDayTextColor }}
                       >
                         {event.title}
                       </Text>

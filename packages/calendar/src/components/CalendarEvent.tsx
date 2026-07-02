@@ -5,6 +5,7 @@ import { OVERLAP_OFFSET, u } from '../commonStyles'
 import { useCalendarTouchableOpacityProps } from '../hooks/useCalendarTouchableOpacityProps'
 import type { EventCellStyle, EventRenderer, ICalendarEventBase, Mode } from '../interfaces'
 import { useTheme } from '../theme/ThemeContext'
+import { getContrastColor } from '../utils/color'
 import { DAY_MINUTES, getRelativeTopInDay, getStyleForOverlappingEvent } from '../utils/datetime'
 import { typedMemo } from '../utils/react'
 import { DefaultCalendarEventRenderer } from './DefaultCalendarEventRenderer'
@@ -80,9 +81,13 @@ function _CalendarEvent<T extends ICalendarEventBase>({
   })
 
   const textColor = React.useMemo(() => {
+    // When the event carries its own background (via eventCellStyle), pick a
+    // readable text color for it — dark text on light colors, light on dark.
+    const bg = ((typeof eventCellStyle === 'function' ? eventCellStyle(event) : eventCellStyle) as { backgroundColor?: string } | undefined)?.backgroundColor
+    if (bg) return getContrastColor(bg)
     const fgColors = palettes.map((p) => p.contrastText)
     return fgColors[eventCount % fgColors.length] || fgColors[0]
-  }, [eventCount, palettes])
+  }, [eventCellStyle, event, eventCount, palettes])
 
   if (renderEvent) return renderEvent(event, touchableOpacityProps)
 

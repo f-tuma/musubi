@@ -9,7 +9,7 @@ import { useEventsStore } from "@/store/useEventsStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native";
 import { useRefreshData } from "@/hooks/useRefreshData";
 
 
@@ -37,6 +37,12 @@ export default function SettingsTab() {
   }, [])
 
   const refresh = useRefreshData();
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try { await refresh(); } catch (e) { console.error(e); }
+    finally { setRefreshing(false); }
+  };
 
   const handleSave = async (settings: Settings) => {
     setIsSaving(true);
@@ -101,7 +107,7 @@ export default function SettingsTab() {
           Settings
         </Text>
       </View>
-      <ScrollView>
+      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <View
           style={{
             paddingHorizontal: 16,

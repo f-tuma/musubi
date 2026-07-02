@@ -6,6 +6,7 @@ import { u } from '../commonStyles'
 import { useCalendarTouchableOpacityProps } from '../hooks/useCalendarTouchableOpacityProps'
 import type { EventCellStyle, EventRenderer, ICalendarEventBase } from '../interfaces'
 import { useTheme } from '../theme/ThemeContext'
+import { getContrastColor } from '../utils/color'
 import { eventDay, getEventSpanningInfo } from '../utils/datetime'
 import { typedMemo } from '../utils/react'
 
@@ -37,6 +38,11 @@ function _CalendarEventForMonthView<T extends ICalendarEventBase>({
   showAdjacentMonths,
 }: CalendarEventProps<T>) {
   const theme = useTheme()
+
+  // Readable title color against the event's own background (falls back to the
+  // month cell's default primary background when no per-event color is set).
+  const eventBg = ((typeof eventCellStyle === 'function' ? eventCellStyle(event) : eventCellStyle) as { backgroundColor?: string } | undefined)?.backgroundColor
+  const textColor = getContrastColor(eventBg ?? theme.palette.primary.main)
 
   const { eventWidth, isMultipleDays, isMultipleDaysStart, eventWeekDuration } = React.useMemo(
     () => getEventSpanningInfo(event, date, dayOfTheWeek, calendarWidth, showAdjacentMonths),
@@ -75,7 +81,7 @@ function _CalendarEventForMonthView<T extends ICalendarEventBase>({
           <View {...(({ key: _k, ...rest }) => rest)(touchableOpacityProps)}>
             <Text
               style={[
-                { color: theme.palette.primary.contrastText },
+                { color: textColor },
                 theme.typography.xs,
                 u.truncate,
                 isRTL && { textAlign: 'right' },

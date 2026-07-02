@@ -25,6 +25,8 @@ export async function getCalendarIDFromToken(token: string) {
     throw new NotFoundError("Invite not found...");
   }
 
+
+
   return result.calendarID;
 }
 
