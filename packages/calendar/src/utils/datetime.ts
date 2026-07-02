@@ -209,8 +209,12 @@ export function enrichEvents<T extends ICalendarEventBase>(
   const eventsByDate: Record<string, T[]> = {}
   eventsWithOverlaps.forEach((event, index) => {
     const enrichedEvent = { ...event, overlapCount: overlapCountingPointers[index] }
-    const startDate = dayjs(enrichedEvent.start).format(SIMPLE_DATE_FORMAT)
-    const endDate = dayjs(enrichedEvent.end).format(SIMPLE_DATE_FORMAT)
+    // Reuse one dayjs instance per bound — dayjs is immutable, so format/startOf/
+    // endOf return new instances rather than mutating these.
+    const start = dayjs(enrichedEvent.start)
+    const end = dayjs(enrichedEvent.end)
+    const startDate = start.format(SIMPLE_DATE_FORMAT)
+    const endDate = end.format(SIMPLE_DATE_FORMAT)
 
     if (!eventsByDate[startDate]) eventsByDate[startDate] = []
     if (!eventsByDate[endDate]) eventsByDate[endDate] = []
@@ -220,22 +224,27 @@ export function enrichEvents<T extends ICalendarEventBase>(
     } else {
       eventsByDate[startDate].push({
         ...enrichedEvent,
-        end: dayjs(enrichedEvent.start).endOf('day').toDate(),
+        end: start.endOf('day').toDate(),
       })
-      const amountOfDaysBetweenDates = dayjs(enrichedEvent.start).diff(enrichedEvent.end, 'day')
-      for (let i = 1; i <= amountOfDaysBetweenDates; i++) {
-        const intermediateDate = dayjs(enrichedEvent.start).add(1, 'day')
-        if (!eventsByDate[intermediateDate.format(SIMPLE_DATE_FORMAT)]) {
-          eventsByDate[intermediateDate.format(SIMPLE_DATE_FORMAT)] = []
-        }
-        eventsByDate[intermediateDate.format(SIMPLE_DATE_FORMAT)].push({
+      // Fill every full day strictly between start and end. Two bugs fixed: the
+      // count was start.diff(end) (negative → loop never ran) and the date never
+      // advanced (start.add(1) each iteration). Each intermediate day now gets a
+      // whole-day slice (start-of-day → end-of-day).
+      const startDay = start.startOf('day')
+      const dayDiff = end.startOf('day').diff(startDay, 'day')
+      for (let i = 1; i < dayDiff; i++) {
+        const intermediateDate = startDay.add(i, 'day')
+        const key = intermediateDate.format(SIMPLE_DATE_FORMAT)
+        if (!eventsByDate[key]) eventsByDate[key] = []
+        eventsByDate[key].push({
           ...enrichedEvent,
-          start: intermediateDate.startOf('day').toDate(),
+          start: intermediateDate.toDate(),
+          end: intermediateDate.endOf('day').toDate(),
         })
       }
       eventsByDate[endDate].push({
         ...enrichedEvent,
-        start: dayjs(enrichedEvent.end).startOf('day').toDate(),
+        start: end.startOf('day').toDate(),
       })
     }
   })

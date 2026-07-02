@@ -39,6 +39,9 @@ import { Schedule } from './Schedule'
 export interface CalendarContainerProps<T extends ICalendarEventBase> {
   hideHours?: boolean
   events: T[]
+  /** Cheap render-time visibility filter (e.g. by calendar). Applied per-cell so
+   *  toggling it does NOT rebuild the day grid. */
+  eventFilter?: (event: T) => boolean
   height: number
   hourRowHeight?: number
   overlapOffset?: number
@@ -111,8 +114,13 @@ export interface CalendarContainerProps<T extends ICalendarEventBase> {
   scheduleMonthSeparatorStyle?: TextStyle
 }
 
+// Stable empty default so a memoized event cell's accessibility prop doesn't get
+// a fresh {} each render (which would defeat its React.memo on every toggle).
+const EMPTY_ACCESSIBILITY_PROPS: AccessibilityProps = {}
+
 function _CalendarContainer<T extends ICalendarEventBase>({
   events,
+  eventFilter,
   height,
   hourRowHeight,
   ampm = false,
@@ -122,7 +130,7 @@ function _CalendarContainer<T extends ICalendarEventBase>({
   allDayEventCellAccessibilityProps = {},
   eventCellStyle,
   eventCellTextColor = '',
-  eventCellAccessibilityProps = {},
+  eventCellAccessibilityProps = EMPTY_ACCESSIBILITY_PROPS,
   calendarCellAccessibilityPropsForMonthView = {},
   calendarCellStyle,
   calendarCellTextStyle,
@@ -282,9 +290,11 @@ function _CalendarContainer<T extends ICalendarEventBase>({
   const handlePressCell = React.useCallback(
     (date: Date) => {
       onPressCell?.(date)
-      if (resetPageOnPressCell) calendarRef.current?.setPage(0, { animated: true })
+      // Don't reset the pager in day mode (matches the old timeline handler).
+      // month mode is never 'day', so the month view's reset is unaffected.
+      if (mode !== 'day' && resetPageOnPressCell) calendarRef.current?.setPage(0, { animated: true })
     },
-    [onPressCell, resetPageOnPressCell],
+    [onPressCell, resetPageOnPressCell, mode],
   )
 
   const commonProps = { cellHeight, dateRange: getDateRange(targetDate), mode, onPressEvent, hideHours, showWeekNumber }
@@ -332,6 +342,7 @@ function _CalendarContainer<T extends ICalendarEventBase>({
               onPressEvent={onPressEvent}
               renderEvent={renderEvent}
               targetDate={getCurrentDate(index)}
+              eventFilter={eventFilter}
               maxVisibleEventCount={maxVisibleEventCount}
               eventMinHeightForMonthView={eventMinHeightForMonthView}
               sortedMonthView={sortedMonthView}
@@ -344,13 +355,14 @@ function _CalendarContainer<T extends ICalendarEventBase>({
           </React.Fragment>
         )}
         onPageChange={handlePageChange}
-        pageBuffer={2}
+        pageBuffer={1}
       />
     )
   }
 
   const headerProps = {
     ...commonProps,
+    eventFilter,
     style: headerContainerStyle,
     headerContainerAccessibilityProps,
     locale,
@@ -425,12 +437,7 @@ function _CalendarContainer<T extends ICalendarEventBase>({
             maxHour={maxHour}
             showTime={showTime}
             onLongPressCell={onLongPressCell}
-            onPressCell={(date) => {
-              onPressCell?.(date)
-              if (mode !== 'day' && resetPageOnPressCell) {
-                calendarRef.current?.setPage(0, { animated: true })
-              }
-            }}
+            onPressCell={handlePressCell}
             onPressEvent={onPressEvent}
             renderEvent={renderEvent}
             headerComponent={headerComponent}
@@ -439,6 +446,7 @@ function _CalendarContainer<T extends ICalendarEventBase>({
             isEventOrderingEnabled={isEventOrderingEnabled}
             showVerticalScrollIndicator={showVerticalScrollIndicator}
             scrollEnabled={verticalScrollEnabled}
+            eventFilter={eventFilter}
             enrichedEventsByDate={enrichedEventsByDate}
             enableEnrichedEvents={enableEnrichedEvents}
             eventsAreSorted={eventsAreSorted}

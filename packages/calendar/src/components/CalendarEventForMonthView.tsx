@@ -40,7 +40,8 @@ function _CalendarEventForMonthView<T extends ICalendarEventBase>({
 
   const { eventWidth, isMultipleDays, isMultipleDaysStart, eventWeekDuration } = React.useMemo(
     () => getEventSpanningInfo(event, date, dayOfTheWeek, calendarWidth, showAdjacentMonths),
-    [date, dayOfTheWeek, event, calendarWidth, showAdjacentMonths],
+    // Key on the day string — `date` is a fresh dayjs object each parent render.
+    [date.format('YYYY-MM-DD'), dayOfTheWeek, event, calendarWidth, showAdjacentMonths],
   )
 
   const touchableOpacityProps = useCalendarTouchableOpacityProps({

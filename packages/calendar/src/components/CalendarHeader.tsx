@@ -31,6 +31,7 @@ export interface CalendarHeaderProps<T extends ICalendarEventBase> {
   dayHeaderHighlightColor?: string
   weekDayHeaderHighlightColor?: string
   showAllDayEventCell?: boolean
+  eventFilter?: (event: T) => boolean
   hideHours?: boolean
   showWeekNumber?: boolean
   weekNumberPrefix?: string
@@ -54,6 +55,7 @@ function _CalendarHeader<T extends ICalendarEventBase>({
   dayHeaderHighlightColor = '',
   weekDayHeaderHighlightColor = '',
   showAllDayEventCell = true,
+  eventFilter,
   hideHours = false,
   showWeekNumber = false,
   weekNumberPrefix = '',
@@ -75,11 +77,19 @@ function _CalendarHeader<T extends ICalendarEventBase>({
   const borderColor = { borderColor: theme.palette.gray['200'] }
   const primaryBg = { backgroundColor: theme.palette.primary.main }
 
+  // Only reserve the all-day row when a visible (calendar-filtered) all-day event
+  // actually falls in the shown range — otherwise it's an empty bar taking space.
+  const visibleAllDay = eventFilter ? allDayEvents.filter(eventFilter) : allDayEvents
+  const hasAllDay = visibleAllDay.some((e) =>
+    dateRange.some((d) => d.isBetween(e.start, e.end, 'day', '[]')),
+  )
+  const showAllDay = showAllDayEventCell && hasAllDay
+
   return (
     <View
       style={[
-        showAllDayEventCell ? u['border-b-2'] : {},
-        showAllDayEventCell ? borderColor : {},
+        showAllDay ? u['border-b-2'] : {},
+        showAllDay ? borderColor : {},
         theme.isRTL ? u['flex-row-reverse'] : u['flex-row'],
         style,
       ]}
@@ -165,9 +175,9 @@ function _CalendarHeader<T extends ICalendarEventBase>({
                 </Text>
               </View>
             </View>
-            {showAllDayEventCell ? (
+            {showAllDay ? (
               <View style={[u['border-l'], { borderColor: theme.palette.gray['200'] }, { height: cellHeight }]}>
-                {allDayEvents.map((event, index) => {
+                {visibleAllDay.map((event, index) => {
                   if (!dayjs(date).isBetween(event.start, event.end, 'day', '[]')) return null
                   const getEventStyle =
                     typeof allDayEventCellStyle === 'function'

@@ -73,6 +73,7 @@ interface CalendarBodyProps<T extends ICalendarEventBase> {
   scrollEnabled?: boolean
   enrichedEventsByDate?: Record<string, T[]>
   enableEnrichedEvents?: boolean
+  eventFilter?: (event: T) => boolean
   eventsAreSorted?: boolean
   timeslots?: number
   hourComponent?: HourRenderer
@@ -110,12 +111,15 @@ function _CalendarBody<T extends ICalendarEventBase>({
   scrollEnabled = true,
   enrichedEventsByDate,
   enableEnrichedEvents = false,
+  eventFilter,
   eventsAreSorted = false,
   timeslots = 0,
   hourComponent,
 }: CalendarBodyProps<T>) {
   const scrollView = React.useRef<ScrollView>(null)
-  const { now } = useNow(!hideNowIndicator)
+  // Only the page that actually contains today needs the 60s now-indicator tick;
+  // otherwise every buffered page body runs a pointless timer + re-render.
+  const { now } = useNow(!hideNowIndicator && dateRange.some(isToday))
   const hours = Array.from({ length: maxHour - minHour + 1 }, (_, i) => minHour + i)
 
   React.useEffect(() => {
@@ -153,7 +157,8 @@ function _CalendarBody<T extends ICalendarEventBase>({
   const enrichedEvents = React.useMemo(() => {
     if (enableEnrichedEvents) return []
     if (isEventOrderingEnabled) {
-      const sortedEvents = events.sort((a, b) => a.start.getDate() - b.start.getDate())
+      // Sort a copy (don't mutate the prop array) and by time, not day-of-month.
+      const sortedEvents = [...events].sort((a, b) => a.start.getTime() - b.start.getTime())
       return sortedEvents.map((event) => ({
         ...event,
         overlapPosition: getOrderOfEvent(event, sortedEvents),
@@ -189,7 +194,10 @@ function _CalendarBody<T extends ICalendarEventBase>({
   const _renderEvents = React.useCallback(
     (date: dayjs.Dayjs) => {
       if (enableEnrichedEvents) {
-        return (internalEnrichedEventsByDate[date.format(SIMPLE_DATE_FORMAT)] || []).map(_renderMappedEvent)
+        // Map is built from ALL events; apply visibility here so a toggle only
+        // re-runs this cheap filter, not the enrich/bucketing pass.
+        const dayEvents = internalEnrichedEventsByDate[date.format(SIMPLE_DATE_FORMAT)] || []
+        return (eventFilter ? dayEvents.filter(eventFilter) : dayEvents).map(_renderMappedEvent)
       }
       return (
         <>
@@ -212,7 +220,7 @@ function _CalendarBody<T extends ICalendarEventBase>({
         </>
       )
     },
-    [_renderMappedEvent, enableEnrichedEvents, enrichedEvents, internalEnrichedEventsByDate],
+    [_renderMappedEvent, enableEnrichedEvents, enrichedEvents, internalEnrichedEventsByDate, eventFilter],
   )
 
   const theme = useTheme()

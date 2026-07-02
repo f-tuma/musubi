@@ -23,8 +23,14 @@ function _Calendar<T extends ICalendarEventBase>({
   isRTL,
   ...props
 }: CalendarProps<T>) {
-  const _theme = deepMerge(defaultTheme, theme) as ThemeInterface
-  if (isRTL !== undefined) _theme.isRTL = isRTL
+  // Memoize the merged theme — a fresh deepMerge object each render would give
+  // ThemeContext a new value identity and bust every useTheme() consumer
+  // (notably the static hour grid). Consumer passes a stable theme prop.
+  const _theme = React.useMemo(() => {
+    const t = deepMerge(defaultTheme, theme) as ThemeInterface
+    if (isRTL !== undefined) t.isRTL = isRTL
+    return t
+  }, [theme, isRTL])
   return (
     <ThemeContext.Provider value={_theme}>
       <CalendarContainer {...props} />

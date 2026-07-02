@@ -32,6 +32,7 @@ interface CalendarBodyForMonthViewProps<T extends ICalendarEventBase> {
   containerHeight: number
   targetDate: dayjs.Dayjs
   events: T[]
+  eventFilter?: (event: T) => boolean
   style: ViewStyle
   eventCellStyle?: EventCellStyle<T>
   eventCellAccessibilityProps?: AccessibilityProps
@@ -67,6 +68,7 @@ function _CalendarBodyForMonthView<T extends ICalendarEventBase>({
   onPressCell,
   onPressDateHeader,
   events,
+  eventFilter,
   onPressEvent,
   eventCellStyle,
   eventCellAccessibilityProps = {},
@@ -95,6 +97,17 @@ function _CalendarBodyForMonthView<T extends ICalendarEventBase>({
   const weeks = showAdjacentMonths
     ? getWeeksWithAdjacentMonths(targetDate, weekStartsOn, showSixWeeks)
     : calendarize(targetDate.toDate(), weekStartsOn)
+
+  // Stable per-cell dayjs objects, keyed on the month. A fresh `date` object each
+  // render would defeat the memoized CalendarEventForMonthView cells; keeping them
+  // stable lets cells bail out on re-renders (e.g. calendar toggles) instead of
+  // re-rendering the whole grid.
+  const weekDates: (dayjs.Dayjs | null)[][] = React.useMemo(
+    () => weeks.map((week) =>
+      week.map((d) => ((showAdjacentMonths || d > 0) ? targetDate.date(d) : null)),
+    ),
+    [targetDate.format('YYYY-MM'), showAdjacentMonths, weekStartsOn, showSixWeeks],
+  )
 
   const minCellHeight = showSixWeeks ? containerHeight / 6 - 30 : containerHeight / 5 - 30
   const theme = useTheme()
@@ -151,12 +164,22 @@ function _CalendarBodyForMonthView<T extends ICalendarEventBase>({
     if (!sortedMonthView) {
       const gridStart = dayjs(targetDate).startOf('month').startOf('week')
       const gridEnd = dayjs(targetDate).endOf('month').endOf('week')
+      // Precompute each event's day-bounds ONCE. Previously dayjs(start)/dayjs(end)
+      // were re-constructed inside the filter for every one of the ~42 grid cells,
+      // i.e. O(cells * events) dayjs allocations per render — the dominant cost.
+      // ponytail: still O(cells * events) comparisons; a one-pass bucket by span
+      // would be O(events) if this ever shows up in a profile.
+      const spans = events.map((event) => ({
+        event,
+        start: dayjs(event.start).startOf('day'),
+        end: dayjs(event.end).endOf('day'),
+      }))
       let d = gridStart.clone()
       while (d.isBefore(gridEnd, 'day')) {
         const key = d.format(SIMPLE_DATE_FORMAT)
-        eventDict[key] = events.filter(({ start, end }) =>
-          d.isBetween(dayjs(start).startOf('day'), dayjs(end).endOf('day'), null, '[)'),
-        )
+        eventDict[key] = spans
+          .filter((s) => d.isBetween(s.start, s.end, null, '[)'))
+          .map((s) => s.event)
         d = d.add(1, 'day')
       }
       return eventDict
@@ -217,7 +240,10 @@ function _CalendarBodyForMonthView<T extends ICalendarEventBase>({
       dateToCompare = dateToCompare.add(1, 'day')
     }
     return eventDict
-  }, [events, sortedMonthView, targetDate])
+    // Key on the month string, not the targetDate dayjs object — a fresh object
+    // is created every parent render, which would otherwise bust this memo even
+    // when the displayed month is unchanged.
+  }, [events, sortedMonthView, targetDate.format('YYYY-MM')])
 
   const renderDateCell = (date: dayjs.Dayjs | null, index: number) => {
     if (date && renderCustomDateForMonth) return renderCustomDateForMonth(date.toDate())
@@ -285,8 +311,7 @@ function _CalendarBodyForMonthView<T extends ICalendarEventBase>({
               </Text>
             </View>
           ) : null}
-          {week
-            .map((d) => showAdjacentMonths ? targetDate.date(d) : d > 0 ? targetDate.date(d) : null)
+          {weekDates[i]
             .map((date, ii) => (
               <TouchableOpacity
                 onLongPress={() => handleCellLongPress(date)}
@@ -318,19 +343,13 @@ function _CalendarBodyForMonthView<T extends ICalendarEventBase>({
                 {calendarWidth > 0 &&
                   (!disableMonthEventCellPress || calendarCellHeight > 0) &&
                   date &&
-                  (eventsByDate[date.format('YYYY-MM-DD')] ?? []).reduce(
-                    (elements, event, index, events) => [
-                      // biome-ignore lint/performance/noAccumulatingSpread: Acceptable
-                      ...elements,
-                      index > maxVisibleEventCount ? null : index === maxVisibleEventCount ? (
-                        <Text
-                          key={`${index}-${event.start}-${event.title}-${event.end}`}
-                          style={[theme.typography.moreLabel, { marginTop: 2, color: theme.palette.moreLabel }]}
-                          onPress={() => onPressMoreLabel?.(events, date.toDate())}
-                        >
-                          {moreLabel.replace('{moreCount}', `${events.length - maxVisibleEventCount}`)}
-                        </Text>
-                      ) : (
+                  (() => {
+                    // Grid is built from ALL events (stable across toggles); apply
+                    // calendar-visibility here so hiding never rebuilds the grid.
+                    const all = eventsByDate[date.format('YYYY-MM-DD')] ?? []
+                    const dayEvents = eventFilter ? all.filter(eventFilter) : all
+                    return [
+                      ...dayEvents.slice(0, maxVisibleEventCount).map((event, index) => (
                         <CalendarEventForMonthView
                           key={`${index}-${event.start}-${event.title}-${event.end}`}
                           event={event}
@@ -345,10 +364,18 @@ function _CalendarBodyForMonthView<T extends ICalendarEventBase>({
                           eventMinHeightForMonthView={eventMinHeightForMonthView}
                           showAdjacentMonths={showAdjacentMonths}
                         />
-                      ),
-                    ],
-                    [] as (null | JSX.Element)[],
-                  )}
+                      )),
+                      dayEvents.length > maxVisibleEventCount ? (
+                        <Text
+                          key="more"
+                          style={[theme.typography.moreLabel, { marginTop: 2, color: theme.palette.moreLabel }]}
+                          onPress={() => onPressMoreLabel?.(dayEvents, date.toDate())}
+                        >
+                          {moreLabel.replace('{moreCount}', `${dayEvents.length - maxVisibleEventCount}`)}
+                        </Text>
+                      ) : null,
+                    ]
+                  })()}
                 {disableMonthEventCellPress && calendarCellHeight > 0 && (
                   <TouchableGradually
                     style={{
