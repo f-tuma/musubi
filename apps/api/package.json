@@ -17,11 +17,11 @@
     "@musubi/types": "workspace:*",
     "@types/cors": "^2.8.19",
     "@types/nodemailer": "^8.0.1",
-    "better-auth": "^1.6.19",
+    "better-auth": "^1.6.23",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "nodemailer": "^8.0.11",
+    "nodemailer": "^9.0.1",
     "tsx": "^4.22.4",
     "zod": "^4.4.3"
   },

@@ -17,6 +17,6 @@
     "@better-auth/expo": "^1.6.22",
     "@musubi/config": "workspace:*",
     "@musubi/db": "workspace:*",
-    "better-auth": "^1.6.10"
+    "better-auth": "^1.6.23"
   }
 }

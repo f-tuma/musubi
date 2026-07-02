@@ -28,7 +28,7 @@
     "@musubi/types": "workspace:*",
     "@react-native-community/datetimepicker": "9.1.0",
     "@react-native-google-signin/google-signin": "^16.1.2",
-    "better-auth": "^1.6.19",
+    "better-auth": "^1.6.23",
     "dayjs": "^1.11.21",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
