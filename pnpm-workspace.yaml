@@ -1,6 +1,9 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+# Expo/React Native tooling assumes a flat node_modules (config plugins, Metro).
+# pnpm's default isolated layout hides transitive deps like @expo/config-plugins.
+nodeLinker: hoisted
 allowBuilds:
   esbuild: false
   msgpackr-extract: true

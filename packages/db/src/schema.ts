@@ -329,43 +329,51 @@ export const eventUsersRelations = relations(eventUsers, ({ one }) => ({
 // });
 
 
-// GOOGLE SYNC
+// EXTERNAL CALENDAR SYNC (provider-agnostic — google | microsoft | caldav)
 
 
-export const googleCalendars = pgTable("google_calendars", {
+export const externalCalendars = pgTable("external_calendars", {
   id: uuid("id").primaryKey().defaultRandom(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at")
     .notNull()
     .defaultNow()
     .$onUpdate(() => new Date()),
+  provider: text("provider").notNull(),
+  userID: text("user_id")
+    .references(() => user.id, { onDelete: "cascade" })
+    .notNull(),
   calendarID: uuid("calendar_id")
     .references(() => calendars.id, { onDelete: "cascade" })
     .notNull(),
-  googleCalendarID: text("google_calendar_id").notNull(),
-  syncToken: text("sync_token"),
-  userID: text("user_id")
-    .references(() => user.id, {
-      onDelete: "cascade",
-    })
-    .notNull(),
-}, (t) => [unique().on(t.googleCalendarID, t.userID), unique().on(t.calendarID)]);
+  externalCalendarID: text("external_calendar_id").notNull(),
+  cursor: text("cursor"),
+}, (t) => [
+  unique().on(t.provider, t.userID, t.externalCalendarID),
+  unique().on(t.calendarID),
+]);
 
-export type NewGoogleCalendar = typeof googleCalendars.$inferInsert;
+export type NewExternalCalendar = typeof externalCalendars.$inferInsert;
 
 
-export const googleEvents = pgTable("google_events", {
+export const externalEvents = pgTable("external_events", {
   id: uuid("id").primaryKey().defaultRandom(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at")
     .notNull()
     .defaultNow()
     .$onUpdate(() => new Date()),
+  provider: text("provider").notNull(),
   eventID: uuid("event_id")
     .references(() => events.id, { onDelete: "cascade" })
     .notNull(),
-  googleCalendarID: text("google_calendar_id").notNull(),
-  googleEventID: text("google_event_id").notNull(),
-}, (t) => [unique().on(t.googleCalendarID, t.googleEventID)]);
+  externalCalendarID: text("external_calendar_id").notNull(),
+  externalEventID: text("external_event_id").notNull(),
+  etag: text("etag"),
+}, (t) => [
+  unique().on(t.provider, t.externalCalendarID, t.externalEventID),
+]);
+
+export type NewExternalEvent = typeof externalEvents.$inferInsert;
 
 export type NewGoogleEvent = typeof googleEvents.$inferInsert;

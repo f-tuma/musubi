@@ -1,3 +1,4 @@
+import { lt } from "drizzle-orm";
 import { calendarInvites, db, NewCalendarInvite } from "..";
 
 
@@ -9,4 +10,8 @@ export async function createInvite(invite: NewCalendarInvite) {
     .returning();
 
   return result;
-}  
+}
+
+export async function deleteExpiredInvites() {
+  await db.delete(calendarInvites).where(lt(calendarInvites.expiresAt, new Date()));
+}

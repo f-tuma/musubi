@@ -1,5 +1,6 @@
 import { config } from "@musubi/config";
 import { auth } from "@musubi/auth";
+import { deleteExpiredInvites, deleteExpiredSessions } from "@musubi/db";
 import { toNodeHandler } from "better-auth/node";
 import express from "express";
 import cors from "cors";
@@ -219,3 +220,16 @@ app.delete("/api/v1/calendars/members/:calendarId", requireAuth, (
 app.use(middlewareErrorHandler);
 
 app.listen(port, "0.0.0.0")
+
+// Periodic cleanup of expired rows (Postgres has no native row TTL).
+// Scheduling lives here (app concern); the deletes live in @musubi/db.
+async function cleanupExpired() {
+  try {
+    await deleteExpiredInvites();
+    await deleteExpiredSessions();
+  } catch (e) {
+    console.error("Cleanup job failed:", e);
+  }
+}
+cleanupExpired();                          // run once at boot (setInterval's first tick is delayed)
+setInterval(cleanupExpired, 60 * 60 * 1000); // then hourly

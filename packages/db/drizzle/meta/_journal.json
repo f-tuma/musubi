@@ -64,6 +64,20 @@
       "when": 1782738160738,
       "tag": "0008_broken_penance",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783079572095,
+      "tag": "0009_neat_meteorite",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783079756030,
+      "tag": "0010_high_bloodstorm",
+      "breakpoints": true
     }
   ]
 }
