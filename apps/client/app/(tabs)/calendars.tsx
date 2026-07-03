@@ -56,7 +56,8 @@ export default function CalendarsTab() {
       if (!map.has(key)) {
         counts[c.provider] = (counts[c.provider] ?? 0) + 1;
         const name = c.provider === "google" ? "Google" : c.provider === "caldav" ? "CalDAV" : c.provider;
-        map.set(key, { provider: c.provider, accountId: c.accountId, label: `${name} Account ${counts[c.provider]}`, calendars: [] });
+        const label = c.accountLabel || `${name} Account ${counts[c.provider]}`;
+        map.set(key, { provider: c.provider, accountId: c.accountId, label, calendars: [] });
       }
       map.get(key)!.calendars.push(c);
     }

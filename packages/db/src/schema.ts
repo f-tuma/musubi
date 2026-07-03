@@ -344,6 +344,7 @@ export const externalCalendars = pgTable("external_calendars", {
     .references(() => user.id, { onDelete: "cascade" })
     .notNull(),
   accountID: text("account_id").notNull(),
+  accountLabel: text("account_label"),
   calendarID: uuid("calendar_id")
     .references(() => calendars.id, { onDelete: "cascade" })
     .notNull(),

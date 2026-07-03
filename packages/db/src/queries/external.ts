@@ -58,6 +58,7 @@ export async function importExternalCalendar(
   provider: string,
   userID: string,
   accountID: string,
+  accountLabel: string,
   cal: { externalId: string; name: string; color: string },
 ) {
   await db.transaction(async (tx) => {
@@ -69,12 +70,24 @@ export async function importExternalCalendar(
       provider,
       userID,
       accountID,
+      accountLabel,
       calendarID: created.id,
       externalCalendarID: cal.externalId,
       cursor: null,
     });
     await tx.insert(calendarMembers).values({ userID, calendarID: created.id });
   });
+}
+
+// Keep the account label fresh across all of an account's calendars.
+export async function setAccountLabel(provider: string, userID: string, accountID: string, accountLabel: string) {
+  await db.update(externalCalendars)
+    .set({ accountLabel })
+    .where(and(
+      eq(externalCalendars.provider, provider),
+      eq(externalCalendars.userID, userID),
+      eq(externalCalendars.accountID, accountID),
+    ));
 }
 
 export async function setCursor(calendarID: string, cursor: string | null) {
@@ -89,6 +102,7 @@ export async function getExternalLinkForCalendar(calendarID: string) {
       externalCalendarID: externalCalendars.externalCalendarID,
       userID: externalCalendars.userID,
       accountID: externalCalendars.accountID,
+      accountLabel: externalCalendars.accountLabel,
     })
     .from(externalCalendars)
     .where(eq(externalCalendars.calendarID, calendarID));

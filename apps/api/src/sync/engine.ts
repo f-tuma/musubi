@@ -9,6 +9,7 @@ import {
   importExternalCalendar,
   importExternalEvent,
   removeCalendar,
+  setAccountLabel,
   setCursor,
   upsertExternalEvent,
 } from "@musubi/db";
@@ -46,8 +47,16 @@ function toEventValues(n: NormalizedEvent, calColor: string) {
 
 // Pull: reconcile calendars, then pull each calendar's changes into Musubi. Scoped
 // to ONE connected account of the provider.
-export async function syncProvider(adapter: CalendarAdapter, userID: string, accountId: string) {
+export async function syncProvider(
+  adapter: CalendarAdapter,
+  userID: string,
+  account: { id: string; label: string },
+) {
   const provider = adapter.provider;
+  const accountId = account.id;
+
+  // keep the human label fresh on this account's calendars
+  await setAccountLabel(provider, userID, accountId, account.label);
 
   // 1. reconcile the calendar list
   const remote = await adapter.listCalendars(userID, accountId);
@@ -62,7 +71,7 @@ export async function syncProvider(adapter: CalendarAdapter, userID: string, acc
   // new remote calendar -> import
   for (const cal of remote) {
     if (!(await doesExternalCalIDExist(provider, accountId, cal.externalId))) {
-      await importExternalCalendar(provider, userID, accountId, cal);
+      await importExternalCalendar(provider, userID, accountId, account.label, cal);
     }
   }
 
@@ -102,8 +111,8 @@ export async function syncProvider(adapter: CalendarAdapter, userID: string, acc
 export async function syncUser(userID: string) {
   for (const adapter of Object.values(adapters)) {
     try {
-      for (const accountId of await adapter.listAccounts(userID)) {
-        await syncProvider(adapter, userID, accountId);
+      for (const account of await adapter.listAccounts(userID)) {
+        await syncProvider(adapter, userID, account);
       }
     } catch (e) {
       console.error(`Sync ${adapter.provider} failed:`, e);

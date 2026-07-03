@@ -93,9 +93,9 @@ function toIcal(event: Event): string {
 export const caldavAdapter: CalendarAdapter = {
   provider: "caldav",
 
-  async listAccounts(userID: string): Promise<string[]> {
+  async listAccounts(userID: string): Promise<{ id: string; label: string }[]> {
     const accounts = await getCaldavAccountsByUser(userID);
-    return accounts.map((a) => a.id);
+    return accounts.map((a) => ({ id: a.id, label: a.username }));
   },
 
   async listCalendars(_userID: string, accountId: string): Promise<ExternalCalendarInfo[]> {

@@ -83,8 +83,22 @@ function toGoogleEvent(event: Event) {
 export const googleAdapter: CalendarAdapter = {
   provider: "google",
 
-  async listAccounts(userID: string): Promise<string[]> {
-    return getGoogleAccountIDs(userID);
+  async listAccounts(userID: string): Promise<{ id: string; label: string }[]> {
+    const ids = await getGoogleAccountIDs(userID);
+    return Promise.all(ids.map(async (id) => {
+      let label = id;
+      try {
+        const accessToken = await getAccessToken(userID, id);
+        const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (res.ok) {
+          const d = await res.json();
+          label = d.email ?? d.name ?? id;
+        }
+      } catch { /* fall back to id */ }
+      return { id, label };
+    }));
   },
 
   async listCalendars(userID: string, accountId: string): Promise<ExternalCalendarInfo[]> {

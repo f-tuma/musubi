@@ -100,6 +100,7 @@ export async function handlerGetCalendars(req: Request, res: Response) {
       invite: "wip",
       provider: link?.provider ?? null,
       accountId: link?.accountID ?? null,
+      accountLabel: link?.accountLabel ?? null,
     })
   }
 

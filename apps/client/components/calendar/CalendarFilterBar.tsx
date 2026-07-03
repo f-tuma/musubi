@@ -1,9 +1,10 @@
 import { memo, useEffect, useState } from "react";
 import { colors, fonts } from "@/constants/theme";
 import { View, Pressable, ScrollView, Text } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
-type Calendar = { id: string; name: string; color: string };
+type Calendar = { id: string; name: string; color: string; provider?: string | null };
 
 type Props = {
   calendars: Calendar[];
@@ -88,11 +89,17 @@ export const CalendarFilterBar = memo(function CalendarFilterBar({
               backgroundColor: active ? colors.bg2 : colors.line,
             }}
           >
-            <View style={{
-              width: 7, height: 7, borderRadius: 4,
-              backgroundColor: cal.color,
-              opacity: active ? 1 : 0.5,
-            }} />
+            {cal.provider === "google" ? (
+              <Ionicons name="logo-google" size={12} color={cal.color} style={{ opacity: active ? 1 : 0.5 }} />
+            ) : cal.provider === "caldav" ? (
+              <Ionicons name="cloud" size={13} color={cal.color} style={{ opacity: active ? 1 : 0.5 }} />
+            ) : (
+              <View style={{
+                width: 7, height: 7, borderRadius: 4,
+                backgroundColor: cal.color,
+                opacity: active ? 1 : 0.5,
+              }} />
+            )}
             <Text style={{
               fontFamily: fonts.sans, fontSize: 12,
               color: active ? colors.fg : colors.fg3,

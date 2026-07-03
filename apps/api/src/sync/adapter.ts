@@ -34,9 +34,10 @@ export type FetchChangesResult = {
 export type CalendarAdapter = {
   provider: string;
 
-  // Connected account ids for this provider (Better Auth account.accountId for
-  // OAuth; caldav_accounts.id for CalDAV). Empty = provider not connected.
-  listAccounts(userID: string): Promise<string[]>;
+  // Connected accounts for this provider (id = Better Auth account.accountId for
+  // OAuth / caldav_accounts.id for CalDAV; label = human name e.g. email/username).
+  // Empty = provider not connected.
+  listAccounts(userID: string): Promise<{ id: string; label: string }[]>;
 
   // Which calendars can this account sync?
   listCalendars(userID: string, accountId: string): Promise<ExternalCalendarInfo[]>;
