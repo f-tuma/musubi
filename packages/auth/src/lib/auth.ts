@@ -41,6 +41,15 @@ export const auth = betterAuth({
       prompt: "select_account consent",
     },
   },
+  account: {
+    accountLinking: {
+      enabled: true,
+      // Let a signed-in user connect additional accounts (e.g. a 2nd Google
+      // account) whose email differs from their Musubi login. Safe here because
+      // linking is always an explicit, authenticated linkSocial action.
+      allowDifferentEmails: true,
+    },
+  },
   user: {
     deleteUser: {
       enabled: true,
