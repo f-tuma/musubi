@@ -9,6 +9,9 @@ export const CalendarSchema = z.object({
   color: z.string(),
   members: z.array(UserSchema),
   invite: z.string(),
+  // external sync origin — null/absent for native Musubi calendars
+  provider: z.string().nullish(),
+  accountId: z.string().nullish(),
 });
 
 export type Calendar = z.infer<typeof CalendarSchema>;

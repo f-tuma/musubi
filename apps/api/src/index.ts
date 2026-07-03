@@ -16,6 +16,7 @@ import { handlerGetSettings, handlerSaveSettings } from "./handlers/settings";
 import { handlerServer, handlerServerStatus } from "./handlers/server";
 import { handlerCheckGoogleStatus, handlerGetGoogleCalendars, handlerRevokeGoogle } from "./handlers/google";
 import { handlerCheckCaldavStatus, handlerConnectCaldav, handlerDisconnectCaldav } from "./handlers/caldav";
+import { handlerDisconnectAccount } from "./handlers/connections";
 
 const app = express()
 const port = config.api.port;
@@ -121,6 +122,13 @@ app.post("/api/v1/users/connections/caldav", requireAuth, (
   res,
   next) => {
   Promise.resolve(handlerConnectCaldav(req, res).catch(next));
+});
+
+app.post("/api/v1/users/connections/disconnect", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerDisconnectAccount(req, res).catch(next));
 });
 
 app.delete("/api/v1/users/connections/caldav", requireAuth, (

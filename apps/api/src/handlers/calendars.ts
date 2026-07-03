@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { addCalendarMember, createCalendar, getCalendar, getCalendarEvents, getCalendarIDFromToken, getCalendarMembers, getUsersCalendars, NewCalendar, removeCalendar, removeClaendarMember, updateCalendar } from '@musubi/db';
+import { addCalendarMember, createCalendar, getCalendar, getCalendarEvents, getCalendarIDFromToken, getCalendarMembers, getExternalLinkForCalendar, getUsersCalendars, NewCalendar, removeCalendar, removeClaendarMember, updateCalendar } from '@musubi/db';
 import { BadRequestError, Calendar, CalendarSchema, NotFoundError, User } from "@musubi/types";
 import { notifyCalendarMembers } from "./stream";
 
@@ -93,7 +93,14 @@ export async function handlerGetCalendars(req: Request, res: Response) {
     for (const user of users) {
       members.push({ id: user.user.id, name: user.user.name, email: user.user.email });
     }
-    result.push({ ...calendar.calendars, members: members, invite: "wip" })
+    const link = await getExternalLinkForCalendar(calendar.calendarID);
+    result.push({
+      ...calendar.calendars,
+      members: members,
+      invite: "wip",
+      provider: link?.provider ?? null,
+      accountId: link?.accountID ?? null,
+    })
   }
 
   res.status(200).json(result);
