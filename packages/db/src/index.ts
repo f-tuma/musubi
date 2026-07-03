@@ -8,6 +8,7 @@ export * from './queries/invites';
 export * from './queries/sessions';
 export * from './queries/settings';
 export * from './queries/external';
+export * from './queries/caldav';
 export * from './queries/google';
 export * from './schema';
 export * as schema from './schema';

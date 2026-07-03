@@ -40,11 +40,16 @@ type SocialConfig = {
   googleClientSecret: string,
 }
 
+type SecurityConfig = {
+  caldavEncKey: string,
+}
+
 type Config = {
   api: APIConfig,
   db: DBConfig,
   smtp: SMTPConfig,
   social: SocialConfig,
+  security: SecurityConfig,
 }
 
 const dbConfig: DBConfig = {
@@ -73,10 +78,15 @@ const socialConfig: SocialConfig = {
   googleClientSecret: envOrThrow("GOOGLE_CLIENT_SECRET"),
 }
 
+const securityConfig: SecurityConfig = {
+  caldavEncKey: process.env.CALDAV_ENC_KEY ?? "", // validated at use in the crypto helper
+}
+
 export const config: Config = {
   api: apiConfig,
   db: dbConfig,
   smtp: smtpConfig,
   social: socialConfig,
+  security: securityConfig,
 }
 

@@ -375,3 +375,23 @@ export const externalEvents = pgTable("external_events", {
 ]);
 
 export type NewExternalEvent = typeof externalEvents.$inferInsert;
+
+
+// CalDAV credentials (Apple/iCloud + generic). Password stored AES-GCM encrypted
+// by the app layer — this table never sees plaintext. One account per user for now.
+export const caldavAccounts = pgTable("caldav_accounts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at")
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+  userID: text("user_id")
+    .references(() => user.id, { onDelete: "cascade" })
+    .notNull(),
+  serverUrl: text("server_url").notNull(),
+  username: text("username").notNull(),
+  encryptedPassword: text("encrypted_password").notNull(),
+}, (t) => [unique().on(t.userID)]);
+
+export type NewCaldavAccount = typeof caldavAccounts.$inferInsert;
