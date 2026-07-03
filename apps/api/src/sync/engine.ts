@@ -14,10 +14,12 @@ import {
 } from "@musubi/db";
 import { CalendarAdapter, NormalizedEvent } from "./adapter";
 import { googleAdapter } from "./adapters/google";
+import { caldavAdapter } from "./adapters/caldav";
 
 // provider -> adapter. Register new providers here.
 const adapters: Record<string, CalendarAdapter> = {
   google: googleAdapter,
+  caldav: caldavAdapter,
   // microsoft: microsoftAdapter,   // (next)
 };
 

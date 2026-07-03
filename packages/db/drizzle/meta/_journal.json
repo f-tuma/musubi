@@ -85,6 +85,13 @@
       "when": 1783098048620,
       "tag": "0011_boring_mentallo",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1783099836526,
+      "tag": "0012_late_anthem",
+      "breakpoints": true
     }
   ]
 }

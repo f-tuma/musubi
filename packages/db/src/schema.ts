@@ -343,13 +343,14 @@ export const externalCalendars = pgTable("external_calendars", {
   userID: text("user_id")
     .references(() => user.id, { onDelete: "cascade" })
     .notNull(),
+  accountID: text("account_id").notNull(),
   calendarID: uuid("calendar_id")
     .references(() => calendars.id, { onDelete: "cascade" })
     .notNull(),
   externalCalendarID: text("external_calendar_id").notNull(),
   cursor: text("cursor"),
 }, (t) => [
-  unique().on(t.provider, t.userID, t.externalCalendarID),
+  unique().on(t.provider, t.accountID, t.externalCalendarID),
   unique().on(t.calendarID),
 ]);
 
@@ -378,7 +379,7 @@ export type NewExternalEvent = typeof externalEvents.$inferInsert;
 
 
 // CalDAV credentials (Apple/iCloud + generic). Password stored AES-GCM encrypted
-// by the app layer — this table never sees plaintext. One account per user for now.
+// by the app layer — this table never sees plaintext. Multiple accounts per user.
 export const caldavAccounts = pgTable("caldav_accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -392,6 +393,6 @@ export const caldavAccounts = pgTable("caldav_accounts", {
   serverUrl: text("server_url").notNull(),
   username: text("username").notNull(),
   encryptedPassword: text("encrypted_password").notNull(),
-}, (t) => [unique().on(t.userID)]);
+}, (t) => [unique().on(t.userID, t.serverUrl, t.username)]);
 
 export type NewCaldavAccount = typeof caldavAccounts.$inferInsert;

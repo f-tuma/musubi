@@ -15,6 +15,7 @@ import { middlewareLogHandler } from "./middleware/log_handler";
 import { handlerGetSettings, handlerSaveSettings } from "./handlers/settings";
 import { handlerServer, handlerServerStatus } from "./handlers/server";
 import { handlerCheckGoogleStatus, handlerGetGoogleCalendars, handlerRevokeGoogle } from "./handlers/google";
+import { handlerCheckCaldavStatus, handlerConnectCaldav, handlerDisconnectCaldav } from "./handlers/caldav";
 
 const app = express()
 const port = config.api.port;
@@ -106,6 +107,27 @@ app.get("/api/v1/users/connections/google", requireAuth, (
   res,
   next) => {
   Promise.resolve(handlerCheckGoogleStatus(req, res).catch(next));
+});
+
+app.get("/api/v1/users/connections/caldav", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerCheckCaldavStatus(req, res).catch(next));
+});
+
+app.post("/api/v1/users/connections/caldav", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerConnectCaldav(req, res).catch(next));
+});
+
+app.delete("/api/v1/users/connections/caldav", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerDisconnectCaldav(req, res).catch(next));
 });
 
 //
