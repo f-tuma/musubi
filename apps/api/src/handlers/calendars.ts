@@ -120,7 +120,7 @@ export async function handlerGetCalendarFromToken(req: Request, res: Response) {
       email: u.user.email,
       id: u.user.id,
     })),
-    events: events.map(e => (e.events)),
+    events: events.map(e => e.events).filter(e => !e.deletedAt), // exclude soft-deleted
   });
 }
 

@@ -108,11 +108,13 @@ export async function handlerRemoveEvent(req: Request, res: Response) {
 }
 
 export async function handlerGetEvents(req: Request, res: Response) {
-  const from = req.query.from ? new Date(req.query.from as string) : undefined;
-  const to = req.query.to ? new Date(req.query.to as string) : undefined;
-  const rows = await getUsersEvents(req.user!.id!, from, to);
+  const since = req.query.since ? new Date(req.query.since as string) : undefined;
+  const serverTime = new Date().toISOString(); // client stores this as its next `since`
+  const rows = await getUsersEvents(req.user!.id!, since);
   const seen = new Map<string, Event>();
+  const deletedIds = new Set<string>();
   for (const { event: dbEvent, calendarID } of rows) {
+    if (dbEvent.deletedAt) { deletedIds.add(dbEvent.id); continue; } // tombstone → client drops it
     const existing = seen.get(dbEvent.id);
     if (existing) {
       existing.calendars.push(calendarID);
@@ -120,9 +122,10 @@ export async function handlerGetEvents(req: Request, res: Response) {
       seen.set(dbEvent.id, { ...dbEvent, calendars: [calendarID] });
     }
   }
-  const events: Event[] = Array.from(seen.values());
   res.status(200).json({
-    events,
+    events: Array.from(seen.values()),
+    deletedIds: [...deletedIds],
+    serverTime,
   });
 }
 

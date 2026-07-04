@@ -177,6 +177,7 @@ export const events = pgTable("events", {
   recurrence: text("recurrence"),
   // reminders:
   url: text("url"),
+  deletedAt: timestamp("deleted_at"), // soft-delete tombstone for delta sync (null = live)
 });
 
 export type NewEvent = typeof events.$inferInsert;
