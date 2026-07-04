@@ -2,7 +2,7 @@ import CalendarDetail from "@/components/calendar/CalendarDetailModal";
 import CreateCalendarModal from "@/components/calendar/CreateCalendarModal";
 import SyncCalendarModal from "@/components/calendar/SyncCalendarModal";
 import { colors, fonts, styles } from "@/constants/theme";
-import { Calendar } from "@musubi/types";
+import { Calendar, providerFlavor } from "@musubi/types";
 import { useApi } from "@/services/api";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useEventsStore } from "@/store/useEventsStore";
@@ -14,6 +14,7 @@ import { useRefreshData } from "@/hooks/useRefreshData";
 
 function ProviderIcon({ provider }: { provider?: string | null }) {
   if (provider === "google") return <Ionicons name="logo-google" size={13} color={colors.fg3} />;
+  if (provider === "apple") return <Ionicons name="logo-apple" size={14} color={colors.fg3} />;
   if (provider === "caldav") return <Ionicons name="cloud" size={14} color={colors.fg3} />;
   return <Feather name="calendar" size={13} color={colors.fg3} />; // native Musubi
 }
@@ -55,7 +56,8 @@ export default function CalendarsTab() {
       const key = `${c.provider}:${c.accountId}`;
       if (!map.has(key)) {
         counts[c.provider] = (counts[c.provider] ?? 0) + 1;
-        const name = c.provider === "google" ? "Google" : c.provider === "caldav" ? "CalDAV" : c.provider;
+        const flavor = providerFlavor(c);
+        const name = flavor === "google" ? "Google" : flavor === "apple" ? "iCloud" : flavor === "caldav" ? "CalDAV" : c.provider;
         const label = c.accountLabel || `${name} Account ${counts[c.provider]}`;
         map.set(key, { provider: c.provider, accountId: c.accountId, label, calendars: [] });
       }
@@ -98,7 +100,7 @@ export default function CalendarsTab() {
           <Text style={{ fontFamily: fonts.sans, color: colors.fg3, fontSize: 10 }}>{c.members.length} members · {eventCountByCal[c.id] ?? 0} events</Text>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <ProviderIcon provider={c.provider} />
+          <ProviderIcon provider={providerFlavor(c)} />
           <Feather name="chevron-right" size={14} color={colors.fg4} />
         </View>
       </View>

@@ -14,7 +14,15 @@ export const CalendarSchema = z.object({
   provider: z.string().nullish(),
   accountId: z.string().nullish(),
   accountLabel: z.string().nullish(),
+  serverUrl: z.string().nullish(), // caldav only — icloud.com host = Apple Calendar
 });
+
+// Which icon/name to show for a calendar's sync origin ("apple" is caldav
+// pointed at iCloud — same protocol, different branding).
+export function providerFlavor(cal: Pick<Calendar, "provider" | "serverUrl">): string | null {
+  if (cal.provider === "caldav" && cal.serverUrl?.includes("icloud.com")) return "apple";
+  return cal.provider ?? null;
+}
 
 export type Calendar = z.infer<typeof CalendarSchema>;
 

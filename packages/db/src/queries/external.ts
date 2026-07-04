@@ -1,5 +1,6 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import {
+  caldavAccounts,
   calendarEvents,
   calendarMembers,
   calendars,
@@ -95,6 +96,7 @@ export async function setCursor(calendarID: string, cursor: string | null) {
 }
 
 // For push: given a Musubi calendar, which provider/external calendar/user backs it.
+// serverUrl (caldav only) lets the client tell Apple/iCloud apart from generic CalDAV.
 export async function getExternalLinkForCalendar(calendarID: string) {
   const [res] = await db
     .select({
@@ -103,8 +105,10 @@ export async function getExternalLinkForCalendar(calendarID: string) {
       userID: externalCalendars.userID,
       accountID: externalCalendars.accountID,
       accountLabel: externalCalendars.accountLabel,
+      serverUrl: caldavAccounts.serverUrl,
     })
     .from(externalCalendars)
+    .leftJoin(caldavAccounts, eq(externalCalendars.accountID, sql`${caldavAccounts.id}::text`))
     .where(eq(externalCalendars.calendarID, calendarID));
   return res ?? null;
 }

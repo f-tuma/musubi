@@ -105,6 +105,7 @@ export async function handlerGetCalendars(req: Request, res: Response) {
       provider: link?.provider ?? null,
       accountId: link?.accountID ?? null,
       accountLabel: link?.accountLabel ?? null,
+      serverUrl: link?.serverUrl ?? null, // caldav only — client uses it to spot iCloud
     })
   }
 

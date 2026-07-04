@@ -3,8 +3,9 @@ import { colors, fonts } from "@/constants/theme";
 import { View, Pressable, ScrollView, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { providerFlavor } from "@musubi/types";
 
-type Calendar = { id: string; name: string; color: string; provider?: string | null };
+type Calendar = { id: string; name: string; color: string; provider?: string | null; serverUrl?: string | null };
 
 type Props = {
   calendars: Calendar[];
@@ -91,6 +92,8 @@ export const CalendarFilterBar = memo(function CalendarFilterBar({
           >
             {cal.provider === "google" ? (
               <Ionicons name="logo-google" size={12} color={cal.color} style={{ opacity: active ? 1 : 0.5 }} />
+            ) : providerFlavor(cal) === "apple" ? (
+              <Ionicons name="logo-apple" size={13} color={cal.color} style={{ opacity: active ? 1 : 0.5 }} />
             ) : cal.provider === "caldav" ? (
               <Ionicons name="cloud" size={13} color={cal.color} style={{ opacity: active ? 1 : 0.5 }} />
             ) : (

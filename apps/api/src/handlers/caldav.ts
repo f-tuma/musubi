@@ -11,7 +11,11 @@ import { encryptSecret } from "../sync/crypto";
 import { createCaldavClient } from "../sync/caldav_client";
 
 export async function handlerConnectCaldav(req: Request, res: Response) {
-  const { serverUrl, username, password } = req.body ?? {};
+  // Trim: pasted app-specific passwords routinely carry a trailing space/newline
+  // from the mobile clipboard, and Apple answers that with a bare 401.
+  const serverUrl = (req.body?.serverUrl as string | undefined)?.trim();
+  const username = (req.body?.username as string | undefined)?.trim();
+  const password = (req.body?.password as string | undefined)?.trim();
   if (!serverUrl || !username || !password) {
     throw new BadRequestError("serverUrl, username and password are required...");
   }
