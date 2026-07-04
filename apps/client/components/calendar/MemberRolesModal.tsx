@@ -9,6 +9,7 @@ import Swipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import { Calendar, can } from "@musubi/types";
 import { useEffect, useRef, useState } from "react";
 import { useApi } from "@/services/api";
+import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { Avatar } from "@/components/Avatar";
 
 type Member = { id: string; name: string; email: string; image?: string | null; role: string };
@@ -19,10 +20,11 @@ type Props = {
   onClose: () => void,
 }
 
-const ASSIGNABLE: ("viewer" | "editor")[] = ["viewer", "editor"];
+const ASSIGNABLE: ("viewer" | "editor" | "owner")[] = ["viewer", "editor", "owner"];
 
 export default function MemberRolesModal({ calendar, visible, onClose }: Props) {
   const api = useApi();
+  const { loadCalendars } = useCalendarsStore();
   const insets = useSafeAreaInsets();
   const { slideStyle, fadeStyle, gesture, handleClose } = useModalAnimation(visible, onClose);
 
@@ -36,14 +38,31 @@ export default function MemberRolesModal({ calendar, visible, onClose }: Props) 
     api.getCalendarMembers(calendar.id).then(setMembers).catch(() => setMembers([]));
   }, [visible, calendar?.id]);
 
-  const changeRole = async (userID: string, role: "viewer" | "editor") => {
+  const changeRole = async (userID: string, role: "viewer" | "editor" | "owner") => {
     setPending(userID);
     try {
       await api.setMemberRole(calendar!.id, userID, role);
       setMembers(prev => prev.map(m => m.id === userID ? { ...m, role } : m));
+      if (role === "owner") {
+        // We just stepped down to editor — refresh members + calendars so
+        // creatorID and our role reflect the transfer.
+        api.getCalendarMembers(calendar!.id).then(setMembers).catch(() => { });
+        api.getCalendars().then(loadCalendars).catch(() => { });
+      }
     } finally {
       setPending(null);
     }
+  };
+
+  const confirmTransfer = (member: Member) => {
+    Alert.alert(
+      "Transfer ownership",
+      `Make ${member.name} the owner? You will become an editor.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Transfer", style: "destructive", onPress: () => changeRole(member.id, "owner") },
+      ],
+    );
   };
 
   const confirmKick = (member: Member, close?: () => void) => {
@@ -122,7 +141,7 @@ export default function MemberRolesModal({ calendar, visible, onClose }: Props) 
                           <Pressable
                             key={role}
                             disabled={pending === m.id || m.role === role}
-                            onPress={() => changeRole(m.id, role)}
+                            onPress={() => role === "owner" ? confirmTransfer(m) : changeRole(m.id, role)}
                             style={{
                               paddingHorizontal: 12, paddingVertical: 5, borderRadius: 999,
                               backgroundColor: m.role === role ? colors.fg : "transparent",
@@ -132,7 +151,7 @@ export default function MemberRolesModal({ calendar, visible, onClose }: Props) 
                               fontFamily: fonts.sans, fontSize: 11,
                               color: m.role === role ? colors.bg : colors.fg2,
                             }}>
-                              {role === "viewer" ? "View" : "Edit"}
+                              {role === "viewer" ? "View" : role === "editor" ? "Edit" : "Owner"}
                             </Text>
                           </Pressable>
                         ))}

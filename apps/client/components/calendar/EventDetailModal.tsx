@@ -2,7 +2,7 @@ import { Event, can } from "@musubi/types";
 import { colors, fonts, styles } from "@/constants/theme";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
 import { Feather, Ionicons } from "@expo/vector-icons";
-import { Modal, Pressable, Text, View, ScrollView, Linking, Platform } from "react-native"
+import { Alert, Modal, Pressable, Text, View, ScrollView, Linking, Platform } from "react-native"
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
@@ -41,7 +41,11 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
   // Editing content (and deleting) is governed by the event's HOME (origin) calendar —
   // same rule the server enforces. Not the calendar you happen to be viewing it in.
   const originCal = calendars.find(c => c.id === event?.originCalendarID);
-  const canEditContent = can(originCal?.role, "editEvents");
+  // Origin deleted (null) → server falls back to creator-or-any-linked-editor,
+  // so mirror that; origin set but not ours → view-only, as before.
+  const canEditContent = event?.originCalendarID
+    ? can(originCal?.role, "editEvents")
+    : !!event && event.calendars.some(id => can(calendars.find(c => c.id === id)?.role, "editEvents"));
 
   // Unlink = remove from a non-origin calendar you can edit (home is removed via Delete).
   const canUnlink = !!event && calendars.some(c =>
@@ -216,8 +220,22 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
                     style={styles.modalActionBtn}
                     disabled={event ? false : true}
                     onPress={() => {
-                      if (event) removeEvent(event, api); // cascade from origin
-                      handleClose();
+                      if (!event) return;
+                      Alert.alert(
+                        "Delete event",
+                        event.recurrence
+                          ? "This deletes the entire recurring series from all calendars."
+                          : "This removes the event from all calendars.",
+                        [
+                          { text: "Cancel", style: "cancel" },
+                          {
+                            text: "Delete", style: "destructive", onPress: () => {
+                              removeEvent(event, api); // cascade from origin
+                              handleClose();
+                            },
+                          },
+                        ],
+                      );
                     }}
                   >
                     <Feather size={20} name="trash" color={colors.accent} />
@@ -237,6 +255,8 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
             <CalendarPickerModal
               title="Fork to calendar"
               visible={forkVisible}
+              filter={(c) => !event?.calendars.includes(c.id)}
+              emptyLabel="No calendars you can fork this to."
               onClose={() => setForkVisible(false)}
               onSelect={async (calendarID) => { if (event) await forkEvent(event, calendarID, api); }}
             />

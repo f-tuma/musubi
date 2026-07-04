@@ -144,13 +144,26 @@ export async function handlerGetCalendar(req: Request, res: Response) {
 }
 
 export async function handlerJoinCalendar(req: Request, res: Response) {
-  const result = await addCalendarMember(req.user?.id!, req.params.calendarId as string);
+  const calendarID = req.params.calendarId as string;
+  // Membership is granted by invite only — a bare calendar id is NOT enough
+  // (ids leak via shared events' `calendars` arrays).
+  const token = req.body?.token as string | undefined;
+  if (!token || (await getCalendarIDFromToken(token)) !== calendarID) {
+    throw new ForbiddenError("A valid invite is required to join this calendar.");
+  }
+  const result = await addCalendarMember(req.user?.id!, calendarID);
 
   res.status(200).json(result);
 }
 
 export async function handlerLeaveCalendar(req: Request, res: Response) {
-  await removeClaendarMember(req.user?.id!, req.params.calendarId as string);
+  const calendarID = req.params.calendarId as string;
+  const calendar = await getCalendar(calendarID);
+  if (req.user!.id === calendar.creatorID) {
+    // Would orphan the calendar — transfer ownership (setMemberRole "owner") or delete it.
+    throw new BadRequestError("The owner can't leave. Transfer ownership or delete the calendar.");
+  }
+  await removeClaendarMember(req.user?.id!, calendarID);
 
   res.sendStatus(200);
 }
@@ -194,8 +207,8 @@ export async function handlerSetMemberRole(req: Request, res: Response) {
   const targetUserID = req.params.userId as string;
   const role = req.body?.role;
 
-  if (role !== "viewer" && role !== "editor") {
-    throw new BadRequestError("Role must be 'viewer' or 'editor'.");
+  if (role !== "viewer" && role !== "editor" && role !== "owner") {
+    throw new BadRequestError("Role must be 'viewer', 'editor' or 'owner'.");
   }
   await assertCan(req.user!.id, calendarID, "manageMembers");
 
@@ -203,6 +216,19 @@ export async function handlerSetMemberRole(req: Request, res: Response) {
   if (!calendar) throw new NotFoundError("Calendar not found...");
   if (targetUserID === calendar.creatorID) {
     throw new BadRequestError("The calendar owner's role can't be changed.");
+  }
+
+  if (role === "owner") {
+    // Ownership transfer: only the current owner may hand it off. They step
+    // down to editor; creatorID moves so owner-guards keep working.
+    if (req.user!.id !== calendar.creatorID) {
+      throw new ForbiddenError("Only the owner can transfer ownership.");
+    }
+    const updated = await setMemberRole(targetUserID, calendarID, "owner");
+    if (!updated) throw new NotFoundError("Member not found on this calendar...");
+    await updateCalendar({ ...calendar, creatorID: targetUserID });
+    await setMemberRole(req.user!.id, calendarID, "editor");
+    return res.status(200).json({ id: targetUserID, role: "owner" });
   }
 
   const updated = await setMemberRole(targetUserID, calendarID, role);

@@ -36,7 +36,26 @@ export function useRefreshData() {
     ]);
     loadSettings(settings);
     loadCalendars(calendars);
-    loadEvents(all);
+
+    // Reconcile against membership: an offline kick sends no SSE and the delta
+    // can't tombstone events we merely lost access to — drop links to calendars
+    // we're no longer in, and events left with none.
+    const memberOf = new Set(calendars.map(c => c.id));
+    const dropped: string[] = [];
+    const fixed: typeof all = [];
+    const kept: typeof all = [];
+    for (const e of all) {
+      const cals = e.calendars?.filter(id => memberOf.has(id)) ?? [];
+      if (cals.length === 0) { dropped.push(e.id); continue; }
+      if (cals.length !== e.calendars.length) {
+        const updated = { ...e, calendars: cals };
+        fixed.push(updated); kept.push(updated);
+      } else kept.push(e);
+    }
+    if (dropped.length) await cacheDeleteEvents(dropped);
+    if (fixed.length) await cacheUpsertEvents(fixed);
+
+    loadEvents(kept);
     cacheSetCalendars(calendars);
   };
 }

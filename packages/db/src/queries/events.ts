@@ -54,7 +54,7 @@ export async function getEvent(id: string) {
   return result;
 }
 
-export async function updateEvent(event: NewEvent) {
+export async function updateEvent(event: Partial<NewEvent> & { id: string }) {
   const [result] = await db
     .update(events)
     .set(event)

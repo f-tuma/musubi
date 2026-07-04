@@ -1,4 +1,4 @@
-import { getEventOrigin, getUserRoleForCalendar } from "@musubi/db";
+import { getEventCalendars, getEventOrigin, getUserRoleForCalendar } from "@musubi/db";
 import { CalendarAction, ForbiddenError, NotFoundError, can } from "@musubi/types";
 
 // Server-side authorization gate. Throws 403 if the user's role on the calendar
@@ -29,8 +29,11 @@ export async function assertCanEditEvent(userID: string, eventID: string) {
     await assertCan(userID, origin.originCalendarID, "editEvents");
     return;
   }
-  // Legacy event with no home calendar → creator-only.
-  if (userID !== origin.creatorID) {
-    throw new ForbiddenError("You don't have permission to edit this event.");
+  // No home calendar (legacy event, or origin was deleted → SET NULL): the creator
+  // or an editor of any calendar it still lives in may edit.
+  if (userID === origin.creatorID) return;
+  for (const cal of await getEventCalendars(eventID)) {
+    if (await canDo(userID, cal, "editEvents")) return;
   }
+  throw new ForbiddenError("You don't have permission to edit this event.");
 }

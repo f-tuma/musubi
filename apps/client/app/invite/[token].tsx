@@ -119,7 +119,7 @@ export default function Invite() {
           disabled={isAccepting}
           onPress={async () => {
             setIsAccepting(true);
-            await api.acceptInvite(calendarData?.id!);
+            await api.acceptInvite(calendarData?.id!, token as string);
             loadCalendars(await api.getCalendars());
             router.canGoBack() ? router.back() : router.replace("/(tabs)");
           }}

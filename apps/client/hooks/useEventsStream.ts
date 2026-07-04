@@ -9,7 +9,7 @@ const apiUrl = Constants.expoConfig?.extra?.apiUrl;
 
 export function useConnectToEventStream() {
   const { authClient } = useServer();
-  const { localAddEvent, localUpdateEvent, localRemoveEvent } = useEventsStore();
+  const { localAddEvent, localUpdateEvent, localRemoveEvent, localRemoveCalendarEvents } = useEventsStore();
   const { localUpdateCalendar, localRemoveCalendar } = useCalendarsStore();
 
   useEffect(() => {
@@ -43,6 +43,7 @@ export function useConnectToEventStream() {
               break;
             case "calendar_removed":
               localRemoveCalendar(data.payload);
+              localRemoveCalendarEvents(data.payload.id);
               break;
             default:
               console.warn(`Uknown event type: ${data.type}`);

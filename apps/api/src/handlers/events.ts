@@ -58,10 +58,13 @@ export async function handlerUpdateEvent(req: Request, res: Response) {
   const added = incoming.filter(c => !existing.includes(c));
   const kept = incoming.filter(c => existing.includes(c));
 
-  const updatedEvent = await updateEvent({
-    ...event,
-    creatorID: req.user!.id,
-  });
+  // Adding a link puts the event into someone's calendar — same gate as handlerLinkEvent.
+  for (const cal of added) await assertCan(req.user!.id, cal, "editEvents");
+
+  // creatorID / originCalendarID are immutable — never trust them from the client
+  // (creator is the permission fallback, origin governs who may edit).
+  const { creatorID: _c, originCalendarID: _o, ...editable } = event;
+  const updatedEvent = await updateEvent({ ...editable, id: event.id! });
 
   if (updatedEvent) {
 
@@ -202,6 +205,9 @@ export async function handlerForkEvent(req: Request, res: Response) {
   if (!canView) throw new ForbiddenError("You can't access this event.");
   if (!(await canDo(req.user!.id, calendarID, "editEvents"))) {
     throw new ForbiddenError("You can't add events to that calendar.");
+  }
+  if (sourceCalendars.includes(calendarID)) {
+    throw new BadRequestError("This event is already in that calendar.");
   }
 
   const src = await getEvent(eventID);

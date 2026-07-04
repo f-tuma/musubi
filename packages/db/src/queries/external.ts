@@ -124,6 +124,13 @@ export async function clearCalendarEvents(calendarID: string) {
 export async function linkEventToCalendars(eventID: string, calendarIDs: string[]) {
   if (calendarIDs.length === 0) return;
   await db.insert(calendarEvents).values(calendarIDs.map(c => ({ eventID, calendarID: c })));
+  await touchEvent(eventID);
+}
+
+// Delta sync filters on events.updatedAt, so link/unlink must bump the event row —
+// otherwise offline members never learn the event's calendar membership changed.
+async function touchEvent(eventID: string) {
+  await db.update(events).set({ updatedAt: new Date() }).where(eq(events.id, eventID));
 }
 
 // Unlink an event from calendars: drop the calendar_events rows AND any external
@@ -141,6 +148,7 @@ export async function unlinkEventFromCalendars(eventID: string, calendarIDs: str
     await db.delete(externalEvents)
       .where(and(eq(externalEvents.eventID, eventID), inArray(externalEvents.externalCalendarID, extIDs)));
   }
+  await touchEvent(eventID);
 }
 
 export async function upsertExternalEvent(

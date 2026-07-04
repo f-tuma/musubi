@@ -13,6 +13,7 @@ type EventsStore = {
   localRemoveEvent: (event: Event) => void;
   updateEvent: (event: Event, api: ReturnType<typeof useApi>) => Promise<void>;
   localUpdateEvent: (event: Event) => void;
+  localRemoveCalendarEvents: (calendarID: string) => void;
   linkEvent: (event: Event, calendarID: string, api: ReturnType<typeof useApi>) => Promise<void>;
   forkEvent: (event: Event, calendarID: string, api: ReturnType<typeof useApi>) => Promise<void>;
 }
@@ -93,5 +94,21 @@ export const useEventsStore = create<EventsStore>((set, get) => ({
       events: [...state.events.filter(e => e.id !== event.id), event],
     }));
     cacheUpsertEvents([event]);
+  },
+  // Lost access to a calendar (kicked / calendar deleted): strip its link from
+  // every event, drop events that lived only there — memory AND cache, so they
+  // don't linger until sign-out.
+  localRemoveCalendarEvents: (calendarID) => {
+    const kept: Event[] = [], dropped: string[] = [], changed: Event[] = [];
+    for (const e of get().events) {
+      if (!e.calendars?.includes(calendarID)) { kept.push(e); continue; }
+      const calendars = e.calendars.filter(c => c !== calendarID);
+      if (calendars.length === 0) { dropped.push(e.id); continue; }
+      const updated = { ...e, calendars };
+      kept.push(updated); changed.push(updated);
+    }
+    set({ events: kept });
+    cacheDeleteEvents(dropped);
+    cacheUpsertEvents(changed);
   },
 }));

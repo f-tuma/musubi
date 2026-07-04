@@ -187,9 +187,11 @@ export function useApi() {
       return data;
     },
 
-    async acceptInvite(calendarID: string) {
+    async acceptInvite(calendarID: string, token: string) {
       const { error, data } = await authClient.$fetch<Invite>(`${apiUrl}/api/${apiVersion}/calendars/members/${calendarID}`, {
         method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token }),
       });
 
       if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
@@ -218,7 +220,7 @@ export function useApi() {
       return data ?? [];
     },
 
-    async setMemberRole(calendarID: string, userID: string, role: "viewer" | "editor") {
+    async setMemberRole(calendarID: string, userID: string, role: "viewer" | "editor" | "owner") {
       const { error } = await authClient.$fetch(
         `${apiUrl}/api/${apiVersion}/calendars/${calendarID}/members/${userID}`,
         { method: "PUT", body: { role } },
