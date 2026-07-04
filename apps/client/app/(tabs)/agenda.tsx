@@ -13,6 +13,7 @@ import Animated, { FadeIn } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { RefreshControl } from "react-native";
 import { useRefreshData } from "@/hooks/useRefreshData";
+import { eventColor } from "@/lib/eventColor";
 
 
 
@@ -162,7 +163,7 @@ export default function AgendaTab() {
                         </Text>
                       </View>
                       <View style={{ flexDirection: "row", flex: 4 }}>
-                        <View style={{ width: 1, backgroundColor: e.color, alignSelf: "stretch" }} />
+                        <View style={{ width: 1, backgroundColor: eventColor(e, calendarById), alignSelf: "stretch" }} />
                         <View style={{ paddingLeft: 16, justifyContent: "center" }}>
                           <Text style={styles.timelineTitle}>{e.title}</Text>
                           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>

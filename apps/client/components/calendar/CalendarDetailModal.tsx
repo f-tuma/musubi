@@ -20,6 +20,7 @@ import CalendarSettingsModal from "./CalendarSettingsModal";
 import CreateCalendarModal from "./CreateCalendarModal";
 import { useVisibleEvents } from "@/hooks/useVisibleEvents";
 import { useApi } from "@/services/api";
+import { eventColor } from "@/lib/eventColor";
 
 
 type Props = {
@@ -112,7 +113,8 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
   );
 
 
-  const eventCellStyle = useCallback((e: Event) => ({ backgroundColor: e.color }), []);
+  const calendarById = useMemo(() => new Map(calendars.map(c => [c.id, c])), [calendars]);
+  const eventCellStyle = useCallback((e: Event) => ({ backgroundColor: eventColor(e, calendarById) }), [calendarById]);
 
   const activeCal = useMemo(() => calendar ? new Set<string>([calendar.id]) : new Set<string>(), [calendar]);
   const { visibleEvents } = useVisibleEvents(events, activeCal);

@@ -16,6 +16,7 @@ import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { useApi } from "@/services/api";
 import { useRefreshData } from "@/hooks/useRefreshData";
+import { eventColor } from "@/lib/eventColor";
 
 
 // `monthStart` is anchorDate snapped to the start of its month (see rangeAnchorMs).
@@ -157,7 +158,8 @@ export default function MainTab() {
     []
   );
 
-  const eventCellStyle = useCallback((e: Event) => ({ backgroundColor: e.color }), []);
+  const calendarById = useMemo(() => new Map(calendars.map(c => [c.id, c])), [calendars]);
+  const eventCellStyle = useCallback((e: Event) => ({ backgroundColor: eventColor(e, calendarById) }), [calendarById]);
 
   return (
 

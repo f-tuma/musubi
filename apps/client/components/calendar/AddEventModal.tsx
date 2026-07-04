@@ -147,7 +147,6 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
   const { authClient } = useServer();
 
   const [newTitle, setNewTitle] = useState("");
-  const [newColor, setNewColor] = useState(appColors[0].color);
   const [newDescription, setNewDescription] = useState("");
   const [newStart, setNewStart] = useState(startingDate ?? new Date());
   const [newEnd, setNewEnd] = useState(startingDate ?? new Date());
@@ -229,7 +228,6 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
       setNewTitle(event?.title ?? "");
       setNewStart(event?.start ?? startingDate ?? new Date());
       setNewEnd(event?.end ?? startingDate ?? new Date());
-      setNewColor(event?.color ?? appColors[0].color)
       setSelectedCals(new Set(event?.calendars) ?? new Set<string>);
       setOriginCal(event?.originCalendarID ?? null);
       setNewDescription(event?.description ?? "");
@@ -350,7 +348,8 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
       calendars: [...selectedCals],
       originCalendarID: originEffective,
       title: newTitle,
-      color: newColor,
+      // color follows the origin calendar; stored as a sensible default (render derives it live)
+      color: calendars.find(c => c.id === originEffective)?.color ?? appColors[0].color,
       start: allDayToggle ? allDayUTC(newStart) : newStart,
       end: allDayToggle ? allDayUTC(newEnd) : newEnd,
       isAllDay: allDayToggle,
@@ -494,35 +493,6 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                   </View>
                 </ScrollView>
                 {calendarsError ? <Text style={styles.errorText}>{calendarsError}</Text> : null}
-              </View>
-
-              <View style={styles.fieldContainer}>
-                <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Colors</Text>
-                <ScrollView
-                  horizontal
-                >
-                  <View style={styles.horizontalPillView}>
-                    {appColors.map((c) => (
-                      <Pressable
-                        key={c.name}
-                        style={{
-                          overflow: "hidden",
-                          flexDirection: "row",
-                          justifyContent: "space-between",
-                          gap: 18,
-                        }}
-                        onPress={() => setNewColor(c.color)}
-                      >
-                        <View style={[styles.calendarCircle, {
-                          borderWidth: c.color === newColor ? 2 : 1,
-                          borderColor: c.color === newColor ? colors.fg3 : colors.line3,
-                        }]}>
-                          <View style={[styles.calendarCircleInner, { backgroundColor: c.color }]} />
-                        </View>
-                      </Pressable>
-                    ))}
-                  </View>
-                </ScrollView>
               </View>
 
               <View style={styles.fieldContainer}>
