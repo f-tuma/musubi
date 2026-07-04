@@ -1,4 +1,4 @@
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, isNotNull, isNull, lt } from "drizzle-orm";
 import { db } from "..";
 import { NewEvent, calendarEvents, calendarMembers, eventUsers, events } from "../schema";
 
@@ -55,6 +55,13 @@ export async function getUsersEvents(userID: string, since?: Date) {
     .innerJoin(calendarEvents, eq(calendarEvents.calendarID, calendarMembers.calendarID))
     .innerJoin(events, eq(events.id, calendarEvents.eventID))
     .where(and(eq(calendarMembers.userID, userID), changeFilter));
+}
+
+// Hard-delete tombstones older than `before` (cascades their calendarEvents +
+// externalEvents mappings). Clients that haven't synced in that long won't see
+// the removal, but that window is intentionally generous.
+export async function purgeDeletedEvents(before: Date) {
+  await db.delete(events).where(and(isNotNull(events.deletedAt), lt(events.deletedAt, before)));
 }
 
 export async function removeEvent(eventID: string) {

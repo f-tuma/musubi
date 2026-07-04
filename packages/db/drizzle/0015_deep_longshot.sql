@@ -1,0 +1,1 @@
+ALTER TABLE "calendar_members" ADD COLUMN "role" text DEFAULT 'editor' NOT NULL;

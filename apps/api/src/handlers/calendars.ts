@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { addCalendarMember, createCalendar, getCalendar, getCalendarEvents, getCalendarIDFromToken, getCalendarMembers, getExternalLinkForCalendar, getUsersCalendars, NewCalendar, removeCalendar, removeClaendarMember, updateCalendar } from '@musubi/db';
 import { BadRequestError, Calendar, CalendarSchema, NotFoundError, User } from "@musubi/types";
 import { notifyCalendarMembers } from "./stream";
+import { assertCan } from "../permissions";
 
 
 export async function handlerCreateCalendar(req: Request, res: Response) {
@@ -28,6 +29,7 @@ export async function handlerRemoveCalendar(req: Request, res: Response) {
     throw new BadRequestError("Request is missing valid calendar data...");
   }
   const members = await getCalendarMembers(calendar.id);
+  await assertCan(req.user!.id, calendar.id, "deleteCalendar");
   const removedCalendar = await removeCalendar(calendar.id);
 
   if (removedCalendar) {
@@ -59,6 +61,7 @@ export async function handlerUpdateCalendar(req: Request, res: Response) {
     throw new BadRequestError("Request missing valid calendar data...");
   }
 
+  await assertCan(req.user!.id, calendar.id, "editCalendar");
   const updatedCalendar = await updateCalendar({ ...calendar, creatorID: req.user!.id });
 
   if (updatedCalendar) {
@@ -98,6 +101,7 @@ export async function handlerGetCalendars(req: Request, res: Response) {
       ...calendar.calendars,
       members: members,
       invite: "wip",
+      role: calendar.role, // the requesting user's role on this calendar
       provider: link?.provider ?? null,
       accountId: link?.accountID ?? null,
       accountLabel: link?.accountLabel ?? null,

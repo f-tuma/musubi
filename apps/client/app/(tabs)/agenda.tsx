@@ -18,7 +18,7 @@ import { useRefreshData } from "@/hooks/useRefreshData";
 
 const dateKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 
-const PAGE = 20;
+const PAGE = 14;
 
 export default function AgendaTab() {
   const api = useApi();

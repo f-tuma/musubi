@@ -1,6 +1,6 @@
 import { config } from "@musubi/config";
 import { auth } from "@musubi/auth";
-import { deleteExpiredInvites, deleteExpiredSessions } from "@musubi/db";
+import { deleteExpiredInvites, deleteExpiredSessions, purgeDeletedEvents } from "@musubi/db";
 import { toNodeHandler } from "better-auth/node";
 import express from "express";
 import cors from "cors";
@@ -257,6 +257,7 @@ async function cleanupExpired() {
   try {
     await deleteExpiredInvites();
     await deleteExpiredSessions();
+    await purgeDeletedEvents(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)); // tombstones > 30d
   } catch (e) {
     console.error("Cleanup job failed:", e);
   }

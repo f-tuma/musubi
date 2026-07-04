@@ -5,7 +5,7 @@ import { Modal, Pressable, Text, View, ScrollView, Share } from "react-native"
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
-import { Calendar, Invite } from "@musubi/types";
+import { Calendar, Invite, can } from "@musubi/types";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useState } from "react";
 import { useApi } from "@/services/api";
@@ -35,9 +35,10 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
 
   const isExternal = !!calendar?.provider;      // google/caldav mirror — no edit/delete in Musubi
   const isOwner = userID === calendar?.creatorID;
-  const showEdit = isOwner && !isExternal;       // only the owner edits (native calendars)
-  const showDelete = isOwner && !isExternal;
-  const showLeave = !isOwner;                    // invited members can always leave
+  const showEdit = can(calendar?.role, "editCalendar") && !isExternal;
+  const showDelete = can(calendar?.role, "deleteCalendar") && !isExternal;
+  const showInvite = can(calendar?.role, "invite");
+  const showLeave = !isOwner;                    // non-owners can leave
 
   return (
     <Modal
@@ -60,6 +61,7 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
             <ScrollView>
               <View style={styles.container}>
                 <View style={{ gap: 8 }}>
+                  {showInvite && (
                   <Pressable
                     disabled={waitingForInvite}
                     style={waitingForInvite ? styles.btnDisabled : styles.btnPrimary}
@@ -81,6 +83,7 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
                     <Feather size={14} name="send" color={colors.bg3} />
                     <Text style={styles.btnPrimaryText}>Send Invite</Text>
                   </Pressable>
+                  )}
                 </View>
               </View>
             </ScrollView>

@@ -1,6 +1,6 @@
 import { MONTH_KANJI } from "@/constants/const";
 import { calendarTheme, colors, fonts, styles } from "@/constants/theme";
-import { Calendar, Event } from "@musubi/types";
+import { Calendar, Event, can } from "@musubi/types";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
 import { useEventsStore } from "@/store/useEventsStore";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -20,7 +20,6 @@ import CalendarSettingsModal from "./CalendarSettingsModal";
 import CreateCalendarModal from "./CreateCalendarModal";
 import { useVisibleEvents } from "@/hooks/useVisibleEvents";
 import { useApi } from "@/services/api";
-import { useServer } from "@/contexts/ServerContext";
 
 
 type Props = {
@@ -35,9 +34,7 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
   const { height } = useWindowDimensions();
   const calendarSpace = height * 0.7;
   const api = useApi();
-  const { authClient } = useServer();
-  const userID = authClient.useSession().data?.user.id;
-  const isOwner = userID === calendar?.creatorID; // interim: only owner edits (roles coming later)
+  const canEditEvents = can(calendar?.role, "editEvents");
   const { events, addEvent, updateEvent, removeEvent } = useEventsStore();
   const { calendars, updateCalendar } = useCalendarsStore();
   const {
@@ -246,7 +243,7 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
                 )}
               </View>
             </View>
-            {isOwner && (
+            {canEditEvents && (
               <Pressable style={[styles.fab, { bottom: 16 + insets.bottom }]}
                 onPress={() => {
                   setPrefilledEvent(undefined);
@@ -274,7 +271,7 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
         onDelete={(event: Event) => removeEvent(event, api)}
         onEdit={(event: Event) => handlerEventEdit(event)}
         event={eventDetail}
-        canEdit={isOwner}
+        canEdit={canEditEvents}
       />
       <CalendarSettingsModal
         calendar={calendarSettings}

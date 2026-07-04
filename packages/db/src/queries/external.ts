@@ -75,7 +75,7 @@ export async function importExternalCalendar(
       externalCalendarID: cal.externalId,
       cursor: null,
     });
-    await tx.insert(calendarMembers).values({ userID, calendarID: created.id });
+    await tx.insert(calendarMembers).values({ userID, calendarID: created.id, role: "owner" });
   });
 }
 

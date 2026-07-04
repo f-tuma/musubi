@@ -9,6 +9,7 @@ export const CalendarSchema = z.object({
   color: z.string(),
   members: z.array(UserSchema),
   invite: z.string(),
+  role: z.string().nullish(), // requesting user's role: owner | editor | viewer
   // external sync origin — null/absent for native Musubi calendars
   provider: z.string().nullish(),
   accountId: z.string().nullish(),

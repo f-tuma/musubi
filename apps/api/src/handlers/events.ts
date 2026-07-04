@@ -3,6 +3,7 @@ import { NewEvent, createEvent, getCalendarMembers, getUsersEvents, removeEvent,
 import { BadRequestError, Event, EventSchema, NotFoundError } from "@musubi/types";
 import { notifyCalendarMembers } from "./stream";
 import { pushEventToProviders } from "../sync/engine";
+import { assertCan } from "../permissions";
 
 export async function handlerCreateEvent(req: Request, res: Response) {
   let event: Event;
@@ -15,6 +16,7 @@ export async function handlerCreateEvent(req: Request, res: Response) {
     ...event,
     creatorID: req.user!.id,
   }
+  for (const cal of event.calendars) await assertCan(req.user!.id, cal, "editEvents");
   const createdEvent = await createEvent(newEvent, event.calendars);
 
   const result = { ...createdEvent, calendars: event.calendars };
@@ -46,6 +48,7 @@ export async function handlerUpdateEvent(req: Request, res: Response) {
     throw new BadRequestError("Request missing valid event data...");
   }
 
+  for (const cal of event.calendars) await assertCan(req.user!.id, cal, "editEvents");
   const updatedEvent = await updateEvent({
     ...event,
     creatorID: req.user!.id,
@@ -79,6 +82,8 @@ export async function handlerUpdateEvent(req: Request, res: Response) {
 export async function handlerRemoveEvent(req: Request, res: Response) {
   const event = EventSchema.parse(req.body);
   if (!event.id) throw new BadRequestError("Event id is required...");
+
+  for (const cal of event.calendars) await assertCan(req.user!.id, cal, "editEvents");
 
   await pushEventToProviders(event, "delete");   // before removeEvent so the external mapping still exists
 

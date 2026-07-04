@@ -13,6 +13,7 @@ export async function createCalendar(calendar: NewCalendar) {
   await db.insert(calendarMembers).values({
     userID: result.creatorID,
     calendarID: result.id,
+    role: "owner",
   })
   return result;
 }
@@ -102,6 +103,15 @@ export async function getCalendarEvents(calendarID: string) {
   });
 
   return result;
+}
+
+// The user's role on a calendar (owner | editor | viewer), or null if not a member.
+export async function getUserRoleForCalendar(userID: string, calendarID: string): Promise<string | null> {
+  const [row] = await db
+    .select({ role: calendarMembers.role })
+    .from(calendarMembers)
+    .where(and(eq(calendarMembers.userID, userID), eq(calendarMembers.calendarID, calendarID)));
+  return row?.role ?? null;
 }
 
 export async function addCalendarMember(userID: string, calendarID: string) {
