@@ -1,6 +1,8 @@
 import { ServerProvider, useServer } from '@/contexts/ServerContext';
-import { useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { View, useColorScheme } from 'react-native';
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { applyTheme, activeScheme } from '@/constants/theme';
 import { Stack, SplashScreen, useRouter } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { InterTight_400Regular, InterTight_500Medium } from '@expo-google-fonts/inter-tight';
@@ -89,20 +91,29 @@ function AppContent() {
   }
 
   return (
-    <Stack screenOptions={{ statusBarStyle: 'light', navigationBarHidden: true, headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
+    <Stack screenOptions={{ statusBarStyle: activeScheme === 'dark' ? 'light' : 'dark', navigationBarHidden: true, headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
   );
 }
 
 function AppLoader() {
   const { apiUrl } = useServer();
 
+  // Resolve the theme: user preference wins, "system" follows the device.
+  const deviceScheme = useColorScheme();
+  const themePref = useSettingsStore(s => s.theme);
+  const scheme = themePref === 'system' ? (deviceScheme === 'light' ? 'light' : 'dark') : themePref;
+
+  // Swap the palette BEFORE children render (useMemo runs during render);
+  // key={scheme} below remounts the tree so every style re-reads it.
+  useMemo(() => applyTheme(scheme), [scheme]);
+
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(colors.bg);
-  }, []);
+  }, [scheme]);
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
-      <StatusBar style="light" />
+    <SafeAreaView key={scheme} style={styles.screen} edges={['top', 'left', 'right']}>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <AppContent key={apiUrl ?? 'loading'} />
       </View>

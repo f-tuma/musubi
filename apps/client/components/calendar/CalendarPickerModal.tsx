@@ -7,6 +7,7 @@ import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-ha
 import { Calendar, can } from "@musubi/types";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useState } from "react";
+import { Tap } from "@/components/ui/Tap";
 
 type Props = {
   title: string,
@@ -49,8 +50,10 @@ export default function CalendarPickerModal({ title, visible, onClose, onSelect,
                   {emptyLabel ?? "No calendars available."}
                 </Text>
               ) : options.map((c) => (
-                <Pressable
+                <Tap
                   key={c.id}
+                  haptic="select"
+                  scaleTo={0.99}
                   disabled={pending === c.id}
                   style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, opacity: pending === c.id ? 0.4 : 1 }}
                   onPress={async () => {
@@ -61,7 +64,7 @@ export default function CalendarPickerModal({ title, visible, onClose, onSelect,
                 >
                   <View style={[styles.colorDot, { backgroundColor: c.color }]} />
                   <Text style={{ fontFamily: fonts.sans, fontSize: 14, color: colors.fg }}>{c.name}</Text>
-                </Pressable>
+                </Tap>
               ))}
             </ScrollView>
           </Animated.View>

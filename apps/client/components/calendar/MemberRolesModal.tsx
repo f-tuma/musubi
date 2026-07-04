@@ -1,6 +1,6 @@
 import { colors, fonts, styles } from "@/constants/theme";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
-import { Alert, Modal, Pressable, Text, View, ScrollView } from "react-native";
+import { Modal, Pressable, Text, View, ScrollView } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -11,6 +11,9 @@ import { useEffect, useRef, useState } from "react";
 import { useApi } from "@/services/api";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { Avatar } from "@/components/Avatar";
+import { Tap } from "@/components/ui/Tap";
+import { confirm } from "@/lib/confirm";
+import * as haptics from "@/lib/haptics";
 
 type Member = { id: string; name: string; email: string; image?: string | null; role: string };
 
@@ -42,6 +45,7 @@ export default function MemberRolesModal({ calendar, visible, onClose }: Props) 
     setPending(userID);
     try {
       await api.setMemberRole(calendar!.id, userID, role);
+      haptics.success();
       setMembers(prev => prev.map(m => m.id === userID ? { ...m, role } : m));
       if (role === "owner") {
         // We just stepped down to editor — refresh members + calendars so
@@ -55,31 +59,28 @@ export default function MemberRolesModal({ calendar, visible, onClose }: Props) 
   };
 
   const confirmTransfer = (member: Member) => {
-    Alert.alert(
-      "Transfer ownership",
-      `Make ${member.name} the owner? You will become an editor.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Transfer", style: "destructive", onPress: () => changeRole(member.id, "owner") },
-      ],
-    );
+    confirm({
+      title: "Transfer ownership",
+      message: `Make ${member.name} the owner? You will become an editor.`,
+      confirmLabel: "Transfer",
+    }, () => changeRole(member.id, "owner"));
   };
 
   const confirmKick = (member: Member, close?: () => void) => {
-    Alert.alert("Remove member", `Remove ${member.name} from this calendar?`, [
-      { text: "Cancel", style: "cancel", onPress: close },
-      {
-        text: "Remove", style: "destructive", onPress: async () => {
-          setPending(member.id);
-          try {
-            await api.removeMember(calendar!.id, member.id);
-            setMembers(prev => prev.filter(m => m.id !== member.id));
-          } finally {
-            setPending(null);
-          }
-        },
-      },
-    ]);
+    close?.(); // fold the swipeable back while the confirm is up
+    confirm({
+      title: "Remove member",
+      message: `Remove ${member.name} from this calendar?`,
+      confirmLabel: "Remove",
+    }, async () => {
+      setPending(member.id);
+      try {
+        await api.removeMember(calendar!.id, member.id);
+        setMembers(prev => prev.filter(m => m.id !== member.id));
+      } finally {
+        setPending(null);
+      }
+    });
   };
 
   return (
@@ -138,8 +139,9 @@ export default function MemberRolesModal({ calendar, visible, onClose }: Props) 
                         opacity: pending === m.id ? 0.4 : 1,
                       }}>
                         {ASSIGNABLE.map((role) => (
-                          <Pressable
+                          <Tap
                             key={role}
+                            haptic="select"
                             disabled={pending === m.id || m.role === role}
                             onPress={() => role === "owner" ? confirmTransfer(m) : changeRole(m.id, role)}
                             style={{
@@ -153,7 +155,7 @@ export default function MemberRolesModal({ calendar, visible, onClose }: Props) 
                             }}>
                               {role === "viewer" ? "View" : role === "editor" ? "Edit" : "Owner"}
                             </Text>
-                          </Pressable>
+                          </Tap>
                         ))}
                       </View>
                     )}

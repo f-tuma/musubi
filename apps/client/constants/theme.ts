@@ -8,7 +8,8 @@ export const fonts = {
   kanji: 'ShipporiMinchoB1_400Regular',
 };
 
-export const colors = {
+// Two zen palettes: sumi ink on night (dark) and ink on washi paper (light).
+const dark = {
   bg: '#0c0c0e',
   bg1: '#131316',
   bg2: '#1a1a1e',
@@ -23,7 +24,40 @@ export const colors = {
   accent: '#c8553d',
 };
 
-export const styles = StyleSheet.create({
+const light: typeof dark = {
+  bg: '#f4f1e8',
+  bg1: '#efebe0',
+  bg2: '#e8e3d5',
+  bg3: '#dfd9c9',
+  line: 'rgba(28,27,24,0.08)',
+  line2: 'rgba(28,27,24,0.13)',
+  line3: 'rgba(28,27,24,0.24)',
+  fg: '#1c1b18',
+  fg2: 'rgba(28,27,24,0.74)',
+  fg3: 'rgba(28,27,24,0.50)',
+  fg4: 'rgba(28,27,24,0.32)',
+  accent: '#b3492f', // deeper vermilion — keeps contrast on paper
+};
+
+export type ThemeScheme = 'dark' | 'light';
+
+// `colors`, `styles` and `calendarTheme` are MUTABLE singletons: every
+// component reads them at render time, so applyTheme() swaps their contents
+// in place and the root remount (key={scheme}) repaints the whole app.
+// No context/provider plumbing through 30 files.
+export const colors = { ...dark };
+
+export let activeScheme: ThemeScheme = 'dark';
+
+export function applyTheme(scheme: ThemeScheme) {
+  if (scheme === activeScheme) return;
+  activeScheme = scheme;
+  Object.assign(colors, scheme === 'dark' ? dark : light);
+  Object.assign(styles, makeStyles());
+  Object.assign(calendarTheme, makeCalendarTheme());
+}
+
+const makeStyles = () => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.bg,
@@ -323,8 +357,9 @@ export const styles = StyleSheet.create({
   },
 });
 
+export const styles = makeStyles();
 
-export const calendarTheme = {
+const makeCalendarTheme = () => ({
   palette: {
     primary: {
       main: colors.accent,
@@ -347,4 +382,6 @@ export const calendarTheme = {
   eventCellOverlappingStyle: {
     borderRadius: 4,
   },
-}
+});
+
+export const calendarTheme = makeCalendarTheme();

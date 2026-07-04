@@ -1,8 +1,9 @@
 import { MONTH_KANJI } from "@/constants/const";
 import { colors, fonts, styles } from "@/constants/theme";
 import { useSettingsStore } from "@/store/useSettingsStore";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { Tap } from "@/components/ui/Tap";
 import { Mode } from "@musubi/calendar";
 
 
@@ -32,9 +33,9 @@ export function CalendarHeader({ anchorDate, calMode, onModeChange, onTodayPress
           }
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <Pressable onPress={onTodayPress}>
+          <Tap onPress={onTodayPress}>
             <Text style={{ color: colors.fg3, fontSize: 12, letterSpacing: 1.5 }}>TODAY</Text>
-          </Pressable>
+          </Tap>
         </View>
       </View>
       <View style={{ flexDirection: 'row', marginTop: 12, justifyContent: 'space-between', alignItems: 'center' }}>
@@ -43,8 +44,9 @@ export function CalendarHeader({ anchorDate, calMode, onModeChange, onTodayPress
           borderWidth: 1, borderColor: colors.line2, borderRadius: 999, padding: 2, gap: 2
         }}>
           {(["day", "week", "month"] as Mode[]).map((m) => (
-            <Pressable
+            <Tap
               key={m}
+              haptic="select"
               style={{
                 paddingHorizontal: 14, paddingVertical: 5, borderRadius: 999,
                 backgroundColor: calMode === m ? colors.fg : 'transparent'
@@ -54,15 +56,15 @@ export function CalendarHeader({ anchorDate, calMode, onModeChange, onTodayPress
               <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: calMode === m ? colors.bg : colors.fg2 }}>
                 {m.charAt(0).toUpperCase() + m.slice(1)}
               </Text>
-            </Pressable>
+            </Tap>
           ))}
         </View>
         {refreshing ? (
           <ActivityIndicator size="small" color={colors.fg3} />
         ) : (
-          <Pressable onPress={onRefresh} hitSlop={10}>
+          <Tap onPress={onRefresh} hitSlop={10}>
             <Feather name="refresh-cw" size={16} color={colors.fg3} />
-          </Pressable>
+          </Tap>
         )}
       </View>
     </View>

@@ -5,8 +5,10 @@ import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useServer } from "@/contexts/ServerContext";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ScrollView, TouchableOpacity, View, Text, StyleSheet } from "react-native";
+import { ScrollView, View, Text, StyleSheet } from "react-native";
 import { Avatar } from "@/components/Avatar";
+import { Btn } from "@/components/ui/Btn";
+import { success } from "@/lib/haptics";
 
 export default function Invite() {
   const api = useApi();
@@ -44,14 +46,14 @@ export default function Invite() {
 
         <View style={local.hero}>
           <View style={{ marginBottom: 20 }}>
-            <View style={[local.calendarIcon, { borderColor: calendarData?.color ?? colors.line2 }]}>
+            <View style={[local.calendarIcon, { backgroundColor: colors.bg3, borderColor: calendarData?.color ?? colors.line2 }]}>
               <Text style={[local.calendarIconText, { color: calendarData?.color }]}>
                 {calendarData?.name?.charAt(0).toUpperCase() ?? '…'}
               </Text>
             </View>
           </View>
-          <Text style={local.invitedBy}>YOU ARE INVITED TO JOIN</Text>
-          <Text style={local.calendarName}>{calendarData?.name ?? '…'}</Text>
+          <Text style={[local.invitedBy, { color: colors.fg3 }]}>YOU ARE INVITED TO JOIN</Text>
+          <Text style={[local.calendarName, { color: colors.fg }]}>{calendarData?.name ?? '…'}</Text>
           <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: colors.fg3 }}>{calendarData?.members?.length} members</Text>
         </View>
 
@@ -61,14 +63,14 @@ export default function Invite() {
             <View style={local.membersRow}>
               <View style={local.avatarStack}>
                 {calendarData?.members?.slice(0, 4).map((m) => (
-                  <View key={m.id} style={local.avatarStackItem}>
+                  <View key={m.id} style={[local.avatarStackItem, { borderColor: colors.bg }]}>
                     <Avatar name={m.name} image={m.image} size={34} />
                   </View>
                 ))}
                 {calendarData?.members?.length! > 4 && (
-                  <View style={local.avatarStackItem}>
-                    <View style={[local.avatar, { width: 34, height: 34, borderRadius: 17 }]}>
-                      <Text style={[local.avatarText, { fontSize: 11 }]}>+{calendarData?.members?.length! - 4}</Text>
+                  <View style={[local.avatarStackItem, { borderColor: colors.bg }]}>
+                    <View style={[local.avatar, { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.bg3, borderColor: colors.line2 }]}>
+                      <Text style={[local.avatarText, { fontSize: 11, color: colors.fg2 }]}>+{calendarData?.members?.length! - 4}</Text>
                     </View>
                   </View>
                 )}
@@ -107,25 +109,25 @@ export default function Invite() {
       </ScrollView>
 
       <View style={styles.screenActions}>
-        <TouchableOpacity
-          style={styles.btnSecondary} onPress={() => {
+        <Btn
+          label="Decline"
+          variant="secondary"
+          onPress={() => {
             router.canGoBack() ? router.back() : router.replace("/(tabs)");
           }}
-        >
-          <Text style={styles.btnSecondaryText}>Decline</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.btnPrimary, { flex: 2 }, isAccepting && { backgroundColor: colors.line }]}
-          disabled={isAccepting}
+        />
+        <Btn
+          label="✓  Accept invitation"
+          style={{ flex: 2 }}
+          loading={isAccepting}
           onPress={async () => {
             setIsAccepting(true);
             await api.acceptInvite(calendarData?.id!, token as string);
             loadCalendars(await api.getCalendars());
+            success();
             router.canGoBack() ? router.back() : router.replace("/(tabs)");
           }}
-        >
-          <Text style={styles.btnPrimaryText}>✓  Accept invitation</Text>
-        </TouchableOpacity>
+        />
       </View>
     </View>
   );
@@ -138,11 +140,11 @@ const local = StyleSheet.create({
     paddingBottom: 28,
     paddingHorizontal: 24,
   },
+  // colors applied inline — the theme can swap at runtime
   calendarIcon: {
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: colors.bg3,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -155,13 +157,11 @@ const local = StyleSheet.create({
     fontFamily: fonts.sansMedium,
     fontSize: 10,
     letterSpacing: 2,
-    color: colors.fg3,
     marginBottom: 8,
   },
   calendarName: {
     fontFamily: fonts.serif,
     fontSize: 34,
-    color: colors.fg,
     marginBottom: 6,
   },
   membersRow: {
@@ -175,18 +175,14 @@ const local = StyleSheet.create({
   avatarStackItem: {
     marginRight: -8,
     borderWidth: 2,
-    borderColor: colors.bg,
     borderRadius: 20,
   },
   avatar: {
-    backgroundColor: colors.bg3,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.line2,
   },
   avatarText: {
     fontFamily: fonts.sansMedium,
-    color: colors.fg2,
   },
 });

@@ -120,6 +120,7 @@ export const userSettings = pgTable("user_settings", {
   defaultCalendarView: text("default_calendar_view").notNull().default("week"),
   weekStartsOn: text("week_starts_on").notNull().default("monday"),
   timeLocale: text("time_locale").notNull().default("en-UK"),
+  theme: text("theme").notNull().default("system"),
 });
 
 export type NewSettings = typeof userSettings.$inferInsert;

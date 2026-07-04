@@ -1,8 +1,9 @@
 import { memo, useEffect, useState } from "react";
 import { colors, fonts } from "@/constants/theme";
-import { View, Pressable, ScrollView, Text } from "react-native";
+import { View, ScrollView, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
+import { Tap } from "@/components/ui/Tap";
+import { tap, thump } from "@/lib/haptics";
 import { providerFlavor } from "@musubi/types";
 
 type Calendar = { id: string; name: string; color: string; provider?: string | null; serverUrl?: string | null };
@@ -38,7 +39,7 @@ export const CalendarFilterBar = memo(function CalendarFilterBar({
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
-    if (process.env.EXPO_OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    tap();
     // Let the pill's paint commit this frame; run the store update (and the
     // filtering it triggers) on the next frame so the tap feels instant.
     // startTransition can't help here — zustand uses useSyncExternalStore,
@@ -47,7 +48,7 @@ export const CalendarFilterBar = memo(function CalendarFilterBar({
   };
 
   const handleSolo = (id: string) => {
-    if (process.env.EXPO_OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    thump();
     const newSoloId = localSoloId === id ? null : id;
     setLocalSoloId(newSoloId);
     setDisplay(
@@ -74,8 +75,9 @@ export const CalendarFilterBar = memo(function CalendarFilterBar({
         const active = display.has(cal.id);
         const soloed = localSoloId === cal.id;
         return (
-          <Pressable
+          <Tap
             key={cal.id}
+            haptic={false}
             onPress={() => handleToggle(cal.id)}
             onLongPress={() => handleSolo(cal.id)}
             delayLongPress={350}
@@ -109,7 +111,7 @@ export const CalendarFilterBar = memo(function CalendarFilterBar({
             }}>
               {cal.name}
             </Text>
-          </Pressable>
+          </Tap>
         );
       })}
     </ScrollView>

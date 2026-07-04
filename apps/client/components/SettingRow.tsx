@@ -1,8 +1,8 @@
-import { colors } from "@/constants/theme";
-import { Feather } from "@expo/vector-icons";
-import { useState } from "react";
-import { Switch, View, Text, Pressable } from "react-native";
+import { colors, fonts } from "@/constants/theme";
+import { Switch, View, Text } from "react-native";
 import { Mode } from "@musubi/calendar";
+import { Tap } from "@/components/ui/Tap";
+import { tap } from "@/lib/haptics";
 
 
 type ToggleProps = {
@@ -19,97 +19,71 @@ type OptionsProps = {
   onChange: (value: Mode) => void;
 }
 
-export function SettingRowToggle({ label, toggle, onToggle, danger }: ToggleProps) {
+const rowStyle = {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  paddingHorizontal: 16,
+  paddingVertical: 8,
+  borderBottomWidth: 1,
+  borderColor: colors.line,
+  minHeight: 62,
+} as const;
 
-
+export function SettingRowToggle({ label, toggle, onToggle }: ToggleProps) {
   return (
-    <Pressable
-      onPress={onToggle}
-      style={{
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderBottomWidth: 1,
-        borderColor: colors.line,
-        minHeight: 62,
-      }}
-    >
-      <Text style={{ fontSize: 16, color: colors.fg2 }}>
+    <Tap onPress={onToggle} scaleTo={1} style={rowStyle}>
+      <Text style={{ fontFamily: fonts.sans, fontSize: 15, color: colors.fg2 }}>
         {label}
       </Text>
       <Switch
-        style={{}}
         thumbColor={toggle ? colors.accent : colors.bg3}
         trackColor={{
           false: colors.line,
           true: colors.line3,
         }}
-        onValueChange={onToggle}
+        onValueChange={() => { tap(); onToggle(); }}
         value={toggle}
       />
-    </Pressable>
+    </Tap>
   );
 }
 
+// Few options → pick in one tap: inline segmented pills, same visual language
+// as the member-role selector.
 export function SettingRowOptions({ label, value, options, onChange }: OptionsProps) {
-  const [listVisible, setListVisible] = useState<boolean>(false);
-
-
   return (
-    <View>
-      <Pressable
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          paddingHorizontal: 16,
-          paddingVertical: 8,
-          borderBottomWidth: 1,
-          borderColor: colors.line,
-          minHeight: 62,
-        }}
-        onPress={() => setListVisible(listVisible ? false : true)}
-      >
-        <Text style={{ fontSize: 16, color: colors.fg2 }}>
-          {label}
-        </Text>
-        <View
-          style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
-        >
-          <Text style={{ fontSize: 16, color: colors.fg2 }}>
-            {value[0].toUpperCase() + value.slice(1)}
-          </Text>
-          <Feather size={16} name={listVisible ? "chevron-down" : "chevron-right"} color={colors.fg3} />
-        </View>
-      </Pressable>
-      {
-        listVisible &&
-        <View>
-          {
-            options?.map(o => (
-              <Pressable
-                key={o}
-                onPress={() => {
-                  onChange!(o as Mode);
-                  setListVisible(false);
-                }}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 12,
-                  borderBottomWidth: 1,
-                  borderColor: colors.line,
-                }}
-              >
-                <Text style={{ fontSize: 16, color: o === value ? colors.fg2 : colors.fg3 }}>
-                  {o[0].toUpperCase() + o.slice(1)}
-                </Text>
-              </Pressable>
-            ))
-          }
-        </View>
-      }
+    <View style={rowStyle}>
+      <Text style={{ fontFamily: fonts.sans, fontSize: 15, color: colors.fg2 }}>
+        {label}
+      </Text>
+      <View style={{
+        flexDirection: "row",
+        borderWidth: 1, borderColor: colors.line2, borderRadius: 999, padding: 2, gap: 2,
+      }}>
+        {options.map((o) => {
+          const active = o === value;
+          return (
+            <Tap
+              key={o}
+              haptic="select"
+              disabled={active}
+              onPress={() => onChange(o as Mode)}
+              style={{
+                paddingHorizontal: 12, paddingVertical: 5, borderRadius: 999,
+                backgroundColor: active ? colors.fg : "transparent",
+              }}
+            >
+              <Text style={{
+                fontFamily: fonts.sans, fontSize: 11,
+                color: active ? colors.bg : colors.fg2,
+              }}>
+                {o[0].toUpperCase() + o.slice(1)}
+              </Text>
+            </Tap>
+          );
+        })}
+      </View>
     </View>
   );
 }

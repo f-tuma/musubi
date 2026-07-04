@@ -18,6 +18,8 @@ type SettingsStore = {
   setNotificationsOnByDefault: (value: boolean) => void,
   timeLocale: "en-UK" | "cs-CZ",
   setTimeLocale: (value: "en-UK" | "cs-CZ") => void,
+  theme: "system" | "dark" | "light",
+  setTheme: (value: "system" | "dark" | "light") => void,
 }
 
 
@@ -46,5 +48,9 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   timeLocale: "en-UK",
   setTimeLocale: (value: "en-UK" | "cs-CZ") => set(() => ({
     timeLocale: value,
+  })),
+  theme: "system",
+  setTheme: (value) => set(() => ({
+    theme: value,
   })),
 }));

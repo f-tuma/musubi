@@ -11,6 +11,8 @@ import { useState } from "react";
 import { useApi } from "@/services/api";
 import { useServer } from "@/contexts/ServerContext";
 import MemberRolesModal from "./MemberRolesModal";
+import { Tap } from "@/components/ui/Tap";
+import { Btn } from "@/components/ui/Btn";
 
 
 type Props = {
@@ -64,9 +66,10 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
               <View style={styles.container}>
                 <View style={{ gap: 8 }}>
                   {showInvite && (
-                  <Pressable
-                    disabled={waitingForInvite}
-                    style={waitingForInvite ? styles.btnDisabled : styles.btnPrimary}
+                  <Btn
+                    label="Send Invite"
+                    icon={<Feather size={14} name="send" color={colors.bg3} />}
+                    loading={waitingForInvite}
                     onPress={async () => {
                       setWaitingForInvite(true);
                       const inviteTemplate: Invite = {
@@ -81,15 +84,14 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
                       });
                       setWaitingForInvite(false);
                     }}
-                  >
-                    <Feather size={14} name="send" color={colors.bg3} />
-                    <Text style={styles.btnPrimaryText}>Send Invite</Text>
-                  </Pressable>
+                  />
                   )}
-                  <Pressable style={styles.btnSecondary} onPress={() => setRolesVisible(true)}>
-                    <Feather size={14} name="users" color={colors.fg2} />
-                    <Text style={styles.btnSecondaryText}>Members</Text>
-                  </Pressable>
+                  <Btn
+                    label="Members"
+                    variant="secondary"
+                    icon={<Feather size={14} name="users" color={colors.fg2} />}
+                    onPress={() => setRolesVisible(true)}
+                  />
                 </View>
               </View>
             </ScrollView>
@@ -104,7 +106,7 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
                 }}
               >
                 {showEdit && (
-                  <Pressable
+                  <Tap
                     style={styles.modalActionBtn}
                     disabled={calendar ? false : true}
                     onPress={() => {
@@ -114,14 +116,15 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
                   >
                     <Feather size={20} name="edit" color={colors.fg2} />
                     <Text style={{ color: colors.fg2, fontSize: 10 }}>Edit</Text>
-                  </Pressable>
+                  </Tap>
                 )}
 
                 {showEdit && (showDelete || showLeave) && <View style={styles.modalActionDivider} />}
 
                 {showDelete && (
-                  <Pressable
+                  <Tap
                     style={styles.modalActionBtn}
+                    haptic="warn"
                     disabled={calendar ? false : true}
                     onPress={() => {
                       onDelete(calendar!);
@@ -130,12 +133,13 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
                   >
                     <Feather size={20} name="trash" color={colors.accent} />
                     <Text style={{ color: colors.accent, fontSize: 10 }}>Delete</Text>
-                  </Pressable>
+                  </Tap>
                 )}
 
                 {showLeave && (
-                  <Pressable
+                  <Tap
                     style={styles.modalActionBtn}
+                    haptic="warn"
                     disabled={isLeaving || !calendar}
                     onPress={async () => {
                       setIsLeaving(true);
@@ -147,7 +151,7 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
                   >
                     <Feather size={20} name="arrow-left-circle" color={isLeaving ? colors.fg4 : colors.accent} />
                     <Text style={{ color: isLeaving ? colors.fg4 : colors.accent, fontSize: 10 }}>Leave</Text>
-                  </Pressable>
+                  </Tap>
                 )}
               </View>
             )}

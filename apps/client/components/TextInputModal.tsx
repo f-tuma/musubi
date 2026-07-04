@@ -1,8 +1,10 @@
 import { colors, fonts, styles } from "@/constants/theme";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
 import Animated from "react-native-reanimated";
-import { Modal, Pressable, TextInput, View, Text } from "react-native";
+import { KeyboardAvoidingView, Modal, Platform, Pressable, TextInput, View, Text } from "react-native";
 import { useState } from "react";
+import { Btn } from "@/components/ui/Btn";
+import * as haptics from "@/lib/haptics";
 
 
 type Props = {
@@ -27,6 +29,7 @@ export default function InputModal({ visible, isDelete, title, placeholder, onCo
     if (onTest) {
       const { ok, error } = await onTest(value);
       if (!ok) {
+        haptics.warn();
         setValueError(error ?? "Uknown error...");
         setIsWaiting(false);
         return;
@@ -55,14 +58,17 @@ export default function InputModal({ visible, isDelete, title, placeholder, onCo
       <Animated.View style={[styles.modalOverlay, fadeStyle]}>
         <Pressable style={{ flex: 1 }} />
       </Animated.View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        pointerEvents="box-none"
+        style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, justifyContent: "center" }}
+      >
       <Animated.View
         style={[{
           width: "80%",
           minHeight: "10%",
-          position: "absolute",
           alignSelf: "center",
           justifyContent: "center",
-          top: "35%",
         }, fadeStyle]}
       >
         <View
@@ -96,19 +102,17 @@ export default function InputModal({ visible, isDelete, title, placeholder, onCo
             gap: 16,
           }}
           >
-            <Pressable style={styles.btnSecondary} onPress={handleCancel}>
-              <Text style={styles.btnSecondaryText}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              style={isWaiting ? styles.btnDisabled : (isDelete ? styles.btnRemove : styles.btnPrimary)}
-              disabled={isWaiting}
+            <Btn label="Cancel" variant="secondary" onPress={handleCancel} />
+            <Btn
+              label={isDelete ? "Delete" : "Confirm"}
+              variant={isDelete ? "destructive" : "primary"}
+              loading={isWaiting}
               onPress={() => handleConfirm(inputValue)}
-            >
-              <Text style={styles.btnPrimaryText}>{isDelete ? "Delete" : "Confirm"}</Text>
-            </Pressable>
+            />
           </View>
         </View>
       </Animated.View>
+      </KeyboardAvoidingView>
     </Modal >
   );
 }

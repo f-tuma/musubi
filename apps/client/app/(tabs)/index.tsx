@@ -3,11 +3,11 @@ import { AddEventModal } from "@/components/calendar/AddEventModal";
 import { CalendarFilterBar } from "@/components/calendar/CalendarFilterBar";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { Calendar, enrichEvents, expandRecurringEvents, type Mode } from "@musubi/calendar";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { CalendarSkeleton } from "@/components/calendar/CalendarSkeleton";
-import * as Haptics from "expo-haptics";
+import { Tap } from "@/components/ui/Tap";
 import dayjs from "dayjs";
 import EventDetailModal from "@/components/calendar/EventDetailModal";
 import { Event } from "@musubi/types";
@@ -211,13 +211,12 @@ export default function MainTab() {
         )}
       </View>
       <Animated.View entering={FadeIn.duration(400)}>
-        <Pressable style={styles.fab} onPress={() => {
-          if (process.env.EXPO_OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        <Tap style={styles.fab} haptic="thump" onPress={() => {
           setPrefilledEvent(undefined);
           setNewEventVisible(true);
         }}>
           <Text style={{ color: colors.bg, fontSize: 28, lineHeight: 30 }}>+</Text>
-        </Pressable>
+        </Tap>
       </Animated.View>
       <AddEventModal
         visible={newEventVisible}

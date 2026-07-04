@@ -21,6 +21,7 @@ import CreateCalendarModal from "./CreateCalendarModal";
 import { useVisibleEvents } from "@/hooks/useVisibleEvents";
 import { useApi } from "@/services/api";
 import { eventColor } from "@/lib/eventColor";
+import { Tap } from "@/components/ui/Tap";
 
 
 type Props = {
@@ -172,12 +173,12 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
                   {calendar?.members.length} members · {visibleEvents.length} events
                 </Text>
               </View>
-              <Pressable
+              <Tap
                 style={{ flex: 1, alignItems: "flex-end", paddingRight: 12 }}
                 onPress={() => openCalendarSettings(calendar!)}
               >
                 <Feather name="settings" size={24} color={colors.fg2} />
-              </Pressable>
+              </Tap>
             </View>
             <View style={{ height: calendarSpace }}>
               <View style={{
@@ -199,8 +200,9 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
                   borderWidth: 1, borderColor: colors.line2, borderRadius: 999, padding: 2, gap: 2
                 }}>
                   {(["day", "week", "month"] as Mode[]).map((m) => (
-                    <Pressable
+                    <Tap
                       key={m}
+                      haptic="select"
                       style={{
                         paddingHorizontal: 14, paddingVertical: 5, borderRadius: 999,
                         backgroundColor: calMode === m ? colors.fg : 'transparent'
@@ -210,14 +212,14 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
                       <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: calMode === m ? colors.bg : colors.fg2 }}>
                         {m.charAt(0).toUpperCase()}
                       </Text>
-                    </Pressable>
+                    </Tap>
                   ))}
                 </View>
-                <Pressable
+                <Tap
                   style={{ paddingLeft: 16 }}
                   onPress={() => setJumpDate(new Date())}>
                   <Text style={{ color: colors.fg3, fontSize: 12, letterSpacing: 1.5 }}>TODAY</Text>
-                </Pressable>
+                </Tap>
               </View>
               <View
                 style={{ flex: 1 }}
@@ -249,14 +251,14 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
               </View>
             </View>
             {canEditEvents && (
-              <Pressable style={[styles.fab, { bottom: 16 + insets.bottom }]}
+              <Tap style={[styles.fab, { bottom: 16 + insets.bottom }]}
                 onPress={() => {
                   setPrefilledEvent(undefined);
                   setNewEventVisible(true);
                 }}
               >
                 <Feather name="plus" color={colors.bg} size={16} />
-              </Pressable>
+              </Tap>
             )}
           </Animated.View>
         </GestureDetector>

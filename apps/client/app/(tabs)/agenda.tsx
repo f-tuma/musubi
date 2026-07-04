@@ -8,9 +8,10 @@ import { useApi } from "@/services/api";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useEventsStore } from "@/store/useEventsStore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
+import { Tap } from "@/components/ui/Tap";
+import { Empty } from "@/components/ui/Empty";
 import { RefreshControl } from "react-native";
 import { useRefreshData } from "@/hooks/useRefreshData";
 import { eventColor } from "@/lib/eventColor";
@@ -124,6 +125,7 @@ export default function AgendaTab() {
           if (fromBottom < 400) setShown(s => Math.min(s + PAGE, groups.length));
         }}
       >
+        {groups.length === 0 && <Empty kanji="静" text="No events ahead" />}
         {
           groups.slice(0, shown).map((g) => (
             <Animated.View
@@ -153,7 +155,7 @@ export default function AgendaTab() {
               <View>
                 {
                   g.items.map(e => (
-                    <Pressable onPress={() => openEventDetail(e)} key={e.id} style={styles.timelineRow}>
+                    <Tap onPress={() => openEventDetail(e)} key={e.id} style={styles.timelineRow}>
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg2 }}>
                           {e.start.toLocaleString("en-UK", { hour: "2-digit", minute: "2-digit" })}
@@ -176,7 +178,7 @@ export default function AgendaTab() {
                           </View>
                         </View>
                       </View>
-                    </Pressable>
+                    </Tap>
                   ))
                 }
               </View>
@@ -185,13 +187,12 @@ export default function AgendaTab() {
         }
       </ScrollView>
       <Animated.View entering={FadeIn.duration(400)}>
-        <Pressable style={styles.fab} onPress={() => {
-          if (process.env.EXPO_OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        <Tap style={styles.fab} haptic="thump" onPress={() => {
           setPrefilledEvent(undefined);
           setNewEventVisible(true);
         }}>
           <Text style={{ color: colors.bg, fontSize: 28, lineHeight: 30 }}>+</Text>
-        </Pressable>
+        </Tap>
       </Animated.View>
       <AddEventModal
         visible={newEventVisible}

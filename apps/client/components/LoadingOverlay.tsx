@@ -30,16 +30,16 @@ export function LoadingOverlay({ ready }: Props) {
   return (
     <Animated.View
       pointerEvents={ready ? "none" : "box-only"}
-      style={[StyleSheet.absoluteFill, styles.container, animStyle]}
+      style={[StyleSheet.absoluteFill, styles.container, { backgroundColor: colors.bg }, animStyle]}
     >
-      <Text style={styles.wordmark}>Musubi</Text>
+      <Text style={[styles.wordmark, { color: colors.fg }]}>Musubi</Text>
     </Animated.View>
   );
 }
 
+// Colors applied inline — the theme can swap at runtime.
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.bg,
     zIndex: 999,
     justifyContent: "center",
     alignItems: "center",
@@ -47,7 +47,6 @@ const styles = StyleSheet.create({
   wordmark: {
     fontFamily: fonts.serif,
     fontSize: 42,
-    color: colors.fg,
     letterSpacing: 1,
   },
 });

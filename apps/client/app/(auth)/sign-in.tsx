@@ -3,7 +3,9 @@ import { colors, fonts, styles } from "@/constants/theme";
 import { useServer } from "@/contexts/ServerContext";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
-import { View, Text, TextInput, Pressable, Alert } from "react-native";
+import { View, Text, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { Btn } from "@/components/ui/Btn";
+import { success, warn } from "@/lib/haptics";
 
 export default function SignIn() {
   const { authClient } = useServer();
@@ -35,13 +37,16 @@ export default function SignIn() {
       try {
         const result = await authClient.signIn.email({ email, password });
         if (result.error) {
+          warn();
           Alert.alert("Sign In Failed", result.error.message);
           setIsLoading(false);
         } else {
+          success();
           router.replace("/(tabs)");
         }
       } catch (e: any) {
         setIsLoading(false);
+        warn();
         Alert.alert("Sign In Failed", e?.message ?? "An unexpected error occurred.");
       }
     }
@@ -53,7 +58,7 @@ export default function SignIn() {
 
   return (
     <View style={styles.screen}>
-      <View style={{ justifyContent: "space-between", flex: 1 }}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ justifyContent: "space-between", flex: 1 }}>
         <View style={[{ gap: 28 }, styles.container]}>
           <View>
             <Text style={{ color: colors.fg3 }}>Welcome back</Text>
@@ -102,22 +107,19 @@ export default function SignIn() {
           </View>
         </View>
         <View style={styles.modalButtonsColumn}>
-          <Pressable
-            style={isLoading ? styles.btnDisabled : styles.btnSecondary}
+          <Btn
+            label="Forgotten password?"
+            variant="secondary"
             disabled={isLoading}
             onPress={() => setIsPasswordResetVisible(true)}
-          >
-            <Text style={styles.btnSecondaryText}>Forgotten password?</Text>
-          </Pressable>
-          <Pressable
-            style={isLoading ? styles.btnDisabled : styles.btnPrimary}
-            disabled={isLoading}
+          />
+          <Btn
+            label="Continue"
+            loading={isLoading}
             onPress={handleSignIn}
-          >
-            <Text style={styles.btnPrimaryText}>Continue</Text>
-          </Pressable>
+          />
         </View>
-      </View>
+      </KeyboardAvoidingView>
       <InputModal
         visible={isPasswordResetVisible}
         placeholder="your@email.com"

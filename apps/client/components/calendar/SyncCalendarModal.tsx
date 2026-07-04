@@ -7,6 +7,9 @@ import { Text, Modal, Pressable, ScrollView, View, TextInput, Alert, Linking } f
 import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
+import { Tap } from "@/components/ui/Tap";
+import { Btn } from "@/components/ui/Btn";
+import * as haptics from "@/lib/haptics";
 
 const ICLOUD_URL = "https://caldav.icloud.com";
 
@@ -50,9 +53,11 @@ export default function SyncCalendarModal({ visible, onClose, onConnected }: Pro
         callbackURL: "/(tabs)",
       });
       if (error) throw new Error(error.message ?? "Google connect failed");
+      haptics.success();
       onConnected();
       handleClose();
     } catch (e: any) {
+      haptics.warn();
       Alert.alert("Google connect failed", e?.message ?? "An unexpected error occured.");
     } finally {
       setIsLoading(false);
@@ -69,9 +74,11 @@ export default function SyncCalendarModal({ visible, onClose, onConnected }: Pro
     setError("");
     try {
       await api.connectCaldav(url, username, password);
+      haptics.success();
       onConnected();
       handleClose();
     } catch {
+      haptics.warn();
       setError("Could not connect — check your credentials.");
     } finally {
       setIsLoading(false);
@@ -103,18 +110,25 @@ export default function SyncCalendarModal({ visible, onClose, onConnected }: Pro
             <ScrollView>
               {step === "providers" && (
                 <View style={styles.modalButtonsColumn}>
-                  <Pressable style={styles.btnSecondary} disabled={isLoading} onPress={handleGoogle}>
-                    <Ionicons name="logo-google" size={16} color={colors.fg2} />
-                    <Text style={styles.btnSecondaryText}>Google Calendar</Text>
-                  </Pressable>
-                  <Pressable style={styles.btnSecondary} onPress={() => setStep("apple")}>
-                    <Ionicons name="logo-apple" size={16} color={colors.fg2} />
-                    <Text style={styles.btnSecondaryText}>Apple / iCloud</Text>
-                  </Pressable>
-                  <Pressable style={styles.btnSecondary} onPress={() => setStep("caldav")}>
-                    <Ionicons name="cloud" size={16} color={colors.fg2} />
-                    <Text style={styles.btnSecondaryText}>Other (CalDAV)</Text>
-                  </Pressable>
+                  <Btn
+                    label="Google Calendar"
+                    variant="secondary"
+                    icon={<Ionicons name="logo-google" size={16} color={colors.fg2} />}
+                    loading={isLoading}
+                    onPress={handleGoogle}
+                  />
+                  <Btn
+                    label="Apple / iCloud"
+                    variant="secondary"
+                    icon={<Ionicons name="logo-apple" size={16} color={colors.fg2} />}
+                    onPress={() => setStep("apple")}
+                  />
+                  <Btn
+                    label="Other (CalDAV)"
+                    variant="secondary"
+                    icon={<Ionicons name="cloud" size={16} color={colors.fg2} />}
+                    onPress={() => setStep("caldav")}
+                  />
                 </View>
               )}
 
@@ -129,11 +143,11 @@ export default function SyncCalendarModal({ visible, onClose, onConnected }: Pro
                       2. App-Specific Passwords → generate one (name it “Musubi”).{"\n"}
                       3. Paste it below with your Apple ID.
                     </Text>
-                    <Pressable onPress={() => Linking.openURL("https://account.apple.com")}>
+                    <Tap onPress={() => Linking.openURL("https://account.apple.com")}>
                       <Text style={{ fontFamily: fonts.sansMedium, fontSize: 13, color: colors.accent }}>
                         Open account.apple.com →
                       </Text>
-                    </Pressable>
+                    </Tap>
                   </View>
 
                   <View style={styles.fieldContainer}>
@@ -162,12 +176,8 @@ export default function SyncCalendarModal({ visible, onClose, onConnected }: Pro
                   </View>
                   {error ? <Text style={styles.errorText}>{error}</Text> : null}
                   <View style={styles.modalButtonsColumn}>
-                    <Pressable style={styles.btnPrimary} disabled={isLoading} onPress={() => handleCaldav(ICLOUD_URL)}>
-                      <Text style={styles.btnPrimaryText}>{isLoading ? "Connecting…" : "Connect"}</Text>
-                    </Pressable>
-                    <Pressable style={styles.btnSecondary} onPress={() => setStep("providers")}>
-                      <Text style={styles.btnSecondaryText}>Back</Text>
-                    </Pressable>
+                    <Btn label="Connect" loading={isLoading} onPress={() => handleCaldav(ICLOUD_URL)} />
+                    <Btn label="Back" variant="secondary" onPress={() => setStep("providers")} />
                   </View>
                 </>
               )}
@@ -208,12 +218,8 @@ export default function SyncCalendarModal({ visible, onClose, onConnected }: Pro
                   </View>
                   {error ? <Text style={styles.errorText}>{error}</Text> : null}
                   <View style={styles.modalButtonsColumn}>
-                    <Pressable style={styles.btnPrimary} disabled={isLoading} onPress={() => handleCaldav(serverUrl)}>
-                      <Text style={styles.btnPrimaryText}>{isLoading ? "Connecting…" : "Connect"}</Text>
-                    </Pressable>
-                    <Pressable style={styles.btnSecondary} onPress={() => setStep("providers")}>
-                      <Text style={styles.btnSecondaryText}>Back</Text>
-                    </Pressable>
+                    <Btn label="Connect" loading={isLoading} onPress={() => handleCaldav(serverUrl)} />
+                    <Btn label="Back" variant="secondary" onPress={() => setStep("providers")} />
                   </View>
                 </>
               )}

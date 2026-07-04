@@ -9,6 +9,9 @@ import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-ha
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated from "react-native-reanimated";
 import { CALENDAR_HINTS } from "@/constants/calendar_hints";
+import { Tap } from "@/components/ui/Tap";
+import { Btn } from "@/components/ui/Btn";
+import * as haptics from "@/lib/haptics";
 
 
 type Props = {
@@ -77,8 +80,10 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
       } else {
         await onCreate(newCalendar);
       }
+      haptics.success();
       handleClose();
     } catch (e: any) {
+      haptics.warn();
       Alert.alert("Failed to save", e?.message ?? "An unexpected error occured.");
     } finally {
       setIsLoading(false);
@@ -137,8 +142,9 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                   >
                     <View style={styles.horizontalPillView}>
                       {appColors.map((c) => (
-                        <Pressable
+                        <Tap
                           key={c.name}
+                          haptic="select"
                           style={{
                             overflow: "hidden",
                             flexDirection: "row",
@@ -153,23 +159,15 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                           }]}>
                             <View style={[styles.calendarCircleInner, { backgroundColor: c.color }]} />
                           </View>
-                        </Pressable>
+                        </Tap>
                       ))}
                     </View>
                   </ScrollView>
                 </View>
               </ScrollView>
               <View style={[styles.modalButtons, { paddingBottom: insets.bottom + 16 }]}>
-                <Pressable style={styles.btnSecondary} onPress={handleClose}>
-                  <Text style={styles.btnSecondaryText}>Cancel</Text>
-                </Pressable>
-                <Pressable
-                  style={isLoading ? [styles.btnPrimary, { backgroundColor: colors.line }] : styles.btnPrimary}
-                  disabled={isLoading}
-                  onPress={handleCreate}
-                >
-                  <Text style={styles.btnPrimaryText}>{calendar ? "Save" : "Create"}</Text>
-                </Pressable>
+                <Btn label="Cancel" variant="secondary" onPress={handleClose} />
+                <Btn label={calendar ? "Save" : "Create"} onPress={handleCreate} loading={isLoading} />
               </View>
             </Animated.View >
           </GestureDetector>

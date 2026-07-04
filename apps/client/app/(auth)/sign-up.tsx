@@ -2,7 +2,9 @@ import { colors, fonts, styles } from "@/constants/theme";
 import { useServer } from "@/contexts/ServerContext";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
-import { View, Text, TextInput, Pressable, Alert } from "react-native";
+import { View, Text, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { Btn } from "@/components/ui/Btn";
+import { success, warn } from "@/lib/haptics";
 
 
 export default function SignUp() {
@@ -49,12 +51,15 @@ export default function SignUp() {
         const result = await authClient.signUp.email({ email, password, name });
         if (result.error) {
           setIsLoading(false);
+          warn();
           Alert.alert("Sign Up Failed", result.error.message);
         } else {
+          success();
           router.replace("/(tabs)");
         }
       } catch (e: any) {
         setIsLoading(false);
+        warn();
         Alert.alert("Sign Up Failed", e?.message ?? "An unexpected error occurred.");
       }
     }
@@ -62,7 +67,7 @@ export default function SignUp() {
 
   return (
     <View style={styles.screen}>
-      <View style={{ justifyContent: "space-between", flex: 1 }}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ justifyContent: "space-between", flex: 1 }}>
         <View style={[{ gap: 28 }, styles.container]}>
           <View>
             <Text style={{ color: colors.fg3 }}>Create account · 1 of 3</Text>
@@ -151,15 +156,13 @@ export default function SignUp() {
           </View>
         </View>
         <View style={styles.modalButtonsColumn}>
-          <Pressable
-            style={isLoading ? [styles.btnPrimary, { backgroundColor: colors.line }] : styles.btnPrimary}
+          <Btn
+            label="Continue"
+            loading={isLoading}
             onPress={handleSignUp}
-            disabled={isLoading}
-          >
-            <Text style={styles.btnPrimaryText}>Continue</Text>
-          </Pressable>
+          />
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </View>
   );
 }

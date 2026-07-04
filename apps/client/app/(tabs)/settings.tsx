@@ -9,8 +9,11 @@ import { useEventsStore } from "@/store/useEventsStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { router } from "expo-router";
 import { useState } from "react";
-import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native";
+import { View, Text, ScrollView, RefreshControl, StyleSheet } from "react-native";
 import { useRefreshData } from "@/hooks/useRefreshData";
+import { Btn } from "@/components/ui/Btn";
+import { warn } from "@/lib/haptics";
+import { Avatar } from "@/components/Avatar";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { cacheClearAll } from "@/services/eventsCache";
 
@@ -32,12 +35,11 @@ export default function SettingsTab() {
     showKanji, setShowKanji,
     notificationsOnByDefault, setNotificationsOnByDefault,
     timeLocale, setTimeLocale,
+    theme, setTheme,
   } = useSettingsStore();
 
   const [confrimDeleteVisible, setConfirmDeleteVisible] = useState(false);
   const userSession = authClient.useSession();
-  const [settingsChanged, setSettingsChanged] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
 
   const refresh = useRefreshData();
   const [refreshing, setRefreshing] = useState(false);
@@ -47,13 +49,13 @@ export default function SettingsTab() {
     finally { setRefreshing(false); }
   };
 
-  const handleSave = async (settings: Settings) => {
-    setIsSaving(true);
-    console.log(settings);
-    // LOG
-    await api.saveSettings(settings);
-    setSettingsChanged(false);
-    setIsSaving(false);
+  // Autosave: settings persist the moment they change — no Save button to forget.
+  // `patch` carries the just-changed value (store reads here would be stale).
+  const save = (patch: Partial<Settings>) => {
+    api.saveSettings({
+      showKanji, notificationsOnByDefault, defaultCalendarView, weekStartsOn, timeLocale, theme,
+      ...patch,
+    }).catch((e) => { warn(); console.error("Settings save failed:", e); });
   };
 
   const handleSignOut = async () => {
@@ -90,65 +92,47 @@ export default function SettingsTab() {
         </Text>
       </View>
       <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-        <View
-          style={{
-            paddingHorizontal: 16,
-            paddingVertical: 16,
-            borderBottomWidth: 1,
-            borderTopWidth: 1,
-            borderColor: colors.line,
-            gap: 16
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 16,
-              color: colors.fg2,
-              textDecorationLine: "underline"
-            }}
-          >
-            User Info
-          </Text>
-          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-            <Text style={{ fontSize: 14, color: colors.fg2 }}>
-              Name:
-            </Text>
-            <Text style={{ fontSize: 14, color: colors.fg2 }}>
+        {/* Who you are — identity, not a form. */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 14, padding: 20, borderBottomWidth: 1, borderColor: colors.line }}>
+          <Avatar name={userSession.data?.user.name ?? "?"} image={userSession.data?.user.image} size={52} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={{ fontFamily: fonts.serif, fontSize: 19, color: colors.fg }}>
               {userSession.data?.user.name}
             </Text>
-          </View>
-          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-            <Text style={{ fontSize: 14, color: colors.fg2 }}>
-              Email:
-            </Text>
-            <Text style={{ fontSize: 14, color: colors.fg2 }}>
+            <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg3 }}>
               {userSession.data?.user.email}
             </Text>
-          </View>
-          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-            <Text style={{ fontSize: 14, color: colors.fg2 }}>
-              Server:
-            </Text>
-            <Text style={{ fontSize: 14, color: colors.fg2 }}>
+            <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.fg4 }}>
               {apiUrl?.slice(8)}
             </Text>
           </View>
         </View>
+
+        <Text style={[styles.sectionLabel, local.sectionHeading]}>Appearance</Text>
+        <SettingRowOptions
+          label="Theme"
+          value={theme}
+          options={["system", "dark", "light"]}
+          onChange={v => {
+            setTheme(v as "system" | "dark" | "light");
+            save({ theme: v as "system" | "dark" | "light" });
+          }}
+        />
         <SettingRowToggle
           label="Show Kanji"
           toggle={showKanji}
           onToggle={() => {
-            setShowKanji(showKanji ? false : true);
-            setSettingsChanged(true);
+            setShowKanji(!showKanji);
+            save({ showKanji: !showKanji });
           }}
         />
         <SettingRowOptions
-          label="Default Calendar View"
+          label="Default View"
           value={defaultCalendarView}
           options={["month", "week", "day"]}
           onChange={v => {
             setDefaultCalendarView(v as CalendarView);
-            setSettingsChanged(true);
+            save({ defaultCalendarView: v as CalendarView });
           }}
         />
         <SettingRowOptions
@@ -157,7 +141,7 @@ export default function SettingsTab() {
           options={["sunday", "monday"]}
           onChange={v => {
             setWeekStartsOn(v as "monday" | "sunday");
-            setSettingsChanged(true);
+            save({ weekStartsOn: v as "monday" | "sunday" });
           }}
         />
         <SettingRowOptions
@@ -166,60 +150,33 @@ export default function SettingsTab() {
           options={["cs-CZ", "en-UK"]}
           onChange={v => {
             setTimeLocale(v as "en-UK" | "cs-CZ");
-            setSettingsChanged(true);
+            save({ timeLocale: v as "en-UK" | "cs-CZ" });
           }}
         />
+
+        <Text style={[styles.sectionLabel, local.sectionHeading]}>Notifications</Text>
         <SettingRowToggle
-          label="Notifications On by Default"
+          label="On by Default"
           toggle={notificationsOnByDefault}
           onToggle={() => {
-            setNotificationsOnByDefault(notificationsOnByDefault ? false : true);
-            setSettingsChanged(true);
+            setNotificationsOnByDefault(!notificationsOnByDefault);
+            save({ notificationsOnByDefault: !notificationsOnByDefault });
           }}
         />
-        <View
-          style={{
-            paddingHorizontal: 16,
-            paddingVertical: 16,
-            borderBottomWidth: 1,
-            borderTopWidth: 1,
-            borderColor: colors.line,
-            gap: 16
-          }}
-        >
-          <Pressable
-            style={styles.btnPrimary}
-            onPress={handleSignOut}
-          >
-            <Text style={styles.btnPrimaryText}>
-              Sign Out
-            </Text>
-          </Pressable>
-          <Pressable
-            style={styles.btnRemove}
+
+        <Text style={[styles.sectionLabel, local.sectionHeading]}>Account</Text>
+        <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
+          <Btn label="Sign Out" variant="secondary" onPress={handleSignOut} />
+        </View>
+        {/* Danger stays visually apart from everything else. */}
+        <View style={{ marginTop: 24, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32, borderTopWidth: 1, borderColor: colors.line }}>
+          <Btn
+            label="Delete Account"
+            variant="destructive"
             onPress={() => setConfirmDeleteVisible(true)}
-          >
-            <Text style={styles.btnPrimaryText}>
-              Delete Account
-            </Text>
-          </Pressable>
+          />
         </View>
       </ScrollView >
-      {settingsChanged &&
-        <Pressable
-          style={[styles.fab, isSaving && { backgroundColor: colors.line }]}
-          disabled={isSaving}
-          onPress={() => handleSave({
-            showKanji,
-            notificationsOnByDefault,
-            defaultCalendarView,
-            weekStartsOn,
-            timeLocale,
-          })}
-        >
-          <Text style={{ color: colors.bg, fontSize: 16, lineHeight: 30 }}>Save Settings</Text>
-        </Pressable>
-      }
       <InputModal
         visible={confrimDeleteVisible}
         title="To delete your account, write you name..."
@@ -231,3 +188,11 @@ export default function SettingsTab() {
     </View >
   );
 }
+
+const local = StyleSheet.create({
+  sectionHeading: {
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 8,
+  },
+});

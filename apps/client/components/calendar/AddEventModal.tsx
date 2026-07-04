@@ -2,7 +2,7 @@ import "react-native-get-random-values";
 import { Calendar, Event, can } from "@musubi/types";
 import { colors, fonts, styles } from "@/constants/theme";
 import { useEffect, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
@@ -16,6 +16,9 @@ import { useSettingsStore } from "@/store/useSettingsStore";
 import { cancelEventPushNotification, getEventsNotificationIdentifier, removeNotification, scheduleEventPushNotification, storeNotification, updateEventPushNotification, updateNotificationTriggerDate } from "@/services/notifications";
 import dayjs from "dayjs";
 import { uuidv7 } from 'uuidv7';
+import { Tap } from "@/components/ui/Tap";
+import { Btn } from "@/components/ui/Btn";
+import * as haptics from "@/lib/haptics";
 
 type Props = {
   visible: boolean;
@@ -176,6 +179,8 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
     : [...selectedCals][0];
   const [isLoading, setIsLoading] = useState(false);
   const [eventHint, setEventHint] = useState(EVENT_HINTS[Math.floor(Math.random() * EVENT_HINTS.length)])
+  // Note/location/URL are the long tail — folded away until asked for.
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const [nameError, setNameError] = useState("");
   const [calendarsError, setCalendarsError] = useState("");
@@ -212,6 +217,7 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
     setNewLocation("");
     setNewUrl("");
     setUrlError("");
+    setDetailsOpen(false);
     setNewRecurrence('none');
     setAdvFreq('WEEKLY');
     setAdvInterval(1);
@@ -233,6 +239,7 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
       setNewDescription(event?.description ?? "");
       setNewLocation(event?.location ?? "");
       setNewUrl(event?.url ?? "");
+      setDetailsOpen(!!(event?.description || event?.location || event?.url));
       const option = parseRRule(event?.recurrence);
       setNewRecurrence(option);
       if (option === 'custom') {
@@ -412,8 +419,10 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
       } else {
         await onSave(eventConstruct);
       }
+      haptics.success();
       handleClose();
     } catch (e: any) {
+      haptics.warn();
       Alert.alert("Failed to save", e?.message ?? "An unexpected error occured.");
     } finally {
       setIsLoading(false);
@@ -453,6 +462,7 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                   placeholder={eventHint}
                   placeholderTextColor={colors.fg4}
                   multiline={true}
+                  autoFocus={!event} // creating: pen ready the moment the sheet lands
                   style={[styles.fieldValueBig, { fontFamily: fonts.sans }]}
                 />
                 {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
@@ -469,8 +479,9 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                       const isOrigin = originEffective === cal.id;
                       const locked = !can(cal.role, "editEvents"); // can't add/remove here
                       return (
-                        <Pressable
+                        <Tap
                           key={cal.id}
+                          haptic="select"
                           disabled={locked}
                           onPress={() => toggleCal(cal.id)}
                           onLongPress={() => { // set as home (origin), selecting it if needed
@@ -487,75 +498,12 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                           <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: active ? colors.fg : colors.fg3 }}>
                             {cal.name}
                           </Text>
-                        </Pressable>
+                        </Tap>
                       );
                     })}
                   </View>
                 </ScrollView>
                 {calendarsError ? <Text style={styles.errorText}>{calendarsError}</Text> : null}
-              </View>
-
-              <View style={styles.fieldContainer}>
-                <View style={{ flexDirection: "row", gap: 36, alignItems: "flex-start" }}>
-                  <View style={{ flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
-                    <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>All Day</Text>
-                    <Switch
-                      thumbColor={allDayToggle ? colors.accent : colors.bg3}
-                      trackColor={{
-                        false: colors.line,
-                        true: colors.line3,
-                      }}
-                      onValueChange={(v) => { setAllDayToggle(v) }}
-                      value={allDayToggle}
-                    />
-                  </View>
-                  {!allDayToggle &&
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Quick Time</Text>
-                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        <View style={styles.horizontalPillView}>
-                          <Pressable
-                            onPress={() => {
-                              setNewStart(withHours(newStart, 6));
-                              setNewEnd(withHours(newStart, 12));
-                            }}
-                            style={newStart.getHours() === 6 && newEnd.getHours() === 12 && newStart.getMinutes() === 0 && newEnd.getMinutes() === 0 ? styles.pillActive : styles.pill}
-                          >
-                            <Feather name="sunrise" color={colors.fg2} />
-                            <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: newStart.getHours() === 6 && newEnd.getHours() === 12 && newStart.getMinutes() === 0 && newEnd.getMinutes() === 0 ? colors.fg : colors.fg3 }}>
-                              Mor
-                            </Text>
-                          </Pressable>
-                          <Pressable
-                            onPress={() => {
-                              setNewStart(withHours(newStart, 12));
-                              setNewEnd(withHours(newStart, 18));
-                            }}
-                            style={newStart.getHours() === 12 && newEnd.getHours() === 18 && newStart.getMinutes() === 0 && newEnd.getMinutes() === 0 ? styles.pillActive : styles.pill}
-                          >
-                            <Feather name="sun" color={colors.fg2} />
-                            <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: newStart.getHours() === 12 && newEnd.getHours() === 18 && newStart.getMinutes() === 0 && newEnd.getMinutes() === 0 ? colors.fg : colors.fg3 }}>
-                              Arvo
-                            </Text>
-                          </Pressable>
-                          <Pressable
-                            onPress={() => {
-                              setNewStart(withHours(newStart, 18));
-                              setNewEnd(withHours(newStart, 24));
-                            }}
-                            style={newStart.getHours() === 18 && newEnd.getHours() === 0 && newStart.getMinutes() === 0 && newEnd.getMinutes() === 0 ? styles.pillActive : styles.pill}
-                          >
-                            <Feather name="moon" color={colors.fg2} />
-                            <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: newStart.getHours() === 18 && newEnd.getHours() === 0 && newStart.getMinutes() === 0 && newEnd.getMinutes() === 0 ? colors.fg : colors.fg3 }}>
-                              Eve
-                            </Text>
-                          </Pressable>
-                        </View>
-                      </ScrollView>
-                    </View>
-                  }
-                </View>
-                {startError ? <Text style={styles.errorText}>{startError}</Text> : null}
               </View>
 
               {datePickerVisible &&
@@ -572,59 +520,89 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                   }}
                 />}
 
+              {/* One "When" block, platform-calendar style: Starts / Ends rows with
+                  date+time chips, all-day inline, quick presets underneath. */}
               <View style={styles.fieldContainer}>
-                <View style={{ flexDirection: "row", gap: 32 }}>
-                  <Pressable onPress={() => {
-                    setDatePickerTarget("start");
-                    setDatePickerMode("date");
-                    setDatePickerVisible(true);
-                  }}>
-                    <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Start Date</Text>
-                    <Text style={[styles.fieldValueText, { fontFamily: fonts.sans }]}>
-                      {newStart.toLocaleString(timeLocale, { dateStyle: 'medium' })}
-                    </Text>
-                  </Pressable>
-                  {!allDayToggle &&
-                    <Pressable onPress={() => {
-                      setDatePickerTarget("start");
-                      setDatePickerMode("time");
-                      setDatePickerVisible(true);
-                    }}>
-                      <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Time</Text>
-                      <Text style={[styles.fieldValueText, { fontFamily: fonts.sans }]}>
-                        {newStart.toLocaleString(timeLocale, { timeStyle: 'short' })}
-                      </Text>
-                    </Pressable>
-                  }
+                {([
+                  ["Starts", newStart, "start", startError] as const,
+                  ["Ends", newEnd, "end", endError] as const,
+                ]).map(([label, value, target, error]) => (
+                  <View key={target}>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6 }}>
+                      <Text style={[styles.fieldValueText, { fontFamily: fonts.sans, color: colors.fg2 }]}>{label}</Text>
+                      <View style={{ flexDirection: "row", gap: 8 }}>
+                        <Tap
+                          onPress={() => {
+                            setDatePickerTarget(target);
+                            setDatePickerMode("date");
+                            setDatePickerVisible(true);
+                          }}
+                          style={[local.chip, { backgroundColor: colors.bg3 }]}
+                        >
+                          <Text style={[styles.fieldValueText, { fontFamily: fonts.sans }]}>
+                            {value.toLocaleString(timeLocale, { dateStyle: 'medium' })}
+                          </Text>
+                        </Tap>
+                        {!allDayToggle &&
+                          <Tap
+                            onPress={() => {
+                              setDatePickerTarget(target);
+                              setDatePickerMode("time");
+                              setDatePickerVisible(true);
+                            }}
+                            style={[local.chip, { backgroundColor: colors.bg3 }]}
+                          >
+                            <Text style={[styles.fieldValueText, { fontFamily: fonts.sans }]}>
+                              {value.toLocaleString(timeLocale, { timeStyle: 'short' })}
+                            </Text>
+                          </Tap>
+                        }
+                      </View>
+                    </View>
+                    {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                  </View>
+                ))}
+
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6 }}>
+                  <Text style={[styles.fieldValueText, { fontFamily: fonts.sans, color: colors.fg2 }]}>All-day</Text>
+                  <Switch
+                    thumbColor={allDayToggle ? colors.accent : colors.bg3}
+                    trackColor={{ false: colors.line, true: colors.line3 }}
+                    onValueChange={(v) => { haptics.tap(); setAllDayToggle(v); }}
+                    value={allDayToggle}
+                  />
                 </View>
-                {startError ? <Text style={styles.errorText}>{startError}</Text> : null}
-              </View>
-              <View style={styles.fieldContainer}>
-                <View style={{ flexDirection: "row", gap: 32 }}>
-                  <Pressable onPress={() => {
-                    setDatePickerTarget("end");
-                    setDatePickerMode("date");
-                    setDatePickerVisible(true);
-                  }}>
-                    <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>End Date</Text>
-                    <Text style={[styles.fieldValueText, { fontFamily: fonts.sans }]}>
-                      {newEnd.toLocaleString(timeLocale, { dateStyle: 'medium' })}
-                    </Text>
-                  </Pressable>
-                  {!allDayToggle &&
-                    <Pressable onPress={() => {
-                      setDatePickerTarget("end");
-                      setDatePickerMode("time");
-                      setDatePickerVisible(true);
-                    }}>
-                      <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Time</Text>
-                      <Text style={[styles.fieldValueText, { fontFamily: fonts.sans }]}>
-                        {newEnd.toLocaleString(timeLocale, { timeStyle: 'short' })}
-                      </Text>
-                    </Pressable>
-                  }
-                </View>
-                {endError ? <Text style={styles.errorText}>{endError}</Text> : null}
+
+                {!allDayToggle &&
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 4 }}>
+                    <View style={styles.horizontalPillView}>
+                      {([
+                        ["sunrise", "Morning", 6, 12],
+                        ["sun", "Afternoon", 12, 18],
+                        ["moon", "Evening", 18, 24],
+                      ] as const).map(([icon, label, from, to]) => {
+                        const active = newStart.getHours() === from && newEnd.getHours() === (to % 24)
+                          && newStart.getMinutes() === 0 && newEnd.getMinutes() === 0;
+                        return (
+                          <Tap
+                            key={label}
+                            haptic="select"
+                            onPress={() => {
+                              setNewStart(withHours(newStart, from));
+                              setNewEnd(withHours(newStart, to));
+                            }}
+                            style={active ? styles.pillActive : styles.pill}
+                          >
+                            <Feather name={icon} color={colors.fg2} />
+                            <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: active ? colors.fg : colors.fg3 }}>
+                              {label}
+                            </Text>
+                          </Tap>
+                        );
+                      })}
+                    </View>
+                  </ScrollView>
+                }
               </View>
 
               <View style={styles.fieldContainer}>
@@ -637,7 +615,7 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                         false: colors.line,
                         true: colors.line3,
                       }}
-                      onValueChange={(v) => { setNotificationToggle(v) }}
+                      onValueChange={(v) => { haptics.tap(); setNotificationToggle(v); }}
                       value={notificationToggle}
                     />
                   </View>
@@ -649,15 +627,16 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                           {NOTIFY_BEFORE.map((opt) => {
                             const active = notifyBeforeTime === opt.value;
                             return (
-                              <Pressable
+                              <Tap
                                 key={opt.label}
+                                haptic="select"
                                 onPress={() => setNotifyBeforeTime(opt.value)}
                                 style={active ? styles.pillActive : styles.pill}
                               >
                                 <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: active ? colors.fg : colors.fg3 }}>
                                   {opt.label}
                                 </Text>
-                              </Pressable>
+                              </Tap>
                             );
                           })}
                         </View>
@@ -665,7 +644,6 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                     </View>
                   }
                 </View>
-                {startError ? <Text style={styles.errorText}>{startError}</Text> : null}
               </View>
               <View style={styles.fieldContainer}>
                 <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Repeat</Text>
@@ -676,8 +654,9 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                       const isWeekly = opt.value === 'weekly' && active;
                       const weekDay = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][newStart.getDay()];
                       return (
-                        <Pressable
+                        <Tap
                           key={opt.value}
+                          haptic="select"
                           onPress={() => {
                             setNewRecurrence(opt.value);
                             if (opt.value === 'custom' && newRecurrence !== 'custom') {
@@ -694,7 +673,7 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                           <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: active ? colors.fg : colors.fg3 }}>
                             {isWeekly ? `Weekly (${weekDay})` : opt.label}
                           </Text>
-                        </Pressable>
+                        </Tap>
                       );
                     })}
                   </View>
@@ -713,28 +692,29 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
 
                       {/* stepper */}
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Pressable
+                        <Tap
                           onPress={() => setAdvInterval(v => Math.max(1, v - 1))}
                           style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bg3, alignItems: 'center', justifyContent: 'center' }}
                         >
                           <Text style={{ fontFamily: fonts.sans, fontSize: 16, color: colors.fg2, lineHeight: 20 }}>−</Text>
-                        </Pressable>
+                        </Tap>
                         <Text style={{ fontFamily: fonts.sans, fontSize: 15, color: colors.fg, minWidth: 22, textAlign: 'center' }}>
                           {advInterval}
                         </Text>
-                        <Pressable
+                        <Tap
                           onPress={() => setAdvInterval(v => Math.min(99, v + 1))}
                           style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bg3, alignItems: 'center', justifyContent: 'center' }}
                         >
                           <Text style={{ fontFamily: fonts.sans, fontSize: 16, color: colors.fg2, lineHeight: 20 }}>+</Text>
-                        </Pressable>
+                        </Tap>
                       </View>
 
                       {/* freq selector */}
                       <View style={{ flexDirection: 'row', gap: 4, flex: 1 }}>
                         {([['DAILY', 'Day'], ['WEEKLY', 'Week'], ['MONTHLY', 'Month'], ['YEARLY', 'Year']] as const).map(([f, label]) => (
-                          <Pressable
+                          <Tap
                             key={f}
+                            haptic="select"
                             onPress={() => setAdvFreq(f)}
                             style={{
                               flex: 1, paddingVertical: 5, borderRadius: 8, alignItems: 'center',
@@ -744,7 +724,7 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                             <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: advFreq === f ? colors.bg : colors.fg3 }}>
                               {label}
                             </Text>
-                          </Pressable>
+                          </Tap>
                         ))}
                       </View>
                     </View>
@@ -757,8 +737,9 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                           {WEEKDAYS_DISPLAY.map(({ label, day }, i) => {
                             const active = advDays.has(day);
                             return (
-                              <Pressable
+                              <Tap
                                 key={i}
+                                haptic="select"
                                 onPress={() => setAdvDays(prev => {
                                   const next = new Set(prev);
                                   if (next.has(day) && next.size > 1) next.delete(day);
@@ -773,7 +754,7 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                                 <Text style={{ fontFamily: fonts.sansMedium, fontSize: 11, color: active ? colors.bg : colors.fg3 }}>
                                   {label}
                                 </Text>
-                              </Pressable>
+                              </Tap>
                             );
                           })}
                         </View>
@@ -785,33 +766,34 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                       <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg3, marginBottom: 8 }}>Ends</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         {(['never', 'count'] as const).map(type => (
-                          <Pressable
+                          <Tap
                             key={type}
+                            haptic="select"
                             onPress={() => setAdvEndType(type)}
                             style={advEndType === type ? styles.pillActive : styles.pill}
                           >
                             <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: advEndType === type ? colors.fg : colors.fg3 }}>
                               {type === 'never' ? 'Never' : 'After'}
                             </Text>
-                          </Pressable>
+                          </Tap>
                         ))}
                         {advEndType === 'count' && (
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            <Pressable
+                            <Tap
                               onPress={() => setAdvCount(v => Math.max(1, v - 1))}
                               style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bg3, alignItems: 'center', justifyContent: 'center' }}
                             >
                               <Text style={{ fontFamily: fonts.sans, fontSize: 16, color: colors.fg2, lineHeight: 20 }}>−</Text>
-                            </Pressable>
+                            </Tap>
                             <Text style={{ fontFamily: fonts.sans, fontSize: 15, color: colors.fg, minWidth: 22, textAlign: 'center' }}>
                               {advCount}
                             </Text>
-                            <Pressable
+                            <Tap
                               onPress={() => setAdvCount(v => Math.min(999, v + 1))}
                               style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bg3, alignItems: 'center', justifyContent: 'center' }}
                             >
                               <Text style={{ fontFamily: fonts.sans, fontSize: 16, color: colors.fg2, lineHeight: 20 }}>+</Text>
-                            </Pressable>
+                            </Tap>
                             <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg3 }}>
                               {advCount === 1 ? 'time' : 'times'}
                             </Text>
@@ -829,52 +811,60 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                 )}
               </View>
 
-              <View style={styles.fieldContainer}>
-                <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Note</Text>
-                <TextInput
-                  value={newDescription}
-                  onChangeText={setNewDescription}
-                  placeholder="..."
-                  placeholderTextColor={colors.fg4}
-                  multiline={true}
-                  style={[styles.fieldValueText, { fontFamily: fonts.sans }]}
-                />
-              </View>
-              <View style={styles.fieldContainer}>
-                <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Location</Text>
-                <TextInput
-                  value={newLocation}
-                  onChangeText={setNewLocation}
-                  placeholder="..."
-                  placeholderTextColor={colors.fg4}
-                  multiline={true}
-                  style={[styles.fieldValueText, { fontFamily: fonts.sans }]}
-                />
-              </View>
-              <View style={styles.fieldContainer}>
-                <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>URL</Text>
-                <TextInput
-                  value={newUrl}
-                  onChangeText={setNewUrl}
-                  placeholder="https://..."
-                  placeholderTextColor={colors.fg4}
-                  multiline={true}
-                  style={[styles.fieldValueText, { fontFamily: fonts.sans }]}
-                />
-                {urlError ? <Text style={styles.errorText}>{urlError}</Text> : null}
-              </View>
+              {/* The long tail — note/location/url stay folded until asked for,
+                  so the common flow is title → when → done. */}
+              {!detailsOpen ? (
+                <Tap
+                  onPress={() => setDetailsOpen(true)}
+                  style={[styles.fieldContainer, { flexDirection: "row", alignItems: "center", gap: 8 }]}
+                >
+                  <Feather name="plus" size={14} color={colors.fg3} />
+                  <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: colors.fg3 }}>
+                    Add note, location or link
+                  </Text>
+                </Tap>
+              ) : (
+                <>
+                  <View style={styles.fieldContainer}>
+                    <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Note</Text>
+                    <TextInput
+                      value={newDescription}
+                      onChangeText={setNewDescription}
+                      placeholder="..."
+                      placeholderTextColor={colors.fg4}
+                      multiline={true}
+                      style={[styles.fieldValueText, { fontFamily: fonts.sans }]}
+                    />
+                  </View>
+                  <View style={styles.fieldContainer}>
+                    <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Location</Text>
+                    <TextInput
+                      value={newLocation}
+                      onChangeText={setNewLocation}
+                      placeholder="..."
+                      placeholderTextColor={colors.fg4}
+                      multiline={true}
+                      style={[styles.fieldValueText, { fontFamily: fonts.sans }]}
+                    />
+                  </View>
+                  <View style={styles.fieldContainer}>
+                    <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>URL</Text>
+                    <TextInput
+                      value={newUrl}
+                      onChangeText={setNewUrl}
+                      placeholder="https://..."
+                      placeholderTextColor={colors.fg4}
+                      multiline={true}
+                      style={[styles.fieldValueText, { fontFamily: fonts.sans }]}
+                    />
+                    {urlError ? <Text style={styles.errorText}>{urlError}</Text> : null}
+                  </View>
+                </>
+              )}
             </ScrollView>
             <View style={[styles.modalButtons, { paddingBottom: insets.bottom + 16 }]}>
-              <Pressable style={styles.btnSecondary} onPress={handleClose}>
-                <Text style={styles.btnSecondaryText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={isLoading ? [styles.btnPrimary, { backgroundColor: colors.line }] : styles.btnPrimary}
-                onPress={handleSave}
-                disabled={isLoading}
-              >
-                <Text style={styles.btnPrimaryText}>{event ? "Save" : "Create"}</Text>
-              </Pressable>
+              <Btn label="Cancel" variant="secondary" onPress={handleClose} />
+              <Btn label={event ? "Save" : "Create"} onPress={handleSave} loading={isLoading} />
             </View>
           </Animated.View>
         </GestureHandlerRootView>
@@ -882,3 +872,13 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
     </>
   );
 }
+
+// Colors stay out of module-level sheets — the theme can swap at runtime.
+const local = StyleSheet.create({
+  chip: {
+    borderRadius: 8,
+    borderCurve: 'continuous',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+});

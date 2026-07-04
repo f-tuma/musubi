@@ -10,6 +10,7 @@ import { useRefreshData } from '@/hooks/useRefreshData';
 import { useEventsStore } from '@/store/useEventsStore';
 import { useCalendarsStore } from '@/store/useCalendarsStore';
 import { cacheGetAllEvents, cacheGetCalendars } from '@/services/eventsCache';
+import { select } from '@/lib/haptics';
 
 
 export default function TabLayout() {
@@ -52,6 +53,7 @@ export default function TabLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Tabs
+        screenListeners={{ tabPress: () => select() }}
         screenOptions={{
           tabBarStyle: {
             backgroundColor: colors.bg1,

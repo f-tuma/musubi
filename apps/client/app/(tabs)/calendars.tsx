@@ -8,8 +8,13 @@ import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useEventsStore } from "@/store/useEventsStore";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { Alert, RefreshControl, ScrollView, Text, View } from "react-native";
 import { useRefreshData } from "@/hooks/useRefreshData";
+import { Tap } from "@/components/ui/Tap";
+import { Btn } from "@/components/ui/Btn";
+import { Empty } from "@/components/ui/Empty";
+import { confirm } from "@/lib/confirm";
+import { warn } from "@/lib/haptics";
 
 
 function ProviderIcon({ provider }: { provider?: string | null }) {
@@ -72,25 +77,21 @@ export default function CalendarsTab() {
   };
 
   const handleDisconnect = (provider: string, accountId: string, label: string) => {
-    Alert.alert(
-      `Disconnect ${label}?`,
-      "Its calendars and their events will be removed from Musubi.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Disconnect",
-          style: "destructive",
-          onPress: async () => {
-            try { await api.disconnectAccount(provider, accountId); await onRefresh(); }
-            catch (e) { console.error(e); Alert.alert("Could not disconnect."); }
-          },
-        },
-      ],
+    confirm(
+      {
+        title: `Disconnect ${label}?`,
+        message: "Its calendars and their events will be removed from Musubi.",
+        confirmLabel: "Disconnect",
+      },
+      async () => {
+        try { await api.disconnectAccount(provider, accountId); await onRefresh(); }
+        catch (e) { console.error(e); warn(); Alert.alert("Could not disconnect."); }
+      },
     );
   };
 
   const renderRow = (c: Calendar) => (
-    <Pressable key={c.id} onPress={() => handleOpenCalendar(c)}>
+    <Tap key={c.id} onPress={() => handleOpenCalendar(c)}>
       <View style={[styles.container, { overflow: "hidden", flexDirection: "row", justifyContent: "space-between", gap: 18 }]}>
         <View style={styles.calendarCircle}>
           <View style={[styles.calendarCircleInner, { backgroundColor: c.color }]} />
@@ -105,18 +106,18 @@ export default function CalendarsTab() {
         </View>
       </View>
       <View style={{ height: 1, backgroundColor: colors.line }} />
-    </Pressable>
+    </Tap>
   );
 
   const SectionHeader = ({ title, onDisconnect }: { title: string; onDisconnect?: () => void }) => (
-    <Pressable
+    <Tap
       disabled={!onDisconnect}
       onPress={onDisconnect}
       style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.bg1 }}
     >
       <Text style={{ fontFamily: fonts.sansMedium, fontSize: 11, color: colors.fg3, letterSpacing: 0.5, textTransform: "uppercase" }}>{title}</Text>
       {onDisconnect ? <Feather name="log-out" size={13} color={colors.fg4} /> : null}
-    </Pressable>
+    </Tap>
   );
 
   return (
@@ -127,17 +128,22 @@ export default function CalendarsTab() {
         </Text>
       </View>
       <View style={[styles.modalButtons, { backgroundColor: colors.bg }]}>
-        <Pressable style={styles.btnPrimary} onPress={() => setCreateModalVisible(true)}>
-          <Feather size={14} name="plus" color={colors.bg3} />
-          <Text style={styles.btnPrimaryText}>Create Calendar</Text>
-        </Pressable>
-        <Pressable style={styles.btnSecondary} onPress={() => setSyncModalVisible(true)}>
-          <Feather size={14} name="refresh-cw" color={colors.fg2} />
-          <Text style={styles.btnSecondaryText}>Sync Calendar</Text>
-        </Pressable>
+        <Btn
+          label="Create Calendar"
+          icon={<Feather size={14} name="plus" color={colors.bg3} />}
+          onPress={() => setCreateModalVisible(true)}
+        />
+        <Btn
+          label="Sync Calendar"
+          variant="secondary"
+          icon={<Feather size={14} name="refresh-cw" color={colors.fg2} />}
+          onPress={() => setSyncModalVisible(true)}
+        />
       </View>
       <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <View style={{ height: 1, backgroundColor: colors.line }} />
+
+        {calendars.length === 0 && <Empty kanji="暦" text="No calendars yet" />}
 
         {native.length > 0 && (
           <>

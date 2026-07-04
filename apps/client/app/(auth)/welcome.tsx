@@ -1,8 +1,10 @@
 import { colors, fonts, styles } from "@/constants/theme";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { View, Text, Pressable, Linking } from "react-native";
+import { View, Text, Linking, KeyboardAvoidingView, Platform } from "react-native";
 import InputModal from "@/components/TextInputModal";
+import { Btn } from "@/components/ui/Btn";
+import { warn } from "@/lib/haptics";
 import { useServer } from "@/contexts/ServerContext";
 import { GoogleSignin, isSuccessResponse } from "@react-native-google-signin/google-signin";
 import Svg, { Path } from "react-native-svg";
@@ -24,13 +26,16 @@ function GoogleG({ size = 18 }: { size?: number }) {
 
 export default function Welcome() {
   const { authClient } = useServer();
+  const [googleBusy, setGoogleBusy] = useState(false);
   const handleGoogle = async () => {
     const wc = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+    setGoogleBusy(true);
     try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const response = await GoogleSignin.signIn();
       if (isSuccessResponse(response)) {
         if (!response.data.idToken) {
+          warn();
           alert(`idToken NULL — webClientId=${wc ?? "UNDEFINED"}`);
           return;
         }
@@ -39,15 +44,20 @@ export default function Welcome() {
           idToken: { token: response.data.idToken },
         });
         if (error) {
+          warn();
           alert(`Server error: ${error.message ?? JSON.stringify(error)}`);
         } else {
           router.replace("/(tabs)");
         }
       } else {
+        warn();
         alert(`Not success: ${response?.type}`);
       }
     } catch (e: any) {
+      warn();
       alert(`Native error: code=${e?.code} ${e?.message ?? String(e)}`);
+    } finally {
+      setGoogleBusy(false);
     }
   };
 
@@ -76,6 +86,7 @@ export default function Welcome() {
 
   return (
     <View style={styles.screen}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
       <View style={{ alignItems: "center", justifyContent: "space-between", flex: 1, paddingTop: 60 }}>
         <View style={{ alignItems: "center", justifyContent: "center" }}>
           <Text style={{ color: colors.fg, fontSize: 72, fontFamily: fonts.serif }}>
@@ -95,37 +106,28 @@ export default function Welcome() {
           </Text>
         </View>
         <View style={styles.modalButtonsColumn}>
-          <Pressable
-            style={[styles.btnSecondary, { backgroundColor: "#000" }]}
+          <Btn
+            label="Continue with Google"
+            variant="secondary"
+            style={{ backgroundColor: "#000" }}
+            icon={<GoogleG size={18} />}
+            loading={googleBusy}
             onPress={handleGoogle}
-          >
-            <GoogleG size={18} />
-            <Text style={styles.btnSecondaryText}>Continue with Google</Text>
-          </Pressable>
-          <Pressable
-            style={styles.btnPrimary}
+          />
+          <Btn
+            label="Create account"
             onPress={() => router.push("/(auth)/sign-up")}
-          >
-            <Text style={styles.btnPrimaryText}>
-              Create account
-            </Text>
-          </Pressable>
-          <Pressable
-            style={styles.btnSecondary}
+          />
+          <Btn
+            label="Login"
+            variant="secondary"
             onPress={() => router.push("/(auth)/sign-in")}
-          >
-            <Text style={styles.btnSecondaryText}>
-              Login
-            </Text>
-          </Pressable>
-          <Pressable
-            style={styles.btnSecondary}
+          />
+          <Btn
+            label={`Server: ${apiUrl}`}
+            variant="secondary"
             onPress={() => setInputModalVisible(true)}
-          >
-            <Text style={styles.btnSecondaryText}>
-              Server: {apiUrl}
-            </Text>
-          </Pressable>
+          />
           <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg4, textAlign: "center" }}>
             By continuing you accept the
             <Text
@@ -152,6 +154,7 @@ export default function Welcome() {
           </Text>
         </View>
       </View >
+      </KeyboardAvoidingView>
       <InputModal
         visible={inputModalVisible}
         title="Api Server URL..."
