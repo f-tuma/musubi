@@ -32,7 +32,7 @@ function getViewRange(mode: Mode, monthStart: Date): [Date, Date] {
 
 export default function MainTab() {
   const api = useApi();
-  const { events, addEvent, updateEvent, removeEvent } = useEventsStore();
+  const { events, addEvent, updateEvent, removeEvent, ensureWindow } = useEventsStore();
   const {
     weekStartsOn,
     defaultCalendarView,
@@ -57,6 +57,8 @@ export default function MainTab() {
 
   const [calMode, setCalMode] = useState<Mode>(defaultCalendarView);
   const [anchorDate, setAnchorDate] = useState(new Date());
+  // Fetch the surrounding window when the user navigates outside what's loaded.
+  useEffect(() => { ensureWindow(anchorDate, api); }, [anchorDate]);
   const [jumpDate, setJumpDate] = useState<Date>(new Date());
   const [newEventVisible, setNewEventVisible] = useState(false);
   const [eventDetailVisible, setEventDetailVisible] = useState(false);

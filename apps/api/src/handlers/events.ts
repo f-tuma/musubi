@@ -108,18 +108,16 @@ export async function handlerRemoveEvent(req: Request, res: Response) {
 }
 
 export async function handlerGetEvents(req: Request, res: Response) {
-  const result = await getUsersEvents(req.user!.id!);
+  const from = req.query.from ? new Date(req.query.from as string) : undefined;
+  const to = req.query.to ? new Date(req.query.to as string) : undefined;
+  const rows = await getUsersEvents(req.user!.id!, from, to);
   const seen = new Map<string, Event>();
-  for (const calendarMember of result) {
-    for (const calendarEvent of calendarMember.calendars.calendarEvents) {
-      const dbEvent = calendarEvent.events
-      if (!seen.has(dbEvent.id)) {
-        const newEvent = { ...dbEvent, calendars: [calendarEvent.calendarID] };
-        seen.set(dbEvent.id, newEvent);
-      } else {
-        const updateEvent = seen.get(dbEvent.id);
-        updateEvent?.calendars.push(calendarEvent.calendarID);
-      }
+  for (const { event: dbEvent, calendarID } of rows) {
+    const existing = seen.get(dbEvent.id);
+    if (existing) {
+      existing.calendars.push(calendarID);
+    } else {
+      seen.set(dbEvent.id, { ...dbEvent, calendars: [calendarID] });
     }
   }
   const events: Event[] = Array.from(seen.values());

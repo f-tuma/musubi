@@ -134,8 +134,13 @@ export function useApi() {
       return data.id;
     },
 
-    async getEvents() {
-      const { error, data } = await authClient.$fetch<{ events: Event[] }>(`${apiUrl}/api/${apiVersion}/events`, {
+    async getEvents(from?: Date, to?: Date) {
+      const params = new URLSearchParams();
+      if (from) params.set("from", from.toISOString());
+      if (to) params.set("to", to.toISOString());
+      const qs = params.toString() ? `?${params}` : "";
+
+      const { error, data } = await authClient.$fetch<{ events: Event[] }>(`${apiUrl}/api/${apiVersion}/events${qs}`, {
         method: "GET",
         headers: {
           "content-type": "application/json",

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, gte, isNotNull, lte, or } from "drizzle-orm";
 import { db } from "..";
 import { NewEvent, calendarEvents, calendarMembers, eventUsers, events } from "../schema";
 
@@ -40,23 +40,23 @@ export async function updateEvent(event: NewEvent) {
   return result;
 }
 
-export async function getUsersEvents(userID: string) {
-  const result = await db.query.calendarMembers.findMany({
-    where: eq(calendarMembers.userID, userID),
-    with: {
-      calendars: {
-        with: {
-          calendarEvents: {
-            with: {
-              events: true,
-            }
-          }
-        }
-      },
-    }
-  });
+export async function getUsersEvents(userID: string, from?: Date, to?: Date) {
+  // Flat join (drizzle can't filter a to-one nested relation). Window: one-off
+  // events overlapping [from, to]; recurring masters always (they expand
+  // client-side, so their master start may be far in the past).
+  const windowed = from !== undefined && to !== undefined;
 
-  return result;
+  return db
+    .select({ event: events, calendarID: calendarEvents.calendarID })
+    .from(calendarMembers)
+    .innerJoin(calendarEvents, eq(calendarEvents.calendarID, calendarMembers.calendarID))
+    .innerJoin(events, eq(events.id, calendarEvents.eventID))
+    .where(and(
+      eq(calendarMembers.userID, userID),
+      windowed
+        ? or(isNotNull(events.recurrence), and(lte(events.start, to!), gte(events.end, from!)))
+        : undefined,
+    ));
 }
 
 export async function removeEvent(eventID: string) {
