@@ -170,6 +170,11 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
   const [selectedCals, setSelectedCals] = useState<Set<string>>(
     () => new Set(calendars.slice(0, 1).map(c => c.id))
   );
+  // Explicit origin (home) pick via long-press. Falls back to first selected.
+  const [originCal, setOriginCal] = useState<string | null>(null);
+  const originEffective = originCal && selectedCals.has(originCal)
+    ? originCal
+    : [...selectedCals][0];
   const [isLoading, setIsLoading] = useState(false);
   const [eventHint, setEventHint] = useState(EVENT_HINTS[Math.floor(Math.random() * EVENT_HINTS.length)])
 
@@ -202,6 +207,7 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
     setNotificationToggle(notificationsOnByDefault);
     setNotifyBeforeTime(15);
     setSelectedCals(new Set(calendars.slice(0, 1).map(c => c.id)));
+    setOriginCal(null);
     setNewDescription("");
     setCalendarsError("");
     setNewLocation("");
@@ -225,6 +231,7 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
       setNewEnd(event?.end ?? startingDate ?? new Date());
       setNewColor(event?.color ?? appColors[0].color)
       setSelectedCals(new Set(event?.calendars) ?? new Set<string>);
+      setOriginCal(event?.originCalendarID ?? null);
       setNewDescription(event?.description ?? "");
       setNewLocation(event?.location ?? "");
       setNewUrl(event?.url ?? "");
@@ -341,6 +348,7 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
       creatorID: userID!,
       organizer: userID!, //TODO: ADD Organizer selection option in client
       calendars: [...selectedCals],
+      originCalendarID: originEffective,
       title: newTitle,
       color: newColor,
       start: allDayToggle ? allDayUTC(newStart) : newStart,
@@ -459,13 +467,17 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                   <View style={styles.horizontalPillView}>
                     {calendars.map((cal) => {
                       const active = selectedCals.has(cal.id);
-                      const isOrigin = event?.originCalendarID === cal.id;
+                      const isOrigin = originEffective === cal.id;
                       const locked = !can(cal.role, "editEvents"); // can't add/remove here
                       return (
                         <Pressable
                           key={cal.id}
                           disabled={locked}
                           onPress={() => toggleCal(cal.id)}
+                          onLongPress={() => { // set as home (origin), selecting it if needed
+                            setSelectedCals(prev => new Set(prev).add(cal.id));
+                            setOriginCal(cal.id);
+                          }}
                           style={active ? styles.pillActive : styles.pill}
                         >
                           {isOrigin

@@ -119,6 +119,30 @@ export async function clearCalendarEvents(calendarID: string) {
     db.select({ id: calendarEvents.eventID }).from(calendarEvents).where(eq(calendarEvents.calendarID, calendarID))));
 }
 
+// Link an event into calendars (calendar_events rows). Caller guarantees these are
+// new links (the "added" diff), so no conflict handling needed.
+export async function linkEventToCalendars(eventID: string, calendarIDs: string[]) {
+  if (calendarIDs.length === 0) return;
+  await db.insert(calendarEvents).values(calendarIDs.map(c => ({ eventID, calendarID: c })));
+}
+
+// Unlink an event from calendars: drop the calendar_events rows AND any external
+// mapping for those calendars, so re-adding later pushes a fresh external event
+// instead of updating a stale (possibly deleted) one.
+export async function unlinkEventFromCalendars(eventID: string, calendarIDs: string[]) {
+  if (calendarIDs.length === 0) return;
+  await db.delete(calendarEvents)
+    .where(and(eq(calendarEvents.eventID, eventID), inArray(calendarEvents.calendarID, calendarIDs)));
+
+  const extCals = await db.select({ ext: externalCalendars.externalCalendarID })
+    .from(externalCalendars).where(inArray(externalCalendars.calendarID, calendarIDs));
+  const extIDs = extCals.map(e => e.ext);
+  if (extIDs.length) {
+    await db.delete(externalEvents)
+      .where(and(eq(externalEvents.eventID, eventID), inArray(externalEvents.externalCalendarID, extIDs)));
+  }
+}
+
 export async function upsertExternalEvent(
   provider: string,
   userID: string,

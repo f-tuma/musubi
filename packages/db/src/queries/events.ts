@@ -36,6 +36,16 @@ export async function getEventOrigin(eventID: string): Promise<{ originCalendarI
   return row;
 }
 
+// Calendars an event is currently linked to (from calendar_events). Used to diff
+// against the incoming set on update → add/remove links + push to providers.
+export async function getEventCalendars(eventID: string): Promise<string[]> {
+  const rows = await db
+    .select({ calendarID: calendarEvents.calendarID })
+    .from(calendarEvents)
+    .where(eq(calendarEvents.eventID, eventID));
+  return rows.map(r => r.calendarID);
+}
+
 export async function getEvent(id: string) {
   const [result] = await db
     .select()

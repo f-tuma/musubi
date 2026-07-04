@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import { NewEvent, createEvent, getCalendarMembers, getUsersEvents, removeEvent, updateEvent } from '@musubi/db';
+import { NewEvent, createEvent, getCalendarMembers, getEventCalendars, getUsersEvents, linkEventToCalendars, removeEvent, unlinkEventFromCalendars, updateEvent } from '@musubi/db';
 import { BadRequestError, Event, EventSchema, NotFoundError } from "@musubi/types";
 import { notifyCalendarMembers } from "./stream";
-import { pushEventToProviders } from "../sync/engine";
+import { pushEventToCalendars, pushEventToProviders } from "../sync/engine";
 import { assertCan, assertCanEditEvent } from "../permissions";
 
 export async function handlerCreateEvent(req: Request, res: Response) {
@@ -49,6 +49,14 @@ export async function handlerUpdateEvent(req: Request, res: Response) {
   }
 
   await assertCanEditEvent(req.user!.id, event.id!); // edit-content gated by home calendar
+
+  // Diff the calendar links: what got removed / added / kept.
+  const existing = await getEventCalendars(event.id!);
+  const incoming = event.calendars;
+  const removed = existing.filter(c => !incoming.includes(c));
+  const added = incoming.filter(c => !existing.includes(c));
+  const kept = incoming.filter(c => existing.includes(c));
+
   const updatedEvent = await updateEvent({
     ...event,
     creatorID: req.user!.id,
@@ -56,25 +64,25 @@ export async function handlerUpdateEvent(req: Request, res: Response) {
 
   if (updatedEvent) {
 
-    await pushEventToProviders(event, "update");
+    // Reconcile links + propagate to external providers.
+    await pushEventToCalendars(event, removed, "delete"); // remove from Google while the mapping still exists
+    await unlinkEventFromCalendars(event.id!, removed);   // then drop the links + stale mappings
+    await linkEventToCalendars(event.id!, added);         // add new links
+    await pushEventToCalendars(event, added, "create");   // create in Google (+ mapping)
+    await pushEventToCalendars(event, kept, "update");     // update the rest
 
-    const result = { ...updatedEvent, calendars: event.calendars };
+    const result = { ...updatedEvent, calendars: incoming };
 
+    // Notify members of both old and new calendars (removed ones need to drop it).
     const memberIDSeen = new Set<string>();
-
-    for (const cal of event.calendars) {
+    for (const cal of new Set([...existing, ...incoming])) {
       const members = await getCalendarMembers(cal);
-
-      for (const member of members) {
-        if (!memberIDSeen.has(member.userID)) {
-          memberIDSeen.add(member.userID);
-        }
-      }
+      for (const member of members) memberIDSeen.add(member.userID);
     }
 
     notifyCalendarMembers([...memberIDSeen], "event_updated", result);
 
-    return res.status(200).json({ ...result, calendars: event.calendars });
+    return res.status(200).json({ ...result, calendars: incoming });
   }
   throw new NotFoundError("Request missing valid event data...");
 }

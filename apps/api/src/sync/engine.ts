@@ -124,7 +124,13 @@ export async function syncUser(userID: string) {
 // For "delete", the caller MUST invoke this BEFORE removing the Musubi event,
 // so the external mapping is still present to look up.
 export async function pushEventToProviders(event: Event, action: "create" | "update" | "delete") {
-  for (const calendarID of event.calendars) {
+  return pushEventToCalendars(event, event.calendars, action);
+}
+
+// Push an event to a specific set of calendars (used by update to reconcile the
+// diff: "delete" for removed calendars, "create" for added, "update" for kept).
+export async function pushEventToCalendars(event: Event, calendarIDs: string[], action: "create" | "update" | "delete") {
+  for (const calendarID of calendarIDs) {
     const link = await getExternalLinkForCalendar(calendarID);
     if (!link) continue;
     const adapter = getAdapter(link.provider);
