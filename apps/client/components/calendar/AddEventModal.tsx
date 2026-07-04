@@ -11,7 +11,7 @@ import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-ha
 import DateTimePicker from '@expo/ui/community/datetime-picker';
 import { useServer } from "@/contexts/ServerContext";
 import { EVENT_HINTS } from "@/constants/event_hints";
-import { Feather } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { cancelEventPushNotification, getEventsNotificationIdentifier, removeNotification, scheduleEventPushNotification, storeNotification, updateEventPushNotification, updateNotificationTriggerDate } from "@/services/notifications";
 import dayjs from "dayjs";
@@ -469,7 +469,7 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                           style={active ? styles.pillActive : styles.pill}
                         >
                           {isOrigin
-                            ? <Feather name="star" size={11} color={cal.color} style={{ opacity: active ? 1 : 0.4 }} />
+                            ? <Ionicons name="star" size={12} color={cal.color} style={{ opacity: active ? 1 : 0.4 }} />
                             : locked
                               ? <Feather name="lock" size={11} color={cal.color} style={{ opacity: active ? 1 : 0.4 }} />
                               : <View style={[styles.colorDot, { backgroundColor: cal.color, opacity: active ? 1 : 0.4 }]} />}

@@ -1,7 +1,7 @@
 import { Event, can } from "@musubi/types";
 import { colors, fonts, styles } from "@/constants/theme";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
-import { Feather } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import { Modal, Pressable, Text, View, ScrollView, Linking, Platform } from "react-native"
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -67,7 +67,7 @@ export default function EventDetailModal({ event, visible, onClose, onDelete, on
                     return (
                       <Pressable key={cal} style={styles.pillActive}>
                         {isOrigin
-                          ? <Feather name="star" size={11} color={calendar.color} />
+                          ? <Ionicons name="star" size={12} color={calendar.color} />
                           : locked
                             ? <Feather name="lock" size={11} color={calendar.color} />
                             : <View style={[styles.colorDot, { backgroundColor: calendar.color }]} />}

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { addCalendarMember, createCalendar, getCalendar, getCalendarEvents, getCalendarIDFromToken, getCalendarMembers, getExternalLinkForCalendar, getUsersCalendars, NewCalendar, removeCalendar, removeClaendarMember, updateCalendar } from '@musubi/db';
+import { addCalendarMember, createCalendar, getCalendar, getCalendarEvents, getCalendarIDFromToken, getCalendarMembers, getExternalLinkForCalendar, getUsersCalendars, NewCalendar, removeCalendar, removeClaendarMember, setMemberRole, updateCalendar } from '@musubi/db';
 import { BadRequestError, Calendar, CalendarSchema, NotFoundError, User } from "@musubi/types";
 import { notifyCalendarMembers } from "./stream";
 import { assertCan } from "../permissions";
@@ -152,5 +152,39 @@ export async function handlerLeaveCalendar(req: Request, res: Response) {
   await removeClaendarMember(req.user?.id!, req.params.calendarId as string);
 
   res.sendStatus(200);
+}
+
+export async function handlerGetCalendarMembers(req: Request, res: Response) {
+  const calendarID = req.params.calendarId as string;
+  await assertCan(req.user!.id, calendarID, "manageMembers");
+  const members = await getCalendarMembers(calendarID);
+  res.status(200).json(members.map(m => ({
+    id: m.user.id,
+    name: m.user.name,
+    email: m.user.email,
+    role: m.role,
+  })));
+}
+
+export async function handlerSetMemberRole(req: Request, res: Response) {
+  const calendarID = req.params.calendarId as string;
+  const targetUserID = req.params.userId as string;
+  const role = req.body?.role;
+
+  if (role !== "viewer" && role !== "editor") {
+    throw new BadRequestError("Role must be 'viewer' or 'editor'.");
+  }
+  await assertCan(req.user!.id, calendarID, "manageMembers");
+
+  const calendar = await getCalendar(calendarID);
+  if (!calendar) throw new NotFoundError("Calendar not found...");
+  if (targetUserID === calendar.creatorID) {
+    throw new BadRequestError("The calendar owner's role can't be changed.");
+  }
+
+  const updated = await setMemberRole(targetUserID, calendarID, role);
+  if (!updated) throw new NotFoundError("Member not found on this calendar...");
+
+  res.status(200).json({ id: targetUserID, role: updated.role });
 }
 

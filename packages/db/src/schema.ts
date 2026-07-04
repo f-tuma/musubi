@@ -255,7 +255,7 @@ export const calendarMembers = pgTable("calendar_members", {
       onDelete: "cascade",
     })
     .notNull(),
-  role: text("role").notNull().default("editor"), // owner | editor | viewer
+  role: text("role").notNull().default("viewer"), // owner | editor | viewer
 });
 
 export const calendarMembersRelations = relations(calendarMembers, ({ one }) => ({

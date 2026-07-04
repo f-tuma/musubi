@@ -10,6 +10,7 @@ import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useState } from "react";
 import { useApi } from "@/services/api";
 import { useServer } from "@/contexts/ServerContext";
+import MemberRolesModal from "./MemberRolesModal";
 
 
 type Props = {
@@ -26,6 +27,7 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
   const { authClient } = useServer();
   const [waitingForInvite, setWaitingForInvite] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
+  const [rolesVisible, setRolesVisible] = useState(false);
 
   const insets = useSafeAreaInsets();
   const { slideStyle, fadeStyle, gesture, handleClose } = useModalAnimation(visible, onClose);
@@ -38,6 +40,7 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
   const showEdit = can(calendar?.role, "editCalendar") && !isExternal;
   const showDelete = can(calendar?.role, "deleteCalendar") && !isExternal;
   const showInvite = can(calendar?.role, "invite");
+  const showManage = can(calendar?.role, "manageMembers"); // owner-only role editing
   const showLeave = !isOwner;                    // non-owners can leave
 
   return (
@@ -83,6 +86,12 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
                     <Feather size={14} name="send" color={colors.bg3} />
                     <Text style={styles.btnPrimaryText}>Send Invite</Text>
                   </Pressable>
+                  )}
+                  {showManage && (
+                    <Pressable style={styles.btnSecondary} onPress={() => setRolesVisible(true)}>
+                      <Feather size={14} name="users" color={colors.fg2} />
+                      <Text style={styles.btnSecondaryText}>Permissions</Text>
+                    </Pressable>
                   )}
                 </View>
               </View>
@@ -148,6 +157,11 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
           </Animated.View>
         </GestureDetector>
       </GestureHandlerRootView>
+      <MemberRolesModal
+        calendar={calendar}
+        visible={rolesVisible}
+        onClose={() => setRolesVisible(false)}
+      />
     </Modal >
   );
 }

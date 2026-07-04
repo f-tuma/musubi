@@ -117,8 +117,20 @@ export async function getUserRoleForCalendar(userID: string, calendarID: string)
 export async function addCalendarMember(userID: string, calendarID: string) {
   const result = await db
     .insert(calendarMembers)
-    .values({ userID, calendarID })
+    .values({ userID, calendarID, role: "viewer" }) // new members start read-only
     .onConflictDoNothing()
+    .returning();
+
+  return result;
+}
+
+// Change a member's role. Owner is intentionally not assignable here (no accidental
+// second owner / ownership transfer) — validated in the handler.
+export async function setMemberRole(userID: string, calendarID: string, role: string) {
+  const [result] = await db
+    .update(calendarMembers)
+    .set({ role })
+    .where(and(eq(calendarMembers.userID, userID), eq(calendarMembers.calendarID, calendarID)))
     .returning();
 
   return result;

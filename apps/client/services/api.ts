@@ -183,6 +183,28 @@ export function useApi() {
       return true;
     },
 
+    async getCalendarMembers(calendarID: string) {
+      const { data, error } = await authClient.$fetch<{ id: string; name: string; email: string; role: string }[]>(
+        `${apiUrl}/api/${apiVersion}/calendars/${calendarID}/members`,
+        { method: "GET" },
+      );
+
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
+
+      return data ?? [];
+    },
+
+    async setMemberRole(calendarID: string, userID: string, role: "viewer" | "editor") {
+      const { error } = await authClient.$fetch(
+        `${apiUrl}/api/${apiVersion}/calendars/${calendarID}/members/${userID}`,
+        { method: "PUT", body: { role } },
+      );
+
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
+
+      return true;
+    },
+
     async getSettings() {
       const { data, error } = await authClient.$fetch<Settings>(`${apiUrl}/api/${apiVersion}/users/settings`, {
         method: "GET",

@@ -5,7 +5,7 @@ import { toNodeHandler } from "better-auth/node";
 import express from "express";
 import cors from "cors";
 import { middlewareErrorHandler } from "./middleware/error_handler";
-import { handlerCreateCalendar, handlerGetCalendars, handlerGetCalendar, handlerRemoveCalendar, handlerUpdateCalendar, handlerJoinCalendar, handlerLeaveCalendar, handlerGetCalendarFromToken } from "./handlers/calendars";
+import { handlerCreateCalendar, handlerGetCalendars, handlerGetCalendar, handlerRemoveCalendar, handlerUpdateCalendar, handlerJoinCalendar, handlerLeaveCalendar, handlerGetCalendarFromToken, handlerGetCalendarMembers, handlerSetMemberRole } from "./handlers/calendars";
 import { handlerDeleteUser, handlerResetUsers } from "./handlers/users";
 import { handlerCreateEvent, handlerGetEvents, handlerRemoveEvent, handlerUpdateEvent } from "./handlers/events";
 import { requireAuth } from "./middleware/require_auth";
@@ -161,6 +161,20 @@ app.post("/api/v1/calendars/members/:calendarId", requireAuth, (
   res,
   next) => {
   Promise.resolve(handlerJoinCalendar(req, res).catch(next));
+});
+
+app.get("/api/v1/calendars/:calendarId/members", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerGetCalendarMembers(req, res).catch(next));
+});
+
+app.put("/api/v1/calendars/:calendarId/members/:userId", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerSetMemberRole(req, res).catch(next));
 });
 
 app.post("/api/v1/events", requireAuth, (
