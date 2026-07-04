@@ -20,8 +20,9 @@ export async function handlerConnectCaldav(req: Request, res: Response) {
   try {
     const client = await createCaldavClient(serverUrl, username, password);
     await client.fetchCalendars();
-  } catch {
-    throw new BadRequestError("Could not connect to CalDAV server — check URL and credentials.");
+  } catch (err) {
+    console.error("CalDAV connect failed:", serverUrl, username, err);
+    throw new BadRequestError("Could not connect to CalDAV server — check URL and credentials. (iCloud requires an app-specific password.)");
   }
 
   await saveCaldavAccount(req.user!.id, serverUrl, username, encryptSecret(password));
