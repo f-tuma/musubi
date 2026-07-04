@@ -18,7 +18,7 @@ export async function handlerCreateCalendar(req: Request, res: Response) {
     creatorID: req.user!.id,
   }
   const result = await createCalendar(newCalendar);
-  res.status(201).json({ ...result, members: [{ id: req.user!.id, name: req.user!.name, email: req.user!.email }], invites: "wip" });
+  res.status(201).json({ ...result, role: "owner", members: [{ id: req.user!.id, name: req.user!.name, email: req.user!.email }], invites: "wip" });
 }
 
 export async function handlerRemoveCalendar(req: Request, res: Response) {

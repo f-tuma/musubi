@@ -11,6 +11,14 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native";
 import { useRefreshData } from "@/hooks/useRefreshData";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import { cacheClearAll } from "@/services/eventsCache";
+
+// Clear the natively-cached Google account so the next sign-in shows the account
+// picker again instead of silently reusing the last account.
+const clearGoogleSession = async () => {
+  try { await GoogleSignin.signOut(); } catch { /* not signed in via Google */ }
+};
 
 
 export default function SettingsTab() {
@@ -48,18 +56,22 @@ export default function SettingsTab() {
     setIsSaving(false);
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     loadCalendars([]);
     loadEvents([]);
-    authClient.signOut();
+    await cacheClearAll();
+    await clearGoogleSession();
+    await authClient.signOut(); // must finish before next sign-in, else B links onto A's session
     router.replace('/(auth)/welcome');
   };
 
-  const handleUserDelete = () => {
+  const handleUserDelete = async () => {
     loadCalendars([]);
     loadEvents([]);
-    api.deleteUser();
-    authClient.signOut();
+    await api.deleteUser();
+    await cacheClearAll();
+    await clearGoogleSession();
+    await authClient.signOut();
     router.replace('/(auth)/welcome');
   }
 

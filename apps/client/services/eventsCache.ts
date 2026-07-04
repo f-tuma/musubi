@@ -113,3 +113,11 @@ export async function setLastSync(iso: string) {
     .values({ key: "lastSync", value: iso })
     .onConflictDoUpdate({ target: syncMetaTable.key, set: { value: iso } });
 }
+
+// Wipe the whole local mirror — events, cached calendars and the sync cursor.
+// Called on sign-out so the next account (or the same one on another device)
+// starts from a clean full sync instead of inheriting stale data.
+export async function cacheClearAll() {
+  await db.delete(eventsTable);
+  await db.delete(syncMetaTable);
+}

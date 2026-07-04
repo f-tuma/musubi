@@ -98,6 +98,7 @@ export const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     borderCurve: 'continuous',
+    minHeight: '33%',
     maxHeight: '88%',
   },
   modalHandle: {
