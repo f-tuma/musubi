@@ -16,6 +16,7 @@ import semver from "semver";
 import Constants from "expo-constants";
 import UpdateRequiredModal from "@/components/UpdateRequiredModal";
 import { registerForPushNotificationsAsync } from '@/services/notifications';
+import { apiVersion } from '@/constants/url';
 
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import { db } from '@/services/db';
@@ -50,7 +51,7 @@ function AppContent() {
       setVersionChecked(true);
       return;
     }
-    fetch(`${apiUrl}/api/server`)
+    fetch(`${apiUrl}/api/${apiVersion}/server`)
       .then(r => r.json())
       .then(({ minClientVersion }: { minClientVersion: string }) => {
         const clientVersion = Constants.expoConfig?.version ?? "0.0.0";
