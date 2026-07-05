@@ -6,7 +6,7 @@ import { scheduleOnRN } from "react-native-worklets";
 
 // Sheet physics: critically-damped spring so the sheet settles like paper,
 // not a linear slide. One spec shared by enter, release and dismiss.
-const SPRING = { damping: 28, stiffness: 300, mass: 0.8 };
+const SPRING = { damping: 32, stiffness: 300, mass: 0.8 };
 const DISMISS_DISTANCE = 100;
 
 export function useModalAnimation(visible: boolean, onClose: () => void) {

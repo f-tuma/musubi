@@ -23,7 +23,7 @@ export const Tap = forwardRef<View, Props>(function Tap(
 
   const feedback = useAnimatedStyle(() => ({
     opacity: withTiming(pressed.value ? 0.65 : 1, { duration: pressed.value ? 40 : 160 }),
-    transform: [{ scale: withSpring(pressed.value ? scaleTo : 1, { damping: 22, stiffness: 500 }) }],
+    transform: [{ scale: withSpring(pressed.value ? scaleTo : 1, { damping: 34, stiffness: 500 }) }],
   }));
 
   return (

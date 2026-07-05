@@ -10,6 +10,7 @@ import { NotoSerif_400Regular } from '@expo-google-fonts/noto-serif';
 import { ShipporiMinchoB1_400Regular } from '@expo-google-fonts/shippori-mincho-b1';
 import { colors, styles } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import semver from "semver";
@@ -132,8 +133,10 @@ export default function RootLayout() {
 
 
   return (
-    <ServerProvider>
-      <AppLoader />
-    </ServerProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ServerProvider>
+        <AppLoader />
+      </ServerProvider>
+    </GestureHandlerRootView>
   );
 }

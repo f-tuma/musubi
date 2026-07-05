@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Text, View } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { colors, fonts, styles } from "@/constants/theme";
 import { providerFlavor } from "@musubi/types";
 import { useApi } from "@/services/api";
@@ -23,6 +23,10 @@ export default function OnboardingSync() {
 
   const [syncVisible, setSyncVisible] = useState(false);
   const [finishing, setFinishing] = useState(false);
+
+  // Refresh whenever this step gains focus — the OAuth round-trip lands back
+  // here and the freshly synced calendars should show up in the list.
+  useFocusEffect(useCallback(() => { refresh().catch(() => { }); }, []));
 
   // One row per connected account, with the provider's icon + account label.
   const accounts = useMemo(() => {
@@ -79,36 +83,37 @@ export default function OnboardingSync() {
       }
     >
       <View style={styles.fieldContainer}>
-        {accounts.length > 0 && (
-          <View style={{ gap: 10, marginBottom: 16 }}>
-            {accounts.map((a) => (
-              <View key={a.label} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <ProviderIcon flavor={a.flavor} />
-                <Text style={{ fontFamily: fonts.sans, fontSize: 14, color: colors.fg, flex: 1 }} numberOfLines={1}>
-                  {a.label}
-                </Text>
-                <Feather name="check" size={16} color={colors.fg3} />
-              </View>
-            ))}
-          </View>
-        )}
-        <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: colors.fg2, marginBottom: 12 }}>
-          {accounts.length > 0
-            ? "Connected — events will appear after the first sync."
-            : "Connect Google or Apple/iCloud. You can also do this anytime later from the Calendars tab."}
-        </Text>
         <Btn
           label={accounts.length > 0 ? "Connect another calendar" : "Connect a calendar"}
           variant="secondary"
           icon={<Feather name="refresh-cw" size={14} color={colors.fg2} />}
           onPress={() => setSyncVisible(true)}
         />
+        <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: colors.fg2, marginTop: 12, textAlign: "center" }}>
+          {accounts.length > 0
+            ? "Connected — events will appear after the first sync."
+            : "Connect Google or Apple/iCloud. You can also do this anytime later from the Calendars tab."}
+        </Text>
       </View>
+      {accounts.length > 0 && (
+        <View style={[styles.fieldContainer, { gap: 10 }]}>
+          {accounts.map((a) => (
+            <View key={a.label} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <ProviderIcon flavor={a.flavor} />
+              <Text style={{ fontFamily: fonts.sans, fontSize: 14, color: colors.fg, flex: 1 }} numberOfLines={1}>
+                {a.label}
+              </Text>
+              <Feather name="check" size={16} color={colors.fg3} />
+            </View>
+          ))}
+        </View>
+      )}
 
       <SyncCalendarModal
         visible={syncVisible}
         onClose={() => setSyncVisible(false)}
         onConnected={() => { refresh().catch(() => { }); }}
+        callbackURL="/onboarding/sync"
       />
     </OnboardingScaffold>
   );

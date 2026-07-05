@@ -1,13 +1,16 @@
-import { calendarTheme, colors, styles } from "@/constants/theme";
-import { AddEventModal } from "@/components/calendar/AddEventModal";
+import { colors, styles } from "@/constants/theme";
+import { AddEventModal, DOCK_PEEK } from "@/components/calendar/AddEventModal";
 import { CalendarFilterBar } from "@/components/calendar/CalendarFilterBar";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
+import { MonthView } from "@/components/cal/MonthView";
+import { TimelineView } from "@/components/cal/TimelineView";
+import { Draft, minutesToY, Rect, ZOOM_IN_MS, ZOOM_OUT_MS } from "@/components/cal/layout";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Text, View } from "react-native";
-import { Calendar, enrichEvents, expandRecurringEvents, type Mode } from "@musubi/calendar";
-import Animated, { FadeIn } from "react-native-reanimated";
-import { CalendarSkeleton } from "@/components/calendar/CalendarSkeleton";
-import { Tap } from "@/components/ui/Tap";
+import { BackHandler, View } from "react-native";
+import { expandRecurringEvents, type Mode } from "@musubi/calendar";
+import Animated, {
+  Easing, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withTiming,
+} from "react-native-reanimated";
 import dayjs from "dayjs";
 import EventDetailModal from "@/components/calendar/EventDetailModal";
 import { Event } from "@musubi/types";
@@ -19,56 +22,53 @@ import { useApi } from "@/services/api";
 import { useRefreshData } from "@/hooks/useRefreshData";
 import { eventColor } from "@/lib/eventColor";
 
+type CalMode = "month" | "week" | "day";
 
-// `monthStart` is anchorDate snapped to the start of its month (see rangeAnchorMs).
-// Snapping means swipes WITHIN a month produce an identical [start,end] and reuse
-// the expand/enrich memo below: day/3days/week swipe by < 1 month → cache hits.
-// Month view still shifts one bucket per swipe (already cheap after the month-view
-// memo fixes). Coverage is 3 months (non-month) / 5 months (month), enough to keep
-// the visible page populated across an in-window swipe.
-function getViewRange(mode: Mode, monthStart: Date): [Date, Date] {
+// Expansion window around the anchor month. Swipes within a month reuse the
+// expand memo below; month view gets a wider window for its buffered pages.
+function getViewRange(mode: CalMode, monthStart: Date): [Date, Date] {
   const m = dayjs(monthStart);
-  const span = mode === 'month' ? 2 : 1;
-  return [m.subtract(span, 'month').toDate(), m.add(span, 'month').endOf('month').toDate()];
+  const span = mode === "month" ? 2 : 1;
+  return [m.subtract(span, "month").toDate(), m.add(span, "month").endOf("month").toDate()];
 }
 
 export default function MainTab() {
   const api = useApi();
-  const { events, addEvent, updateEvent, removeEvent } = useEventsStore();
-  const {
-    weekStartsOn,
-    defaultCalendarView,
-  } = useSettingsStore();
+  const { events, addEvent, updateEvent } = useEventsStore();
+  const { weekStartsOn, defaultCalendarView } = useSettingsStore();
 
   const { calendars, activeCals, soloCalId, toggleCal, soloCalendar, syncActiveCals } = useCalendarsStore();
   useEffect(() => {
     syncActiveCals(calendars);
   }, [calendars]);
 
+  // settings' CalendarView still carries a legacy "schedule" value — the agenda tab owns that
+  const normalizeMode = (m: string): CalMode => (m === "week" || m === "day") ? m : "month";
+  const [calMode, setCalMode] = useState<CalMode>(normalizeMode(defaultCalendarView));
+  // `base` = page-0 anchor of the active pager; only changes on mode switch /
+  // today, so swipes stay cheap. `anchorDate` follows the visible page (header).
+  const [base, setBase] = useState(new Date());
+  const [anchorDate, setAnchorDate] = useState(new Date());
   useEffect(() => {
-    setCalMode(defaultCalendarView);
+    setCalMode(normalizeMode(defaultCalendarView));
   }, [defaultCalendarView]);
 
+  // month → day zoom: the tapped cell rect grows into a full day view overlay
+  const [drill, setDrill] = useState<null | { date: Date; rect: Rect }>(null);
+  // gates the docked sheet: it slides up only AFTER the day zoom-in settles
+  const [drillReady, setDrillReady] = useState(false);
+  const zoom = useSharedValue(0);
+  const [bodySize, setBodySize] = useState({ w: 0, h: 0 });
 
-  const [calHeight, setCalHeight] = useState(0);
-  const [calReady, setCalReady] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setCalReady(true), 500);
-    return () => clearTimeout(t);
-  }, []);
-
-  const [calMode, setCalMode] = useState<Mode>(defaultCalendarView);
-  const [anchorDate, setAnchorDate] = useState(new Date());
-  const [jumpDate, setJumpDate] = useState<Date>(new Date());
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [dockHidden, setDockHidden] = useState(false); // X hides the sheet until the next draft
+  const handleDraftChange = useCallback((d: Draft | null) => { setDraft(d); setDockHidden(false); }, []);
   const [newEventVisible, setNewEventVisible] = useState(false);
   const [eventDetailVisible, setEventDetailVisible] = useState(false);
   const [prefilledEvent, setPrefilledEvent] = useState<Event | undefined>(undefined);
   const [eventDetail, setEventDetail] = useState<Event | null>(null);
-  const [startingDate, setStartingDate] = useState<Date | undefined>(new Date());
+  const scrollPosRef = useRef(Math.max(0, minutesToY(new Date().getHours() * 60 - 60)));
 
-  // Pull-to-refresh (week/day timeline). Keep `refresh` in a ref so onRefresh —
-  // and thus the memoized refreshControl — stay stable and don't re-render the
-  // whole calendar on every render (only when `refreshing` toggles).
   const refresh = useRefreshData();
   const refreshRef = useRef(refresh);
   useEffect(() => { refreshRef.current = refresh; });
@@ -79,36 +79,70 @@ export default function MainTab() {
     finally { setRefreshing(false); }
   }, []);
 
+  const openDrill = useCallback((date: Date, rect: Rect) => {
+    setDraft(null);
+    setDrillReady(false);
+    setAnchorDate(date); // header + composer follow the drilled day (and its swipes)
+    setDrill({ date, rect });
+    zoom.value = 0;
+    zoom.value = withTiming(1, { duration: ZOOM_IN_MS, easing: Easing.out(Easing.cubic) }, (finished) => {
+      if (finished) runOnJS(setDrillReady)(true);
+    });
+  }, []);
+
+  const clearDrill = useCallback(() => {
+    setDrill(null);
+    setDraft(null);
+  }, []);
+
+  const closeDrill = useCallback(() => {
+    setDrillReady(false); // sheet ducks out while the day zooms back
+    zoom.value = withTiming(0, { duration: ZOOM_OUT_MS, easing: Easing.in(Easing.cubic) }, (finished) => {
+      if (finished) runOnJS(clearDrill)();
+    });
+  }, [clearDrill]);
+
+  // Android back while drilled into a day → zoom back out to the month.
+  useEffect(() => {
+    if (!drill) return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => { closeDrill(); return true; });
+    return () => sub.remove();
+  }, [drill, closeDrill]);
+
+  const switchMode = useCallback((m: Mode) => {
+    if (m !== "month" && m !== "week" && m !== "day") return;
+    setDraft(null);
+    if (drill) {
+      if (m === "month") { closeDrill(); return; }
+      // jump straight from the drilled day into another mode, no zoom-out
+      zoom.value = 0;
+      setDrill(null);
+    }
+    setBase(anchorDate);
+    setCalMode(m);
+  }, [drill, anchorDate, closeDrill]);
+
+  const onTodayPress = useCallback(() => {
+    const now = new Date();
+    zoom.value = 0;
+    setDrill(null);
+    setDraft(null);
+    setBase(now);       // new base remounts the pager at today
+    setAnchorDate(now);
+  }, []);
+
   const handlerEventEdit = useCallback((event: Event) => {
     setEventDetailVisible(false);
     setPrefilledEvent(event);
     setNewEventVisible(true);
   }, []);
 
-  const handleCreateEventOnCell = useCallback((date: Date) => {
-    setStartingDate(date);
-    setNewEventVisible(true);
-  }, []);
-
-  const goToDay = useCallback((date: Date) => {
-    setCalMode('day');
-    setAnchorDate(date);
-    setJumpDate(date);
-  }, []);
-
-  // Quick tap on a day drills into its day view (week/month); in day view a tap
-  // creates an event. Long-press always creates (wired to onLongPressCell).
-  const handleCellPress = useCallback((date: Date) => {
-    if (calMode === 'day') handleCreateEventOnCell(date);
-    else goToDay(date);
-  }, [calMode, goToDay, handleCreateEventOnCell]);
-
   const openEventDetail = useCallback((event: Event) => {
     // Recurring occurrences have synthetic ids like "<originalId>_<timestamp>".
     // Display the occurrence's own start/end (the date the user tapped) but
     // keep the original event's id so that edit/delete targets the full series.
     const original = events.find(e => e.id === event.id)
-      ?? events.find(e => e.id === event.id?.replace(/_\d+$/, ''));
+      ?? events.find(e => e.id === event.id?.replace(/_\d+$/, ""));
     setEventDetail(
       original && original.id !== event.id
         ? { ...original, start: event.start, end: event.end }
@@ -117,10 +151,9 @@ export default function MainTab() {
     setEventDetailVisible(true);
   }, [events]);
 
-  // Snap the expansion anchor to its month; changes value only when the month
-  // changes, so the range memo below stays stable across in-month swipes.
+  // Snap the expansion anchor to its month; stable across in-month swipes.
   const rangeAnchorMs = useMemo(
-    () => dayjs(anchorDate).startOf('month').valueOf(),
+    () => dayjs(anchorDate).startOf("month").valueOf(),
     [anchorDate],
   );
   const [rangeStart, rangeEnd] = useMemo(
@@ -135,41 +168,47 @@ export default function MainTab() {
       .sort((a, b) => a.start.getTime() - b.start.getTime()),
     [events, rangeStart, rangeEnd],
   );
-
-  // Calendar visibility is applied as a cheap per-cell filter INSIDE the calendar
-  // (eventFilter prop), NOT by rebuilding the events array. So toggling a calendar
-  // no longer re-expands/re-enriches/re-buckets, and the day grid — memoized on
-  // [events, month] — stays put across the ~5 buffered pager pages.
-  const eventFilter = useCallback(
-    (e: Event) => e.calendars.some(id => activeCals.has(id)),
-    [activeCals],
-  );
-
-  // Timeline (week/day) shows TIMED events only — all-day events live in the header
-  // bar. Building this map from all events rendered them in both places, and
-  // zero-duration all-day events (start == end == 00:00) showed as slivers at
-  // midnight. Exclude all-day here; the header gets them via the container split.
-  const enrichedEventsByDate = useMemo(
-    () => enrichEvents(expandedAll.filter(e => !e.isAllDay), true),
-    [expandedAll],
-  );
-
-  const scrollOffset = useMemo(() =>
-    new Date().getHours() * 60 - 60,
-    []
+  const visibleEvents = useMemo(
+    () => expandedAll.filter(e => e.calendars.some(id => activeCals.has(id))),
+    [expandedAll, activeCals],
   );
 
   const calendarById = useMemo(() => new Map(calendars.map(c => [c.id, c])), [calendars]);
-  const eventCellStyle = useCallback((e: Event) => ({ backgroundColor: eventColor(e, calendarById) }), [calendarById]);
+  const eventColorOf = useCallback((e: Event) => eventColor(e, calendarById), [calendarById]);
+
+  const onPageChange = useCallback((date: Date) => setAnchorDate(date), []);
+  const dockVisible = calMode !== "month" || !!drill;
+
+  // Overlay geometry: tapped cell rect → full calendar body. Content is laid out
+  // at full size inside and fades in, so nothing reflows mid-animation.
+  const overlayStyle = useAnimatedStyle(() => {
+    if (!drill) return { opacity: 0 };
+    const r = drill.rect;
+    return {
+      opacity: 1,
+      left: interpolate(zoom.value, [0, 1], [r.x, 0]),
+      top: interpolate(zoom.value, [0, 1], [r.y, 0]),
+      width: interpolate(zoom.value, [0, 1], [r.w, bodySize.w]),
+      height: interpolate(zoom.value, [0, 1], [r.h, bodySize.h]),
+      borderRadius: interpolate(zoom.value, [0, 1], [10, 0]),
+    };
+  });
+  const overlayContentStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(zoom.value, [0, 0.35, 1], [0, 0.2, 1]),
+  }));
+  const monthUnderStyle = useAnimatedStyle(() => ({
+    flex: 1,
+    opacity: 1 - zoom.value * 0.5,
+    transform: [{ scale: 1 + zoom.value * 0.03 }],
+  }));
 
   return (
-
     <View style={styles.screen}>
       <CalendarHeader
         anchorDate={anchorDate}
-        calMode={calMode}
-        onModeChange={setCalMode}
-        onTodayPress={() => setJumpDate(new Date())}
+        calMode={drill ? "day" : calMode}
+        onModeChange={switchMode}
+        onTodayPress={onTodayPress}
         onRefresh={onRefresh}
         refreshing={refreshing}
       />
@@ -182,50 +221,86 @@ export default function MainTab() {
       />
       <View
         style={{ flex: 1 }}
-        onLayout={(event) => setCalHeight(event.nativeEvent.layout.height)}
+        onLayout={e => setBodySize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
       >
-        {(!calReady || calHeight === 0) && <CalendarSkeleton />}
-        {calReady && calHeight > 0 && (
-          <Animated.View entering={FadeIn.duration(350)} style={{ flex: 1 }}>
-          <Calendar
-            events={expandedAll}
-            eventFilter={eventFilter}
-            eventsAreSorted={true}
-            enableEnrichedEvents={true}
-            enrichedEventsByDate={enrichedEventsByDate}
-            height={calMode === "month" ? calHeight : calHeight + 95}
-            theme={calendarTheme}
-            eventCellStyle={eventCellStyle}
-            allDayEventCellStyle={eventCellStyle}
+        {calMode === "month" ? (
+          <Animated.View style={monthUnderStyle}>
+            <MonthView
+              key={`m-${base.getTime()}`}
+              base={base}
+              events={visibleEvents}
+              weekStartsOn={weekStartsOn === "sunday" ? 0 : 1}
+              eventColorOf={eventColorOf}
+              onDayPress={openDrill}
+              onPageChange={onPageChange}
+            />
+          </Animated.View>
+        ) : (
+          <TimelineView
+            key={`${calMode}-${base.getTime()}`}
             mode={calMode}
+            base={base}
+            events={visibleEvents}
             weekStartsOn={weekStartsOn === "sunday" ? 0 : 1}
-            swipeEnabled={true}
-            showAllDayEventCell={true}
-            date={jumpDate}
-            scrollOffsetMinutes={scrollOffset}
-            onSwipeEnd={setAnchorDate}
+            eventColorOf={eventColorOf}
             onPressEvent={openEventDetail}
-            onPressCell={handleCellPress}
-            onLongPressCell={handleCreateEventOnCell}
+            draft={draft}
+            onDraftChange={handleDraftChange}
+            onPageChange={onPageChange}
+            scrollPosRef={scrollPosRef}
+            bottomPad={DOCK_PEEK + 14}
           />
+        )}
+
+        {drill && (
+          <Animated.View style={[{
+            position: "absolute",
+            backgroundColor: colors.bg,
+            overflow: "hidden",
+            borderWidth: 1,
+            borderColor: colors.line2,
+          }, overlayStyle]}>
+            <Animated.View style={[{ width: bodySize.w, height: bodySize.h }, overlayContentStyle]}>
+              <TimelineView
+                key={`drill-${drill.date.getTime()}`}
+                mode="day"
+                base={drill.date}
+                events={visibleEvents}
+                weekStartsOn={weekStartsOn === "sunday" ? 0 : 1}
+                eventColorOf={eventColorOf}
+                onPressEvent={openEventDetail}
+                draft={draft}
+                onDraftChange={handleDraftChange}
+                onPageChange={onPageChange}
+                scrollPosRef={scrollPosRef}
+                bottomPad={DOCK_PEEK + 14}
+              />
+            </Animated.View>
           </Animated.View>
         )}
       </View>
-      <Animated.View entering={FadeIn.duration(400)}>
-        <Tap style={styles.fab} haptic="thump" onPress={() => {
-          setPrefilledEvent(undefined);
-          setNewEventVisible(true);
-        }}>
-          <Text style={{ color: colors.onFill, fontSize: 28, lineHeight: 30 }}>+</Text>
-        </Tap>
-      </Animated.View>
+
+      {/* Docked event composer — peek with title + quick save, pull up for the
+          full form. The draft ghost on the grid feeds its times live. */}
+      {dockVisible && (
+        <AddEventModal
+          docked
+          visible={true}
+          peekVisible={!!draft || ((calMode === "day" || (!!drill && drillReady)) && !dockHidden)}
+          anchor={anchorDate}
+          startingDate={draft?.start}
+          endingDate={draft?.end}
+          onClose={() => { setDraft(null); setDockHidden(true); }}
+          onSave={async (e) => await addEvent(e, api)}
+          onEdit={async (e) => await updateEvent(e, api)}
+          calendars={calendars}
+        />
+      )}
+
+      {/* Classic modal — editing an existing event from its detail. */}
       <AddEventModal
         visible={newEventVisible}
-        startingDate={startingDate}
-        onClose={() => {
-          setNewEventVisible(false);
-          setStartingDate(undefined);
-        }}
+        onClose={() => setNewEventVisible(false)}
         onSave={async (e) => await addEvent(e, api)}
         onEdit={async (e) => await updateEvent(e, api)}
         calendars={calendars}

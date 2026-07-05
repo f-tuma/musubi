@@ -1,0 +1,108 @@
+<svg width="340" height="700" viewBox="0 0 340 700" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Stylized preview of the Musubi month view + docked composer -->
+  <defs>
+    <clipPath id="screen"><rect x="14" y="14" width="312" height="672" rx="34"/></clipPath>
+  </defs>
+
+  <!-- frame -->
+  <rect x="6" y="6" width="328" height="688" rx="42" fill="#1a1a1e"/>
+  <rect x="14" y="14" width="312" height="672" rx="34" fill="#0c0c0e"/>
+
+  <g clip-path="url(#screen)">
+    <!-- header -->
+    <rect x="14" y="14" width="312" height="86" fill="#131316"/>
+    <line x1="14" y1="100" x2="326" y2="100" stroke="#e8e4d9" stroke-opacity="0.07"/>
+    <text x="36" y="76" font-family="Georgia,serif" font-size="26" fill="#e8e4d9">July</text>
+    <text x="96" y="74" font-family="'Hiragino Mincho ProN','Noto Serif JP',serif" font-size="13" fill="#8f8b80">文月</text>
+    <path d="M124 68 l5 6 l5 -6" stroke="#8f8b80" stroke-width="1.6" fill="none"/>
+    <text x="238" y="74" font-family="Helvetica,Arial,sans-serif" font-size="10" letter-spacing="2" fill="#8f8b80">TODAY</text>
+    <g stroke="#8f8b80" stroke-width="1.4" fill="none">
+      <path d="M301 66 a7 7 0 1 1 -2 -5" />
+      <path d="M301 60 v6 h-6" />
+    </g>
+
+    <!-- calendar pills -->
+    <g font-family="Helvetica,Arial,sans-serif" font-size="10" fill="#a8a396">
+      <rect x="30" y="112" width="66" height="24" rx="12" fill="#1a1a1e" stroke="#e8e4d9" stroke-opacity="0.16"/>
+      <circle cx="44" cy="124" r="3" fill="#c8553d"/><text x="52" y="128">Family</text>
+      <rect x="102" y="112" width="60" height="24" rx="12" fill="#1a1a1e" stroke="#e8e4d9" stroke-opacity="0.16"/>
+      <circle cx="116" cy="124" r="3" fill="#7a8ba3"/><text x="124" y="128">Work</text>
+      <rect x="168" y="112" width="70" height="24" rx="12" fill="#1a1a1e" stroke="#e8e4d9" stroke-opacity="0.16"/>
+      <circle cx="182" cy="124" r="3" fill="#a8b5a0"/><text x="190" y="128">Friends</text>
+      <rect x="244" y="112" width="62" height="24" rx="12" fill="#1a1a1e" stroke="#e8e4d9" stroke-opacity="0.16"/>
+      <circle cx="258" cy="124" r="3" fill="#d4a574"/><text x="266" y="128">Anna</text>
+    </g>
+
+    <!-- weekday initials -->
+    <g font-family="Helvetica,Arial,sans-serif" font-size="9" fill="#5c594f" text-anchor="middle" letter-spacing="1">
+      <text x="36" y="160">M</text><text x="81" y="160">T</text><text x="125" y="160">W</text>
+      <text x="170" y="160">T</text><text x="214" y="160">F</text><text x="259" y="160">S</text><text x="303" y="160">S</text>
+    </g>
+
+    <!-- month grid -->
+    <g stroke="#e8e4d9" stroke-opacity="0.06">
+      <line x1="14" y1="170" x2="326" y2="170"/>
+      <line x1="14" y1="252" x2="326" y2="252"/>
+      <line x1="14" y1="334" x2="326" y2="334"/>
+      <line x1="14" y1="416" x2="326" y2="416"/>
+      <line x1="58.6" y1="170" x2="58.6" y2="498"/>
+      <line x1="103.1" y1="170" x2="103.1" y2="498"/>
+      <line x1="147.7" y1="170" x2="147.7" y2="498"/>
+      <line x1="192.3" y1="170" x2="192.3" y2="498"/>
+      <line x1="236.9" y1="170" x2="236.9" y2="498"/>
+      <line x1="281.4" y1="170" x2="281.4" y2="498"/>
+    </g>
+
+    <!-- day numbers, row 1 (29 30 1 2 3 4 5) -->
+    <g font-family="Helvetica,Arial,sans-serif" font-size="10" text-anchor="middle">
+      <g fill="#454239"><text x="36" y="186">29</text><text x="81" y="186">30</text></g>
+      <g fill="#8f8b80">
+        <text x="125" y="186">1</text><text x="170" y="186">2</text><text x="214" y="186">3</text>
+        <text x="259" y="186">4</text><text x="303" y="186">5</text>
+      </g>
+      <g fill="#8f8b80">
+        <text x="36" y="268">6</text><text x="81" y="268">7</text><text x="125" y="268">8</text>
+        <text x="170" y="268">9</text><text x="214" y="268">10</text><text x="259" y="268">11</text><text x="303" y="268">12</text>
+      </g>
+      <g fill="#8f8b80">
+        <text x="36" y="350">13</text><text x="81" y="350">14</text>
+        <text x="170" y="350">16</text><text x="214" y="350">17</text><text x="259" y="350">18</text><text x="303" y="350">19</text>
+      </g>
+      <g fill="#8f8b80">
+        <text x="36" y="432">20</text><text x="81" y="432">21</text><text x="125" y="432">22</text>
+        <text x="170" y="432">23</text><text x="214" y="432">24</text><text x="259" y="432">25</text><text x="303" y="432">26</text>
+      </g>
+    </g>
+    <!-- today: 15 -->
+    <circle cx="125" cy="346" r="9" fill="#c8553d"/>
+    <text x="125" y="350" font-family="Helvetica,Arial,sans-serif" font-size="10" fill="#f4f1e8" text-anchor="middle">15</text>
+
+    <!-- event chips -->
+    <g rx="2">
+      <rect x="107" y="194" width="37" height="9" rx="2" fill="#7a8ba3"/>
+      <rect x="107" y="206" width="37" height="9" rx="2" fill="#a8b5a0"/>
+      <rect x="218" y="194" width="37" height="9" rx="2" fill="#c8553d"/>
+      <rect x="18"  y="276" width="37" height="9" rx="2" fill="#d4a574"/>
+      <rect x="62"  y="276" width="37" height="9" rx="2" fill="#7a8ba3"/>
+      <rect x="62"  y="288" width="37" height="9" rx="2" fill="#b3a48a"/>
+      <rect x="151" y="276" width="37" height="9" rx="2" fill="#c8553d"/>
+      <rect x="107" y="358" width="37" height="9" rx="2" fill="#a8b5a0"/>
+      <rect x="107" y="370" width="37" height="9" rx="2" fill="#7a8ba3"/>
+      <rect x="240" y="358" width="37" height="9" rx="2" fill="#d4a574"/>
+      <rect x="285" y="358" width="37" height="9" rx="2" fill="#c8553d"/>
+      <rect x="18"  y="440" width="37" height="9" rx="2" fill="#b3a48a"/>
+      <rect x="196" y="440" width="37" height="9" rx="2" fill="#a8b5a0"/>
+    </g>
+
+    <!-- docked quick composer (peek) -->
+    <rect x="14" y="560" width="312" height="126" rx="20" fill="#131316" stroke="#e8e4d9" stroke-opacity="0.12"/>
+    <rect x="152" y="570" width="36" height="3" rx="1.5" fill="#3a3a3e"/>
+    <path d="M34 590 l10 10 M44 590 l-10 10" stroke="#a8a396" stroke-width="1.6"/>
+    <rect x="252" y="584" width="56" height="24" rx="12" fill="#e8e4d9"/>
+    <text x="280" y="600" font-family="Helvetica,Arial,sans-serif" font-size="11" fill="#0c0c0e" text-anchor="middle">Save</text>
+    <text x="34" y="644" font-family="Georgia,serif" font-size="18" fill="#5c594f">Add title…</text>
+
+    <!-- tab bar hint -->
+    <line x1="14" y1="686" x2="326" y2="686" stroke="#e8e4d9" stroke-opacity="0.07"/>
+  </g>
+</svg>

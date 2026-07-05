@@ -17,8 +17,9 @@ export function chooseOption(
   title: string,
   message: string | undefined,
   options: { label: string; destructive?: boolean; onPress: () => void }[],
+  quiet = false, // pickers (view switch…) shouldn't buzz like destructive choices
 ) {
-  warn();
+  if (!quiet) warn();
   if (Platform.OS === "ios") {
     const destructiveIdx = options.findIndex(o => o.destructive);
     ActionSheetIOS.showActionSheetWithOptions(

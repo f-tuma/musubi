@@ -1,13 +1,13 @@
 import "react-native-get-random-values";
 import { Calendar, Event, can } from "@musubi/types";
 import { colors, fonts, styles } from "@/constants/theme";
-import { useEffect, useRef, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
-import Animated from "react-native-reanimated";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, useWindowDimensions, View } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
 import { appColors } from "@/constants/colors";
-import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
+import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import DateTimePicker from '@expo/ui/community/datetime-picker';
 import { useServer } from "@/contexts/ServerContext";
 import { EVENT_HINTS } from "@/constants/event_hints";
@@ -24,6 +24,14 @@ import * as haptics from "@/lib/haptics";
 type Props = {
   visible: boolean;
   startingDate?: Date;
+  endingDate?: Date;    // drag-to-create range end
+  /** Docked: always-mounted bottom sheet on the calendar — peek shows title +
+   *  quick save, pulling the top edge up reveals the full form. */
+  docked?: boolean;
+  anchor?: Date;        // docked: day in view — default times land here
+  /** Docked only: false slides the sheet fully off-screen (week view waits for
+   *  a draft); flipping to true brings it back at peek. */
+  peekVisible?: boolean;
   onClose: () => void;
   onSave: (event: Event) => Promise<void>;
   onEdit: (event: Event) => Promise<void>;
@@ -141,7 +149,18 @@ function describeAdvanced(cfg: AdvancedRRuleConfig): string {
   return s;
 }
 
-export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, calendars, event }: Props) {
+// ── Docked sheet tuning ──────────────────────────────────────────────────────
+export const DOCK_PEEK = 172;        // visible sliver of the docked sheet: actions + title
+const DOCK_MAX_H = 620;              // expanded height cap
+const DOCK_HEIGHT_RATIO = 0.8;       // …or this fraction of the window, whichever is smaller
+const DOCK_HIDDEN_EXTRA = 30;        // pushed this far past its height when hidden
+const DOCK_SNAP_VELOCITY = 400;      // fling speed that snaps open/closed regardless of position
+const DOCK_SPRING = { damping: 32, stiffness: 300, mass: 0.8 };
+const TAB_BAR_H = 70;                // (tabs)/_layout tabBarStyle.height — sheet rests on top of it
+const KB_SHOW_MS = 220;              // keyboard lift in/out timings
+const KB_HIDE_MS = 180;
+
+export function AddEventModal({ visible, startingDate, endingDate, docked, anchor, peekVisible = true, onClose, onSave, onEdit, calendars, event }: Props) {
   const {
     notificationsOnByDefault,
     timeLocale,
@@ -176,9 +195,15 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
   const [advEndType, setAdvEndType] = useState<AdvancedEndType>('never');
   const [advCount, setAdvCount] = useState(10);
 
-  const [selectedCals, setSelectedCals] = useState<Set<string>>(
-    () => new Set(calendars.slice(0, 1).map(c => c.id))
-  );
+  // Default to a calendar the user can actually write to (personal first) —
+  // the first calendar in the list can be a read-only external one.
+  const defaultCalSet = () => {
+    const c = calendars.find(c => c.isDefault && can(c.role, "editEvents"))
+      ?? calendars.find(c => can(c.role, "editEvents"))
+      ?? calendars[0];
+    return new Set(c ? [c.id] : []);
+  };
+  const [selectedCals, setSelectedCals] = useState<Set<string>>(defaultCalSet);
   // Explicit origin (home) pick via long-press. Falls back to first selected.
   const [originCal, setOriginCal] = useState<string | null>(null);
   const originEffective = originCal && selectedCals.has(originCal)
@@ -225,7 +250,7 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
     setEndError("");
     setNotificationToggle(notificationsOnByDefault);
     setNotifyBeforeTime(15);
-    setSelectedCals(new Set(calendars.slice(0, 1).map(c => c.id)));
+    setSelectedCals(defaultCalSet());
     setOriginCal(null);
     setNewDescription("");
     setCalendarsError("");
@@ -244,13 +269,89 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
     setEventHint(EVENT_HINTS[Math.floor(Math.random() * EVENT_HINTS.length)]);
   }
 
-  const { slideStyle, fadeStyle, gesture, handleClose } = useModalAnimation(visible, closeSequence);
+  const { slideStyle, fadeStyle, gesture, handleClose } = useModalAnimation(!docked && visible, closeSequence);
+
+  // ── Docked mode: fixed-height sheet pinned to the bottom of the calendar.
+  // Two snap points — peek (title + quick save) and fully pulled out.
+  const win = useWindowDimensions();
+  const DOCK_H = Math.min(win.height * DOCK_HEIGHT_RATIO, DOCK_MAX_H);
+  const dockRange = DOCK_H - DOCK_PEEK;
+  const dockOff = useSharedValue(peekVisible ? dockRange : DOCK_H + DOCK_HIDDEN_EXTRA);
+  const dockStart = useSharedValue(0);
+
+  // Keyboard lift: the window doesn't resize (enforced edge-to-edge), so shift
+  // the sheet by exactly how far the keyboard reaches past the tab bar. Uses
+  // the keyboard's real top edge (screenY), not its height — more reliable
+  // across Android nav modes.
+  const kbLift = useSharedValue(0);
+  // Same overlap as React state: pads the scroll content so bottom fields
+  // (note/location/url) can scroll clear of the keyboard when expanded.
+  const [kbPad, setKbPad] = useState(0);
+  useEffect(() => {
+    if (!docked) return;
+    const show = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      e => {
+        const containerBottom = win.height - TAB_BAR_H; // sheet's resting bottom, window coords
+        const overlap = Math.max(containerBottom - e.endCoordinates.screenY, 0);
+        kbLift.value = withTiming(overlap, { duration: KB_SHOW_MS });
+        setKbPad(overlap);
+      });
+    const hide = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => { kbLift.value = withTiming(0, { duration: KB_HIDE_MS }); setKbPad(0); });
+    return () => { show.remove(); hide.remove(); };
+  }, [docked, win.height]);
+
+
+  // Hide/show the docked sheet (week view: appears with the first draft).
+  // When re-shown it lands at peek, never straight into the expanded state.
+  useEffect(() => {
+    if (!docked) return;
+    dockOff.value = withSpring(
+      peekVisible ? Math.min(dockOff.value, dockRange) : DOCK_H + DOCK_HIDDEN_EXTRA,
+      DOCK_SPRING,
+    );
+  }, [docked, peekVisible, dockRange]);
+  const dockGesture = useMemo(() => Gesture.Pan()
+    .onStart(() => { dockStart.value = dockOff.value; })
+    .onUpdate(e => { dockOff.value = Math.min(Math.max(dockStart.value + e.translationY, 0), dockRange); })
+    .onEnd(e => {
+      const expand = e.velocityY < -DOCK_SNAP_VELOCITY || (dockOff.value < dockRange / 2 && e.velocityY < DOCK_SNAP_VELOCITY);
+      dockOff.value = withSpring(expand ? 0 : dockRange, DOCK_SPRING);
+    }), [dockRange]);
+
+  // Lift caps at 0 — the expanded sheet keeps its top on screen (title lives
+  // there), fields further down scroll instead.
+  const dockedSlide = useAnimatedStyle(() => ({
+    transform: [{ translateY: Math.max(dockOff.value - kbLift.value, 0) }],
+  }));
+
+  const dockedDismiss = () => {
+    Keyboard.dismiss();
+    dockOff.value = withSpring(dockRange, DOCK_SPRING);
+    closeSequence(); // resets fields + onClose (parent clears the draft)
+  };
+
+  // Docked: times follow the calendar — the drag/tap draft when there is one,
+  // otherwise a sensible default on the day in view.
+  useEffect(() => {
+    if (!docked) return;
+    if (startingDate) {
+      setNewStart(startingDate);
+      setNewEnd(endingDate ?? new Date(startingDate.getTime() + 3600_000));
+    } else {
+      const s = new Date(anchor ?? new Date());
+      const now = new Date();
+      s.setHours(dayjs(s).isSame(now, "day") ? now.getHours() + 1 : 9, 0, 0, 0);
+      setNewStart(s);
+      setNewEnd(new Date(s.getTime() + 3600_000));
+    }
+  }, [docked, startingDate?.getTime(), endingDate?.getTime(), anchor?.getTime()]);
 
   useEffect(() => {
     if (visible) {
       setNewTitle(event?.title ?? "");
       setNewStart(event?.start ?? startingDate ?? new Date());
-      setNewEnd(event?.end ?? startingDate ?? new Date());
+      setNewEnd(event?.end ?? endingDate ?? startingDate ?? new Date());
       setSelectedCals(new Set(event?.calendars) ?? new Set<string>);
       setOriginCal(event?.originCalendarID ?? null);
       setNewDescription(event?.description ?? "");
@@ -409,7 +510,7 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
         await onSave(eventConstruct);
       }
       haptics.success();
-      handleClose();
+      docked ? dockedDismiss() : handleClose();
     } catch (e: any) {
       haptics.warn();
       Alert.alert("Failed to save", e?.message ?? "An unexpected error occured.");
@@ -418,450 +519,502 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
     }
   };
 
-  return (
+  const sheetContent = (
     <>
-      <Modal
-        visible={visible}
-        onRequestClose={handleClose}
-        animationType="none"
-        transparent={true}
-        statusBarTranslucent={true}
+      {/* the top strip is the pull handle: docked = snap peek/full, modal = dismiss */}
+      <GestureDetector gesture={docked ? dockGesture : gesture}>
+        <View>
+          {/* docked: tighter handle, clearly above the X/Save row */}
+          <View style={[styles.modalHandle, docked && { marginVertical: 8 }]} />
+          {docked ? (
+            <View style={{ paddingHorizontal: 16, paddingBottom: 4 }}>
+              {/* actions live up here — no Cancel/Create row in docked mode */}
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                <Tap onPress={dockedDismiss} hitSlop={10}>
+                  <Feather name="x" size={20} color={colors.fg2} />
+                </Tap>
+                <Tap haptic="thump" onPress={handleSave} disabled={isLoading} style={{
+                  backgroundColor: colors.fill, borderRadius: 999, borderCurve: "continuous",
+                  paddingHorizontal: 20, paddingVertical: 8, minWidth: 68, alignItems: "center",
+                }}>
+                  {isLoading
+                    ? <ActivityIndicator size="small" color={colors.onFill} />
+                    : <Text style={{ fontFamily: fonts.sansMedium, fontSize: 13, color: colors.onFill }}>Save</Text>}
+                </Tap>
+              </View>
+              <TextInput
+                value={newTitle}
+                onChangeText={setNewTitle}
+                placeholder={eventHint}
+                placeholderTextColor={colors.fg4}
+                returnKeyType="done"
+                onSubmitEditing={handleSave}
+                style={[styles.fieldValueBig, { fontFamily: fonts.sans, paddingVertical: 6, marginTop: 8 }]}
+              />
+              {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
+            </View>
+          ) : (
+            <View style={styles.modalTitleRow}>
+              <Text style={styles.modalTitle}>{event ? "Edit Event" : "New Event"}</Text>
+            </View>
+          )}
+        </View>
+      </GestureDetector>
+      <ScrollView
+        ref={scrollRef}
+        keyboardShouldPersistTaps="handled"
+        style={docked ? { flex: 1 } : undefined}
+        contentContainerStyle={docked ? { paddingBottom: kbPad } : undefined}
       >
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <Animated.View style={[styles.modalOverlay, fadeStyle]}>
-            <Pressable style={{ flex: 1 }} onPress={handleClose} />
-          </Animated.View>
-          <Animated.View style={[styles.modalSheet, fadeStyle, slideStyle]}>
-            <GestureDetector gesture={gesture}>
-              <View>
-                <View style={styles.modalHandle} />
+        {!docked && (
+          <View style={styles.fieldContainer}>
+            <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Title</Text>
+            <TextInput
+              value={newTitle}
+              onChangeText={setNewTitle}
+              placeholder={eventHint}
+              placeholderTextColor={colors.fg4}
+              multiline={true}
+              autoFocus={!event} // creating: pen ready the moment the sheet lands
+              style={[styles.fieldValueBig, { fontFamily: fonts.sans, marginBottom: 0 }]}
+            />
+            {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
+          </View>
+        )}
 
-                <View style={styles.modalTitleRow}>
-                  <Text style={styles.modalTitle}>{event ? "Edit Event" : "New Event"}</Text>
-                </View>
+        <View style={styles.fieldContainer}>
+          <ScrollView
+            horizontal
+          >
+            <View style={styles.horizontalPillView}>
+              {calendars.map((cal) => {
+                const active = selectedCals.has(cal.id);
+                const isOrigin = originEffective === cal.id;
+                const locked = !can(cal.role, "editEvents"); // can't add/remove here
+                return (
+                  <Tap
+                    key={cal.id}
+                    haptic="select"
+                    disabled={locked}
+                    onPress={() => toggleCal(cal.id)}
+                    onLongPress={() => { // set as home (origin), selecting it if needed
+                      setSelectedCals(prev => new Set(prev).add(cal.id));
+                      setOriginCal(cal.id);
+                    }}
+                    style={active ? styles.pillActive : styles.pill}
+                  >
+                    {isOrigin
+                      ? <Ionicons name="star" size={12} color={cal.color} style={{ opacity: active ? 1 : 0.4 }} />
+                      : locked
+                        ? <Feather name="lock" size={11} color={cal.color} style={{ opacity: active ? 1 : 0.4 }} />
+                        : <View style={[styles.colorDot, { backgroundColor: cal.color, opacity: active ? 1 : 0.4 }]} />}
+                    <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: active ? colors.fg : colors.fg3 }}>
+                      {cal.name}
+                    </Text>
+                  </Tap>
+                );
+              })}
+            </View>
+          </ScrollView>
+          {calendarsError ? <Text style={styles.errorText}>{calendarsError}</Text> : null}
+        </View>
 
-              </View>
-            </GestureDetector>
-            <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled">
-              <View style={styles.fieldContainer}>
-                <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Title</Text>
-                <TextInput
-                  value={newTitle}
-                  onChangeText={setNewTitle}
-                  placeholder={eventHint}
-                  placeholderTextColor={colors.fg4}
-                  multiline={true}
-                  autoFocus={!event} // creating: pen ready the moment the sheet lands
-                  style={[styles.fieldValueBig, { fontFamily: fonts.sans }]}
-                />
-                {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
-              </View>
+        {datePickerVisible &&
+          <DateTimePicker
+            presentation="dialog"
+            value={getDatePickerValue()}
+            mode={datePickerMode}
+            onValueChange={(_event, selectedDate) => {
+              setDatePickerVisible(false);
+              setDateFromDatePicker(selectedDate);
+            }}
+            onDismiss={() => {
+              setDatePickerVisible(false);
+            }}
+          />}
 
-              <View style={styles.fieldContainer}>
-                <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Calendars</Text>
-                <ScrollView
-                  horizontal
-                >
-                  <View style={styles.horizontalPillView}>
-                    {calendars.map((cal) => {
-                      const active = selectedCals.has(cal.id);
-                      const isOrigin = originEffective === cal.id;
-                      const locked = !can(cal.role, "editEvents"); // can't add/remove here
-                      return (
-                        <Tap
-                          key={cal.id}
-                          haptic="select"
-                          disabled={locked}
-                          onPress={() => toggleCal(cal.id)}
-                          onLongPress={() => { // set as home (origin), selecting it if needed
-                            setSelectedCals(prev => new Set(prev).add(cal.id));
-                            setOriginCal(cal.id);
-                          }}
-                          style={active ? styles.pillActive : styles.pill}
-                        >
-                          {isOrigin
-                            ? <Ionicons name="star" size={12} color={cal.color} style={{ opacity: active ? 1 : 0.4 }} />
-                            : locked
-                              ? <Feather name="lock" size={11} color={cal.color} style={{ opacity: active ? 1 : 0.4 }} />
-                              : <View style={[styles.colorDot, { backgroundColor: cal.color, opacity: active ? 1 : 0.4 }]} />}
-                          <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: active ? colors.fg : colors.fg3 }}>
-                            {cal.name}
-                          </Text>
-                        </Tap>
-                      );
-                    })}
-                  </View>
-                </ScrollView>
-                {calendarsError ? <Text style={styles.errorText}>{calendarsError}</Text> : null}
-              </View>
-
-              {datePickerVisible &&
-                <DateTimePicker
-                  presentation="dialog"
-                  value={getDatePickerValue()}
-                  mode={datePickerMode}
-                  onValueChange={(_event, selectedDate) => {
-                    setDatePickerVisible(false);
-                    setDateFromDatePicker(selectedDate);
-                  }}
-                  onDismiss={() => {
-                    setDatePickerVisible(false);
-                  }}
-                />}
-
-              {/* One "When" block, platform-calendar style: Starts / Ends rows with
+        {/* One "When" block, platform-calendar style: Starts / Ends rows with
                   date+time chips, all-day inline, quick presets underneath. */}
-              <View style={styles.fieldContainer}>
-                {([
-                  ["Starts", newStart, "start", startError] as const,
-                  ["Ends", newEnd, "end", endError] as const,
-                ]).map(([label, value, target, error]) => (
-                  <View key={target}>
-                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6 }}>
-                      <Text style={[styles.fieldValueText, { fontFamily: fonts.sans, color: colors.fg2 }]}>{label}</Text>
-                      <View style={{ flexDirection: "row", gap: 8 }}>
-                        <Tap
-                          onPress={() => {
-                            setDatePickerTarget(target);
-                            setDatePickerMode("date");
-                            setDatePickerVisible(true);
-                          }}
-                          style={[local.chip, { backgroundColor: colors.bg3 }]}
-                        >
-                          <Text style={[styles.fieldValueText, { fontFamily: fonts.sans }]}>
-                            {value.toLocaleString(timeLocale, { dateStyle: 'medium' })}
-                          </Text>
-                        </Tap>
-                        {!allDayToggle &&
-                          <Tap
-                            onPress={() => {
-                              setDatePickerTarget(target);
-                              setDatePickerMode("time");
-                              setDatePickerVisible(true);
-                            }}
-                            style={[local.chip, { backgroundColor: colors.bg3 }]}
-                          >
-                            <Text style={[styles.fieldValueText, { fontFamily: fonts.sans }]}>
-                              {value.toLocaleString(timeLocale, { timeStyle: 'short' })}
-                            </Text>
-                          </Tap>
-                        }
-                      </View>
-                    </View>
-                    {error ? <Text style={styles.errorText}>{error}</Text> : null}
-                  </View>
-                ))}
-
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6 }}>
-                  <Text style={[styles.fieldValueText, { fontFamily: fonts.sans, color: colors.fg2 }]}>All-day</Text>
-                  <Switch
-                    thumbColor={allDayToggle ? colors.accent : colors.bg3}
-                    trackColor={{ false: colors.line, true: colors.line3 }}
-                    onValueChange={(v) => { setAllDayToggle(v); }}
-                    value={allDayToggle}
-                  />
-                </View>
-
-                {!allDayToggle &&
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 4 }}>
-                    <View style={styles.horizontalPillView}>
-                      {([
-                        ["sunrise", "Morning", 6, 12],
-                        ["sun", "Afternoon", 12, 18],
-                        ["moon", "Evening", 18, 24],
-                      ] as const).map(([icon, label, from, to]) => {
-                        const active = newStart.getHours() === from && newEnd.getHours() === (to % 24)
-                          && newStart.getMinutes() === 0 && newEnd.getMinutes() === 0;
-                        return (
-                          <Tap
-                            key={label}
-                            haptic="select"
-                            onPress={() => {
-                              setNewStart(withHours(newStart, from));
-                              setNewEnd(withHours(newStart, to));
-                            }}
-                            style={active ? styles.pillActive : styles.pill}
-                          >
-                            <Feather name={icon} color={colors.fg2} />
-                            <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: active ? colors.fg : colors.fg3 }}>
-                              {label}
-                            </Text>
-                          </Tap>
-                        );
-                      })}
-                    </View>
-                  </ScrollView>
-                }
-              </View>
-
-              <View style={styles.fieldContainer}>
-                <View style={{ flexDirection: "row", gap: 36, alignItems: "flex-start" }}>
-                  <View style={{ flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
-                    <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Notification</Text>
-                    <Switch
-                      thumbColor={notificationToggle ? colors.accent : colors.bg3}
-                      trackColor={{
-                        false: colors.line,
-                        true: colors.line3,
+        <View style={styles.fieldContainer}>
+          {([
+            ["Starts", newStart, "start", startError] as const,
+            ["Ends", newEnd, "end", endError] as const,
+          ]).map(([label, value, target, error]) => (
+            <View key={target}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6 }}>
+                <Text style={[styles.fieldValueText, { fontFamily: fonts.sans, color: colors.fg2 }]}>{label}</Text>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <Tap
+                    onPress={() => {
+                      setDatePickerTarget(target);
+                      setDatePickerMode("date");
+                      setDatePickerVisible(true);
+                    }}
+                    style={[local.chip, { backgroundColor: colors.bg3 }]}
+                  >
+                    <Text style={[styles.fieldValueText, { fontFamily: fonts.sans }]}>
+                      {value.toLocaleString(timeLocale, { dateStyle: 'medium' })}
+                    </Text>
+                  </Tap>
+                  {!allDayToggle &&
+                    <Tap
+                      onPress={() => {
+                        setDatePickerTarget(target);
+                        setDatePickerMode("time");
+                        setDatePickerVisible(true);
                       }}
-                      onValueChange={(v) => { setNotificationToggle(v); }}
-                      value={notificationToggle}
-                    />
-                  </View>
-                  {notificationToggle &&
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Notify Before Event</Text>
-                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        <View style={styles.horizontalPillView}>
-                          {NOTIFY_BEFORE.map((opt) => {
-                            const active = notifyBeforeTime === opt.value;
-                            return (
-                              <Tap
-                                key={opt.label}
-                                haptic="select"
-                                onPress={() => setNotifyBeforeTime(opt.value)}
-                                style={active ? styles.pillActive : styles.pill}
-                              >
-                                <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: active ? colors.fg : colors.fg3 }}>
-                                  {opt.label}
-                                </Text>
-                              </Tap>
-                            );
-                          })}
-                        </View>
-                      </ScrollView>
-                    </View>
+                      style={[local.chip, { backgroundColor: colors.bg3 }]}
+                    >
+                      <Text style={[styles.fieldValueText, { fontFamily: fonts.sans }]}>
+                        {value.toLocaleString(timeLocale, { timeStyle: 'short' })}
+                      </Text>
+                    </Tap>
                   }
                 </View>
               </View>
-              <View style={styles.fieldContainer}>
-                <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Repeat</Text>
+              {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            </View>
+          ))}
+
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6 }}>
+            <Text style={[styles.fieldValueText, { fontFamily: fonts.sans, color: colors.fg2 }]}>All-day</Text>
+            <Switch
+              thumbColor={allDayToggle ? colors.accent : colors.bg3}
+              trackColor={{ false: colors.line, true: colors.line3 }}
+              onValueChange={(v) => { setAllDayToggle(v); }}
+              value={allDayToggle}
+            />
+          </View>
+
+          {!allDayToggle &&
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 4 }}>
+              <View style={styles.horizontalPillView}>
+                {([
+                  ["sunrise", "Morning", 6, 12],
+                  ["sun", "Afternoon", 12, 18],
+                  ["moon", "Evening", 18, 24],
+                ] as const).map(([icon, label, from, to]) => {
+                  const active = newStart.getHours() === from && newEnd.getHours() === (to % 24)
+                    && newStart.getMinutes() === 0 && newEnd.getMinutes() === 0;
+                  return (
+                    <Tap
+                      key={label}
+                      haptic="select"
+                      onPress={() => {
+                        setNewStart(withHours(newStart, from));
+                        setNewEnd(withHours(newStart, to));
+                      }}
+                      style={active ? styles.pillActive : styles.pill}
+                    >
+                      <Feather name={icon} color={colors.fg2} />
+                      <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: active ? colors.fg : colors.fg3 }}>
+                        {label}
+                      </Text>
+                    </Tap>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          }
+        </View>
+
+        <View style={styles.fieldContainer}>
+          <View style={{ flexDirection: "row", gap: 36, alignItems: "flex-start" }}>
+            <View style={{ flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+              <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Notification</Text>
+              <Switch
+                thumbColor={notificationToggle ? colors.accent : colors.bg3}
+                trackColor={{
+                  false: colors.line,
+                  true: colors.line3,
+                }}
+                onValueChange={(v) => { setNotificationToggle(v); }}
+                value={notificationToggle}
+              />
+            </View>
+            {notificationToggle &&
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Notify Before Event</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={styles.horizontalPillView}>
-                    {RECURRENCE_OPTIONS.map((opt) => {
-                      const active = newRecurrence === opt.value;
-                      const isWeekly = opt.value === 'weekly' && active;
-                      const weekDay = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][newStart.getDay()];
+                    {NOTIFY_BEFORE.map((opt) => {
+                      const active = notifyBeforeTime === opt.value;
                       return (
                         <Tap
-                          key={opt.value}
+                          key={opt.label}
                           haptic="select"
-                          onPress={() => {
-                            setNewRecurrence(opt.value);
-                            if (opt.value === 'custom' && newRecurrence !== 'custom') {
-                              setAdvFreq('WEEKLY');
-                              setAdvInterval(1);
-                              setAdvDays(new Set([newStart.getDay() || 1]));
-                              setAdvEndType('never');
-                              setAdvCount(10);
-                            }
-                          }}
+                          onPress={() => setNotifyBeforeTime(opt.value)}
                           style={active ? styles.pillActive : styles.pill}
                         >
-                          <Feather name={opt.icon as any} size={12} color={active ? colors.fg : colors.fg3} />
                           <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: active ? colors.fg : colors.fg3 }}>
-                            {isWeekly ? `Weekly (${weekDay})` : opt.label}
+                            {opt.label}
                           </Text>
                         </Tap>
                       );
                     })}
                   </View>
                 </ScrollView>
-
-                {newRecurrence === 'custom' && (
-                  <View style={{
-                    marginTop: 12, backgroundColor: colors.bg2,
-                    borderRadius: 12, padding: 14,
-                    borderWidth: 1, borderColor: colors.line, gap: 16,
-                  }}>
-
-                    {/* ── Every N <freq> ── */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                      <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg3, width: 38 }}>Every</Text>
-
-                      {/* stepper */}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Tap
-                          onPress={() => setAdvInterval(v => Math.max(1, v - 1))}
-                          style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bg3, alignItems: 'center', justifyContent: 'center' }}
-                        >
-                          <Text style={{ fontFamily: fonts.sans, fontSize: 16, color: colors.fg2, lineHeight: 20 }}>−</Text>
-                        </Tap>
-                        <Text style={{ fontFamily: fonts.sans, fontSize: 15, color: colors.fg, minWidth: 22, textAlign: 'center' }}>
-                          {advInterval}
-                        </Text>
-                        <Tap
-                          onPress={() => setAdvInterval(v => Math.min(99, v + 1))}
-                          style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bg3, alignItems: 'center', justifyContent: 'center' }}
-                        >
-                          <Text style={{ fontFamily: fonts.sans, fontSize: 16, color: colors.fg2, lineHeight: 20 }}>+</Text>
-                        </Tap>
-                      </View>
-
-                      {/* freq selector */}
-                      <View style={{ flexDirection: 'row', gap: 4, flex: 1 }}>
-                        {([['DAILY', 'Day'], ['WEEKLY', 'Week'], ['MONTHLY', 'Month'], ['YEARLY', 'Year']] as const).map(([f, label]) => (
-                          <Tap
-                            key={f}
-                            haptic="select"
-                            onPress={() => setAdvFreq(f)}
-                            style={{
-                              flex: 1, paddingVertical: 5, borderRadius: 8, alignItems: 'center',
-                              backgroundColor: advFreq === f ? colors.fill : colors.bg3,
-                            }}
-                          >
-                            <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: advFreq === f ? colors.onFill : colors.fg3 }}>
-                              {label}
-                            </Text>
-                          </Tap>
-                        ))}
-                      </View>
-                    </View>
-
-                    {/* ── Day picker (weekly only) ── */}
-                    {advFreq === 'WEEKLY' && (
-                      <View>
-                        <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg3, marginBottom: 8 }}>On</Text>
-                        <View style={{ flexDirection: 'row', gap: 6 }}>
-                          {WEEKDAYS_DISPLAY.map(({ label, day }, i) => {
-                            const active = advDays.has(day);
-                            return (
-                              <Tap
-                                key={i}
-                                haptic="select"
-                                onPress={() => setAdvDays(prev => {
-                                  const next = new Set(prev);
-                                  if (next.has(day) && next.size > 1) next.delete(day);
-                                  else next.add(day);
-                                  return next;
-                                })}
-                                style={{
-                                  flex: 1, aspectRatio: 1, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
-                                  backgroundColor: active ? colors.fill : colors.bg3,
-                                }}
-                              >
-                                <Text style={{ fontFamily: fonts.sansMedium, fontSize: 11, color: active ? colors.onFill : colors.fg3 }}>
-                                  {label}
-                                </Text>
-                              </Tap>
-                            );
-                          })}
-                        </View>
-                      </View>
-                    )}
-
-                    {/* ── Ends ── */}
-                    <View>
-                      <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg3, marginBottom: 8 }}>Ends</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        {(['never', 'count'] as const).map(type => (
-                          <Tap
-                            key={type}
-                            haptic="select"
-                            onPress={() => setAdvEndType(type)}
-                            style={advEndType === type ? styles.pillActive : styles.pill}
-                          >
-                            <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: advEndType === type ? colors.fg : colors.fg3 }}>
-                              {type === 'never' ? 'Never' : 'After'}
-                            </Text>
-                          </Tap>
-                        ))}
-                        {advEndType === 'count' && (
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            <Tap
-                              onPress={() => setAdvCount(v => Math.max(1, v - 1))}
-                              style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bg3, alignItems: 'center', justifyContent: 'center' }}
-                            >
-                              <Text style={{ fontFamily: fonts.sans, fontSize: 16, color: colors.fg2, lineHeight: 20 }}>−</Text>
-                            </Tap>
-                            <Text style={{ fontFamily: fonts.sans, fontSize: 15, color: colors.fg, minWidth: 22, textAlign: 'center' }}>
-                              {advCount}
-                            </Text>
-                            <Tap
-                              onPress={() => setAdvCount(v => Math.min(999, v + 1))}
-                              style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bg3, alignItems: 'center', justifyContent: 'center' }}
-                            >
-                              <Text style={{ fontFamily: fonts.sans, fontSize: 16, color: colors.fg2, lineHeight: 20 }}>+</Text>
-                            </Tap>
-                            <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg3 }}>
-                              {advCount === 1 ? 'time' : 'times'}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-
-                    {/* ── Human-readable summary ── */}
-                    <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.fg3, fontStyle: 'italic' }}>
-                      {describeAdvanced({ freq: advFreq, interval: advInterval, days: advDays, endType: advEndType, count: advCount })}
+              </View>
+            }
+          </View>
+        </View>
+        <View style={styles.fieldContainer}>
+          <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Repeat</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.horizontalPillView}>
+              {RECURRENCE_OPTIONS.map((opt) => {
+                const active = newRecurrence === opt.value;
+                const isWeekly = opt.value === 'weekly' && active;
+                const weekDay = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][newStart.getDay()];
+                return (
+                  <Tap
+                    key={opt.value}
+                    haptic="select"
+                    onPress={() => {
+                      setNewRecurrence(opt.value);
+                      if (opt.value === 'custom' && newRecurrence !== 'custom') {
+                        setAdvFreq('WEEKLY');
+                        setAdvInterval(1);
+                        setAdvDays(new Set([newStart.getDay() || 1]));
+                        setAdvEndType('never');
+                        setAdvCount(10);
+                      }
+                    }}
+                    style={active ? styles.pillActive : styles.pill}
+                  >
+                    <Feather name={opt.icon as any} size={12} color={active ? colors.fg : colors.fg3} />
+                    <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: active ? colors.fg : colors.fg3 }}>
+                      {isWeekly ? `Weekly (${weekDay})` : opt.label}
                     </Text>
+                  </Tap>
+                );
+              })}
+            </View>
+          </ScrollView>
 
-                  </View>
-                )}
+          {newRecurrence === 'custom' && (
+            <View style={{
+              marginTop: 12, backgroundColor: colors.bg2,
+              borderRadius: 12, padding: 14,
+              borderWidth: 1, borderColor: colors.line, gap: 16,
+            }}>
+
+              {/* ── Every N <freq> ── */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg3, width: 38 }}>Every</Text>
+
+                {/* stepper */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Tap
+                    onPress={() => setAdvInterval(v => Math.max(1, v - 1))}
+                    style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bg3, alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <Text style={{ fontFamily: fonts.sans, fontSize: 16, color: colors.fg2, lineHeight: 20 }}>−</Text>
+                  </Tap>
+                  <Text style={{ fontFamily: fonts.sans, fontSize: 15, color: colors.fg, minWidth: 22, textAlign: 'center' }}>
+                    {advInterval}
+                  </Text>
+                  <Tap
+                    onPress={() => setAdvInterval(v => Math.min(99, v + 1))}
+                    style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bg3, alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <Text style={{ fontFamily: fonts.sans, fontSize: 16, color: colors.fg2, lineHeight: 20 }}>+</Text>
+                  </Tap>
+                </View>
+
+                {/* freq selector */}
+                <View style={{ flexDirection: 'row', gap: 4, flex: 1 }}>
+                  {([['DAILY', 'Day'], ['WEEKLY', 'Week'], ['MONTHLY', 'Month'], ['YEARLY', 'Year']] as const).map(([f, label]) => (
+                    <Tap
+                      key={f}
+                      haptic="select"
+                      onPress={() => setAdvFreq(f)}
+                      style={{
+                        flex: 1, paddingVertical: 5, borderRadius: 8, alignItems: 'center',
+                        backgroundColor: advFreq === f ? colors.fill : colors.bg3,
+                      }}
+                    >
+                      <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: advFreq === f ? colors.onFill : colors.fg3 }}>
+                        {label}
+                      </Text>
+                    </Tap>
+                  ))}
+                </View>
               </View>
 
-              {/* The long tail — note/location/url stay folded until asked for,
-                  so the common flow is title → when → done. */}
-              {!detailsOpen ? (
-                <Tap
-                  onPress={() => setDetailsOpen(true)}
-                  style={[styles.fieldContainer, { flexDirection: "row", alignItems: "center", gap: 8 }]}
-                >
-                  <Feather name="plus" size={14} color={colors.fg3} />
-                  <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: colors.fg3 }}>
-                    Add note, location or link
-                  </Text>
-                </Tap>
-              ) : (
-                <>
-                  <View style={styles.fieldContainer}>
-                    <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Note</Text>
-                    <TextInput
-                      value={newDescription}
-                      onChangeText={setNewDescription}
-                      onFocus={scrollToBottomField}
-                      placeholder="..."
-                      placeholderTextColor={colors.fg4}
-                      multiline={true}
-                      style={[styles.fieldValueText, { fontFamily: fonts.sans }]}
-                    />
+              {/* ── Day picker (weekly only) ── */}
+              {advFreq === 'WEEKLY' && (
+                <View>
+                  <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg3, marginBottom: 8 }}>On</Text>
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    {WEEKDAYS_DISPLAY.map(({ label, day }, i) => {
+                      const active = advDays.has(day);
+                      return (
+                        <Tap
+                          key={i}
+                          haptic="select"
+                          onPress={() => setAdvDays(prev => {
+                            const next = new Set(prev);
+                            if (next.has(day) && next.size > 1) next.delete(day);
+                            else next.add(day);
+                            return next;
+                          })}
+                          style={{
+                            flex: 1, aspectRatio: 1, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
+                            backgroundColor: active ? colors.fill : colors.bg3,
+                          }}
+                        >
+                          <Text style={{ fontFamily: fonts.sansMedium, fontSize: 11, color: active ? colors.onFill : colors.fg3 }}>
+                            {label}
+                          </Text>
+                        </Tap>
+                      );
+                    })}
                   </View>
-                  <View style={styles.fieldContainer}>
-                    <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Location</Text>
-                    <TextInput
-                      value={newLocation}
-                      onChangeText={setNewLocation}
-                      onFocus={scrollToBottomField}
-                      placeholder="..."
-                      placeholderTextColor={colors.fg4}
-                      multiline={true}
-                      style={[styles.fieldValueText, { fontFamily: fonts.sans }]}
-                    />
-                  </View>
-                  <View style={styles.fieldContainer}>
-                    <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>URL</Text>
-                    <TextInput
-                      value={newUrl}
-                      onChangeText={setNewUrl}
-                      onFocus={scrollToBottomField}
-                      placeholder="https://..."
-                      placeholderTextColor={colors.fg4}
-                      multiline={true}
-                      style={[styles.fieldValueText, { fontFamily: fonts.sans }]}
-                    />
-                    {urlError ? <Text style={styles.errorText}>{urlError}</Text> : null}
-                  </View>
-                </>
+                </View>
               )}
-            </ScrollView>
-            <View style={[styles.modalButtons, { paddingBottom: insets.bottom + 16 }]}>
-              <Btn label="Cancel" variant="secondary" onPress={handleClose} />
-              <Btn label={event ? "Save" : "Create"} onPress={handleSave} loading={isLoading} />
+
+              {/* ── Ends ── */}
+              <View>
+                <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg3, marginBottom: 8 }}>Ends</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  {(['never', 'count'] as const).map(type => (
+                    <Tap
+                      key={type}
+                      haptic="select"
+                      onPress={() => setAdvEndType(type)}
+                      style={advEndType === type ? styles.pillActive : styles.pill}
+                    >
+                      <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: advEndType === type ? colors.fg : colors.fg3 }}>
+                        {type === 'never' ? 'Never' : 'After'}
+                      </Text>
+                    </Tap>
+                  ))}
+                  {advEndType === 'count' && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Tap
+                        onPress={() => setAdvCount(v => Math.max(1, v - 1))}
+                        style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bg3, alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <Text style={{ fontFamily: fonts.sans, fontSize: 16, color: colors.fg2, lineHeight: 20 }}>−</Text>
+                      </Tap>
+                      <Text style={{ fontFamily: fonts.sans, fontSize: 15, color: colors.fg, minWidth: 22, textAlign: 'center' }}>
+                        {advCount}
+                      </Text>
+                      <Tap
+                        onPress={() => setAdvCount(v => Math.min(999, v + 1))}
+                        style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bg3, alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <Text style={{ fontFamily: fonts.sans, fontSize: 16, color: colors.fg2, lineHeight: 20 }}>+</Text>
+                      </Tap>
+                      <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg3 }}>
+                        {advCount === 1 ? 'time' : 'times'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {/* ── Human-readable summary ── */}
+              <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.fg3, fontStyle: 'italic' }}>
+                {describeAdvanced({ freq: advFreq, interval: advInterval, days: advDays, endType: advEndType, count: advCount })}
+              </Text>
+
             </View>
-          </Animated.View>
-        </GestureHandlerRootView>
-      </Modal >
+          )}
+        </View>
+
+        {/* The long tail — note/location/url stay folded until asked for,
+                  so the common flow is title → when → done. */}
+        {!detailsOpen ? (
+          <Tap
+            onPress={() => setDetailsOpen(true)}
+            style={[styles.fieldContainer, { flexDirection: "row", alignItems: "center", gap: 8 }]}
+          >
+            <Feather name="plus" size={14} color={colors.fg3} />
+            <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: colors.fg3 }}>
+              Add note, location or link
+            </Text>
+          </Tap>
+        ) : (
+          <>
+            <View style={styles.fieldContainer}>
+              <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Note</Text>
+              <TextInput
+                value={newDescription}
+                onChangeText={setNewDescription}
+                onFocus={scrollToBottomField}
+                placeholder="..."
+                placeholderTextColor={colors.fg4}
+                multiline={true}
+                style={[styles.fieldValueText, { fontFamily: fonts.sans }]}
+              />
+            </View>
+            <View style={styles.fieldContainer}>
+              <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Location</Text>
+              <TextInput
+                value={newLocation}
+                onChangeText={setNewLocation}
+                onFocus={scrollToBottomField}
+                placeholder="..."
+                placeholderTextColor={colors.fg4}
+                multiline={true}
+                style={[styles.fieldValueText, { fontFamily: fonts.sans }]}
+              />
+            </View>
+            <View style={styles.fieldContainer}>
+              <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>URL</Text>
+              <TextInput
+                value={newUrl}
+                onChangeText={setNewUrl}
+                onFocus={scrollToBottomField}
+                placeholder="https://..."
+                placeholderTextColor={colors.fg4}
+                multiline={true}
+                style={[styles.fieldValueText, { fontFamily: fonts.sans }]}
+              />
+              {urlError ? <Text style={styles.errorText}>{urlError}</Text> : null}
+            </View>
+          </>
+        )}
+      </ScrollView>
+      {!docked && (
+        <View style={[styles.modalButtons, { paddingBottom: insets.bottom + 16 }]}>
+          <Btn label="Cancel" variant="secondary" onPress={handleClose} />
+          <Btn label={event ? "Save" : "Create"} onPress={handleSave} loading={isLoading} />
+        </View>
+      )}
     </>
+  );
+
+  if (docked) {
+    return (
+      <Animated.View style={[styles.modalSheet, {
+        height: DOCK_H, maxHeight: DOCK_H, minHeight: 0,
+        borderWidth: 1, borderColor: colors.line2,
+      }, dockedSlide]}>
+        {sheetContent}
+      </Animated.View>
+    );
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      onRequestClose={handleClose}
+      animationType="none"
+      transparent={true}
+      statusBarTranslucent={true}
+    >
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Animated.View style={[styles.modalOverlay, fadeStyle]}>
+          <Pressable style={{ flex: 1 }} onPress={handleClose} />
+        </Animated.View>
+        <Animated.View style={[styles.modalSheet, fadeStyle, slideStyle]}>
+          {sheetContent}
+        </Animated.View>
+      </GestureHandlerRootView>
+    </Modal>
   );
 }
 

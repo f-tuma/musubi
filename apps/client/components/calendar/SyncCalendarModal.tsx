@@ -19,9 +19,12 @@ type Props = {
   visible: boolean;
   onClose: () => void;
   onConnected: () => void;
+  /** Where the OAuth round-trip lands — onboarding passes its own step so
+   *  connecting doesn't dump the user into the app. */
+  callbackURL?: string;
 };
 
-export default function SyncCalendarModal({ visible, onClose, onConnected }: Props) {
+export default function SyncCalendarModal({ visible, onClose, onConnected, callbackURL = "/(tabs)" }: Props) {
   const { authClient } = useServer();
   const api = useApi();
 
@@ -50,7 +53,7 @@ export default function SyncCalendarModal({ visible, onClose, onConnected }: Pro
       const { error } = await authClient.linkSocial({
         provider: "google",
         scopes: ["https://www.googleapis.com/auth/calendar"],
-        callbackURL: "/(tabs)",
+        callbackURL,
       });
       if (error) throw new Error(error.message ?? "Google connect failed");
       haptics.success();
