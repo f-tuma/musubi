@@ -18,8 +18,9 @@
   <g transform="translate(148,160)">
     <circle cx="-34" cy="0" r="62" stroke="#e8e4d9" stroke-width="11"/>
     <circle cx="42" cy="0" r="62" stroke="#c8553d" stroke-width="11"/>
-    <!-- weave: re-draw an arc of the bone ring where it should pass over the red one -->
-    <path d="M 8 -50 A 62 62 0 0 1 28 -8" stroke="#e8e4d9" stroke-width="11" fill="none"/>
+    <!-- weave: re-draw the bone ring's arc over the red one at the TOP crossing
+         (points sit exactly on the bone circle: center (-34,0), r 62, θ −62°…−43°) -->
+    <path d="M -4.9 -54.7 A 62 62 0 0 1 11.3 -42.3" stroke="#e8e4d9" stroke-width="11" fill="none" stroke-linecap="butt"/>
   </g>
 
   <!-- wordmark -->
