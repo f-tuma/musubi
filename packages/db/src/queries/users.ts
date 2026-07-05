@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { db, user } from "..";
+import { db, user, userAvatars } from "..";
 import { config } from "@musubi/config";
 import { ForbiddenError, NotFoundError } from "@musubi/types";
 
@@ -24,4 +24,16 @@ export async function resetUsers() {
     const [result] = await db.delete(user).returning();
     return result;
   }
+}
+
+// Upsert the avatar bytes; caller is responsible for size/type validation.
+export async function setUserAvatar(userID: string, data: Buffer, mimeType: string) {
+  await db.insert(userAvatars)
+    .values({ id: userID, data, mimeType })
+    .onConflictDoUpdate({ target: userAvatars.id, set: { data, mimeType, updatedAt: new Date() } });
+}
+
+export async function getUserAvatar(userID: string) {
+  const [row] = await db.select().from(userAvatars).where(eq(userAvatars.id, userID));
+  return row ?? null;
 }

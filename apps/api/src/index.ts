@@ -6,7 +6,7 @@ import express from "express";
 import cors from "cors";
 import { middlewareErrorHandler } from "./middleware/error_handler";
 import { handlerCreateCalendar, handlerGetCalendars, handlerGetCalendar, handlerRemoveCalendar, handlerUpdateCalendar, handlerJoinCalendar, handlerLeaveCalendar, handlerGetCalendarFromToken, handlerGetCalendarMembers, handlerSetMemberRole, handlerKickMember } from "./handlers/calendars";
-import { handlerDeleteUser, handlerResetUsers } from "./handlers/users";
+import { handlerDeleteUser, handlerGetAvatar, handlerResetUsers, handlerUploadAvatar } from "./handlers/users";
 import { handlerCreateEvent, handlerForkEvent, handlerGetEvents, handlerLinkEvent, handlerRemoveEvent, handlerUpdateEvent } from "./handlers/events";
 import { requireAuth } from "./middleware/require_auth";
 import { handlerCreateCalendarInvite } from "./handlers/invites";
@@ -38,7 +38,7 @@ app.use(cors({
   },
   credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({ limit: "512kb" })); // avatars arrive as base64 JSON
 app.use(middlewareLogHandler);
 
 //
@@ -253,6 +253,21 @@ app.delete("/api/v1/users", requireAuth, (
   res,
   next) => {
   Promise.resolve(handlerDeleteUser(req, res).catch(next));
+});
+
+app.post("/api/v1/users/avatar", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerUploadAvatar(req, res).catch(next));
+});
+
+// public — see handler comment (plain <Image> can't send auth headers)
+app.get("/api/v1/users/:userId/avatar", (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerGetAvatar(req, res).catch(next));
 });
 
 app.delete("/api/v1/events", requireAuth, (

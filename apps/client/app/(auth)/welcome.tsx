@@ -106,10 +106,11 @@ export default function Welcome() {
           </Text>
         </View>
         <View style={styles.modalButtonsColumn}>
+          {/* No hardcoded background — secondary follows the theme, so the
+              label stays readable in both light and dark mode. */}
           <Btn
             label="Continue with Google"
             variant="secondary"
-            style={{ backgroundColor: "#000" }}
             icon={<GoogleG size={18} />}
             loading={googleBusy}
             onPress={handleGoogle}

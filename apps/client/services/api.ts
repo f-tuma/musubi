@@ -199,6 +199,17 @@ export function useApi() {
       return data;
     },
 
+    async uploadAvatar(base64: string) {
+      const { error, data } = await authClient.$fetch<{ url: string }>(`${apiUrl}/api/${apiVersion}/users/avatar`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ data: base64 }),
+      });
+
+      if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
+      return data.url;
+    },
+
     async leaveCalendar(calendarID: string) {
       const { error } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/calendars/members/${calendarID}`, {
         method: "DELETE",

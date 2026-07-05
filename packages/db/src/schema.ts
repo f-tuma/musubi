@@ -1,5 +1,10 @@
 import { relations } from "drizzle-orm";
-import { boolean, index, pgTable, text, timestamp, uuid, integer, unique } from "drizzle-orm/pg-core";
+import { boolean, customType, index, pgTable, text, timestamp, uuid, integer, unique } from "drizzle-orm/pg-core";
+
+// drizzle has no built-in bytea — minimal custom type
+const bytea = customType<{ data: Buffer }>({
+  dataType() { return "bytea"; },
+});
 
 
 // AUTH
@@ -102,6 +107,22 @@ export const accountRelations = relations(account, ({ one }) => ({
 
 // User settings
 
+
+// Avatars live in the DB on purpose: client-side optimization keeps them at
+// ~10-20 KB, self-hosting stays "just docker-compose", and pg_dump backs them
+// up. If bigger media ever lands (event attachments), swap the storage behind
+// the avatar endpoints for S3/MinIO — nothing else needs to change.
+export const userAvatars = pgTable("user_avatars", {
+  id: text("id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  data: bytea("data").notNull(),
+  mimeType: text("mime_type").notNull(),
+  updatedAt: timestamp("updated_at")
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
 
 export const userSettings = pgTable("user_settings", {
   id: text("id")

@@ -62,7 +62,7 @@ export const auth = betterAuth({
         // undeletable, non-transferable, the default home for future features.
         after: async (user) => {
           try {
-            await createCalendar({ name: "Personal", color: "#C8553D", creatorID: user.id, isDefault: true });
+            await createCalendar({ name: user.name?.trim() || "Personal", color: "#C8553D", creatorID: user.id, isDefault: true });
           } catch (e) {
             // Never block registration on this; onboarding self-heals a miss.
             console.error("Failed to create personal calendar for", user.id, e);
