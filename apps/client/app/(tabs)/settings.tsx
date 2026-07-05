@@ -12,8 +12,11 @@ import { useState } from "react";
 import { View, Text, ScrollView, RefreshControl, StyleSheet } from "react-native";
 import { useRefreshData } from "@/hooks/useRefreshData";
 import { Btn } from "@/components/ui/Btn";
-import { warn } from "@/lib/haptics";
+import { Tap } from "@/components/ui/Tap";
+import { success, warn } from "@/lib/haptics";
 import { Avatar } from "@/components/Avatar";
+import { pickAvatarBase64 } from "@/lib/avatar";
+import { Feather } from "@expo/vector-icons";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { cacheClearAll } from "@/services/eventsCache";
 
@@ -40,7 +43,37 @@ export default function SettingsTab() {
   } = useSettingsStore();
 
   const [confrimDeleteVisible, setConfirmDeleteVisible] = useState(false);
+  const [nameModalVisible, setNameModalVisible] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState(false);
   const userSession = authClient.useSession();
+
+  const changeAvatar = async () => {
+    setAvatarBusy(true);
+    try {
+      const base64 = await pickAvatarBase64();
+      if (!base64) return; // cancelled
+      const url = await api.uploadAvatar(base64);
+      await authClient.updateUser({ image: url });
+      success();
+    } catch (e) {
+      warn();
+      console.error("Avatar upload failed:", e);
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const changeName = async (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === userSession.data?.user.name) return;
+    try {
+      await authClient.updateUser({ name: trimmed });
+      success();
+    } catch (e) {
+      warn();
+      console.error("Name update failed:", e);
+    }
+  };
 
   const refresh = useRefreshData();
   const [refreshing, setRefreshing] = useState(false);
@@ -93,20 +126,35 @@ export default function SettingsTab() {
         </Text>
       </View>
       <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-        {/* Who you are — identity, not a form. */}
+        {/* Who you are — tap the avatar to change the photo, tap the name to rename. */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 14, padding: 20, borderBottomWidth: 1, borderColor: colors.line }}>
-          <Avatar name={userSession.data?.user.name ?? "?"} image={userSession.data?.user.image} size={52} />
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text style={{ fontFamily: fonts.serif, fontSize: 19, color: colors.fg }}>
-              {userSession.data?.user.name}
-            </Text>
+          <Tap onPress={changeAvatar} disabled={avatarBusy} scaleTo={0.95}>
+            <View style={{ opacity: avatarBusy ? 0.5 : 1 }}>
+              <Avatar name={userSession.data?.user.name ?? "?"} image={userSession.data?.user.image} size={52} />
+              <View style={{
+                position: "absolute", right: -3, bottom: -3,
+                width: 20, height: 20, borderRadius: 10,
+                backgroundColor: colors.fill, alignItems: "center", justifyContent: "center",
+                borderWidth: 2, borderColor: colors.bg1,
+              }}>
+                <Feather name="camera" size={10} color={colors.onFill} />
+              </View>
+            </View>
+          </Tap>
+          <Tap onPress={() => setNameModalVisible(true)} scaleTo={1} style={{ flex: 1, gap: 2 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Text style={{ fontFamily: fonts.serif, fontSize: 19, color: colors.fg }}>
+                {userSession.data?.user.name}
+              </Text>
+              <Feather name="edit-2" size={12} color={colors.fg4} />
+            </View>
             <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg3 }}>
               {userSession.data?.user.email}
             </Text>
             <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.fg4 }}>
               {apiUrl?.slice(8)}
             </Text>
-          </View>
+          </Tap>
         </View>
 
         <Text style={[styles.sectionLabel, local.sectionHeading]}>Appearance</Text>
@@ -175,6 +223,13 @@ export default function SettingsTab() {
           />
         </View>
       </ScrollView >
+      <InputModal
+        visible={nameModalVisible}
+        title="Display name"
+        placeholder={userSession.data?.user.name ?? "Your name"}
+        onClose={() => setNameModalVisible(false)}
+        onConfirm={changeName}
+      />
       <InputModal
         visible={confrimDeleteVisible}
         title="To delete your account, write you name..."

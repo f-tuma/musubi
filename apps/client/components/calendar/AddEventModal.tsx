@@ -1,7 +1,7 @@
 import "react-native-get-random-values";
 import { Calendar, Event, can } from "@musubi/types";
 import { colors, fonts, styles } from "@/constants/theme";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -188,6 +188,14 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
   const [eventHint, setEventHint] = useState(EVENT_HINTS[Math.floor(Math.random() * EVENT_HINTS.length)])
   // Note/location/URL are the long tail — folded away until asked for.
   const [detailsOpen, setDetailsOpen] = useState(false);
+
+  // The detail fields sit at the very bottom of the sheet's ScrollView; with
+  // Android edge-to-edge there's no system auto-scroll-into-view, so focusing
+  // them scrolls to the end manually (delay ≈ keyboard animation).
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollToBottomField = () => {
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 250);
+  };
 
   const [nameError, setNameError] = useState("");
   const [calendarsError, setCalendarsError] = useState("");
@@ -469,7 +477,7 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
 
               </View>
             </GestureDetector>
-            <ScrollView>
+            <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled">
               <View style={styles.fieldContainer}>
                 <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Title</Text>
                 <TextInput
@@ -846,6 +854,7 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                     <TextInput
                       value={newDescription}
                       onChangeText={setNewDescription}
+                      onFocus={scrollToBottomField}
                       placeholder="..."
                       placeholderTextColor={colors.fg4}
                       multiline={true}
@@ -857,6 +866,7 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                     <TextInput
                       value={newLocation}
                       onChangeText={setNewLocation}
+                      onFocus={scrollToBottomField}
                       placeholder="..."
                       placeholderTextColor={colors.fg4}
                       multiline={true}
@@ -868,6 +878,7 @@ export function AddEventModal({ visible, startingDate, onClose, onSave, onEdit, 
                     <TextInput
                       value={newUrl}
                       onChangeText={setNewUrl}
+                      onFocus={scrollToBottomField}
                       placeholder="https://..."
                       placeholderTextColor={colors.fg4}
                       multiline={true}

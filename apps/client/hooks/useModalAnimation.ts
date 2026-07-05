@@ -1,10 +1,8 @@
 import { useEffect } from "react";
-import { Dimensions, Platform } from "react-native";
+import { Dimensions, Keyboard, Platform } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
-import { useAnimatedKeyboard, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
+import { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
-
-const isIOS = Platform.OS === 'ios';
 
 // Sheet physics: critically-damped spring so the sheet settles like paper,
 // not a linear slide. One spec shared by enter, release and dismiss.
@@ -15,7 +13,22 @@ export function useModalAnimation(visible: boolean, onClose: () => void) {
   const offScreen = Dimensions.get("screen").height / 5;
   const slideAnim = useSharedValue(offScreen);
   const fadeAnim = useSharedValue(0);
-  const keyboard = useAnimatedKeyboard();
+  // The sheet must ride the keyboard manually on both platforms: edge-to-edge
+  // Android has no system adjustResize, and reanimated's useAnimatedKeyboard
+  // doesn't see the keyboard inside a native <Modal> window on Android — so we
+  // feed a shared value from RN's Keyboard events instead (those DO fire there).
+  const keyboardHeight = useSharedValue(0);
+  useEffect(() => {
+    const showEvt = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvt = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const show = Keyboard.addListener(showEvt, (e) => {
+      keyboardHeight.value = withTiming(e.endCoordinates.height, { duration: 220 });
+    });
+    const hide = Keyboard.addListener(hideEvt, () => {
+      keyboardHeight.value = withTiming(0, { duration: 180 });
+    });
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   const gesture = Gesture.Pan()
     .onChange((ev) => {
@@ -55,7 +68,7 @@ export function useModalAnimation(visible: boolean, onClose: () => void) {
   }, [visible]);
 
   const slideStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: slideAnim.value - (isIOS ? keyboard.height.value : 0) }],
+    transform: [{ translateY: slideAnim.value - keyboardHeight.value }],
   }));
 
   const fadeStyle = useAnimatedStyle(() => ({

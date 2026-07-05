@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { ScrollView, Text, TextInput, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { BackHandler, KeyboardAvoidingView, ScrollView, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { colors, fonts, styles } from "@/constants/theme";
 import { appColors } from "@/constants/colors";
@@ -30,6 +30,19 @@ export default function Onboarding() {
   const { data: session } = authClient.useSession();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
+
+  // Android back = previous step, not "hide the app". On step 1 fall through
+  // to the default (backgrounding at a root screen is standard).
+  useEffect(() => {
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (step > 1) {
+        setStep(step === 3 ? 2 : 1);
+        return true;
+      }
+      return false;
+    });
+    return () => sub.remove();
+  }, [step]);
 
   // step 1 — profile
   const [name, setName] = useState<string | null>(null);       // null = untouched
@@ -125,6 +138,7 @@ export default function Onboarding() {
 
   return (
     <View style={styles.screen}>
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
         {/* progress dots */}
         <View style={{ flexDirection: "row", gap: 6, justifyContent: "center", paddingTop: 16 }}>
@@ -242,6 +256,7 @@ export default function Onboarding() {
         {step === 2 && <Btn label="Continue" style={{ flex: 2 }} onPress={saveCalendarAndContinue} />}
         {step === 3 && <Btn label="Start using Musubi" style={{ flex: 2 }} onPress={finish} loading={finishing} />}
       </View>
+      </KeyboardAvoidingView>
 
       <SyncCalendarModal
         visible={syncVisible}

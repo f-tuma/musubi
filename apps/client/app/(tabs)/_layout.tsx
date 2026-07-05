@@ -62,6 +62,9 @@ export default function TabLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Tabs
+        // Android back from any tab returns to Home first, then backgrounds —
+        // instead of hiding the app immediately.
+        backBehavior="initialRoute"
         screenListeners={{ tabPress: () => select() }}
         screenOptions={{
           tabBarStyle: {

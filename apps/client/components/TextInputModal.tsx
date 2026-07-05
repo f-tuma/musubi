@@ -59,7 +59,7 @@ export default function InputModal({ visible, isDelete, title, placeholder, onCo
         <Pressable style={{ flex: 1 }} />
       </Animated.View>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior="padding"
         pointerEvents="box-none"
         style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, justifyContent: "center" }}
       >

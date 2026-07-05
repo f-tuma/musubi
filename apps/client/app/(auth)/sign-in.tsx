@@ -58,7 +58,7 @@ export default function SignIn() {
 
   return (
     <View style={styles.screen}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ justifyContent: "space-between", flex: 1 }}>
+      <KeyboardAvoidingView behavior="padding" style={{ justifyContent: "space-between", flex: 1 }}>
         <View style={[{ gap: 28 }, styles.container]}>
           <View>
             <Text style={{ color: colors.fg3 }}>Welcome back</Text>
