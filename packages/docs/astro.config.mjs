@@ -4,6 +4,11 @@ import starlight from '@astrojs/starlight';
 import node from '@astrojs/node';
 
 export default defineConfig({
+  // Astro 6 leaves markdown.gfm unset in the resolved config and only the .md
+  // pipeline fills the default — MDX inherits `undefined` and drops tables.
+  // Explicit gfm keeps tables working in .mdx pages.
+  markdown: { gfm: true, smartypants: true },
+
   integrations: [
     starlight({
       title: 'Musubi',
