@@ -1,0 +1,12 @@
+{
+  "name": "@musubi/calendar",
+  "version": "1.0.0",
+  "description": "Musubi calendar logic — rrule recurrence expansion and date helpers.",
+  "main": "./src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "private": true,
+  "dependencies": {
+    "dayjs": "^1.11.13",
+    "rrule": "^2.8.1"
+  }
+}

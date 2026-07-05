@@ -1,0 +1,83 @@
+---
+title: Contributing
+description: How to contribute to Musubi.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Musubi is open source under the MIT licence and welcomes contributions. Whether that's a bug fix, a new feature, better tests, or improved documentation — it's all welcome.
+
+## Before you start
+
+- Check the [GitHub issues](https://github.com/f-tuma/musubi/issues) to see if someone is already working on what you have in mind
+- For larger changes, open an issue first to discuss the approach before investing time in a PR
+- Keep changes focused — one thing per pull request makes reviewing easier
+
+## Development setup
+
+Follow the [Running Locally](/docs/guides/running-locally/) guide to get the full stack running on your machine.
+
+## Monorepo layout
+
+The project uses **pnpm workspaces** and **Turborepo**:
+
+| Workspace | What lives there |
+|---|---|
+| `apps/api` | Express API server — routes, permissions, SSE stream, external sync engine |
+| `apps/client` | Expo mobile app (Expo Router) |
+| `packages/db` | Drizzle ORM schema, queries, and migrations (PostgreSQL) |
+| `packages/types` | Shared Zod schemas and TypeScript types — adding or changing a data model starts here |
+| `packages/calendar` | Vendored calendar UI component, extended with recurrence expansion |
+| `packages/auth` | Better Auth configuration |
+| `packages/config` | Shared environment loading |
+| `packages/docs` | This documentation site (Astro Starlight) |
+
+## Where to read first
+
+- **Client UI work** — use the UI primitives (`Tap`, `Btn`, `Empty`, `confirm()`) and follow the theming rules; hardcoded colours or bare `Pressable`s will be flagged in review. See the [client reference](/docs/reference/client/).
+- **Sync / provider work** — the provider adapters and generic sync engine are documented in the [sync reference](/docs/reference/sync/).
+- **Permissions** — roles, the home-calendar ownership model, and the server-side gates are in the [server reference](/docs/reference/server/).
+
+## Type checking
+
+There is no repo-wide typecheck script yet; run the compiler per workspace:
+
+```sh
+cd apps/client && npx tsc --noEmit --skipLibCheck
+cd apps/api && npx tsc --noEmit --skipLibCheck
+```
+
+## Database migrations
+
+After editing `packages/db/src/schema.ts`:
+
+```sh
+pnpm db:generate   # generate a migration from the schema diff
+pnpm db:migrate    # apply pending migrations
+```
+
+Commit the generated SQL in `packages/db/drizzle/` with your change.
+
+## Submitting a pull request
+
+1. Fork the repo and create a branch from `main`
+2. Make your changes
+3. Test on both iOS and Android if the change touches the client
+4. Open a PR with a clear description of what changed and why
+
+<Aside type="tip">
+The PR description is where context lives — what problem does this solve, what alternatives did you consider, anything reviewers should watch out for. The code shows *what* changed; the description explains *why*.
+</Aside>
+
+## Code style
+
+The codebase uses TypeScript throughout. A few conventions:
+
+- React components use functional style with hooks
+- Server state lives in Zustand stores in `apps/client/store/` — stores are API-first (state and cache are written only after the API call succeeds), and components read from stores rather than holding server state locally
+- Animations use Reanimated v4 — avoid the legacy `Animated` API from React Native
+- No inline magic numbers for colours — use `colors` and `fonts` from `apps/client/constants/theme.ts` (and read them at render time, never in module-level constants — see [theming pitfalls](/docs/reference/client/#theming))
+
+## Questions
+
+Open a GitHub issue or discussion if you're unsure about something before spending time on it.

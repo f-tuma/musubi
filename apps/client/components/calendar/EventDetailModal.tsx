@@ -1,0 +1,334 @@
+import { Event, can } from "@musubi/types";
+import { colors, fonts, styles } from "@/constants/theme";
+import { useModalAnimation } from "@/hooks/useModalAnimation";
+import { Feather, Ionicons } from "@expo/vector-icons";
+import { Modal, Pressable, Text, View, ScrollView, Linking, Platform } from "react-native"
+import Animated from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useCalendarsStore } from "@/store/useCalendarsStore";
+import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
+import { useSettingsStore } from "@/store/useSettingsStore";
+import { useEventsStore } from "@/store/useEventsStore";
+import { useApi } from "@/services/api";
+import { useState } from "react";
+import CalendarPickerModal from "./CalendarPickerModal";
+import { Tap } from "@/components/ui/Tap";
+import { chooseOption, confirm } from "@/lib/confirm";
+import { excludeOccurrence, endSeriesBefore } from "@musubi/calendar";
+import { syncEventNotification } from "@/services/notifications";
+
+
+type Props = {
+  event: Event | null,
+  visible: boolean,
+  onClose: () => void,
+  onEdit: (event: Event) => void,
+};
+
+const openMaps = (location: string) => {
+  const query = encodeURIComponent(location);
+  const url = Platform.OS === 'ios'
+    ? `maps:?q=${query}`
+    : `geo:0,0?q=${query}`;
+  Linking.openURL(url);
+};
+
+export default function EventDetailModal({ event, visible, onClose, onEdit }: Props) {
+  const { calendars } = useCalendarsStore();
+
+  const api = useApi();
+  const { events, linkEvent, forkEvent, removeEvent, updateEvent } = useEventsStore();
+  const [linkVisible, setLinkVisible] = useState(false);
+  const [forkVisible, setForkVisible] = useState(false);
+  const [unlinkVisible, setUnlinkVisible] = useState(false);
+
+  // Editing content (and deleting) is governed by the event's HOME (origin) calendar —
+  // same rule the server enforces. Not the calendar you happen to be viewing it in.
+  const originCal = calendars.find(c => c.id === event?.originCalendarID);
+  // Origin deleted (null) → server falls back to creator-or-any-linked-editor,
+  // so mirror that; origin set but not ours → view-only, as before.
+  const canEditContent = event?.originCalendarID
+    ? can(originCal?.role, "editEvents")
+    : !!event && event.calendars.some(id => can(calendars.find(c => c.id === id)?.role, "editEvents"));
+
+  // Unlink = remove from a non-origin calendar you can edit (home is removed via Delete).
+  const canUnlink = !!event && calendars.some(c =>
+    event.calendars.includes(c.id) && c.id !== event.originCalendarID && can(c.role, "editEvents"));
+
+  const {
+    timeLocale,
+  } = useSettingsStore();
+
+  const insets = useSafeAreaInsets();
+  const { slideStyle, fadeStyle, gesture, handleClose } = useModalAnimation(visible, onClose);
+
+  // `event` carries the tapped occurrence's start/end; the store row holds the
+  // series master (true anchor times) — updates must be built from the master.
+  const master = events.find(e => e.id === event?.id);
+
+  const deleteAll = () => {
+    if (!event) return;
+    removeEvent(event, api); // cascade from origin
+    handleClose();
+  };
+  const deleteThisOccurrence = () => {
+    if (!event || !master?.recurrence) return deleteAll();
+    const updated = { ...master, recurrence: excludeOccurrence(master.recurrence, event.start) };
+    updateEvent(updated, api);
+    syncEventNotification(updated).catch(() => { });
+    handleClose();
+  };
+  const deleteFollowing = () => {
+    if (!event || !master?.recurrence) return deleteAll();
+    // Ending before the first occurrence would leave an invisible husk.
+    if (event.start.getTime() <= master.start.getTime()) return deleteAll();
+    const updated = { ...master, recurrence: endSeriesBefore(master.recurrence, event.start) };
+    updateEvent(updated, api);
+    syncEventNotification(updated).catch(() => { });
+    handleClose();
+  };
+
+  // Identity color: origin calendar first, else first visible linked calendar.
+  const accent = (originCal ?? calendars.find(c => event?.calendars.includes(c.id)))?.color ?? colors.fg3;
+
+  const sameDay = event && new Date(new Date(event.start).setHours(0, 0, 0, 0)).getTime()
+    === new Date(new Date(event.end).setHours(0, 0, 0, 0)).getTime();
+  const durationLabel = (() => {
+    if (!event || event.isAllDay) return null;
+    const mins = Math.round((new Date(event.end).getTime() - new Date(event.start).getTime()) / 60000);
+    if (mins <= 0) return null;
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return h === 0 ? `${m} min` : m === 0 ? `${h} h` : `${h} h ${m} min`;
+  })();
+
+  return (
+    <Modal
+      visible={visible}
+      onRequestClose={handleClose}
+      animationType="none"
+      transparent={true}
+      statusBarTranslucent={true}
+    >
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Animated.View style={[styles.modalOverlay, fadeStyle]}>
+          <Pressable style={{ flex: 1 }} onPress={handleClose} />
+        </Animated.View>
+        <GestureDetector gesture={gesture}>
+          <Animated.View style={[styles.modalSheet, fadeStyle, slideStyle]}>
+            <View style={styles.modalHandle} />
+
+            {/* Identity first: brush-stroke accent + title + when. */}
+            <View style={{ flexDirection: "row", gap: 14, paddingHorizontal: 22, paddingTop: 6, paddingBottom: 18 }}>
+              <View style={{ width: 3, borderRadius: 2, backgroundColor: accent, alignSelf: "stretch", marginTop: 6, marginBottom: 2 }} />
+              <View style={{ flex: 1, gap: 6 }}>
+                <Text style={[styles.modalTitle, { fontSize: 26, lineHeight: 32 }]}>{event?.title}</Text>
+                <Text style={{ fontFamily: fonts.sans, fontSize: 14, color: colors.fg2 }}>
+                  {event?.start.toLocaleString(timeLocale, { weekday: "long", month: "long", day: "numeric" })}
+                  {sameDay ? "" : " – " + event?.end.toLocaleString(timeLocale, { weekday: "long", month: "long", day: "numeric" })}
+                </Text>
+                {!event?.isAllDay &&
+                  <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: colors.fg3 }}>
+                    {event?.start.toLocaleString(timeLocale, { hour: "2-digit", minute: "2-digit" })}
+                    {" – "}
+                    {event?.end.toLocaleString(timeLocale, { hour: "2-digit", minute: "2-digit" })}
+                    {durationLabel ? `  ·  ${durationLabel}` : ""}
+                  </Text>
+                }
+                {event?.isAllDay &&
+                  <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: colors.fg3 }}>All day</Text>
+                }
+              </View>
+            </View>
+
+            <ScrollView>
+              {/* Where it lives — quiet metadata under the identity block. No
+                  bottom border when nothing follows (avoids an empty "section"). */}
+              <View style={[
+                styles.fieldContainer,
+                { paddingTop: 12, paddingBottom: 12 },
+                !(event?.location || event?.url || event?.description) && { borderBottomWidth: 0 },
+              ]}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={styles.horizontalPillView}>
+                    {event?.calendars.map((cal) => {
+                      const calendar = calendars.find(c => c.id === cal);
+                      if (!calendar) return null;
+                      const isOrigin = event?.originCalendarID === cal;
+                      const locked = !can(calendar.role, "editEvents");
+                      return (
+                        <View key={cal} style={styles.pill}>
+                          {isOrigin
+                            ? <Ionicons name="star" size={12} color={calendar.color} />
+                            : locked
+                              ? <Feather name="lock" size={11} color={calendar.color} />
+                              : <View style={[styles.colorDot, { backgroundColor: calendar.color }]} />}
+                          <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg2 }}>
+                            {calendar.name}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
+              </View>
+              {(event?.location || event?.url) ? (
+                <View style={styles.fieldContainer}>
+                  {event?.location &&
+                    <View style={styles.modalDetailRow}>
+                      <Feather size={20} name="map-pin" color={colors.fg4} />
+                      <Tap style={{ flex: 1 }} onPress={() => openMaps(event.location!)}>
+                        <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: colors.fg2, textDecorationLine: "underline" }}>
+                          {event?.location}
+                        </Text>
+                      </Tap>
+                    </View>
+                  }
+                  {event?.url &&
+                    <View style={styles.modalDetailRow}>
+                      <Feather size={20} name="link" color={colors.fg4} />
+                      <Tap style={{ flex: 1 }} onPress={() => { Linking.openURL(event?.url!) }}>
+                        {/* Long links are all query params at the tail — ellipsize keeps the useful start. */}
+                        <Text numberOfLines={1} ellipsizeMode="tail" style={{ color: colors.fg2, textDecorationLine: "underline" }}>
+                          {event?.url}
+                        </Text>
+                      </Tap>
+                    </View>
+                  }
+                </View>
+              ) : null}
+              {
+                event?.description &&
+                <View style={styles.fieldContainer}>
+                  <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Note</Text>
+                  <View style={{
+                    padding: 12,
+                    backgroundColor: colors.bg3,
+                    borderColor: colors.line,
+                    borderWidth: 1,
+                    borderRadius: 8
+                  }}>
+                    <Text style={{ fontFamily: fonts.serif, color: colors.fg2 }}>{event?.description}</Text>
+                  </View>
+                </View>
+              }
+            </ScrollView>
+            {/* Actions ordered by frequency of use: Edit leads (brightest), sharing
+                verbs sit in the middle, Delete last. */}
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                paddingBottom: insets.bottom,
+                borderTopWidth: 1,
+                borderTopColor: colors.line,
+              }}
+            >
+              {canEditContent && (
+                <>
+                  <Tap
+                    style={styles.modalActionBtn}
+                    disabled={event ? false : true}
+                    onPress={() => {
+                      // Recurring: edit the SERIES → prefill with the master's
+                      // anchor times, not the tapped occurrence's (saving those
+                      // would shift the whole series).
+                      onEdit(master ?? event!);
+                      handleClose();
+                    }}
+                  >
+                    <Feather size={20} name="edit-2" color={colors.fg} />
+                    <Text style={{ color: colors.fg, fontSize: 10 }}>Edit</Text>
+                  </Tap>
+                  <View style={styles.modalActionDivider} />
+                </>
+              )}
+              <Tap
+                style={styles.modalActionBtn}
+                disabled={event ? false : true}
+                onPress={() => setLinkVisible(true)}
+              >
+                <Feather size={20} name="link" color={colors.fg2} />
+                <Text style={{ color: colors.fg2, fontSize: 10 }}>Link</Text>
+              </Tap>
+              <View style={styles.modalActionDivider} />
+              <Tap
+                style={styles.modalActionBtn}
+                disabled={event ? false : true}
+                onPress={() => setForkVisible(true)}
+              >
+                <Feather size={20} name="copy" color={colors.fg2} />
+                <Text style={{ color: colors.fg2, fontSize: 10 }}>Fork</Text>
+              </Tap>
+              {canUnlink && (
+                <>
+                  <View style={styles.modalActionDivider} />
+                  <Tap
+                    style={styles.modalActionBtn}
+                    disabled={event ? false : true}
+                    onPress={() => setUnlinkVisible(true)}
+                  >
+                    <Feather size={20} name="minus-circle" color={colors.fg2} />
+                    <Text style={{ color: colors.fg2, fontSize: 10 }}>Unlink</Text>
+                  </Tap>
+                </>
+              )}
+              {canEditContent && (
+                <>
+                  <View style={styles.modalActionDivider} />
+                  <Tap
+                    style={styles.modalActionBtn}
+                    haptic="warn"
+                    disabled={event ? false : true}
+                    onPress={() => {
+                      if (!event) return;
+                      if (event.recurrence) {
+                        chooseOption("Delete recurring event", undefined, [
+                          { label: "This event only", onPress: deleteThisOccurrence },
+                          { label: "This and following events", onPress: deleteFollowing },
+                          { label: "All events", destructive: true, onPress: deleteAll },
+                        ]);
+                      } else {
+                        confirm({
+                          title: "Delete event",
+                          message: "This removes the event from all calendars.",
+                          confirmLabel: "Delete",
+                        }, deleteAll);
+                      }
+                    }}
+                  >
+                    <Feather size={20} name="trash" color={colors.accent} />
+                    <Text style={{ color: colors.accent, fontSize: 10 }}>Delete</Text>
+                  </Tap>
+                </>
+              )}
+            </View>
+            <CalendarPickerModal
+              title="Add to calendar"
+              visible={linkVisible}
+              filter={(c) => !event?.calendars.includes(c.id)}
+              emptyLabel="No calendars you can add this to."
+              onClose={() => setLinkVisible(false)}
+              onSelect={async (calendarID) => { if (event) await linkEvent(event, calendarID, api); }}
+            />
+            <CalendarPickerModal
+              title="Fork to calendar"
+              visible={forkVisible}
+              filter={(c) => !event?.calendars.includes(c.id)}
+              emptyLabel="No calendars you can fork this to."
+              onClose={() => setForkVisible(false)}
+              onSelect={async (calendarID) => { if (event) await forkEvent(event, calendarID, api); }}
+            />
+            <CalendarPickerModal
+              title="Remove from calendar"
+              visible={unlinkVisible}
+              filter={(c) => !!event?.calendars.includes(c.id) && c.id !== event?.originCalendarID}
+              emptyLabel="No calendars to remove this from."
+              onClose={() => setUnlinkVisible(false)}
+              onSelect={async (calendarID) => { if (event) await removeEvent(event, api, calendarID); }}
+            />
+          </Animated.View>
+        </GestureDetector>
+      </GestureHandlerRootView>
+    </Modal >
+  );
+}

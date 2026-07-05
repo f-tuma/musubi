@@ -1,0 +1,20 @@
+{
+  "name": "@musubi/types",
+  "version": "1.0.0",
+  "description": "Shared TypeScript types across the Musubi monorepo.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "frgtn.dev",
+  "license": "MIT",
+  "packageManager": "pnpm@10.33.0",
+  "dependencies": {
+    "zod": "^4.4.3"
+  }
+}

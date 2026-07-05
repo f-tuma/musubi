@@ -1,0 +1,392 @@
+import { StyleSheet } from "react-native";
+
+
+export const fonts = {
+  sans: 'InterTight_400Regular',
+  sansMedium: 'InterTight_500Medium',
+  serif: 'NotoSerif_400Regular',
+  kanji: 'ShipporiMinchoB1_400Regular',
+};
+
+// Two zen palettes: sumi ink on night (dark) and ink on washi paper (light).
+const dark = {
+  bg: '#0c0c0e',
+  bg1: '#131316',
+  bg2: '#1a1a1e',
+  bg3: '#222226',
+  line: 'rgba(232,228,217,0.06)',
+  line2: 'rgba(232,228,217,0.10)',
+  line3: 'rgba(232,228,217,0.18)',
+  fg: '#e8e4d9',
+  fg2: 'rgba(232,228,217,0.72)',
+  fg3: 'rgba(232,228,217,0.48)',
+  fg4: 'rgba(232,228,217,0.28)',
+  accent: '#c8553d',
+  fill: '#e8e4d9',      // solid background of active pills / primary buttons
+  onFill: '#0c0c0e',    // text/icon sitting on `fill`
+};
+
+const light: typeof dark = {
+  bg: '#f4f1e8',
+  bg1: '#efebe0',
+  bg2: '#e8e3d5',
+  bg3: '#dfd9c9',
+  line: 'rgba(28,27,24,0.08)',
+  line2: 'rgba(28,27,24,0.13)',
+  line3: 'rgba(28,27,24,0.24)',
+  fg: '#1c1b18',
+  fg2: 'rgba(28,27,24,0.74)',
+  fg3: 'rgba(28,27,24,0.50)',
+  fg4: 'rgba(28,27,24,0.32)',
+  accent: '#b3492f', // deeper vermilion — keeps contrast on paper
+  fill: '#4a4741',      // dark warm grey, not full ink — softer active fills
+  onFill: '#f4f1e8',
+};
+
+export type ThemeScheme = 'dark' | 'light';
+
+// `colors`, `styles` and `calendarTheme` are MUTABLE singletons: every
+// component reads them at render time, so applyTheme() swaps their contents
+// in place and the root remount (key={scheme}) repaints the whole app.
+// No context/provider plumbing through 30 files.
+export const colors = { ...dark };
+
+export let activeScheme: ThemeScheme = 'dark';
+
+export function applyTheme(scheme: ThemeScheme) {
+  // No same-scheme early return: cheap to reapply, and a guard can wedge
+  // after a hot reload leaves activeScheme out of sync with the palette.
+  activeScheme = scheme;
+  Object.assign(colors, scheme === 'dark' ? dark : light);
+  Object.assign(styles, makeStyles());
+  Object.assign(calendarTheme, makeCalendarTheme());
+}
+
+const makeStyles = () => StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.bg,
+  },
+  header: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
+    backgroundColor: colors.bg1,
+  },
+  pillActive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.line3,
+    borderRadius: 999,
+    borderCurve: 'continuous',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: colors.bg2,
+  },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: 999,
+    borderCurve: 'continuous',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  horizontalPillView: {
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 2
+  },
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 16,
+    height: 40,
+    minWidth: 40,
+    paddingHorizontal: 16,
+    borderRadius: 26,
+    backgroundColor: colors.fill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fabRemove: {
+    position: 'absolute',
+    left: 16,
+    bottom: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 26,
+    backgroundColor: colors.fill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  modalSheet: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.bg1,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderCurve: 'continuous',
+    minHeight: '33%',
+    maxHeight: '88%',
+  },
+  modalHandle: {
+    width: 36,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.line3,
+    alignSelf: 'center',
+    marginVertical: 10,
+  },
+  modalTitleRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+    paddingHorizontal: 22,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
+  },
+  modalDetailRow: {
+    flexDirection: "row",
+    gap: 10,
+    paddingVertical: 10,
+  },
+  container: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  fieldContainer: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
+  },
+  fieldLabel: {
+    fontFamily: fonts.sans,
+    fontSize: 10,
+    color: colors.fg4,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  sectionLabel: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 10,
+    letterSpacing: 1.5,
+    color: colors.fg4,
+    textTransform: 'uppercase',
+  },
+  fieldValueText: {
+    color: colors.fg,
+    fontSize: 14,
+  },
+  fieldValueBig: {
+    color: colors.fg,
+    fontSize: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    padding: 16,
+  },
+  modalButtonsColumn: {
+    flexDirection: 'column',
+    alignSelf: "stretch",
+    alignItems: "stretch",
+    justifyContent: "flex-end",
+    flex: 1,
+    gap: 10,
+    padding: 16,
+  },
+  btnPrimary: {
+    flex: 1,
+    maxHeight: 48,
+    minHeight: 48,
+    gap: 6,
+    backgroundColor: colors.fill,
+    borderRadius: 10,
+    padding: 13,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  btnSecondary: {
+    flex: 1,
+    maxHeight: 48,
+    minHeight: 48,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.line2,
+    borderRadius: 10,
+    padding: 13,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: 'center',
+  },
+  btnRemove: {
+    flex: 1,
+    maxHeight: 48,
+    minHeight: 48,
+    gap: 6,
+    backgroundColor: "#C8553D",
+    borderRadius: 10,
+    padding: 13,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  btnDisabled: {
+    flex: 1,
+    maxHeight: 48,
+    minHeight: 48,
+    gap: 6,
+    backgroundColor: colors.fg3,
+    borderRadius: 10,
+    padding: 13,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  btnPrimaryText: {
+    color: colors.onFill,
+    fontFamily: fonts.sansMedium,
+    fontSize: 13,
+  },
+  btnSecondaryText: {
+    color: colors.fg2,
+    fontFamily: fonts.sansMedium,
+    fontSize: 13,
+  },
+  modalTitle: {
+    fontFamily: fonts.serif,
+    fontSize: 22,
+    color: colors.fg,
+  },
+  errorText: {
+    color: colors.accent,
+    fontFamily: fonts.sans,
+    fontSize: 12,
+  },
+  textInput: {
+    fontFamily: fonts.sans,
+    fontSize: 20,
+    color: colors.fg2,
+  },
+  colorDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  calendarCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.line3,
+    position: 'relative',
+    marginVertical: 16,
+  },
+  calendarCircleInner: {
+    position: 'absolute',
+    inset: 4,
+    borderRadius: 14,
+    opacity: 0.9,
+  },
+  modalActionBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingTop: 15,
+    paddingBottom: 15,
+  },
+  modalActionDivider: {
+    backgroundColor: colors.line,
+    width: 1,
+    alignSelf: 'stretch',
+  },
+  navHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
+  },
+  section: {
+    paddingHorizontal: 16,
+    marginBottom: 28,
+    gap: 12,
+  },
+  screenActions: {
+    flexDirection: 'row',
+    gap: 10,
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderColor: colors.line,
+  },
+  timelineDay: {
+    fontFamily: fonts.serif,
+    fontSize: 24,
+    color: colors.fg,
+  },
+  timelineMonth: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    color: colors.fg3,
+  },
+  timelineTitle: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.fg,
+  },
+  timelineMeta: {
+    fontFamily: fonts.sans,
+    fontSize: 10,
+    color: colors.fg3,
+  },
+});
+
+export const styles = makeStyles();
+
+const makeCalendarTheme = () => ({
+  palette: {
+    primary: {
+      main: colors.accent,
+      contrastText: colors.bg,
+    },
+    gray: {
+      '100': colors.bg1,
+      '200': colors.line,
+      '300': colors.line2,
+      '500': colors.fg3,
+      '800': colors.fg2,
+    },
+    nowIndicator: colors.accent,
+  },
+  typography: {
+    fontFamily: fonts.sans,
+    xs: { fontSize: 10 },
+    sm: { fontSize: 12 },
+  },
+  eventCellOverlappingStyle: {
+    borderRadius: 4,
+  },
+});
+
+export const calendarTheme = makeCalendarTheme();

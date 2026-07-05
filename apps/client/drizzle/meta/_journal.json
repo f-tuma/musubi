@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1782063835633,
+      "tag": "0000_solid_captain_britain",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1783153003910,
+      "tag": "0001_next_stark_industries",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1783158854646,
+      "tag": "0002_loving_psynapse",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1783249191690,
+      "tag": "0003_classy_vermin",
+      "breakpoints": true
+    }
+  ]
+}

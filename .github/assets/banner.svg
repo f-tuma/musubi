@@ -1,0 +1,37 @@
+<svg width="1200" height="320" viewBox="0 0 1200 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Musubi hero banner — sumi ink on night, echoing the app icon's knot -->
+  <defs>
+    <radialGradient id="glow" cx="30%" cy="45%" r="75%">
+      <stop offset="0%" stop-color="#17171b"/>
+      <stop offset="100%" stop-color="#0c0c0e"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="320" rx="14" fill="url(#glow)"/>
+  <rect x="0.5" y="0.5" width="1199" height="319" rx="13.5" stroke="#e8e4d9" stroke-opacity="0.08"/>
+
+  <!-- giant kanji watermark: 結 (musubi — to tie) -->
+  <text x="1060" y="248" font-family="'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',serif"
+        font-size="230" fill="#e8e4d9" fill-opacity="0.05" text-anchor="middle">結</text>
+
+  <!-- the knot — two interlocked rings, as in the app icon -->
+  <g transform="translate(148,160)">
+    <circle cx="-34" cy="0" r="62" stroke="#e8e4d9" stroke-width="11"/>
+    <circle cx="42" cy="0" r="62" stroke="#c8553d" stroke-width="11"/>
+    <!-- weave: re-draw an arc of the bone ring where it should pass over the red one -->
+    <path d="M 8 -50 A 62 62 0 0 1 28 -8" stroke="#e8e4d9" stroke-width="11" fill="none"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="310" y="150" font-family="Georgia,'Times New Roman',serif" font-size="78" fill="#e8e4d9">Musubi</text>
+  <text x="588" y="148" font-family="'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',serif"
+        font-size="34" fill="#c8553d">結び</text>
+
+  <!-- tagline -->
+  <text x="312" y="205" font-family="Helvetica,Arial,sans-serif" font-size="24" fill="#a8a396">
+    The open-source calendar for the people in your life.
+  </text>
+  <text x="312" y="243" font-family="Helvetica,Arial,sans-serif" font-size="16" fill="#6d6a60" letter-spacing="3">
+    SHARE · SYNC · SELF-HOST
+  </text>
+</svg>

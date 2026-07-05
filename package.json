@@ -1,0 +1,24 @@
+{
+  "name": "musubi",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Musubi monorepo — open, self-hostable shared calendar.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev --ui=tui",
+    "build": "turbo run build",
+    "db:generate": "pnpm -F @musubi/db exec drizzle-kit generate",
+    "db:migrate": "pnpm -F @musubi/db exec drizzle-kit migrate"
+  },
+  "keywords": [],
+  "author": "frgtn.dev",
+  "license": "MIT",
+  "packageManager": "pnpm@11.8.0",
+  "devDependencies": {
+    "turbo": "^2.10.3",
+    "typescript": "~5.9.3"
+  }
+}

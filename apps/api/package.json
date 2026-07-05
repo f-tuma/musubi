@@ -1,0 +1,33 @@
+{
+  "name": "@musubi/api",
+  "version": "1.0.0",
+  "description": "Musubi REST + SSE backend (Express, Better Auth, Drizzle, Postgres).",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npx tsx src/index.ts"
+  },
+  "keywords": [],
+  "author": "frgtn.dev",
+  "license": "MIT",
+  "packageManager": "pnpm@10.33.0",
+  "dependencies": {
+    "@musubi/auth": "workspace:*",
+    "@musubi/config": "workspace:*",
+    "@musubi/db": "workspace:*",
+    "@musubi/types": "workspace:*",
+    "@types/cors": "^2.8.19",
+    "@types/nodemailer": "^8.0.1",
+    "better-auth": "^1.6.23",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "ical.js": "^2.2.1",
+    "nodemailer": "^9.0.1",
+    "tsdav": "^2.3.0",
+    "tsx": "^4.22.4",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6"
+  }
+}

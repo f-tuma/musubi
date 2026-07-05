@@ -1,0 +1,139 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap');
+
+/* Force dark theme regardless of system preference */
+:root {
+  color-scheme: dark;
+}
+
+/*
+  Musubi color palette:
+    bone    #E8E4D9  — primary foreground
+    shu     #C8553D  — accent (brick red)
+    moss    #A8B5A0  — muted green
+    ochre   #D4A574  — golden brown
+    indigo  #7A8BA3  — blue-gray
+
+  Backgrounds:
+    bg      #0c0c0e
+    bg1     #131316
+    bg2     #1a1a1e
+    bg3     #222226
+*/
+
+:root {
+  --sl-font: 'Inter Tight', system-ui, sans-serif;
+  --sl-font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+}
+
+/* ── Light theme ── */
+:root[data-theme='light'] {
+  --sl-color-accent-low:  #fde9e5;
+  --sl-color-accent:      #c8553d;
+  --sl-color-accent-high: #8c2e1e;
+
+  --sl-color-white: #0c0c0e;
+  --sl-color-gray-1: #1a1a1e;
+  --sl-color-gray-2: #3a3a3e;
+  --sl-color-gray-3: #6a6a6e;
+  --sl-color-gray-4: #b8b4a9;
+  --sl-color-gray-5: #d8d4c9;
+  --sl-color-gray-6: #eeebe4;
+  --sl-color-black: #faf9f6;
+}
+
+/* ── Dark theme — mirrors the app exactly ── */
+:root[data-theme='dark'] {
+  --sl-color-accent-low:  #3d1a13;
+  --sl-color-accent:      #c8553d;
+  --sl-color-accent-high: #e8907a;
+
+  --sl-color-white: #e8e4d9;
+  --sl-color-gray-1: rgba(232, 228, 217, 0.80);
+  --sl-color-gray-2: rgba(232, 228, 217, 0.60);
+  --sl-color-gray-3: rgba(232, 228, 217, 0.40);
+  --sl-color-gray-4: #222226;
+  --sl-color-gray-5: #1a1a1e;
+  --sl-color-gray-6: #131316;
+  --sl-color-black: #0c0c0e;
+}
+
+/* ── Typography ── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Noto Serif', serif;
+  letter-spacing: -0.02em;
+}
+
+.sl-markdown-content h1 { font-size: 2rem; }
+.sl-markdown-content h2 { font-size: 1.4rem; border-bottom: 1px solid var(--sl-color-gray-5); padding-bottom: 0.4em; }
+
+/* ── Hero ── */
+.hero > .sl-flex {
+  gap: 1.5rem;
+}
+
+.hero h1 {
+  font-family: 'Noto Serif', serif;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  letter-spacing: -0.03em;
+}
+
+.hero .tagline {
+  color: var(--sl-color-gray-2);
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+/* ── Sidebar ── */
+.sidebar-content {
+  border-right: 1px solid var(--sl-color-gray-6);
+}
+
+nav.sidebar a[aria-current='page'] {
+  font-weight: 500;
+}
+
+/* ── Code blocks ── */
+:root[data-theme='dark'] .astro-code,
+:root[data-theme='dark'] pre {
+  background-color: #131316 !important;
+  border: 1px solid rgba(232, 228, 217, 0.06);
+  border-radius: 6px;
+}
+
+/* ── Inline code ── */
+code:not(pre > code) {
+  background-color: var(--sl-color-gray-6);
+  color: #D4A574; /* ochre */
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  font-size: 0.875em;
+}
+
+/* ── Callout/aside accent ── */
+.starlight-aside--note {
+  border-color: #7A8BA3; /* indigo */
+}
+.starlight-aside--tip {
+  border-color: #A8B5A0; /* moss */
+}
+.starlight-aside--caution {
+  border-color: #D4A574; /* ochre */
+}
+.starlight-aside--danger {
+  border-color: #c8553d; /* shu */
+}
+
+/* ── Search ── */
+site-search button {
+  border-radius: 6px;
+}
+
+/* ── Card grid ── */
+:root[data-theme='dark'] .card {
+  background: #131316;
+  border-color: rgba(232, 228, 217, 0.06);
+}
+
+:root[data-theme='dark'] .card:hover {
+  border-color: rgba(232, 228, 217, 0.18);
+}

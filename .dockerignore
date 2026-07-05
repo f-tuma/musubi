@@ -1,0 +1,32 @@
+# Bez tohohle posílá Docker daemon do build contextu i node_modules
+# z každého balíčku monorepa — build je 100× pomalejší a layer cache nefunguje.
+
+**/node_modules
+**/.turbo
+**/dist
+**/build
+**/.next
+**/.expo
+**/*.log
+**/coverage
+**/.nyc_output
+**/*.tsbuildinfo
+
+# native artefakty z Expo prebuildu — pro API se vůbec netýkají, jen by zaplevelily kontext
+apps/client/android
+apps/client/ios
+
+# git / editor
+.git
+.gitignore
+.idea
+.vscode
+.DS_Store
+
+# dev-only soubory v rootu, na které build server nemá co sahat
+.env
+.env.*
+!.env.example
+cookies.txt
+BUGS.md
+TODO.md

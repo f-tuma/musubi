@@ -1,0 +1,132 @@
+---
+title: Sync Engine & Provider Adapters
+description: How external calendar sync works, and a step-by-step guide to adding a new provider (Microsoft Graph, Fastmail, …).
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+Musubi mirrors external calendars (Google, iCloud / any CalDAV server) as regular Musubi calendars. A **generic sync engine** owns the algorithm; everything provider-specific lives behind a small **adapter interface**. Adding a provider means writing one adapter file — the engine, DB mappings, permissions, and client UI come for free.
+
+```
+apps/api/src/sync/
+├── engine.ts             # generic pull/push algorithm — never edit for a new provider
+├── adapter.ts            # the CalendarAdapter contract (types)
+├── adapters/
+│   ├── google.ts         # Google Calendar API adapter
+│   └── caldav.ts         # CalDAV adapter (iCloud, Fastmail, Nextcloud, …)
+├── caldav_client.ts      # tsdav client factory
+└── crypto.ts             # encrypt/decrypt stored CalDAV passwords
+```
+
+## Mental model
+
+- Each external calendar becomes one **Musubi calendar** ("mirror"), linked via the `external_calendars` row (provider, account, external id, sync cursor).
+- Each imported event is a normal `events` row, linked via `external_events` (provider + external calendar id + external event id → Musubi event id). This mapping is how pushes find the remote copy and how re-imports avoid duplicates.
+- **Pull** (provider → Musubi) runs when the client triggers a sync. **Push** (Musubi → provider) runs inline whenever an event that lives in a mirror is created/updated/deleted.
+- Mirrors the provider marks read-only (holiday calendars, subscriptions) get the **viewer** role even for the account owner — the permission system does the rest.
+
+## The pull algorithm (`syncProvider`)
+
+For one connected account:
+
+1. `setAccountLabel` — refresh the human label shown in the client.
+2. `listCalendars` → reconcile: remote calendar gone → `removeCalendar` (mirror + its events); new remote calendar → `importExternalCalendar` (creates the mirror, membership role `viewer` if `readOnly`); existing → `setMemberRole` keeps the read-only flag fresh.
+3. Per calendar: `fetchChanges(cursor)` → for each `NormalizedEvent`:
+   - `status: "cancelled"` → `deleteExternalEvent`
+   - otherwise `upsertExternalEvent` — finds the `external_events` mapping; **updates** the existing Musubi event (reviving a tombstone if a reset wiped it) or **inserts** a new one (creator = account owner, `originCalendarID` = the mirror).
+4. Persist `nextCursor`.
+
+**Reset semantics**: when the provider invalidates the cursor (Google answers `410 GONE`), the adapter returns `reset: true`. The engine then soft-deletes (tombstones) all events of that calendar and re-applies the full change set. Because `external_events` mappings survive, still-present events are revived under the **same Musubi id** — no duplicate churn, and clients drop genuinely-gone events via the delta sync tombstones.
+
+## The push path (`pushEventToCalendars`)
+
+When an event changes, the API handlers call `pushEventToCalendars(event, calendarIDs, "create" | "update" | "delete")`. For every target calendar that has an external link, the engine resolves the adapter and account, then:
+
+- **create** → `pushCreate`, and stores the returned `externalEventId` in `external_events`
+- **update** → looks up the mapping, `pushUpdate`
+- **delete** → `pushDelete`, mapping is removed together with the calendar link
+
+Credentials always belong to whoever connected that mirror — this is correct: the mirror must stay consistent with its remote, otherwise the next pull would resurrect deleted events.
+
+## The adapter contract
+
+```ts
+export type CalendarAdapter = {
+  provider: string;                                    // registry key, stored in DB rows
+
+  listAccounts(userID): Promise<{ id, label }[]>;      // connected accounts, [] = not connected
+  listCalendars(userID, accountId): Promise<ExternalCalendarInfo[]>;
+  fetchChanges(userID, accountId, externalCalendarId, cursor):
+    Promise<{ changes: NormalizedEvent[]; nextCursor: string | null; reset?: boolean }>;
+
+  pushCreate(userID, accountId, externalCalendarId, event): Promise<{ externalEventId }>;
+  pushUpdate(userID, accountId, externalCalendarId, externalEventId, event): Promise<void>;
+  pushDelete(userID, accountId, externalCalendarId, externalEventId): Promise<void>;
+};
+```
+
+`NormalizedEvent` is the provider-agnostic shape (see `adapter.ts`): title, start/end, `isAllDay`, description, location, organizer, `recurrence`, url, `status: "active" | "cancelled"`, optional `etag`.
+
+### The recurrence contract (read this twice)
+
+Recurrence is where sync breaks silently. Musubi's internal format is:
+
+- a bare RRULE (`FREQ=WEEKLY;BYDAY=MO`), **or**
+- multi-line iCal once exceptions exist: `RRULE:FREQ=WEEKLY\nEXDATE:20260712T140000Z`
+
+Rules an adapter **must** follow, learned the hard way (each was a real bug):
+
+1. **Normalize EXDATE to UTC datetimes on import.** The `rrule` library *silently ignores* `EXDATE;TZID=…` lines — the occurrence keeps rendering even though it was deleted remotely. Google's adapter converts TZID stamps to UTC via `zonedToUtc` (plain `Intl`, no tz dependency). `EXDATE;VALUE=DATE:` is fine as-is (all-day events are anchored to UTC midnight).
+2. **Never rely on `rrulestr`'s `dtstart` option for multi-line strings.** It's ignored for rule *sets* — the series anchors to "now". Client expansion embeds a `DTSTART:` line instead (`packages/calendar/src/recurrence.ts`); adapters don't need DTSTART in stored recurrence, but must not add a conflicting one.
+3. **Push must round-trip recurrence.** Omitting it strips the RRULE from the remote copy on every update (the original CalDAV adapter did exactly this). Convert on the way out: Google gets prefixed iCal lines; **all-day** series need `EXDATE;VALUE=DATE:` and a date-only `UNTIL` (RFC 5545: exception/UNTIL value type must match DTSTART's).
+4. **Don't map provider UI links into `url`.** Google's `htmlLink` ("open in Google Calendar") is noise on every event; only real event URLs belong there (`hangoutLink`, `source.url`).
+5. **Sanitize provider quirks at the boundary**, in one place per adapter (`sanitizeRecurrence` in google.ts). Example: Google emits `FREQ=YEARLY;BYMONTHDAY=X` without `BYMONTH`, which RFC 5545 expands *monthly* — the adapter anchors the start month.
+
+<Aside type="caution">
+When in doubt, test the `rrule` library empirically (`node -e` against `node_modules/rrule`) before trusting that a format works — it fails silently more often than it throws.
+</Aside>
+
+## Adding a provider, step by step
+
+Example: Microsoft Graph (Outlook).
+
+<Steps>
+
+1. **Credentials & connection flow.**
+   - OAuth providers: register with Better Auth (`packages/auth`), the account rows land in Better Auth's `account` table; `accountId` is your adapter's account id. See the Google connect flow (`apps/api/src/handlers/connections.ts`, `google.ts → getAccessToken`).
+   - Password/token providers: follow CalDAV — a dedicated table (`caldav_accounts`) with the secret encrypted via `sync/crypto.ts`, plus connect/disconnect handlers with a **verification call before storing anything** and trimmed inputs (mobile clipboards append whitespace; a trailing space cost us a debugging session).
+
+2. **Write the adapter** in `apps/api/src/sync/adapters/microsoft.ts` implementing `CalendarAdapter`. Keep all Graph-specific JSON mapping inside; export nothing but the adapter object.
+   - `listCalendars`: map the provider's access level to `readOnly` (Graph: `canEdit === false`).
+   - `fetchChanges`: use the provider's incremental sync (Graph delta queries; the `@odata.deltaLink` is your cursor). On cursor invalidation return `reset: true` with a full snapshot.
+   - Recurrence: convert Graph's structured `recurrence` object to RRULE text on import, and back on push. Honor the recurrence contract above.
+
+3. **Register it** — one line in `engine.ts`:
+
+   ```ts
+   const adapters: Record<string, CalendarAdapter> = {
+     google: googleAdapter,
+     caldav: caldavAdapter,
+     microsoft: microsoftAdapter,   // ← new
+   };
+   ```
+
+4. **Disconnect cascade** — `handlerDisconnectAccount` already removes mirrors generically; only add a branch if credentials live outside Better Auth (like the CalDAV table).
+
+5. **Client** — the calendars list groups by `provider:accountId` automatically. Add a provider icon in `ProviderIcon` (`app/(tabs)/calendars.tsx`) and `CalendarFilterBar.tsx`; if one provider hosts distinguishable services (like CalDAV → iCloud), extend `providerFlavor()` in `packages/types/src/calendar.ts`.
+
+6. **Test the ugly paths**, not just the happy one: cursor reset (does a full re-import duplicate events?), deleting one occurrence of a recurring event (does EXDATE round-trip, or does the next pull revert it?), a read-only calendar (holidays), disconnecting the account, and two accounts of the same provider.
+
+</Steps>
+
+## Field notes (bugs that will bite again)
+
+| Symptom | Cause | Where it's handled |
+|---|---|---|
+| Recurring series with an exception renders on wrong dates | `rrulestr` ignores `dtstart` option for multi-line input | `packages/calendar/src/recurrence.ts` embeds `DTSTART:` |
+| Deleted occurrence keeps showing after sync | `EXDATE;TZID=…` silently ignored by `rrule` | Google adapter normalizes to UTC on import |
+| Editing a recurring event kills its recurrence remotely | push omitted RRULE from the payload | both adapters round-trip recurrence |
+| Exception reappears after each sync | full-refetch import dropped EXDATE, then overwrote local | CalDAV import reads EXDATE back |
+| Duplicate events after `410 GONE` | reset wiped events but mappings didn't revive them | `upsertExternalEvent` revives tombstones by mapping |
+| "Open in Google Calendar" link on every imported event | `htmlLink` mapped into `url` | Google adapter maps `hangoutLink`/`source.url` only |
+| Holiday calendar editable in the UI, push fails | provider access level not mapped | `readOnly` → viewer role, re-checked every sync |

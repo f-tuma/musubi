@@ -1,0 +1,80 @@
+---
+title: Introduction
+description: What Musubi is, how it works, and how it's built.
+---
+
+Musubi is a privacy-first shared calendar app for mobile. The name comes from the Japanese word 結び (*musubi*) — *knot*, *bond*, or *connection*. The idea: one place to connect your schedule with the people around you, without giving your calendar data to a third party.
+
+You can use the hosted version at **musubi.frgtn.dev** or [run it yourself](/docs/guides/self-hosting/).
+
+---
+
+## How it works
+
+Musubi is built around three core concepts: **calendars**, **events**, and **invites**.
+
+**Calendars** are the main organisational unit. You create a calendar, give it a name and colour, and it becomes a shared space for events. You can own multiple calendars — one for family, one for a project, one for a sports team.
+
+**Events** live inside calendars. An event can belong to more than one calendar at the same time — if you share an event across a work calendar and a personal one, all members of both calendars can see it. Events support titles, start/end times, optional notes, location, a link, and recurrence rules (see [Recurring events](#recurring-events) below).
+
+**Invites** are how other people join your calendar. You generate a shareable invite link from within the app; anyone who opens it and has an account can accept and become a member.
+
+Once someone is a member of a calendar, they can create and edit events in it. Only the calendar creator can delete the calendar itself.
+
+---
+
+## Recurring events
+
+Musubi supports recurring events using [RFC 5545 RRULE](https://datatracker.ietf.org/doc/html/rfc5545) strings. The app ships with presets (daily, weekly, weekdays, monthly, yearly) and a custom editor for more specific patterns — for example, "every Tuesday and Thursday" or "every other week on Monday, Wednesday, Friday, 10 times".
+
+---
+
+## Real-time sync
+
+When someone in your calendar creates or updates an event, everyone else sees it immediately. The server pushes updates over a persistent **Server-Sent Events** (SSE) connection — no polling, no refresh needed.
+
+---
+
+## Settings
+
+A few settings worth knowing about:
+
+- **Default calendar view** — choose between day, week, or month as your opening view
+- **Week starts on** — Sunday or Monday
+- **Show Kanji** — toggles Japanese month and day characters in the calendar header. This is purely an aesthetic touch reflecting the Japanese name and philosophy behind the app; it is not a localisation feature
+
+---
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Mobile client | React Native (Expo SDK 56) |
+| Routing | Expo Router — file-based navigation |
+| State | Zustand |
+| Calendar component | `@musubi/calendar` — forked and extended in-repo |
+| Animations | Reanimated v4 |
+| Server | Express.js (Node.js) |
+| Auth | Better Auth — email/password |
+| ORM | Drizzle ORM |
+| Database | PostgreSQL |
+| Real-time | Server-Sent Events (SSE) |
+| Monorepo | pnpm workspaces + Turborepo |
+
+---
+
+## Project structure
+
+```
+Musubi/
+├── apps/
+│   ├── client/     # Expo / React Native mobile app
+│   └── api/        # Express.js REST API server
+└── packages/
+    ├── calendar/   # Forked calendar component with recurrence support
+    ├── docs/       # This documentation site (Astro + Starlight)
+    ├── db/         # Drizzle ORM schema, migrations, and query helpers
+    ├── auth/       # Better Auth server configuration
+    ├── types/      # Shared TypeScript types (client + server)
+    └── config/     # Environment variable loading and validation
+```

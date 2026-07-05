@@ -1,0 +1,87 @@
+---
+title: Self-Hosting
+description: Run Musubi on your own server with Docker Compose.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Musubi is designed to be self-hosted. If you want your calendar data on your own infrastructure, this is the path.
+
+## Prerequisites
+
+- A server with **Docker** and **Docker Compose** installed
+- A domain name (optional but recommended for HTTPS)
+
+## 1. Get the code
+
+```sh
+git clone https://github.com/f-tuma/musubi.git
+cd musubi
+```
+
+## 2. Configure environment variables
+
+```sh
+cp .env.example .env
+```
+
+Edit `.env` with your production values. Key variables:
+
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `BETTER_AUTH_SECRET` | Long random secret — generate with `openssl rand -base64 32` |
+| `BETTER_AUTH_URL` | The public URL of your API, e.g. `https://musubi.yourdomain.com` |
+| `ENVIRONMENT` | Set to anything other than `dev` for production |
+
+For password reset emails to work, also set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `FROM_EMAIL`.
+
+<Aside type="caution">
+`BETTER_AUTH_SECRET` must be kept private and consistent. If you change it, all existing sessions are invalidated — every user gets logged out.
+</Aside>
+
+## 3. Start everything
+
+```sh
+docker compose up -d
+```
+
+This starts the API server, the PostgreSQL database, and runs migrations automatically.
+
+## 4. Point the mobile app at your server
+
+When users open Musubi for the first time, they can enter a custom server URL on the welcome screen. Give them your server's address — e.g. `https://musubi.yourdomain.com`.
+
+---
+
+## Updating
+
+To pull the latest version:
+
+```sh
+git pull
+docker compose down
+docker compose up -d --build
+```
+
+Migrations run automatically on startup.
+
+---
+
+## Backups
+
+The only stateful piece is the PostgreSQL database. Back it up with:
+
+```sh
+docker exec musubi-db pg_dump -U postgres musubi > backup.sql
+```
+
+Restore with:
+
+```sh
+cat backup.sql | docker exec -i musubi-db psql -U postgres musubi
+```
+
+<Aside type="note">
+Musubi is in active development. Breaking changes are possible before a stable 1.0 release. Check the changelog before updating.
+</Aside>

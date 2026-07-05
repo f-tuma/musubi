@@ -1,0 +1,1 @@
+ALTER TABLE "external_calendars" ADD COLUMN "account_label" text;

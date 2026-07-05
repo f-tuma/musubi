@@ -1,0 +1,316 @@
+import { config } from "@musubi/config";
+import { auth } from "@musubi/auth";
+import { deleteExpiredInvites, deleteExpiredSessions, purgeDeletedEvents } from "@musubi/db";
+import { toNodeHandler } from "better-auth/node";
+import express from "express";
+import cors from "cors";
+import { middlewareErrorHandler } from "./middleware/error_handler";
+import { handlerCreateCalendar, handlerGetCalendars, handlerGetCalendar, handlerRemoveCalendar, handlerUpdateCalendar, handlerJoinCalendar, handlerLeaveCalendar, handlerGetCalendarFromToken, handlerGetCalendarMembers, handlerSetMemberRole, handlerKickMember } from "./handlers/calendars";
+import { handlerDeleteUser, handlerGetAvatar, handlerResetUsers, handlerUploadAvatar } from "./handlers/users";
+import { handlerCreateEvent, handlerForkEvent, handlerGetEvents, handlerLinkEvent, handlerRemoveEvent, handlerUpdateEvent } from "./handlers/events";
+import { requireAuth } from "./middleware/require_auth";
+import { handlerCreateCalendarInvite } from "./handlers/invites";
+import { handlerStream } from "./handlers/stream";
+import { middlewareLogHandler } from "./middleware/log_handler";
+import { handlerGetSettings, handlerSaveSettings } from "./handlers/settings";
+import { handlerServer, handlerServerStatus } from "./handlers/server";
+import { handlerCheckGoogleStatus, handlerGetGoogleCalendars, handlerRevokeGoogle } from "./handlers/google";
+import { handlerCheckCaldavStatus, handlerConnectCaldav, handlerDisconnectCaldav } from "./handlers/caldav";
+import { handlerDisconnectAccount } from "./handlers/connections";
+
+const app = express()
+const port = config.api.port;
+
+const allowedOrigins = [
+  config.api.url,
+  ...(config.api.environment === "dev" ? ["http://localhost:3000", "http://localhost:8081"] : []),
+];
+
+//MIDDLEWARE
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+}));
+app.use(express.json({ limit: "512kb" })); // avatars arrive as base64 JSON
+app.use(middlewareLogHandler);
+
+//
+
+// AUTH
+
+app.all("/api/auth/{*any}", toNodeHandler(auth));
+
+//
+
+// GET REQUESTS
+
+app.get("/api/v1/server", handlerServer);
+app.get("/api/v1/server/ok", handlerServerStatus);
+
+app.get("/api/v1/calendars", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerGetCalendars(req, res).catch(next));
+});
+
+app.get("/api/v1/calendars/google", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerGetGoogleCalendars(req, res).catch(next));
+});
+
+app.get("/api/v1/calendars/:id", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerGetCalendar(req, res).catch(next));
+});
+
+app.get("/api/v1/calendars/tokens/:token", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerGetCalendarFromToken(req, res).catch(next));
+});
+
+app.get("/api/v1/events", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerGetEvents(req, res).catch(next));
+});
+
+app.get("/api/v1/stream", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerStream(req, res).catch(next));
+});
+
+app.get("/api/v1/users/settings", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerGetSettings(req, res).catch(next));
+});
+
+app.get("/api/v1/users/connections/google", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerCheckGoogleStatus(req, res).catch(next));
+});
+
+app.get("/api/v1/users/connections/caldav", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerCheckCaldavStatus(req, res).catch(next));
+});
+
+app.post("/api/v1/users/connections/caldav", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerConnectCaldav(req, res).catch(next));
+});
+
+app.post("/api/v1/users/connections/disconnect", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerDisconnectAccount(req, res).catch(next));
+});
+
+app.delete("/api/v1/users/connections/caldav", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerDisconnectCaldav(req, res).catch(next));
+});
+
+//
+
+// POST REQUESTS
+
+app.post("/api/v1/users/reset", (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerResetUsers(req, res).catch(next));
+});
+
+app.post("/api/v1/calendars", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerCreateCalendar(req, res).catch(next));
+});
+
+app.post("/api/v1/calendars/members/:calendarId", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerJoinCalendar(req, res).catch(next));
+});
+
+app.get("/api/v1/calendars/:calendarId/members", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerGetCalendarMembers(req, res).catch(next));
+});
+
+app.put("/api/v1/calendars/:calendarId/members/:userId", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerSetMemberRole(req, res).catch(next));
+});
+
+app.delete("/api/v1/calendars/:calendarId/members/:userId", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerKickMember(req, res).catch(next));
+});
+
+app.post("/api/v1/events", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerCreateEvent(req, res).catch(next));
+});
+
+app.post("/api/v1/events/:eventId/link", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerLinkEvent(req, res).catch(next));
+});
+
+app.post("/api/v1/events/:eventId/fork", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerForkEvent(req, res).catch(next));
+});
+
+app.post("/api/v1/calendars/invites", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerCreateCalendarInvite(req, res).catch(next));
+});
+
+app.post("/api/v1/users/connections/google/revoke", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerRevokeGoogle(req, res).catch(next));
+});
+
+//
+
+// PUT REQUESTS
+
+app.put("/api/v1/events", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerUpdateEvent(req, res).catch(next));
+});
+
+app.put("/api/v1/calendars", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerUpdateCalendar(req, res).catch(next));
+});
+
+app.put("/api/v1/users/settings", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerSaveSettings(req, res).catch(next));
+});
+
+//
+
+// DELETE REQUESTS
+
+app.delete("/api/v1/users", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerDeleteUser(req, res).catch(next));
+});
+
+app.post("/api/v1/users/avatar", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerUploadAvatar(req, res).catch(next));
+});
+
+// public — see handler comment (plain <Image> can't send auth headers)
+app.get("/api/v1/users/:userId/avatar", (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerGetAvatar(req, res).catch(next));
+});
+
+app.delete("/api/v1/events", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerRemoveEvent(req, res).catch(next));
+});
+
+app.delete("/api/v1/calendars", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerRemoveCalendar(req, res).catch(next));
+});
+
+app.delete("/api/v1/calendars/members/:calendarId", requireAuth, (
+  req,
+  res,
+  next) => {
+  Promise.resolve(handlerLeaveCalendar(req, res).catch(next));
+});
+
+//
+
+
+// SERVER
+// These should be last...
+
+app.use(middlewareErrorHandler);
+
+app.listen(port, "0.0.0.0")
+
+// Periodic cleanup of expired rows (Postgres has no native row TTL).
+// Scheduling lives here (app concern); the deletes live in @musubi/db.
+async function cleanupExpired() {
+  try {
+    await deleteExpiredInvites();
+    await deleteExpiredSessions();
+    await purgeDeletedEvents(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)); // tombstones > 30d
+  } catch (e) {
+    console.error("Cleanup job failed:", e);
+  }
+}
+cleanupExpired();                          // run once at boot (setInterval's first tick is delayed)
+setInterval(cleanupExpired, 60 * 60 * 1000); // then hourly

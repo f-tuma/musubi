@@ -1,0 +1,1 @@
+ALTER TABLE `notifications_table` ADD `offsetMinutes` integer DEFAULT 15 NOT NULL;

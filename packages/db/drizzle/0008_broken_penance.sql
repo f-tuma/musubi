@@ -1,0 +1,3 @@
+ALTER TABLE "google_calendars" ADD COLUMN "user_id" text NOT NULL;--> statement-breakpoint
+ALTER TABLE "google_calendars" ADD CONSTRAINT "google_calendars_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "google_calendars" ADD CONSTRAINT "google_calendars_google_calendar_id_user_id_unique" UNIQUE("google_calendar_id","user_id");

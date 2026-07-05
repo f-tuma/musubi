@@ -1,0 +1,43 @@
+---
+title: Roadmap
+description: What's done, what's next, and known limitations.
+---
+
+Musubi is in active development, approaching its first public release. This page tracks direction — nothing is promised by a specific date.
+
+## Next up
+
+**Microsoft Outlook adapter.** The sync engine is provider-agnostic; Outlook needs a Microsoft Graph adapter (delta queries, structured-recurrence ↔ RRULE mapping). See the [adapter guide](/docs/reference/sync/) — this is a well-scoped contribution.
+
+**Edit a single occurrence.** Deleting one occurrence and ending a series work today (EXDATE / UNTIL). Editing one occurrence — "move just this Tuesday's session" — needs *detached instances* (an exception event tied to the series), a data-model addition on its own.
+
+**Offline mutation queue.** Mutations are API-first: offline changes fail loudly instead of being silently lost, but they aren't retried. A queue (pending-mutation table in the client's SQLite, replayed on reconnect) would make the app fully offline-capable.
+
+**Conflict detection.** Concurrent edits are last-write-wins. A version column + `409 Conflict` precondition would surface conflicts instead of silently overwriting.
+
+**Onboarding steps 2 & 3.** Create a first personal calendar during sign-up; connect external calendars during setup.
+
+## Under consideration
+
+- **Per-event permission overrides** — calendar roles are the source of truth today; events may later override (e.g. a viewer-editable signup sheet).
+- **Push notifications from the server** — reminders are currently scheduled locally on-device.
+- **More OAuth sign-in providers** — Google Sign-In works natively today; Apple/Microsoft may follow.
+
+## Done
+
+Recent highlights, newest first:
+
+- **Recurring event exceptions** — delete one occurrence, delete "this and following" (series ends, history kept), full-series delete; exceptions round-trip to Google and CalDAV
+- **Light mode** — system-following theme with a manual override (washi-paper light palette)
+- **External calendar sync** — Google Calendar + any CalDAV server (iCloud, Fastmail, Nextcloud…), two-way, multiple accounts per provider, read-only detection (holiday calendars), incremental cursors with 410-reset recovery
+- **Roles & ownership** — owner / editor / viewer per calendar, ownership transfer, invite-token-only membership, live role updates over SSE
+- **Event ownership model** — home (origin) calendar governs editing; link (share by reference) and fork (independent copy) across calendars
+- **Google Sign-In** — native OAuth via Better Auth
+- **Offline-tolerant client cache** — SQLite mirror with delta sync cursor, tombstones, and membership reconciliation
+- Shared calendars with invite links, real-time SSE sync, recurring events (RRULE), calendar filter bar with solo mode, self-hosting via Docker Compose
+
+## Known limitations
+
+- One occurrence of a recurring event can be removed but not *edited* (see detached instances above).
+- `zonedToUtc` (timezone exception stamps from Google) can be off by an hour in the hour surrounding a DST transition.
+- The theme preference isn't persisted device-side yet — a cold start briefly follows the system scheme until settings load.

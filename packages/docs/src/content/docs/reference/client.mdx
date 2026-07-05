@@ -1,0 +1,170 @@
+---
+title: Client
+description: Reference for the Musubi React Native / Expo mobile app.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The client is a React Native app built with Expo SDK 56. It runs on iOS and Android.
+
+## Tech stack
+
+| Concern | Library |
+|---|---|
+| Framework | Expo SDK 56 / React Native 0.85 |
+| Routing | Expo Router — file-based, tab + stack navigation |
+| State management | Zustand |
+| Local cache | SQLite via Drizzle ORM + `expo-sqlite` |
+| Calendar component | `@musubi/calendar` — forked in-repo, extended with recurrence |
+| Animations | Reanimated v4 + Gesture Handler |
+| Real-time | `react-native-sse` (Server-Sent Events) |
+| Auth client | Better Auth |
+| Fonts | Inter Tight, Noto Serif, Shippori Mincho B1 |
+
+## File structure
+
+```
+apps/client/
+├── app/
+│   ├── _layout.tsx           # Root layout — fonts, migrations, theme, auth routing, splash
+│   ├── (auth)/
+│   │   ├── welcome.tsx       # Landing — server URL, Google sign-in, sign in / sign up
+│   │   ├── sign-in.tsx       # Email + password sign-in
+│   │   └── sign-up.tsx       # Registration
+│   ├── (tabs)/
+│   │   ├── _layout.tsx       # Tab navigator + initial data fetch
+│   │   ├── index.tsx         # Main calendar view
+│   │   ├── agenda.tsx        # Upcoming events list
+│   │   ├── calendars.tsx     # Manage calendars, members, external connections
+│   │   └── settings.tsx      # User settings (incl. theme)
+│   └── invite/
+│       └── [token].tsx       # Deep-link invite acceptance
+├── components/
+│   ├── calendar/             # Calendar-specific UI (modals, filter bar, skeletons…)
+│   └── ui/                   # App-wide UI primitives — Tap, Btn, Empty
+├── constants/
+│   ├── colors.ts             # Named colour swatches (appColors array)
+│   ├── theme.ts              # Palettes, fonts, styles, calendarTheme, applyTheme()
+│   └── const.ts              # Japanese month/day name arrays
+├── hooks/
+│   ├── useRefreshData.ts     # Full refresh pipeline (sync → delta → cache → stores)
+│   ├── useVisibleEvents.ts   # Filters + sorts events by active calendars
+│   ├── useEventsStream.ts    # SSE connection for real-time updates
+│   └── useModalAnimation.ts  # Shared bottom-sheet animation hook
+├── lib/
+│   ├── confirm.ts            # confirm() / chooseOption() — native dialogs
+│   ├── haptics.ts            # Semantic haptic vocabulary
+│   └── liveEvent.ts          # liveEventDetail() — keep open modals fresh
+├── services/
+│   ├── api.ts                # Typed HTTP client for all API endpoints
+│   ├── eventsCache.ts        # SQLite event cache (Drizzle + expo-sqlite)
+│   ├── db.ts                 # Local SQLite database instance
+│   └── notifications.ts      # Local scheduled notifications (expo-notifications)
+├── store/
+│   ├── useEventsStore.ts     # Events state + CRUD
+│   ├── useCalendarsStore.ts  # Calendars state, active filter, solo mode
+│   └── useSettingsStore.ts   # User settings (view mode, week start, theme…)
+└── contexts/
+    └── ServerContext.tsx      # Server URL + auth client instance
+```
+
+## UI primitives
+
+Everything interactive is built from a small set of primitives in `components/ui/` and `lib/`. **These are the way to build UI in this app** — don't reach for bare `Pressable`, `Alert.alert`, or ad-hoc haptic calls.
+
+### `Tap` (`components/ui/Tap.tsx`)
+
+Drop-in `Pressable` replacement with the app-wide press feel: quick opacity dim plus a subtle Reanimated spring scale on press-in. Props:
+
+- `haptic` — name of a haptic from `lib/haptics.ts` to play on press-in. **Default `false`**: haptics are reserved for important actions, not every row.
+- `scaleTo` — press-in scale, `0.97` by default; pass `1` to keep only the dim.
+
+<Aside type="caution">
+`Tap` wraps its `style` in an animated array, so it does **not** support the function-style `style={({ pressed }) => …}` form. Pass a plain style or array.
+</Aside>
+
+### `Btn` (`components/ui/Btn.tsx`)
+
+The app button: theme variant, press feel, haptic, and busy state in one place.
+
+- `variant` — `primary` (solid fill), `secondary` (outline), `destructive` (vermilion; plays the `warn` haptic instead of `tap`)
+- `loading` — shows a spinner and blocks presses; wire it to your in-flight state
+
+### `Empty` (`components/ui/Empty.tsx`)
+
+Zen empty state: a single kanji (default 空), breathing room, one quiet line of text. Use it wherever a list can be empty.
+
+### `confirm()` / `chooseOption()` (`lib/confirm.ts`)
+
+The one way to ask "are you sure?". `confirm()` shows the native `ActionSheetIOS` on iOS and `Alert` on Android, leading with a warning haptic. `chooseOption()` is the multi-choice variant — e.g. the recurring-event delete scope ("this / following / all").
+
+### Haptics (`lib/haptics.ts`)
+
+Semantic vocabulary so callsites read as intent: `tap` (light tick), `select` (**intentionally a no-op** — firing on every pill tap proved annoying, kept so callsites stay semantic), `thump` (medium — long-press, drag thresholds), `success`, `warn`. Policy: haptics only on important actions (primary/destructive buttons, FABs, confirms), not every touch.
+
+## Theming
+
+`constants/theme.ts` defines two palettes: **dark** (sumi ink on night) and **light** (ink on washi paper). The exported `colors`, `styles`, and `calendarTheme` are **mutable singletons** — `applyTheme(scheme)` swaps their contents in place with `Object.assign`, no context/provider plumbing.
+
+The root layout resolves the effective scheme from the user's `theme` setting (`system` | `dark` | `light`, with `system` following `useColorScheme()`), calls `applyTheme(scheme)`, and remounts the whole tree via `key={scheme}` so every component re-reads the swapped tokens.
+
+<Aside type="danger">
+Two pitfalls that silently break theme switching:
+
+1. **Never reference `colors.*` in module-level `StyleSheet.create` or module-level constants.** Module scope is evaluated once — the values go stale after a theme switch. Apply colours inline at render time (or inside a function called per render).
+2. **`applyTheme` must be called as a plain statement in the component body, NOT inside `useMemo`.** The React Compiler assumes memo callbacks are pure and eliminates ones whose result is unused — which silently drops the side effect. It's idempotent, so calling it every render is fine.
+</Aside>
+
+### Token roles
+
+| Token | Role |
+|---|---|
+| `bg` … `bg3` | Backgrounds, from screen base to elevated pills/inputs |
+| `line` … `line3` | Hairlines and borders, increasing contrast |
+| `fg` … `fg4` | Text, from primary to placeholder |
+| `accent` | Vermilion — highlights, errors, now-indicator |
+| `fill` / `onFill` | Solid active fills (pills, primary buttons) and the text/icon sitting on them |
+
+Never hardcode hex values in components — always read from `colors`.
+
+## Data flow
+
+### Stores are API-first
+
+Three Zustand stores (`useEventsStore`, `useCalendarsStore`, `useSettingsStore`) hold all server state. Mutating actions call the API **first** and only write to state and the SQLite cache after the call succeeds — there are no optimistic writes to roll back. Each API-backed action has a `local*` twin (`localAddEvent`, `localRemoveCalendar`, …) used by the SSE stream to apply changes that already happened on the server.
+
+### Refresh pipeline (`hooks/useRefreshData.ts`)
+
+A full refresh runs, in order:
+
+1. **Provider sync trigger** — pokes the server to sync connected external providers first, so freshly imported changes land in the delta below (best-effort, no-op when nothing is connected).
+2. **Delta fetch** — `GET /api/events?since=<lastSync>` returns only events changed since the stored cursor, plus tombstone `deletedIds`. No valid cursor → full sync, which replaces the entire cache.
+3. **Cache write** — upsert changed events and delete tombstoned ones in the SQLite cache (`services/eventsCache.ts`), then store the returned `serverTime` as the next cursor.
+4. **Membership reconcile** — an offline kick sends no SSE and the delta can't tombstone events you merely lost access to, so events are re-checked against current calendar membership: links to calendars you're no longer in are stripped, and events left with none are purged.
+
+### Real-time updates (`hooks/useEventsStream.ts`)
+
+A persistent SSE connection to `GET /api/stream` receives `event_created`, `event_updated`, `event_removed`, `calendar_updated`, and `calendar_removed` messages and applies them via the stores' `local*` actions. `calendar_removed` also calls `localRemoveCalendarEvents` to purge that calendar's events from memory and cache.
+
+### Live detail modals (`lib/liveEvent.ts`)
+
+An open detail modal holds a snapshot; SSE keeps the store fresh. `liveEventDetail(events, detail)` re-reads the live row so remote edits show without reopening — for recurring events it keeps the tapped occurrence's start/end, since the store row carries the series master's times.
+
+## Modal pattern
+
+Bottom sheets share `useModalAnimation(visible, onClose)`: critically-damped spring physics (one spec for enter, release, and dismiss), a pan gesture that follows the finger downward and rubber-bands upward, and dismissal past a distance or velocity threshold.
+
+<Aside type="caution">
+Closing happens on a plain `setTimeout`, **not** an animation completion callback — an interrupted animation can drop its callback, leaving an invisible "ghost" modal that blocks all touches.
+</Aside>
+
+## Recurrence expansion
+
+Recurring events are stored as a single row with an RRULE string (optionally multi-line iCal with `EXDATE` exception lines) and expanded on the client by `expandRecurringEvents()` from `@musubi/calendar` for the visible date range. Parsed rules are cached per `(rrule, dtstart)` pair. Occurrence ids are synthetic — `` `<originalId>_<startTimestamp>` `` — stable across renders so list keys don't thrash.
+
+## Adding a screen
+
+1. Create a file in the appropriate `app/` directory
+2. Export a default React component as the screen
+3. If it's a new tab, add it to `app/(tabs)/_layout.tsx`
+4. Use `styles.screen` as the root container style — it handles background colour and flex

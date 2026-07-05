@@ -1,0 +1,43 @@
+---
+title: Musubi
+description: A privacy-first shared calendar. Connect your schedules, own your data.
+template: splash
+hero:
+  tagline: One app for all your shared calendars. Privacy-first, self-hostable, and built for people who care where their data lives.
+  actions:
+    - text: Get Started
+      link: /docs/guides/introduction/
+      icon: right-arrow
+      variant: primary
+    - text: Self-Host
+      link: /docs/guides/self-hosting/
+      icon: open-book
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## What is Musubi?
+
+Musubi (結び) is a Japanese word meaning *knot* or *bond*. The app ties people's schedules together — shared calendars that you control, running on infrastructure you own.
+
+<CardGrid stagger>
+  <Card title="Privacy First" icon="shield">
+    No ads, no tracking, no third-party calendar vendor with your schedule. Run it yourself or use the hosted version at musubi.frgtn.dev.
+  </Card>
+  <Card title="Shared Calendars" icon="star">
+    Create calendars and invite others with owner, editor, and viewer roles. Owners can hand a calendar off entirely — ownership transfer built in.
+  </Card>
+  <Card title="External Calendar Sync" icon="random">
+    Connect Google Calendar and any CalDAV server — including iCloud. Two-way sync, multiple accounts, and automatic read-only detection for calendars you can't write to.
+  </Card>
+  <Card title="Recurring Events" icon="approve-check-circle">
+    Full RFC 5545 RRULE support — weekly workouts, monthly syncs, yearly reminders — including per-occurrence exceptions: delete or skip a single occurrence without touching the series.
+  </Card>
+  <Card title="Real-Time Sync" icon="rocket">
+    Events update live across all connected clients via Server-Sent Events. No polling, no manual refresh.
+  </Card>
+  <Card title="Light & Dark" icon="sun">
+    Two hand-tuned zen palettes — sumi ink on night, ink on washi paper. Follows your system setting, or pick one and stay.
+  </Card>
+</CardGrid>
