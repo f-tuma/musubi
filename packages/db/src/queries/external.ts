@@ -171,7 +171,9 @@ export async function upsertExternalEvent(
       .from(externalEvents)
       .where(and(
         eq(externalEvents.provider, provider),
-        eq(externalEvents.externalCalendarID, externalCalendarID),
+        // scope to THIS mirror — global calendars (Google holidays) share
+        // externalCalendarID across every user's account
+        eq(externalEvents.calendarID, calendarID),
         eq(externalEvents.externalEventID, externalEventID),
       ));
 
@@ -187,16 +189,17 @@ export async function upsertExternalEvent(
         .values({ id: crypto.randomUUID(), ...values, creatorID: userID, originCalendarID: calendarID })
         .returning();
       await tx.insert(calendarEvents).values({ eventID: ev.id, calendarID });
-      await tx.insert(externalEvents).values({ provider, eventID: ev.id, externalCalendarID, externalEventID, etag });
+      await tx.insert(externalEvents).values({ provider, eventID: ev.id, calendarID, externalCalendarID, externalEventID, etag });
     }
   });
 }
 
-export async function deleteExternalEvent(provider: string, externalCalendarID: string, externalEventID: string) {
+export async function deleteExternalEvent(provider: string, calendarID: string, externalEventID: string) {
   await db.delete(events).where(inArray(events.id,
     db.select({ id: externalEvents.eventID }).from(externalEvents).where(and(
       eq(externalEvents.provider, provider),
-      eq(externalEvents.externalCalendarID, externalCalendarID),
+      // scoped to the caller's mirror — never reach into another user's mirror
+      eq(externalEvents.calendarID, calendarID),
       eq(externalEvents.externalEventID, externalEventID),
     ))));
 }
@@ -218,9 +221,10 @@ export async function getExternalEventID(provider: string, eventID: string, exte
 export async function importExternalEvent(
   provider: string,
   eventID: string,
+  calendarID: string,
   externalCalendarID: string,
   externalEventID: string,
   etag: string | null = null,
 ) {
-  await db.insert(externalEvents).values({ provider, eventID, externalCalendarID, externalEventID, etag });
+  await db.insert(externalEvents).values({ provider, eventID, calendarID, externalCalendarID, externalEventID, etag });
 }

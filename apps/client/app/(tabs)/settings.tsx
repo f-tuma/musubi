@@ -128,7 +128,7 @@ export default function SettingsTab() {
           Settings
         </Text>
       </View>
-      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         {/* Who you are — tap the avatar to change the photo, tap the name to rename. */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 14, padding: 20, borderBottomWidth: 1, borderColor: colors.line }}>
           <Tap onPress={changeAvatar} disabled={avatarBusy} scaleTo={0.95}>

@@ -44,7 +44,7 @@ export default function CalendarPickerModal({ title, visible, onClose, onSelect,
             <View style={styles.modalTitleRow}>
               <Text style={styles.modalTitle}>{title}</Text>
             </View>
-            <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 16, gap: 4 }}>
+            <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 16, gap: 4 }} showsVerticalScrollIndicator={false}>
               {options.length === 0 ? (
                 <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: colors.fg3 }}>
                   {emptyLabel ?? "No calendars available."}

@@ -103,7 +103,7 @@ export default function MemberRolesModal({ calendar, visible, onClose }: Props) 
             <View style={styles.modalTitleRow}>
               <Text style={styles.modalTitle}>Members</Text>
             </View>
-            <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 16, gap: 12 }}>
+            <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 16, gap: 12 }} showsVerticalScrollIndicator={false}>
               {members.map((m) => {
                 const isOwner = m.id === calendar?.creatorID;
                 const kickable = canManage && !isOwner;

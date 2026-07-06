@@ -20,16 +20,10 @@ export function useApi() {
       if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
 
 
-      const newCalendar: Calendar = {
-        name: data.name,
-        color: data.color,
-        id: data.id,
-        creatorID: data.creatorID,
-        members: data.members,
-        invite: "WIP",
-      }
-
-      return newCalendar;
+      // Pass the server response through whole — rebuilding the object here
+      // silently dropped `role: "owner"`, so the creator didn't get owner
+      // actions (invite, roles) until the next full sync.
+      return { ...data, invite: "WIP" };
     },
 
     async getCalendars() {

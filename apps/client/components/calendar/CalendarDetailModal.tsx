@@ -27,6 +27,8 @@ import CreateCalendarModal from "./CreateCalendarModal";
 import { useVisibleEvents } from "@/hooks/useVisibleEvents";
 import { useApi } from "@/services/api";
 import { eventColor } from "@/lib/eventColor";
+import { canEditEvent } from "@/lib/eventPermissions";
+import { warn } from "@/lib/haptics";
 import { Tap } from "@/components/ui/Tap";
 
 
@@ -45,7 +47,7 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
   const calendarSpace = height * 0.7;
   const api = useApi();
   const canEditEvents = can(calendar?.role, "editEvents");
-  const { events, addEvent, updateEvent } = useEventsStore();
+  const { events, addEvent, updateEvent, localUpdateEvent } = useEventsStore();
   const { calendars, updateCalendar } = useCalendarsStore();
   const { weekStartsOn, defaultCalendarView, showKanji } = useSettingsStore();
 
@@ -118,6 +120,7 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
       width: interpolate(zoom.value, [0, 1], [r.w, bodySize.w]),
       height: interpolate(zoom.value, [0, 1], [r.h, bodySize.h]),
       borderRadius: interpolate(zoom.value, [0, 1], [10, 0]),
+      borderWidth: zoom.value < 1 ? 1 : 0, // hairline helps mid-zoom, but at rest it's a visible edge
     };
   });
   const overlayContentStyle = useAnimatedStyle(() => ({
@@ -170,6 +173,28 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
     setEndingDate(d.end);
     setNewEventVisible(true);
   }, [canEditEvents]);
+
+  const canMoveEvent = useCallback(
+    (e: Event) => !e.recurrence && canEditEvent(e, calendars),
+    [calendars],
+  );
+  const onMoveEvent = useCallback((ev: Event, dayDelta: number, minDelta: number) => {
+    const shift = (d: Date) => {
+      const n = new Date(d);
+      n.setDate(n.getDate() + dayDelta);
+      n.setMinutes(n.getMinutes() + minDelta);
+      return n;
+    };
+    const updated = { ...ev, start: shift(ev.start), end: shift(ev.end) };
+    localUpdateEvent(updated); // optimistic — the block must not snap back
+    api.updateEvent(updated)
+      .then(result => localUpdateEvent(result))
+      .catch(err => {
+        console.error("Move failed:", err);
+        warn();
+        localUpdateEvent(ev); // revert
+      });
+  }, [api, localUpdateEvent]);
 
   const calendarById = useMemo(() => new Map(calendars.map(c => [c.id, c])), [calendars]);
   const eventColorOf = useCallback((e: Event) => eventColor(e, calendarById), [calendarById]);
@@ -281,6 +306,8 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
                     onPressEvent={openEventDetail}
                     draft={null}
                     onDraftChange={handleDraftChange}
+                    canMoveEvent={canMoveEvent}
+                    onMoveEvent={onMoveEvent}
                     onPageChange={setAnchorDate}
                     scrollPosRef={scrollPosRef}
                     bottomPad={insets.bottom + 20}
@@ -306,6 +333,8 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
                         onPressEvent={openEventDetail}
                         draft={null}
                         onDraftChange={handleDraftChange}
+                        canMoveEvent={canMoveEvent}
+                        onMoveEvent={onMoveEvent}
                         onPageChange={setAnchorDate}
                         scrollPosRef={scrollPosRef}
                         bottomPad={insets.bottom + 20}

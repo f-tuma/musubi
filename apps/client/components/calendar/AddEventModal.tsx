@@ -6,6 +6,7 @@ import { ActivityIndicator, Alert, Keyboard, Modal, Platform, Pressable, ScrollV
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
+import { sortCalendars } from "@/lib/calendarOrder";
 import { appColors } from "@/constants/colors";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import DateTimePicker from '@expo/ui/community/datetime-picker';
@@ -155,7 +156,7 @@ const DOCK_MAX_H = 620;              // expanded height cap
 const DOCK_HEIGHT_RATIO = 0.8;       // …or this fraction of the window, whichever is smaller
 const DOCK_HIDDEN_EXTRA = 30;        // pushed this far past its height when hidden
 const DOCK_SNAP_VELOCITY = 400;      // fling speed that snaps open/closed regardless of position
-const DOCK_SPRING = { damping: 32, stiffness: 300, mass: 0.8 };
+const DOCK_SPRING = { damping: 28, stiffness: 240, mass: 0.8 };
 const TAB_BAR_H = 70;                // (tabs)/_layout tabBarStyle.height — sheet rests on top of it
 const KB_SHOW_MS = 220;              // keyboard lift in/out timings
 const KB_HIDE_MS = 180;
@@ -164,6 +165,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
   const {
     notificationsOnByDefault,
     timeLocale,
+    calendarOrder,
   } = useSettingsStore();
 
   const insets = useSafeAreaInsets();
@@ -330,6 +332,18 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
     dockOff.value = withSpring(dockRange, DOCK_SPRING);
     closeSequence(); // resets fields + onClose (parent clears the draft)
   };
+  // typing the title pulls the sheet fully open so the rest of the form shows
+  const dockExpand = () => { dockOff.value = withSpring(0, DOCK_SPRING); };
+  const dockCollapse = () => { Keyboard.dismiss(); dockOff.value = withSpring(dockRange, DOCK_SPRING); };
+
+  // Backdrop behind an expanded sheet — dims and swallows touches so the
+  // calendar underneath can't scroll/move while the form is out of the dock.
+  // At peek it's transparent and lets touches through (pointerEvents none).
+  const backdropStyle = useAnimatedStyle(() => {
+    const raw = (dockRange - dockOff.value) / dockRange;
+    const t = raw < 0 ? 0 : raw > 1 ? 1 : raw;
+    return { opacity: t, pointerEvents: t > 0.01 ? "auto" : "none" };
+  });
 
   // Docked: times follow the calendar — the drag/tap draft when there is one,
   // otherwise a sensible default on the day in view.
@@ -545,6 +559,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
               <TextInput
                 value={newTitle}
                 onChangeText={setNewTitle}
+                onFocus={dockExpand}
                 placeholder={eventHint}
                 placeholderTextColor={colors.fg4}
                 returnKeyType="done"
@@ -565,7 +580,8 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
         keyboardShouldPersistTaps="handled"
         style={docked ? { flex: 1 } : undefined}
         contentContainerStyle={docked ? { paddingBottom: kbPad } : undefined}
-      >
+      
+  showsVerticalScrollIndicator={false}>
         {!docked && (
           <View style={styles.fieldContainer}>
             <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Title</Text>
@@ -585,9 +601,11 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
         <View style={styles.fieldContainer}>
           <ScrollView
             horizontal
-          >
+          
+  showsHorizontalScrollIndicator={false}>
             <View style={styles.horizontalPillView}>
-              {calendars.map((cal) => {
+              {/* Same order as the Calendars tab, including the user's drag order. */}
+              {sortCalendars(calendars, calendarOrder).map((cal) => {
                 const active = selectedCals.has(cal.id);
                 const isOrigin = originEffective === cal.id;
                 const locked = !can(cal.role, "editEvents"); // can't add/remove here
@@ -989,12 +1007,19 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
 
   if (docked) {
     return (
-      <Animated.View style={[styles.modalSheet, {
-        height: DOCK_H, maxHeight: DOCK_H, minHeight: 0,
-        borderWidth: 1, borderColor: colors.line2,
-      }, dockedSlide]}>
-        {sheetContent}
-      </Animated.View>
+      <>
+        <Animated.View
+          style={[{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.45)" }, backdropStyle]}
+        >
+          <Pressable style={{ flex: 1 }} onPress={dockCollapse} />
+        </Animated.View>
+        <Animated.View style={[styles.modalSheet, {
+          height: DOCK_H, maxHeight: DOCK_H, minHeight: 0,
+          borderTopWidth: 1, borderColor: colors.line2, // edge-to-edge like every other sheet
+        }, dockedSlide]}>
+          {sheetContent}
+        </Animated.View>
+      </>
     );
   }
 

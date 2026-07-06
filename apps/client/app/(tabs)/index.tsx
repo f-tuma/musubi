@@ -21,6 +21,8 @@ import { useSettingsStore } from "@/store/useSettingsStore";
 import { useApi } from "@/services/api";
 import { useRefreshData } from "@/hooks/useRefreshData";
 import { eventColor } from "@/lib/eventColor";
+import { canEditEvent } from "@/lib/eventPermissions";
+import { warn } from "@/lib/haptics";
 
 type CalMode = "month" | "week" | "day";
 
@@ -34,7 +36,7 @@ function getViewRange(mode: CalMode, monthStart: Date): [Date, Date] {
 
 export default function MainTab() {
   const api = useApi();
-  const { events, addEvent, updateEvent } = useEventsStore();
+  const { events, addEvent, updateEvent, localUpdateEvent } = useEventsStore();
   const { weekStartsOn, defaultCalendarView } = useSettingsStore();
 
   const { calendars, activeCals, soloCalId, toggleCal, soloCalendar, syncActiveCals } = useCalendarsStore();
@@ -177,7 +179,34 @@ export default function MainTab() {
   const eventColorOf = useCallback((e: Event) => eventColor(e, calendarById), [calendarById]);
 
   const onPageChange = useCallback((date: Date) => setAnchorDate(date), []);
+
+  // Drag-to-move existing events: only non-recurring ones the user may edit
+  // (moving one occurrence of a series = detached instances, postponed).
+  const canMoveEvent = useCallback(
+    (e: Event) => !e.recurrence && canEditEvent(e, calendars),
+    [calendars],
+  );
+  const onMoveEvent = useCallback((ev: Event, dayDelta: number, minDelta: number) => {
+    const shift = (d: Date) => {
+      const n = new Date(d);
+      n.setDate(n.getDate() + dayDelta);
+      n.setMinutes(n.getMinutes() + minDelta);
+      return n;
+    };
+    const updated = { ...ev, start: shift(ev.start), end: shift(ev.end) };
+    localUpdateEvent(updated); // optimistic — the block must not snap back
+    api.updateEvent(updated)
+      .then(result => localUpdateEvent(result))
+      .catch(err => {
+        console.error("Move failed:", err);
+        warn();
+        localUpdateEvent(ev); // revert
+      });
+  }, [api, localUpdateEvent]);
   const dockVisible = calMode !== "month" || !!drill;
+  // one truth for "is the sheet peeking" — drives the sheet AND the timeline's
+  // bottom padding (no dead gap under midnight when the sheet is hidden)
+  const dockPeeking = !!draft || ((calMode === "day" || (!!drill && drillReady)) && !dockHidden);
 
   // Overlay geometry: tapped cell rect → full calendar body. Content is laid out
   // at full size inside and fades in, so nothing reflows mid-animation.
@@ -191,6 +220,7 @@ export default function MainTab() {
       width: interpolate(zoom.value, [0, 1], [r.w, bodySize.w]),
       height: interpolate(zoom.value, [0, 1], [r.h, bodySize.h]),
       borderRadius: interpolate(zoom.value, [0, 1], [10, 0]),
+      borderWidth: zoom.value < 1 ? 1 : 0, // hairline helps mid-zoom, but at rest it's a visible edge
     };
   });
   const overlayContentStyle = useAnimatedStyle(() => ({
@@ -246,9 +276,11 @@ export default function MainTab() {
             onPressEvent={openEventDetail}
             draft={draft}
             onDraftChange={handleDraftChange}
+            canMoveEvent={canMoveEvent}
+            onMoveEvent={onMoveEvent}
             onPageChange={onPageChange}
             scrollPosRef={scrollPosRef}
-            bottomPad={DOCK_PEEK + 14}
+            bottomPad={dockPeeking ? DOCK_PEEK + 14 : 28}
           />
         )}
 
@@ -257,7 +289,6 @@ export default function MainTab() {
             position: "absolute",
             backgroundColor: colors.bg,
             overflow: "hidden",
-            borderWidth: 1,
             borderColor: colors.line2,
           }, overlayStyle]}>
             <Animated.View style={[{ width: bodySize.w, height: bodySize.h }, overlayContentStyle]}>
@@ -271,9 +302,11 @@ export default function MainTab() {
                 onPressEvent={openEventDetail}
                 draft={draft}
                 onDraftChange={handleDraftChange}
+                canMoveEvent={canMoveEvent}
+                onMoveEvent={onMoveEvent}
                 onPageChange={onPageChange}
                 scrollPosRef={scrollPosRef}
-                bottomPad={DOCK_PEEK + 14}
+                bottomPad={!dockHidden || !!draft ? DOCK_PEEK + 14 : 28} // sheet is expected after the zoom — reserve the gap up front
               />
             </Animated.View>
           </Animated.View>
@@ -286,7 +319,7 @@ export default function MainTab() {
         <AddEventModal
           docked
           visible={true}
-          peekVisible={!!draft || ((calMode === "day" || (!!drill && drillReady)) && !dockHidden)}
+          peekVisible={dockPeeking}
           anchor={anchorDate}
           startingDate={draft?.start}
           endingDate={draft?.end}

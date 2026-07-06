@@ -29,6 +29,9 @@ export const Tap = forwardRef<View, Props>(function Tap(
   return (
     <AnimatedPressable
       ref={ref}
+      // Press feedback waits a beat, so a scroll passing over the element
+      // cancels the press before the dim/scale ever shows (native-ripple feel).
+      unstable_pressDelay={90}
       disabled={disabled}
       style={[style as any, feedback]}
       onPressIn={(e) => {

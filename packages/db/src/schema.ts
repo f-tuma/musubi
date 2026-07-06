@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { boolean, customType, index, pgTable, text, timestamp, uuid, integer, unique } from "drizzle-orm/pg-core";
+import { boolean, customType, index, jsonb, pgTable, text, timestamp, uuid, integer, unique } from "drizzle-orm/pg-core";
 
 // drizzle has no built-in bytea — minimal custom type
 const bytea = customType<{ data: Buffer }>({
@@ -138,11 +138,13 @@ export const userSettings = pgTable("user_settings", {
   // settings
   showKanji: boolean("show_kanji").notNull().default(true),
   notificationsOnByDefault: boolean("notifications_on_by_default").notNull().default(true),
-  defaultCalendarView: text("default_calendar_view").notNull().default("week"),
+  defaultCalendarView: text("default_calendar_view").notNull().default("month"),
   weekStartsOn: text("week_starts_on").notNull().default("monday"),
   timeLocale: text("time_locale").notNull().default("en-UK"),
   theme: text("theme").notNull().default("system"),
   onboarded: boolean("onboarded").notNull().default(false),
+  // flat, user-chosen calendar order; group order derives from first appearance
+  calendarOrder: jsonb("calendar_order").$type<string[]>().notNull().default([]),
 });
 
 export type NewSettings = typeof userSettings.$inferInsert;
@@ -403,11 +405,17 @@ export const externalEvents = pgTable("external_events", {
   eventID: uuid("event_id")
     .references(() => events.id, { onDelete: "cascade" })
     .notNull(),
+  // The LOCAL mirror calendar this mapping belongs to. Scoping by it is what
+  // lets two users mirror the same global external calendar (Google holidays
+  // share one externalCalendarID across all accounts) without colliding.
+  calendarID: uuid("calendar_id")
+    .references(() => calendars.id, { onDelete: "cascade" })
+    .notNull(),
   externalCalendarID: text("external_calendar_id").notNull(),
   externalEventID: text("external_event_id").notNull(),
   etag: text("etag"),
 }, (t) => [
-  unique().on(t.provider, t.externalCalendarID, t.externalEventID),
+  unique().on(t.provider, t.calendarID, t.externalEventID),
 ]);
 
 export type NewExternalEvent = typeof externalEvents.$inferInsert;

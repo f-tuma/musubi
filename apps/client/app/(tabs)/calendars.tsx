@@ -1,4 +1,6 @@
 import CalendarDetail from "@/components/calendar/CalendarDetailModal";
+import { CalendarGroup, ReorderableCalendarList } from "@/components/calendar/ReorderableCalendarList";
+import { useSettingsStore } from "@/store/useSettingsStore";
 import CreateCalendarModal from "@/components/calendar/CreateCalendarModal";
 import SyncCalendarModal from "@/components/calendar/SyncCalendarModal";
 import { colors, fonts, styles } from "@/constants/theme";
@@ -16,13 +18,6 @@ import { Empty } from "@/components/ui/Empty";
 import { confirm } from "@/lib/confirm";
 import { warn } from "@/lib/haptics";
 
-
-function ProviderIcon({ provider }: { provider?: string | null }) {
-  if (provider === "google") return <Ionicons name="logo-google" size={13} color={colors.fg3} />;
-  if (provider === "apple") return <Ionicons name="logo-apple" size={14} color={colors.fg3} />;
-  if (provider === "caldav") return <Ionicons name="cloud" size={14} color={colors.fg3} />;
-  return <Feather name="calendar" size={13} color={colors.fg3} />; // native Musubi
-}
 
 export default function CalendarsTab() {
   const api = useApi();
@@ -51,10 +46,19 @@ export default function CalendarsTab() {
     return map;
   }, [events]);
 
+  const settings = useSettingsStore();
+  const { calendarOrder, setCalendarOrder } = settings;
+
   // Group calendars: native Musubi first, then one section per connected account.
-  const { native, accounts } = useMemo(() => {
+  // Rows and account groups follow the user's saved drag order; the default
+  // (personal) calendar is pinned to the very top.
+  const groups = useMemo<CalendarGroup[]>(() => {
+    const orderIdx = (id: string) => {
+      const i = calendarOrder.indexOf(id);
+      return i === -1 ? Number.MAX_SAFE_INTEGER : i;
+    };
     const native: Calendar[] = [];
-    const map = new Map<string, { provider: string; accountId: string; label: string; calendars: Calendar[] }>();
+    const map = new Map<string, CalendarGroup>();
     const counts: Record<string, number> = {};
     for (const c of calendars) {
       if (!c.provider || !c.accountId) { native.push(c); continue; }
@@ -64,12 +68,35 @@ export default function CalendarsTab() {
         const flavor = providerFlavor(c);
         const name = flavor === "google" ? "Google" : flavor === "apple" ? "iCloud" : flavor === "caldav" ? "CalDAV" : c.provider;
         const label = c.accountLabel || `${name} Account ${counts[c.provider]}`;
-        map.set(key, { provider: c.provider, accountId: c.accountId, label, calendars: [] });
+        map.set(key, { key, title: label, provider: c.provider, accountId: c.accountId, calendars: [] });
       }
       map.get(key)!.calendars.push(c);
     }
-    return { native, accounts: [...map.values()] };
-  }, [calendars]);
+    native.sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0) || orderIdx(a.id) - orderIdx(b.id));
+    const accounts = [...map.values()];
+    for (const g of accounts) g.calendars.sort((a, b) => orderIdx(a.id) - orderIdx(b.id));
+    accounts.sort((a, b) =>
+      Math.min(...a.calendars.map(c => orderIdx(c.id))) - Math.min(...b.calendars.map(c => orderIdx(c.id))));
+    const result: CalendarGroup[] = [];
+    if (native.length) result.push({ key: "native", title: "Musubi", native: true, calendars: native });
+    result.push(...accounts);
+    return result;
+  }, [calendars, calendarOrder]);
+
+  // Persist a new drag order: local store first (instant), then the server.
+  const persistOrder = (ids: string[]) => {
+    setCalendarOrder(ids);
+    api.saveSettings({
+      showKanji: settings.showKanji,
+      notificationsOnByDefault: settings.notificationsOnByDefault,
+      defaultCalendarView: settings.defaultCalendarView,
+      weekStartsOn: settings.weekStartsOn,
+      timeLocale: settings.timeLocale,
+      theme: settings.theme,
+      onboarded: settings.onboarded,
+      calendarOrder: ids,
+    }).catch((e) => console.error("Order save failed:", e));
+  };
 
   const handleOpenCalendar = (calendar: Calendar) => {
     setPrefilledCalendar(calendar);
@@ -89,36 +116,6 @@ export default function CalendarsTab() {
       },
     );
   };
-
-  const renderRow = (c: Calendar) => (
-    <Tap key={c.id} onPress={() => handleOpenCalendar(c)}>
-      <View style={[styles.container, { overflow: "hidden", flexDirection: "row", justifyContent: "space-between", gap: 18 }]}>
-        <View style={styles.calendarCircle}>
-          <View style={[styles.calendarCircleInner, { backgroundColor: c.color }]} />
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center' }}>
-          <Text style={{ fontFamily: fonts.sansMedium, color: colors.fg2 }}>{c.name}</Text>
-          <Text style={{ fontFamily: fonts.sans, color: colors.fg3, fontSize: 10 }}>{c.members.length} members · {eventCountByCal[c.id] ?? 0} events</Text>
-        </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <ProviderIcon provider={providerFlavor(c)} />
-          <Feather name="chevron-right" size={14} color={colors.fg4} />
-        </View>
-      </View>
-      <View style={{ height: 1, backgroundColor: colors.line }} />
-    </Tap>
-  );
-
-  const SectionHeader = ({ title, onDisconnect }: { title: string; onDisconnect?: () => void }) => (
-    <Tap
-      disabled={!onDisconnect}
-      onPress={onDisconnect}
-      style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.bg1 }}
-    >
-      <Text style={{ fontFamily: fonts.sansMedium, fontSize: 11, color: colors.fg3, letterSpacing: 0.5, textTransform: "uppercase" }}>{title}</Text>
-      {onDisconnect ? <Feather name="log-out" size={13} color={colors.fg4} /> : null}
-    </Tap>
-  );
 
   return (
     <View style={styles.screen}>
@@ -140,27 +137,18 @@ export default function CalendarsTab() {
           onPress={() => setSyncModalVisible(true)}
         />
       </View>
-      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <View style={{ height: 1, backgroundColor: colors.line }} />
 
         {calendars.length === 0 && <Empty kanji="暦" text="No calendars yet" />}
 
-        {native.length > 0 && (
-          <>
-            <SectionHeader title="Musubi" />
-            {native.map(renderRow)}
-          </>
-        )}
-
-        {accounts.map((acc) => (
-          <View key={`${acc.provider}:${acc.accountId}`}>
-            <SectionHeader
-              title={acc.label}
-              onDisconnect={() => handleDisconnect(acc.provider, acc.accountId, acc.label)}
-            />
-            {acc.calendars.map(renderRow)}
-          </View>
-        ))}
+        <ReorderableCalendarList
+          groups={groups}
+          eventCount={eventCountByCal}
+          onOpen={handleOpenCalendar}
+          onDisconnect={(g) => handleDisconnect(g.provider!, g.accountId!, g.title)}
+          onReorder={persistOrder}
+        />
       </ScrollView>
       <CreateCalendarModal
         visible={createModalVisible}

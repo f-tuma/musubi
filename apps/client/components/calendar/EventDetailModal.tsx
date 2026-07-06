@@ -140,7 +140,7 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
               </View>
             </View>
 
-            <ScrollView>
+            <ScrollView showsVerticalScrollIndicator={false}>
               {/* Where it lives — quiet metadata under the identity block. No
                   bottom border when nothing follows (avoids an empty "section"). */}
               <View style={[

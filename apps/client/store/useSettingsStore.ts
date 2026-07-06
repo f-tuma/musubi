@@ -22,12 +22,14 @@ type SettingsStore = {
   setTheme: (value: "system" | "dark" | "light") => void,
   onboarded: boolean,
   setOnboarded: (value: boolean) => void,
+  calendarOrder: string[],
+  setCalendarOrder: (ids: string[]) => void,
 }
 
 
 export const useSettingsStore = create<SettingsStore>((set) => ({
   loadSettings: (settings: Settings) => set(() => (settings)),
-  defaultCalendarView: "week",
+  defaultCalendarView: "month",
   setDefaultCalendarView: (view) => set(() => ({
     defaultCalendarView: view,
   })),
@@ -58,6 +60,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   // default true so existing sessions never flash the onboarding screen —
   // the server's value arrives via loadSettings and wins
   onboarded: true,
+  calendarOrder: [],
+  setCalendarOrder: (ids) => set(() => ({ calendarOrder: ids })),
   setOnboarded: (value) => set(() => ({
     onboarded: value,
   })),

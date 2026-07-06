@@ -94,7 +94,7 @@ export async function syncProvider(
 
     for (const ev of changes) {
       if (ev.status === "cancelled") {
-        await deleteExternalEvent(provider, link.externalCalendarID, ev.externalId);
+        await deleteExternalEvent(provider, link.calendarID, ev.externalId);
       } else {
         await upsertExternalEvent(
           provider,
@@ -145,7 +145,7 @@ export async function pushEventToCalendars(event: Event, calendarIDs: string[], 
     try {
       if (action === "create") {
         const { externalEventId } = await adapter.pushCreate(link.userID, link.accountID, link.externalCalendarID, event);
-        await importExternalEvent(link.provider, event.id, link.externalCalendarID, externalEventId);
+        await importExternalEvent(link.provider, event.id, calendarID, link.externalCalendarID, externalEventId);
       } else {
         const externalEventId = await getExternalEventID(link.provider, event.id, link.externalCalendarID);
         if (!externalEventId) continue;

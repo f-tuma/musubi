@@ -1,0 +1,1 @@
+ALTER TABLE "user_settings" ALTER COLUMN "default_calendar_view" SET DEFAULT 'month';

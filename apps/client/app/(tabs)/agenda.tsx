@@ -119,6 +119,7 @@ export default function AgendaTab() {
         ref={scrollRef}
         style={{ paddingHorizontal: 16 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
         onScroll={({ nativeEvent }) => {
           const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;

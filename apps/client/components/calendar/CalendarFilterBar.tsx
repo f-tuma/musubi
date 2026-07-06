@@ -1,3 +1,5 @@
+import { sortCalendars } from "@/lib/calendarOrder";
+import { useSettingsStore } from "@/store/useSettingsStore";
 import { memo, useEffect, useState } from "react";
 import { colors, fonts } from "@/constants/theme";
 import { View, ScrollView, Text } from "react-native";
@@ -6,7 +8,7 @@ import { Tap } from "@/components/ui/Tap";
 import { tap, thump } from "@/lib/haptics";
 import { providerFlavor } from "@musubi/types";
 
-type Calendar = { id: string; name: string; color: string; provider?: string | null; serverUrl?: string | null };
+type Calendar = { id: string; name: string; color: string; provider?: string | null; serverUrl?: string | null; isDefault?: boolean | null };
 
 type Props = {
   calendars: Calendar[];
@@ -23,6 +25,7 @@ export const CalendarFilterBar = memo(function CalendarFilterBar({
   onToggle,
   onSolo,
 }: Props) {
+  const calendarOrder = useSettingsStore(st => st.calendarOrder);
   // Optimistic local state so pills repaint before the expensive event
   // filtering pipeline catches up.
   const [display, setDisplay] = useState(() => new Set(activeCals));
@@ -71,9 +74,8 @@ export const CalendarFilterBar = memo(function CalendarFilterBar({
       }}
       contentContainerStyle={{ padding: 10, gap: 6, alignItems: "center" }}
     >
-      {/* Same order as the Calendars tab: native Musubi first, then synced
-          accounts (stable sort keeps within-group order). */}
-      {[...calendars].sort((a, b) => (a.provider ? 1 : 0) - (b.provider ? 1 : 0)).map((cal) => {
+      {/* Same order as the Calendars tab, including the user's drag order. */}
+      {sortCalendars(calendars, calendarOrder).map((cal) => {
         const active = display.has(cal.id);
         const soloed = localSoloId === cal.id;
         return (

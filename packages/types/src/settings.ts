@@ -12,6 +12,8 @@ export const SettingsSchema = z.object({
   theme: z.enum(["system", "dark", "light"]).default("system"),
   // optional (not defaulted): an omitted field must never reset the flag
   onboarded: z.boolean().optional(),
+  // user-chosen calendar order (flat id list); optional for the same reason
+  calendarOrder: z.array(z.string()).optional(),
 });
 
 export type Settings = z.infer<typeof SettingsSchema>;
