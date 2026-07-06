@@ -21,6 +21,11 @@ export const GRAB_SPRING = { damping: 30, stiffness: 400 };
 export const ZOOM_IN_MS = 300;
 export const ZOOM_OUT_MS = 260;
 
+// ── Timeline pinch zoom ──────────────────────────────────────────────────────
+// HOUR_H is the default; a pinch scales the live hour height between these.
+export const ZOOM_HOUR_MIN = 30;   // whole day compressed (~720px)
+export const ZOOM_HOUR_MAX = 180;  // one hour fills the screen
+
 export type Draft = { start: Date; end: Date };
 export type Rect = { x: number; y: number; w: number; h: number };
 

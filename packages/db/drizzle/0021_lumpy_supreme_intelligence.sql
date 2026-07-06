@@ -2,12 +2,14 @@ ALTER TABLE "external_events" DROP CONSTRAINT "external_events_provider_external
 ALTER TABLE "external_events" ADD COLUMN "calendar_id" uuid;--> statement-breakpoint
 -- backfill: the mirror is the calendar the event is linked to that also carries
 -- the matching external_calendars mapping (one per user/account)
+-- ee (UPDATE target) can only be referenced in WHERE, never in a FROM-list
+-- JOIN's ON — keep the ec↔ee match down here.
 UPDATE "external_events" ee SET "calendar_id" = ce."calendar_id"
 FROM "calendar_events" ce
 JOIN "external_calendars" ec
   ON ec."calendar_id" = ce."calendar_id"
- AND ec."external_calendar_id" = ee."external_calendar_id"
-WHERE ce."event_id" = ee."event_id";--> statement-breakpoint
+WHERE ce."event_id" = ee."event_id"
+  AND ec."external_calendar_id" = ee."external_calendar_id";--> statement-breakpoint
 DELETE FROM "external_events" WHERE "calendar_id" IS NULL;--> statement-breakpoint
 ALTER TABLE "external_events" ALTER COLUMN "calendar_id" SET NOT NULL;--> statement-breakpoint
 ALTER TABLE "external_events" ADD CONSTRAINT "external_events_calendar_id_calendars_id_fk" FOREIGN KEY ("calendar_id") REFERENCES "public"."calendars"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

@@ -8,11 +8,13 @@ import { MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import InfinitePager from "react-native-infinite-pager";
 import { Gesture, GestureDetector, ScrollView } from "react-native-gesture-handler";
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
+import Animated, {
+  runOnJS, scrollTo, SharedValue, useAnimatedReaction, useAnimatedRef, useAnimatedStyle, useSharedValue, withSpring, withTiming,
+} from "react-native-reanimated";
 import {
   addDays, allDaySpans, bucketByDay, clamp, dayKey, daySegments, Draft, fmtTime,
-  GRAB_DOT_HIT, GRAB_SCALE, GRAB_SPRING, GRID_H, GUTTER, HOLD_CREATE_MS, HOLD_GRAB_MS,
-  HOUR_H, INK, isSameDay, minutesToY, SNAP_DRAG_MIN, SNAP_TAP_MIN, startOfWeek, yToMinutes,
+  GRAB_DOT_HIT, GRAB_SCALE, GRAB_SPRING, GUTTER, HOLD_CREATE_MS, HOLD_GRAB_MS,
+  HOUR_H, INK, isSameDay, SNAP_DRAG_MIN, SNAP_TAP_MIN, startOfWeek, ZOOM_HOUR_MAX, ZOOM_HOUR_MIN,
 } from "./layout";
 
 const ALLDAY_LANES = 3;  // all-day strip shows up to this many bar rows
@@ -45,6 +47,10 @@ export function TimelineView({
   const [width, setWidth] = useState(0);
   const byDay = useMemo(() => bucketByDay(events), [events]);
   const weekBase = useMemo(() => startOfWeek(base, weekStartsOn), [base, weekStartsOn]);
+  // Pixels per hour, pinch-zoomable. Lives here so it survives page swipes and
+  // is shared by every buffered page; all vertical geometry derives from it on
+  // the UI thread (no re-render on zoom → smooth, crisp, no flash).
+  const hourH = useSharedValue(HOUR_H);
 
   const pageStart = (index: number) =>
     mode === "week" ? addDays(weekBase, index * 7) : addDays(base, index);
@@ -61,6 +67,7 @@ export function TimelineView({
               width={width}
               events={events}
               byDay={byDay}
+              hourH={hourH}
               eventColorOf={eventColorOf}
               onPressEvent={onPressEvent}
               draft={draft}
@@ -85,6 +92,7 @@ type PageProps = {
   width: number;
   events: Event[];
   byDay: Map<string, Event[]>;
+  hourH: SharedValue<number>;
   eventColorOf: (e: Event) => string;
   onPressEvent: (e: Event) => void;
   draft: Draft | null;
@@ -96,12 +104,18 @@ type PageProps = {
 };
 
 function TimelinePage({
-  days, width, events, byDay, eventColorOf, onPressEvent, draft, onDraftChange, canMoveEvent, onMoveEvent, scrollPosRef, bottomPad,
+  days, width, events, byDay, hourH, eventColorOf, onPressEvent, draft, onDraftChange, canMoveEvent, onMoveEvent, scrollPosRef, bottomPad,
 }: PageProps) {
   const colW = (width - GUTTER) / days.length;
   const [now, setNow] = useState(() => new Date());
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
+  const scrollY = useSharedValue(0); // live scroll offset — pinch anchors to it
   const hasToday = days.some(d => isSameDay(d, now));
+
+  // minutes ⇄ pixels at the CURRENT zoom (reads the live hour height)
+  const m2y = (m: number) => (m / 60) * hourH.value;
+  const y2min = (y: number, snap: number) =>
+    clamp(Math.round((y / hourH.value) * 60 / snap) * snap, 0, 24 * 60 - snap);
 
   useEffect(() => {
     // restore the shared scroll position when this page mounts (pager buffer)
@@ -118,7 +132,8 @@ function TimelinePage({
   // the sheet doesn't make the scroll content jump
   const padSV = useSharedValue(bottomPad);
   useEffect(() => { padSV.value = withTiming(bottomPad, { duration: 200 }); }, [bottomPad]);
-  const contentStyle = useAnimatedStyle(() => ({ height: GRID_H + padSV.value + 12 }));
+  const contentStyle = useAnimatedStyle(() => ({ height: 24 * hourH.value + padSV.value + 12 }));
+  const gridOverlayStyle = useAnimatedStyle(() => ({ height: 24 * hourH.value }));
 
   const segmentsByDay = useMemo(
     () => days.map(d => daySegments(byDay.get(dayKey(d)) ?? [], d)),
@@ -151,19 +166,19 @@ function TimelinePage({
   const lastSnap = useRef("");
   const handleTap = (x: number, y: number) => {
     const day = Math.floor(x / live.current.colW);
-    const min = yToMinutes(y - 30, SNAP_TAP_MIN); // center the block on the finger
+    const min = y2min(y - 30, SNAP_TAP_MIN); // center the block on the finger
     tapHaptic();
     onDraftChange({ start: atMinutes(day, min), end: atMinutes(day, min + 60) });
   };
   const handleDragStart = (x: number, y: number) => {
     const day = Math.floor(x / live.current.colW);
-    const min = yToMinutes(y, SNAP_DRAG_MIN);
+    const min = y2min(y, SNAP_DRAG_MIN);
     dragAnchor.current = { day, min };
     lastSnap.current = `${day}:${min}:${min}`;
     gestureActive.current = true;
     gDay.value = day;
-    gTop.value = minutesToY(min);
-    gH.value = minutesToY(60);
+    gTop.value = m2y(min);
+    gH.value = m2y(60);
     thump();
     onDraftChange({ start: atMinutes(day, min), end: atMinutes(day, min + 60) });
   };
@@ -171,14 +186,14 @@ function TimelinePage({
   // toward the next step — visual and draft move together, one click at a time.
   const handleDragMove = (y: number) => {
     const { day, min } = dragAnchor.current;
-    const cur = yToMinutes(y, SNAP_DRAG_MIN);
+    const cur = y2min(y, SNAP_DRAG_MIN);
     const key = `${day}:${min}:${cur}`;
     if (key === lastSnap.current) return;
     lastSnap.current = key;
     const sMin = cur < min ? cur : min;
     const eMin = cur > min ? Math.max(cur, min + 15) : min + 60;
-    gTop.value = withTiming(minutesToY(sMin), { duration: SNAP_STEP_MS });
-    gH.value = withTiming(minutesToY(eMin - sMin), { duration: SNAP_STEP_MS });
+    gTop.value = withTiming(m2y(sMin), { duration: SNAP_STEP_MS });
+    gH.value = withTiming(m2y(eMin - sMin), { duration: SNAP_STEP_MS });
     onDraftChange({ start: atMinutes(day, sMin), end: atMinutes(day, eMin) });
   };
   // "lifted" scale on the ghost while a hold-drag is active — visible feedback
@@ -191,7 +206,7 @@ function TimelinePage({
   // "snap and hold" feel without routing every frame through React state.
   const gDay = useSharedValue(0);
   const gTop = useSharedValue(0);
-  const gH = useSharedValue(minutesToY(60));
+  const gH = useSharedValue(HOUR_H);
   const gestureActive = useRef(false);
   const ghostStyle = useAnimatedStyle(() => ({
     left: GUTTER + gDay.value * colW + 2,
@@ -203,8 +218,8 @@ function TimelinePage({
     const d = live.current.draft;
     if (!d) return;
     const dayIdx = Math.max(live.current.days.findIndex(x => isSameDay(x, d.start)), 0);
-    const top = minutesToY(d.start.getHours() * 60 + d.start.getMinutes());
-    const h = Math.max(minutesToY((d.end.getTime() - d.start.getTime()) / 60000), 18);
+    const top = m2y(d.start.getHours() * 60 + d.start.getMinutes());
+    const h = Math.max(m2y((d.end.getTime() - d.start.getTime()) / 60000), 18);
     gDay.value = animated ? withTiming(dayIdx, { duration: GHOST_SETTLE_MS }) : dayIdx;
     gTop.value = animated ? withTiming(top, { duration: GHOST_SETTLE_MS }) : top;
     gH.value = animated ? withTiming(h, { duration: GHOST_SETTLE_MS }) : h;
@@ -245,7 +260,7 @@ function TimelinePage({
     if (!draft) return;
     const startMin = draft.start.getHours() * 60 + draft.start.getMinutes();
     const endMin = startMin + (draft.end.getTime() - draft.start.getTime()) / 60000;
-    const h = minutesToY(endMin - startMin);
+    const h = m2y(endMin - startMin);
     const w = colW - 4; // ghost width
     const mode = x <= GRAB_DOT_HIT && y <= GRAB_DOT_HIT ? "start"
       : x >= w - GRAB_DOT_HIT && y >= h - GRAB_DOT_HIT ? "end"
@@ -261,26 +276,26 @@ function TimelinePage({
   const grabMove = (tx: number, ty: number) => {
     const g = grab.current;
     if (!g) return;
-    const dMin = Math.round((ty / HOUR_H) * 60 / SNAP_DRAG_MIN) * SNAP_DRAG_MIN;
+    const dMin = Math.round((ty / hourH.value) * 60 / SNAP_DRAG_MIN) * SNAP_DRAG_MIN;
     const dDay = Math.round(tx / live.current.colW);
     const key = `${g.mode}:${dMin}:${dDay}`;
     if (key === lastSnap.current) return;
     lastSnap.current = key;
     if (g.mode === "start") {
       const s = clamp(g.startMin + dMin, 0, g.endMin - 15);
-      gTop.value = withTiming(minutesToY(s), { duration: SNAP_STEP_MS });
-      gH.value = withTiming(minutesToY(g.endMin - s), { duration: SNAP_STEP_MS });
+      gTop.value = withTiming(m2y(s), { duration: SNAP_STEP_MS });
+      gH.value = withTiming(m2y(g.endMin - s), { duration: SNAP_STEP_MS });
       onDraftChange({ start: atMinutes(g.day, s), end: atMinutes(g.day, g.endMin) });
     } else if (g.mode === "end") {
       const en = clamp(g.endMin + dMin, g.startMin + 15, 24 * 60);
-      gH.value = withTiming(minutesToY(en - g.startMin), { duration: SNAP_STEP_MS });
+      gH.value = withTiming(m2y(en - g.startMin), { duration: SNAP_STEP_MS });
       onDraftChange({ start: atMinutes(g.day, g.startMin), end: atMinutes(g.day, en) });
     } else {
       const dur = g.endMin - g.startMin;
       const day = clamp(g.day + dDay, 0, live.current.days.length - 1);
       const s = clamp(g.startMin + dMin, 0, 24 * 60 - dur);
-      gTop.value = withTiming(minutesToY(s), { duration: SNAP_STEP_MS });
-      gH.value = withTiming(minutesToY(dur), { duration: SNAP_STEP_MS });
+      gTop.value = withTiming(m2y(s), { duration: SNAP_STEP_MS });
+      gH.value = withTiming(m2y(dur), { duration: SNAP_STEP_MS });
       if (day !== gDay.value) gDay.value = withTiming(day, { duration: 80 });
       onDraftChange({ start: atMinutes(day, s), end: atMinutes(day, s + dur) });
     }
@@ -301,159 +316,198 @@ function TimelinePage({
     }),
   []);
 
+  // Pinch to zoom the hour height. Pure UI-thread: updates hourH.value, which
+  // every derived style/reaction reads — no React re-render while pinching.
+  // Focal correction: the content point under the fingers at pinch start stays
+  // put — its content-Y scales with the hour height, so we scroll to keep it at
+  // the same viewport-Y (focalY is viewport-relative since the detector wraps
+  // the ScrollView). Moving the fingers pans too.
+  const zoomBase = useSharedValue(HOUR_H);
+  const focalContentY = useSharedValue(0);
+  const pinchGesture = useMemo(() => Gesture.Pinch()
+    .onStart(e => {
+      zoomBase.value = hourH.value;
+      focalContentY.value = scrollY.value + e.focalY;
+    })
+    .onUpdate(e => {
+      const raw = zoomBase.value * e.scale;
+      const nh = raw < ZOOM_HOUR_MIN ? ZOOM_HOUR_MIN : raw > ZOOM_HOUR_MAX ? ZOOM_HOUR_MAX : raw;
+      hourH.value = nh;
+      const newScroll = focalContentY.value * (nh / zoomBase.value) - e.focalY;
+      scrollTo(scrollRef, 0, newScroll < 0 ? 0 : newScroll, false);
+    }), []);
+
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
   return (
-    <View style={{ flex: 1 }}>
-      {/* day header row */}
-      <View style={{ flexDirection: "row", paddingLeft: GUTTER, paddingVertical: 6, borderBottomWidth: hasAllDay ? 0 : 1, borderColor: colors.line }}>
-        {days.map((d, i) => {
-          const today = isSameDay(d, now);
-          return (
-            <View key={i} style={{ width: colW, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 }}>
-              <Text style={{ fontFamily: fonts.sans, fontSize: 10, color: today ? colors.accent : colors.fg4, letterSpacing: 1 }}>
-                {dayjs(d).format(days.length === 1 ? "dddd" : "dd").toUpperCase()}
-              </Text>
-              <View style={{
-                minWidth: 21, height: 21, borderRadius: 11, paddingHorizontal: 3,
-                alignItems: "center", justifyContent: "center",
-                backgroundColor: today ? colors.accent : "transparent",
-              }}>
-                <Text style={{ fontFamily: fonts.sansMedium, fontSize: 12, color: today ? "#f4f1e8" : colors.fg2 }}>
-                  {d.getDate()}
-                </Text>
-              </View>
-            </View>
-          );
-        })}
-      </View>
-
-      {/* all-day events — continuous bars spanning their days */}
-      {hasAllDay && (
-        <View style={{
-          marginLeft: GUTTER, height: laneCount * ALLDAY_LANE_H + 4,
-          borderBottomWidth: 1, borderColor: colors.line,
-        }}>
-          {visibleSpans.map(sp => (
-            <Tap key={sp.event.id} onPress={() => onPressEvent(sp.event)} style={{
-              position: "absolute",
-              left: sp.startCol * colW + 1,
-              width: (sp.endCol - sp.startCol + 1) * colW - 2,
-              top: sp.lane * ALLDAY_LANE_H,
-              height: ALLDAY_LANE_H - 4,
-              backgroundColor: eventColorOf(sp.event),
-              borderRadius: 4, paddingHorizontal: 5, justifyContent: "center",
-            }}>
-              <Text numberOfLines={1} style={{ fontFamily: fonts.sans, fontSize: 9.5, color: INK }}>{sp.event.title}</Text>
-            </Tap>
-          ))}
-          {hiddenSpans > 0 && (
-            <Text style={{ position: "absolute", right: 4, bottom: 2, fontFamily: fonts.sans, fontSize: 9, color: colors.fg3 }}>
-              +{hiddenSpans}
-            </Text>
-          )}
-        </View>
-      )}
-
-      <ScrollView
-        ref={scrollRef}
-        onScroll={e => { scrollPosRef.current = e.nativeEvent.contentOffset.y; }}
-        scrollEventThrottle={32}
-        showsVerticalScrollIndicator={false}
-      >
-        <Animated.View style={contentStyle}>
-          {/* hour lines + labels */}
-          {Array.from({ length: 24 }, (_, h) => (
-            <View key={h} style={{ position: "absolute", top: minutesToY(h * 60), left: 0, right: 0 }}>
-              <View style={{ position: "absolute", left: GUTTER, right: 0, height: 1, backgroundColor: colors.line }} />
-              {h > 0 && (
-                <Text style={{ position: "absolute", top: -6, width: GUTTER - 8, textAlign: "right", fontFamily: fonts.sans, fontSize: 10, color: colors.fg4 }}>
-                  {h}:00
-                </Text>
-              )}
-            </View>
-          ))}
-          {/* column separators */}
-          {days.length > 1 && days.map((_, i) => i > 0 && (
-            <View key={i} style={{ position: "absolute", left: GUTTER + i * colW, top: 0, bottom: 0, width: 1, backgroundColor: colors.line }} />
-          ))}
-
-          {/* empty-slot gestures — sits under the event blocks */}
-          <GestureDetector gesture={gridGesture}>
-            <View style={{ position: "absolute", left: GUTTER, top: 0, width: width - GUTTER, height: GRID_H }} />
-          </GestureDetector>
-
-          {/* events — hold a movable block to pick it up; locked ones wear 🔒 */}
-          {segmentsByDay.map((segs, di) => segs.map((s, si) => {
-            const laneW = (colW - 4) / s.cols;
-            const top = minutesToY(s.startMin);
-            const height = Math.max(minutesToY(s.endMin - s.startMin) - 2, 18);
+      <View style={{ flex: 1 }}>
+        {/* day header row */}
+        <View style={{ flexDirection: "row", paddingLeft: GUTTER, paddingVertical: 6, borderBottomWidth: hasAllDay ? 0 : 1, borderColor: colors.line }}>
+          {days.map((d, i) => {
+            const today = isSameDay(d, now);
             return (
-              <TimelineEventBlock
-                key={s.event.id + si}
-                event={s.event}
-                left={GUTTER + di * colW + 2 + s.col * laneW}
-                top={top}
-                width={laneW - 2}
-                height={height}
-                showTime={height >= 34 && laneW > 60}
-                color={eventColorOf(s.event)}
-                dayIndex={di}
-                daysCount={days.length}
-                colW={colW}
-                movable={canMoveEvent(s.event)}
-                onPress={onPressEvent}
-                onMove={onMoveEvent}
-              />
-            );
-          }))}
-
-          {/* drag/tap draft ghost — grabbable: edges resize, middle moves.
-              Position comes from shared values (finger-continuous); the times
-              in the label are the snapped draft state. */}
-          {draft && (() => {
-            const handleDot = {
-              position: "absolute" as const, width: 11, height: 11, borderRadius: 6,
-              backgroundColor: colors.bg, borderWidth: 2, borderColor: colors.accent,
-            };
-            return (
-              <GestureDetector key="draft" gesture={draftGesture}>
-                <Animated.View style={[{
-                  position: "absolute",
-                  width: colW - 4,
-                  borderRadius: 5, borderWidth: 1.5,
-                  // neutral scrim, not accent: reads over any event color beneath
-                  // (dark mode darkens what's under, light mode lightens it)
-                  borderColor: colors.accent,
-                  backgroundColor: activeScheme === "dark" ? "rgba(12,12,14,0.5)" : "rgba(244,241,232,0.6)",
-                  paddingHorizontal: 5, paddingTop: 3,
-                }, ghostStyle, grabStyle]}>
-                  <Text style={{ fontFamily: fonts.sansMedium, fontSize: 9.5, color: colors.fg2 }}>
-                    {fmtTime(draft.start)} – {fmtTime(draft.end)}
+              <View key={i} style={{ width: colW, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                <Text style={{ fontFamily: fonts.sans, fontSize: 10, color: today ? colors.accent : colors.fg4, letterSpacing: 1 }}>
+                  {dayjs(d).format(days.length === 1 ? "dddd" : "dd").toUpperCase()}
+                </Text>
+                <View style={{
+                  minWidth: 21, height: 21, borderRadius: 11, paddingHorizontal: 3,
+                  alignItems: "center", justifyContent: "center",
+                  backgroundColor: today ? colors.accent : "transparent",
+                }}>
+                  <Text style={{ fontFamily: fonts.sansMedium, fontSize: 12, color: today ? "#f4f1e8" : colors.fg2 }}>
+                    {d.getDate()}
                   </Text>
-                  <View style={[handleDot, { top: -6, left: 12 }]} />
-                  <View style={[handleDot, { bottom: -6, right: 12 }]} />
-                </Animated.View>
-              </GestureDetector>
+                </View>
+              </View>
             );
-          })()}
+          })}
+        </View>
 
-          {/* now indicator */}
-          {days.map((d, di) => isSameDay(d, now) && (
-            <View key="now" pointerEvents="none" style={{ position: "absolute", left: GUTTER + di * colW, width: colW, top: minutesToY(nowMin) - 1 }}>
-              <View style={{ height: 2, backgroundColor: colors.accent, borderRadius: 1 }} />
-              <View style={{ position: "absolute", left: -3, top: -2.5, width: 7, height: 7, borderRadius: 4, backgroundColor: colors.accent }} />
-            </View>
-          ))}
-        </Animated.View>
-      </ScrollView>
-    </View>
+        {/* all-day events — continuous bars spanning their days */}
+        {hasAllDay && (
+          <View style={{
+            marginLeft: GUTTER, height: laneCount * ALLDAY_LANE_H + 4,
+            borderBottomWidth: 1, borderColor: colors.line,
+          }}>
+            {visibleSpans.map(sp => (
+              <Tap key={sp.event.id} onPress={() => onPressEvent(sp.event)} style={{
+                position: "absolute",
+                left: sp.startCol * colW + 1,
+                width: (sp.endCol - sp.startCol + 1) * colW - 2,
+                top: sp.lane * ALLDAY_LANE_H,
+                height: ALLDAY_LANE_H - 4,
+                backgroundColor: eventColorOf(sp.event),
+                borderRadius: 4, paddingHorizontal: 5, justifyContent: "center",
+              }}>
+                <Text numberOfLines={1} style={{ fontFamily: fonts.sans, fontSize: 9.5, color: INK }}>{sp.event.title}</Text>
+              </Tap>
+            ))}
+            {hiddenSpans > 0 && (
+              <Text style={{ position: "absolute", right: 4, bottom: 2, fontFamily: fonts.sans, fontSize: 9, color: colors.fg3 }}>
+                +{hiddenSpans}
+              </Text>
+            )}
+          </View>
+        )}
+
+        <GestureDetector gesture={pinchGesture}>
+        <ScrollView
+          ref={scrollRef as any} // RNGH ScrollView; reanimated scrollTo resolves the native node
+          onScroll={e => { scrollPosRef.current = e.nativeEvent.contentOffset.y; scrollY.value = e.nativeEvent.contentOffset.y; }}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+        >
+          <Animated.View style={contentStyle}>
+            {/* hour lines + labels — each tracks the live hour height */}
+            {Array.from({ length: 24 }, (_, h) => (
+              <HourLine key={h} h={h} hourH={hourH} />
+            ))}
+            {/* column separators */}
+            {days.length > 1 && days.map((_, i) => i > 0 && (
+              <View key={i} style={{ position: "absolute", left: GUTTER + i * colW, top: 0, bottom: 0, width: 1, backgroundColor: colors.line }} />
+            ))}
+
+            {/* empty-slot gestures — sits under the event blocks */}
+            <GestureDetector gesture={gridGesture}>
+              <Animated.View style={[{ position: "absolute", left: GUTTER, top: 0, width: width - GUTTER }, gridOverlayStyle]} />
+            </GestureDetector>
+
+            {/* events — hold a movable block to pick it up; locked ones wear 🔒 */}
+            {segmentsByDay.map((segs, di) => segs.map((s, si) => {
+              const laneW = (colW - 4) / s.cols;
+              return (
+                <TimelineEventBlock
+                  key={s.event.id + si}
+                  event={s.event}
+                  startMin={s.startMin}
+                  endMin={s.endMin}
+                  left={GUTTER + di * colW + 2 + s.col * laneW}
+                  width={laneW - 2}
+                  hourH={hourH}
+                  showTime={s.endMin - s.startMin >= 40 && laneW > 60}
+                  color={eventColorOf(s.event)}
+                  dayIndex={di}
+                  daysCount={days.length}
+                  colW={colW}
+                  movable={canMoveEvent(s.event)}
+                  onPress={onPressEvent}
+                  onMove={onMoveEvent}
+                />
+              );
+            }))}
+
+            {/* drag/tap draft ghost — grabbable: corner dots resize, middle moves.
+                Position comes from shared values (snaps to 15-min steps); the
+                times in the label are the snapped draft state. */}
+            {draft && (() => {
+              const handleDot = {
+                position: "absolute" as const, width: 11, height: 11, borderRadius: 6,
+                backgroundColor: colors.bg, borderWidth: 2, borderColor: colors.accent,
+              };
+              return (
+                <GestureDetector key="draft" gesture={draftGesture}>
+                  <Animated.View style={[{
+                    position: "absolute",
+                    width: colW - 4,
+                    borderRadius: 5, borderWidth: 1.5,
+                    // neutral scrim, not accent: reads over any event color beneath
+                    // (dark mode darkens what's under, light mode lightens it)
+                    borderColor: colors.accent,
+                    backgroundColor: activeScheme === "dark" ? "rgba(12,12,14,0.5)" : "rgba(244,241,232,0.6)",
+                    paddingHorizontal: 5, paddingTop: 3,
+                  }, ghostStyle, grabStyle]}>
+                    <Text style={{ fontFamily: fonts.sansMedium, fontSize: 9.5, color: colors.fg2 }}>
+                      {fmtTime(draft.start)} – {fmtTime(draft.end)}
+                    </Text>
+                    <View style={[handleDot, { top: -6, left: 12 }]} />
+                    <View style={[handleDot, { bottom: -6, right: 12 }]} />
+                  </Animated.View>
+                </GestureDetector>
+              );
+            })()}
+
+            {/* now indicator */}
+            {days.map((d, di) => isSameDay(d, now) && (
+              <NowIndicator key="now" hourH={hourH} nowMin={nowMin} left={GUTTER + di * colW} colW={colW} />
+            ))}
+          </Animated.View>
+        </ScrollView>
+        </GestureDetector>
+      </View>
+  );
+}
+
+// One hour gridline + its label, positioned at the live hour height.
+function HourLine({ h, hourH }: { h: number; hourH: SharedValue<number> }) {
+  const style = useAnimatedStyle(() => ({ top: h * hourH.value }));
+  return (
+    <Animated.View style={[{ position: "absolute", left: 0, right: 0 }, style]}>
+      <View style={{ position: "absolute", left: GUTTER, right: 0, height: 1, backgroundColor: colors.line }} />
+      {h > 0 && (
+        <Text style={{ position: "absolute", top: -6, width: GUTTER - 8, textAlign: "right", fontFamily: fonts.sans, fontSize: 10, color: colors.fg4 }}>
+          {h}:00
+        </Text>
+      )}
+    </Animated.View>
+  );
+}
+
+function NowIndicator({ hourH, nowMin, left, colW }: { hourH: SharedValue<number>; nowMin: number; left: number; colW: number }) {
+  const style = useAnimatedStyle(() => ({ top: (nowMin / 60) * hourH.value - 1 }));
+  return (
+    <Animated.View pointerEvents="none" style={[{ position: "absolute", left, width: colW }, style]}>
+      <View style={{ height: 2, backgroundColor: colors.accent, borderRadius: 1 }} />
+      <View style={{ position: "absolute", left: -3, top: -2.5, width: 7, height: 7, borderRadius: 4, backgroundColor: colors.accent }} />
+    </Animated.View>
   );
 }
 
 type BlockProps = {
   event: Event;
-  left: number; top: number; width: number; height: number;
+  startMin: number; endMin: number;    // event's minutes-from-midnight (clipped to day)
+  left: number; width: number;         // horizontal px — unaffected by vertical zoom
+  hourH: SharedValue<number>;
   showTime: boolean;
   color: string;
   dayIndex: number;
@@ -468,21 +522,27 @@ type BlockProps = {
 // (vertical = continuous time, horizontal = whole-day snaps). Blocks that
 // can't move — read-only calendars, recurring series — wear a small lock.
 //
-// Flicker-free drop: position lives in leftSV/topSV (animated style, not React
-// layout). On commit the raw drag is FOLDED into those bases while the
-// transforms zero out in the same UI-thread batch — identical pixel before and
-// after — and the layout-sync effect then glides to the snapped spot.
+// Vertical position/height derive from the shared hour height via a reaction,
+// so a pinch reflows every block on the UI thread. Flicker-free drop: on commit
+// the raw drag is FOLDED into topSV/leftSV while the transforms zero out in the
+// same batch — identical pixel before and after — then the layout effect glides
+// to the snapped spot.
 function TimelineEventBlock({
-  event, left, top, width, height, showTime, color, dayIndex, daysCount, colW, movable, onPress, onMove,
+  event, startMin, endMin, left, width, hourH, showTime, color, dayIndex, daysCount, colW, movable, onPress, onMove,
 }: BlockProps) {
   const live = useRef({ event, dayIndex, daysCount, colW, onMove });
   live.current = { event, dayIndex, daysCount, colW, onMove };
 
+  const baseTop = (h: number) => (startMin / 60) * h;
+  const baseH = (h: number) => Math.max(((endMin - startMin) / 60) * h - 2, 18);
+
   const leftSV = useSharedValue(left);
-  const topSV = useSharedValue(top);
+  const topSV = useSharedValue(baseTop(hourH.value));
+  const heightSV = useSharedValue(baseH(hourH.value));
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
   const lift = useSharedValue(1);
+  const dragging = useSharedValue(false);
   const ndTarget = useSharedValue(0);
   const minPrev = useSharedValue(0);
   const dayIdxSV = useSharedValue(dayIndex);
@@ -494,19 +554,29 @@ function TimelineEventBlock({
     colWSV.value = colW;
   }, [dayIndex, daysCount, colW]);
 
-  // layout sync: after a committed move the new left/top equal the folded
-  // visual position, so this glide is the drop's settle onto the grid
+  // Zoom: reflow to the live hour height on the UI thread (skip while dragging —
+  // the gesture owns the position then). Math is inlined; baseTop/baseH are JS
+  // closures and can't be called from this worklet.
+  useAnimatedReaction(() => hourH.value, (h) => {
+    if (dragging.value) return;
+    topSV.value = (startMin / 60) * h;
+    heightSV.value = Math.max(((endMin - startMin) / 60) * h - 2, 18);
+  }, [startMin, endMin]);
+
+  // layout sync: after a committed move the folded top equals the new base, so
+  // this glide is the drop's settle onto the grid (horizontal/day too)
   const mounted = useRef(false);
   useEffect(() => {
+    const h = hourH.value;
     if (!mounted.current) {
       mounted.current = true;
-      leftSV.value = left;
-      topSV.value = top;
+      leftSV.value = left; topSV.value = baseTop(h); heightSV.value = baseH(h);
       return;
     }
     leftSV.value = withTiming(left, { duration: GHOST_SETTLE_MS });
-    topSV.value = withTiming(top, { duration: GHOST_SETTLE_MS });
-  }, [left, top]);
+    topSV.value = withTiming(baseTop(h), { duration: GHOST_SETTLE_MS });
+    heightSV.value = baseH(h); // duration is unchanged by a move — snap
+  }, [left, startMin, endMin]);
 
   // live time range preview while dragging (snapped, deduped)
   const [preview, setPreview] = useState<null | { day: number; min: number }>(null);
@@ -516,7 +586,7 @@ function TimelineEventBlock({
   const commit = (rawTx: number, rawTy: number) => {
     const { event, dayIndex, daysCount, colW, onMove } = live.current;
     const dayDelta = clamp(Math.round(rawTx / colW), -dayIndex, daysCount - 1 - dayIndex);
-    const minDelta = Math.round((rawTy / HOUR_H) * 60 / SNAP_DRAG_MIN) * SNAP_DRAG_MIN;
+    const minDelta = Math.round((rawTy / hourH.value) * 60 / SNAP_DRAG_MIN) * SNAP_DRAG_MIN;
     setPreview(null);
     if (dayDelta === 0 && minDelta === 0) {
       tx.value = withTiming(0, { duration: GHOST_SETTLE_MS });
@@ -536,6 +606,7 @@ function TimelineEventBlock({
     .enabled(movable)
     .activateAfterLongPress(HOLD_GRAB_MS)
     .onStart(() => {
+      dragging.value = true;
       lift.value = withSpring(GRAB_SCALE, GRAB_SPRING);
       ndTarget.value = 0;
       minPrev.value = 0;
@@ -544,7 +615,7 @@ function TimelineEventBlock({
     .onUpdate(e => {
       ty.value = e.translationY;
       const nd = Math.min(Math.max(Math.round(e.translationX / colWSV.value), -dayIdxSV.value), boundsSV.value - dayIdxSV.value);
-      const m = Math.round((e.translationY / HOUR_H) * 60 / SNAP_DRAG_MIN) * SNAP_DRAG_MIN;
+      const m = Math.round((e.translationY / hourH.value) * 60 / SNAP_DRAG_MIN) * SNAP_DRAG_MIN;
       if (ndTarget.value !== nd) {
         ndTarget.value = nd;
         tx.value = withTiming(nd * colWSV.value, { duration: 80 });
@@ -556,6 +627,7 @@ function TimelineEventBlock({
     })
     .onEnd(e => { runOnJS(commit)(e.translationX, e.translationY); })
     .onFinalize(() => {
+      dragging.value = false;
       lift.value = withSpring(1, GRAB_SPRING);
       runOnJS(clearPreview)();
     }),
@@ -565,6 +637,7 @@ function TimelineEventBlock({
   const animStyle = useAnimatedStyle(() => ({
     left: leftSV.value,
     top: topSV.value,
+    height: heightSV.value,
     transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: lift.value }],
     zIndex: lift.value > 1 ? 10 : 0,
     elevation: lift.value > 1 ? 6 : 0,
@@ -575,10 +648,11 @@ function TimelineEventBlock({
   }));
 
   const shiftMs = preview ? (preview.day * 24 * 60 + preview.min) * 60000 : 0;
+  const dur = endMin - startMin;
 
   return (
     <GestureDetector gesture={gesture}>
-      <Animated.View style={[{ position: "absolute", width, height }, animStyle]}>
+      <Animated.View style={[{ position: "absolute", width }, animStyle]}>
         <Tap
           onPress={() => onPress(event)}
           style={{
@@ -588,7 +662,7 @@ function TimelineEventBlock({
             overflow: "hidden",
           }}
         >
-          <Text numberOfLines={height > 30 ? 2 : 1} style={{ fontFamily: fonts.sansMedium, fontSize: 10.5, color: INK, paddingRight: movable ? 0 : 10 }}>
+          <Text numberOfLines={dur >= 30 ? 2 : 1} style={{ fontFamily: fonts.sansMedium, fontSize: 10.5, color: INK, paddingRight: movable ? 0 : 10 }}>
             {event.title}
           </Text>
           {(showTime || preview !== null) && (
