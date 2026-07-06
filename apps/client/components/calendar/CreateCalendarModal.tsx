@@ -122,7 +122,7 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                 <Text style={styles.modalTitle}>{calendar ? "Edit Calendar" : "New Calendar"}</Text>
               </View>
 
-              <ScrollView>
+              <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.fieldContainer}>
                   <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Name</Text>
                   <TextInput
@@ -139,7 +139,8 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                   <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Colors</Text>
                   <ScrollView
                     horizontal
-                  >
+                  
+  showsHorizontalScrollIndicator={false}>
                     <View style={styles.horizontalPillView}>
                       {appColors.map((c) => (
                         <Tap

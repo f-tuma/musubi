@@ -1,12 +1,16 @@
 import { useEffect } from "react";
 import { Dimensions, Keyboard, Platform } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
-import { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
+import { Easing, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-// Sheet physics: critically-damped spring so the sheet settles like paper,
-// not a linear slide. One spec shared by enter, release and dismiss.
-const SPRING = { damping: 32, stiffness: 300, mass: 0.8 };
+// Programmatic enter/exit use TIMING with a deceleration curve: springs are
+// kept for gesture release only (where finger velocity makes them feel right).
+// An overdamped spring here had two uglies — a hard initial lurch and a slow
+// asymptotic tail that made sheets visibly creep up ~4px after "settling".
+const ENTER = { duration: 320, easing: Easing.out(Easing.cubic) };
+const EXIT = { duration: 240, easing: Easing.in(Easing.cubic) };
+const SPRING = { damping: 28, stiffness: 240, mass: 0.8 };
 const DISMISS_DISTANCE = 100;
 
 export function useModalAnimation(visible: boolean, onClose: () => void) {
@@ -55,14 +59,14 @@ export function useModalAnimation(visible: boolean, onClose: () => void) {
   }
 
   async function handleClose() {
-    slideAnim.value = withSpring(offScreen, SPRING);
+    slideAnim.value = withTiming(offScreen, EXIT);
     fadeAnim.value = withTiming(0, { duration: 180 });
     deferredClose();
   }
 
   useEffect(() => {
     if (visible) {
-      slideAnim.value = withSpring(0, SPRING);
+      slideAnim.value = withTiming(0, ENTER);
       fadeAnim.value = withTiming(1, { duration: 200 });
     }
   }, [visible]);

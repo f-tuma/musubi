@@ -110,7 +110,7 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
               <Text style={styles.modalTitle}>{title}</Text>
             </View>
 
-            <ScrollView>
+            <ScrollView showsVerticalScrollIndicator={false}>
               {step === "providers" && (
                 <View style={styles.modalButtonsColumn}>
                   <Btn

@@ -15,7 +15,8 @@ The client is a React Native app built with Expo SDK 56. It runs on iOS and Andr
 | Routing | Expo Router — file-based, tab + stack navigation |
 | State management | Zustand |
 | Local cache | SQLite via Drizzle ORM + `expo-sqlite` |
-| Calendar component | `@musubi/calendar` — forked in-repo, extended with recurrence |
+| Calendar UI | Custom, in `components/cal/` (month → day/week, pinch zoom, drag-to-create/move). See [Custom calendar](#custom-calendar). |
+| Recurrence / date logic | `@musubi/calendar` — logic-only package (RRULE expansion + date helpers), no UI |
 | Animations | Reanimated v4 + Gesture Handler |
 | Real-time | `react-native-sse` (Server-Sent Events) |
 | Auth client | Better Auth |
@@ -40,7 +41,10 @@ apps/client/
 │   └── invite/
 │       └── [token].tsx       # Deep-link invite acceptance
 ├── components/
-│   ├── calendar/             # Calendar-specific UI (modals, filter bar, skeletons…)
+│   ├── cal/                  # Custom calendar engine — layout.ts (geometry + tuning),
+│   │                         #   MonthView, TimelineView (day/week), ModeSwitch
+│   ├── calendar/             # Calendar feature UI (event/calendar modals, filter bar,
+│   │                         #   AddEventModal incl. docked composer, ReorderableCalendarList)
 │   └── ui/                   # App-wide UI primitives — Tap, Btn, Empty
 ├── constants/
 │   ├── colors.ts             # Named colour swatches (appColors array)
@@ -54,7 +58,9 @@ apps/client/
 ├── lib/
 │   ├── confirm.ts            # confirm() / chooseOption() — native dialogs
 │   ├── haptics.ts            # Semantic haptic vocabulary
-│   └── liveEvent.ts          # liveEventDetail() — keep open modals fresh
+│   ├── liveEvent.ts          # liveEventDetail() — keep open modals fresh
+│   ├── calendarOrder.ts      # sortCalendars() — user's saved calendar order
+│   └── eventPermissions.ts   # canEditEvent() — mirrors the server's event edit rule
 ├── services/
 │   ├── api.ts                # Typed HTTP client for all API endpoints
 │   ├── eventsCache.ts        # SQLite event cache (Drizzle + expo-sqlite)
@@ -131,20 +137,20 @@ Never hardcode hex values in components — always read from `colors`.
 
 ### Stores are API-first
 
-Three Zustand stores (`useEventsStore`, `useCalendarsStore`, `useSettingsStore`) hold all server state. Mutating actions call the API **first** and only write to state and the SQLite cache after the call succeeds — there are no optimistic writes to roll back. Each API-backed action has a `local*` twin (`localAddEvent`, `localRemoveCalendar`, …) used by the SSE stream to apply changes that already happened on the server.
+Three Zustand stores (`useEventsStore`, `useCalendarsStore`, `useSettingsStore`) hold all server state. Mutating actions call the API **first** and only write to state and the SQLite cache after the call succeeds. Each API-backed action has a `local*` twin (`localAddEvent`, `localRemoveCalendar`, …) used by the SSE stream to apply changes that already happened on the server. The one deliberate exception is **drag-to-move** on the calendar (see [Custom calendar](#custom-calendar)): it applies locally first for a responsive drop and reverts if the request fails.
 
 ### Refresh pipeline (`hooks/useRefreshData.ts`)
 
 A full refresh runs, in order:
 
 1. **Provider sync trigger** — pokes the server to sync connected external providers first, so freshly imported changes land in the delta below (best-effort, no-op when nothing is connected).
-2. **Delta fetch** — `GET /api/events?since=<lastSync>` returns only events changed since the stored cursor, plus tombstone `deletedIds`. No valid cursor → full sync, which replaces the entire cache.
+2. **Delta fetch** — `GET /api/v1/events?since=<lastSync>` returns only events changed since the stored cursor, plus tombstone `deletedIds`. No valid cursor → full sync, which replaces the entire cache.
 3. **Cache write** — upsert changed events and delete tombstoned ones in the SQLite cache (`services/eventsCache.ts`), then store the returned `serverTime` as the next cursor.
 4. **Membership reconcile** — an offline kick sends no SSE and the delta can't tombstone events you merely lost access to, so events are re-checked against current calendar membership: links to calendars you're no longer in are stripped, and events left with none are purged.
 
 ### Real-time updates (`hooks/useEventsStream.ts`)
 
-A persistent SSE connection to `GET /api/stream` receives `event_created`, `event_updated`, `event_removed`, `calendar_updated`, and `calendar_removed` messages and applies them via the stores' `local*` actions. `calendar_removed` also calls `localRemoveCalendarEvents` to purge that calendar's events from memory and cache.
+A persistent SSE connection to `GET /api/v1/stream` receives `event_created`, `event_updated`, `event_removed`, `calendar_updated`, and `calendar_removed` messages and applies them via the stores' `local*` actions. `calendar_removed` also calls `localRemoveCalendarEvents` to purge that calendar's events from memory and cache.
 
 ### Live detail modals (`lib/liveEvent.ts`)
 
@@ -157,6 +163,32 @@ Bottom sheets share `useModalAnimation(visible, onClose)`: critically-damped spr
 <Aside type="caution">
 Closing happens on a plain `setTimeout`, **not** an animation completion callback — an interrupted animation can drop its callback, leaving an invisible "ghost" modal that blocks all touches.
 </Aside>
+
+## Custom calendar
+
+The calendar UI is hand-built in `components/cal/` — a small engine the screens (`app/(tabs)/index.tsx`, `CalendarDetailModal`) drive. There is no third-party calendar widget.
+
+| File | Responsibility |
+|---|---|
+| `layout.ts` | All geometry + date math + tuning constants in one place — `HOUR_H`, `GUTTER`, snap/hold thresholds, zoom bounds, `minutesToY`, `bucketByDay`, `daySegments` (overlap columns), `allDaySpans`, `monthGrid`. Change timing/spacing here, not in components. |
+| `MonthView.tsx` | Paged month grid (6×7). Tapping a day zooms into it; events are chips, not tappable. |
+| `TimelineView.tsx` | Day and week timeline: hour grid, event blocks, all-day strip, the drag-to-create ghost, and all the gestures. |
+| `ModeSwitch.tsx` | The day / week / month dropdown (Musubi-style, not the OS menu). |
+
+**Coordinate model.** Vertical position is minutes → pixels through `hourH` (pixels per hour). `hourH` is a **Reanimated shared value** so a pinch can rescale the whole timeline on the UI thread with no React re-render — hour lines, the now-indicator, and every event block derive their `top`/`height` from it (blocks via `useAnimatedReaction`). Horizontal position is the day column; `minutesToY`/`daySegments` handle the rest.
+
+**Gestures** (all Reanimated + Gesture Handler):
+
+- **Pinch to zoom** sits on the *outer* page view and is declared `simultaneousWithExternalGesture` with the ScrollView, so one-finger scroll and event taps keep working while a two-finger pinch rescales `hourH`. It keeps the point under the fingers fixed by scrolling to compensate.
+- **Drag-to-create** — hold an empty slot, then drag to size the range. The ghost snaps to 15-minute steps and holds each step; its corner dots resize the edges, the middle moves it.
+- **Drag-to-move** an existing block — hold to pick up, drag to reschedule (vertical = time, horizontal = whole-day steps). Recurring or read-only events can't move and wear a lock icon. This is the app's one **optimistic** path: it writes locally immediately, calls `PUT /api/v1/events`, and reverts on failure.
+- **Tap** a block opens its detail. Because an ancestor gesture detector would otherwise swallow a `Pressable`'s release, the block is a plain `Tap` whose press is preserved by keeping the pinch on the outer view (two-finger only).
+
+<Aside type="note">
+**Flicker-free drop.** A block's position lives in shared values, never React layout. On drop the raw drag is folded into the base coordinates while the transforms zero out in the *same* UI-thread frame — identical pixels before and after — then a layout effect glides to the snapped slot. Same trick powers the drag-reorder in `ReorderableCalendarList`.
+</Aside>
+
+**Docked composer.** New events use `AddEventModal` in `docked` mode: a sheet pinned to the bottom that peeks with a title field + Save, expands when you type or pull it up (a backdrop then blocks the calendar), and reads its times live from the drag/tap draft on the grid.
 
 ## Recurrence expansion
 

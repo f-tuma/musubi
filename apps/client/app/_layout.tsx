@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { View, useColorScheme } from 'react-native';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { applyTheme, activeScheme } from '@/constants/theme';
-import { Stack, SplashScreen, useRouter } from 'expo-router';
+import { Stack, SplashScreen, useRouter, usePathname } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { InterTight_400Regular, InterTight_500Medium } from '@expo-google-fonts/inter-tight';
 import { NotoSerif_400Regular } from '@expo-google-fonts/noto-serif';
@@ -11,6 +11,7 @@ import { ShipporiMinchoB1_400Regular } from '@expo-google-fonts/shippori-mincho-
 import { colors, styles } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { ToastHost } from '@/components/ui/Toast';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import semver from "semver";
@@ -71,9 +72,13 @@ function AppContent() {
   if (ready) everReady.current = true;
 
   const navigated = useRef(false);
+  const pathname = usePathname();
   useEffect(() => {
     if (!ready || navigated.current || updateRequired) return;
     navigated.current = true;
+    // Cold start via a deep link (invite/[token], …) already landed on its
+    // route — replacing it with the tabs would close the screen under the user.
+    if (session && pathname.startsWith('/invite')) return;
     router.replace(session ? '/(tabs)' : '/(auth)/welcome');
   }, [ready, updateRequired]);
 
@@ -137,6 +142,7 @@ export default function RootLayout() {
       <ServerProvider>
         <AppLoader />
       </ServerProvider>
+      <ToastHost />
     </GestureHandlerRootView>
   );
 }

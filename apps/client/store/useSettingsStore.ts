@@ -16,18 +16,22 @@ type SettingsStore = {
   setShowKanji: (value: boolean) => void,
   notificationsOnByDefault: boolean,
   setNotificationsOnByDefault: (value: boolean) => void,
-  timeLocale: "en-UK" | "cs-CZ",
-  setTimeLocale: (value: "en-UK" | "cs-CZ") => void,
+  timeFormat: "12h" | "24h",
+  setTimeFormat: (value: "12h" | "24h") => void,
+  dateFormat: "dmy" | "mdy" | "ymd",
+  setDateFormat: (value: "dmy" | "mdy" | "ymd") => void,
   theme: "system" | "dark" | "light",
   setTheme: (value: "system" | "dark" | "light") => void,
   onboarded: boolean,
   setOnboarded: (value: boolean) => void,
+  calendarOrder: string[],
+  setCalendarOrder: (ids: string[]) => void,
 }
 
 
 export const useSettingsStore = create<SettingsStore>((set) => ({
   loadSettings: (settings: Settings) => set(() => (settings)),
-  defaultCalendarView: "week",
+  defaultCalendarView: "month",
   setDefaultCalendarView: (view) => set(() => ({
     defaultCalendarView: view,
   })),
@@ -47,9 +51,13 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setNotificationsOnByDefault: (value: boolean) => set(() => ({
     notificationsOnByDefault: value,
   })),
-  timeLocale: "en-UK",
-  setTimeLocale: (value: "en-UK" | "cs-CZ") => set(() => ({
-    timeLocale: value,
+  timeFormat: "24h",
+  setTimeFormat: (value) => set(() => ({
+    timeFormat: value,
+  })),
+  dateFormat: "dmy",
+  setDateFormat: (value) => set(() => ({
+    dateFormat: value,
   })),
   theme: "system",
   setTheme: (value) => set(() => ({
@@ -58,6 +66,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   // default true so existing sessions never flash the onboarding screen —
   // the server's value arrives via loadSettings and wins
   onboarded: true,
+  calendarOrder: [],
+  setCalendarOrder: (ids) => set(() => ({ calendarOrder: ids })),
   setOnboarded: (value) => set(() => ({
     onboarded: value,
   })),

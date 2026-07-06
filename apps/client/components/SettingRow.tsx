@@ -16,6 +16,8 @@ type OptionsProps = {
   value: string;
   options: string[];
   onChange: (value: Mode) => void;
+  /** Optional display label per option value (else the value, capitalized). */
+  labels?: Record<string, string>;
 }
 
 // Border color applied inline at usage — the theme can swap at runtime.
@@ -50,7 +52,7 @@ export function SettingRowToggle({ label, toggle, onToggle }: ToggleProps) {
 
 // Few options → pick in one tap: inline segmented pills, same visual language
 // as the member-role selector.
-export function SettingRowOptions({ label, value, options, onChange }: OptionsProps) {
+export function SettingRowOptions({ label, value, options, onChange, labels }: OptionsProps) {
   return (
     <View style={[rowStyle, { borderColor: colors.line }]}>
       <Text style={{ fontFamily: fonts.sans, fontSize: 15, color: colors.fg2 }}>
@@ -77,7 +79,7 @@ export function SettingRowOptions({ label, value, options, onChange }: OptionsPr
                 fontFamily: fonts.sans, fontSize: 11,
                 color: active ? colors.onFill : colors.fg2,
               }}>
-                {o[0].toUpperCase() + o.slice(1)}
+                {labels?.[o] ?? o[0].toUpperCase() + o.slice(1)}
               </Text>
             </Tap>
           );

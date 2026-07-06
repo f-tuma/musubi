@@ -13,13 +13,19 @@ export const SNAP_DRAG_MIN = 15;   // minutes — drag resize/move snap
 export const SNAP_TAP_MIN = 30;    // minutes — quick-tap draft snap
 export const HOLD_CREATE_MS = 280; // hold before drag-to-create activates on the grid
 export const HOLD_GRAB_MS = 150;   // hold before an existing draft can be grabbed
-export const GRAB_EDGE_PX = 24;    // top/bottom strip of the ghost that resizes instead of moves
+export const GRAB_DOT_HIT = 30;    // draft ghost: corner-box touch zone around each resize dot
 export const GRAB_SCALE = 1.04;    // "lifted" ghost scale while dragging
 export const GRAB_SPRING = { damping: 30, stiffness: 400 };
 
 // ── Month → day zoom ─────────────────────────────────────────────────────────
 export const ZOOM_IN_MS = 300;
 export const ZOOM_OUT_MS = 260;
+export const DRILL_OPEN_MIN = 8 * 60 + 45; // minutes-from-midnight the drilled day view scrolls to (08:45)
+
+// ── Timeline pinch zoom ──────────────────────────────────────────────────────
+// HOUR_H is the default; a pinch scales the live hour height between these.
+export const ZOOM_HOUR_MIN = 30;   // whole day compressed (~720px)
+export const ZOOM_HOUR_MAX = 180;  // one hour fills the screen
 
 export type Draft = { start: Date; end: Date };
 export type Rect = { x: number; y: number; w: number; h: number };
@@ -116,3 +122,31 @@ export function daySegments(dayEvents: Event[], day: Date): Segment[] {
 }
 
 export const fmtTime = (d: Date) => dayjs(d).format("H:mm");
+
+// All-day events as CONTINUOUS spans over a row of days (month week-row or the
+// week view's all-day strip) — one bar across columns instead of per-day chips.
+export type Span = { event: Event; startCol: number; endCol: number; lane: number };
+export function allDaySpans(events: Event[], days: Date[]): Span[] {
+  const keys = days.map(dayKey);
+  const spans: Span[] = [];
+  const seen = new Set<string>();
+  for (const e of events) {
+    if (!e.isAllDay || !e.id || seen.has(e.id)) continue;
+    const evKeys = new Set(eventDayKeys(e));
+    let start = -1, end = -1;
+    keys.forEach((k, i) => { if (evKeys.has(k)) { if (start < 0) start = i; end = i; } });
+    if (start < 0) continue;
+    seen.add(e.id);
+    spans.push({ event: e, startCol: start, endCol: end, lane: 0 });
+  }
+  // greedy lanes: longest-first within same start so wide bars sit on top
+  spans.sort((a, b) => a.startCol - b.startCol || b.endCol - a.endCol);
+  const laneEnds: number[] = [];
+  for (const sp of spans) {
+    let lane = laneEnds.findIndex(end => end < sp.startCol);
+    if (lane === -1) { lane = laneEnds.length; laneEnds.push(-1); }
+    laneEnds[lane] = sp.endCol;
+    sp.lane = lane;
+  }
+  return spans;
+}

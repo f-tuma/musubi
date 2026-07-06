@@ -137,7 +137,10 @@ const makeStyles = () => StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     borderCurve: 'continuous',
-    minHeight: '33%',
+    // FIXED dp, not a percentage: with statusBarTranslucent the Modal window's
+    // height settles a beat after open — a %-minHeight recomputed against the
+    // taller window made short sheets visibly hop upward.
+    minHeight: 290,
     maxHeight: '88%',
   },
   modalHandle: {

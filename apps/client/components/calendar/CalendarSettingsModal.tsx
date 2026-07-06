@@ -62,7 +62,7 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
             <View style={styles.modalTitleRow}>
               <Text style={styles.modalTitle}>{calendar?.name}</Text>
             </View>
-            <ScrollView>
+            <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.container}>
                 <View style={{ gap: 8 }}>
                   {showInvite && (

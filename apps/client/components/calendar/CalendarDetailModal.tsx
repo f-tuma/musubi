@@ -16,7 +16,7 @@ import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-ha
 import { AddEventModal } from "./AddEventModal";
 import { MonthView } from "@/components/cal/MonthView";
 import { TimelineView } from "@/components/cal/TimelineView";
-import { Draft, minutesToY, Rect, ZOOM_IN_MS, ZOOM_OUT_MS } from "@/components/cal/layout";
+import { Draft, DRILL_OPEN_MIN, minutesToY, Rect, ZOOM_IN_MS, ZOOM_OUT_MS } from "@/components/cal/layout";
 import { ModeSwitch } from "@/components/cal/ModeSwitch";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import EventDetailModal from "./EventDetailModal";
@@ -27,6 +27,9 @@ import CreateCalendarModal from "./CreateCalendarModal";
 import { useVisibleEvents } from "@/hooks/useVisibleEvents";
 import { useApi } from "@/services/api";
 import { eventColor } from "@/lib/eventColor";
+import { canEditEvent } from "@/lib/eventPermissions";
+import { warn } from "@/lib/haptics";
+import { showToast, ToastHost } from "@/components/ui/Toast";
 import { Tap } from "@/components/ui/Tap";
 
 
@@ -45,7 +48,7 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
   const calendarSpace = height * 0.7;
   const api = useApi();
   const canEditEvents = can(calendar?.role, "editEvents");
-  const { events, addEvent, updateEvent } = useEventsStore();
+  const { events, addEvent, updateEvent, localUpdateEvent } = useEventsStore();
   const { calendars, updateCalendar } = useCalendarsStore();
   const { weekStartsOn, defaultCalendarView, showKanji } = useSettingsStore();
 
@@ -64,6 +67,8 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
   const [startingDate, setStartingDate] = useState<Date | undefined>(undefined);
   const [endingDate, setEndingDate] = useState<Date | undefined>(undefined);
   const scrollPosRef = useRef(Math.max(0, minutesToY(new Date().getHours() * 60 - 60)));
+  // drill-in day view keeps its own scroll memory, reset to noon on each open
+  const drillScrollPosRef = useRef(minutesToY(DRILL_OPEN_MIN));
 
   const insets = useSafeAreaInsets();
   const { slideStyle, fadeStyle, gesture, handleClose } = useModalAnimation(visible, onClose);
@@ -75,6 +80,7 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
 
   const openDrill = useCallback((date: Date, rect: Rect) => {
     setAnchorDate(date);
+    drillScrollPosRef.current = minutesToY(DRILL_OPEN_MIN); // day view always opens at this time
     setDrill({ date, rect });
     zoom.value = 0;
     zoom.value = withTiming(1, { duration: ZOOM_IN_MS, easing: Easing.out(Easing.cubic) });
@@ -118,6 +124,7 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
       width: interpolate(zoom.value, [0, 1], [r.w, bodySize.w]),
       height: interpolate(zoom.value, [0, 1], [r.h, bodySize.h]),
       borderRadius: interpolate(zoom.value, [0, 1], [10, 0]),
+      borderWidth: zoom.value < 1 ? 1 : 0, // hairline helps mid-zoom, but at rest it's a visible edge
     };
   });
   const overlayContentStyle = useAnimatedStyle(() => ({
@@ -170,6 +177,29 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
     setEndingDate(d.end);
     setNewEventVisible(true);
   }, [canEditEvents]);
+
+  const canMoveEvent = useCallback(
+    (e: Event) => !e.recurrence && canEditEvent(e, calendars),
+    [calendars],
+  );
+  const onMoveEvent = useCallback((ev: Event, dayDelta: number, minDelta: number) => {
+    const shift = (d: Date) => {
+      const n = new Date(d);
+      n.setDate(n.getDate() + dayDelta);
+      n.setMinutes(n.getMinutes() + minDelta);
+      return n;
+    };
+    const updated = { ...ev, start: shift(ev.start), end: shift(ev.end) };
+    // optimistic (block must not snap back); revert locally if the server rejects
+    const persist = (next: Event, fallback: Event) => {
+      localUpdateEvent(next);
+      api.updateEvent(next)
+        .then(result => localUpdateEvent(result))
+        .catch(err => { console.error("Move failed:", err); warn(); localUpdateEvent(fallback); });
+    };
+    persist(updated, ev);
+    showToast({ message: `“${ev.title || "Event"}” moved`, actionLabel: "Undo", onAction: () => persist(ev, updated) });
+  }, [api, localUpdateEvent]);
 
   const calendarById = useMemo(() => new Map(calendars.map(c => [c.id, c])), [calendars]);
   const eventColorOf = useCallback((e: Event) => eventColor(e, calendarById), [calendarById]);
@@ -281,6 +311,8 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
                     onPressEvent={openEventDetail}
                     draft={null}
                     onDraftChange={handleDraftChange}
+                    canMoveEvent={canMoveEvent}
+                    onMoveEvent={onMoveEvent}
                     onPageChange={setAnchorDate}
                     scrollPosRef={scrollPosRef}
                     bottomPad={insets.bottom + 20}
@@ -306,8 +338,10 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
                         onPressEvent={openEventDetail}
                         draft={null}
                         onDraftChange={handleDraftChange}
+                        canMoveEvent={canMoveEvent}
+                        onMoveEvent={onMoveEvent}
                         onPageChange={setAnchorDate}
-                        scrollPosRef={scrollPosRef}
+                        scrollPosRef={drillScrollPosRef}
                         bottomPad={insets.bottom + 20}
                       />
                     </Animated.View>
@@ -364,6 +398,8 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
           onEdit(cal);
         }}
       />
+      {/* own host: the root one is occluded by this native Modal */}
+      <ToastHost />
     </Modal >
   );
 }

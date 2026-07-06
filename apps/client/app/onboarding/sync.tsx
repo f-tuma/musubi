@@ -49,7 +49,8 @@ export default function OnboardingSync() {
         notificationsOnByDefault: settings.notificationsOnByDefault,
         defaultCalendarView: settings.defaultCalendarView,
         weekStartsOn: settings.weekStartsOn,
-        timeLocale: settings.timeLocale,
+        timeFormat: settings.timeFormat,
+        dateFormat: settings.dateFormat,
         theme: settings.theme,
         onboarded: true,
       });

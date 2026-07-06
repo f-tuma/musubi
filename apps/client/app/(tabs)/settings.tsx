@@ -38,7 +38,8 @@ export default function SettingsTab() {
     weekStartsOn, setWeekStartsOn,
     showKanji, setShowKanji,
     notificationsOnByDefault, setNotificationsOnByDefault,
-    timeLocale, setTimeLocale,
+    timeFormat, setTimeFormat,
+    dateFormat, setDateFormat,
     theme, setTheme,
     onboarded,
   } = useSettingsStore();
@@ -88,7 +89,7 @@ export default function SettingsTab() {
   // `patch` carries the just-changed value (store reads here would be stale).
   const save = (patch: Partial<Settings>) => {
     api.saveSettings({
-      showKanji, notificationsOnByDefault, defaultCalendarView, weekStartsOn, timeLocale, theme, onboarded,
+      showKanji, notificationsOnByDefault, defaultCalendarView, weekStartsOn, timeFormat, dateFormat, theme, onboarded,
       ...patch,
     }).catch((e) => { warn(); console.error("Settings save failed:", e); });
   };
@@ -128,7 +129,7 @@ export default function SettingsTab() {
           Settings
         </Text>
       </View>
-      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         {/* Who you are — tap the avatar to change the photo, tap the name to rename. */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 14, padding: 20, borderBottomWidth: 1, borderColor: colors.line }}>
           <Tap onPress={changeAvatar} disabled={avatarBusy} scaleTo={0.95}>
@@ -197,12 +198,22 @@ export default function SettingsTab() {
           }}
         />
         <SettingRowOptions
-          label="Time Locale"
-          value={timeLocale}
-          options={["cs-CZ", "en-UK"]}
+          label="Time Format"
+          value={timeFormat}
+          options={["24h", "12h"]}
           onChange={v => {
-            setTimeLocale(v as "en-UK" | "cs-CZ");
-            save({ timeLocale: v as "en-UK" | "cs-CZ" });
+            setTimeFormat(v as "12h" | "24h");
+            save({ timeFormat: v as "12h" | "24h" });
+          }}
+        />
+        <SettingRowOptions
+          label="Date Format"
+          value={dateFormat}
+          options={["dmy", "mdy", "ymd"]}
+          labels={{ dmy: "D/M/Y", mdy: "M/D/Y", ymd: "Y-M-D" }}
+          onChange={v => {
+            setDateFormat(v as "dmy" | "mdy" | "ymd");
+            save({ dateFormat: v as "dmy" | "mdy" | "ymd" });
           }}
         />
 

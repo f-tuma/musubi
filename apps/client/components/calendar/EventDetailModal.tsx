@@ -14,6 +14,7 @@ import { useState } from "react";
 import CalendarPickerModal from "./CalendarPickerModal";
 import { Tap } from "@/components/ui/Tap";
 import { chooseOption, confirm } from "@/lib/confirm";
+import { formatDateLong, formatTime } from "@/lib/datetimeFormat";
 import { excludeOccurrence, endSeriesBefore } from "@musubi/calendar";
 import { syncEventNotification } from "@/services/notifications";
 
@@ -56,7 +57,8 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
     event.calendars.includes(c.id) && c.id !== event.originCalendarID && can(c.role, "editEvents"));
 
   const {
-    timeLocale,
+    timeFormat,
+    dateFormat,
   } = useSettingsStore();
 
   const insets = useSafeAreaInsets();
@@ -123,14 +125,14 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
               <View style={{ flex: 1, gap: 6 }}>
                 <Text style={[styles.modalTitle, { fontSize: 26, lineHeight: 32 }]}>{event?.title}</Text>
                 <Text style={{ fontFamily: fonts.sans, fontSize: 14, color: colors.fg2 }}>
-                  {event?.start.toLocaleString(timeLocale, { weekday: "long", month: "long", day: "numeric" })}
-                  {sameDay ? "" : " – " + event?.end.toLocaleString(timeLocale, { weekday: "long", month: "long", day: "numeric" })}
+                  {event && formatDateLong(event.start, dateFormat)}
+                  {!event || sameDay ? "" : " – " + formatDateLong(event.end, dateFormat)}
                 </Text>
                 {!event?.isAllDay &&
                   <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: colors.fg3 }}>
-                    {event?.start.toLocaleString(timeLocale, { hour: "2-digit", minute: "2-digit" })}
+                    {event && formatTime(event.start, timeFormat)}
                     {" – "}
-                    {event?.end.toLocaleString(timeLocale, { hour: "2-digit", minute: "2-digit" })}
+                    {event && formatTime(event.end, timeFormat)}
                     {durationLabel ? `  ·  ${durationLabel}` : ""}
                   </Text>
                 }
@@ -140,7 +142,7 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
               </View>
             </View>
 
-            <ScrollView>
+            <ScrollView showsVerticalScrollIndicator={false}>
               {/* Where it lives — quiet metadata under the identity block. No
                   bottom border when nothing follows (avoids an empty "section"). */}
               <View style={[
