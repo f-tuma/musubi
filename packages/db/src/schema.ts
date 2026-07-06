@@ -140,7 +140,8 @@ export const userSettings = pgTable("user_settings", {
   notificationsOnByDefault: boolean("notifications_on_by_default").notNull().default(true),
   defaultCalendarView: text("default_calendar_view").notNull().default("month"),
   weekStartsOn: text("week_starts_on").notNull().default("monday"),
-  timeLocale: text("time_locale").notNull().default("en-UK"),
+  timeFormat: text("time_format").notNull().default("24h"),
+  dateFormat: text("date_format").notNull().default("dmy"),
   theme: text("theme").notNull().default("system"),
   onboarded: boolean("onboarded").notNull().default(false),
   // flat, user-chosen calendar order; group order derives from first appearance

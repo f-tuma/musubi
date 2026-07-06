@@ -23,6 +23,7 @@ import { useRefreshData } from "@/hooks/useRefreshData";
 import { eventColor } from "@/lib/eventColor";
 import { canEditEvent } from "@/lib/eventPermissions";
 import { warn } from "@/lib/haptics";
+import { showToast } from "@/components/ui/Toast";
 
 type CalMode = "month" | "week" | "day";
 
@@ -83,6 +84,7 @@ export default function MainTab() {
 
   const openDrill = useCallback((date: Date, rect: Rect) => {
     setDraft(null);
+    setDockHidden(false); // a fresh drill always re-shows the composer, even if X hid it last time
     setDrillReady(false);
     setAnchorDate(date); // header + composer follow the drilled day (and its swipes)
     setDrill({ date, rect });
@@ -194,14 +196,15 @@ export default function MainTab() {
       return n;
     };
     const updated = { ...ev, start: shift(ev.start), end: shift(ev.end) };
-    localUpdateEvent(updated); // optimistic — the block must not snap back
-    api.updateEvent(updated)
-      .then(result => localUpdateEvent(result))
-      .catch(err => {
-        console.error("Move failed:", err);
-        warn();
-        localUpdateEvent(ev); // revert
-      });
+    // optimistic (block must not snap back); revert locally if the server rejects
+    const persist = (next: Event, fallback: Event) => {
+      localUpdateEvent(next);
+      api.updateEvent(next)
+        .then(result => localUpdateEvent(result))
+        .catch(err => { console.error("Move failed:", err); warn(); localUpdateEvent(fallback); });
+    };
+    persist(updated, ev);
+    showToast({ message: `“${ev.title || "Event"}” moved`, actionLabel: "Undo", onAction: () => persist(ev, updated) });
   }, [api, localUpdateEvent]);
   const dockVisible = calMode !== "month" || !!drill;
   // one truth for "is the sheet peeking" — drives the sheet AND the timeline's

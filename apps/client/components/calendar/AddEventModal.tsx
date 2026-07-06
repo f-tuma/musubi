@@ -7,6 +7,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } fr
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
 import { sortCalendars } from "@/lib/calendarOrder";
+import { formatDateMedium, formatTime } from "@/lib/datetimeFormat";
 import { appColors } from "@/constants/colors";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import DateTimePicker from '@expo/ui/community/datetime-picker';
@@ -164,7 +165,8 @@ const KB_HIDE_MS = 180;
 export function AddEventModal({ visible, startingDate, endingDate, docked, anchor, peekVisible = true, onClose, onSave, onEdit, calendars, event }: Props) {
   const {
     notificationsOnByDefault,
-    timeLocale,
+    timeFormat,
+    dateFormat,
     calendarOrder,
   } = useSettingsStore();
 
@@ -314,6 +316,10 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
     );
   }, [docked, peekVisible, dockRange]);
   const dockGesture = useMemo(() => Gesture.Pan()
+    // need a real vertical drag before we take over — otherwise a still tap on
+    // the X / Save buttons (they live inside this handle) reads as a micro-pan
+    // and the button press is eaten, so the sheet "won't close".
+    .activeOffsetY([-12, 12])
     .onStart(() => { dockStart.value = dockOff.value; })
     .onUpdate(e => { dockOff.value = Math.min(Math.max(dockStart.value + e.translationY, 0), dockRange); })
     .onEnd(e => {
@@ -671,7 +677,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
                     style={[local.chip, { backgroundColor: colors.bg3 }]}
                   >
                     <Text style={[styles.fieldValueText, { fontFamily: fonts.sans }]}>
-                      {value.toLocaleString(timeLocale, { dateStyle: 'medium' })}
+                      {formatDateMedium(value, dateFormat)}
                     </Text>
                   </Tap>
                   {!allDayToggle &&
@@ -684,7 +690,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
                       style={[local.chip, { backgroundColor: colors.bg3 }]}
                     >
                       <Text style={[styles.fieldValueText, { fontFamily: fonts.sans }]}>
-                        {value.toLocaleString(timeLocale, { timeStyle: 'short' })}
+                        {formatTime(value, timeFormat)}
                       </Text>
                     </Tap>
                   }
@@ -1015,7 +1021,6 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
         </Animated.View>
         <Animated.View style={[styles.modalSheet, {
           height: DOCK_H, maxHeight: DOCK_H, minHeight: 0,
-          borderTopWidth: 1, borderColor: colors.line2, // edge-to-edge like every other sheet
         }, dockedSlide]}>
           {sheetContent}
         </Animated.View>

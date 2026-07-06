@@ -12,10 +12,27 @@ import Animated, {
   runOnJS, scrollTo, SharedValue, useAnimatedReaction, useAnimatedRef, useAnimatedStyle, useSharedValue, withSpring, withTiming,
 } from "react-native-reanimated";
 import {
-  addDays, allDaySpans, bucketByDay, clamp, dayKey, daySegments, Draft, fmtTime,
+  addDays, allDaySpans, bucketByDay, clamp, dayKey, daySegments, Draft,
   GRAB_DOT_HIT, GRAB_SCALE, GRAB_SPRING, GUTTER, HOLD_CREATE_MS, HOLD_GRAB_MS,
   HOUR_H, INK, isSameDay, SNAP_DRAG_MIN, SNAP_TAP_MIN, startOfWeek, ZOOM_HOUR_MAX, ZOOM_HOUR_MIN,
 } from "./layout";
+import { useSettingsStore } from "@/store/useSettingsStore";
+import { formatTime, TimeFormat } from "@/lib/datetimeFormat";
+
+// The day/week timeline. Read this first if you're new to the calendar:
+//
+// • Layout is minutes → pixels via `hourH` (pixels per hour), a SHARED VALUE so
+//   a pinch rescales the whole timeline on the UI thread with no re-render.
+//   Everything vertical — hour lines, now-indicator, event blocks — derives
+//   its top/height from it. Geometry helpers + tuning live in `layout.ts`.
+// • Three gesture layers, from back to front: the grid overlay (drag-to-create
+//   the draft "ghost"), the event blocks (tap = open, hold = move), and the
+//   ghost itself (corner dots resize, middle moves). Pinch-to-zoom sits on the
+//   OUTER page view so it never steals single-finger scroll or taps.
+// • Positions live in shared values, never React layout — see the "flicker-free
+//   drop" note on TimelineEventBlock for why.
+//
+// InfinitePager pages the view; one <TimelinePage> renders per visible page.
 
 const ALLDAY_LANES = 3;  // all-day strip shows up to this many bar rows
 const ALLDAY_LANE_H = 22;
@@ -111,6 +128,7 @@ function TimelinePage({
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollY = useSharedValue(0); // live scroll offset — pinch anchors to it
   const hasToday = days.some(d => isSameDay(d, now));
+  const timeFormat = useSettingsStore((s) => s.timeFormat);
 
   // minutes ⇄ pixels at the CURRENT zoom (reads the live hour height)
   const m2y = (m: number) => (m / 60) * hourH.value;
@@ -323,23 +341,34 @@ function TimelinePage({
   // the same viewport-Y (focalY is viewport-relative since the detector wraps
   // the ScrollView). Moving the fingers pans too.
   const zoomBase = useSharedValue(HOUR_H);
-  const focalContentY = useSharedValue(0);
+  const focalContentY = useSharedValue(0); // content-space y under the fingers at start
+  const vFocal = useSharedValue(0);        // that finger's y within the scroll viewport
+  const scrollTopSV = useSharedValue(0);   // ScrollView's top offset inside the page
+  // Pinch lives on the OUTER page view and is declared simultaneous with the
+  // ScrollView's gesture — so single-finger scroll and event taps keep working
+  // (the pinch only claims two fingers), and the two-finger pinch can activate
+  // alongside the scroll. focalY is page-relative, so subtract the viewport top.
   const pinchGesture = useMemo(() => Gesture.Pinch()
     .onStart(e => {
       zoomBase.value = hourH.value;
-      focalContentY.value = scrollY.value + e.focalY;
+      const vf = e.focalY - scrollTopSV.value;
+      vFocal.value = vf;
+      focalContentY.value = scrollY.value + vf;
     })
     .onUpdate(e => {
       const raw = zoomBase.value * e.scale;
       const nh = raw < ZOOM_HOUR_MIN ? ZOOM_HOUR_MIN : raw > ZOOM_HOUR_MAX ? ZOOM_HOUR_MAX : raw;
       hourH.value = nh;
-      const newScroll = focalContentY.value * (nh / zoomBase.value) - e.focalY;
+      // keep the anchor at the same viewport-Y
+      const newScroll = focalContentY.value * (nh / zoomBase.value) - vFocal.value;
       scrollTo(scrollRef, 0, newScroll < 0 ? 0 : newScroll, false);
-    }), []);
+    })
+    .simultaneousWithExternalGesture(scrollRef as any), []);
 
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
   return (
+    <GestureDetector gesture={pinchGesture}>
       <View style={{ flex: 1 }}>
         {/* day header row */}
         <View style={{ flexDirection: "row", paddingLeft: GUTTER, paddingVertical: 6, borderBottomWidth: hasAllDay ? 0 : 1, borderColor: colors.line }}>
@@ -391,9 +420,9 @@ function TimelinePage({
           </View>
         )}
 
-        <GestureDetector gesture={pinchGesture}>
         <ScrollView
           ref={scrollRef as any} // RNGH ScrollView; reanimated scrollTo resolves the native node
+          onLayout={e => { scrollTopSV.value = e.nativeEvent.layout.y; }}
           onScroll={e => { scrollPosRef.current = e.nativeEvent.contentOffset.y; scrollY.value = e.nativeEvent.contentOffset.y; }}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
@@ -426,6 +455,7 @@ function TimelinePage({
                   width={laneW - 2}
                   hourH={hourH}
                   showTime={s.endMin - s.startMin >= 40 && laneW > 60}
+                  timeFormat={timeFormat}
                   color={eventColorOf(s.event)}
                   dayIndex={di}
                   daysCount={days.length}
@@ -458,7 +488,7 @@ function TimelinePage({
                     paddingHorizontal: 5, paddingTop: 3,
                   }, ghostStyle, grabStyle]}>
                     <Text style={{ fontFamily: fonts.sansMedium, fontSize: 9.5, color: colors.fg2 }}>
-                      {fmtTime(draft.start)} – {fmtTime(draft.end)}
+                      {formatTime(draft.start, timeFormat)} – {formatTime(draft.end, timeFormat)}
                     </Text>
                     <View style={[handleDot, { top: -6, left: 12 }]} />
                     <View style={[handleDot, { bottom: -6, right: 12 }]} />
@@ -473,8 +503,8 @@ function TimelinePage({
             ))}
           </Animated.View>
         </ScrollView>
-        </GestureDetector>
       </View>
+    </GestureDetector>
   );
 }
 
@@ -509,6 +539,7 @@ type BlockProps = {
   left: number; width: number;         // horizontal px — unaffected by vertical zoom
   hourH: SharedValue<number>;
   showTime: boolean;
+  timeFormat: TimeFormat;
   color: string;
   dayIndex: number;
   daysCount: number;
@@ -528,7 +559,7 @@ type BlockProps = {
 // same batch — identical pixel before and after — then the layout effect glides
 // to the snapped spot.
 function TimelineEventBlock({
-  event, startMin, endMin, left, width, hourH, showTime, color, dayIndex, daysCount, colW, movable, onPress, onMove,
+  event, startMin, endMin, left, width, hourH, showTime, timeFormat, color, dayIndex, daysCount, colW, movable, onPress, onMove,
 }: BlockProps) {
   const live = useRef({ event, dayIndex, daysCount, colW, onMove });
   live.current = { event, dayIndex, daysCount, colW, onMove };
@@ -537,8 +568,11 @@ function TimelineEventBlock({
   const baseH = (h: number) => Math.max(((endMin - startMin) / 60) * h - 2, 18);
 
   const leftSV = useSharedValue(left);
-  const topSV = useSharedValue(baseTop(hourH.value));
-  const heightSV = useSharedValue(baseH(hourH.value));
+  // Seed from the default hour height (a constant) — reading hourH.value here
+  // would be a render-time shared-value read. The mount effect below immediately
+  // corrects to the live value, and the zoom reaction keeps it in sync.
+  const topSV = useSharedValue(baseTop(HOUR_H));
+  const heightSV = useSharedValue(baseH(HOUR_H));
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
   const lift = useSharedValue(1);
@@ -667,7 +701,7 @@ function TimelineEventBlock({
           </Text>
           {(showTime || preview !== null) && (
             <Text style={{ fontFamily: fonts.sans, fontSize: 9, color: INK, opacity: 0.65 }}>
-              {fmtTime(new Date(event.start.getTime() + shiftMs))} – {fmtTime(new Date(event.end.getTime() + shiftMs))}
+              {formatTime(new Date(event.start.getTime() + shiftMs), timeFormat)} – {formatTime(new Date(event.end.getTime() + shiftMs), timeFormat)}
             </Text>
           )}
           {!movable && (

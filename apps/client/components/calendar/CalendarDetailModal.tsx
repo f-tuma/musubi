@@ -29,6 +29,7 @@ import { useApi } from "@/services/api";
 import { eventColor } from "@/lib/eventColor";
 import { canEditEvent } from "@/lib/eventPermissions";
 import { warn } from "@/lib/haptics";
+import { showToast, ToastHost } from "@/components/ui/Toast";
 import { Tap } from "@/components/ui/Tap";
 
 
@@ -186,14 +187,15 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
       return n;
     };
     const updated = { ...ev, start: shift(ev.start), end: shift(ev.end) };
-    localUpdateEvent(updated); // optimistic — the block must not snap back
-    api.updateEvent(updated)
-      .then(result => localUpdateEvent(result))
-      .catch(err => {
-        console.error("Move failed:", err);
-        warn();
-        localUpdateEvent(ev); // revert
-      });
+    // optimistic (block must not snap back); revert locally if the server rejects
+    const persist = (next: Event, fallback: Event) => {
+      localUpdateEvent(next);
+      api.updateEvent(next)
+        .then(result => localUpdateEvent(result))
+        .catch(err => { console.error("Move failed:", err); warn(); localUpdateEvent(fallback); });
+    };
+    persist(updated, ev);
+    showToast({ message: `“${ev.title || "Event"}” moved`, actionLabel: "Undo", onAction: () => persist(ev, updated) });
   }, [api, localUpdateEvent]);
 
   const calendarById = useMemo(() => new Map(calendars.map(c => [c.id, c])), [calendars]);
@@ -393,6 +395,8 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
           onEdit(cal);
         }}
       />
+      {/* own host: the root one is occluded by this native Modal */}
+      <ToastHost />
     </Modal >
   );
 }

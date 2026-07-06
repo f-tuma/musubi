@@ -26,7 +26,7 @@ const allowedOrigins = [
   ...(config.api.environment === "dev" ? ["http://localhost:3000", "http://localhost:8081"] : []),
 ];
 
-//MIDDLEWARE
+// ── Middleware ────────────────────────────────────────────────────────────────
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -41,262 +41,62 @@ app.use(cors({
 app.use(express.json({ limit: "512kb" })); // avatars arrive as base64 JSON
 app.use(middlewareLogHandler);
 
-//
-
-// AUTH
-
+// Better Auth owns everything under /api/auth (sign-in/up, sessions, reset).
 app.all("/api/auth/{*any}", toNodeHandler(auth));
 
-//
+// ── Routes ────────────────────────────────────────────────────────────────────
+// `wrap` adapts an async handler to Express: a rejected promise is forwarded to
+// the error middleware (below) instead of crashing the process. Per route it's
+// `requireAuth` first (dropped for the few public ones), then `wrap(handler)`.
+// Grouped by resource to mirror docs/reference/server.mdx.
+const wrap = (handler: (req: any, res: any) => Promise<unknown>): express.RequestHandler =>
+  (req, res, next) => { Promise.resolve(handler(req, res)).catch(next); };
 
-// GET REQUESTS
-
+// Server (public)
 app.get("/api/v1/server", handlerServer);
 app.get("/api/v1/server/ok", handlerServerStatus);
 
-app.get("/api/v1/calendars", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerGetCalendars(req, res).catch(next));
-});
+// Events
+app.get("/api/v1/events", requireAuth, wrap(handlerGetEvents));
+app.post("/api/v1/events", requireAuth, wrap(handlerCreateEvent));
+app.put("/api/v1/events", requireAuth, wrap(handlerUpdateEvent));
+app.delete("/api/v1/events", requireAuth, wrap(handlerRemoveEvent));
+app.post("/api/v1/events/:eventId/link", requireAuth, wrap(handlerLinkEvent));
+app.post("/api/v1/events/:eventId/fork", requireAuth, wrap(handlerForkEvent));
 
-app.get("/api/v1/calendars/google", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerGetGoogleCalendars(req, res).catch(next));
-});
+// Calendars — /google must stay before /:id (both one-segment GETs)
+app.get("/api/v1/calendars", requireAuth, wrap(handlerGetCalendars));
+app.get("/api/v1/calendars/google", requireAuth, wrap(handlerGetGoogleCalendars));
+app.get("/api/v1/calendars/tokens/:token", requireAuth, wrap(handlerGetCalendarFromToken));
+app.get("/api/v1/calendars/:id", requireAuth, wrap(handlerGetCalendar));
+app.post("/api/v1/calendars", requireAuth, wrap(handlerCreateCalendar));
+app.put("/api/v1/calendars", requireAuth, wrap(handlerUpdateCalendar));
+app.delete("/api/v1/calendars", requireAuth, wrap(handlerRemoveCalendar));
 
-app.get("/api/v1/calendars/:id", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerGetCalendar(req, res).catch(next));
-});
+// Members & invites
+app.post("/api/v1/calendars/invites", requireAuth, wrap(handlerCreateCalendarInvite));
+app.get("/api/v1/calendars/:calendarId/members", requireAuth, wrap(handlerGetCalendarMembers));
+app.post("/api/v1/calendars/members/:calendarId", requireAuth, wrap(handlerJoinCalendar));
+app.delete("/api/v1/calendars/members/:calendarId", requireAuth, wrap(handlerLeaveCalendar));
+app.put("/api/v1/calendars/:calendarId/members/:userId", requireAuth, wrap(handlerSetMemberRole));
+app.delete("/api/v1/calendars/:calendarId/members/:userId", requireAuth, wrap(handlerKickMember));
 
-app.get("/api/v1/calendars/tokens/:token", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerGetCalendarFromToken(req, res).catch(next));
-});
+// Users & connections
+app.get("/api/v1/users/settings", requireAuth, wrap(handlerGetSettings));
+app.put("/api/v1/users/settings", requireAuth, wrap(handlerSaveSettings));
+app.delete("/api/v1/users", requireAuth, wrap(handlerDeleteUser));
+app.post("/api/v1/users/avatar", requireAuth, wrap(handlerUploadAvatar));
+app.get("/api/v1/users/connections/google", requireAuth, wrap(handlerCheckGoogleStatus));
+app.post("/api/v1/users/connections/google/revoke", requireAuth, wrap(handlerRevokeGoogle));
+app.get("/api/v1/users/connections/caldav", requireAuth, wrap(handlerCheckCaldavStatus));
+app.post("/api/v1/users/connections/caldav", requireAuth, wrap(handlerConnectCaldav));
+app.delete("/api/v1/users/connections/caldav", requireAuth, wrap(handlerDisconnectCaldav));
+app.post("/api/v1/users/connections/disconnect", requireAuth, wrap(handlerDisconnectAccount));
+app.post("/api/v1/users/reset", wrap(handlerResetUsers)); // public — password reset entry
+app.get("/api/v1/users/:userId/avatar", wrap(handlerGetAvatar)); // public — <Image> can't send auth headers
 
-app.get("/api/v1/events", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerGetEvents(req, res).catch(next));
-});
-
-app.get("/api/v1/stream", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerStream(req, res).catch(next));
-});
-
-app.get("/api/v1/users/settings", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerGetSettings(req, res).catch(next));
-});
-
-app.get("/api/v1/users/connections/google", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerCheckGoogleStatus(req, res).catch(next));
-});
-
-app.get("/api/v1/users/connections/caldav", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerCheckCaldavStatus(req, res).catch(next));
-});
-
-app.post("/api/v1/users/connections/caldav", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerConnectCaldav(req, res).catch(next));
-});
-
-app.post("/api/v1/users/connections/disconnect", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerDisconnectAccount(req, res).catch(next));
-});
-
-app.delete("/api/v1/users/connections/caldav", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerDisconnectCaldav(req, res).catch(next));
-});
-
-//
-
-// POST REQUESTS
-
-app.post("/api/v1/users/reset", (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerResetUsers(req, res).catch(next));
-});
-
-app.post("/api/v1/calendars", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerCreateCalendar(req, res).catch(next));
-});
-
-app.post("/api/v1/calendars/members/:calendarId", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerJoinCalendar(req, res).catch(next));
-});
-
-app.get("/api/v1/calendars/:calendarId/members", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerGetCalendarMembers(req, res).catch(next));
-});
-
-app.put("/api/v1/calendars/:calendarId/members/:userId", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerSetMemberRole(req, res).catch(next));
-});
-
-app.delete("/api/v1/calendars/:calendarId/members/:userId", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerKickMember(req, res).catch(next));
-});
-
-app.post("/api/v1/events", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerCreateEvent(req, res).catch(next));
-});
-
-app.post("/api/v1/events/:eventId/link", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerLinkEvent(req, res).catch(next));
-});
-
-app.post("/api/v1/events/:eventId/fork", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerForkEvent(req, res).catch(next));
-});
-
-app.post("/api/v1/calendars/invites", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerCreateCalendarInvite(req, res).catch(next));
-});
-
-app.post("/api/v1/users/connections/google/revoke", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerRevokeGoogle(req, res).catch(next));
-});
-
-//
-
-// PUT REQUESTS
-
-app.put("/api/v1/events", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerUpdateEvent(req, res).catch(next));
-});
-
-app.put("/api/v1/calendars", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerUpdateCalendar(req, res).catch(next));
-});
-
-app.put("/api/v1/users/settings", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerSaveSettings(req, res).catch(next));
-});
-
-//
-
-// DELETE REQUESTS
-
-app.delete("/api/v1/users", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerDeleteUser(req, res).catch(next));
-});
-
-app.post("/api/v1/users/avatar", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerUploadAvatar(req, res).catch(next));
-});
-
-// public — see handler comment (plain <Image> can't send auth headers)
-app.get("/api/v1/users/:userId/avatar", (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerGetAvatar(req, res).catch(next));
-});
-
-app.delete("/api/v1/events", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerRemoveEvent(req, res).catch(next));
-});
-
-app.delete("/api/v1/calendars", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerRemoveCalendar(req, res).catch(next));
-});
-
-app.delete("/api/v1/calendars/members/:calendarId", requireAuth, (
-  req,
-  res,
-  next) => {
-  Promise.resolve(handlerLeaveCalendar(req, res).catch(next));
-});
-
-//
-
-
-// SERVER
-// These should be last...
-
+// ── Server ────────────────────────────────────────────────────────────────────
+// Error middleware must be registered last so it catches everything above.
 app.use(middlewareErrorHandler);
 
 app.listen(port, "0.0.0.0")

@@ -16,6 +16,8 @@ import { Empty } from "@/components/ui/Empty";
 import { RefreshControl } from "react-native";
 import { useRefreshData } from "@/hooks/useRefreshData";
 import { eventColor } from "@/lib/eventColor";
+import { useSettingsStore } from "@/store/useSettingsStore";
+import { formatTime } from "@/lib/datetimeFormat";
 
 
 
@@ -27,6 +29,7 @@ export default function AgendaTab() {
   const api = useApi();
   const { events, addEvent, updateEvent, removeEvent } = useEventsStore();
   const { calendars, activeCals, soloCalId, toggleCal, soloCalendar, syncActiveCals } = useCalendarsStore();
+  const timeFormat = useSettingsStore((s) => s.timeFormat);
   useEffect(() => {
     syncActiveCals(calendars);
   }, [calendars]);
@@ -160,10 +163,10 @@ export default function AgendaTab() {
                     <Tap onPress={() => openEventDetail(e)} key={e.id} style={styles.timelineRow}>
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg2 }}>
-                          {e.start.toLocaleString("en-UK", { hour: "2-digit", minute: "2-digit" })}
+                          {formatTime(e.start, timeFormat)}
                         </Text>
                         <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg4 }}>
-                          {e.end.toLocaleString("en-UK", { hour: "2-digit", minute: "2-digit" })}
+                          {formatTime(e.end, timeFormat)}
                         </Text>
                       </View>
                       <View style={{ flexDirection: "row", flex: 4 }}>

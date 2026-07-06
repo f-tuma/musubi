@@ -8,7 +8,9 @@ export const SettingsSchema = z.object({
   notificationsOnByDefault: z.boolean(),
   defaultCalendarView: CalendarViewSchema,
   weekStartsOn: z.enum(["monday", "sunday"]),
-  timeLocale: z.enum(["en-UK", "cs-CZ"]),
+  // how times render (12-hour with AM/PM vs 24-hour) and the order dates are written
+  timeFormat: z.enum(["12h", "24h"]),
+  dateFormat: z.enum(["dmy", "mdy", "ymd"]),
   theme: z.enum(["system", "dark", "light"]).default("system"),
   // optional (not defaulted): an omitted field must never reset the flag
   onboarded: z.boolean().optional(),

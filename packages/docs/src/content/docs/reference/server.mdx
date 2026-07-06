@@ -50,62 +50,66 @@ External mirrors marked read-only by the provider (holiday calendars) give even 
 
 ## API endpoints (v1)
 
-All routes are prefixed with `/api/v1`. 🔒 = requires a session (`Authorization: Bearer <token>`). Auth itself (sign-in/up, session, password reset) is handled by Better Auth under `/api/auth/*`.
+Every path below is written **in full**, starting at `/api/v1`. Prepend your server's origin for the complete URL — on a local dev server the API listens on `API_SERVER_PORT` (default `7531`), so `GET /api/v1/events` is `http://localhost:7531/api/v1/events`.
+
+🔒 = requires a session, sent as `Authorization: Bearer <token>`. Authentication itself (sign-in/up, session, password reset) is handled by Better Auth and lives under `/api/auth/*` — **not** under `/api/v1`.
 
 ### Server
 
-| Method | Path | Auth | Description |
+| Method | Full path | Auth | Description |
 |---|---|---|---|
-| `GET` | `/server` | — | Version info + `minClientVersion` (client update gate) |
-| `GET` | `/server/ok` | — | Health check |
+| `GET` | `/api/v1/server` | — | Version info + `minClientVersion` (client update gate) |
+| `GET` | `/api/v1/server/ok` | — | Health check |
 
 ### Events
 
-| Method | Path | Auth | Description |
+| Method | Full path | Auth | Description |
 |---|---|---|---|
-| `GET` | `/events` | 🔒 | All active events, or a **delta** with `?since=<ISO>`: returns `{ events, deletedIds, serverTime }`; client stores `serverTime` as its next cursor. Deletes arrive as tombstone ids. |
-| `POST` | `/events` | 🔒 | Create — requires `editEvents` on every target calendar |
-| `PUT` | `/events` | 🔒 | Update content + reconcile calendar links (diffs `calendars[]`; added links need `editEvents` on the target). Pushes changes to external providers. |
-| `DELETE` | `/events` | 🔒 | Delete/unlink. Body `{ ...event, unlinkCalendarID? }` — with `unlinkCalendarID` removes from that one calendar; without it unlinks everywhere the user can edit (authoritative cascade if that includes the origin). Tombstones the row once the last link is gone. |
-| `POST` | `/events/:eventId/link` | 🔒 | Propagate into another calendar (`{ calendarID }`) — view access to the event + `editEvents` on the target |
-| `POST` | `/events/:eventId/fork` | 🔒 | Independent copy into a calendar (`{ calendarID }`); rejected if the event already lives there |
+| `GET` | `/api/v1/events` | 🔒 | All active events, or a **delta** with `?since=<ISO>`: returns `{ events, deletedIds, serverTime }`; client stores `serverTime` as its next cursor. Deletes arrive as tombstone ids. |
+| `POST` | `/api/v1/events` | 🔒 | Create — requires `editEvents` on every target calendar |
+| `PUT` | `/api/v1/events` | 🔒 | Update content + reconcile calendar links (diffs `calendars[]`; added links need `editEvents` on the target). Pushes changes to external providers. |
+| `DELETE` | `/api/v1/events` | 🔒 | Delete/unlink. Body `{ ...event, unlinkCalendarID? }` — with `unlinkCalendarID` removes from that one calendar; without it unlinks everywhere the user can edit (authoritative cascade if that includes the origin). Tombstones the row once the last link is gone. |
+| `POST` | `/api/v1/events/:eventId/link` | 🔒 | Propagate into another calendar (`{ calendarID }`) — view access to the event + `editEvents` on the target |
+| `POST` | `/api/v1/events/:eventId/fork` | 🔒 | Independent copy into a calendar (`{ calendarID }`); rejected if the event already lives there |
 
-Recurring events store exceptions inside `recurrence` (multi-line iCal: `RRULE:…\nEXDATE:…`). "Delete this occurrence" and "end series here" are therefore plain `PUT /events` calls — no dedicated endpoints.
+Recurring events store exceptions inside `recurrence` (multi-line iCal: `RRULE:…\nEXDATE:…`). "Delete this occurrence" and "end series here" are therefore plain `PUT /api/v1/events` calls — no dedicated endpoints.
 
 ### Calendars
 
-| Method | Path | Auth | Description |
+| Method | Full path | Auth | Description |
 |---|---|---|---|
-| `GET` | `/calendars` | 🔒 | User's calendars with members, own `role`, and sync origin (`provider`, `accountId`, `accountLabel`, `serverUrl`) |
-| `GET` | `/calendars/:id` | 🔒 | One calendar + members |
-| `POST` | `/calendars` | 🔒 | Create (creator becomes owner) |
-| `PUT` | `/calendars` | 🔒 | Update name/color — `editCalendar` |
-| `DELETE` | `/calendars` | 🔒 | Delete — `deleteCalendar`; orphaned events are removed |
-| `GET` | `/calendars/google` | 🔒 | Triggers a pull sync of **all** connected providers for the user (name is historical) |
+| `GET` | `/api/v1/calendars` | 🔒 | User's calendars with members, own `role`, and sync origin (`provider`, `accountId`, `accountLabel`, `serverUrl`) |
+| `GET` | `/api/v1/calendars/:id` | 🔒 | One calendar + members |
+| `POST` | `/api/v1/calendars` | 🔒 | Create (creator becomes owner) |
+| `PUT` | `/api/v1/calendars` | 🔒 | Update name/color — `editCalendar` |
+| `DELETE` | `/api/v1/calendars` | 🔒 | Delete — `deleteCalendar`; orphaned events are removed |
+| `GET` | `/api/v1/calendars/google` | 🔒 | Triggers a pull sync of **all** connected providers for the user (name is historical) |
 
 ### Members & invites
 
-| Method | Path | Auth | Description |
+| Method | Full path | Auth | Description |
 |---|---|---|---|
-| `POST` | `/calendars/invites` | 🔒 | Create an invite token — `invite` permission |
-| `GET` | `/calendars/tokens/:token` | 🔒 | Invite preview: calendar, members, events |
-| `POST` | `/calendars/members/:calendarId` | 🔒 | Join — body `{ token }`, validated against the calendar (invite-only membership) |
-| `DELETE` | `/calendars/members/:calendarId` | 🔒 | Leave — blocked for the owner (transfer or delete instead) |
-| `GET` | `/calendars/:calendarId/members` | 🔒 | List members with roles (any member) |
-| `PUT` | `/calendars/:calendarId/members/:userId` | 🔒 | Set role `viewer` \| `editor` \| `owner` — `manageMembers`; `owner` = **ownership transfer** (current owner only; they drop to editor, `creatorID` moves) |
-| `DELETE` | `/calendars/:calendarId/members/:userId` | 🔒 | Kick — `manageMembers`; the owner can't be kicked |
+| `POST` | `/api/v1/calendars/invites` | 🔒 | Create an invite token — `invite` permission |
+| `GET` | `/api/v1/calendars/tokens/:token` | 🔒 | Invite preview: calendar, members, events |
+| `POST` | `/api/v1/calendars/members/:calendarId` | 🔒 | Join — body `{ token }`, validated against the calendar (invite-only membership) |
+| `DELETE` | `/api/v1/calendars/members/:calendarId` | 🔒 | Leave — blocked for the owner (transfer or delete instead) |
+| `GET` | `/api/v1/calendars/:calendarId/members` | 🔒 | List members with roles (any member) |
+| `PUT` | `/api/v1/calendars/:calendarId/members/:userId` | 🔒 | Set role `viewer` \| `editor` \| `owner` — `manageMembers`; `owner` = **ownership transfer** (current owner only; they drop to editor, `creatorID` moves) |
+| `DELETE` | `/api/v1/calendars/:calendarId/members/:userId` | 🔒 | Kick — `manageMembers`; the owner can't be kicked |
 
 ### Users & connections
 
-| Method | Path | Auth | Description |
+| Method | Full path | Auth | Description |
 |---|---|---|---|
-| `GET` / `PUT` | `/users/settings` | 🔒 | User settings (view defaults, locale, notifications, `theme`) |
-| `DELETE` | `/users` | 🔒 | Delete account (cascades owned calendars) |
-| `POST` | `/users/reset` | — | Password reset flow entry |
-| `GET` | `/users/connections/google` | 🔒 | Connected Google accounts |
-| `GET` / `POST` / `DELETE` | `/users/connections/caldav` | 🔒 | List / connect / disconnect CalDAV accounts. Connect verifies credentials before storing (iCloud needs an app-specific password); inputs are trimmed server-side. |
-| `POST` | `/users/connections/disconnect` | 🔒 | Generic disconnect `{ provider, accountId }` — removes the account's mirrored calendars, then the credentials |
-| `POST` | `/users/connections/google/revoke` | 🔒 | Revoke the Google OAuth grant |
+| `GET` / `PUT` | `/api/v1/users/settings` | 🔒 | User settings (view defaults, `timeFormat` 12h/24h, `dateFormat`, notifications, `theme`, `calendarOrder`) |
+| `DELETE` | `/api/v1/users` | 🔒 | Delete account (cascades owned calendars) |
+| `POST` | `/api/v1/users/avatar` | 🔒 | Upload the current user's avatar (base64 JSON) |
+| `GET` | `/api/v1/users/:userId/avatar` | — | Fetch a user's avatar image |
+| `POST` | `/api/v1/users/reset` | — | Password reset flow entry |
+| `GET` | `/api/v1/users/connections/google` | 🔒 | Connected Google accounts |
+| `GET` / `POST` / `DELETE` | `/api/v1/users/connections/caldav` | 🔒 | List / connect / disconnect CalDAV accounts. Connect verifies credentials before storing (iCloud needs an app-specific password); inputs are trimmed server-side. |
+| `POST` | `/api/v1/users/connections/disconnect` | 🔒 | Generic disconnect `{ provider, accountId }` — removes the account's mirrored calendars, then the credentials |
+| `POST` | `/api/v1/users/connections/google/revoke` | 🔒 | Revoke the Google OAuth grant |
 
 ## Real-time stream (SSE)
 

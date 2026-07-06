@@ -11,6 +11,7 @@ import { ShipporiMinchoB1_400Regular } from '@expo-google-fonts/shippori-mincho-
 import { colors, styles } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { ToastHost } from '@/components/ui/Toast';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import semver from "semver";
@@ -141,6 +142,7 @@ export default function RootLayout() {
       <ServerProvider>
         <AppLoader />
       </ServerProvider>
+      <ToastHost />
     </GestureHandlerRootView>
   );
 }
