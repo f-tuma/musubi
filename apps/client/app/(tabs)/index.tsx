@@ -58,15 +58,10 @@ export default function MainTab() {
 
   // month → day zoom: the tapped cell rect grows into a full day view overlay
   const [drill, setDrill] = useState<null | { date: Date; rect: Rect }>(null);
-  // whether the drill's composer should peek: true from the moment a drill opens
-  // (so the day view reserves its space from frame one), false on close so the
-  // sheet ducks out as the day zooms back to the month.
+  // whether the drill's composer should peek: flipped true when the zoom-in
+  // finishes (so it slides up after the day has settled, not before/during),
+  // false on close so it ducks out as the day zooms back to the month.
   const [dockPeekReady, setDockPeekReady] = useState(false);
-  // the drilled day always OPENS with the composer's gap reserved; only once it
-  // has settled (after the zoom) may the gap be cut when the composer is hidden.
-  // Deferring the check means the gap is only ever removed from the bottom of an
-  // already-open view — it never grows into view, so nothing jumps.
-  const [drillSettled, setDrillSettled] = useState(false);
   const zoom = useSharedValue(0);
   const [bodySize, setBodySize] = useState({ w: 0, h: 0 });
 
@@ -95,14 +90,19 @@ export default function MainTab() {
     setDraft(null);
     setDockHidden(false); // a fresh drill always re-shows the composer, even if X hid it last time
     drillScrollPosRef.current = minutesToY(DRILL_OPEN_MIN); // day view always opens at this time
-    setDockPeekReady(true); // composer present from frame one — no post-zoom slide-in
-    setDrillSettled(false); // open with the gap reserved; allow cutting it only after the zoom
     setAnchorDate(date); // header + composer follow the drilled day (and its swipes)
     setDrill({ date, rect });
     zoom.value = 0;
-    zoom.value = withTiming(1, { duration: ZOOM_IN_MS, easing: Easing.out(Easing.cubic) }, (finished) => {
-      if (finished) runOnJS(setDrillSettled)(true);
-    });
+    // Mount the (heavy) day view while the overlay is still at the tapped cell and
+    // invisible (zoom 0), THEN animate a frame later — so the mount + scroll cost
+    // lands before the animation, not on its frames. The zoom then runs on
+    // already-mounted, already-scrolled content and stays smooth. The composer
+    // slides up only once the zoom finishes.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      zoom.value = withTiming(1, { duration: ZOOM_IN_MS, easing: Easing.out(Easing.cubic) }, (finished) => {
+        if (finished) runOnJS(setDockPeekReady)(true);
+      });
+    }));
   }, []);
 
   const clearDrill = useCallback(() => {
@@ -111,7 +111,6 @@ export default function MainTab() {
   }, []);
 
   const closeDrill = useCallback(() => {
-    setDrillSettled(false); // back to gap-reserved while closing
     setDockPeekReady(false); // sheet ducks out while the day zooms back
     zoom.value = withTiming(0, { duration: ZOOM_OUT_MS, easing: Easing.in(Easing.cubic) }, (finished) => {
       if (finished) runOnJS(clearDrill)();
@@ -323,10 +322,10 @@ export default function MainTab() {
                 onMoveEvent={onMoveEvent}
                 onPageChange={onPageChange}
                 scrollPosRef={drillScrollPosRef}
-                // opens with the gap reserved; only after the drill settles may it
-                // be cut (when the composer is hidden) — shrinks from the bottom of
-                // an already-open view, so nothing jumps.
-                bottomPad={drillSettled && dockHidden && !draft ? 28 : DOCK_PEEK + 14}
+                // gap reserved by default; only cut when the composer is hidden —
+                // which only happens on a user X (already after open), so the cut
+                // just shrinks the bottom of an open view and nothing jumps.
+                bottomPad={dockHidden && !draft ? 28 : DOCK_PEEK + 14}
               />
             </Animated.View>
           </Animated.View>

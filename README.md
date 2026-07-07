@@ -52,7 +52,7 @@ Nobody else is building exactly this: **an open calendar designed as social infr
 | 月 | **A calendar UI built from scratch** | Month → day zoom animation, drag-to-create with grab handles, docked quick-composer — Google Calendar fluency, none of the Google |
 | 侘 | **Zen aesthetic** | Sumi ink on night / ink on washi paper, spring physics, deliberate haptics, kanji accents |
 | 鈴 | **Notifications** | Local reminders that survive edits, moves, and recurrence — even for synced events |
-| 家 | **Self-hosting** | One Postgres + one Node server, `docker-compose.yml` included |
+| 家 | **Self-hosting** | One Postgres + one Node server, `docker-compose.selfhost.yml` included |
 
 ### Sync providers
 
@@ -87,7 +87,7 @@ iOS build is planned once the Android client settles.
 
 ## 🏠 Run it yourself
 
-**Requirements:** Node 20+, pnpm 10+, Postgres 15+ (or just Docker).
+**Requirements:** Node 20+, pnpm 11+, Postgres 15+ (or just Docker).
 
 ```sh
 git clone https://github.com/f-tuma/Musubi.git && cd Musubi
@@ -100,7 +100,7 @@ pnpm db:migrate
 pnpm dev            # api + client + docs, all in parallel
 ```
 
-Testing on a real device? Point `API_URL` at your machine's LAN IP (`http://192.168.x.x:3000`), not `localhost`. There's a `docker-compose.yml` at the repo root for the server + database. Full guides live in [`packages/docs`](./packages/docs/) and at [musubi.frgtn.dev/docs](https://musubi.frgtn.dev/docs).
+Testing on a real device? Set `BETTER_AUTH_URL` and the app's server URL (welcome screen) to your machine's LAN IP (`http://192.168.x.x:7531`), not `localhost`. To run the server + database on a plain Docker host, use `docker compose -f docker-compose.selfhost.yml up -d` (the repo's default `docker-compose.yml` targets Dokploy). Full guides live in [`packages/docs`](./packages/docs/) and at [musubi.frgtn.dev/docs](https://musubi.frgtn.dev/docs).
 
 ## 🧱 How it's built
 

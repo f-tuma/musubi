@@ -453,7 +453,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
     const eventConstruct: Event = {
       id: event?.id ?? uuidv7(),
       creatorID: userID!,
-      organizer: userID!, //TODO: ADD Organizer selection option in client
+      organizer: userID!,
       calendars: [...selectedCals],
       originCalendarID: originEffective,
       title: newTitle,
@@ -462,7 +462,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
       start: allDayToggle ? allDayUTC(newStart) : newStart,
       end: allDayToggle ? allDayUTC(newEnd) : newEnd,
       isAllDay: allDayToggle,
-      isCanceled: false, //TODO: Before cal sync we need a system for event status
+      isCanceled: false,
       description: newDescription,
       location: newLocation,
       recurrence: (() => {
@@ -586,8 +586,8 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
         keyboardShouldPersistTaps="handled"
         style={docked ? { flex: 1 } : undefined}
         contentContainerStyle={docked ? { paddingBottom: kbPad } : undefined}
-      
-  showsVerticalScrollIndicator={false}>
+
+        showsVerticalScrollIndicator={false}>
         {!docked && (
           <View style={styles.fieldContainer}>
             <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Title</Text>
@@ -607,8 +607,8 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
         <View style={styles.fieldContainer}>
           <ScrollView
             horizontal
-          
-  showsHorizontalScrollIndicator={false}>
+
+            showsHorizontalScrollIndicator={false}>
             <View style={styles.horizontalPillView}>
               {/* Same order as the Calendars tab, including the user's drag order. */}
               {sortCalendars(calendars, calendarOrder).map((cal) => {

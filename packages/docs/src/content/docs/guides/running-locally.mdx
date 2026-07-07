@@ -28,20 +28,25 @@ Copy the example file:
 cp .env.example .env
 ```
 
-Then edit `.env`. The required variables are:
+Then edit `.env`. The **required** variables (the API won't boot without them) are:
 
 | Variable | Description |
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection string, e.g. `postgresql://user:pass@localhost:5432/musubi` |
 | `BETTER_AUTH_SECRET` | Any long random string — used to sign sessions |
-| `BETTER_AUTH_URL` | The **origin** of the API server, e.g. `http://localhost:3000`. **No trailing slash, no `/api` suffix.** |
-| `API_SERVER_PORT` | Port the API listens on. Defaults to `3000` |
+| `BETTER_AUTH_URL` | The **origin** of the API server, e.g. `http://localhost:7531`. **No trailing slash, no `/api` suffix.** |
 | `ENVIRONMENT` | Set to `dev` during development — enables CORS for localhost |
 
-SMTP variables (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL`) are only required if you want password reset emails to actually send. The app works without them in development.
+`API_SERVER_PORT` is optional (defaults to `7531`). Everything else is **optional** — the API boots without it, and the feature that uses it simply won't work until set:
+
+| Variable | Enables |
+|---|---|
+| `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in and Google Calendar sync |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL` | Password-reset (and other) emails |
+| `CALDAV_ENC_KEY` | Connecting CalDAV accounts (encrypts stored passwords) |
 
 <Aside type="caution">
-`BETTER_AUTH_URL` must be the origin only — no `/api` suffix. Both the client and Better Auth append their own paths to it. If you set it to `http://localhost:3000/api`, requests will land at `/api/api/...` and fail.
+`BETTER_AUTH_URL` must be the origin only — no `/api` suffix. Both the client and Better Auth append their own paths to it. If you set it to `http://localhost:7531/api`, requests will land at `/api/api/...` and fail.
 </Aside>
 
 ## 3. Run database migrations
@@ -65,7 +70,7 @@ Turborepo runs the API, the Expo client, and the docs site in parallel with an i
 To run a single piece in isolation:
 
 ```sh
-cd apps/api && pnpm dev        # API only  → http://localhost:3000
+cd apps/api && pnpm dev        # API only  → http://localhost:7531
 cd apps/client && pnpm dev     # Expo client only
 cd packages/docs && pnpm dev   # Docs site only → http://localhost:4321/docs
 ```
@@ -73,5 +78,5 @@ cd packages/docs && pnpm dev   # Docs site only → http://localhost:4321/docs
 The Expo dev server will print a QR code. Scan it with Expo Go on your phone, or press `i` for an iOS simulator or `a` for Android.
 
 <Aside type="tip">
-If you're testing on a **real phone** (not a simulator), `localhost` won't work — your phone and computer are different machines. Set `BETTER_AUTH_URL` and the app's server URL to your machine's local network IP, e.g. `http://192.168.1.42:3000`. You can find it with `ip addr` (Linux) or `ifconfig` (macOS).
+If you're testing on a **real phone** (not a simulator), `localhost` won't work — your phone and computer are different machines. Set `BETTER_AUTH_URL` and the app's server URL to your machine's local network IP, e.g. `http://192.168.1.42:7531`. You can find it with `ip addr` (Linux) or `ifconfig` (macOS).
 </Aside>

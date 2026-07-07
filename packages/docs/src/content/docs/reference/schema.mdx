@@ -137,10 +137,13 @@ One row per user. Created with defaults on first request if it doesn't exist.
 | `id` | `text` PK/FK → `user` | — | Same as user ID |
 | `show_kanji` | `boolean` | `true` | Show Japanese characters in calendar header |
 | `notifications_on_by_default` | `boolean` | `true` | Pre-toggle reminders on new events |
-| `default_calendar_view` | `text` | `"week"` | `"day"`, `"week"`, or `"month"` |
+| `default_calendar_view` | `text` | `"month"` | `"day"`, `"week"`, or `"month"` |
 | `week_starts_on` | `text` | `"monday"` | `"monday"` or `"sunday"` |
-| `time_locale` | `text` | `"en-UK"` | Time formatting locale |
+| `time_format` | `text` | `"24h"` | `"12h"` or `"24h"` |
+| `date_format` | `text` | `"dmy"` | `"dmy"`, `"mdy"`, or `"ymd"` |
 | `theme` | `text` | `"system"` | `"system"`, `"dark"`, or `"light"` |
+| `onboarded` | `boolean` | `false` | Whether the user has finished onboarding |
+| `calendar_order` | `jsonb` | `[]` | User's saved calendar order — flat list of calendar IDs |
 | `created_at` | `timestamp` | | |
 | `updated_at` | `timestamp` | | Auto-updated |
 
@@ -223,11 +226,12 @@ Maps local events to their provider-side counterparts so two-way sync can match 
 | `id` | `uuid` PK | |
 | `provider` | `text` | |
 | `event_id` | `uuid` FK → `events` | Cascade delete |
+| `calendar_id` | `uuid` FK → `calendars` | The local mirror calendar this mapping belongs to. Cascade delete |
 | `external_calendar_id` | `text` | Provider-side calendar ID |
 | `external_event_id` | `text` | Provider-side event ID |
 | `etag` | `text` | Change detection (CalDAV) |
 
-Unique on (`provider`, `external_calendar_id`, `external_event_id`).
+Unique on (`provider`, `calendar_id`, `external_event_id`) — scoped by the **local mirror**, so the same global external calendar (e.g. Google holiday calendars, which share one `external_calendar_id` across every account) can be mirrored by multiple users without their event mappings colliding.
 
 ### `caldav_accounts`
 

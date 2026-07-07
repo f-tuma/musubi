@@ -19,7 +19,7 @@ Musubi is built around three core concepts: **calendars**, **events**, and **inv
 
 **Invites** are how other people join your calendar. You generate a shareable invite link from within the app; anyone who opens it and has an account can accept and become a member.
 
-Once someone is a member of a calendar, they can create and edit events in it. Only the calendar creator can delete the calendar itself.
+A member's abilities depend on their **role**: *viewers* can see events, *editors* can also create and edit them, and *owners* can additionally rename the calendar, manage members, and delete it. Ownership can be transferred to another member.
 
 ---
 
@@ -41,6 +41,9 @@ A few settings worth knowing about:
 
 - **Default calendar view** — choose between day, week, or month as your opening view
 - **Week starts on** — Sunday or Monday
+- **Theme** — system, dark, or light
+- **Time format** — 12-hour (AM/PM) or 24-hour
+- **Date format** — the order dates are written (D/M/Y, M/D/Y, or Y-M-D)
 - **Show Kanji** — toggles Japanese month and day characters in the calendar header. This is purely an aesthetic touch reflecting the Japanese name and philosophy behind the app; it is not a localisation feature
 
 ---
@@ -52,10 +55,11 @@ A few settings worth knowing about:
 | Mobile client | React Native (Expo SDK 56) |
 | Routing | Expo Router — file-based navigation |
 | State | Zustand |
-| Calendar component | `@musubi/calendar` — forked and extended in-repo |
-| Animations | Reanimated v4 |
+| Calendar UI | Custom, in-app (`components/cal/`) — month/day/week, pinch-zoom, drag |
+| Recurrence / dates | `@musubi/calendar` — logic-only package (RRULE + date helpers) |
+| Animations | Reanimated v4 + Gesture Handler |
 | Server | Express.js (Node.js) |
-| Auth | Better Auth — email/password |
+| Auth | Better Auth — email/password + Google |
 | ORM | Drizzle ORM |
 | Database | PostgreSQL |
 | Real-time | Server-Sent Events (SSE) |
@@ -71,7 +75,7 @@ Musubi/
 │   ├── client/     # Expo / React Native mobile app
 │   └── api/        # Express.js REST API server
 └── packages/
-    ├── calendar/   # Forked calendar component with recurrence support
+    ├── calendar/   # Recurrence (RRULE) expansion + date helpers — logic only
     ├── docs/       # This documentation site (Astro + Starlight)
     ├── db/         # Drizzle ORM schema, migrations, and query helpers
     ├── auth/       # Better Auth server configuration

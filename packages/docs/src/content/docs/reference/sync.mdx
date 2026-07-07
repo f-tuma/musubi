@@ -21,7 +21,7 @@ apps/api/src/sync/
 ## Mental model
 
 - Each external calendar becomes one **Musubi calendar** ("mirror"), linked via the `external_calendars` row (provider, account, external id, sync cursor).
-- Each imported event is a normal `events` row, linked via `external_events` (provider + external calendar id + external event id → Musubi event id). This mapping is how pushes find the remote copy and how re-imports avoid duplicates.
+- Each imported event is a normal `events` row, linked via `external_events`, keyed by the **local mirror** (`provider` + local `calendar_id` + external event id → Musubi event id). Scoping by the local calendar is what lets several users mirror the same *global* external calendar — Google holiday calendars share one external id across every account — without their mappings colliding. This mapping is how pushes find the remote copy and how re-imports avoid duplicates.
 - **Pull** (provider → Musubi) runs when the client triggers a sync. **Push** (Musubi → provider) runs inline whenever an event that lives in a mirror is created/updated/deleted.
 - Mirrors the provider marks read-only (holiday calendars, subscriptions) get the **viewer** role even for the account owner — the permission system does the rest.
 

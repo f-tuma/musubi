@@ -135,9 +135,15 @@ function TimelinePage({
   const y2min = (y: number, snap: number) =>
     clamp(Math.round((y / hourH.value) * 60 / snap) * snap, 0, 24 * 60 - snap);
 
+  // Content stays invisible until the initial scroll is applied, then reveals —
+  // so the mount→scroll settle is never seen (no top → target flash on open),
+  // without forcing a synchronous full-height layout the way contentOffset does.
+  const contentOpacity = useSharedValue(0);
   useEffect(() => {
-    // restore the shared scroll position when this page mounts (pager buffer)
-    requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: scrollPosRef.current, animated: false }));
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: scrollPosRef.current, animated: false });
+      contentOpacity.value = withTiming(1, { duration: 100 });
+    });
   }, []);
 
   useEffect(() => {
@@ -150,7 +156,7 @@ function TimelinePage({
   // the sheet doesn't make the scroll content jump
   const padSV = useSharedValue(bottomPad);
   useEffect(() => { padSV.value = withTiming(bottomPad, { duration: 200 }); }, [bottomPad]);
-  const contentStyle = useAnimatedStyle(() => ({ height: 24 * hourH.value + padSV.value + 12 }));
+  const contentStyle = useAnimatedStyle(() => ({ height: 24 * hourH.value + padSV.value + 12, opacity: contentOpacity.value }));
   const gridOverlayStyle = useAnimatedStyle(() => ({ height: 24 * hourH.value }));
 
   const segmentsByDay = useMemo(
@@ -422,9 +428,6 @@ function TimelinePage({
 
         <ScrollView
           ref={scrollRef as any} // RNGH ScrollView; reanimated scrollTo resolves the native node
-          // start already scrolled to the shared position — the first painted frame
-          // is at 8:45 (or wherever), so there's no top → target snap on open
-          contentOffset={{ x: 0, y: scrollPosRef.current }}
           onLayout={e => { scrollTopSV.value = e.nativeEvent.layout.y; }}
           onScroll={e => { scrollPosRef.current = e.nativeEvent.contentOffset.y; scrollY.value = e.nativeEvent.contentOffset.y; }}
           scrollEventThrottle={16}

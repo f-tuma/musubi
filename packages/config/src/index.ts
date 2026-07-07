@@ -64,18 +64,21 @@ const apiConfig: APIConfig = {
 
 console.log(`USING PORT: ${apiConfig.port}`)
 
+// SMTP + Google are OPTIONAL — the API boots without them so local dev doesn't
+// need mail or OAuth set up. The features that use them fail/verify at call time
+// (password-reset send, Google sign-in & Calendar sync) rather than at boot.
 const smtpConfig: SMTPConfig = {
-  host: envOrThrow("SMTP_HOST"),
-  port: Number(envOrThrow("SMTP_PORT")),
-  user: envOrThrow("SMTP_USER"),
-  pass: envOrThrow("SMTP_PASS"),
-  from: envOrThrow("FROM_EMAIL"),
+  host: process.env.SMTP_HOST ?? "",
+  port: Number(process.env.SMTP_PORT) || 0,
+  user: process.env.SMTP_USER ?? "",
+  pass: process.env.SMTP_PASS ?? "",
+  from: process.env.FROM_EMAIL ?? "",
 }
 
 const socialConfig: SocialConfig = {
-  googleIOSClientID: "", // envOrThrow("GOOGLE_IOS_CLIENT_ID"),
-  googleWebClientID: envOrThrow("GOOGLE_WEB_CLIENT_ID"),
-  googleClientSecret: envOrThrow("GOOGLE_CLIENT_SECRET"),
+  googleIOSClientID: process.env.GOOGLE_IOS_CLIENT_ID ?? "",
+  googleWebClientID: process.env.GOOGLE_WEB_CLIENT_ID ?? "",
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
 }
 
 const securityConfig: SecurityConfig = {

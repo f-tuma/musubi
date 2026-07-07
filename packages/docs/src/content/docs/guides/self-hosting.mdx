@@ -29,12 +29,18 @@ Edit `.env` with your production values. Key variables:
 
 | Variable | Description |
 |---|---|
-| `DATABASE_URL` | PostgreSQL connection string |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Database credentials — Compose starts Postgres with these and builds `DATABASE_URL` from them |
+| `DATABASE_URL` | PostgreSQL connection string (Compose overrides this to point at the `db` service) |
 | `BETTER_AUTH_SECRET` | Long random secret — generate with `openssl rand -base64 32` |
 | `BETTER_AUTH_URL` | The public URL of your API, e.g. `https://musubi.yourdomain.com` |
 | `ENVIRONMENT` | Set to anything other than `dev` for production |
+| `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth credentials — needed for Google sign-in and Google Calendar sync |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL` | Outgoing mail for password-reset emails |
+| `CALDAV_ENC_KEY` | Encrypts stored CalDAV passwords — required before anyone connects a CalDAV account |
 
-For password reset emails to work, also set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `FROM_EMAIL`.
+<Aside type="caution">
+Required to boot: the `POSTGRES_*` credentials, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, and `ENVIRONMENT`. The Google, SMTP, and `CALDAV_ENC_KEY` variables are optional — the API starts without them and the matching feature just stays off until you set it.
+</Aside>
 
 <Aside type="caution">
 `BETTER_AUTH_SECRET` must be kept private and consistent. If you change it, all existing sessions are invalidated — every user gets logged out.
@@ -43,10 +49,14 @@ For password reset emails to work, also set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER
 ## 3. Start everything
 
 ```sh
-docker compose up -d
+docker compose -f docker-compose.selfhost.yml up -d
 ```
 
-This starts the API server, the PostgreSQL database, and runs migrations automatically.
+This starts the API server, the PostgreSQL database, and runs migrations automatically (the API container runs `drizzle-kit migrate` before booting).
+
+<Aside type="note">
+Use the `docker-compose.selfhost.yml` file — it publishes the API port and runs its own Postgres. The repo's default `docker-compose.yml` targets [Dokploy](https://dokploy.com) (it attaches to an external `dokploy-network` and only `expose`s the port for Dokploy's reverse proxy), so a bare `docker compose up` against it won't work on a plain host. For HTTPS, put a reverse proxy in front of the published port and set `BETTER_AUTH_URL` to the public `https://` origin.
+</Aside>
 
 ## 4. Point the mobile app at your server
 
@@ -60,8 +70,8 @@ To pull the latest version:
 
 ```sh
 git pull
-docker compose down
-docker compose up -d --build
+docker compose -f docker-compose.selfhost.yml down
+docker compose -f docker-compose.selfhost.yml up -d --build
 ```
 
 Migrations run automatically on startup.
@@ -70,16 +80,16 @@ Migrations run automatically on startup.
 
 ## Backups
 
-The only stateful piece is the PostgreSQL database. Back it up with:
+The only stateful piece is the PostgreSQL database. Run these from the repo directory (Compose resolves the `db` service; use the `POSTGRES_USER` / `POSTGRES_DB` values from your `.env`):
 
 ```sh
-docker exec musubi-db pg_dump -U postgres musubi > backup.sql
+docker compose -f docker-compose.selfhost.yml exec -T db pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" > backup.sql
 ```
 
 Restore with:
 
 ```sh
-cat backup.sql | docker exec -i musubi-db psql -U postgres musubi
+cat backup.sql | docker compose -f docker-compose.selfhost.yml exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"
 ```
 
 <Aside type="note">

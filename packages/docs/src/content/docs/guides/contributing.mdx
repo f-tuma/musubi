@@ -27,7 +27,7 @@ The project uses **pnpm workspaces** and **Turborepo**:
 | `apps/client` | Expo mobile app (Expo Router) |
 | `packages/db` | Drizzle ORM schema, queries, and migrations (PostgreSQL) |
 | `packages/types` | Shared Zod schemas and TypeScript types — adding or changing a data model starts here |
-| `packages/calendar` | Vendored calendar UI component, extended with recurrence expansion |
+| `packages/calendar` | Recurrence (RRULE) expansion + date helpers — logic only, no UI (the calendar UI is custom in `apps/client/components/cal/`) |
 | `packages/auth` | Better Auth configuration |
 | `packages/config` | Shared environment loading |
 | `packages/docs` | This documentation site (Astro Starlight) |

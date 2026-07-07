@@ -83,7 +83,11 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
     drillScrollPosRef.current = minutesToY(DRILL_OPEN_MIN); // day view always opens at this time
     setDrill({ date, rect });
     zoom.value = 0;
-    zoom.value = withTiming(1, { duration: ZOOM_IN_MS, easing: Easing.out(Easing.cubic) });
+    // mount the day view while the overlay is tiny + invisible (zoom 0), then
+    // animate a frame later — keeps the heavy mount off the animation's frames
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      zoom.value = withTiming(1, { duration: ZOOM_IN_MS, easing: Easing.out(Easing.cubic) });
+    }));
   }, []);
 
   const clearDrill = useCallback(() => setDrill(null), []);
