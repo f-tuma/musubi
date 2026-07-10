@@ -43,18 +43,6 @@ export async function getUserExternalCalendars(provider: string, userID: string,
     ));
 }
 
-export async function doesExternalCalIDExist(provider: string, accountID: string, externalCalendarID: string) {
-  const [res] = await db
-    .select()
-    .from(externalCalendars)
-    .where(and(
-      eq(externalCalendars.provider, provider),
-      eq(externalCalendars.accountID, accountID),
-      eq(externalCalendars.externalCalendarID, externalCalendarID),
-    ));
-  return !!res;
-}
-
 export async function importExternalCalendar(
   provider: string,
   userID: string,

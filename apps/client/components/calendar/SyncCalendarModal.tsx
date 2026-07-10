@@ -61,7 +61,7 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
       handleClose();
     } catch (e: any) {
       haptics.warn();
-      Alert.alert("Google connect failed", e?.message ?? "An unexpected error occured.");
+      Alert.alert("Google connect failed", e?.message ?? "An unexpected error occurred.");
     } finally {
       setIsLoading(false);
     }

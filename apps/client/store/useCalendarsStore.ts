@@ -92,10 +92,10 @@ export const useCalendarsStore = create<CalendarStore>((set, get) => ({
 
   updateCalendar: async (calendar, api) => {
     const result = await api.updateCalendar(calendar);
-    set((state) => ({
-      calendars: [...state.calendars.filter(c => c.id !== result.id), result],
-    }));
-    return result;
+    // MERGE, don't replace: the update response is the raw calendars row and
+    // omits per-user fields (role, provider…). Replacing would drop the user's
+    // role → the calendar shows as read-only/locked until the next full sync.
+    return get().localUpdateCalendar(result);
   },
 
   localUpdateCalendar: (calendar) => {

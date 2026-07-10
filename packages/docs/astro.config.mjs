@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import mermaid from 'astro-mermaid';
 import node from '@astrojs/node';
 
 export default defineConfig({
@@ -10,6 +11,21 @@ export default defineConfig({
   markdown: { gfm: true, smartypants: true },
 
   integrations: [
+    // astro-mermaid must come BEFORE starlight so its rehype step runs first.
+    // Renders client-side (no build-time headless browser) and follows the
+    // active light/dark theme.
+    // useMaxWidth:false keeps diagrams at a legible intrinsic size instead of
+    // shrinking to fit — on narrow screens the .mermaid container scrolls
+    // horizontally (see custom.css) rather than rendering unreadable text.
+    mermaid({
+      theme: 'default',
+      autoTheme: true,
+      mermaidConfig: {
+        flowchart: { useMaxWidth: false },
+        sequence: { useMaxWidth: false },
+        er: { useMaxWidth: false },
+      },
+    }),
     starlight({
       title: 'Musubi',
       customCss: ['./src/styles/custom.css'],
@@ -20,22 +36,23 @@ export default defineConfig({
             { label: 'Introduction', slug: 'guides/introduction' },
             { label: 'Running Locally', slug: 'guides/running-locally' },
             { label: 'Self-Hosting', slug: 'guides/self-hosting' },
-            { label: 'Contributing', slug: 'guides/contributing' },
           ],
         },
         {
-          label: 'Reference',
+          label: 'Architecture',
           items: [
-            { label: 'Client', slug: 'reference/client' },
-            { label: 'Server & API', slug: 'reference/server' },
-            { label: 'Sync & Provider Adapters', slug: 'reference/sync' },
-            { label: 'Database Schema', slug: 'reference/schema' },
+            { label: 'Overview', slug: 'architecture/overview' },
+            { label: 'Data Model', slug: 'architecture/data-model' },
+            { label: 'API Server', slug: 'architecture/api' },
+            { label: 'Client App', slug: 'architecture/client' },
+            { label: 'Sync Engine', slug: 'architecture/sync' },
+            { label: 'Shared Packages', slug: 'architecture/packages' },
           ],
         },
         {
-          label: 'Roadmap',
+          label: 'Contributing',
           items: [
-            { label: 'Roadmap', slug: 'roadmap' },
+            { label: 'Contributing Guide', slug: 'guides/contributing' },
           ],
         },
       ],

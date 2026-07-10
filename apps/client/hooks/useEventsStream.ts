@@ -1,18 +1,19 @@
 import { useEventsStore } from "@/store/useEventsStore";
-import Constants from "expo-constants";
 import { useEffect } from "react";
 import EventSource from "react-native-sse";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useServer } from "@/contexts/ServerContext";
 
-const apiUrl = Constants.expoConfig?.extra?.apiUrl;
-
 export function useConnectToEventStream() {
-  const { authClient } = useServer();
+  // apiUrl comes from ServerContext (SecureStore-backed, self-host aware) — the
+  // same origin every other request uses, so the SSE stream tracks a custom
+  // server URL too.
+  const { authClient, apiUrl } = useServer();
   const { localAddEvent, localUpdateEvent, localRemoveEvent, localRemoveCalendarEvents } = useEventsStore();
   const { localUpdateCalendar, localRemoveCalendar } = useCalendarsStore();
 
   useEffect(() => {
+    if (!apiUrl) return;
     let sse: EventSource;
 
     const connect = async () => {
@@ -53,5 +54,5 @@ export function useConnectToEventStream() {
     }
     connect();
     return () => sse?.close();
-  }, []);
+  }, [apiUrl, authClient]);
 }

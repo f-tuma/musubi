@@ -274,11 +274,17 @@ function PositionedItem({ id, y, dragged, baseY, dragY, lift, registry, onMeasur
     shadowOpacity: dragged ? 0.18 : 0,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 5 },
-    backgroundColor: dragged ? colors.bg1 : "transparent",
   }));
 
+  // backgroundColor stays OUT of the worklet: reading `colors` inside a worklet
+  // serializes the whole mutable palette to the UI thread, which then blocks
+  // applyTheme() from swapping it — breaking dark/light switching. It only
+  // depends on `dragged` (a prop), so apply it in the plain style at render.
   return (
-    <Animated.View style={style} onLayout={onMeasure ? e => onMeasure(e.nativeEvent.layout.height) : undefined}>
+    <Animated.View
+      style={[style, { backgroundColor: dragged ? colors.bg1 : "transparent" }]}
+      onLayout={onMeasure ? e => onMeasure(e.nativeEvent.layout.height) : undefined}
+    >
       {children}
     </Animated.View>
   );

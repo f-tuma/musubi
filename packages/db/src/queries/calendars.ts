@@ -136,7 +136,7 @@ export async function setMemberRole(userID: string, calendarID: string, role: st
   return result;
 }
 
-export async function removeClaendarMember(userID: string, calendarID: string) {
+export async function removeCalendarMember(userID: string, calendarID: string) {
   const [result] = await db
     .delete(calendarMembers)
     .where(and(eq(calendarMembers.userID, userID), eq(calendarMembers.calendarID, calendarID)))

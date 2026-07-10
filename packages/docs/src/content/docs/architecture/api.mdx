@@ -1,0 +1,165 @@
+---
+title: API Server
+description: apps/api — Express request lifecycle, the handler rhythm, permissions, error handling, realtime, and how to add an endpoint.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+The backend is a plain **Express** server in `apps/api/`. No framework magic — routes, middleware, handlers, and a thin permission layer. This page gives you the mental model and the exact pattern every handler follows.
+
+## Boot sequence
+
+`apps/api/src/index.ts` is the front door. It wires the app in this order (order matters):
+
+```mermaid
+flowchart TD
+    A["cors() — origin whitelist + credentials"] --> B["express.json (512 KB cap · base64 avatars)"]
+    B --> C["middlewareLogHandler"]
+    C --> D["/api/auth/* → Better Auth (sign-in/up, sessions, reset)"]
+    D --> E["/api/v1/* → application routes"]
+    E --> F["middlewareErrorHandler — MUST be last"]
+    F --> G["listen(config.api.port · default 7531)"]
+    G --> H["hourly cleanup jobs — expired invites/sessions, purge 30-day tombstones"]
+```
+
+Two route namespaces exist and never overlap:
+
+- **`/api/auth/*`** — entirely owned by Better Auth. Don't add routes here.
+- **`/api/v1/*`** — the application API. Everything you add goes here.
+
+<Aside type="caution">
+Route order within a namespace matters — Express matches in registration order. `GET /api/v1/calendars/google` is registered **before** `GET /api/v1/calendars/:id`, otherwise `:id` would swallow `google`. When adding a static path that collides with a param route, register it first.
+</Aside>
+
+## The handler rhythm
+
+Every mutating handler follows the same five beats. Internalise this and the whole backend reads identically:
+
+```mermaid
+flowchart LR
+    V["validate<br/>(BadRequest)"] --> A["authorise<br/>(Forbidden)"] --> P["persist<br/>(packages/db)"] --> S["sync outward<br/>(sync engine)"] --> B["broadcast<br/>(SSE)"]
+```
+
+A representative handler (`handlerCreateEvent` in `handlers/events.ts`):
+
+```ts
+export async function handlerCreateEvent(req: Request, res: Response) {
+  const event = EventSchema.parse(req.body);          // 1. validate (throws BadRequest)
+  event.creatorID = req.user!.id;                       //    never trust client for identity
+  await assertCan(req.user!.id, event.calendars[0], "editEvents"); // 2. authorise
+  const created = await createEvent(event, event.calendars);       // 3. persist (packages/db)
+  await pushEventToProviders(created, "create");        // 4. sync outward (Google/CalDAV)
+  notifyCalendarMembers(memberIds, "event_created", created);       // 5. broadcast
+  res.status(201).json(created);
+}
+```
+
+Conventions baked into that snippet:
+
+- **`req.user`** is set by the `requireAuth` middleware (type augmented in `apps/api/src/express.d.ts`). Public routes omit `requireAuth`.
+- **Identity fields (`creatorID`, `originCalendarID`) are set server-side**, never taken from the client body. `handlerUpdateEvent` strips them: `const { creatorID, originCalendarID, ...editable } = event`.
+- **Handlers throw; they don't return error responses.** A `wrap()` helper (`const wrap = h => (req,res,next) => Promise.resolve(h(req,res)).catch(next)`) funnels rejected promises into the error middleware. That's why every route is `wrap(handlerX)`.
+
+## Errors → HTTP status
+
+Handlers throw the typed error classes from `@musubi/types` (`errors.ts`). `middlewareErrorHandler` maps them:
+
+| Thrown | Status |
+|---|---|
+| `BadRequestError` | 400 |
+| `UnauthorizedError` | 401 |
+| `ForbiddenError` | 403 |
+| `NotFoundError` | 404 |
+| anything else | 500 |
+
+```ts
+if (!event) throw new NotFoundError("Event not found...");
+if (start > end) throw new BadRequestError("Start must precede end.");
+```
+
+Query modules return `undefined`/`[]` for "not found" — the handler decides whether that's a 404.
+
+## Permissions
+
+Two files, two responsibilities:
+
+- **`packages/types/src/permissions.ts`** — the *truth*: the `CalendarRole` × `CalendarAction` matrix and the pure `can(role, action)` function. Shared with the client so UI can hide what the user can't do.
+- **`apps/api/src/permissions.ts`** — the *server gates* that call it against the DB.
+
+| Role | Allowed actions |
+|---|---|
+| `owner` | editCalendar, deleteCalendar, manageMembers, editEvents, invite |
+| `editor` | editEvents, invite |
+| `viewer` | *(read-only)* |
+
+Three gate functions:
+
+- `assertCan(userID, calendarID, action)` — throws `ForbiddenError` if not allowed. The default gate.
+- `canDo(userID, calendarID, action): Promise<boolean>` — non-throwing, for branching (e.g. "unlink only the calendars you *can* edit").
+- `assertCanEditEvent(userID, eventID)` — the **home-calendar** gate. Edit rights follow `originCalendarID`, not whichever calendar you're viewing the event through. Falls back to the creator if the home calendar was deleted.
+
+<Aside type="caution">
+The single most important permission rule: **an event is editable only through its home calendar.** A shared event visible in five calendars can only be edited by editors/owners of its `originCalendarID`. This is what prevents conflicting edits across shared views. Any new event-mutating endpoint must call `assertCanEditEvent`, not a plain `assertCan` on the viewing calendar.
+</Aside>
+
+## Link vs Fork
+
+The two signature endpoints in `handlers/events.ts`, both `POST /api/v1/events/:eventId/{link|fork}`:
+
+- **Link** (`handlerLinkEvent`) — adds an existing event to another calendar. Requires you can *see* the event and can *edit* the target calendar. One event row, a new `calendar_events` link. Ownership (`originCalendarID`) is unchanged. Broadcasts `event_updated` to all members of all linked calendars.
+- **Fork** (`handlerForkEvent`) — creates an independent copy: new UUID, new `creatorID`, new `originCalendarID`. Fully divergent from the original. Broadcasts `event_created` to the target.
+
+Rule of thumb: *Link* to share one truth; *Fork* to claim your own version.
+
+## Realtime (SSE)
+
+`GET /api/stream` is a long-lived [Server-Sent Events](https://developer.mozilla.org/docs/Web/API/Server-sent_events) connection, registered **outside** the `/api/v1` prefix to match the client's URL. `handlerStream` sets the SSE headers and stores the response in a `Map<userID, Response>`; `notifyCalendarMembers(userIds, type, payload)` writes `event_created` / `event_updated` / `event_removed` / `calendar_updated` / `calendar_removed` frames to the affected users. Every mutating handler calls it after persisting — so a change one member makes appears live for the others.
+
+It's an authenticated route (`requireAuth`): the client sends its session as a `Bearer` token, which Better Auth's bearer plugin validates. The client subscribes via `react-native-sse` (`apps/client/hooks/useEventsStream.ts`).
+
+<Aside type="note">
+Broadcasts are **best-effort and fire-and-forget** — a member with no open connection (offline, backgrounded) simply catches up on their next pull-to-refresh delta sync (`useRefreshData`). There is no auto-reconnect loop and no server-side replay buffer; the delta sync is the durable path, SSE is the live-nicety on top.
+</Aside>
+
+## Route map
+
+| Group | Routes |
+|---|---|
+| Health | `GET /api/v1/server`, `/server/ok` *(public)* |
+| Events | `GET/POST/PUT/DELETE /api/v1/events`, `POST /api/v1/events/:id/link`, `/fork` |
+| Calendars | `GET/POST/PUT/DELETE /api/v1/calendars`, `GET /calendars/:id`, `/calendars/google`, `/calendars/tokens/:token` |
+| Members | `GET /calendars/:id/members`, `POST/DELETE /calendars/members/:id` (join/leave), `PUT/DELETE /calendars/:id/members/:userId` (role/kick) |
+| Users | `GET/PUT /users/settings`, `DELETE /users`, `POST /users/avatar`, `GET /users/:id/avatar` *(public)* |
+| Connections | google check/revoke, caldav check/connect/disconnect, `POST /users/connections/disconnect` |
+
+<Aside type="note">
+`POST /api/v1/users/reset` is public and its inline comment says "password reset entry" — but it maps to `handlerResetUsers`, the **dev-only** full user wipe (guarded by `ENVIRONMENT === "dev"`, throws `Forbidden` otherwise). The comment is misleading; real password reset is a Better Auth route under `/api/auth`. Worth a cleanup.
+</Aside>
+
+## How to add an endpoint
+
+<Steps>
+
+1. **Write the handler** in the right `handlers/*.ts` file. Follow the five-beat rhythm — validate (throw `BadRequestError`), authorise (`assertCan*` → `ForbiddenError`), persist (a `@musubi/db` query, throw `NotFoundError` on missing), sync outward if it touches events (`pushEventToProviders`), broadcast (`notifyCalendarMembers`), respond (`201` create / `200` update).
+
+2. **Add a query function** in `packages/db/src/queries/*.ts` if you need new DB access — never inline `db.select` in a handler.
+
+3. **Register the route** in `index.ts`, before `middlewareErrorHandler`, wrapped and (usually) authed:
+   ```ts
+   app.put("/api/v1/events/:eventId/reschedule", requireAuth, wrap(handlerRescheduleEvent));
+   ```
+   Watch route order if the path could collide with a `:param` route.
+
+4. **Add the client method** in `apps/client/services/api.ts` (see the [client guide](/docs/architecture/client/#the-useapi-hook)) and call `throwOnError(error)` after the fetch.
+
+5. **Typecheck** both apps: `cd apps/api && npx tsc --noEmit --skipLibCheck`.
+
+</Steps>
+
+## Gotchas worth knowing
+
+- **Body limit is 512 KB** (base64 avatars). Larger payloads 413.
+- **Avatar upload sniffs magic bytes** — no extension trust; served from a public, timestamp-versioned URL (`<Image>` can't send auth headers).
+- **Owner can't leave** a calendar (`handlerLeaveCalendar` blocks it) — transfer ownership or delete. Prevents orphaned calendars.
+- **Invites are token-based, not email-based** — `handlerJoinCalendar` requires a token matching the calendar, preventing ID enumeration.
+- **Broadcasts target all members of affected calendars**, deduped via a `Set`, not just the requester.

@@ -3,6 +3,8 @@ title: Introduction
 description: What Musubi is, how it works, and how it's built.
 ---
 
+import { FileTree } from '@astrojs/starlight/components';
+
 Musubi is a privacy-first shared calendar app for mobile. The name comes from the Japanese word 結び (*musubi*) — *knot*, *bond*, or *connection*. The idea: one place to connect your schedule with the people around you, without giving your calendar data to a third party.
 
 You can use the hosted version at **musubi.frgtn.dev** or [run it yourself](/docs/guides/self-hosting/).
@@ -69,16 +71,25 @@ A few settings worth knowing about:
 
 ## Project structure
 
-```
-Musubi/
-├── apps/
-│   ├── client/     # Expo / React Native mobile app
-│   └── api/        # Express.js REST API server
-└── packages/
-    ├── calendar/   # Recurrence (RRULE) expansion + date helpers — logic only
-    ├── docs/       # This documentation site (Astro + Starlight)
-    ├── db/         # Drizzle ORM schema, migrations, and query helpers
-    ├── auth/       # Better Auth server configuration
-    ├── types/      # Shared TypeScript types (client + server)
-    └── config/     # Environment variable loading and validation
-```
+<FileTree>
+- apps/
+  - api/          Express API server (the backend)
+  - client/       Expo / React Native app (the frontend)
+- packages/
+  - db/           Drizzle schema, query modules, PostgreSQL migrations
+  - types/        Zod schemas + inferred types — the client/server contract
+  - calendar/     Recurrence (RRULE) expansion + date helpers — logic only
+  - auth/         Better Auth configuration
+  - config/       Environment loading
+  - docs/         This documentation site (Astro Starlight)
+- turbo.json      Task graph (dev/build)
+- docker-compose*.yml
+</FileTree>
+
+For a deeper, layer-by-layer tour of each workspace, see the [Architecture Overview](/docs/architecture/overview/).
+
+---
+
+## Roadmap
+
+Planned features, current priorities, and what's in progress live on the public **[Musubi roadmap on GitHub](https://github.com/orgs/frgtn-dot-dev/projects/1/views/1)**.

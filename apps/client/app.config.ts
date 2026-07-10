@@ -2,7 +2,7 @@ const expoConfig = {
   name: "Musubi",
   slug: "musubi",
   owner: "frgtn",
-  version: "0.0.11",
+  version: "0.0.12",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "musubi",
@@ -12,7 +12,15 @@ const expoConfig = {
     "supportsTablet": true,
     "bundleIdentifier": "dev.frgtn.musubi",
     "infoPlist": {
-      "ITSAppUsesNonExemptEncryption": false
+      "ITSAppUsesNonExemptEncryption": false,
+      // Nabídne Musubi v "Otevřít v…" pro .ics soubory/pozvánky (iOS neumí víc — default kalendář nelze).
+      "CFBundleDocumentTypes": [
+        {
+          "CFBundleTypeName": "Calendar Event",
+          "LSHandlerRank": "Alternate",
+          "LSItemContentTypes": ["com.apple.ical.ics", "public.calendar"]
+        }
+      ]
     }
   },
   android: {
@@ -36,6 +44,17 @@ const expoConfig = {
           }
         ],
         "category": ["BROWSABLE", "DEFAULT"]
+      },
+      {
+        // Otevření .ics souboru/pozvánky → Musubi v chooseru (uživatel dá "Vždy" = de facto default).
+        "action": "VIEW",
+        "category": ["DEFAULT", "BROWSABLE"],
+        "data": [
+          { "scheme": "content", "mimeType": "text/calendar" },
+          { "scheme": "file", "mimeType": "text/calendar" },
+          { "scheme": "https", "mimeType": "text/calendar" },
+          { "scheme": "http", "mimeType": "text/calendar" }
+        ]
       }
     ]
   },

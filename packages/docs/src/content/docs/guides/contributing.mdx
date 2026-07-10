@@ -1,50 +1,69 @@
 ---
 title: Contributing
-description: How to contribute to Musubi.
+description: How to contribute to Musubi — setup, where to read first, the workflow, and the conventions reviewers check.
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
 
-Musubi is open source under the MIT licence and welcomes contributions. Whether that's a bug fix, a new feature, better tests, or improved documentation — it's all welcome.
+Musubi is open source under the MIT licence and welcomes contributions — bug fixes, features, tests, or docs.
 
 ## Before you start
 
-- Check the [GitHub issues](https://github.com/f-tuma/musubi/issues) to see if someone is already working on what you have in mind
-- For larger changes, open an issue first to discuss the approach before investing time in a PR
-- Keep changes focused — one thing per pull request makes reviewing easier
+- Check the [GitHub issues](https://github.com/f-tuma/musubi/issues) — someone may already be on it.
+- For larger changes, open an issue first to agree on the approach.
+- Keep PRs focused: one thing per pull request.
 
 ## Development setup
 
-Follow the [Running Locally](/docs/guides/running-locally/) guide to get the full stack running on your machine.
+Follow [Running Locally](/docs/guides/running-locally/) to get the full stack up.
+
+## Understand the codebase first
+
+Don't start editing blind. Read the [Architecture Overview](/docs/architecture/overview/) — it gives you the one idea (events are *linked into* calendars, not owned by them) that the whole codebase assumes. Then read the page for the area you're touching:
+
+<CardGrid>
+  <LinkCard title="API Server" href="/docs/architecture/api/" description="Backend endpoints, permissions, the handler rhythm." />
+  <LinkCard title="Client App" href="/docs/architecture/client/" description="Screens, state, offline, the custom calendar." />
+  <LinkCard title="Sync Engine" href="/docs/architecture/sync/" description="External calendar providers." />
+  <LinkCard title="Data Model" href="/docs/architecture/data-model/" description="Schema + migrations." />
+  <LinkCard title="Shared Packages" href="/docs/architecture/packages/" description="The Zod contract, recurrence, auth, config." />
+</CardGrid>
+
+<Aside type="tip">
+Run `pnpm graph` from the repo root for an interactive, browsable map of the codebase — every file, its architectural layer, and how they connect. It's the visual companion to the architecture docs. (It needs the Understand-Anything plugin; if you don't have it, the docs above stand on their own.)
+</Aside>
 
 ## Monorepo layout
 
-The project uses **pnpm workspaces** and **Turborepo**:
+pnpm workspaces + Turborepo:
 
 | Workspace | What lives there |
 |---|---|
-| `apps/api` | Express API server — routes, permissions, SSE stream, external sync engine |
-| `apps/client` | Expo mobile app (Expo Router) |
-| `packages/db` | Drizzle ORM schema, queries, and migrations (PostgreSQL) |
-| `packages/types` | Shared Zod schemas and TypeScript types — adding or changing a data model starts here |
-| `packages/calendar` | Recurrence (RRULE) expansion + date helpers — logic only, no UI (the calendar UI is custom in `apps/client/components/cal/`) |
-| `packages/auth` | Better Auth configuration |
-| `packages/config` | Shared environment loading |
-| `packages/docs` | This documentation site (Astro Starlight) |
+| `apps/api` | Express API — routes, permissions, sync engine |
+| `apps/client` | Expo app (Expo Router) |
+| `packages/db` | Drizzle schema, queries, PostgreSQL migrations |
+| `packages/types` | Shared Zod schemas + types — **change data shapes here first** |
+| `packages/calendar` | Recurrence (RRULE) expansion + date helpers — logic only |
+| `packages/auth` | Better Auth config |
+| `packages/config` | Environment loading |
+| `packages/docs` | This documentation site |
 
-## Where to read first
+## The verification loop
 
-- **Client UI work** — use the UI primitives (`Tap`, `Btn`, `Empty`, `confirm()`) and follow the theming rules; hardcoded colours or bare `Pressable`s will be flagged in review. See the [client reference](/docs/reference/client/).
-- **Sync / provider work** — the provider adapters and generic sync engine are documented in the [sync reference](/docs/reference/sync/).
-- **Permissions** — roles, the home-calendar ownership model, and the server-side gates are in the [server reference](/docs/reference/server/).
-
-## Type checking
-
-There is no repo-wide typecheck script yet; run the compiler per workspace:
+There is no repo-wide typecheck script; run the compiler per workspace. Establish a **baseline** before you start (some pre-existing errors live in `node_modules` type defs, hence `--skipLibCheck`), and make sure your change doesn't add new ones:
 
 ```sh
 cd apps/client && npx tsc --noEmit --skipLibCheck
-cd apps/api && npx tsc --noEmit --skipLibCheck
+cd apps/api    && npx tsc --noEmit --skipLibCheck
+```
+
+Some pure logic ships with **runnable self-checks** (no test framework — just assertions run with `tsx`). Run and follow that pattern when you extract testable logic:
+
+```sh
+cd apps/client
+npx tsx lib/rrule.test.ts        # RRULE build/parse round-trip
+npx tsx lib/eventForm.test.ts    # event-form validation
+npx tsx lib/ics.test.ts          # ICS import
 ```
 
 ## Database migrations
@@ -56,28 +75,30 @@ pnpm db:generate   # generate a migration from the schema diff
 pnpm db:migrate    # apply pending migrations
 ```
 
-Commit the generated SQL in `packages/db/drizzle/` with your change.
-
-## Submitting a pull request
-
-1. Fork the repo and create a branch from `main`
-2. Make your changes
-3. Test on both iOS and Android if the change touches the client
-4. Open a PR with a clear description of what changed and why
-
-<Aside type="tip">
-The PR description is where context lives — what problem does this solve, what alternatives did you consider, anything reviewers should watch out for. The code shows *what* changed; the description explains *why*.
-</Aside>
+Commit the generated SQL in `packages/db/drizzle/` **with** your change. See the [migration workflow](/docs/architecture/data-model/#migration-workflow) for the gotchas (renames, cascades, forgetting to generate).
 
 ## Code style
 
-The codebase uses TypeScript throughout. A few conventions:
+TypeScript throughout. The conventions reviewers check:
 
-- React components use functional style with hooks
-- Server state lives in Zustand stores in `apps/client/store/` — stores are API-first (state and cache are written only after the API call succeeds), and components read from stores rather than holding server state locally
-- Animations use Reanimated v4 — avoid the legacy `Animated` API from React Native
-- No inline magic numbers for colours — use `colors` and `fonts` from `apps/client/constants/theme.ts` (and read them at render time, never in module-level constants — see [theming pitfalls](/docs/reference/client/#theming))
+- **Stores are API-first** — Zustand stores in `apps/client/store/` write state/cache only after the API call succeeds; components read from stores, not local server state. **Merge, don't replace** on calendar updates (SSE payloads omit fields).
+- **UI primitives, not ad-hoc** — use `Tap`/`Btn`/`Empty`/`Toast`/`confirm()` from `components/ui/`; a bare `Pressable` or hand-rolled dialog gets flagged.
+- **Theme at render time** — read `colors`/`fonts` from `constants/theme.ts` inside the component, never into a module-level constant (it freezes to the first-loaded theme). See [theming](/docs/architecture/client/#conventions).
+- **Reanimated v4**, not the legacy `Animated` API. In the custom calendar, keep positions in shared values and use `runOnJS` for React setters.
+- **No inline magic numbers** — name them (a `layout.ts`-style tuning block or `constants/`).
+- **Change data shapes in `packages/types` first**, then thread the type through both apps.
+
+## Submitting a pull request
+
+1. Fork and branch from `main`.
+2. Make your change; keep it focused.
+3. Typecheck both workspaces; run any relevant self-checks; test on **iOS and Android** if it touches the client (there are deliberate per-platform branches).
+4. Open a PR with a clear description of **what** changed and **why**.
+
+<Aside type="tip">
+The PR description is where context lives — the problem, the alternatives you considered, anything reviewers should watch. The diff shows *what*; the description explains *why*.
+</Aside>
 
 ## Questions
 
-Open a GitHub issue or discussion if you're unsure about something before spending time on it.
+Open a GitHub issue or discussion before spending time if you're unsure about the approach.

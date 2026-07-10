@@ -128,6 +128,25 @@ site-search button {
   border-radius: 6px;
 }
 
+/* ── Mermaid diagrams ── */
+/* Diagrams render at intrinsic size (useMaxWidth:false in astro.config); this
+   container lets a wide diagram scroll horizontally on narrow screens instead
+   of shrinking to illegibility or clipping. Small diagrams just center. */
+.mermaid {
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-align: center;
+  background: transparent !important;
+  border: none !important;
+  padding: 0.25rem 0 0.75rem;
+  /* momentum scroll on iOS */
+  -webkit-overflow-scrolling: touch;
+}
+.mermaid svg {
+  max-width: none; /* don't let the SVG cap itself below its natural size */
+  height: auto;
+}
+
 /* ── Card grid ── */
 :root[data-theme='dark'] .card {
   background: #131316;

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { addCalendarMember, createCalendar, getCalendar, getCalendarEvents, getCalendarIDFromToken, getCalendarMembers, getExternalLinkForCalendar, getUserRoleForCalendar, getUsersCalendars, NewCalendar, removeCalendar, removeClaendarMember, setMemberRole, updateCalendar } from '@musubi/db';
+import { addCalendarMember, createCalendar, getCalendar, getCalendarEvents, getCalendarIDFromToken, getCalendarMembers, getExternalLinkForCalendar, getUserRoleForCalendar, getUsersCalendars, NewCalendar, removeCalendar, removeCalendarMember, setMemberRole, updateCalendar } from '@musubi/db';
 import { BadRequestError, Calendar, CalendarSchema, ForbiddenError, NotFoundError, User } from "@musubi/types";
 import { notifyCalendarMembers } from "./stream";
 import { assertCan } from "../permissions";
@@ -170,7 +170,7 @@ export async function handlerLeaveCalendar(req: Request, res: Response) {
     // Would orphan the calendar — transfer ownership (setMemberRole "owner") or delete it.
     throw new BadRequestError("The owner can't leave. Transfer ownership or delete the calendar.");
   }
-  await removeClaendarMember(req.user?.id!, calendarID);
+  await removeCalendarMember(req.user?.id!, calendarID);
 
   res.sendStatus(200);
 }
@@ -187,7 +187,7 @@ export async function handlerKickMember(req: Request, res: Response) {
     throw new BadRequestError("The calendar owner can't be removed.");
   }
 
-  await removeClaendarMember(targetUserID, calendarID);
+  await removeCalendarMember(targetUserID, calendarID);
   // Tell the removed user's client to drop the calendar.
   notifyCalendarMembers([targetUserID], "calendar_removed", { id: calendarID });
 

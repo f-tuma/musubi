@@ -62,3 +62,6 @@ BUGS.md
 # Buidls
 *.apk
 *.aab
+
+# Understand-Anything knowledge graph (generated — run `pnpm graph` / /understand)
+.understand-anything/

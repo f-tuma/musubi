@@ -6,6 +6,7 @@ import { MonthView } from "@/components/cal/MonthView";
 import { TimelineView } from "@/components/cal/TimelineView";
 import { Draft, DRILL_OPEN_MIN, minutesToY, Rect, ZOOM_IN_MS, ZOOM_OUT_MS } from "@/components/cal/layout";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFocusEffect } from "expo-router";
 import { BackHandler, View } from "react-native";
 import { expandRecurringEvents, type Mode } from "@musubi/calendar";
 import Animated, {
@@ -15,6 +16,7 @@ import dayjs from "dayjs";
 import EventDetailModal from "@/components/calendar/EventDetailModal";
 import { Event } from "@musubi/types";
 import { useEventsStore } from "@/store/useEventsStore";
+import { useImportStore } from "@/store/useImportStore";
 import { liveEventDetail } from "@/lib/liveEvent";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
@@ -118,11 +120,14 @@ export default function MainTab() {
   }, [clearDrill]);
 
   // Android back while drilled into a day → zoom back out to the month.
-  useEffect(() => {
+  // Registered via useFocusEffect (not a plain useEffect) so it's ordered
+  // correctly against the navigator's own back handler — otherwise the first
+  // edge-swipe gets eaten and you have to swipe twice.
+  useFocusEffect(useCallback(() => {
     if (!drill) return;
     const sub = BackHandler.addEventListener("hardwareBackPress", () => { closeDrill(); return true; });
     return () => sub.remove();
-  }, [drill, closeDrill]);
+  }, [drill, closeDrill]));
 
   const switchMode = useCallback((m: Mode) => {
     if (m !== "month" && m !== "week" && m !== "day") return;
@@ -151,6 +156,22 @@ export default function MainTab() {
     setPrefilledEvent(event);
     setNewEventVisible(true);
   }, []);
+
+  // An .ics opened via the OS (parsed in app/_layout) → open the composer prefilled.
+  const importPending = useImportStore(s => s.pending);
+  useEffect(() => {
+    if (!importPending) return;
+    setPrefilledEvent({
+      title: importPending.title,
+      start: importPending.start,
+      end: importPending.end,
+      isAllDay: importPending.isAllDay,
+      description: importPending.description ?? null,
+      location: importPending.location ?? null,
+    } as Event); // no id → composer treats it as a new event
+    setNewEventVisible(true);
+    useImportStore.getState().setPending(null);
+  }, [importPending]);
 
   const openEventDetail = useCallback((event: Event) => {
     // Recurring occurrences have synthetic ids like "<originalId>_<timestamp>".

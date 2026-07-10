@@ -4,5 +4,5 @@ export * from "./calendar";
 export * from "./event";
 export * from "./invite";
 export * from "./settings";
-export * from "./google.ts";
+export * from "./google";
 export * from "./permissions";

@@ -19,12 +19,38 @@ import Constants from "expo-constants";
 import UpdateRequiredModal from "@/components/UpdateRequiredModal";
 import { registerForPushNotificationsAsync } from '@/services/notifications';
 import { apiVersion } from '@/constants/url';
+import * as Linking from 'expo-linking';
+import { File } from 'expo-file-system';
+import { parseICS } from '@/lib/ics';
+import { useImportStore } from '@/store/useImportStore';
 
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import { db } from '@/services/db';
 import migrations from '@/drizzle/migrations';
 
 SplashScreen.preventAutoHideAsync();
+
+// An .ics opened via the OS ("Open in Musubi") arrives as a file/content/http
+// URL. Read it, parse the first event, and stash it for the calendar screen.
+async function readIcs(url: string): Promise<string | null> {
+  try {
+    if (url.startsWith('http')) return await (await fetch(url)).text();
+    return await new File(url).text(); // file:// (iOS inbox, Android file) + content:// (SAF)
+  } catch {
+    // ponytail: some Android OEMs reject File.text() on content://; fetch as fallback.
+    try { return await (await fetch(url)).text(); } catch { return null; }
+  }
+}
+
+async function handleIncomingUrl(url: string | null) {
+  if (!url) return;
+  // Only .ics imports here — app-links (/invite) stay with expo-router.
+  const isIcs = /\.ics(\?|$)/i.test(url) || url.startsWith('content:') || url.startsWith('file:');
+  if (!isIcs) return;
+  const text = await readIcs(url);
+  const draft = text ? parseICS(text) : null;
+  if (draft) useImportStore.getState().setPending(draft);
+}
 
 function AppContent() {
   const { success: migrated, error: migError } = useMigrations(db, migrations);
@@ -85,6 +111,13 @@ function AppContent() {
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();
   }, [ready]);
+
+  // Handle .ics files opened via the OS (cold start + while running).
+  useEffect(() => {
+    Linking.getInitialURL().then(handleIncomingUrl);
+    const sub = Linking.addEventListener('url', ({ url }) => handleIncomingUrl(url));
+    return () => sub.remove();
+  }, []);
 
   if (!everReady.current) return null;
 

@@ -84,7 +84,7 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
       handleClose();
     } catch (e: any) {
       haptics.warn();
-      Alert.alert("Failed to save", e?.message ?? "An unexpected error occured.");
+      Alert.alert("Failed to save", e?.message ?? "An unexpected error occurred.");
     } finally {
       setIsLoading(false);
     }
