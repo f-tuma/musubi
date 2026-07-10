@@ -53,7 +53,6 @@ export default defineConfig({
           label: 'Contributing',
           items: [
             { label: 'Contributing Guide', slug: 'guides/contributing' },
-            { label: 'Roadmap', slug: 'roadmap' },
           ],
         },
       ],
