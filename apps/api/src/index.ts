@@ -56,6 +56,11 @@ const wrap = (handler: (req: any, res: any) => Promise<unknown>): express.Reques
 app.get("/api/v1/server", handlerServer);
 app.get("/api/v1/server/ok", handlerServerStatus);
 
+// Realtime — Server-Sent Events. Kept outside /api/v1 to match the client's
+// EventSource URL (`${apiUrl}/api/stream`). Holds the connection open and
+// registers it for notifyCalendarMembers() broadcasts.
+app.get("/api/stream", requireAuth, wrap(handlerStream));
+
 // Events
 app.get("/api/v1/events", requireAuth, wrap(handlerGetEvents));
 app.post("/api/v1/events", requireAuth, wrap(handlerCreateEvent));
