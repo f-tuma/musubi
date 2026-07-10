@@ -14,7 +14,18 @@ export default defineConfig({
     // astro-mermaid must come BEFORE starlight so its rehype step runs first.
     // Renders client-side (no build-time headless browser) and follows the
     // active light/dark theme.
-    mermaid({ theme: 'default', autoTheme: true }),
+    // useMaxWidth:false keeps diagrams at a legible intrinsic size instead of
+    // shrinking to fit — on narrow screens the .mermaid container scrolls
+    // horizontally (see custom.css) rather than rendering unreadable text.
+    mermaid({
+      theme: 'default',
+      autoTheme: true,
+      mermaidConfig: {
+        flowchart: { useMaxWidth: false },
+        sequence: { useMaxWidth: false },
+        er: { useMaxWidth: false },
+      },
+    }),
     starlight({
       title: 'Musubi',
       customCss: ['./src/styles/custom.css'],
