@@ -20,6 +20,7 @@ import dayjs from "dayjs";
 import { uuidv7 } from 'uuidv7';
 import { joinRecurrence, splitRecurrence } from '@musubi/calendar';
 import { AdvancedEndType, AdvancedFreq, AdvancedRRuleConfig, buildRRule, describeAdvanced, parseAdvanced, parseRRule, RecurrenceOption } from "@/lib/rrule";
+import { validateEventForm } from "@/lib/eventForm";
 import { Tap } from "@/components/ui/Tap";
 import { Btn } from "@/components/ui/Btn";
 import * as haptics from "@/lib/haptics";
@@ -396,43 +397,20 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
       url: newUrl.toLowerCase()
     }
 
-    let passed: boolean = true;
+    const { ok, errors } = validateEventForm({
+      title: newTitle,
+      calendarCount: selectedCals.size,
+      start: newStart,
+      end: newEnd,
+      url: newUrl,
+    });
+    setNameError(errors.name);
+    setCalendarsError(errors.calendars);
+    setStartError(errors.start);
+    setEndError(errors.end);
+    if (errors.url) setUrlError(errors.url); // valid URL never clears a prior url error (legacy behavior)
 
-    if (newTitle.length === 0) {
-      setNameError("I mean... At least one letter please...");
-      passed = false;
-    } else {
-      setNameError("");
-    }
-    if ([...selectedCals].length === 0) {
-      setCalendarsError("Event needs some cozy place... Give it atleast one...");
-      passed = false;
-    } else {
-      setCalendarsError("");
-    }
-    if (newStart.getTime() > newEnd.getTime()) {
-      setStartError("I don't think so...");
-      setEndError("I should probably be the one in front...");
-      passed = false;
-    } else {
-      setStartError("");
-      setEndError("");
-    }
-    if (newUrl) {
-      try {
-        const { protocol } = new URL(newUrl);
-        if (protocol !== "http:" && protocol !== "https:") {
-          setUrlError("Invalid URL protocol...");
-          passed = false;
-        }
-
-      } catch {
-        setUrlError("Invalid URL...");
-        passed = false;
-      }
-    }
-
-    if (!passed) {
+    if (!ok) {
       return;
     }
 
