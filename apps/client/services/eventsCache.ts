@@ -1,5 +1,5 @@
 import { eq, inArray } from "drizzle-orm";
-import { Calendar, Event } from "@musubi/types";
+import { Calendar, Event, Settings } from "@musubi/types";
 import { db } from "./db";
 import { eventsTable, syncMetaTable } from "@/db/schema";
 
@@ -112,6 +112,21 @@ export async function setLastSync(iso: string) {
   await db.insert(syncMetaTable)
     .values({ key: "lastSync", value: iso })
     .onConflictDoUpdate({ target: syncMetaTable.key, set: { value: iso } });
+}
+
+// Settings snapshot (same blob pattern as calendars). Hydrated at boot BEFORE
+// the first themed render, so the app opens in the last-known theme instead of
+// flashing the system one until the server responds.
+export async function cacheSetSettings(settings: Settings) {
+  const value = JSON.stringify(settings);
+  await db.insert(syncMetaTable)
+    .values({ key: "settings", value })
+    .onConflictDoUpdate({ target: syncMetaTable.key, set: { value } });
+}
+
+export async function cacheGetSettings(): Promise<Settings | null> {
+  const [row] = await db.select().from(syncMetaTable).where(eq(syncMetaTable.key, "settings"));
+  return row ? JSON.parse(row.value) : null;
 }
 
 // Wipe the whole local mirror — events, cached calendars and the sync cursor.

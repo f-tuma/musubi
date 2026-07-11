@@ -1,5 +1,6 @@
 
 import { CalendarView, Settings } from "@musubi/types";
+import { cacheSetSettings } from "@/services/eventsCache";
 import { create } from "zustand";
 
 
@@ -71,3 +72,15 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     onboarded: value,
   })),
 }));
+
+// Write-through persistence: every change lands in the local SQLite blob, so
+// the next cold start hydrates (theme included) before the first themed render
+// — no flash of the system theme while waiting for the server.
+useSettingsStore.subscribe((s) => {
+  const { showKanji, notificationsOnByDefault, defaultCalendarView, weekStartsOn,
+    timeFormat, dateFormat, theme, onboarded, calendarOrder } = s;
+  cacheSetSettings({
+    showKanji, notificationsOnByDefault, defaultCalendarView, weekStartsOn,
+    timeFormat, dateFormat, theme, onboarded, calendarOrder,
+  }).catch(() => { }); // fresh install: the table appears once migrations run
+});

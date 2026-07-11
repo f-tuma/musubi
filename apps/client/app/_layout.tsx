@@ -2,6 +2,7 @@ import { ServerProvider, useServer } from '@/contexts/ServerContext';
 import { useEffect, useRef, useState } from 'react';
 import { View, useColorScheme } from 'react-native';
 import { useSettingsStore } from '@/store/useSettingsStore';
+import { cacheGetSettings } from '@/services/eventsCache';
 import { applyTheme, activeScheme } from '@/constants/theme';
 import { Stack, SplashScreen, useRouter, usePathname } from 'expo-router';
 import { useFonts } from 'expo-font';
@@ -138,6 +139,18 @@ function AppContent() {
 function AppLoader() {
   const { apiUrl } = useServer();
 
+  // Hydrate settings from the local snapshot BEFORE the first themed render —
+  // the server copy arrives much later (network), and rendering with the
+  // default meant a flash of the system theme on every cold start. Until the
+  // (fast, local) read resolves we render nothing; the native splash covers it.
+  const [settingsHydrated, setSettingsHydrated] = useState(false);
+  useEffect(() => {
+    cacheGetSettings()
+      .then(s => { if (s) useSettingsStore.getState().loadSettings(s); })
+      .catch(() => { }) // fresh install: table appears once migrations run
+      .finally(() => setSettingsHydrated(true));
+  }, []);
+
   // Resolve the theme: user preference wins, "system" follows the device.
   const deviceScheme = useColorScheme();
   const themePref = useSettingsStore(s => s.theme);
@@ -152,6 +165,8 @@ function AppLoader() {
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(colors.bg);
   }, [scheme]);
+
+  if (!settingsHydrated) return null; // one local read; native splash covers it
 
   return (
     <SafeAreaView key={scheme} style={styles.screen} edges={['top', 'left', 'right']}>
