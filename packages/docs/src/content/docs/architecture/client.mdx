@@ -13,7 +13,8 @@ The client (`apps/client/`) is an **Expo / React Native** app using **Expo Route
 
 ```mermaid
 flowchart TD
-    A["GestureHandlerRootView → ServerProvider → ToastHost"] --> B["useMigrations(db) — run local SQLite migrations"]
+    Z["hydrate settings from local SQLite snapshot — theme applies BEFORE first render (no system-theme flash)"] --> A["GestureHandlerRootView → ServerProvider → ToastHost"]
+    A --> B["useMigrations(db) — run local SQLite migrations"]
     B --> C["load fonts (InterTight, NotoSerif, ShipporiMinchoB1)"]
     C --> D["authClient.useSession() — is there a session?"]
     D --> E["version check — GET /api/v1/server, compare semver"]
@@ -59,7 +60,7 @@ All in `apps/client/store/`. Stores are **API-first**: they call the server, and
 |---|---|---|
 | `useEventsStore` | in-memory event list | `addEvent/updateEvent/removeEvent` (API+cache) vs `localAdd/Update/Remove` (from SSE or cache hydration); `linkEvent`/`forkEvent` |
 | `useCalendarsStore` | calendars + `activeCals` filter + solo mode | **merge, don't replace** on update (see below) |
-| `useSettingsStore` | preferences | hydrated by `api.getSettings()`; `onboarded` defaults `true` so returning users never flash onboarding |
+| `useSettingsStore` | preferences | **write-through persisted**: every change lands in the local SQLite blob (`cacheSetSettings`), and `AppLoader` hydrates it *before the first themed render* — so the theme never flashes from system to stored on cold start. The server copy (via `api.getSettings()`) still wins on refresh. `onboarded` defaults `true` so returning users never flash onboarding |
 | `useImportStore` | pending ICS draft | tiny bridge between `_layout` and the calendar screen |
 
 The highest fan-in files in the codebase are `constants/theme.ts` (40+ importers), `services/api.ts`, and these stores — treat their public shapes as load-bearing.

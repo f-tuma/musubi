@@ -22,7 +22,7 @@ Federation's version of "home": the one Musubi server a calendar lives on. Other
 ## Calendar UI (apps/client/components/cal + calendar)
 
 ### Drill
-The month → day zoom: tapping a day cell in month view "drills into" it — the tapped cell's rectangle animates into a full-screen day view overlay. State is `drill: { date, rect }`; opened by `openDrill`, closed by `closeDrill` (zoom back out). Lives in `app/(tabs)/index.tsx` and `CalendarDetailModal.tsx`. The overlay is a separate `TimelineView` mounted *before* the animation starts (the double-`requestAnimationFrame` trick) so the zoom runs on already-mounted content.
+The month → day zoom: tapping a day cell in month view "drills into" it — the tapped cell's rectangle animates into a full-screen day view overlay. State is `drill: { date, rect }`; opened by `openDrill`, closed by `closeDrill` (zoom back out). Lives in `app/(tabs)/index.tsx` and `CalendarDetailModal.tsx`. The choreography matters: the day view mounts and scrolls **while fully invisible** (the overlay's opacity is gated on `zoom > 0`, and the animation starts a double-`requestAnimationFrame` later), so the zoom runs on already-mounted content and the tapped cell never "blacks out" while the heavy view loads. Both the close and the composer-peek trigger run on timers, not animation callbacks.
 
 ### Dock / docked composer
 The event composer (`AddEventModal`) in its **docked** mode: a persistent bottom sheet resting above the tab bar (or the safe-area inset inside the calendar-detail modal), instead of a classic pop-up modal. Used for *creating* events on the home tab, agenda and calendar detail; editing an existing event still uses the classic modal. The docked mode owns its keyboard handling (it lifts by exactly the keyboard overlap and caps so its top stays on screen) — which is why it replaced the FAB-opened modal that pushed the form off-screen.
@@ -51,7 +51,7 @@ Gesture handlers read mutable state through a single `live` ref (`live.current.d
 ## Client data flow (apps/client)
 
 ### Hydration
-Filling the in-memory Zustand stores from the local SQLite cache on app start (`(tabs)/_layout.tsx` → `cacheGetAllEvents`/`cacheGetCalendars` → `loadEvents`/`loadCalendars`) — the app renders instantly from the last known state, then a refresh reconciles with the server.
+Filling the in-memory Zustand stores from the local SQLite cache on app start — the app renders instantly from the last known state, then a refresh reconciles with the server. Two moments: **settings hydrate first**, in `AppLoader` (`app/_layout.tsx`), *before* the first themed render (the reason the theme doesn't flash from system to your stored preference on cold start); events + calendars hydrate on tabs mount (`(tabs)/_layout.tsx`). The settings store is write-through: every change persists to the `syncMeta` blob immediately.
 
 ### Delta sync
 "Give me everything that changed since T": `GET /api/v1/events?since=` returns `{ events, deletedIds, serverTime }`; the client upserts, drops the tombstoned ids, and stores `serverTime` as its next cursor. Orchestrated by `hooks/useRefreshData.ts`. A missing/garbage cursor falls back to a full, authoritative re-pull.
