@@ -13,6 +13,15 @@ export async function handlerCreateEvent(req: Request, res: Response) {
   } catch (err) {
     throw new BadRequestError("Request is missing valid event data...");
   }
+  // Server-side shape guards (don't trust the client): an event needs at least
+  // one calendar, and its HOME must be one of the linked calendars — those are
+  // membership-verified below, which also proves they exist (clean 400/403
+  // instead of an FK 500, and no smuggling a foreign calendar in as origin).
+  if (event.calendars.length === 0) throw new BadRequestError("Event needs at least one calendar...");
+  if (!event.originCalendarID) event.originCalendarID = event.calendars[0];
+  if (!event.calendars.includes(event.originCalendarID)) {
+    throw new BadRequestError("originCalendarID must be one of the event's calendars...");
+  }
   const newEvent: NewEvent = {
     ...event,
     creatorID: req.user!.id,
