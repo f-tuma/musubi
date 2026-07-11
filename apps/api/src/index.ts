@@ -17,7 +17,7 @@ import { handlerServer, handlerServerStatus } from "./handlers/server";
 import { handlerCheckGoogleStatus, handlerGetGoogleCalendars, handlerRevokeGoogle } from "./handlers/google";
 import { handlerCheckCaldavStatus, handlerConnectCaldav, handlerDisconnectCaldav } from "./handlers/caldav";
 import { handlerDisconnectAccount } from "./handlers/connections";
-import { handlerFederationAccept, handlerInvitePage } from "./handlers/federation";
+import { handlerDeleteMusubiAccount, handlerFederationAccept, handlerGetMusubiAccounts, handlerInvitePage, handlerSaveMusubiAccount } from "./handlers/federation";
 
 const app = express()
 const port = config.api.port;
@@ -67,6 +67,11 @@ app.get("/api/stream", requireAuth, wrap(handlerStream));
 // server serves its own deep links (no dependency on the hosted domain).
 app.post("/api/v1/federation/accept", wrap(handlerFederationAccept));
 app.get("/invite/:token", handlerInvitePage(config.api.url));
+// The user's connections to other Musubi servers (member tokens, encrypted at
+// rest) — stored home-side so a connection accepted on one device roams to all.
+app.get("/api/v1/users/connections/musubi", requireAuth, wrap(handlerGetMusubiAccounts));
+app.post("/api/v1/users/connections/musubi", requireAuth, wrap(handlerSaveMusubiAccount));
+app.delete("/api/v1/users/connections/musubi", requireAuth, wrap(handlerDeleteMusubiAccount));
 
 // Events
 app.get("/api/v1/events", requireAuth, wrap(handlerGetEvents));

@@ -3,7 +3,7 @@ import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useEventsStore } from "@/store/useEventsStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { reconcileEventNotifications } from "@/services/notifications";
-import { syncFederatedAccounts } from "@/services/federation";
+import { setFederatedAccounts, syncFederatedAccounts } from "@/services/federation";
 import { cacheDeleteEvents, cacheGetAllEvents, cacheGetCalendars, cacheReplaceAllEvents, cacheSetCalendars, cacheUpsertEvents, getLastSync, setLastSync } from "@/services/eventsCache";
 
 export function useRefreshData() {
@@ -37,9 +37,13 @@ export function useRefreshData() {
     ]);
     loadSettings(settings);
 
-    // Federated servers: pull shared calendars + events from each connected
-    // Musubi server (v1: full fetch — no delta). A server that's down keeps its
-    // last-cached calendars so the reconcile below doesn't wipe local copies.
+    // Federated servers: the registry's source of truth is the HOME server
+    // (connections roam across devices); SecureStore is the offline fallback.
+    try { await setFederatedAccounts(await api.getMusubiAccounts()); }
+    catch { /* home unreachable or pre-federation server → cached registry */ }
+    // Pull shared calendars + events from each connected Musubi server (v1:
+    // full fetch — no delta). A server that's down keeps its last-cached
+    // calendars so the reconcile below doesn't wipe local copies.
     const fed = await syncFederatedAccounts(await cacheGetCalendars());
     if (fed.syncedServers.size) {
       // full-set semantics per synced server: cached events living only in that

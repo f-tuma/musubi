@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { db, user, memberTokens } from "..";
+import { db, user, memberTokens, musubiAccounts } from "..";
 import { randomUUID } from "node:crypto";
 
 // Federation (Musubi ↔ Musubi): shadow accounts + member tokens.
@@ -60,4 +60,26 @@ export async function getUserByTokenHash(tokenHash: string) {
 /** Drop all of a user's member tokens (e.g. when their last membership ends). */
 export async function revokeMemberTokens(userID: string) {
   await db.delete(memberTokens).where(eq(memberTokens.userID, userID));
+}
+
+// ── Home side: this user's connections to OTHER Musubi servers ───────────────
+// Tokens arrive here already encrypted (AES-GCM at the API layer) so every
+// signed-in device can pick the connection up.
+
+export async function getMusubiAccounts(userID: string) {
+  return db.select().from(musubiAccounts).where(eq(musubiAccounts.userID, userID));
+}
+
+export async function upsertMusubiAccount(userID: string, server: string, remoteUserID: string, encryptedToken: string) {
+  await db.insert(musubiAccounts)
+    .values({ userID, server, remoteUserID, encryptedToken })
+    .onConflictDoUpdate({
+      target: [musubiAccounts.userID, musubiAccounts.server],
+      set: { remoteUserID, encryptedToken, updatedAt: new Date() },
+    });
+}
+
+export async function deleteMusubiAccount(userID: string, server: string) {
+  await db.delete(musubiAccounts)
+    .where(and(eq(musubiAccounts.userID, userID), eq(musubiAccounts.server, server)));
 }

@@ -465,3 +465,24 @@ export const memberTokens = pgTable("member_tokens", {
 }, (t) => [index("member_tokens_user_idx").on(t.userID)]);
 
 export type NewMemberToken = typeof memberTokens.$inferInsert;
+
+// Home side: this user's memberships on OTHER Musubi servers. The member token
+// is stored AES-GCM encrypted at the app layer (same scheme + key as CalDAV
+// passwords) so every signed-in device picks the connection up — accepting an
+// invite on one device federates them all.
+export const musubiAccounts = pgTable("musubi_accounts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at")
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+  userID: text("user_id")
+    .references(() => user.id, { onDelete: "cascade" })
+    .notNull(),
+  server: text("server").notNull(),          // the origin server's URL
+  remoteUserID: text("remote_user_id").notNull(), // our shadow-user id there
+  encryptedToken: text("encrypted_token").notNull(),
+}, (t) => [unique().on(t.userID, t.server)]);
+
+export type NewMusubiAccount = typeof musubiAccounts.$inferInsert;

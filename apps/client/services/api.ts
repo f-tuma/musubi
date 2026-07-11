@@ -428,6 +428,35 @@ export function useApi() {
       throwOnError(error);
     },
 
+    // Federated Musubi connections live on the HOME server (encrypted at rest)
+    // so they roam across devices — always home-routed, never federated.
+    async getMusubiAccounts() {
+      const { error, data } = await authClient.$fetch<{ accounts: { server: string; userID: string; token: string }[] }>(
+        `${apiUrl}/api/${apiVersion}/users/connections/musubi`, { method: "GET" });
+      throwOnError(error);
+      return data.accounts;
+    },
+
+    async saveMusubiAccount(account: { server: string; userID: string; token: string }) {
+      const { error } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/users/connections/musubi`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(account),
+      });
+      throwOnError(error);
+      return true;
+    },
+
+    async deleteMusubiAccount(server: string) {
+      const { error } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/users/connections/musubi`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ server }),
+      });
+      throwOnError(error);
+      return true;
+    },
+
     async disconnectAccount(provider: string, accountId: string) {
       const { error } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/users/connections/disconnect`, {
         method: "POST",

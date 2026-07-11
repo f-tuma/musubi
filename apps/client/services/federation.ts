@@ -43,6 +43,17 @@ export async function addFederatedAccount(acc: FederatedAccount) {
   await persist();
 }
 
+/**
+ * Replace the registry from the home server — the source of truth, so a
+ * connection accepted on one device roams to all of them. SecureStore stays as
+ * the offline fallback cache.
+ */
+export async function setFederatedAccounts(accs: FederatedAccount[]) {
+  accounts = accs;
+  loaded = true;
+  await persist();
+}
+
 export async function removeFederatedAccount(server: string) {
   await loadFederatedAccounts();
   accounts = accounts.filter(a => a.server !== server);

@@ -1,10 +1,12 @@
 import { Request, Response } from "express";
 import { createHash, randomBytes } from "node:crypto";
 import {
-  addCalendarMember, createExternalUser, findExternalUser,
-  getCalendar, getCalendarIDFromToken, saveMemberToken,
+  addCalendarMember, createExternalUser, deleteMusubiAccount, findExternalUser,
+  getCalendar, getCalendarIDFromToken, getMusubiAccounts, saveMemberToken,
+  upsertMusubiAccount,
 } from "@musubi/db";
 import { BadRequestError } from "@musubi/types";
+import { decryptSecret, encryptSecret } from "../sync/crypto";
 
 // Federation (Musubi ↔ Musubi), v1: an invite token doubles as the cross-server
 // capability. A user from another server accepts an invite here and becomes a
@@ -47,6 +49,37 @@ export async function handlerFederationAccept(req: Request, res: Response) {
 
   const calendar = await getCalendar(calendarID);
   res.status(200).json({ memberToken: raw, userID: shadow.id, calendar });
+}
+
+// ── Home side: the user's connections to OTHER Musubi servers ────────────────
+// Stored here (member token AES-GCM encrypted, same key as CalDAV passwords) so
+// the connection roams: accepting an invite on one device federates them all.
+
+/** GET /api/v1/users/connections/musubi — the caller's federated connections. */
+export async function handlerGetMusubiAccounts(req: Request, res: Response) {
+  const rows = await getMusubiAccounts(req.user!.id);
+  res.status(200).json({
+    // decrypted only for the authenticated owner, over TLS — the client needs
+    // the raw token to talk to the origin server directly
+    accounts: rows.map(r => ({ server: r.server, userID: r.remoteUserID, token: decryptSecret(r.encryptedToken) })),
+  });
+}
+
+/** POST /api/v1/users/connections/musubi — store/refresh one connection. */
+export async function handlerSaveMusubiAccount(req: Request, res: Response) {
+  const { server, userID, token } = req.body ?? {};
+  if (!server || !userID || !token) throw new BadRequestError("server, userID and token are required...");
+  if (!/^https?:\/\//.test(server)) throw new BadRequestError("server must be an http(s) origin...");
+  await upsertMusubiAccount(req.user!.id, server, userID, encryptSecret(token));
+  res.sendStatus(200);
+}
+
+/** DELETE /api/v1/users/connections/musubi — drop a connection. */
+export async function handlerDeleteMusubiAccount(req: Request, res: Response) {
+  const { server } = req.body ?? {};
+  if (!server) throw new BadRequestError("server is required...");
+  await deleteMusubiAccount(req.user!.id, server);
+  res.sendStatus(200);
 }
 
 /**
