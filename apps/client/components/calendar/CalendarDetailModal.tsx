@@ -47,9 +47,18 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
   const { height } = useWindowDimensions();
   const calendarSpace = height * 0.7;
   const api = useApi();
-  const canEditEvents = can(calendar?.role, "editEvents");
   const { events, addEvent, updateEvent, localUpdateEvent } = useEventsStore();
   const { calendars, updateCalendar } = useCalendarsStore();
+  // Read the calendar live from the store by id: an edit round-trip (and the SSE
+  // calendar_updated frame) returns the bare calendars row without per-user
+  // fields, so the copy passed in as a prop can lose `role`. The store merges and
+  // keeps role — deriving from it keeps permissions (and name/colour) correct
+  // after an in-place edit, instead of showing an owner as locked-out.
+  const liveCalendar = useMemo(
+    () => calendars.find((c) => c.id === calendar?.id) ?? calendar,
+    [calendars, calendar],
+  );
+  const canEditEvents = can(liveCalendar?.role, "editEvents");
   const { weekStartsOn, defaultCalendarView, showKanji } = useSettingsStore();
 
   const [calMode, setCalMode] = useState<CalMode>(
@@ -243,17 +252,17 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
             <View style={styles.modalHandle} />
             <View style={styles.modalTitleRow}>
               <View style={styles.calendarCircle}>
-                <View style={[styles.calendarCircleInner, { backgroundColor: calendar?.color ?? "" }]} />
+                <View style={[styles.calendarCircleInner, { backgroundColor: liveCalendar?.color ?? "" }]} />
               </View>
               <View>
-                <Text style={styles.modalTitle}>{calendar?.name}</Text>
+                <Text style={styles.modalTitle}>{liveCalendar?.name}</Text>
                 <Text style={{ color: colors.fg3, fontSize: 12 }}>
-                  {calendar?.members.length} members · {visibleEvents.length} events
+                  {liveCalendar?.members.length} members · {visibleEvents.length} events
                 </Text>
               </View>
               <Tap
                 style={{ flex: 1, alignItems: "flex-end", paddingRight: 12 }}
-                onPress={() => openCalendarSettings(calendar!)}
+                onPress={() => openCalendarSettings(liveCalendar!)}
               >
                 <Feather name="settings" size={24} color={colors.fg2} />
               </Tap>
