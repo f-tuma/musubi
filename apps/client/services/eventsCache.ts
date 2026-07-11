@@ -1,6 +1,6 @@
 import { eq, inArray } from "drizzle-orm";
 import { Calendar, Event, Settings } from "@musubi/types";
-import { db } from "./db";
+import { db, sqlite } from "./db";
 import { eventsTable, syncMetaTable } from "@/db/schema";
 
 // Event <-> SQLite row. Dates as ISO text (new Date() accepts Date or string),
@@ -114,9 +114,9 @@ export async function setLastSync(iso: string) {
     .onConflictDoUpdate({ target: syncMetaTable.key, set: { value: iso } });
 }
 
-// Settings snapshot (same blob pattern as calendars). Hydrated at boot BEFORE
-// the first themed render, so the app opens in the last-known theme instead of
-// flashing the system one until the server responds.
+// Settings snapshot (same blob pattern as calendars). Read back SYNCHRONOUSLY
+// at store creation so the very first frame renders in the last-known theme —
+// any async gap here shows as a flash (system theme, or worse a white window).
 export async function cacheSetSettings(settings: Settings) {
   const value = JSON.stringify(settings);
   await db.insert(syncMetaTable)
@@ -124,9 +124,14 @@ export async function cacheSetSettings(settings: Settings) {
     .onConflictDoUpdate({ target: syncMetaTable.key, set: { value } });
 }
 
-export async function cacheGetSettings(): Promise<Settings | null> {
-  const [row] = await db.select().from(syncMetaTable).where(eq(syncMetaTable.key, "settings"));
-  return row ? JSON.parse(row.value) : null;
+export function cacheGetSettingsSync(): Settings | null {
+  try {
+    const row = sqlite.getFirstSync<{ value: string }>(
+      "SELECT value FROM sync_meta WHERE key = 'settings'");
+    return row ? JSON.parse(row.value) : null;
+  } catch {
+    return null; // fresh install: the table appears once migrations run
+  }
 }
 
 // Wipe the whole local mirror — events, cached calendars and the sync cursor.
