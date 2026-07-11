@@ -78,6 +78,20 @@ interface CalendarAdapter {
 
 `syncUser(userID)` loops every connected provider, each wrapped in try/catch so one provider failing doesn't abort the rest. A missing adapter for a provider is logged and skipped.
 
+## Near-realtime: the scheduled sync
+
+Provider changes reach the app without a manual pull-to-refresh through a three-piece loop:
+
+1. **Scheduler** (`apps/api/src/index.ts`): every `EXTERNAL_SYNC_INTERVAL_MIN` minutes (default 5, `0` disables), the server runs `syncUser` for every user who has at least one provider mirror (`getExternalSyncUserIDs`).
+2. **Change detection** (the part that makes this sane): `upsertExternalEvent` returns whether it *actually wrote* — with an etag (CalDAV) an unchanged, alive event is a verified no-op: no write, no `updatedAt` bump, so neither the broadcast nor the client delta fire for nothing. Deletions are detected by a **sweep**: on a full-set fetch (`reset: true` — CalDAV always, Google after a 410), events whose external id wasn't in the fetched set get tombstoned. The sweep replaced the old tombstone-everything-then-revive reset, which churned every event on every sync.
+3. **Broadcast → silent refresh**: when a calendar really changed, `syncUser` sends an SSE `external_sync` frame to its members; the client (`useEventsStream`) responds with a *silent* delta refresh — `refresh({ providerSync: false })`, skipping the provider-sync trigger so it can't loop.
+
+<Aside type="note">
+Why polling and not push? True Google push (watch webhooks) needs a publicly reachable HTTPS endpoint plus channel management/renewal — hostile to self-hosting — and **CalDAV has no push protocol at all**. A uniform poll with real change detection gives both providers near-realtime for free. If webhook push ever lands, it slots in as an *additional* trigger for the same `syncUser` path.
+</Aside>
+
+Two correctness details worth knowing: provider **deletions tombstone** (`deletedAt`) rather than hard-delete, so offline clients learn about them through the delta's `deletedIds` (a hard delete just vanished — stale caches kept the event forever); and a client-originated push echoes back on the next poll as a write (values identical), which is harmless.
+
 <Aside type="note">
 `organizer` is `NOT NULL` in the schema but adapters may hand back `null` — the engine falls back to `""`. `color` on synced events comes from the **mirror calendar**, not the provider event.
 </Aside>

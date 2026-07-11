@@ -117,7 +117,7 @@ The client has its **own** drizzle schema and migrations (`apps/client/db/schema
 
 ### Realtime
 
-`hooks/useEventsStream.ts` opens an `EventSource` (`react-native-sse`) to `${apiUrl}/api/stream` — `apiUrl` comes from `ServerContext`, so the stream follows a self-hosted server too — authenticated with the session `Bearer` token. Incoming frames (`event_created`, `event_updated`, …) are routed to the `local*` store methods; see the [server-side broadcast](/docs/architecture/api/#realtime-sse). There's no auto-reconnect loop — a dropped stream is picked back up by the next pull-to-refresh delta sync, which is the durable path.
+`hooks/useEventsStream.ts` opens an `EventSource` (`react-native-sse`) to `${apiUrl}/api/stream` — `apiUrl` comes from `ServerContext`, so the stream follows a self-hosted server too — authenticated with the session `Bearer` token. Incoming frames (`event_created`, `event_updated`, …) are routed to the `local*` store methods; the `external_sync` frame (the server's scheduled Google/CalDAV sync found changes) triggers a **silent delta refresh** — `refresh({ providerSync: false })`, guarded against overlap and careful not to re-trigger the provider sync (that would loop). See the [server-side broadcast](/docs/architecture/api/#realtime-sse) and the [scheduled sync](/docs/architecture/sync/#near-realtime-the-scheduled-sync). There's no auto-reconnect loop — a dropped stream is picked back up by the next pull-to-refresh delta sync, which is the durable path.
 
 ## The custom calendar
 

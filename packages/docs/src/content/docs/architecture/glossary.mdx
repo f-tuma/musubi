@@ -80,7 +80,10 @@ A provider's calendar imported as a normal Musubi calendar with an `external_cal
 An implementation of the `CalendarAdapter` contract (`sync/adapter.ts`) translating one provider's API to `NormalizedEvent`s: `google`, `caldav` today. The engine never talks to providers directly.
 
 ### Cursor
-The provider's opaque "changes since" token (`external_calendars.cursor`) — Google's `syncToken`, CalDAV's `syncToken` (unused: it full-fetches), the delta `serverTime` on the client. Cursor expiry (`410 Gone`) → the adapter returns `reset: true` and the engine wipes + refetches.
+The provider's opaque "changes since" token (`external_calendars.cursor`) — Google's `syncToken`, CalDAV's `syncToken` (unused: it full-fetches), the delta `serverTime` on the client. Cursor expiry (`410 Gone`) → the adapter returns `reset: true` and the engine reconciles against the full set (see Sweep).
+
+### Sweep
+The full-set reconciliation (`sweepExternalEvents`): after a `reset: true` fetch, the mirror's events whose external id was **not** in the fetched set get tombstoned — they were deleted on the provider. Paired with etag-aware upserts, it's what lets the [scheduled sync](/docs/architecture/sync/#near-realtime-the-scheduled-sync) tell "nothing changed" from "something changed" and only then wake clients with an SSE `external_sync`.
 
 ### Shadow account
 Federation's key trick: a normal `user` row on the origin server (`isExternal`, `homeServer`) standing in for someone whose real account lives elsewhere — so membership, roles and attribution work *natively*, with no changes to the permission model. Created on invite accept.
