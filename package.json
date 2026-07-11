@@ -12,7 +12,7 @@
     "build": "turbo run build",
     "db:generate": "pnpm -F @musubi/db exec drizzle-kit generate",
     "db:migrate": "pnpm -F @musubi/db exec drizzle-kit migrate",
-    "graph": "GRAPH_DIR=\"$PWD\" bash -c 'd=$(ls -d \"$HOME\"/.claude/plugins/cache/understand-anything/understand-anything/*/packages/dashboard 2>/dev/null | sort -V | tail -1); [ -n \"$d\" ] || { echo \"understand-anything plugin not found — install it in Claude Code (/plugin) and run /understand first\"; exit 1; }; cd \"$d\" && exec npx vite --host 127.0.0.1'"
+    "graph": "GRAPH_DIR=\"$PWD\" bash -c 'd=$(ls -d \"$HOME\"/.claude/plugins/cache/understand-anything/understand-anything/*/packages/dashboard 2>/dev/null | sort -V | tail -1); if [ -n \"$d\" ]; then cd \"$d\" && exec npx vite --host 127.0.0.1; fi; echo \"Plugin not found — using the standalone viewer (Node only, reads the committed graph)\"; exec npx https://github.com/Egonex-AI/Understand-Anything/releases/latest/download/understand-anything-viewer.tgz \"$GRAPH_DIR\"'"
   },
   "keywords": [],
   "author": "frgtn.dev",
