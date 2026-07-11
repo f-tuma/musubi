@@ -201,8 +201,8 @@ function TimelinePage({
     lastSnap.current = `${day}:${min}:${min}`;
     gestureActive.current = true;
     gDay.value = day;
-    gTop.value = m2y(min);
-    gH.value = m2y(60);
+    gStartMin.value = min;
+    gDurMin.value = 60;
     thump();
     onDraftChange({ start: atMinutes(day, min), end: atMinutes(day, min + 60) });
   };
@@ -216,8 +216,8 @@ function TimelinePage({
     lastSnap.current = key;
     const sMin = cur < min ? cur : min;
     const eMin = cur > min ? Math.max(cur, min + 15) : min + 60;
-    gTop.value = withTiming(m2y(sMin), { duration: SNAP_STEP_MS });
-    gH.value = withTiming(m2y(eMin - sMin), { duration: SNAP_STEP_MS });
+    gStartMin.value = withTiming(sMin, { duration: SNAP_STEP_MS });
+    gDurMin.value = withTiming(eMin - sMin, { duration: SNAP_STEP_MS });
     onDraftChange({ start: atMinutes(day, sMin), end: atMinutes(day, eMin) });
   };
   // "lifted" scale on the ghost while a hold-drag is active — visible feedback
@@ -229,24 +229,27 @@ function TimelinePage({
   // lock-step with the draft times — a short withTiming per step gives the
   // "snap and hold" feel without routing every frame through React state.
   const gDay = useSharedValue(0);
-  const gTop = useSharedValue(0);
-  const gH = useSharedValue(HOUR_H);
+  // Geometry in MINUTES, not pixels: the pixel top/height are derived in
+  // ghostStyle from hourH, so the ghost scales with pinch-zoom exactly like the
+  // event blocks. Storing frozen pixels here made the ghost drift while zooming.
+  const gStartMin = useSharedValue(0); // start, minutes from midnight
+  const gDurMin = useSharedValue(60);  // duration, minutes
   const gestureActive = useRef(false);
   const ghostStyle = useAnimatedStyle(() => ({
     left: GUTTER + gDay.value * colW + 2,
-    top: gTop.value,
-    height: gH.value,
+    top: (gStartMin.value / 60) * hourH.value,
+    height: Math.max((gDurMin.value / 60) * hourH.value, 18),
   }));
 
   const syncGhostToDraft = (animated: boolean) => {
     const d = live.current.draft;
     if (!d) return;
     const dayIdx = Math.max(live.current.days.findIndex(x => isSameDay(x, d.start)), 0);
-    const top = m2y(d.start.getHours() * 60 + d.start.getMinutes());
-    const h = Math.max(m2y((d.end.getTime() - d.start.getTime()) / 60000), 18);
+    const startMin = d.start.getHours() * 60 + d.start.getMinutes();
+    const durMin = (d.end.getTime() - d.start.getTime()) / 60000;
     gDay.value = animated ? withTiming(dayIdx, { duration: GHOST_SETTLE_MS }) : dayIdx;
-    gTop.value = animated ? withTiming(top, { duration: GHOST_SETTLE_MS }) : top;
-    gH.value = animated ? withTiming(h, { duration: GHOST_SETTLE_MS }) : h;
+    gStartMin.value = animated ? withTiming(startMin, { duration: GHOST_SETTLE_MS }) : startMin;
+    gDurMin.value = animated ? withTiming(durMin, { duration: GHOST_SETTLE_MS }) : durMin;
   };
   // tap-created (or externally changed) drafts position the ghost from state;
   // during an active drag the gesture owns the visuals
@@ -307,19 +310,19 @@ function TimelinePage({
     lastSnap.current = key;
     if (g.mode === "start") {
       const s = clamp(g.startMin + dMin, 0, g.endMin - 15);
-      gTop.value = withTiming(m2y(s), { duration: SNAP_STEP_MS });
-      gH.value = withTiming(m2y(g.endMin - s), { duration: SNAP_STEP_MS });
+      gStartMin.value = withTiming(s, { duration: SNAP_STEP_MS });
+      gDurMin.value = withTiming(g.endMin - s, { duration: SNAP_STEP_MS });
       onDraftChange({ start: atMinutes(g.day, s), end: atMinutes(g.day, g.endMin) });
     } else if (g.mode === "end") {
       const en = clamp(g.endMin + dMin, g.startMin + 15, 24 * 60);
-      gH.value = withTiming(m2y(en - g.startMin), { duration: SNAP_STEP_MS });
+      gDurMin.value = withTiming(en - g.startMin, { duration: SNAP_STEP_MS });
       onDraftChange({ start: atMinutes(g.day, g.startMin), end: atMinutes(g.day, en) });
     } else {
       const dur = g.endMin - g.startMin;
       const day = clamp(g.day + dDay, 0, live.current.days.length - 1);
       const s = clamp(g.startMin + dMin, 0, 24 * 60 - dur);
-      gTop.value = withTiming(m2y(s), { duration: SNAP_STEP_MS });
-      gH.value = withTiming(m2y(dur), { duration: SNAP_STEP_MS });
+      gStartMin.value = withTiming(s, { duration: SNAP_STEP_MS });
+      gDurMin.value = withTiming(dur, { duration: SNAP_STEP_MS });
       if (day !== gDay.value) gDay.value = withTiming(day, { duration: 80 });
       onDraftChange({ start: atMinutes(day, s), end: atMinutes(day, s + dur) });
     }
