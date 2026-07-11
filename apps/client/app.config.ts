@@ -86,7 +86,8 @@ const expoConfig = {
     "expo-font",
     "expo-web-browser",
     "expo-build-properties",
-    "expo-image"
+    "expo-image",
+    "./plugins/withCalendarAppCategory"
   ],
   experiments: {
     "typedRoutes": true,
