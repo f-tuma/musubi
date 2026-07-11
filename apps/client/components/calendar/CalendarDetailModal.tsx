@@ -13,7 +13,7 @@ import Animated, {
 import { expandRecurringEvents } from "@musubi/calendar";
 import dayjs from "dayjs";
 import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
-import { AddEventModal } from "./AddEventModal";
+import { AddEventModal, DOCK_PEEK } from "./AddEventModal";
 import { MonthView } from "@/components/cal/MonthView";
 import { TimelineView } from "@/components/cal/TimelineView";
 import { Draft, DRILL_OPEN_MIN, minutesToY, Rect, ZOOM_IN_MS, ZOOM_OUT_MS } from "@/components/cal/layout";
@@ -65,7 +65,11 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
     defaultCalendarView === "week" || defaultCalendarView === "day" ? defaultCalendarView : "month");
   const [base, setBase] = useState(new Date());
   const [anchorDate, setAnchorDate] = useState(new Date());
-  const [createOpen, setCreateOpen] = useState(false);          // docked composer (FAB + drag-to-create)
+  // Docked composer, same model as the home tab: no FAB — it peeks in day view
+  // (or when there's a draft) and rides drag-to-create.
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [dockHidden, setDockHidden] = useState(false);   // X hides the sheet until the next draft
+  const [dockPeekReady, setDockPeekReady] = useState(false);
   const [newEventVisible, setNewEventVisible] = useState(false); // classic modal (edit from detail)
   const [newCalendarVisible, setNewCalendarVisible] = useState(false);
   const [eventDetailVisible, setEventDetailVisible] = useState(false);
@@ -74,8 +78,6 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
   const [prefilledCalendar, setPreffiledCalendar] = useState<Calendar | undefined>(undefined);
   const [eventDetail, setEventDetail] = useState<Event | null>(null);
   const [calendarSettings, setCallendarSettings] = useState<Calendar | null>(null);
-  const [startingDate, setStartingDate] = useState<Date | undefined>(undefined);
-  const [endingDate, setEndingDate] = useState<Date | undefined>(undefined);
   const scrollPosRef = useRef(Math.max(0, minutesToY(new Date().getHours() * 60 - 60)));
   // drill-in day view keeps its own scroll memory, reset to noon on each open
   const drillScrollPosRef = useRef(minutesToY(DRILL_OPEN_MIN));
@@ -91,28 +93,35 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
   const [bodySize, setBodySize] = useState({ w: 0, h: 0 });
 
   const openDrill = useCallback((date: Date, rect: Rect) => {
+    setDraft(null);
+    setDockHidden(false); // a fresh drill always re-shows the composer, even if X hid it last time
     setAnchorDate(date);
     drillScrollPosRef.current = minutesToY(DRILL_OPEN_MIN); // day view always opens at this time
     setDrill({ date, rect });
     zoom.value = 0;
     // mount the day view while the overlay is tiny + invisible (zoom 0), then
-    // animate a frame later — keeps the heavy mount off the animation's frames
+    // animate a frame later — keeps the heavy mount off the animation's frames.
+    // The composer peeks up only once the zoom settles (dockPeekReady).
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      zoom.value = withTiming(1, { duration: ZOOM_IN_MS, easing: Easing.out(Easing.cubic) });
+      zoom.value = withTiming(1, { duration: ZOOM_IN_MS, easing: Easing.out(Easing.cubic) }, (finished) => {
+        if (finished) runOnJS(setDockPeekReady)(true);
+      });
     }));
   }, []);
 
-  const clearDrill = useCallback(() => setDrill(null), []);
+  const clearDrill = useCallback(() => { setDrill(null); setDraft(null); }, []);
   useEffect(() => {
-    if (!visible) { setDrill(null); zoom.value = 0; } // sheet dismissed mid-drill
+    if (!visible) { setDrill(null); zoom.value = 0; setDraft(null); setDockPeekReady(false); } // sheet dismissed mid-drill
   }, [visible]);
   const closeDrill = useCallback(() => {
+    setDockPeekReady(false); // sheet ducks out while the day zooms back
     zoom.value = withTiming(0, { duration: ZOOM_OUT_MS, easing: Easing.in(Easing.cubic) }, (finished) => {
       if (finished) runOnJS(clearDrill)();
     });
   }, [clearDrill]);
 
   const switchMode = (mode: CalMode) => {
+    setDraft(null);
     if (drill) {
       if (mode === "month") { closeDrill(); return; }
       zoom.value = 0;
@@ -186,12 +195,10 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
   };
 
   // Tap/drag on an empty slot → straight into the event form with that range.
-  const handleDraftChange = useCallback((d: Draft) => {
+  const handleDraftChange = useCallback((d: Draft | null) => {
     if (!canEditEvents) return;
-    setPrefilledEvent(undefined);
-    setStartingDate(d.start);
-    setEndingDate(d.end);
-    setCreateOpen(true);
+    setDraft(d);
+    setDockHidden(false);
   }, [canEditEvents]);
 
   const canMoveEvent = useCallback(
@@ -237,6 +244,12 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
       .sort((a, b) => a.start.getTime() - b.start.getTime()),
     [visibleEvents, rangeStart, rangeEnd],
   );
+
+  // Dock model mirrors app/(tabs)/index.tsx: mounted in day/week (or a drill),
+  // and it peeks when there's a draft, in day view, or once a drill settles —
+  // no FAB. Gated on canEditEvents so a viewer never gets a composer.
+  const dockVisible = canEditEvents && (calMode !== "month" || !!drill);
+  const dockPeeking = !!draft || ((calMode === "day" || (!!drill && dockPeekReady)) && !dockHidden);
 
   return (
     <Modal
@@ -325,13 +338,13 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
                     weekStartsOn={weekStartsOn === "sunday" ? 0 : 1}
                     eventColorOf={eventColorOf}
                     onPressEvent={openEventDetail}
-                    draft={null}
+                    draft={draft}
                     onDraftChange={handleDraftChange}
                     canMoveEvent={canMoveEvent}
                     onMoveEvent={onMoveEvent}
                     onPageChange={setAnchorDate}
                     scrollPosRef={scrollPosRef}
-                    bottomPad={insets.bottom + 20}
+                    bottomPad={dockPeeking ? DOCK_PEEK + 14 : insets.bottom + 20}
                   />
                 )}
 
@@ -352,55 +365,44 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
                         weekStartsOn={weekStartsOn === "sunday" ? 0 : 1}
                         eventColorOf={eventColorOf}
                         onPressEvent={openEventDetail}
-                        draft={null}
+                        draft={draft}
                         onDraftChange={handleDraftChange}
                         canMoveEvent={canMoveEvent}
                         onMoveEvent={onMoveEvent}
                         onPageChange={setAnchorDate}
                         scrollPosRef={drillScrollPosRef}
-                        bottomPad={insets.bottom + 20}
+                        bottomPad={dockHidden && !draft ? insets.bottom + 20 : DOCK_PEEK + 14}
                       />
                     </Animated.View>
                   </Animated.View>
                 )}
               </View>
             </View>
-            {/* FAB matches the agenda tab; hides while the composer is open. */}
-            {canEditEvents && !createOpen && (
-              <Tap style={[styles.fab, { bottom: 16 + insets.bottom }]}
-                onPress={() => {
-                  setPrefilledEvent(undefined);
-                  setStartingDate(undefined);
-                  setEndingDate(undefined);
-                  setCreateOpen(true);
-                }}
-              >
-                <Text style={{ color: colors.onFill, fontSize: 28, lineHeight: 30 }}>+</Text>
-              </Tap>
-            )}
           </Animated.View>
         </GestureDetector>
-        {/* Create — docked composer at the detail sheet's bottom. No tab bar in
-            this modal, so the keyboard inset is the safe area. Lives inside this
-            GestureHandlerRootView (the app-root one is occluded by the Modal). */}
-        <AddEventModal
-          docked
-          visible
-          peekVisible={createOpen}
-          dockBottomInset={insets.bottom}
-          anchor={anchorDate}
-          startingDate={startingDate}
-          endingDate={endingDate}
-          onClose={() => { setCreateOpen(false); setStartingDate(undefined); setEndingDate(undefined); }}
-          onSave={(e) => addEvent(e, api)}
-          onEdit={(e) => updateEvent(e, api)}
-          calendars={calendars}
-        />
+        {/* Docked composer — no FAB. Peeks in day view / with a draft, same
+            model as the home tab. No tab bar in this modal, so the keyboard
+            inset is the safe area. Lives inside this GestureHandlerRootView
+            (the app-root one is occluded by the native Modal). */}
+        {dockVisible && (
+          <AddEventModal
+            docked
+            visible
+            peekVisible={dockPeeking}
+            dockBottomInset={insets.bottom}
+            anchor={anchorDate}
+            startingDate={draft?.start}
+            endingDate={draft?.end}
+            onClose={() => { setDraft(null); setDockHidden(true); }}
+            onSave={(e) => addEvent(e, api)}
+            onEdit={(e) => updateEvent(e, api)}
+            calendars={calendars}
+          />
+        )}
       </GestureHandlerRootView>
+      {/* Edit — classic modal, opened from an event's detail. */}
       <AddEventModal
         visible={newEventVisible}
-        startingDate={startingDate}
-        endingDate={endingDate}
         onClose={() => setNewEventVisible(false)}
         onSave={(e) => addEvent(e, api)}
         onEdit={(e) => updateEvent(e, api)}
