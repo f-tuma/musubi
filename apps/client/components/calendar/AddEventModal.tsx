@@ -36,6 +36,11 @@ type Props = {
   /** Docked only: false slides the sheet fully off-screen (week view waits for
    *  a draft); flipping to true brings it back at peek. */
   peekVisible?: boolean;
+  /** Docked only: gap from the window bottom to the sheet's resting edge, used
+   *  by the keyboard-lift math. Defaults to the tab bar height (tab screens);
+   *  pass the safe-area inset when the docked sheet lives inside a full-screen
+   *  modal (no tab bar), e.g. the calendar detail view. */
+  dockBottomInset?: number;
   onClose: () => void;
   onSave: (event: Event) => Promise<void>;
   onEdit: (event: Event) => Promise<void>;
@@ -79,7 +84,7 @@ const TAB_BAR_H = 70;                // (tabs)/_layout tabBarStyle.height — sh
 const KB_SHOW_MS = 220;              // keyboard lift in/out timings
 const KB_HIDE_MS = 180;
 
-export function AddEventModal({ visible, startingDate, endingDate, docked, anchor, peekVisible = true, onClose, onSave, onEdit, calendars, event }: Props) {
+export function AddEventModal({ visible, startingDate, endingDate, docked, anchor, peekVisible = true, dockBottomInset = TAB_BAR_H, onClose, onSave, onEdit, calendars, event }: Props) {
   const {
     notificationsOnByDefault,
     timeFormat,
@@ -212,7 +217,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
     if (!docked) return;
     const show = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
       e => {
-        const containerBottom = win.height - TAB_BAR_H; // sheet's resting bottom, window coords
+        const containerBottom = win.height - dockBottomInset; // sheet's resting bottom, window coords
         const overlap = Math.max(containerBottom - e.endCoordinates.screenY, 0);
         kbLift.value = withTiming(overlap, { duration: KB_SHOW_MS });
         setKbPad(overlap);
@@ -220,7 +225,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
     const hide = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
       () => { kbLift.value = withTiming(0, { duration: KB_HIDE_MS }); setKbPad(0); });
     return () => { show.remove(); hide.remove(); };
-  }, [docked, win.height]);
+  }, [docked, win.height, dockBottomInset]);
 
 
   // Hide/show the docked sheet (week view: appears with the first draft).
