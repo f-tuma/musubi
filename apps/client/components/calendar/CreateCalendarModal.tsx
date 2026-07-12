@@ -13,6 +13,7 @@ import { Tap } from "@/components/ui/Tap";
 import { Btn } from "@/components/ui/Btn";
 import * as haptics from "@/lib/haptics";
 import ColorPickerModal from "@/components/ColorPickerModal";
+import { Feather } from "@expo/vector-icons";
 
 
 type Props = {
@@ -165,7 +166,8 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                           </View>
                         </Tap>
                       ))}
-                      {/* Custom color — opens the picker; shows the picked color once chosen. */}
+                      {/* Custom color — opens the picker; filled with the picked
+                          color once chosen, the pencil stays on top. */}
                       <Tap haptic="select" onPress={() => setPickerOpen(true)}>
                         <View style={[styles.calendarCircle, {
                           borderWidth: isCustomColor ? 2 : 1,
@@ -173,9 +175,8 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                           alignItems: "center",
                           justifyContent: "center",
                         }]}>
-                          {isCustomColor
-                            ? <View style={[styles.calendarCircleInner, { backgroundColor: newColor }]} />
-                            : <Text style={{ color: colors.fg3, fontSize: 16, lineHeight: 18 }}>+</Text>}
+                          {isCustomColor && <View style={[styles.calendarCircleInner, { backgroundColor: newColor }]} />}
+                          <Feather name="edit-2" size={12} color={isCustomColor ? colors.bg : colors.fg3} />
                         </View>
                       </Tap>
                     </View>

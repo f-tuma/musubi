@@ -9,6 +9,7 @@ import { Btn } from "@/components/ui/Btn";
 import { Tap } from "@/components/ui/Tap";
 import { OnboardingScaffold } from "@/components/OnboardingScaffold";
 import ColorPickerModal from "@/components/ColorPickerModal";
+import { Feather } from "@expo/vector-icons";
 
 // Onboarding step 2 — personalize the auto-created personal calendar.
 export default function OnboardingCalendar() {
@@ -69,7 +70,8 @@ export default function OnboardingCalendar() {
                 }}
               />
             ))}
-            {/* Custom color — opens the picker; shows the picked color once chosen. */}
+            {/* Custom color — opens the picker; filled with the picked color
+                once chosen, the pencil stays on top. */}
             <Tap
               onPress={() => setPickerOpen(true)}
               style={{
@@ -80,7 +82,7 @@ export default function OnboardingCalendar() {
                 alignItems: "center", justifyContent: "center",
               }}
             >
-              {!isCustomColor && <Text style={{ color: colors.fg3, fontSize: 18, lineHeight: 20 }}>+</Text>}
+              <Feather name="edit-2" size={14} color={isCustomColor ? colors.bg : colors.fg3} />
             </Tap>
           </View>
         </ScrollView>
