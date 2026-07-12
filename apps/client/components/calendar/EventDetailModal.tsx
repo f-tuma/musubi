@@ -257,11 +257,16 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
               }
               {shownAttendees.length > 0 && (
                 <View style={[styles.fieldContainer, { borderBottomWidth: 0 }]}>
-                  {/* Same row anatomy as MemberRolesModal: label left, pill action right. */}
+                  {/* Same row anatomy as MemberRolesModal: label left, pill action right.
+                      The label doubles as the expand/collapse toggle (chevron lives here so
+                      it survives the facepile ↔ list swap below). */}
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                    <Text style={[styles.fieldLabel, { fontFamily: fonts.sans, marginBottom: 0 }]}>
-                      Attendees · {shownAttendees.length}
-                    </Text>
+                    <Tap scaleTo={1} hitSlop={10} onPress={() => setAttendeesOpen(o => !o)} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Text style={[styles.fieldLabel, { fontFamily: fonts.sans, marginBottom: 0 }]}>
+                        Attendees · {shownAttendees.length}
+                      </Text>
+                      <Feather name={attendeesOpen ? "chevron-up" : "chevron-down"} size={14} color={colors.fg4} />
+                    </Tap>
                     <Tap
                       onPress={toggleAttendance}
                       haptic={isAttending ? "warn" : "success"}
@@ -277,34 +282,31 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
                       </View>
                     </Tap>
                   </View>
-                  {/* Collapsed: overlapping facepile; tap toggles the full list. */}
-                  <Tap scaleTo={1} onPress={() => setAttendeesOpen(o => !o)}>
-                    <View style={{ flexDirection: "row", alignItems: "center" }}>
-                      {shownAttendees.slice(0, 7).map((a, i) => (
-                        // bg1 ring separates the overlapping circles from each other
-                        <View key={a.id} style={{ marginLeft: i === 0 ? 0 : -10, borderWidth: 2, borderColor: colors.bg1, borderRadius: 999 }}>
-                          <Avatar name={a.name} image={a.image} size={32} />
-                        </View>
-                      ))}
-                      {shownAttendees.length > 7 && (
-                        <View style={{
-                          marginLeft: -10, width: 36, height: 36, borderRadius: 18,
-                          borderWidth: 2, borderColor: colors.bg1, backgroundColor: colors.bg3,
-                          alignItems: "center", justifyContent: "center",
-                        }}>
-                          <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.fg2 }}>
-                            +{shownAttendees.length - 7}
-                          </Text>
-                        </View>
-                      )}
-                      <Feather
-                        name={attendeesOpen ? "chevron-up" : "chevron-down"}
-                        size={16} color={colors.fg4} style={{ marginLeft: 8 }}
-                      />
-                    </View>
-                  </Tap>
-                  {attendeesOpen && (
-                    <ScrollView style={{ maxHeight: 216, marginTop: 12 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+                  {/* Facepile "falls apart" into the list on expand — one or the other, never both. */}
+                  {!attendeesOpen ? (
+                    <Tap scaleTo={1} onPress={() => setAttendeesOpen(true)}>
+                      <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        {shownAttendees.slice(0, 7).map((a, i) => (
+                          // bg1 ring separates the overlapping circles from each other
+                          <View key={a.id} style={{ marginLeft: i === 0 ? 0 : -10, borderWidth: 2, borderColor: colors.bg1, borderRadius: 999 }}>
+                            <Avatar name={a.name} image={a.image} size={32} />
+                          </View>
+                        ))}
+                        {shownAttendees.length > 7 && (
+                          <View style={{
+                            marginLeft: -10, width: 36, height: 36, borderRadius: 18,
+                            borderWidth: 2, borderColor: colors.bg1, backgroundColor: colors.bg3,
+                            alignItems: "center", justifyContent: "center",
+                          }}>
+                            <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.fg2 }}>
+                              +{shownAttendees.length - 7}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </Tap>
+                  ) : (
+                    <ScrollView style={{ maxHeight: 216 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
                       <View style={{ gap: 12 }}>
                         {shownAttendees.map(a => (
                           <View key={a.id} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
