@@ -107,6 +107,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
   const [notifyBeforePickerVisible, setNotifyBeforePickerVisible] = useState(false);
   const [notificationToggle, setNotificationToggle] = useState<boolean>(notificationsOnByDefault);
   const [allDayToggle, setAllDayToggle] = useState(false);
+  const [attendeesToggle, setAttendeesToggle] = useState(false);
   const [newLocation, setNewLocation] = useState("");
   const [newUrl, setNewUrl] = useState("");
   const [newRecurrence, setNewRecurrence] = useState<RecurrenceOption>('none');
@@ -185,6 +186,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
     setNewUrl("");
     setUrlError("");
     setDetailsOpen(false);
+    setAttendeesToggle(false);
     setNewRecurrence('none');
     setRecurrenceExtras([]);
     setSavedUntil(null);
@@ -305,6 +307,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
       setNewLocation(event?.location ?? "");
       setNewUrl(event?.url ?? "");
       setDetailsOpen(!!(event?.description || event?.location || event?.url));
+      setAttendeesToggle(event?.hasAttendees ?? false);
       if (event?.id) {
         // reflect the reminder's REAL state, not the global default
         getEventNotification(event.id).then((row) => {
@@ -389,6 +392,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
       start: allDayToggle ? allDayUTC(newStart) : newStart,
       end: allDayToggle ? allDayUTC(newEnd) : newEnd,
       isAllDay: allDayToggle,
+      hasAttendees: attendeesToggle,
       isCanceled: false,
       description: newDescription,
       location: newLocation,
@@ -692,6 +696,25 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
                 </ScrollView>
               </View>
             }
+          </View>
+        </View>
+
+        {/* Attendance toggle — a "kind of event". Non-destructive: switching it
+            off keeps event_users rows, re-enabling shows the same people. */}
+        <View style={styles.fieldContainer}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.fieldValueText, { fontFamily: fonts.sans, color: colors.fg2 }]}>Attendees</Text>
+              <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.fg4, marginTop: 2 }}>
+                People can attend and see who's coming
+              </Text>
+            </View>
+            <Switch
+              thumbColor={attendeesToggle ? colors.accent : colors.bg3}
+              trackColor={{ false: colors.line, true: colors.line3 }}
+              onValueChange={(v) => { setAttendeesToggle(v); }}
+              value={attendeesToggle}
+            />
           </View>
         </View>
         <View style={styles.fieldContainer}>

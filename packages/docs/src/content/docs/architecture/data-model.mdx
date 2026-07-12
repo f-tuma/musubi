@@ -78,7 +78,7 @@ erDiagram
 - A shared event linked into 3 calendars is *one* row. Editing it edits it everywhere. That's the feature.
 
 <Aside type="note">
-`eventUsers` is the attendee list: presence in the table means attending, and anyone who can *view* the event may join/leave (`GET /events/:id/attendees`, `PUT /events/:id/attendance`). The payload is name + avatar only — no emails, since an event can span calendars whose members aren't mutuals. When real RSVP lands (web), add a `status` column (`yes | no | maybe`) — presence + status needs no rework. External sync inserts events directly (not via `createEvent`), so provider-imported events don't get a phantom creator-attendee.
+`eventUsers` is the attendee list: presence in the table means attending, and anyone who can *view* the event may join/leave (`GET /events/:id/attendees`, `PUT /events/:id/attendance`). The feature is per-event opt-in via `events.hasAttendees` — a UI toggle, **non-destructive**: switching it off keeps the `event_users` rows, so re-enabling restores the same list. The payload is name + avatar only — no emails, since an event can span calendars whose members aren't mutuals. When real RSVP lands (web), add a `status` column (`yes | no | maybe`) — presence + status needs no rework. External sync inserts events directly (not via `createEvent`), so provider-imported events don't get a phantom creator-attendee.
 </Aside>
 
 ### 5. External sync (provider-agnostic)

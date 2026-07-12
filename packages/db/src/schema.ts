@@ -208,6 +208,9 @@ export const events = pgTable("events", {
   description: text("description"),
   location: text("location"),
   isCanceled: boolean("is_canceled").notNull().default(false),
+  // Attendance toggle (a "kind of event"). Off hides the attendee UI only —
+  // event_users rows survive the flip, so re-enabling restores the list.
+  hasAttendees: boolean("has_attendees").notNull().default(false),
   organizer: text("organizer").notNull(),
   recurrence: text("recurrence"),
   // reminders:

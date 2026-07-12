@@ -55,9 +55,9 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
   const { byEvent, setAttendees } = useAttendeesStore();
   const attendees = event ? byEvent[event.id] : undefined;
   useEffect(() => {
-    if (visible && event) api.getEventAttendees(event).then(a => setAttendees(event.id!, a)).catch(() => { });
+    if (visible && event?.hasAttendees) api.getEventAttendees(event).then(a => setAttendees(event.id!, a)).catch(() => { });
     // api is a fresh object every render — deps on it would refetch in a loop
-  }, [visible, event?.id]);
+  }, [visible, event?.id, event?.hasAttendees]);
 
   // TEST ONLY — 10 fake attendees to eyeball the facepile + expanded list; remove after review.
   const TEST_ATTENDEES: Attendee[] = [
@@ -190,7 +190,7 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
               <View style={[
                 styles.fieldContainer,
                 { paddingTop: 12, paddingBottom: 12 },
-                !(event?.location || event?.url || event?.description || shownAttendees.length) && { borderBottomWidth: 0 },
+                !(event?.location || event?.url || event?.description || event?.hasAttendees) && { borderBottomWidth: 0 },
               ]}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={styles.horizontalPillView}>
@@ -255,8 +255,10 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
                   </View>
                 </View>
               }
-              {shownAttendees.length > 0 && (
-                <View style={[styles.fieldContainer, { borderBottomWidth: 0 }]}>
+              {event?.hasAttendees && shownAttendees.length > 0 && (
+                // paddingHorizontal 22 (not the container's 16) — optically lines
+                // up with the title block above; circles at 16 read wider than text.
+                <View style={[styles.fieldContainer, { borderBottomWidth: 0, paddingHorizontal: 22 }]}>
                   {/* Same row anatomy as MemberRolesModal: label left, pill action right.
                       The label doubles as the expand/collapse toggle (chevron lives here so
                       it survives the facepile ↔ list swap below). */}

@@ -221,6 +221,7 @@ export async function handlerForkEvent(req: Request, res: Response) {
     start: src.start,
     end: src.end,
     isAllDay: src.isAllDay,
+    hasAttendees: src.hasAttendees,
     description: src.description,
     location: src.location,
     organizer: req.user!.id,       // new owner
