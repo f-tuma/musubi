@@ -12,6 +12,7 @@ import { CALENDAR_HINTS } from "@/constants/calendar_hints";
 import { Tap } from "@/components/ui/Tap";
 import { Btn } from "@/components/ui/Btn";
 import * as haptics from "@/lib/haptics";
+import ColorPickerModal from "@/components/ColorPickerModal";
 
 
 type Props = {
@@ -32,6 +33,8 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
 
   const [nameError, setNameError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const isCustomColor = !appColors.some(c => c.color === newColor);
 
   const { data: session } = authClient.useSession();
   const userID = session?.user.id;
@@ -162,6 +165,19 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                           </View>
                         </Tap>
                       ))}
+                      {/* Custom color — opens the picker; shows the picked color once chosen. */}
+                      <Tap haptic="select" onPress={() => setPickerOpen(true)}>
+                        <View style={[styles.calendarCircle, {
+                          borderWidth: isCustomColor ? 2 : 1,
+                          borderColor: isCustomColor ? colors.fg3 : colors.line3,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }]}>
+                          {isCustomColor
+                            ? <View style={[styles.calendarCircleInner, { backgroundColor: newColor }]} />
+                            : <Text style={{ color: colors.fg3, fontSize: 16, lineHeight: 18 }}>+</Text>}
+                        </View>
+                      </Tap>
                     </View>
                   </ScrollView>
                 </View>
@@ -174,6 +190,12 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
           </GestureDetector>
         </GestureHandlerRootView>
       </Modal >
+      <ColorPickerModal
+        visible={pickerOpen}
+        value={newColor}
+        onConfirm={setNewColor}
+        onClose={() => setPickerOpen(false)}
+      />
     </>
   );
 }
