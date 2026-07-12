@@ -325,6 +325,9 @@ export const calendarEventsRelations = relations(calendarEvents, ({ one }) => ({
 }));
 
 
+// Attendees. Presence in the table = attending; the creator is added on event
+// creation. When RSVP lands (web), add a `status` column — presence + status
+// covers yes/no/maybe with no rework.
 export const eventUsers = pgTable("event_users", {
   id: uuid("id").primaryKey().defaultRandom(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -342,34 +345,13 @@ export const eventUsers = pgTable("event_users", {
       onDelete: "cascade",
     })
     .notNull(),
-});
+}, (t) => [unique().on(t.eventID, t.userID)]); // makes join idempotent (onConflictDoNothing)
 
 
 export const eventUsersRelations = relations(eventUsers, ({ one }) => ({
   user: one(user, { fields: [eventUsers.userID], references: [user.id] }),
   events: one(events, { fields: [eventUsers.eventID], references: [events.id] }),
 }));
-
-
-// export const eventAttendees = pgTable("event_attendees", {
-//   id: uuid("id").primaryKey().defaultRandom(),
-//   createdAt: timestamp("created_at").notNull().defaultNow(),
-//   updatedAt: timestamp("updated_at")
-//     .notNull()
-//     .defaultNow()
-//     .$onUpdate(() => new Date()),
-//   eventID: uuid("event_id")
-//     .references(() => events.id, {
-//       onDelete: "cascade",
-//     })
-//     .notNull(),
-//   userID: text("user_id")
-//     .references(() => user.id, {
-//       onDelete: "cascade",
-//     })
-//     .notNull(),
-//   //TODO: Complete Table
-// });
 
 
 // EXTERNAL CALENDAR SYNC (provider-agnostic — google | microsoft | caldav)
