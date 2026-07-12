@@ -55,6 +55,17 @@ const expoConfig = {
           { "scheme": "https", "mimeType": "text/calendar" },
           { "scheme": "http", "mimeType": "text/calendar" }
         ]
+      },
+      {
+        // Datumové/hodinové widgety otevírají kalendář přes
+        // content://com.android.calendar/time/<millis> (AOSP filtr, mimeType
+        // time/epoch) — bez něj se Musubi v jejich chooseru nenabízí.
+        // (Kategorie APP_CALENDAR na launcher aktivitě řeší plugins/withCalendarAppCategory.)
+        "action": "VIEW",
+        "category": ["DEFAULT"],
+        "data": [
+          { "scheme": "content", "host": "com.android.calendar", "mimeType": "time/epoch" }
+        ]
       }
     ]
   },
