@@ -79,6 +79,26 @@ export async function getUsersEvents(userID: string, since?: Date) {
     .where(and(eq(calendarMembers.userID, userID), changeFilter));
 }
 
+// Attendees: name + avatar only — no emails (an event can span calendars whose
+// members aren't mutuals, so don't leak what the UI doesn't need).
+export async function getEventAttendees(eventID: string) {
+  const rows = await db.query.eventUsers.findMany({
+    where: eq(eventUsers.eventID, eventID),
+    with: { user: true },
+  });
+  rows.sort((a, b) => a.user.name.localeCompare(b.user.name));
+  return rows.map(r => ({ id: r.user.id, name: r.user.name, image: r.user.image }));
+}
+
+// Idempotent join/leave — the unique (event, user) constraint absorbs retries.
+export async function setAttendance(eventID: string, userID: string, attending: boolean) {
+  if (attending) {
+    await db.insert(eventUsers).values({ eventID, userID }).onConflictDoNothing();
+  } else {
+    await db.delete(eventUsers).where(and(eq(eventUsers.eventID, eventID), eq(eventUsers.userID, userID)));
+  }
+}
+
 // Hard-delete tombstones older than `before` (cascades their calendarEvents +
 // externalEvents mappings). Clients that haven't synced in that long won't see
 // the removal, but that window is intentionally generous.

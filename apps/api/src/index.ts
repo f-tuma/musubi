@@ -7,7 +7,7 @@ import cors from "cors";
 import { middlewareErrorHandler } from "./middleware/error_handler";
 import { handlerCreateCalendar, handlerGetCalendars, handlerGetCalendar, handlerRemoveCalendar, handlerUpdateCalendar, handlerJoinCalendar, handlerLeaveCalendar, handlerGetCalendarFromToken, handlerGetCalendarMembers, handlerSetMemberRole, handlerKickMember } from "./handlers/calendars";
 import { handlerDeleteUser, handlerGetAvatar, handlerResetUsers, handlerUploadAvatar } from "./handlers/users";
-import { handlerCreateEvent, handlerForkEvent, handlerGetEvents, handlerLinkEvent, handlerRemoveEvent, handlerUpdateEvent } from "./handlers/events";
+import { handlerCreateEvent, handlerForkEvent, handlerGetAttendees, handlerGetEvents, handlerLinkEvent, handlerRemoveEvent, handlerSetAttendance, handlerUpdateEvent } from "./handlers/events";
 import { requireAuth } from "./middleware/require_auth";
 import { handlerCreateCalendarInvite } from "./handlers/invites";
 import { handlerStream } from "./handlers/stream";
@@ -82,6 +82,8 @@ app.put("/api/v1/events", requireAuth, wrap(handlerUpdateEvent));
 app.delete("/api/v1/events", requireAuth, wrap(handlerRemoveEvent));
 app.post("/api/v1/events/:eventId/link", requireAuth, wrap(handlerLinkEvent));
 app.post("/api/v1/events/:eventId/fork", requireAuth, wrap(handlerForkEvent));
+app.get("/api/v1/events/:eventId/attendees", requireAuth, wrap(handlerGetAttendees));
+app.put("/api/v1/events/:eventId/attendance", requireAuth, wrap(handlerSetAttendance));
 
 // Calendars — /google must stay before /:id (both one-segment GETs)
 app.get("/api/v1/calendars", requireAuth, wrap(handlerGetCalendars));
