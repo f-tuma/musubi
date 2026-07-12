@@ -37,7 +37,7 @@ type Props = {
   onReorder: (ids: string[]) => void;
 };
 
-function ProviderIcon({ provider }: { provider?: string | null }) {
+export function ProviderIcon({ provider }: { provider?: string | null }) {
   if (provider === "google") return <Ionicons name="logo-google" size={13} color={colors.fg3} />;
   if (provider === "apple") return <Ionicons name="logo-apple" size={14} color={colors.fg3} />;
   if (provider === "caldav") return <Ionicons name="cloud" size={14} color={colors.fg3} />;

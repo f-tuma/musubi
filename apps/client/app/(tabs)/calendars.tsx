@@ -169,7 +169,10 @@ export default function CalendarsTab() {
         onEdit={(cal) => setPrefilledCalendar(cal)}
         onDelete={(calendar) => {
           setPrefilledCalendar(null);
-          removeCalendar(calendar, api);
+          // The provider can refuse (e.g. Google won't delete a primary
+          // calendar) — the store aborts the local removal, surface why.
+          removeCalendar(calendar, api).catch((e) =>
+            Alert.alert("Failed to delete", e?.message ?? "An unexpected error occurred."));
         }}
       />
     </View>
