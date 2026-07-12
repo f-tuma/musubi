@@ -1,8 +1,28 @@
 {
   "version": "1.0.0",
-  "gitCommitHash": "066906cd69d358c865c3182e710e991e086cbf2c",
-  "generatedAt": "2026-07-10T18:35:24.186Z",
+  "gitCommitHash": "39687ee5b56305036a3cfa523cdac75332901cc8",
+  "generatedAt": "2026-07-12T14:24:39.805Z",
   "files": {
+    ".dockerignore": {
+      "filePath": ".dockerignore",
+      "contentHash": "cd776e4db4528fadd1aba3346ffc144a9489872c2db3e90dc5ff2b68d4f232a7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": false
+    },
+    ".env.example": {
+      "filePath": ".env.example",
+      "contentHash": "94b8ca808b0daf9a5e78587d73ce46238ec952d2f31a7283aaeb0e72b3b8b511",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 48,
+      "hasStructuralAnalysis": true
+    },
     ".npmrc": {
       "filePath": ".npmrc",
       "contentHash": "a28c9d86a8981049d203ad164cff1e753ed61dc0460ee8765316cbb3d0007d00",
@@ -22,6 +42,76 @@
       "exports": [],
       "totalLines": 2,
       "hasStructuralAnalysis": false
+    },
+    ".understand-anything/.understandignore": {
+      "filePath": ".understand-anything/.understandignore",
+      "contentHash": "07a0b3a988cb2444c00e8c977754eb8d31b81ace3246a3facf536c842bd92b2f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 66,
+      "hasStructuralAnalysis": false
+    },
+    ".understand-anything/config.json": {
+      "filePath": ".understand-anything/config.json",
+      "contentHash": "e6e1895a8e3cb71f76daebccd84c4fc9877d8a88fb75e476ca22a320e69d4995",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": true
+    },
+    ".understand-anything/fingerprints.json": {
+      "filePath": ".understand-anything/fingerprints.json",
+      "contentHash": "3bc24076e9f7b34006f34b312f6d170880e5ec1c96c3bec4244188682ee28529",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 9002,
+      "hasStructuralAnalysis": true
+    },
+    ".understand-anything/knowledge-graph.json": {
+      "filePath": ".understand-anything/knowledge-graph.json",
+      "contentHash": "af24ffd64b008d10020f5e0d112dc63e6431be981b223c8adc00a77ce697dec3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 13913,
+      "hasStructuralAnalysis": true
+    },
+    ".understand-anything/meta.json": {
+      "filePath": ".understand-anything/meta.json",
+      "contentHash": "a91e6cfb688b1b0b1f755c09771bb716cc4cf75c702c7ab73f3f8b81d66893d0",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 6,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/Dockerfile": {
+      "filePath": "apps/api/Dockerfile",
+      "contentHash": "dc086a00e24689ca03b67865d44cdbf72947f11c7e9e5f5d6d6d7968c6c04553",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 28,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/package.json": {
+      "filePath": "apps/api/package.json",
+      "contentHash": "3e4397903fab503ed6a4a870cea00fbe72fc7a7a242e246290032c00b53828d6",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 34,
+      "hasStructuralAnalysis": true
     },
     "apps/api/src/emails/index.ts": {
       "filePath": "apps/api/src/emails/index.ts",
@@ -401,7 +491,7 @@
     },
     "apps/api/src/handlers/events.ts": {
       "filePath": "apps/api/src/handlers/events.ts",
-      "contentHash": "0691df0e14f7c40b0d2445d57c19c1c88b13d9d8250206e6f20ee8a87f56c851",
+      "contentHash": "d168b22ad4e1062ada2b15f71a142f0509e2e9ceb54ef8dd25ef0ce05a3012f5",
       "functions": [
         {
           "name": "handlerCreateEvent",
@@ -410,7 +500,7 @@
             "res"
           ],
           "exported": true,
-          "lineCount": 34
+          "lineCount": 43
         },
         {
           "name": "handlerUpdateEvent",
@@ -530,7 +620,120 @@
         "handlerForkEvent",
         "handlerGetEvents"
       ],
-      "totalLines": 269,
+      "totalLines": 278,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/src/handlers/federation.ts": {
+      "filePath": "apps/api/src/handlers/federation.ts",
+      "contentHash": "68d2ff16a1a3d76dab34e372ddf39191d97e583e7ea4d1a43776e807440d70c6",
+      "functions": [
+        {
+          "name": "hashMemberToken",
+          "params": [
+            "raw"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "handlerFederationAccept",
+          "params": [
+            "req",
+            "res"
+          ],
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "handlerGetMusubiAccounts",
+          "params": [
+            "req",
+            "res"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "handlerSaveMusubiAccount",
+          "params": [
+            "req",
+            "res"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "handlerDeleteMusubiAccount",
+          "params": [
+            "req",
+            "res"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "handlerInvitePage",
+          "params": [
+            "origin"
+          ],
+          "exported": true,
+          "lineCount": 18
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "express",
+          "specifiers": [
+            "Request",
+            "Response"
+          ]
+        },
+        {
+          "source": "node:crypto",
+          "specifiers": [
+            "createHash",
+            "randomBytes"
+          ]
+        },
+        {
+          "source": "@musubi/db",
+          "specifiers": [
+            "addCalendarMember",
+            "createExternalUser",
+            "deleteMusubiAccount",
+            "findExternalUser",
+            "getCalendar",
+            "getCalendarIDFromToken",
+            "getMusubiAccounts",
+            "saveMemberToken",
+            "upsertMusubiAccount"
+          ]
+        },
+        {
+          "source": "@musubi/types",
+          "specifiers": [
+            "BadRequestError"
+          ]
+        },
+        {
+          "source": "../sync/crypto",
+          "specifiers": [
+            "decryptSecret",
+            "encryptSecret"
+          ]
+        }
+      ],
+      "exports": [
+        "hashMemberToken",
+        "handlerFederationAccept",
+        "handlerGetMusubiAccounts",
+        "handlerSaveMusubiAccount",
+        "handlerDeleteMusubiAccount",
+        "handlerInvitePage"
+      ],
+      "totalLines": 109,
       "hasStructuralAnalysis": true
     },
     "apps/api/src/handlers/google.ts": {
@@ -650,7 +853,7 @@
     },
     "apps/api/src/handlers/server.ts": {
       "filePath": "apps/api/src/handlers/server.ts",
-      "contentHash": "9341c69ceff3236f85a53608dad57d3fe13d025ff0fec6bc52ee221db62787e2",
+      "contentHash": "e7574a90d6c1b965e416f7dae79cd8747273c37dda6d955b61dd06f2e4187dd0",
       "functions": [
         {
           "name": "handlerServerStatus",
@@ -882,7 +1085,7 @@
     },
     "apps/api/src/index.ts": {
       "filePath": "apps/api/src/index.ts",
-      "contentHash": "d5275da3c61f7b6b51c57f8b02c164c33ea95fc55beab2c8fa64b3a7eb9744a7",
+      "contentHash": "6fc5a3616af4448c0fdd9d91a03caaed23642b134e56cfe78d87adcb33c77898",
       "functions": [
         {
           "name": "wrap",
@@ -1041,10 +1244,32 @@
           "specifiers": [
             "handlerDisconnectAccount"
           ]
+        },
+        {
+          "source": "./handlers/federation",
+          "specifiers": [
+            "handlerDeleteMusubiAccount",
+            "handlerFederationAccept",
+            "handlerGetMusubiAccounts",
+            "handlerInvitePage",
+            "handlerSaveMusubiAccount"
+          ]
+        },
+        {
+          "source": "./sync/engine",
+          "specifiers": [
+            "syncUser"
+          ]
+        },
+        {
+          "source": "@musubi/db",
+          "specifiers": [
+            "getExternalSyncUserIDs"
+          ]
         }
       ],
       "exports": [],
-      "totalLines": 117,
+      "totalLines": 156,
       "hasStructuralAnalysis": true
     },
     "apps/api/src/middleware/error_handler.ts": {
@@ -1120,7 +1345,7 @@
     },
     "apps/api/src/middleware/require_auth.ts": {
       "filePath": "apps/api/src/middleware/require_auth.ts",
-      "contentHash": "4251e490e54c94de9174ffdf26625baf0676587d5ee243869d01f310b0ba0f39",
+      "contentHash": "7907c0a04ff7b72b67d608a1a143eca068a307b2b370a96e398218127e1c9d62",
       "functions": [
         {
           "name": "requireAuth",
@@ -1130,7 +1355,7 @@
             "next"
           ],
           "exported": true,
-          "lineCount": 6
+          "lineCount": 21
         }
       ],
       "classes": [],
@@ -1139,6 +1364,12 @@
           "source": "@musubi/auth",
           "specifiers": [
             "auth"
+          ]
+        },
+        {
+          "source": "@musubi/db",
+          "specifiers": [
+            "getUserByTokenHash"
           ]
         },
         {
@@ -1154,12 +1385,18 @@
             "Request",
             "Response"
           ]
+        },
+        {
+          "source": "../handlers/federation",
+          "specifiers": [
+            "hashMemberToken"
+          ]
         }
       ],
       "exports": [
         "requireAuth"
       ],
-      "totalLines": 12,
+      "totalLines": 29,
       "hasStructuralAnalysis": true
     },
     "apps/api/src/permissions.ts": {
@@ -1535,7 +1772,7 @@
     },
     "apps/api/src/sync/engine.ts": {
       "filePath": "apps/api/src/sync/engine.ts",
-      "contentHash": "edb32737165c8fa421a2e759f6c0ba0a76c6d52623c305441dc3614cfce14246",
+      "contentHash": "ca5750b9e01f8090f3ddea541931aa41a622e7e03b05cfad19ac9bdc4777911e",
       "functions": [
         {
           "name": "getAdapter",
@@ -1563,7 +1800,7 @@
             "account"
           ],
           "exported": true,
-          "lineCount": 64
+          "lineCount": 74
         },
         {
           "name": "syncUser",
@@ -1571,7 +1808,7 @@
             "userID"
           ],
           "exported": true,
-          "lineCount": 11
+          "lineCount": 21
         },
         {
           "name": "pushEventToProviders",
@@ -1604,8 +1841,8 @@
         {
           "source": "@musubi/db",
           "specifiers": [
-            "clearCalendarEvents",
             "deleteExternalEvent",
+            "getCalendarMembers",
             "getExternalEventID",
             "getExternalLinkForCalendar",
             "getUserExternalCalendars",
@@ -1615,7 +1852,14 @@
             "setAccountLabel",
             "setCursor",
             "setMemberRole",
+            "sweepExternalEvents",
             "upsertExternalEvent"
+          ]
+        },
+        {
+          "source": "../handlers/stream",
+          "specifiers": [
+            "notifyCalendarMembers"
           ]
         },
         {
@@ -1645,22 +1889,32 @@
         "pushEventToProviders",
         "pushEventToCalendars"
       ],
-      "totalLines": 163,
+      "totalLines": 188,
       "hasStructuralAnalysis": true
     },
-    "apps/client/app.config.ts": {
-      "filePath": "apps/client/app.config.ts",
-      "contentHash": "fa7f7895f55d0c8840793f97fcbc66cbd6e9a6b05903754452c600d171f785fd",
+    "apps/api/tsconfig.json": {
+      "filePath": "apps/api/tsconfig.json",
+      "contentHash": "a047759434785978eeb9bf09009bdb4d2ad39bcdeeb68f6bcc69b78531c30d90",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 104,
+      "totalLines": 13,
+      "hasStructuralAnalysis": true
+    },
+    "apps/client/app.config.ts": {
+      "filePath": "apps/client/app.config.ts",
+      "contentHash": "0b23182b031e72cd18de1df9cfe92e95c964be39e5e8ba65e0609faa6876e838",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 105,
       "hasStructuralAnalysis": true
     },
     "apps/client/app/_layout.tsx": {
       "filePath": "apps/client/app/_layout.tsx",
-      "contentHash": "f94178b51c27a5c687278fa3d60fe75283499d40fa341ea7fd471d4ad46b180d",
+      "contentHash": "2a2ce996e87ab89b5c5fef9d0a89af9aa0a37512d1b620beaf6a5616ca21fec3",
       "functions": [
         {
           "name": "readIcs",
@@ -1689,7 +1943,7 @@
           "name": "AppLoader",
           "params": [],
           "exported": false,
-          "lineCount": 27
+          "lineCount": 32
         },
         {
           "name": "RootLayout",
@@ -1882,7 +2136,7 @@
       "exports": [
         "RootLayout"
       ],
-      "totalLines": 182,
+      "totalLines": 187,
       "hasStructuralAnalysis": true
     },
     "apps/client/app/(auth)/_layout.tsx": {
@@ -2283,7 +2537,7 @@
     },
     "apps/client/app/(tabs)/agenda.tsx": {
       "filePath": "apps/client/app/(tabs)/agenda.tsx",
-      "contentHash": "92ed1247147da58c9855162faed08dc6f08a97c0615827fe4aaa5a221cfaf184",
+      "contentHash": "60d8155420c74978ce84eb24a2342e771d2b1c6aaf7a8af6b2da74ee3428a13f",
       "functions": [
         {
           "name": "dateKey",
@@ -2297,7 +2551,7 @@
           "name": "AgendaTab",
           "params": [],
           "exported": true,
-          "lineCount": 191
+          "lineCount": 212
         }
       ],
       "classes": [],
@@ -2402,6 +2656,12 @@
           ]
         },
         {
+          "source": "@/components/calendar/YearStamp",
+          "specifiers": [
+            "YearStamp"
+          ]
+        },
+        {
           "source": "react-native",
           "specifiers": [
             "RefreshControl"
@@ -2435,7 +2695,7 @@
       "exports": [
         "AgendaTab"
       ],
-      "totalLines": 219,
+      "totalLines": 241,
       "hasStructuralAnalysis": true
     },
     "apps/client/app/(tabs)/calendars.tsx": {
@@ -2584,7 +2844,7 @@
     },
     "apps/client/app/(tabs)/index.tsx": {
       "filePath": "apps/client/app/(tabs)/index.tsx",
-      "contentHash": "9fe4d8988113975a7491bd496a930e1f410c8c95cb339837d1acabdb4fc04798",
+      "contentHash": "d42318b5cb654460329cdc0763908e5e1ae7ba06147084479c476d74206c4092",
       "functions": [
         {
           "name": "getViewRange",
@@ -2600,7 +2860,7 @@
           "name": "MainTab",
           "params": [],
           "exported": true,
-          "lineCount": 351
+          "lineCount": 361
         }
       ],
       "classes": [],
@@ -2690,7 +2950,6 @@
             "Animated",
             "Easing",
             "interpolate",
-            "runOnJS",
             "useAnimatedStyle",
             "useSharedValue",
             "withTiming"
@@ -2784,7 +3043,7 @@
       "exports": [
         "MainTab"
       ],
-      "totalLines": 391,
+      "totalLines": 401,
       "hasStructuralAnalysis": true
     },
     "apps/client/app/(tabs)/settings.tsx": {
@@ -2988,13 +3247,13 @@
     },
     "apps/client/app/invite/[token].tsx": {
       "filePath": "apps/client/app/invite/[token].tsx",
-      "contentHash": "db8d4995e335a58d1188874a867fd9d37ebcf847e219ba80adba24af8f202e25",
+      "contentHash": "2f0701cf3f5d5f27b1abeb8fb776acf10b331ea7e138b28fee96158190ca72ac",
       "functions": [
         {
           "name": "Invite",
           "params": [],
           "exported": true,
-          "lineCount": 122
+          "lineCount": 148
         }
       ],
       "classes": [],
@@ -3071,12 +3330,25 @@
           "specifiers": [
             "success"
           ]
+        },
+        {
+          "source": "@/services/federation",
+          "specifiers": [
+            "acceptRemoteInvite",
+            "fetchRemoteCalendarPreview"
+          ]
+        },
+        {
+          "source": "@/hooks/useRefreshData",
+          "specifiers": [
+            "useRefreshData"
+          ]
         }
       ],
       "exports": [
         "Invite"
       ],
-      "totalLines": 189,
+      "totalLines": 217,
       "hasStructuralAnalysis": true
     },
     "apps/client/app/onboarding/_layout.tsx": {
@@ -3459,7 +3731,7 @@
     },
     "apps/client/components/cal/layout.ts": {
       "filePath": "apps/client/components/cal/layout.ts",
-      "contentHash": "9d5f7648a47a6c11b5ab12d28bab8f7d0e88d61b7a2372205891d367583e1bdb",
+      "contentHash": "ef43a9a42463f63269f9a931ba40ae15af64e9b4c72e5e5e6b93029a91f74daf",
       "functions": [
         {
           "name": "clamp",
@@ -3656,7 +3928,7 @@
         "fmtTime",
         "allDaySpans"
       ],
-      "totalLines": 153,
+      "totalLines": 155,
       "hasStructuralAnalysis": true
     },
     "apps/client/components/cal/ModeSwitch.tsx": {
@@ -3806,7 +4078,7 @@
     },
     "apps/client/components/cal/TimelineView.tsx": {
       "filePath": "apps/client/components/cal/TimelineView.tsx",
-      "contentHash": "cdb00104f9732bc2477dd23fee363047f428d24c7361210731166c6ca40cbb77",
+      "contentHash": "e45dafa85c7932ae10884f3277f726060ae4282ba011f45a5cb7b85fec3f2b1a",
       "functions": [
         {
           "name": "TimelineView",
@@ -3822,7 +4094,7 @@
             "{\n  days, width, events, byDay, hourH, eventColorOf, onPressEvent, draft, onDraftChange, canMoveEvent, onMoveEvent, scrollPosRef, bottomPad,\n}"
           ],
           "exported": false,
-          "lineCount": 393
+          "lineCount": 396
         },
         {
           "name": "HourLine",
@@ -3979,12 +4251,12 @@
       "exports": [
         "TimelineView"
       ],
-      "totalLines": 721,
+      "totalLines": 724,
       "hasStructuralAnalysis": true
     },
     "apps/client/components/calendar/AddEventModal.tsx": {
       "filePath": "apps/client/components/calendar/AddEventModal.tsx",
-      "contentHash": "23197919778f8e3d8ee8e3390ddb983309c90d7e920867d5076f2d8a984abff2",
+      "contentHash": "f8b852b5d855f89a359042615b6b5dc61f3c7a3b2d7bf70af5ea68bf252709a3",
       "functions": [
         {
           "name": "withHours",
@@ -3999,10 +4271,10 @@
         {
           "name": "AddEventModal",
           "params": [
-            "{ visible, startingDate, endingDate, docked, anchor, peekVisible = true, onClose, onSave, onEdit, calendars, event }"
+            "{ visible, startingDate, endingDate, docked, anchor, peekVisible = true, dockBottomInset = TAB_BAR_H, onClose, onSave, onEdit, calendars, event }"
           ],
           "exported": true,
-          "lineCount": 866
+          "lineCount": 874
         }
       ],
       "classes": [],
@@ -4181,6 +4453,12 @@
           ]
         },
         {
+          "source": "@/services/federation",
+          "specifiers": [
+            "remoteForCalendar"
+          ]
+        },
+        {
           "source": "@/components/ui/Tap",
           "specifiers": [
             "Tap"
@@ -4203,12 +4481,12 @@
         "DOCK_PEEK",
         "AddEventModal"
       ],
-      "totalLines": 958,
+      "totalLines": 972,
       "hasStructuralAnalysis": true
     },
     "apps/client/components/calendar/CalendarDetailModal.tsx": {
       "filePath": "apps/client/components/calendar/CalendarDetailModal.tsx",
-      "contentHash": "1f1bdbe6b7adfe9b30ad254e06fa60c4e780e484d17b2f6282bb695f8001717c",
+      "contentHash": "bcc4644b4134e927042b405adb888ff3e52570118c15d82bb9032a81bafafc43",
       "functions": [
         {
           "name": "CalendarDetail",
@@ -4216,7 +4494,7 @@
             "{ calendar, visible, onClose, onDelete, onEdit }"
           ],
           "exported": true,
-          "lineCount": 364
+          "lineCount": 406
         }
       ],
       "classes": [],
@@ -4293,7 +4571,6 @@
             "Animated",
             "Easing",
             "interpolate",
-            "runOnJS",
             "useAnimatedStyle",
             "useSharedValue",
             "withTiming"
@@ -4321,7 +4598,8 @@
         {
           "source": "./AddEventModal",
           "specifiers": [
-            "AddEventModal"
+            "AddEventModal",
+            "DOCK_PEEK"
           ]
         },
         {
@@ -4351,6 +4629,12 @@
           "source": "@/components/cal/ModeSwitch",
           "specifiers": [
             "ModeSwitch"
+          ]
+        },
+        {
+          "source": "@/components/calendar/YearStamp",
+          "specifiers": [
+            "YearStamp"
           ]
         },
         {
@@ -4436,7 +4720,7 @@
       "exports": [
         "CalendarDetail"
       ],
-      "totalLines": 410,
+      "totalLines": 453,
       "hasStructuralAnalysis": true
     },
     "apps/client/components/calendar/CalendarFilterBar.tsx": {
@@ -4514,7 +4798,7 @@
     },
     "apps/client/components/calendar/CalendarHeader.tsx": {
       "filePath": "apps/client/components/calendar/CalendarHeader.tsx",
-      "contentHash": "6755990871b0ab10c54ecc6bc6bd8f721b1a48f90b0a5e68663d3df64d1ddb21",
+      "contentHash": "5a85684ce11c8d0dc690b8a15728cb13455528c462e5c092740f90ba8f2e7e16",
       "functions": [
         {
           "name": "CalendarHeader",
@@ -4522,7 +4806,7 @@
             "{ anchorDate, calMode, onModeChange, onTodayPress, onRefresh, refreshing }"
           ],
           "exported": true,
-          "lineCount": 41
+          "lineCount": 42
         }
       ],
       "classes": [],
@@ -4574,6 +4858,12 @@
           ]
         },
         {
+          "source": "@/components/calendar/YearStamp",
+          "specifiers": [
+            "YearStamp"
+          ]
+        },
+        {
           "source": "@musubi/calendar",
           "specifiers": [
             "Mode"
@@ -4583,7 +4873,7 @@
       "exports": [
         "CalendarHeader"
       ],
-      "totalLines": 61,
+      "totalLines": 63,
       "hasStructuralAnalysis": true
     },
     "apps/client/components/calendar/CalendarPickerModal.tsx": {
@@ -4678,7 +4968,7 @@
     },
     "apps/client/components/calendar/CalendarSettingsModal.tsx": {
       "filePath": "apps/client/components/calendar/CalendarSettingsModal.tsx",
-      "contentHash": "010a59008b3470fcfd1430e7d55c89749dd24add4a53395dbccf7407fbbcd132",
+      "contentHash": "b4abbc714a32bed9c2636e756e00023cb934e03268c454cfad730707b3459938",
       "functions": [
         {
           "name": "CalendarSettingsModal",
@@ -4686,7 +4976,7 @@
             "{ calendar, visible, onClose, onDelete, onEdit, onLeave }"
           ],
           "exported": true,
-          "lineCount": 142
+          "lineCount": 146
         }
       ],
       "classes": [],
@@ -4794,7 +5084,7 @@
       "exports": [
         "CalendarSettingsModal"
       ],
-      "totalLines": 169,
+      "totalLines": 173,
       "hasStructuralAnalysis": true
     },
     "apps/client/components/calendar/CalendarSkeleton.tsx": {
@@ -5468,6 +5758,42 @@
         "SyncCalendarModal"
       ],
       "totalLines": 236,
+      "hasStructuralAnalysis": true
+    },
+    "apps/client/components/calendar/YearStamp.tsx": {
+      "filePath": "apps/client/components/calendar/YearStamp.tsx",
+      "contentHash": "84cdb84691d030cab3f85c0b13def1f9afd64cd2b699b6fa1cc5387156a96403",
+      "functions": [
+        {
+          "name": "YearStamp",
+          "params": [
+            "{ date, size = 12 }"
+          ],
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@/constants/theme",
+          "specifiers": [
+            "colors",
+            "fonts"
+          ]
+        },
+        {
+          "source": "react-native",
+          "specifiers": [
+            "Text",
+            "View"
+          ]
+        }
+      ],
+      "exports": [
+        "YearStamp"
+      ],
+      "totalLines": 18,
       "hasStructuralAnalysis": true
     },
     "apps/client/components/LoadingOverlay.tsx": {
@@ -6171,6 +6497,96 @@
       "totalLines": 10,
       "hasStructuralAnalysis": true
     },
+    "apps/client/drizzle/0000_solid_captain_britain.sql": {
+      "filePath": "apps/client/drizzle/0000_solid_captain_britain.sql",
+      "contentHash": "34ccbb38ab0570e1f417a24d5199cc3c6d625d2d48989462152ec8e27626ef0e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 7,
+      "hasStructuralAnalysis": true
+    },
+    "apps/client/drizzle/0001_next_stark_industries.sql": {
+      "filePath": "apps/client/drizzle/0001_next_stark_industries.sql",
+      "contentHash": "259e96defe4f83fc49159ec954c4191a593a1008d94f36e2e03acb8aea73f310",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 34,
+      "hasStructuralAnalysis": true
+    },
+    "apps/client/drizzle/0002_loving_psynapse.sql": {
+      "filePath": "apps/client/drizzle/0002_loving_psynapse.sql",
+      "contentHash": "98ca57103c942f94c384a7521534eb465667e82d20424f78bdcc428246df7ad3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "apps/client/drizzle/0003_classy_vermin.sql": {
+      "filePath": "apps/client/drizzle/0003_classy_vermin.sql",
+      "contentHash": "bc793f59bb4d00ca06e8f90916273792b3a1b66dee044539f3f2c48a8df2ea24",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "apps/client/drizzle/meta/_journal.json": {
+      "filePath": "apps/client/drizzle/meta/_journal.json",
+      "contentHash": "6b41227feada5d91dec0828c28793b4aea575caf343ea5fa2c2279d83a4d305b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 34,
+      "hasStructuralAnalysis": true
+    },
+    "apps/client/drizzle/meta/0000_snapshot.json": {
+      "filePath": "apps/client/drizzle/meta/0000_snapshot.json",
+      "contentHash": "8bded6e8959e7b378e14eb33a2d449d145bef3a43fec132c23a2e14e67b4ba6e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 56,
+      "hasStructuralAnalysis": true
+    },
+    "apps/client/drizzle/meta/0001_snapshot.json": {
+      "filePath": "apps/client/drizzle/meta/0001_snapshot.json",
+      "contentHash": "d8c2707c9fca5026c2951f7f4821fa046490e2fac3b84ff8333e22152ef0ef7f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 190,
+      "hasStructuralAnalysis": true
+    },
+    "apps/client/drizzle/meta/0002_snapshot.json": {
+      "filePath": "apps/client/drizzle/meta/0002_snapshot.json",
+      "contentHash": "da6b413457cd698609fbd62ad4b71e750fbf606d754a00e2551668f37ecb10ba",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 197,
+      "hasStructuralAnalysis": true
+    },
+    "apps/client/drizzle/meta/0003_snapshot.json": {
+      "filePath": "apps/client/drizzle/meta/0003_snapshot.json",
+      "contentHash": "c2715a8400afe844cd32054cef0da0e22c092416566ef93e83cf900f7fe3ff8d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 205,
+      "hasStructuralAnalysis": true
+    },
     "apps/client/drizzle/migrations.js": {
       "filePath": "apps/client/drizzle/migrations.js",
       "contentHash": "caf59b811f28480fc02ac4adb44f0cf79a08902e10040920c60bd3732d4413cf",
@@ -6212,6 +6628,16 @@
       "totalLines": 18,
       "hasStructuralAnalysis": true
     },
+    "apps/client/eas.json": {
+      "filePath": "apps/client/eas.json",
+      "contentHash": "8b6084c1a501638dfc74835d04a2e6721507ef8ef29ec67d7b21bbbe15b8f9fd",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 35,
+      "hasStructuralAnalysis": true
+    },
     "apps/client/eslint.config.js": {
       "filePath": "apps/client/eslint.config.js",
       "contentHash": "3b0c823fd936f964905db962e66e92e24773b7085c0c82750a4d4f0b1808c41c",
@@ -6224,13 +6650,13 @@
     },
     "apps/client/hooks/useEventsStream.ts": {
       "filePath": "apps/client/hooks/useEventsStream.ts",
-      "contentHash": "682fcb8213d789a3ad8914508f27b362901bdbb91f338751304ee12a13097e03",
+      "contentHash": "cfa99c7ee904acab2983496bde7bf89b9c70c688083f514a74ad32a732d96690",
       "functions": [
         {
           "name": "useConnectToEventStream",
           "params": [],
           "exported": true,
-          "lineCount": 48
+          "lineCount": 69
         }
       ],
       "classes": [],
@@ -6242,15 +6668,10 @@
           ]
         },
         {
-          "source": "expo-constants",
-          "specifiers": [
-            "Constants"
-          ]
-        },
-        {
           "source": "react",
           "specifiers": [
-            "useEffect"
+            "useEffect",
+            "useRef"
           ]
         },
         {
@@ -6270,26 +6691,33 @@
           "specifiers": [
             "useServer"
           ]
+        },
+        {
+          "source": "@/hooks/useRefreshData",
+          "specifiers": [
+            "useRefreshData"
+          ]
         }
       ],
       "exports": [
         "useConnectToEventStream"
       ],
-      "totalLines": 58,
+      "totalLines": 77,
       "hasStructuralAnalysis": true
     },
     "apps/client/hooks/useModalAnimation.ts": {
       "filePath": "apps/client/hooks/useModalAnimation.ts",
-      "contentHash": "96305215d66d9c1be6e56901c0d4ba60b0e9ea780a22574493ac570977f265cd",
+      "contentHash": "4ec1f244b82761a168b3d2e5262649707f439478cb53f7a27fdbad788ec58dab",
       "functions": [
         {
           "name": "useModalAnimation",
           "params": [
             "visible",
-            "onClose"
+            "onClose",
+            "keyboardAware"
           ],
           "exported": true,
-          "lineCount": 68
+          "lineCount": 69
         }
       ],
       "classes": [],
@@ -6334,18 +6762,18 @@
       "exports": [
         "useModalAnimation"
       ],
-      "totalLines": 84,
+      "totalLines": 88,
       "hasStructuralAnalysis": true
     },
     "apps/client/hooks/useRefreshData.ts": {
       "filePath": "apps/client/hooks/useRefreshData.ts",
-      "contentHash": "889b57750909ac7160d84c9eeac8074fb0c7f1a27743079c42d874a412bd7c26",
+      "contentHash": "c6a664b41746246633ab76838852b3999bf55e61fbf466fb43fe48a20cd26796",
       "functions": [
         {
           "name": "useRefreshData",
           "params": [],
           "exported": true,
-          "lineCount": 57
+          "lineCount": 88
         }
       ],
       "classes": [],
@@ -6381,10 +6809,18 @@
           ]
         },
         {
+          "source": "@/services/federation",
+          "specifiers": [
+            "setFederatedAccounts",
+            "syncFederatedAccounts"
+          ]
+        },
+        {
           "source": "@/services/eventsCache",
           "specifiers": [
             "cacheDeleteEvents",
             "cacheGetAllEvents",
+            "cacheGetCalendars",
             "cacheReplaceAllEvents",
             "cacheSetCalendars",
             "cacheUpsertEvents",
@@ -6396,7 +6832,7 @@
       "exports": [
         "useRefreshData"
       ],
-      "totalLines": 65,
+      "totalLines": 97,
       "hasStructuralAnalysis": true
     },
     "apps/client/hooks/useVisibleEvents.ts": {
@@ -6990,10 +7426,46 @@
       "totalLines": 39,
       "hasStructuralAnalysis": true
     },
+    "apps/client/package.json": {
+      "filePath": "apps/client/package.json",
+      "contentHash": "9f2ea3be01a445431b6ed3dd46f4c1edef939dd247ca1626dc8745a6956c6a80",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 87,
+      "hasStructuralAnalysis": true
+    },
+    "apps/client/plugins/withCalendarAppCategory.js": {
+      "filePath": "apps/client/plugins/withCalendarAppCategory.js",
+      "contentHash": "4cd2974d7608b51814fb1ddfb981196469b0a2f7bab8127e1bf7e943e6e03d94",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 44,
+      "hasStructuralAnalysis": true
+    },
     "apps/client/services/api.ts": {
       "filePath": "apps/client/services/api.ts",
-      "contentHash": "2235cd783998fad38663c2bf03e1fa488f89120446672e745ce335a9cf9a5e9a",
+      "contentHash": "d3164cb240d54c2dfe154435e8cfbcb5b6e0eb492322a2ae320630f241d510ab",
       "functions": [
+        {
+          "name": "remoteOf",
+          "params": [
+            "calendarID"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "eventHome",
+          "params": [
+            "event"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
         {
           "name": "throwOnError",
           "params": [
@@ -7006,7 +7478,7 @@
           "name": "useApi",
           "params": [],
           "exported": true,
-          "lineCount": 349
+          "lineCount": 452
         }
       ],
       "classes": [],
@@ -7033,12 +7505,19 @@
           "specifiers": [
             "apiVersion"
           ]
+        },
+        {
+          "source": "@/services/federation",
+          "specifiers": [
+            "fedFetch",
+            "remoteForCalendar"
+          ]
         }
       ],
       "exports": [
         "useApi"
       ],
-      "totalLines": 361,
+      "totalLines": 471,
       "hasStructuralAnalysis": true
     },
     "apps/client/services/auth-client.ts": {
@@ -7083,7 +7562,7 @@
     },
     "apps/client/services/db.ts": {
       "filePath": "apps/client/services/db.ts",
-      "contentHash": "cf76d78728c8d5d07c74d459015fe8783f94e39de3b3ebb685f950963f1cedf9",
+      "contentHash": "cc8a957bf8cc6a00587d861d4c5a55dbd112d20c4762b7fb316cbd5e88e80801",
       "functions": [],
       "classes": [],
       "imports": [
@@ -7101,14 +7580,15 @@
         }
       ],
       "exports": [
-        "db"
+        "db",
+        "sqlite"
       ],
-      "totalLines": 8,
+      "totalLines": 11,
       "hasStructuralAnalysis": true
     },
     "apps/client/services/eventsCache.ts": {
       "filePath": "apps/client/services/eventsCache.ts",
-      "contentHash": "fdc921d069bd25e5b529c1f8002303876b0d12c59715234c0f6c8a1d82b619b3",
+      "contentHash": "e0dc1a791ba19687f09aae7166ca80cb422776af6c8cdff68a5e782f13347f9a",
       "functions": [
         {
           "name": "toRow",
@@ -7198,6 +7678,21 @@
           "lineCount": 6
         },
         {
+          "name": "cacheSetSettings",
+          "params": [
+            "settings"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "cacheGetSettingsSync",
+          "params": [],
+          "returnType": "Settings | null",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
           "name": "cacheClearAll",
           "params": [],
           "exported": true,
@@ -7217,13 +7712,15 @@
           "source": "@musubi/types",
           "specifiers": [
             "Calendar",
-            "Event"
+            "Event",
+            "Settings"
           ]
         },
         {
           "source": "./db",
           "specifiers": [
-            "db"
+            "db",
+            "sqlite"
           ]
         },
         {
@@ -7243,9 +7740,139 @@
         "cacheGetCalendars",
         "getLastSync",
         "setLastSync",
+        "cacheSetSettings",
+        "cacheGetSettingsSync",
         "cacheClearAll"
       ],
-      "totalLines": 124,
+      "totalLines": 144,
+      "hasStructuralAnalysis": true
+    },
+    "apps/client/services/federation.ts": {
+      "filePath": "apps/client/services/federation.ts",
+      "contentHash": "41b21f08b54b503b4160fe8c3e4b51e30d11b7d84486d4d4cbf0ec12d071125f",
+      "functions": [
+        {
+          "name": "loadFederatedAccounts",
+          "params": [],
+          "returnType": "Promise<FederatedAccount[]>",
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "persist",
+          "params": [],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "addFederatedAccount",
+          "params": [
+            "acc"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "setFederatedAccounts",
+          "params": [
+            "accs"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "removeFederatedAccount",
+          "params": [
+            "server"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "remoteForCalendar",
+          "params": [
+            "calendarID"
+          ],
+          "returnType": "FederatedAccount | null",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "fedFetch",
+          "params": [
+            "acc",
+            "path",
+            "init"
+          ],
+          "returnType": "Promise<T>",
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "reviveEvent",
+          "params": [
+            "e"
+          ],
+          "returnType": "Event",
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "fetchRemoteCalendarPreview",
+          "params": [
+            "server",
+            "inviteToken"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "acceptRemoteInvite",
+          "params": [
+            "server",
+            "inviteToken",
+            "profile"
+          ],
+          "exported": true,
+          "lineCount": 19
+        },
+        {
+          "name": "syncFederatedAccounts",
+          "params": [
+            "fallbackCalendars"
+          ],
+          "exported": true,
+          "lineCount": 31
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "expo-secure-store",
+          "specifiers": [
+            "* as SecureStore"
+          ]
+        },
+        {
+          "source": "@musubi/types",
+          "specifiers": [
+            "Calendar",
+            "Event"
+          ]
+        }
+      ],
+      "exports": [
+        "loadFederatedAccounts",
+        "addFederatedAccount",
+        "setFederatedAccounts",
+        "removeFederatedAccount",
+        "remoteForCalendar",
+        "fedFetch",
+        "fetchRemoteCalendarPreview",
+        "acceptRemoteInvite",
+        "syncFederatedAccounts"
+      ],
+      "totalLines": 159,
       "hasStructuralAnalysis": true
     },
     "apps/client/services/notifications.ts": {
@@ -7495,7 +8122,7 @@
     },
     "apps/client/store/useSettingsStore.ts": {
       "filePath": "apps/client/store/useSettingsStore.ts",
-      "contentHash": "413bf6eb91adac1c236ebbab326f9ac07a3b974342b01549708c9f420f65b12f",
+      "contentHash": "1c4f491f2705f4da0d5e2d4f1d2c327f6c0e91fd5876a5f13a15aa46be5f09a7",
       "functions": [],
       "classes": [],
       "imports": [
@@ -7504,6 +8131,13 @@
           "specifiers": [
             "CalendarView",
             "Settings"
+          ]
+        },
+        {
+          "source": "@/services/eventsCache",
+          "specifiers": [
+            "cacheGetSettingsSync",
+            "cacheSetSettings"
           ]
         },
         {
@@ -7516,7 +8150,57 @@
       "exports": [
         "useSettingsStore"
       ],
-      "totalLines": 74,
+      "totalLines": 94,
+      "hasStructuralAnalysis": true
+    },
+    "apps/client/tsconfig.json": {
+      "filePath": "apps/client/tsconfig.json",
+      "contentHash": "3c14ded62f937ae12e9f121d1ebd53d9d6cae27b037651a99b1e34b80b33002a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 19,
+      "hasStructuralAnalysis": true
+    },
+    "docker-compose.selfhost.yml": {
+      "filePath": "docker-compose.selfhost.yml",
+      "contentHash": "f9ef752f80e35a45b49786ee37b99e89905c0751c46ae3aff29e09babc847d2d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 48,
+      "hasStructuralAnalysis": true
+    },
+    "docker-compose.yml": {
+      "filePath": "docker-compose.yml",
+      "contentHash": "4dc796dc8546c91e8fc97b4d88ab906229b321ed59fbdf05abdcee508f785727",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 38,
+      "hasStructuralAnalysis": true
+    },
+    "package.json": {
+      "filePath": "package.json",
+      "contentHash": "a939d9f33aa182fab975941797e7d940a069808cb5f194bb1524d577719d3523",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 26,
+      "hasStructuralAnalysis": true
+    },
+    "packages/auth/package.json": {
+      "filePath": "packages/auth/package.json",
+      "contentHash": "dba6f547c7eaf8b2abb31acde010a30b664bd0b82caa5c4ec903501c91540496",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 23,
       "hasStructuralAnalysis": true
     },
     "packages/auth/src/index.ts": {
@@ -7590,6 +8274,16 @@
         "auth"
       ],
       "totalLines": 79,
+      "hasStructuralAnalysis": true
+    },
+    "packages/calendar/package.json": {
+      "filePath": "packages/calendar/package.json",
+      "contentHash": "d9367904c83baac0e68a639217742e51683c47dba1ed720a69d1f59983986a1f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 13,
       "hasStructuralAnalysis": true
     },
     "packages/calendar/src/datetime.ts": {
@@ -7747,9 +8441,19 @@
       "totalLines": 124,
       "hasStructuralAnalysis": true
     },
+    "packages/config/package.json": {
+      "filePath": "packages/config/package.json",
+      "contentHash": "f76ccc7d4a9e460c91c98308cb7dd2c56273594241336b72750480e47b4734b0",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 21,
+      "hasStructuralAnalysis": true
+    },
     "packages/config/src/index.ts": {
       "filePath": "packages/config/src/index.ts",
-      "contentHash": "d18cc048d6d457637e0b1822864ba48bb87b5ebee1f1efc5c8d1dd90aa44065c",
+      "contentHash": "20e8c4dd7c060a2474d3a0eb628e2a26552d3a3f94bbe0774f064c756dce15a2",
       "functions": [
         {
           "name": "envOrThrow",
@@ -7796,7 +8500,7 @@
       "exports": [
         "config"
       ],
-      "totalLines": 96,
+      "totalLines": 102,
       "hasStructuralAnalysis": true
     },
     "packages/db/drizzle.config.ts": {
@@ -7822,9 +8526,549 @@
       "totalLines": 12,
       "hasStructuralAnalysis": true
     },
+    "packages/db/drizzle/0000_square_dexter_bennett.sql": {
+      "filePath": "packages/db/drizzle/0000_square_dexter_bennett.sql",
+      "contentHash": "39d3956e344e443fbfb368ed333b8dd16f0ae9b10e6ebb9a72ced29b61ea0f29",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 115,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0001_funny_nekra.sql": {
+      "filePath": "packages/db/drizzle/0001_funny_nekra.sql",
+      "contentHash": "87f650d42da868a73337bdb31b0907880f7d886666c616c570acd02676a782ad",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 10,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0002_flaky_natasha_romanoff.sql": {
+      "filePath": "packages/db/drizzle/0002_flaky_natasha_romanoff.sql",
+      "contentHash": "8c250f1484e78573c0d5d5d71e2ad622edece74c3bad699e29d430c9ea439ed9",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 8,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0003_medical_sebastian_shaw.sql": {
+      "filePath": "packages/db/drizzle/0003_medical_sebastian_shaw.sql",
+      "contentHash": "ca02f1d2ca8cd91c8be219a3f26d7bed763c3a14bc1651f79ba7591c0cdb6421",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 10,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0004_legal_maestro.sql": {
+      "filePath": "packages/db/drizzle/0004_legal_maestro.sql",
+      "contentHash": "f554acc440946d0072ab1dc2b09aafb022a004fe1b9d3ae253c25adcdb49e8a2",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0005_green_vin_gonzales.sql": {
+      "filePath": "packages/db/drizzle/0005_green_vin_gonzales.sql",
+      "contentHash": "253822dddbcc127707753396ca79c1873aca559a2737f1d97c88c57a9f8c9f95",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0006_mushy_mac_gargan.sql": {
+      "filePath": "packages/db/drizzle/0006_mushy_mac_gargan.sql",
+      "contentHash": "0839f6b1d37c06b60868cf956f98c69a2aef45b707637f542c7a56de2ca9e9c6",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0007_windy_doorman.sql": {
+      "filePath": "packages/db/drizzle/0007_windy_doorman.sql",
+      "contentHash": "59809eaf9cac01464958d172db9c873a1cc3d007985945a9f2f92b94543cd387",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 22,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0008_broken_penance.sql": {
+      "filePath": "packages/db/drizzle/0008_broken_penance.sql",
+      "contentHash": "4dbe475b19a4edec03425f9ed4e8020280ac4d55d7715f0ba3cbffeaacbe227f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 3,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0009_neat_meteorite.sql": {
+      "filePath": "packages/db/drizzle/0009_neat_meteorite.sql",
+      "contentHash": "56a2555a8de77a2d55cc26181add326c0dcb045778bda014821f2b8cde07fe18",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 28,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0010_high_bloodstorm.sql": {
+      "filePath": "packages/db/drizzle/0010_high_bloodstorm.sql",
+      "contentHash": "0a78a2ea3bfcd8b66356702480bb0ce44de601a3bb87883bd34547cd45548450",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0011_boring_mentallo.sql": {
+      "filePath": "packages/db/drizzle/0011_boring_mentallo.sql",
+      "contentHash": "b2b15dfe7cae953561b5902d76c9cfccd997b91ae938768d4273bcc2431a024d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 12,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0012_late_anthem.sql": {
+      "filePath": "packages/db/drizzle/0012_late_anthem.sql",
+      "contentHash": "0173853afd787185acf94d371148b67cc153d67f03a7fc2906db18e4d688227f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 5,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0013_zippy_baron_zemo.sql": {
+      "filePath": "packages/db/drizzle/0013_zippy_baron_zemo.sql",
+      "contentHash": "ba8d48e1ac48ce736e40ecb7538c41ea56cd6bf3079da0594aea83401f08ae51",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0014_robust_sister_grimm.sql": {
+      "filePath": "packages/db/drizzle/0014_robust_sister_grimm.sql",
+      "contentHash": "2ffb06b1c2ccfdfdfe5b601e2a3a87f3e1880c731fcc2d6fa62c1bb2a2ac8a6c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0015_deep_longshot.sql": {
+      "filePath": "packages/db/drizzle/0015_deep_longshot.sql",
+      "contentHash": "cb0e2a7ae43768c106c5a2e7255fa2c614cf33d018ebc01d6a9108d83423e6b7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0016_supreme_puppet_master.sql": {
+      "filePath": "packages/db/drizzle/0016_supreme_puppet_master.sql",
+      "contentHash": "0460b8c876896890324829977e90cadf3916a20bcecfa6cd6d92841a2f9d9690",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0017_fine_brood.sql": {
+      "filePath": "packages/db/drizzle/0017_fine_brood.sql",
+      "contentHash": "0793d9adea4e371d02e08d71f89853e0249d2559baea66a3fee0bee74dab7247",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0018_cute_blue_shield.sql": {
+      "filePath": "packages/db/drizzle/0018_cute_blue_shield.sql",
+      "contentHash": "2b956da381ccb52a43984e8c4435700ccab69ed82ef484be54c55c7fb20eed69",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0019_lean_mattie_franklin.sql": {
+      "filePath": "packages/db/drizzle/0019_lean_mattie_franklin.sql",
+      "contentHash": "da8450d5cc4e98e85d583e018c62ba92515a89ecca1c9ae1115465627ffff79f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 8,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0020_opposite_ulik.sql": {
+      "filePath": "packages/db/drizzle/0020_opposite_ulik.sql",
+      "contentHash": "600a474b0312aac666a8b04348fade37b4de075eff1e80c9f6de219de9cd1169",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0021_lumpy_supreme_intelligence.sql": {
+      "filePath": "packages/db/drizzle/0021_lumpy_supreme_intelligence.sql",
+      "contentHash": "af4f21f3771ecd327a0fd56472e25f776eacf78cd18a6646057e1b495b398dc5",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 20,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0022_long_demogoblin.sql": {
+      "filePath": "packages/db/drizzle/0022_long_demogoblin.sql",
+      "contentHash": "b1b81a25876b2366a4d7fa2a87cf94569e1620b1c63ca58944ade088cfca3a41",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0023_time_date_format.sql": {
+      "filePath": "packages/db/drizzle/0023_time_date_format.sql",
+      "contentHash": "47dbb05f550816bbeb53e0ee57c514903c9807b030f68fde8f706df19ad908ed",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 4,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0024_adorable_king_bedlam.sql": {
+      "filePath": "packages/db/drizzle/0024_adorable_king_bedlam.sql",
+      "contentHash": "1e0b217d04d5ee6df5de75935158d36e39b60a7f7667b5284e9d3453536b2d6f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 12,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/0025_smiling_preak.sql": {
+      "filePath": "packages/db/drizzle/0025_smiling_preak.sql",
+      "contentHash": "aadd309cdc4388f7ae470cf8ca6d70278fad15d5800e2715c273732905a56c87",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 12,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/_journal.json": {
+      "filePath": "packages/db/drizzle/meta/_journal.json",
+      "contentHash": "90dee9551fdfa9b1dc0eb2b4f25747d0f98fb587b005c9a3ff2c795053f42ef6",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 188,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0000_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0000_snapshot.json",
+      "contentHash": "0907ad867840dc3fa40976423371b769502638716ecb529b991693bd0cbab8a4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 803,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0001_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0001_snapshot.json",
+      "contentHash": "a79ed3eee8ad0fa0558abbc5fbbbff847148fb9b1ccb5badba7eb0adc45c64d3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 871,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0002_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0002_snapshot.json",
+      "contentHash": "4917078a9ed51f3b697aa5465a5c570a5a9b3d722b7f88defd0a6b963d4a10a6",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 915,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0003_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0003_snapshot.json",
+      "contentHash": "629ce569fd427143a2f1456b365e0c71f47469620d9061ecc27504a252eeef44",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 983,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0004_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0004_snapshot.json",
+      "contentHash": "535afb7fc4683f9f563726953cb83760c29f309d8a6545a483699848aee56f14",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 990,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0005_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0005_snapshot.json",
+      "contentHash": "6fd61186c8d70ea777038f433d3f5c55f09e507016ec13a39a810d76e34ad6fc",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 989,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0006_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0006_snapshot.json",
+      "contentHash": "40a09b1c0a530069e07732f6ffb552f92c45d48012271e5ec79ecb453adc7dee",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 996,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0007_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0007_snapshot.json",
+      "contentHash": "757fa2519da32b8435b0557280d33cdd0e13eaac21bac00e105e1f8d996ba2c4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1145,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0008_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0008_snapshot.json",
+      "contentHash": "9dcadbab265b50572a2c3dea78f6f1cbff76271f2521cae0f4ed965a28ed1d46",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1172,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0009_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0009_snapshot.json",
+      "contentHash": "6a62c914d4c8d652b43e68f7ec978bc9537087081d664ad5df8c7080f0b04c8e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1368,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0010_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0010_snapshot.json",
+      "contentHash": "c8fbf2525f34341d5cfcc902dd5472dc093b196bfe32831f2aec2d97b64e75c1",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1192,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0011_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0011_snapshot.json",
+      "contentHash": "ab7e3c5c6ae60ca08a7712e3701828b57b2aa9f55bbec9d0e26fbe00382ce228",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1272,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0012_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0012_snapshot.json",
+      "contentHash": "5cb6ccf9b0ddc71e34341e24c8b917bd9e6147bf3f88bdf32a6d4bacfeec76c9",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1280,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0013_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0013_snapshot.json",
+      "contentHash": "976bf6ceee7f1c13a88a1085d2a80f96c0963c816ef1510fe8830cb6de3a9d7c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1286,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0014_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0014_snapshot.json",
+      "contentHash": "d4123902dc3418c4dab57899b0933052a64217a088facac629d37155889dbcb0",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1292,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0015_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0015_snapshot.json",
+      "contentHash": "6553fe4649082d65d4c83c3dc12c4c854623e4819e04f92c57146b044cd3bb2f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1299,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0016_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0016_snapshot.json",
+      "contentHash": "d1b1378cdd57f0c0ad734f3cb798099b3584a8600e44add4fafbe7a99504e942",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1318,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0017_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0017_snapshot.json",
+      "contentHash": "cdf26292ef59020157bdd939526882f9c3620baf98632ac70067787f4b21b61d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1325,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0018_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0018_snapshot.json",
+      "contentHash": "5d7f622a964653c4183fa7f81106dc351dadafe5b497177f226b745e3d139699",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1339,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0019_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0019_snapshot.json",
+      "contentHash": "c54d66a0ce82571f33a07a29cb1ee2ad77cc5ef66b34e15ffc6e423c1a5f6c58",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1391,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0020_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0020_snapshot.json",
+      "contentHash": "48e3661af091ef061794d0b8c72aaee4f68c95c969054db21cb4c6627e17aec5",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1391,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0021_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0021_snapshot.json",
+      "contentHash": "c5aa299e93bfef4360162247f08efdbc7195e8ddbc8018e679898c18dfba1397",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1410,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0022_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0022_snapshot.json",
+      "contentHash": "de46620e743f73998266d74a631c9f9a049e48644895ea279a024f390ad127db",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1417,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0023_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0023_snapshot.json",
+      "contentHash": "87fc51be09f5ead79b2fa919e0b53866eee09ca8836a54c7d2afa6504b909a79",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1425,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0024_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0024_snapshot.json",
+      "contentHash": "72c7458791c9a30f36fd42cf247ca67a8ff2fc3161bf50b0892a6eb460332868",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1514,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/drizzle/meta/0025_snapshot.json": {
+      "filePath": "packages/db/drizzle/meta/0025_snapshot.json",
+      "contentHash": "d49da7b056e9ba966c9a56f972a911982350bed7225936cf7617e29d76bd465b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1595,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/package.json": {
+      "filePath": "packages/db/package.json",
+      "contentHash": "b5caf891866fae23fdd5893d1861e251693479710f3267df70f8f547957ba9b6",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 27,
+      "hasStructuralAnalysis": true
+    },
     "packages/db/src/index.ts": {
       "filePath": "packages/db/src/index.ts",
-      "contentHash": "6d7ebc6982f91464bd59dbf550f8365ad4fdd2421522edbdf0fafd0d2998395c",
+      "contentHash": "238eacbb2f1903ea256066d6d769954f8e2ba17178728afa92d9e46b91e4edcf",
       "functions": [],
       "classes": [],
       "imports": [
@@ -7850,7 +9094,7 @@
       "exports": [
         "db"
       ],
-      "totalLines": 17,
+      "totalLines": 18,
       "hasStructuralAnalysis": true
     },
     "packages/db/src/queries/caldav.ts": {
@@ -8196,7 +9440,7 @@
     },
     "packages/db/src/queries/external.ts": {
       "filePath": "packages/db/src/queries/external.ts",
-      "contentHash": "b52aa20e95183e217a25df9883eca5ee20cd384d2da4bc35f1690994d57ec1aa",
+      "contentHash": "66a73dcf7f452acf95d26cd075c83e62cde579ad0a3afd624bcdf8b5188990c2",
       "functions": [
         {
           "name": "getUserExternalCalendars",
@@ -8294,8 +9538,9 @@
             "values",
             "etag"
           ],
+          "returnType": "Promise<boolean>",
           "exported": true,
-          "lineCount": 37
+          "lineCount": 42
         },
         {
           "name": "deleteExternalEvent",
@@ -8304,8 +9549,27 @@
             "calendarID",
             "externalEventID"
           ],
+          "returnType": "Promise<boolean>",
           "exported": true,
-          "lineCount": 9
+          "lineCount": 12
+        },
+        {
+          "name": "sweepExternalEvents",
+          "params": [
+            "provider",
+            "calendarID",
+            "seenExternalEventIDs"
+          ],
+          "returnType": "Promise<number>",
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "getExternalSyncUserIDs",
+          "params": [],
+          "returnType": "Promise<string[]>",
+          "exported": true,
+          "lineCount": 4
         },
         {
           "name": "getExternalEventID",
@@ -8339,6 +9603,7 @@
             "and",
             "eq",
             "inArray",
+            "isNull",
             "sql"
           ]
         },
@@ -8367,10 +9632,125 @@
         "unlinkEventFromCalendars",
         "upsertExternalEvent",
         "deleteExternalEvent",
+        "sweepExternalEvents",
+        "getExternalSyncUserIDs",
         "getExternalEventID",
         "importExternalEvent"
       ],
-      "totalLines": 219,
+      "totalLines": 269,
+      "hasStructuralAnalysis": true
+    },
+    "packages/db/src/queries/federation.ts": {
+      "filePath": "packages/db/src/queries/federation.ts",
+      "contentHash": "909dd77cf221f8fd01e7746a352c575c3bb989460cc2f13ee1047d385de361f4",
+      "functions": [
+        {
+          "name": "findExternalUser",
+          "params": [
+            "homeServer",
+            "email"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "createExternalUser",
+          "params": [
+            "profile"
+          ],
+          "exported": true,
+          "lineCount": 21
+        },
+        {
+          "name": "saveMemberToken",
+          "params": [
+            "userID",
+            "tokenHash"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "getUserByTokenHash",
+          "params": [
+            "tokenHash"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "revokeMemberTokens",
+          "params": [
+            "userID"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "getMusubiAccounts",
+          "params": [
+            "userID"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "upsertMusubiAccount",
+          "params": [
+            "userID",
+            "server",
+            "remoteUserID",
+            "encryptedToken"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "deleteMusubiAccount",
+          "params": [
+            "userID",
+            "server"
+          ],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "drizzle-orm",
+          "specifiers": [
+            "and",
+            "eq"
+          ]
+        },
+        {
+          "source": "..",
+          "specifiers": [
+            "db",
+            "user",
+            "memberTokens",
+            "musubiAccounts"
+          ]
+        },
+        {
+          "source": "node:crypto",
+          "specifiers": [
+            "randomUUID"
+          ]
+        }
+      ],
+      "exports": [
+        "findExternalUser",
+        "createExternalUser",
+        "saveMemberToken",
+        "getUserByTokenHash",
+        "revokeMemberTokens",
+        "getMusubiAccounts",
+        "upsertMusubiAccount",
+        "deleteMusubiAccount"
+      ],
+      "totalLines": 86,
       "hasStructuralAnalysis": true
     },
     "packages/db/src/queries/google.ts": {
@@ -8640,7 +10020,7 @@
     },
     "packages/db/src/schema.ts": {
       "filePath": "packages/db/src/schema.ts",
-      "contentHash": "e913873d4be5ec94cf3459f730ed7705afa5fde24cb7fd69b1c6d85240ff05bf",
+      "contentHash": "1090d4e34447733b10d1c107fd8edbf4bc3d0138e4bdc8a773c1eff22878f8c4",
       "functions": [],
       "classes": [],
       "imports": [
@@ -8691,14 +10071,16 @@
         "eventUsersRelations",
         "externalCalendars",
         "externalEvents",
-        "caldavAccounts"
+        "caldavAccounts",
+        "memberTokens",
+        "musubiAccounts"
       ],
-      "totalLines": 443,
+      "totalLines": 489,
       "hasStructuralAnalysis": true
     },
     "packages/docs/astro.config.mjs": {
       "filePath": "packages/docs/astro.config.mjs",
-      "contentHash": "bdae64616457a0fb40f42814fd6996df95bc0eca84323b9946a466670d5c538b",
+      "contentHash": "40e58d12431a3683c3708a5d593a786e72bedaa188a447837e4ed28da0c54230",
       "functions": [],
       "classes": [],
       "imports": [
@@ -8715,6 +10097,12 @@
           ]
         },
         {
+          "source": "astro-mermaid",
+          "specifiers": [
+            "mermaid"
+          ]
+        },
+        {
           "source": "@astrojs/node",
           "specifiers": [
             "node"
@@ -8722,7 +10110,27 @@
         }
       ],
       "exports": [],
-      "totalLines": 51,
+      "totalLines": 71,
+      "hasStructuralAnalysis": true
+    },
+    "packages/docs/Dockerfile": {
+      "filePath": "packages/docs/Dockerfile",
+      "contentHash": "9aacc221205dff9c79ae89b41c930f0ac4ff6fa379d738000a7f65371e9116fb",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 14,
+      "hasStructuralAnalysis": true
+    },
+    "packages/docs/package.json": {
+      "filePath": "packages/docs/package.json",
+      "contentHash": "b0bbd90460e56122fb328de57539dbb3c832887b8b1b2c7515fb442f022d7f75",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 24,
       "hasStructuralAnalysis": true
     },
     "packages/docs/src/assets/houston.webp": {
@@ -8764,6 +10172,176 @@
         "collections"
       ],
       "totalLines": 8,
+      "hasStructuralAnalysis": true
+    },
+    "packages/docs/src/content/docs/architecture/api.mdx": {
+      "filePath": "packages/docs/src/content/docs/architecture/api.mdx",
+      "contentHash": "b3b606e16e81c5f32e97adedb2720344f74f07496bef17a5a21f20113f0c117b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 177,
+      "hasStructuralAnalysis": true
+    },
+    "packages/docs/src/content/docs/architecture/client.mdx": {
+      "filePath": "packages/docs/src/content/docs/architecture/client.mdx",
+      "contentHash": "58b0bf5f01dc9bc10f5778cb1ef2440bdbf7fd291a32a5093ef5d483e39cfc71",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 191,
+      "hasStructuralAnalysis": true
+    },
+    "packages/docs/src/content/docs/architecture/data-model.mdx": {
+      "filePath": "packages/docs/src/content/docs/architecture/data-model.mdx",
+      "contentHash": "a71895b446c69fe8bb64df4d475f6648fe48bdf8cc76918ab590d790f4178a51",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 182,
+      "hasStructuralAnalysis": true
+    },
+    "packages/docs/src/content/docs/architecture/federation.mdx": {
+      "filePath": "packages/docs/src/content/docs/architecture/federation.mdx",
+      "contentHash": "00a8b6f5ea51bfc2688da3d3ff341bbd8ff5b1b007dbca4822d2c232fbeb8a32",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 105,
+      "hasStructuralAnalysis": true
+    },
+    "packages/docs/src/content/docs/architecture/glossary.mdx": {
+      "filePath": "packages/docs/src/content/docs/architecture/glossary.mdx",
+      "contentHash": "d4f326ceed9955fa974e7b06699b0492375a8186a140e479769e5a353e8a8ff3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 113,
+      "hasStructuralAnalysis": true
+    },
+    "packages/docs/src/content/docs/architecture/overview.mdx": {
+      "filePath": "packages/docs/src/content/docs/architecture/overview.mdx",
+      "contentHash": "c08a7c6f7a0ca24e376e163480fa4901e77faa2f11cfe7b2d4ca56abfe9091e2",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 137,
+      "hasStructuralAnalysis": true
+    },
+    "packages/docs/src/content/docs/architecture/packages.mdx": {
+      "filePath": "packages/docs/src/content/docs/architecture/packages.mdx",
+      "contentHash": "4864f578ccee5e531db3febb0016e708b66a1594268e8870a40c8f0fa47cf83a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 115,
+      "hasStructuralAnalysis": true
+    },
+    "packages/docs/src/content/docs/architecture/sync.mdx": {
+      "filePath": "packages/docs/src/content/docs/architecture/sync.mdx",
+      "contentHash": "bdf6d81c001efed61a6cdba7d9fb6eb1eb926ed28569edd8319ec45714ab4887",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 170,
+      "hasStructuralAnalysis": true
+    },
+    "packages/docs/src/content/docs/guides/contributing.mdx": {
+      "filePath": "packages/docs/src/content/docs/guides/contributing.mdx",
+      "contentHash": "0276764250d607a7a398a7afd0bfe0ce7afb80f23c38533242279b45f24ba704",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 107,
+      "hasStructuralAnalysis": true
+    },
+    "packages/docs/src/content/docs/guides/introduction.mdx": {
+      "filePath": "packages/docs/src/content/docs/guides/introduction.mdx",
+      "contentHash": "ba80054b14b1bdefbe81b709ecd1175c7f9d78b3b1a600c86eba01965e14edfb",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 96,
+      "hasStructuralAnalysis": true
+    },
+    "packages/docs/src/content/docs/guides/onboarding.mdx": {
+      "filePath": "packages/docs/src/content/docs/guides/onboarding.mdx",
+      "contentHash": "ab51530be4042fc333ede3edd2f5b66a17bacd2a1a6c967cd8ffc6e1b385e767",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 242,
+      "hasStructuralAnalysis": true
+    },
+    "packages/docs/src/content/docs/guides/running-locally.mdx": {
+      "filePath": "packages/docs/src/content/docs/guides/running-locally.mdx",
+      "contentHash": "3f3cf24a749f83ed80995e2e3f25558e941f0ee20a23ae0c7a69d5fe72d49319",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 84,
+      "hasStructuralAnalysis": true
+    },
+    "packages/docs/src/content/docs/guides/self-hosting.mdx": {
+      "filePath": "packages/docs/src/content/docs/guides/self-hosting.mdx",
+      "contentHash": "dcd1d946430a88b88729cf8ef796c7d48298c0dc19179ee2a2563d49545b20dd",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 98,
+      "hasStructuralAnalysis": true
+    },
+    "packages/docs/src/content/docs/index.mdx": {
+      "filePath": "packages/docs/src/content/docs/index.mdx",
+      "contentHash": "0fe667d49e09dcef237ebc8de97c4a0ea18344f99d73ebe0305bb83d86371552",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 44,
+      "hasStructuralAnalysis": true
+    },
+    "packages/docs/src/styles/custom.css": {
+      "filePath": "packages/docs/src/styles/custom.css",
+      "contentHash": "f906d55a8d5243c75a6fb6988eec84a3fd7791b04422f9313946aba21bb1c513",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 159,
+      "hasStructuralAnalysis": false
+    },
+    "packages/docs/tsconfig.json": {
+      "filePath": "packages/docs/tsconfig.json",
+      "contentHash": "b5b0a5b04a14cddd7713c5e1c82e86c79c17c2f86b170e26e9b170b3d5e01cd9",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 6,
+      "hasStructuralAnalysis": true
+    },
+    "packages/types/package.json": {
+      "filePath": "packages/types/package.json",
+      "contentHash": "98176825cc5b646891c9f15b5cfc045166b6c1db8f538da9ecf36f74a2c343ff",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 21,
       "hasStructuralAnalysis": true
     },
     "packages/types/src/calendar.ts": {
@@ -8996,6 +10574,36 @@
         "UserSchema"
       ],
       "totalLines": 11,
+      "hasStructuralAnalysis": true
+    },
+    "pnpm-workspace.yaml": {
+      "filePath": "pnpm-workspace.yaml",
+      "contentHash": "1ccd29306c6bdab467041cf0bdc3455cda601c872ee12f425e6a75e9405cb144",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "README.md": {
+      "filePath": "README.md",
+      "contentHash": "c275bbad18832376c00b516334bbf1708e56bd688e450a99ad0638a9ed329540",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 145,
+      "hasStructuralAnalysis": true
+    },
+    "turbo.json": {
+      "filePath": "turbo.json",
+      "contentHash": "7bd2167f5d34754e6651ac2f49f05c714c3e47e914f1ed72d5dc8b3b212d93f7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 19,
       "hasStructuralAnalysis": true
     }
   }
