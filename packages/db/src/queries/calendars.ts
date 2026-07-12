@@ -91,6 +91,13 @@ export async function getCalendarMembers(calendarID: string) {
     }
   });
 
+  // Owner first everywhere members are shown; name as a stable tiebreaker.
+  const rank: Record<string, number> = { owner: 0, editor: 1, viewer: 2 };
+  result.sort((a, b) =>
+    (rank[a.role] ?? 9) - (rank[b.role] ?? 9)
+    || a.user.name.localeCompare(b.user.name)
+  );
+
   return result;
 }
 
