@@ -246,21 +246,36 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
               }
               {attendees && (
                 <View style={[styles.fieldContainer, { borderBottomWidth: 0 }]}>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                    <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>
+                  {/* Same row anatomy as MemberRolesModal: label left, pill action right. */}
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <Text style={[styles.fieldLabel, { fontFamily: fonts.sans, marginBottom: 0 }]}>
                       Attendees{attendees.length > 0 ? ` · ${attendees.length}` : ""}
                     </Text>
-                    <Tap onPress={toggleAttendance} haptic={isAttending ? "warn" : "success"} hitSlop={10}>
-                      <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: isAttending ? colors.fg3 : colors.accent }}>
-                        {isAttending ? "Leave" : "Attend"}
-                      </Text>
+                    <Tap
+                      onPress={toggleAttendance}
+                      haptic={isAttending ? "warn" : "success"}
+                      style={{
+                        borderWidth: 1, borderColor: colors.line2, borderRadius: 999, padding: 2,
+                        backgroundColor: isAttending ? "transparent" : colors.fill,
+                      }}
+                    >
+                      <View style={{ paddingHorizontal: 12, paddingVertical: 5 }}>
+                        <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: isAttending ? colors.fg2 : colors.onFill }}>
+                          {isAttending ? "Leave" : "Attend"}
+                        </Text>
+                      </View>
                     </Tap>
                   </View>
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                  <View style={{ gap: 12 }}>
                     {attendees.map(a => (
-                      <View key={a.id} style={styles.pill}>
-                        <Avatar name={a.name} image={a.image} size={20} />
-                        <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg2 }}>{a.name}</Text>
+                      <View key={a.id} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                        <Avatar name={a.name} image={a.image} size={40} />
+                        <Text style={{ fontFamily: fonts.sans, fontSize: 14, color: colors.fg, flex: 1 }} numberOfLines={1}>
+                          {a.name}
+                        </Text>
+                        {a.id === userID && (
+                          <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.fg3 }}>You</Text>
+                        )}
                       </View>
                     ))}
                   </View>
