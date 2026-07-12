@@ -74,7 +74,7 @@ erDiagram
 **Consequences you must respect:**
 
 - To find a user's events, you join `user → calendarMembers → calendars → calendarEvents → events`. There is no shortcut column.
-- Deleting a calendar only removes an event if that event is **orphaned** (no remaining `calendarEvents` links). See `removeCalendar()` in `queries/calendars.ts`.
+- Deleting a calendar kills the events **homed** in it (`originCalendarID`) everywhere — they're tombstoned *before* the calendar row goes, because the FK would otherwise `set null` their origin and hide them. Events merely *linked* into the deleted calendar survive in their other calendars; only fully **orphaned** ones (no remaining `calendarEvents` links) are removed. See `removeCalendar()` in `queries/calendars.ts`.
 - A shared event linked into 3 calendars is *one* row. Editing it edits it everywhere. That's the feature.
 
 <Aside type="note">
