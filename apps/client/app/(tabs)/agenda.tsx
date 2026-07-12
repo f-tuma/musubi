@@ -106,6 +106,84 @@ export default function AgendaTab() {
     setEventDetailVisible(true);
   }, []);
 
+  // Year dividers are direct ScrollView children so stickyHeaderIndices can
+  // pin them: the year stays at the top until the next year's divider pushes
+  // it off. Solid background + padding (not margin) so rows don't show
+  // through while pinned.
+  const stickyIndices: number[] = [];
+  const rows: React.JSX.Element[] = [];
+  groups.slice(0, shown).forEach((g, i, sliced) => {
+    if (i === 0 || sliced[i - 1].date.getFullYear() !== g.date.getFullYear()) {
+      stickyIndices.push(rows.length);
+      rows.push(
+        <View
+          key={`year-${g.date.getFullYear()}`}
+          style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingTop: 14, paddingBottom: 2, backgroundColor: colors.bg }}
+        >
+          <YearStamp date={g.date} full />
+          <View style={{ flex: 1, height: 1, backgroundColor: colors.line }} />
+        </View>
+      );
+    }
+    rows.push(
+      <Animated.View
+        key={g.date.toISOString()}
+        entering={FadeIn.duration(250)}
+      >
+        <View style={styles.timelineRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.timelineDay}>
+              {g.date.toLocaleString("en-UK", { day: "2-digit" })}
+            </Text>
+            <Text style={styles.timelineMonth}>
+              {g.date.toLocaleString("en-UK", { month: "short" }).toUpperCase()}
+            </Text>
+          </View>
+          <View style={{ flex: 4, justifyContent: "flex-end" }}>
+            <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg2 }} >
+              {g.date.toLocaleString("en-UK", { weekday: "long" })}
+            </Text>
+            {dateKey(g.date) === todayKey &&
+              <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg3 }}>
+                TODAY
+              </Text>
+            }
+          </View>
+        </View>
+        <View>
+          {
+            g.items.map(e => (
+              <Tap onPress={() => openEventDetail(e)} key={e.id} style={styles.timelineRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg2 }}>
+                    {formatTime(e.start, timeFormat)}
+                  </Text>
+                  <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg4 }}>
+                    {formatTime(e.end, timeFormat)}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: "row", flex: 4 }}>
+                  <View style={{ width: 1, backgroundColor: eventColor(e, calendarById), alignSelf: "stretch" }} />
+                  <View style={{ paddingLeft: 16, justifyContent: "center" }}>
+                    <Text style={styles.timelineTitle}>{e.title}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      {e.calendars.map(c => (
+                        <View key={c} style={{ flexDirection: "row", gap: 4, alignItems: "center" }}>
+                          <View style={[styles.colorDot, { backgroundColor: calendarById.get(c)?.color ?? "" }]} />
+                          <Text style={styles.timelineMeta}>{calendarById.get(c)?.name ?? ""}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                </View>
+              </Tap>
+            ))
+          }
+        </View>
+      </Animated.View>
+    );
+  });
+
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
@@ -131,74 +209,9 @@ export default function AgendaTab() {
           const fromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height;
           if (fromBottom < 400) setShown(s => Math.min(s + PAGE, groups.length));
         }}
+        stickyHeaderIndices={stickyIndices}
       >
-        {groups.length === 0 && <Empty kanji="静" text="No events ahead" />}
-        {
-          groups.slice(0, shown).map((g, i, sliced) => (
-            <Animated.View
-              key={g.date.toISOString()}
-              entering={FadeIn.duration(250)}
-            >
-              {/* Year divider — once per year in the list (first group + on change). */}
-              {(i === 0 || sliced[i - 1].date.getFullYear() !== g.date.getFullYear()) && (
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 14, marginBottom: 2 }}>
-                  <YearStamp date={g.date} />
-                  <View style={{ flex: 1, height: 1, backgroundColor: colors.line }} />
-                </View>
-              )}
-              <View style={styles.timelineRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.timelineDay}>
-                    {g.date.toLocaleString("en-UK", { day: "2-digit" })}
-                  </Text>
-                  <Text style={styles.timelineMonth}>
-                    {g.date.toLocaleString("en-UK", { month: "short" }).toUpperCase()}
-                  </Text>
-                </View>
-                <View style={{ flex: 4, justifyContent: "flex-end" }}>
-                  <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg2 }} >
-                    {g.date.toLocaleString("en-UK", { weekday: "long" })}
-                  </Text>
-                  {dateKey(g.date) === todayKey &&
-                    <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg3 }}>
-                      TODAY
-                    </Text>
-                  }
-                </View>
-              </View>
-              <View>
-                {
-                  g.items.map(e => (
-                    <Tap onPress={() => openEventDetail(e)} key={e.id} style={styles.timelineRow}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg2 }}>
-                          {formatTime(e.start, timeFormat)}
-                        </Text>
-                        <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg4 }}>
-                          {formatTime(e.end, timeFormat)}
-                        </Text>
-                      </View>
-                      <View style={{ flexDirection: "row", flex: 4 }}>
-                        <View style={{ width: 1, backgroundColor: eventColor(e, calendarById), alignSelf: "stretch" }} />
-                        <View style={{ paddingLeft: 16, justifyContent: "center" }}>
-                          <Text style={styles.timelineTitle}>{e.title}</Text>
-                          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                            {e.calendars.map(c => (
-                              <View key={c} style={{ flexDirection: "row", gap: 4, alignItems: "center" }}>
-                                <View style={[styles.colorDot, { backgroundColor: calendarById.get(c)?.color ?? "" }]} />
-                                <Text style={styles.timelineMeta}>{calendarById.get(c)?.name ?? ""}</Text>
-                              </View>
-                            ))}
-                          </View>
-                        </View>
-                      </View>
-                    </Tap>
-                  ))
-                }
-              </View>
-            </Animated.View>
-          ))
-        }
+        {groups.length === 0 ? <Empty kanji="静" text="No events ahead" /> : rows}
       </ScrollView>
       {/* FAB hides while the docked composer is open (mirrors the home screen). */}
       {!createOpen && (
