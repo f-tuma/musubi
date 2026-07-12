@@ -309,9 +309,6 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
                             <Text style={{ fontFamily: fonts.sans, fontSize: 14, color: colors.fg, flex: 1 }} numberOfLines={1}>
                               {a.name}
                             </Text>
-                            {a.id === userID && (
-                              <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.fg3 }}>You</Text>
-                            )}
                           </View>
                         ))}
                       </View>
