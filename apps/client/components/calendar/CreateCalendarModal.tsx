@@ -1,9 +1,11 @@
 import { appColors } from "@/constants/colors";
 import { colors, fonts, styles } from "@/constants/theme";
-import { Calendar } from "@musubi/types";
+import { Calendar, providerFlavor } from "@musubi/types";
 import { useServer } from "@/contexts/ServerContext";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
-import { useEffect, useState } from "react";
+import { useCalendarsStore } from "@/store/useCalendarsStore";
+import { ProviderIcon } from "@/components/calendar/ReorderableCalendarList";
+import { useEffect, useMemo, useState } from "react";
 import { Text, Modal, Pressable, ScrollView, View, TextInput, Alert } from "react-native";
 import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -37,6 +39,22 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
   const [pickerOpen, setPickerOpen] = useState(false);
   const isCustomColor = !appColors.some(c => c.color === newColor);
 
+  // Where to create: null = this Musubi server, otherwise a connected provider
+  // account — one entry per (provider, accountId), derived from synced calendars.
+  const allCalendars = useCalendarsStore(s => s.calendars);
+  const accounts = useMemo(() => {
+    const map = new Map<string, { provider: string; accountId: string; label: string; flavor: string | null }>();
+    for (const c of allCalendars) {
+      if (!c.provider || !c.accountId) continue;
+      const key = `${c.provider}:${c.accountId}`;
+      if (!map.has(key)) {
+        map.set(key, { provider: c.provider, accountId: c.accountId, label: c.accountLabel || c.provider, flavor: providerFlavor(c) });
+      }
+    }
+    return [...map.values()];
+  }, [allCalendars]);
+  const [account, setAccount] = useState<(typeof accounts)[number] | null>(null);
+
   const { data: session } = authClient.useSession();
   const userID = session?.user.id;
 
@@ -55,6 +73,9 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
       color: newColor,
       members: calendar?.members ?? [],
       invite: "create",
+      // create into a connected account — the server makes it on the provider first
+      provider: calendar ? calendar.provider : account?.provider ?? null,
+      accountId: calendar ? calendar.accountId : account?.accountId ?? null,
     };
 
     let passed = true;
@@ -100,6 +121,7 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
     setNewName("");
     setNameError("");
     setNewColor(appColors[0].color);
+    setAccount(null);
     setCalendarHint(CALENDAR_HINTS[Math.floor(Math.random() * CALENDAR_HINTS.length)]);
     setIsLoading(false);
   };
@@ -182,6 +204,45 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                     </View>
                   </ScrollView>
                 </View>
+
+                {/* Where the calendar lives — this Musubi server, or a connected
+                    provider account (created on the provider, then synced in).
+                    Only when creating: calendars can't move between accounts. */}
+                {!calendar && accounts.length > 0 && (
+                  <View style={styles.fieldContainer}>
+                    <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Account</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      <View style={{ flexDirection: "row", gap: 8, paddingVertical: 12 }}>
+                        {[null, ...accounts].map((a) => {
+                          const selected = (a?.accountId ?? null) === (account?.accountId ?? null) && (a?.provider ?? null) === (account?.provider ?? null);
+                          return (
+                            <Tap
+                              key={a ? `${a.provider}:${a.accountId}` : "musubi"}
+                              haptic="select"
+                              onPress={() => setAccount(a)}
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                gap: 6,
+                                paddingHorizontal: 12,
+                                paddingVertical: 7,
+                                borderRadius: 999,
+                                borderWidth: 1,
+                                borderColor: selected ? colors.fg3 : colors.line3,
+                                backgroundColor: selected ? colors.bg3 : "transparent",
+                              }}
+                            >
+                              <ProviderIcon provider={a?.flavor} />
+                              <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: selected ? colors.fg : colors.fg2 }}>
+                                {a?.label ?? "Musubi"}
+                              </Text>
+                            </Tap>
+                          );
+                        })}
+                      </View>
+                    </ScrollView>
+                  </View>
+                )}
               </ScrollView>
               <View style={[styles.modalButtons, { paddingBottom: insets.bottom + 16 }]}>
                 <Btn label="Cancel" variant="secondary" onPress={handleClose} />

@@ -1,4 +1,5 @@
 import ICAL from "ical.js";
+import { randomUUID } from "crypto";
 import { Event } from "@musubi/types";
 import { getCaldavAccountById, getCaldavAccountsByUser } from "@musubi/db";
 import { CalendarAdapter, ExternalCalendarInfo, FetchChangesResult, NormalizedEvent } from "../adapter";
@@ -10,6 +11,18 @@ async function clientForAccount(accountId: string) {
   if (!acc) throw new Error("CalDAV account not found");
   return createCaldavClient(acc.serverUrl, acc.username, decryptSecret(acc.encryptedPassword));
 }
+
+// Basic-auth header for calendar-level ops (MKCALENDAR / PROPPATCH / DELETE) —
+// tsdav's typed client covers objects well, but raw WebDAV keeps the Apple
+// color namespace and MKCALENDAR body under our control.
+async function basicAuthForAccount(accountId: string) {
+  const acc = await getCaldavAccountById(accountId);
+  if (!acc) throw new Error("CalDAV account not found");
+  return `Basic ${Buffer.from(`${acc.username}:${decryptSecret(acc.encryptedPassword)}`).toString("base64")}`;
+}
+
+const escapeXml = (s: string) =>
+  s.replace(/[<>&'"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" }[c]!));
 
 // All-day is a tz-less date; anchor to UTC midnight (consistent with the rest of Musubi).
 function utcMidnight(t: { year: number; month: number; day: number }): Date {
@@ -182,6 +195,56 @@ export const caldavAdapter: CalendarAdapter = {
     const client = await clientForAccount(accountId);
     const res = await client.deleteCalendarObject({
       calendarObject: { url: externalEventId },
+    });
+    if (!res.ok && res.status !== 404) throw new Error(`CalDAV ${res.status} ${res.statusText}`);
+  },
+
+  async createCalendar(_userID, accountId, { name, color }) {
+    // Calendar home = parent of an existing calendar's URL (every provisioned
+    // account has at least one; discovery re-derives partition hosts on iCloud).
+    const client = await clientForAccount(accountId);
+    const cals = await client.fetchCalendars();
+    if (cals.length === 0) throw new Error("CalDAV: no calendar home found on this account");
+    const home = new URL("..", cals[0].url).href;
+    const url = `${home}${randomUUID()}/`;
+
+    const res = await fetch(url, {
+      method: "MKCALENDAR",
+      headers: { Authorization: await basicAuthForAccount(accountId), "Content-Type": "application/xml; charset=utf-8" },
+      body: `<?xml version="1.0" encoding="utf-8"?>
+<C:mkcalendar xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:A="http://apple.com/ns/ical/">
+  <D:set><D:prop>
+    <D:displayname>${escapeXml(name)}</D:displayname>
+    <A:calendar-color>${escapeXml(color)}</A:calendar-color>
+    <C:supported-calendar-component-set><C:comp name="VEVENT"/></C:supported-calendar-component-set>
+  </D:prop></D:set>
+</C:mkcalendar>`,
+    });
+    if (!res.ok) throw new Error(`CalDAV ${res.status} ${res.statusText}`);
+    return { externalId: url };
+  },
+
+  async updateCalendar(_userID, accountId, externalCalendarId, { name, color }) {
+    const res = await fetch(externalCalendarId, {
+      method: "PROPPATCH",
+      headers: { Authorization: await basicAuthForAccount(accountId), "Content-Type": "application/xml; charset=utf-8" },
+      body: `<?xml version="1.0" encoding="utf-8"?>
+<D:propertyupdate xmlns:D="DAV:" xmlns:A="http://apple.com/ns/ical/">
+  <D:set><D:prop>
+    <D:displayname>${escapeXml(name)}</D:displayname>
+    <A:calendar-color>${escapeXml(color)}</A:calendar-color>
+  </D:prop></D:set>
+</D:propertyupdate>`,
+    });
+    // 207 multistatus counts as ok; per-prop failures (e.g. a server ignoring
+    // the Apple color prop) are non-fatal — displayname is the one that matters.
+    if (!res.ok && res.status !== 207) throw new Error(`CalDAV ${res.status} ${res.statusText}`);
+  },
+
+  async deleteCalendar(_userID, accountId, externalCalendarId) {
+    const res = await fetch(externalCalendarId, {
+      method: "DELETE",
+      headers: { Authorization: await basicAuthForAccount(accountId) },
     });
     if (!res.ok && res.status !== 404) throw new Error(`CalDAV ${res.status} ${res.statusText}`);
   },
