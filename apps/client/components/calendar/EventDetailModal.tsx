@@ -256,9 +256,9 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
                 </View>
               }
               {event?.hasAttendees && shownAttendees.length > 0 && (
-                // paddingHorizontal 22 (not the container's 16) — optically lines
+                // paddingHorizontal 26 (not the container's 16) — optically lines
                 // up with the title block above; circles at 16 read wider than text.
-                <View style={[styles.fieldContainer, { borderBottomWidth: 0, paddingHorizontal: 22 }]}>
+                <View style={[styles.fieldContainer, { borderBottomWidth: 0, paddingHorizontal: 26 }]}>
                   {/* Same row anatomy as MemberRolesModal: label left, pill action right.
                       The label doubles as the expand/collapse toggle (chevron lives here so
                       it survives the facepile ↔ list swap below). */}
