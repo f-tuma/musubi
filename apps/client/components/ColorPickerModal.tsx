@@ -6,6 +6,12 @@ import { useEffect, useRef, useState } from "react";
 import ColorPicker, { HueSlider, Panel1, Preview } from "reanimated-color-picker";
 import { Btn } from "@/components/ui/Btn";
 
+// Dark text on light colors, light text on dark ones (perceived luminance).
+const isLight = (hex: string) => {
+  const n = parseInt(hex.slice(1), 16);
+  return (0.299 * (n >> 16 & 255) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) > 150;
+};
+
 type Props = {
   visible: boolean,
   /** Initial color (hex). */
@@ -63,29 +69,28 @@ export default function ColorPickerModal({ visible, value, onConfirm, onClose }:
               style={{ gap: 14 }}
               onCompleteJS={({ hex }) => { picked.current = hex; setHexText(hex); }}
             >
-              <Preview hideInitialColor style={{ borderRadius: 10 }} />
+              {/* The preview pill doubles as the hex field: Preview paints the
+                  live color, the transparent input on top edits the code. */}
+              <View>
+                <Preview hideInitialColor hideText style={{ borderRadius: 10, height: 44 }} />
+                <TextInput
+                  value={hexText}
+                  onChangeText={onHexInput}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  maxLength={7}
+                  style={{
+                    position: "absolute", top: 0, bottom: 0, left: 0, right: 0,
+                    textAlign: "center",
+                    color: isLight(picked.current) ? "#1a1a1a" : "#f2f2f2",
+                    fontFamily: fonts.sans,
+                    fontSize: 15,
+                  }}
+                />
+              </View>
               <Panel1 style={{ borderRadius: 10 }} />
               <HueSlider style={{ borderRadius: 10 }} />
             </ColorPicker>
-            <TextInput
-              value={hexText}
-              onChangeText={onHexInput}
-              autoCapitalize="none"
-              autoCorrect={false}
-              maxLength={7}
-              placeholder="#RRGGBB"
-              placeholderTextColor={colors.fg4}
-              style={{
-                padding: 12,
-                borderWidth: 1,
-                borderColor: colors.line3,
-                borderRadius: 10,
-                backgroundColor: colors.bg2,
-                color: colors.fg,
-                fontFamily: fonts.sans,
-                fontSize: 15,
-              }}
-            />
             <View style={{ flexDirection: "row", gap: 16 }}>
               <Btn label="Cancel" variant="secondary" onPress={handleClose} />
               <Btn label="Confirm" onPress={() => { onConfirm(picked.current); handleClose(); }} />
