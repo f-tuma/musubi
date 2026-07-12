@@ -1,9 +1,31 @@
 import { Request, Response } from "express";
-import { addCalendarMember, createCalendar, getCalendar, getCalendarEvents, getCalendarIDFromToken, getCalendarMembers, getExternalLinkForCalendar, getUserRoleForCalendar, getUsersCalendars, NewCalendar, removeCalendar, removeCalendarMember, setMemberRole, updateCalendar } from '@musubi/db';
+import { addCalendarMember, createCalendar, getCalendar, getCalendarEvents, getCalendarIDFromToken, getCalendarMembers, getExternalLinkForCalendar, getUserRoleForCalendar, getUsersCalendars, importExternalCalendar, NewCalendar, removeCalendar, removeCalendarMember, setMemberRole, updateCalendar } from '@musubi/db';
 import { BadRequestError, Calendar, CalendarSchema, ForbiddenError, NotFoundError, User } from "@musubi/types";
 import { notifyCalendarMembers } from "./stream";
 import { assertCan } from "../permissions";
+import { getAdapter } from "../sync/engine";
 
+// External mirror? Then only the person whose provider account backs it may
+// change/delete it — and the change must land on the provider FIRST (throwing
+// aborts the local write, keeping Musubi and the provider consistent).
+async function pushExternal(
+  userID: string,
+  calendarID: string,
+  action: (adapter: NonNullable<ReturnType<typeof getAdapter>>, link: NonNullable<Awaited<ReturnType<typeof getExternalLinkForCalendar>>>) => Promise<void>,
+) {
+  const link = await getExternalLinkForCalendar(calendarID);
+  if (!link) return;
+  if (link.userID !== userID) {
+    throw new ForbiddenError("Only the owner of the connected account can change this calendar.");
+  }
+  const adapter = getAdapter(link.provider);
+  if (!adapter) throw new BadRequestError(`Unknown provider "${link.provider}".`);
+  try {
+    await action(adapter, link);
+  } catch (e: any) {
+    throw new BadRequestError(e?.message ?? "The provider rejected the change.");
+  }
+}
 
 export async function handlerCreateCalendar(req: Request, res: Response) {
   let calendar: Calendar;
@@ -12,6 +34,38 @@ export async function handlerCreateCalendar(req: Request, res: Response) {
   } catch (err) {
     throw new BadRequestError("Request is missing valid calendar data...");
   }
+
+  // Create INTO a connected provider account: make it on the provider first,
+  // then import the mirror exactly like the sync engine would.
+  if (calendar.provider && calendar.accountId) {
+    const adapter = getAdapter(calendar.provider);
+    if (!adapter) throw new BadRequestError(`Unknown provider "${calendar.provider}".`);
+    const account = (await adapter.listAccounts(req.user!.id)).find(a => a.id === calendar.accountId);
+    if (!account) throw new ForbiddenError("That account isn't connected to your user.");
+
+    let externalId: string;
+    try {
+      ({ externalId } = await adapter.createCalendar(req.user!.id, account.id, { name: calendar.name, color: calendar.color }));
+    } catch (e: any) {
+      throw new BadRequestError(e?.message ?? "The provider rejected the new calendar.");
+    }
+    const created = await importExternalCalendar(
+      calendar.provider, req.user!.id, account.id, account.label,
+      { externalId, name: calendar.name, color: calendar.color },
+    );
+    const link = await getExternalLinkForCalendar(created.id);
+    return res.status(201).json({
+      ...created,
+      role: "owner",
+      members: [{ id: req.user!.id, name: req.user!.name, email: req.user!.email }],
+      invites: "wip",
+      provider: link?.provider ?? calendar.provider,
+      accountId: link?.accountID ?? account.id,
+      accountLabel: link?.accountLabel ?? account.label,
+      serverUrl: link?.serverUrl ?? null,
+    });
+  }
+
   const newCalendar: NewCalendar = {
     name: calendar.name,
     color: calendar.color,
@@ -34,6 +88,9 @@ export async function handlerRemoveCalendar(req: Request, res: Response) {
   if (existing.isDefault) {
     throw new BadRequestError("Your personal calendar can't be deleted.");
   }
+  // External mirror → delete on the provider first; failure aborts the local delete.
+  await pushExternal(req.user!.id, calendar.id, (adapter, link) =>
+    adapter.deleteCalendar(link.userID, link.accountID, link.externalCalendarID));
   const removedCalendar = await removeCalendar(calendar.id);
 
   if (removedCalendar) {
@@ -66,6 +123,9 @@ export async function handlerUpdateCalendar(req: Request, res: Response) {
   }
 
   await assertCan(req.user!.id, calendar.id, "editCalendar");
+  // External mirror → rename/recolor on the provider first; failure aborts the local write.
+  await pushExternal(req.user!.id, calendar.id, (adapter, link) =>
+    adapter.updateCalendar(link.userID, link.accountID, link.externalCalendarID, { name: calendar.name, color: calendar.color }));
   // isDefault is server-managed — never writable from the client.
   const { isDefault: _ignored, ...editable } = calendar;
   const updatedCalendar = await updateCalendar({ ...editable, creatorID: req.user!.id });

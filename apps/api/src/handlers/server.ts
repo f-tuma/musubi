@@ -6,6 +6,6 @@ export function handlerServerStatus(_: Request, res: Response) {
 }
 
 export function handlerServer(_: Request, res: Response) {
-  res.status(200).json({ minClientVersion: "0.0.14" });
+  res.status(200).json({ minClientVersion: "0.0.15" });
 }
 

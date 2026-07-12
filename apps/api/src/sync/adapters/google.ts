@@ -10,6 +10,28 @@ import {
 
 const GCAL = "https://www.googleapis.com/calendar/v3";
 
+// Error with Google's own message when available ("Cannot delete primary
+// calendar", …) — status text alone is useless to the user.
+async function googleError(res: Response): Promise<Error> {
+  let detail = res.statusText;
+  try { detail = (await res.json())?.error?.message ?? detail; } catch { /* keep statusText */ }
+  return new Error(`Google ${res.status}: ${detail}`);
+}
+
+// Calendar color lives on the per-user calendarList entry, not the calendar
+// resource itself; colorRgbFormat=true accepts plain hex.
+async function patchCalendarColor(accessToken: string, calendarId: string, color: string) {
+  const res = await fetch(
+    `${GCAL}/users/me/calendarList/${encodeURIComponent(calendarId)}?colorRgbFormat=true`,
+    {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ backgroundColor: color, foregroundColor: "#000000" }),
+    },
+  );
+  if (!res.ok) throw await googleError(res);
+}
+
 async function getAccessToken(userID: string, accountId: string) {
   const { accessToken } = await auth.api.getAccessToken({
     body: { providerId: "google", userId: userID, accountId },
@@ -250,5 +272,39 @@ export const googleAdapter: CalendarAdapter = {
     if (!res.ok && res.status !== 404 && res.status !== 410) {
       throw new Error(`Google ${res.status} ${res.statusText}`);
     }
+  },
+
+  async createCalendar(userID, accountId, { name, color }) {
+    const accessToken = await getAccessToken(userID, accountId);
+    const res = await fetch(`${GCAL}/calendars`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ summary: name }),
+    });
+    if (!res.ok) throw await googleError(res);
+    const data = await res.json();
+    await patchCalendarColor(accessToken!, data.id, color);
+    return { externalId: data.id };
+  },
+
+  async updateCalendar(userID, accountId, externalCalendarId, { name, color }) {
+    const accessToken = await getAccessToken(userID, accountId);
+    const res = await fetch(`${GCAL}/calendars/${encodeURIComponent(externalCalendarId)}`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ summary: name }),
+    });
+    if (!res.ok) throw await googleError(res);
+    await patchCalendarColor(accessToken!, externalCalendarId, color);
+  },
+
+  async deleteCalendar(userID, accountId, externalCalendarId) {
+    const accessToken = await getAccessToken(userID, accountId);
+    const res = await fetch(`${GCAL}/calendars/${encodeURIComponent(externalCalendarId)}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    // 404/410 = already gone = success; primary calendars come back as 400 and bubble up.
+    if (!res.ok && res.status !== 404 && res.status !== 410) throw await googleError(res);
   },
 };

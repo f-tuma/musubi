@@ -97,16 +97,25 @@ function AppContent() {
   const everReady = useRef(false);
   if (ready) everReady.current = true;
 
+  // The cold-start URL, resolved explicitly. `pathname` alone can't be trusted
+  // here: expo-router processes the initial URL asynchronously, so at nav time
+  // it may still read "/" even though the app was opened via an invite link —
+  // the replace below would then close the invite screen right after it
+  // flashed in. undefined = still resolving, null = no deep link.
+  const [initialUrl, setInitialUrl] = useState<string | null | undefined>(undefined);
+  useEffect(() => { Linking.getInitialURL().then(u => setInitialUrl(u ?? null)); }, []);
+
   const navigated = useRef(false);
   const pathname = usePathname();
   useEffect(() => {
-    if (!ready || navigated.current || updateRequired) return;
+    if (!ready || navigated.current || updateRequired || initialUrl === undefined) return;
     navigated.current = true;
-    // Cold start via a deep link (invite/[token], …) already landed on its
-    // route — replacing it with the tabs would close the screen under the user.
-    if (session && pathname.startsWith('/invite')) return;
+    // Cold start via a deep link (invite/[token], …) lands on its own route —
+    // replacing it with the tabs would close the screen under the user.
+    const inviteStart = pathname.startsWith('/invite') || initialUrl?.includes('/invite/');
+    if (session && inviteStart) return;
     router.replace(session ? '/(tabs)' : '/(auth)/welcome');
-  }, [ready, updateRequired]);
+  }, [ready, updateRequired, initialUrl]);
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();

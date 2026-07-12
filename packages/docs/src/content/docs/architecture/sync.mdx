@@ -59,10 +59,19 @@ interface CalendarAdapter {
   pushCreate(userID, accountId, externalCalendarId, event): Promise<{ externalEventId }>;
   pushUpdate(userID, accountId, externalCalendarId, externalEventId, event): Promise<void>;
   pushDelete(userID, accountId, externalCalendarId, externalEventId): Promise<void>;
+
+  // calendar-level writes — create / rename+recolor / delete the calendar itself
+  createCalendar(userID, accountId, { name, color }): Promise<{ externalId }>;
+  updateCalendar(userID, accountId, externalCalendarId, { name, color }): Promise<void>;
+  deleteCalendar(userID, accountId, externalCalendarId): Promise<void>;
 }
 ```
 
 `NormalizedEvent` is the currency of the whole system — every adapter translates its provider's format to and from it.
+
+### Calendar-level writes
+
+Mirrors are editable and deletable from Musubi, and `POST /calendars` can create a calendar **into** a connected account. The calendar handlers apply these **provider-first**: the adapter call runs before the local write, and a provider rejection (Google refusing to delete a primary calendar, an expired token…) aborts the whole operation — Musubi and the provider never diverge. Only the user whose account backs the mirror may do this (`external_calendars.userID` check); provider-side read-only mirrors have `role: "viewer"`, so `assertCan` blocks them anyway. Provider quirks live in the adapters: Google calendar color sits on the per-user `calendarList` entry (`colorRgbFormat=true`), CalDAV uses raw `MKCALENDAR` / `PROPPATCH` (Apple `calendar-color` namespace) / `DELETE` on the collection URL.
 
 ## The engine
 
@@ -156,6 +165,7 @@ Most sync bugs are recurrence and all-day edge cases. The existing adapters alre
 - [ ] `organizer` may be null → engine defaults to `""`
 - [ ] Multiple accounts per provider supported via `listAccounts()`
 - [ ] Deletes idempotent (404/410 = success)
+- [ ] Calendar-level ops (`createCalendar`/`updateCalendar`/`deleteCalendar`) throw on provider rejection — the handlers rely on that to abort the local write
 
 ## Reference
 

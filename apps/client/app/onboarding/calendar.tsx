@@ -8,6 +8,8 @@ import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { Btn } from "@/components/ui/Btn";
 import { Tap } from "@/components/ui/Tap";
 import { OnboardingScaffold } from "@/components/OnboardingScaffold";
+import ColorPickerModal from "@/components/ColorPickerModal";
+import { Feather } from "@expo/vector-icons";
 
 // Onboarding step 2 — personalize the auto-created personal calendar.
 export default function OnboardingCalendar() {
@@ -19,6 +21,8 @@ export default function OnboardingCalendar() {
   const [color, setColor] = useState<string | null>(null);
   const shownName = calName ?? personal?.name ?? "Personal";
   const shownColor = color ?? personal?.color ?? appColors[1].color;
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const isCustomColor = !appColors.some(c => c.color === shownColor);
 
   const continueNext = () => {
     if (personal && (calName !== null || color !== null)) {
@@ -66,8 +70,28 @@ export default function OnboardingCalendar() {
                 }}
               />
             ))}
+            {/* Custom color — opens the picker; filled with the picked color
+                once chosen, the plus stays on top. */}
+            <Tap
+              onPress={() => setPickerOpen(true)}
+              style={{
+                width: 32, height: 32, borderRadius: 16,
+                backgroundColor: isCustomColor ? shownColor : "transparent",
+                borderWidth: isCustomColor ? 2 : 1,
+                borderColor: isCustomColor ? colors.fg : colors.line3,
+                alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <Feather name="plus" size={16} color={isCustomColor ? colors.bg : colors.fg3} />
+            </Tap>
           </View>
         </ScrollView>
+        <ColorPickerModal
+          visible={pickerOpen}
+          value={shownColor}
+          onConfirm={setColor}
+          onClose={() => setPickerOpen(false)}
+        />
         <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.fg4, marginTop: 10 }}>
           This calendar is yours alone and always stays with your account.
         </Text>

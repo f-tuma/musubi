@@ -2,7 +2,7 @@ const expoConfig = {
   name: "Musubi",
   slug: "musubi",
   owner: "frgtn",
-  version: "0.0.14",
+  version: "0.0.15",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "musubi",
@@ -54,6 +54,17 @@ const expoConfig = {
           { "scheme": "file", "mimeType": "text/calendar" },
           { "scheme": "https", "mimeType": "text/calendar" },
           { "scheme": "http", "mimeType": "text/calendar" }
+        ]
+      },
+      {
+        // Datumové/hodinové widgety otevírají kalendář přes
+        // content://com.android.calendar/time/<millis> (AOSP filtr, mimeType
+        // time/epoch) — bez něj se Musubi v jejich chooseru nenabízí.
+        // (Kategorie APP_CALENDAR na launcher aktivitě řeší plugins/withCalendarAppCategory.)
+        "action": "VIEW",
+        "category": ["DEFAULT"],
+        "data": [
+          { "scheme": "content", "host": "com.android.calendar", "mimeType": "time/epoch" }
         ]
       }
     ]

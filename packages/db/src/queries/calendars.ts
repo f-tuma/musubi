@@ -45,6 +45,14 @@ export async function getCalendar(id: string) {
 }
 
 export async function removeCalendar(calendarID: string) {
+  // Events HOMED here die with the calendar — including copies linked into
+  // other calendars. Tombstone (not hard-delete) so other members' delta sync
+  // drops them; must run BEFORE the calendar row goes, because the FK would
+  // set originCalendarID to null and hide them from this query.
+  await db.update(events)
+    .set({ deletedAt: new Date() })
+    .where(eq(events.originCalendarID, calendarID));
+
   const eIDs = await db.select({ eventID: calendarEvents.eventID }).from(calendarEvents).where(eq(calendarEvents.calendarID, calendarID));
 
   const [result] = await db.delete(calendars).where(eq(calendars.id, calendarID)).returning();
@@ -90,6 +98,13 @@ export async function getCalendarMembers(calendarID: string) {
       user: true,
     }
   });
+
+  // Owner first everywhere members are shown; name as a stable tiebreaker.
+  const rank: Record<string, number> = { owner: 0, editor: 1, viewer: 2 };
+  result.sort((a, b) =>
+    (rank[a.role] ?? 9) - (rank[b.role] ?? 9)
+    || a.user.name.localeCompare(b.user.name)
+  );
 
   return result;
 }

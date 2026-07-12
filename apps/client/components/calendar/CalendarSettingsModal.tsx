@@ -5,7 +5,8 @@ import { Modal, Pressable, Text, View, ScrollView, Share } from "react-native"
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
-import { Calendar, Invite, can } from "@musubi/types";
+import { Calendar, Invite, can, providerFlavor } from "@musubi/types";
+import { confirm } from "@/lib/confirm";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useState } from "react";
 import { useApi } from "@/services/api";
@@ -37,12 +38,46 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
   const { data: session } = authClient.useSession();
   const userID = session?.user.id;
 
-  const isExternal = !!calendar?.provider;      // google/caldav mirror — no edit/delete in Musubi
+  const isExternal = !!calendar?.provider;      // google/caldav mirror — edits/deletes push to the provider
   const isOwner = userID === calendar?.creatorID;
-  const showEdit = can(calendar?.role, "editCalendar") && !isExternal;
-  const showDelete = can(calendar?.role, "deleteCalendar") && !isExternal && !calendar?.isDefault;
+  // External mirrors: only the connection owner may edit/delete (the server
+  // enforces this too); provider-side read-only mirrors have role "viewer",
+  // so can() already blocks them.
+  const showEdit = can(calendar?.role, "editCalendar") && (!isExternal || isOwner);
+  const showDelete = can(calendar?.role, "deleteCalendar") && !calendar?.isDefault && (!isExternal || isOwner);
   const showInvite = can(calendar?.role, "invite");
   const showLeave = !isOwner;                    // non-owners can leave
+
+  // External delete = two-step confirm: first that it's a provider-synced
+  // calendar (and where it lives), then the actual deletion.
+  const handleDelete = () => {
+    if (!calendar) return;
+    if (!isExternal) {
+      confirm({
+        title: `Delete "${calendar.name}"?`,
+        message: "The calendar and all its events will be permanently deleted. This can't be undone.",
+        confirmLabel: "Delete",
+      }, () => {
+        onDelete(calendar);
+        handleClose();
+      });
+      return;
+    }
+    const flavor = providerFlavor(calendar);
+    const providerName = flavor === "apple" ? "Apple Calendar" : flavor === "google" ? "Google Calendar" : "the CalDAV server";
+    confirm({
+      title: "External calendar",
+      message: `"${calendar.name}" is synced from ${calendar.accountLabel ?? "a connected account"}. Deleting it here also deletes it in ${providerName}.`,
+      confirmLabel: "Continue",
+    }, () => confirm({
+      title: "Delete calendar?",
+      message: "The calendar and all its events will be permanently deleted. This can't be undone.",
+      confirmLabel: "Delete",
+    }, () => {
+      onDelete(calendar);
+      handleClose();
+    }));
+  };
 
   return (
     <Modal
@@ -130,10 +165,7 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
                     style={styles.modalActionBtn}
                     haptic="warn"
                     disabled={calendar ? false : true}
-                    onPress={() => {
-                      onDelete(calendar!);
-                      handleClose();
-                    }}
+                    onPress={handleDelete}
                   >
                     <Feather size={20} name="trash" color={colors.accent} />
                     <Text style={{ color: colors.accent, fontSize: 10 }}>Delete</Text>

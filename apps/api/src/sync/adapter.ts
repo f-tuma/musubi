@@ -58,4 +58,10 @@ export type CalendarAdapter = {
   pushCreate(userID: string, accountId: string, externalCalendarId: string, event: Event): Promise<{ externalEventId: string }>;
   pushUpdate(userID: string, accountId: string, externalCalendarId: string, externalEventId: string, event: Event): Promise<void>;
   pushDelete(userID: string, accountId: string, externalCalendarId: string, externalEventId: string): Promise<void>;
+
+  // Calendar-level writes — create/rename/recolor/delete the calendar itself
+  // on the provider. Callers must abort the local change when these throw.
+  createCalendar(userID: string, accountId: string, data: { name: string; color: string }): Promise<{ externalId: string }>;
+  updateCalendar(userID: string, accountId: string, externalCalendarId: string, data: { name: string; color: string }): Promise<void>;
+  deleteCalendar(userID: string, accountId: string, externalCalendarId: string): Promise<void>;
 };
