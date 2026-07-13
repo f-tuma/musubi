@@ -3,7 +3,7 @@ import { Calendar, Event, can } from "@musubi/types";
 import { colors, fonts, styles } from "@/constants/theme";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, useWindowDimensions, View } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
+import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
 import { sortCalendars } from "@/lib/calendarOrder";
@@ -80,6 +80,7 @@ const DOCK_MAX_H = 620;              // expanded height cap
 const DOCK_HEIGHT_RATIO = 0.8;       // …or this fraction of the window, whichever is smaller
 const DOCK_HIDDEN_EXTRA = 30;        // pushed this far past its height when hidden
 const DOCK_SNAP_VELOCITY = 400;      // fling speed that snaps open/closed regardless of position
+const DOCK_DISMISS_PAST = 60;        // dragged this far past peek = dismiss the sheet entirely
 const DOCK_SPRING = { damping: 28, stiffness: 240, mass: 0.8 };
 const TAB_BAR_H = 70;                // (tabs)/_layout tabBarStyle.height — sheet rests on top of it
 const KB_SHOW_MS = 220;              // keyboard lift in/out timings
@@ -240,17 +241,38 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
       DOCK_SPRING,
     );
   }, [docked, peekVisible, dockRange]);
+  // Swipe-down past peek: the gesture already animated the sheet off-screen —
+  // just clean up (closeSequence → onClose hides it for real via peekVisible).
+  // Defined BEFORE the gesture: worklets capture JS refs at creation time, so a
+  // later const would be captured as undefined (runOnJS(undefined) crash).
+  const dismissByGesture = () => {
+    Keyboard.dismiss();
+    closeSequence();
+  };
+
   const dockGesture = useMemo(() => Gesture.Pan()
     // need a real vertical drag before we take over — otherwise a still tap on
     // the X / Save buttons (they live inside this handle) reads as a micro-pan
     // and the button press is eaten, so the sheet "won't close".
     .activeOffsetY([-12, 12])
     .onStart(() => { dockStart.value = dockOff.value; })
-    .onUpdate(e => { dockOff.value = Math.min(Math.max(dockStart.value + e.translationY, 0), dockRange); })
+    .onUpdate(e => {
+      // From PEEK the drag may continue past the dock — that's the dismiss path.
+      // From EXPANDED it stops at peek (two-stage), so collapsing a tall sheet
+      // can't accidentally throw the whole composer away.
+      const maxY = dockStart.value >= dockRange - 1 ? DOCK_H + DOCK_HIDDEN_EXTRA : dockRange;
+      dockOff.value = Math.min(Math.max(dockStart.value + e.translationY, 0), maxY);
+    })
     .onEnd(e => {
+      const past = dockOff.value - dockRange;
+      if (past > DOCK_DISMISS_PAST || (past > 0 && e.velocityY > DOCK_SNAP_VELOCITY)) {
+        dockOff.value = withSpring(DOCK_H + DOCK_HIDDEN_EXTRA, { ...DOCK_SPRING, velocity: e.velocityY });
+        runOnJS(dismissByGesture)();
+        return;
+      }
       const expand = e.velocityY < -DOCK_SNAP_VELOCITY || (dockOff.value < dockRange / 2 && e.velocityY < DOCK_SNAP_VELOCITY);
       dockOff.value = withSpring(expand ? 0 : dockRange, DOCK_SPRING);
-    }), [dockRange]);
+    }), [dockRange, DOCK_H]);
 
   // Lift caps at 0 — the expanded sheet keeps its top on screen (title lives
   // there), fields further down scroll instead.
