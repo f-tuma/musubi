@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { createHash, randomBytes } from "node:crypto";
 import {
-  addCalendarMember, createExternalUser, deleteMusubiAccount, findExternalUser,
+  addCalendarMember, consumeInvite, createExternalUser, deleteMusubiAccount, findExternalUser,
   getCalendar, getCalendarIDFromToken, getMusubiAccounts, saveMemberToken,
   upsertMusubiAccount,
 } from "@musubi/db";
@@ -42,7 +42,8 @@ export async function handlerFederationAccept(req: Request, res: Response) {
   const shadow = await findExternalUser(homeServer, email)
     ?? await createExternalUser({ name, email, image, homeServer });
 
-  await addCalendarMember(shadow.id, calendarID); // viewer; conflict-safe on re-accept
+  const added = await addCalendarMember(shadow.id, calendarID); // viewer; conflict-safe on re-accept
+  if (added.length > 0) await consumeInvite(token); // burn a use only on a NEW membership
 
   const raw = randomBytes(32).toString("hex");
   await saveMemberToken(shadow.id, hashMemberToken(raw));

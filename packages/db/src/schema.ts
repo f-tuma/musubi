@@ -246,7 +246,8 @@ export const calendarInvites = pgTable("calendar_invites", {
     })
     .notNull(),
   expiresAt: timestamp("expires_at").notNull(),
-  maxUses: integer("max_uses"),
+  maxUses: integer("max_uses"), // null = unlimited
+  uses: integer("uses").notNull().default(0), // bumped on join/accept, checked against maxUses
 });
 
 export type NewCalendarInvite = typeof calendarInvites.$inferInsert;
@@ -294,7 +295,7 @@ export const calendarMembers = pgTable("calendar_members", {
     })
     .notNull(),
   role: text("role").notNull().default("viewer"), // owner | editor | viewer
-});
+}, (t) => [unique().on(t.userID, t.calendarID)]); // re-join hits onConflictDoNothing instead of duplicating the membership
 
 export const calendarMembersRelations = relations(calendarMembers, ({ one }) => ({
   calendars: one(calendars, { fields: [calendarMembers.calendarID], references: [calendars.id] }),

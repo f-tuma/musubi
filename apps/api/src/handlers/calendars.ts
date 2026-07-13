@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { addCalendarMember, createCalendar, getCalendar, getCalendarEvents, getCalendarIDFromToken, getCalendarMembers, getExternalLinkForCalendar, getUserRoleForCalendar, getUsersCalendars, importExternalCalendar, NewCalendar, removeCalendar, removeCalendarMember, setMemberRole, updateCalendar } from '@musubi/db';
+import { addCalendarMember, consumeInvite, createCalendar, getCalendar, getCalendarEvents, getCalendarIDFromToken, getCalendarMembers, getExternalLinkForCalendar, getUserRoleForCalendar, getUsersCalendars, importExternalCalendar, NewCalendar, removeCalendar, removeCalendarMember, setMemberRole, updateCalendar } from '@musubi/db';
 import { BadRequestError, Calendar, CalendarSchema, ForbiddenError, NotFoundError, User } from "@musubi/types";
 import { notifyCalendarMembers } from "./stream";
 import { assertCan } from "../permissions";
@@ -219,6 +219,8 @@ export async function handlerJoinCalendar(req: Request, res: Response) {
     throw new ForbiddenError("A valid invite is required to join this calendar.");
   }
   const result = await addCalendarMember(req.user?.id!, calendarID);
+  // Empty result = was already a member (conflict) — don't burn a use on re-joins.
+  if (result.length > 0) await consumeInvite(token);
 
   res.status(200).json(result);
 }
