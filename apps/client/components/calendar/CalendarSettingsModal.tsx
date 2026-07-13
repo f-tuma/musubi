@@ -15,6 +15,9 @@ import MemberRolesModal from "./MemberRolesModal";
 import InvitesModal from "./InvitesModal";
 import { Tap } from "@/components/ui/Tap";
 import { Btn } from "@/components/ui/Btn";
+import { File, Paths } from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import { warn } from "@/lib/haptics";
 
 
 type Props = {
@@ -32,6 +35,25 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
   const [isLeaving, setIsLeaving] = useState(false);
   const [rolesVisible, setRolesVisible] = useState(false);
   const [invitesVisible, setInvitesVisible] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  // One-shot .ics snapshot: fetch → temp file → OS share sheet.
+  const exportCalendar = async () => {
+    if (!calendar) return;
+    setExporting(true);
+    try {
+      const ics = await api.exportCalendar(calendar.id);
+      const file = new File(Paths.cache, `${calendar.name.replace(/[^\w.-]+/g, "_") || "calendar"}.ics`);
+      if (file.exists) file.delete(); // stale export from a previous share
+      file.write(ics);
+      await Sharing.shareAsync(file.uri, { mimeType: "text/calendar" });
+    } catch (e) {
+      warn();
+      console.error("Calendar export failed:", e);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const insets = useSafeAreaInsets();
   const { slideStyle, fadeStyle, gesture, handleClose } = useModalAnimation(visible, onClose);
@@ -113,6 +135,13 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
                     variant="secondary"
                     icon={<Feather size={14} name="users" color={colors.fg2} />}
                     onPress={() => setRolesVisible(true)}
+                  />
+                  <Btn
+                    label="Export (.ics)"
+                    variant="secondary"
+                    icon={<Feather size={14} name="download" color={colors.fg2} />}
+                    loading={exporting}
+                    onPress={exportCalendar}
                   />
                 </View>
               </View>

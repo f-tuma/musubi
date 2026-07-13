@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
+import ICAL from "ical.js";
 import { addCalendarMember, consumeInvite, createCalendar, getCalendar, getCalendarEvents, getCalendarIDFromToken, getCalendarMembers, getExternalLinkForCalendar, getUserRoleForCalendar, getUsersCalendars, importExternalCalendar, NewCalendar, removeCalendar, removeCalendarMember, setMemberRole, updateCalendar } from '@musubi/db';
+import { toVevent } from "../sync/adapters/caldav";
 import { BadRequestError, Calendar, CalendarSchema, ForbiddenError, NotFoundError, User } from "@musubi/types";
 import { notifyCalendarMembers } from "./stream";
 import { assertCan } from "../permissions";
@@ -206,6 +208,31 @@ export async function handlerGetCalendar(req: Request, res: Response) {
       id: u.user.id,
     })),
   });
+}
+
+// One-shot .ics snapshot of a whole calendar. Any member may export — they can
+// already see every event. Reuses the CalDAV adapter's VEVENT serializer, so
+// recurrence (RRULE + EXDATE) and all-day semantics round-trip identically.
+export async function handlerExportCalendar(req: Request, res: Response) {
+  const calendarID = req.params.id as string;
+  if (!(await getUserRoleForCalendar(req.user!.id, calendarID))) {
+    throw new ForbiddenError("You can't access this calendar.");
+  }
+  const calendar = await getCalendar(calendarID);
+  const rows = await getCalendarEvents(calendarID);
+
+  const vcal = new ICAL.Component("vcalendar");
+  vcal.updatePropertyWithValue("version", "2.0");
+  vcal.updatePropertyWithValue("prodid", "-//Musubi//EN");
+  vcal.updatePropertyWithValue("x-wr-calname", calendar.name);
+  for (const row of rows) {
+    if (!row.events.deletedAt) vcal.addSubcomponent(toVevent(row.events));
+  }
+
+  const filename = `${calendar.name.replace(/[^\w.-]+/g, "_") || "calendar"}.ics`;
+  res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.status(200).send(vcal.toString());
 }
 
 export async function handlerJoinCalendar(req: Request, res: Response) {

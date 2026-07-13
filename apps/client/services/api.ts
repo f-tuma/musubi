@@ -288,6 +288,16 @@ export function useApi() {
       return data;
     },
 
+    // Returns raw ICS text — plain fetch, not $fetch/fedFetch (both assume JSON).
+    async exportCalendar(calendarID: string): Promise<string> {
+      const remote = remoteOf(calendarID);
+      const url = `${remote?.server ?? apiUrl}/api/${apiVersion}/calendars/${calendarID}/export`;
+      const token = remote?.token ?? (await authClient.getSession()).data?.session?.token;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error(`${res.status}: export failed`);
+      return res.text();
+    },
+
     async getInvites(calendarID: string) {
       const remote = remoteOf(calendarID);
       if (remote) {

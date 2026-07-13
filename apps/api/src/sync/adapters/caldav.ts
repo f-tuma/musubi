@@ -92,12 +92,11 @@ function icalToNormalized(obj: { url: string; etag?: string; data?: string }): N
   };
 }
 
-// Musubi Event -> iCal string
-function toIcal(event: Event): string {
-  const vcal = new ICAL.Component("vcalendar");
-  vcal.updatePropertyWithValue("version", "2.0");
-  vcal.updatePropertyWithValue("prodid", "-//Musubi//EN");
+// Musubi Event -> VEVENT component. Shared with calendar export (one VCALENDAR,
+// many VEVENTs) — keep it independent of the wrapping calendar.
+export type IcalEventFields = Pick<Event, "id" | "title" | "description" | "location" | "isAllDay" | "start" | "end" | "recurrence">;
 
+export function toVevent(event: IcalEventFields): ICAL.Component {
   const vevent = new ICAL.Component("vevent");
   const ev = new ICAL.Event(vevent);
   ev.uid = event.id;
@@ -130,7 +129,15 @@ function toIcal(event: Event): string {
     }
   }
 
-  vcal.addSubcomponent(vevent);
+  return vevent;
+}
+
+// Musubi Event -> iCal string (single-event VCALENDAR, for CalDAV PUTs)
+function toIcal(event: Event): string {
+  const vcal = new ICAL.Component("vcalendar");
+  vcal.updatePropertyWithValue("version", "2.0");
+  vcal.updatePropertyWithValue("prodid", "-//Musubi//EN");
+  vcal.addSubcomponent(toVevent(event));
   return vcal.toString();
 }
 

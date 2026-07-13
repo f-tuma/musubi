@@ -141,7 +141,7 @@ Broadcasts are **best-effort and fire-and-forget** — there is no server-side r
 |---|---|
 | Health | `GET /api/v1/server`, `/server/ok` *(public)* |
 | Events | `GET/POST/PUT/DELETE /api/v1/events`, `POST /api/v1/events/:id/link`, `/fork`, `GET /events/:id/attendees`, `PUT /events/:id/attendance` |
-| Calendars | `GET/POST/PUT/DELETE /api/v1/calendars`, `GET /calendars/:id`, `/calendars/google`, `/calendars/tokens/:token` |
+| Calendars | `GET/POST/PUT/DELETE /api/v1/calendars`, `GET /calendars/:id`, `/calendars/google`, `/calendars/tokens/:token`, `GET /calendars/:id/export` (.ics snapshot, any member) |
 | Members | `GET /calendars/:id/members`, `POST/DELETE /calendars/members/:id` (join/leave), `PUT/DELETE /calendars/:id/members/:userId` (role/kick) |
 | Invites | `POST /calendars/invites` (create — `expiresAt: null` = never, `maxUses: null` = unlimited), `GET /calendars/:id/invites` (list, with `uses`), `DELETE /calendars/invites/:inviteId` (revoke) — all gated on the `invite` action |
 | Users | `GET/PUT /users/settings`, `DELETE /users`, `POST /users/avatar`, `GET /users/:id/avatar` *(public)* |
