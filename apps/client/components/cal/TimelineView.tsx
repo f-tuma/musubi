@@ -362,23 +362,32 @@ function TimelinePage({
   const scrollTopSV = useSharedValue(0);   // ScrollView's top offset inside the page
   // Pinch lives on the OUTER page view and is declared simultaneous with the
   // ScrollView's gesture — so single-finger scroll and event taps keep working
-  // (the pinch only claims two fingers), and the two-finger pinch can activate
-  // alongside the scroll. focalY is page-relative, so subtract the viewport top.
+  // (the pinch only claims two fingers). focalY is page-relative, so subtract
+  // the viewport top. While the pinch is active the ScrollView's own scrolling
+  // is DISABLED: with two owners (native pan + our per-frame scrollTo) the
+  // position jittered — the pinch is the single owner, and it pans too, by
+  // tracking the LIVE focal point instead of the gesture-start one.
+  const [pinching, setPinching] = useState(false);
   const pinchGesture = useMemo(() => Gesture.Pinch()
     .onStart(e => {
       zoomBase.value = hourH.value;
       const vf = e.focalY - scrollTopSV.value;
       vFocal.value = vf;
       focalContentY.value = scrollY.value + vf;
+      runOnJS(setPinching)(true);
     })
     .onUpdate(e => {
       const raw = zoomBase.value * e.scale;
       const nh = raw < ZOOM_HOUR_MIN ? ZOOM_HOUR_MIN : raw > ZOOM_HOUR_MAX ? ZOOM_HOUR_MAX : raw;
       hourH.value = nh;
-      // keep the anchor at the same viewport-Y
-      const newScroll = focalContentY.value * (nh / zoomBase.value) - vFocal.value;
-      scrollTo(scrollRef, 0, newScroll < 0 ? 0 : newScroll, false);
+      // anchor rides the fingers: same content point stays under the (moving) focal
+      const vf = e.focalY - scrollTopSV.value;
+      const newScroll = focalContentY.value * (nh / zoomBase.value) - vf;
+      const clamped = newScroll < 0 ? 0 : newScroll;
+      scrollY.value = clamped; // keep the shared value honest for the next gesture
+      scrollTo(scrollRef, 0, clamped, false);
     })
+    .onFinalize(() => { runOnJS(setPinching)(false); })
     .simultaneousWithExternalGesture(scrollRef as any), []);
 
   const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -438,6 +447,7 @@ function TimelinePage({
 
         <ScrollView
           ref={scrollRef as any} // RNGH ScrollView; reanimated scrollTo resolves the native node
+          scrollEnabled={!pinching} // during a pinch the gesture owns the scroll position
           onLayout={e => { scrollTopSV.value = e.nativeEvent.layout.y; }}
           onScroll={e => { scrollPosRef.current = e.nativeEvent.contentOffset.y; scrollY.value = e.nativeEvent.contentOffset.y; }}
           scrollEventThrottle={16}
