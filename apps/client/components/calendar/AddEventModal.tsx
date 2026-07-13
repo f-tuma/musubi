@@ -751,6 +751,24 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
             </View>
           </ScrollView>
 
+          {/* RFC 5545: a rule anchored to a day some months don't have simply
+              skips those months (and Feb 29 → leap years only). Spec-correct,
+              but surprising — say it up front instead of letting users find out. */}
+          {(() => {
+            const day = newStart.getDate();
+            const monthlyRule = newRecurrence === 'monthly' || (newRecurrence === 'custom' && advFreq === 'MONTHLY');
+            const hint = monthlyRule && day >= 29
+              ? `Repeats on day ${day} — months without it are skipped.`
+              : newRecurrence === 'yearly' && day === 29 && newStart.getMonth() === 1
+                ? "February 29 only exists in leap years — this repeats every 4 years."
+                : null;
+            return hint && (
+              <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.fg4, marginTop: 8 }}>
+                {hint}
+              </Text>
+            );
+          })()}
+
           {newRecurrence === 'custom' && (
             <View style={{
               marginTop: 12, backgroundColor: colors.bg2,

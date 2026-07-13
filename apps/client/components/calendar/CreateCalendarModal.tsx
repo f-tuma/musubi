@@ -72,7 +72,6 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
       name: newName,
       color: newColor,
       members: calendar?.members ?? [],
-      invite: "create",
       // create into a connected account — the server makes it on the provider first
       provider: calendar ? calendar.provider : account?.provider ?? null,
       accountId: calendar ? calendar.accountId : account?.accountId ?? null,
