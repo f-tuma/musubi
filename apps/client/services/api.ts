@@ -288,6 +288,23 @@ export function useApi() {
       return data;
     },
 
+    // Raw iCalendar body — plain fetch (the $fetch helpers assume JSON bodies).
+    // Home server only: importing always creates a native calendar here.
+    async importCalendar(ics: string, name: string, color: string) {
+      const { data } = await authClient.getSession();
+      const qs = `?name=${encodeURIComponent(name)}&color=${encodeURIComponent(color)}`;
+      const res = await fetch(`${apiUrl}/api/${apiVersion}/calendars/import${qs}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${data?.session?.token}`,
+          "content-type": "text/calendar",
+        },
+        body: ics,
+      });
+      if (!res.ok) throw new Error(`${res.status}: import failed`);
+      return res.json() as Promise<Calendar & { imported: number }>;
+    },
+
     // Returns raw ICS text — plain fetch, not $fetch/fedFetch (both assume JSON).
     async exportCalendar(calendarID: string): Promise<string> {
       const remote = remoteOf(calendarID);

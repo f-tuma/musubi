@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import ICAL from "ical.js";
-import { addCalendarMember, consumeInvite, createCalendar, getCalendar, getCalendarEvents, getCalendarIDFromToken, getCalendarMembers, getExternalLinkForCalendar, getUserRoleForCalendar, getUsersCalendars, importExternalCalendar, NewCalendar, removeCalendar, removeCalendarMember, setMemberRole, updateCalendar } from '@musubi/db';
-import { toVevent } from "../sync/adapters/caldav";
+import { randomUUID } from "crypto";
+import { addCalendarMember, consumeInvite, createCalendar, createEvent, getCalendar, getCalendarEvents, getCalendarIDFromToken, getCalendarMembers, getExternalLinkForCalendar, getUserRoleForCalendar, getUsersCalendars, importExternalCalendar, NewCalendar, removeCalendar, removeCalendarMember, setMemberRole, updateCalendar } from '@musubi/db';
+import { toVevent, veventToFields } from "../sync/adapters/caldav";
 import { BadRequestError, Calendar, CalendarSchema, ForbiddenError, NotFoundError, User } from "@musubi/types";
 import { notifyCalendarMembers } from "./stream";
 import { assertCan } from "../permissions";
@@ -207,6 +208,61 @@ export async function handlerGetCalendar(req: Request, res: Response) {
       email: u.user.email,
       id: u.user.id,
     })),
+  });
+}
+
+// Import a whole .ics file as a NEW native calendar. Body is raw iCalendar text
+// (route-level express.text — the global JSON parser's 512 KB cap doesn't fit
+// real calendars); name/color ride in the query string.
+export async function handlerImportCalendar(req: Request, res: Response) {
+  const ics = req.body;
+  if (typeof ics !== "string" || !ics.trim()) throw new BadRequestError("Request body must be an iCalendar file...");
+
+  let vcal: ICAL.Component;
+  try {
+    vcal = new ICAL.Component(ICAL.parse(ics));
+  } catch {
+    throw new BadRequestError("That file isn't valid iCalendar data...");
+  }
+
+  const name = (req.query.name as string)
+    || (vcal.getFirstPropertyValue("x-wr-calname") as string | null)
+    || "Imported calendar";
+  const color = (req.query.color as string) || "#7a9e7e";
+
+  const created = await createCalendar({ name, color, creatorID: req.user!.id });
+
+  // ponytail: RECURRENCE-ID overrides (edited single occurrences) are skipped —
+  // the master VEVENT carries the series; per-occurrence edits need detached
+  // instances, which Musubi doesn't model yet. Also one createEvent per VEVENT
+  // (3 inserts each) — batch if huge imports ever matter.
+  let imported = 0;
+  for (const vevent of vcal.getAllSubcomponents("vevent")) {
+    if (vevent.getFirstPropertyValue("recurrence-id")) continue;
+    const fields = veventToFields(vevent);
+    if (!fields) continue;
+    await createEvent({
+      id: randomUUID(),
+      creatorID: req.user!.id,
+      organizer: req.user!.id,
+      title: fields.title,
+      color,
+      start: fields.start,
+      end: fields.end,
+      isAllDay: fields.isAllDay,
+      description: fields.description,
+      location: fields.location,
+      recurrence: fields.recurrence,
+      originCalendarID: created.id,
+    }, [created.id]);
+    imported++;
+  }
+
+  res.status(201).json({
+    ...created,
+    role: "owner",
+    members: [{ id: req.user!.id, name: req.user!.name, email: req.user!.email }],
+    imported,
   });
 }
 

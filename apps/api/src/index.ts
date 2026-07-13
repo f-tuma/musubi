@@ -5,7 +5,7 @@ import { toNodeHandler } from "better-auth/node";
 import express from "express";
 import cors from "cors";
 import { middlewareErrorHandler } from "./middleware/error_handler";
-import { handlerCreateCalendar, handlerGetCalendars, handlerGetCalendar, handlerRemoveCalendar, handlerUpdateCalendar, handlerJoinCalendar, handlerLeaveCalendar, handlerExportCalendar, handlerGetCalendarFromToken, handlerGetCalendarMembers, handlerSetMemberRole, handlerKickMember } from "./handlers/calendars";
+import { handlerCreateCalendar, handlerGetCalendars, handlerGetCalendar, handlerRemoveCalendar, handlerUpdateCalendar, handlerJoinCalendar, handlerLeaveCalendar, handlerExportCalendar, handlerImportCalendar, handlerGetCalendarFromToken, handlerGetCalendarMembers, handlerSetMemberRole, handlerKickMember } from "./handlers/calendars";
 import { handlerDeleteUser, handlerGetAvatar, handlerResetUsers, handlerUploadAvatar } from "./handlers/users";
 import { handlerCreateEvent, handlerForkEvent, handlerGetAttendees, handlerGetEvents, handlerLinkEvent, handlerRemoveEvent, handlerSetAttendance, handlerUpdateEvent } from "./handlers/events";
 import { requireAuth } from "./middleware/require_auth";
@@ -96,6 +96,8 @@ app.get("/api/v1/calendars/tokens/:token", rateLimit(30, 15 * 60_000), wrap(hand
 app.get("/api/v1/calendars/:id/export", requireAuth, wrap(handlerExportCalendar)); // .ics snapshot
 app.get("/api/v1/calendars/:id", requireAuth, wrap(handlerGetCalendar));
 app.post("/api/v1/calendars", requireAuth, wrap(handlerCreateCalendar));
+// Raw iCalendar body — its own text parser (the global 512 KB JSON cap is too small)
+app.post("/api/v1/calendars/import", requireAuth, express.text({ type: "*/*", limit: "10mb" }), wrap(handlerImportCalendar));
 app.put("/api/v1/calendars", requireAuth, wrap(handlerUpdateCalendar));
 app.delete("/api/v1/calendars", requireAuth, wrap(handlerRemoveCalendar));
 
