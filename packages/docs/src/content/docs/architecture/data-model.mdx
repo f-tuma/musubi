@@ -67,9 +67,10 @@ erDiagram
 
 | Table | Meaning | Cascade / constraint |
 |---|---|---|
-| `calendarMembers` | who is in a calendar + their `role` | cascades from user & calendar; role defaults `"viewer"` |
+| `calendarMembers` | who is in a calendar + their `role` | cascades from user & calendar; role defaults `"viewer"`; unique `(userID, calendarID)` — re-joins hit `onConflictDoNothing` instead of duplicating |
 | `calendarEvents` | which calendars an event is linked into (M:N) | cascades both sides |
 | `eventUsers` | attendees of an event (creator added on create; presence = attending) | cascades both sides; unique `(eventID, userID)` |
+| `calendarInvites` | invite links — the row's uuid `id` IS the token | cascades from calendar; `expiresAt` null = never expires, `maxUses` null = unlimited, `uses` counter checked (with expiry) at every token read |
 
 **Consequences you must respect:**
 

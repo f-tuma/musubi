@@ -91,6 +91,8 @@ function throwOnError(error): asserts error is null {
 
 The `asserts error is null` return type is load-bearing — after `throwOnError(error)`, TypeScript knows `data` is non-null. A plain `void` helper would reintroduce `data: T | null` at every call site. Also: the server returns dates as ISO strings, so methods normalise them (`start: new Date(data.start)`) before returning.
 
+`throwOnError` is also the **session-expiry tripwire**: a 401 calls `notifySessionExpired()` (`lib/signOut.ts`), which runs the registered recovery handler once — the full `signOutAndReset` sequence — and lands the user on the welcome screen instead of every screen failing silently. `signOutAndReset` is THE sign-out path (Settings sign-out, account delete and expiry recovery all route through it): stores → SQLite mirror → scheduled notifications → native Google session → Better Auth session → redirect.
+
 - **`contexts/ServerContext.tsx`** provides `{ apiUrl, authClient, setNewServerUrl }`. The API URL is read from `SecureStore` (defaults to prod), so self-hosters can point the app at their own server.
 - **`services/auth-client.ts`** builds the Better Auth client with the Expo plugin (scheme `musubi://`, tokens in `SecureStore`).
 - **`services/federation.ts`** holds the federated-server registry: member tokens for calendars shared from *other* Musubi servers, and a `calendarID → origin server` map that `useApi` consults to route writes. Calendars from federated servers carry `provider: "musubi"` + `serverUrl` and sync in `useRefreshData` after the home pull. Full picture in [Federation](/docs/architecture/federation/).
@@ -119,7 +121,7 @@ The client has its **own** drizzle schema and migrations (`apps/client/db/schema
 
 ### Realtime
 
-`hooks/useEventsStream.ts` opens an `EventSource` (`react-native-sse`) to `${apiUrl}/api/stream` — `apiUrl` comes from `ServerContext`, so the stream follows a self-hosted server too — authenticated with the session `Bearer` token. Incoming frames (`event_created`, `event_updated`, …) are routed to the `local*` store methods; the `external_sync` frame (the server's scheduled Google/CalDAV sync found changes) triggers a **silent delta refresh** — `refresh({ providerSync: false })`, guarded against overlap and careful not to re-trigger the provider sync (that would loop). See the [server-side broadcast](/docs/architecture/api/#realtime-sse) and the [scheduled sync](/docs/architecture/sync/#near-realtime-the-scheduled-sync). There's no auto-reconnect loop — a dropped stream is picked back up by the next pull-to-refresh delta sync, which is the durable path.
+`hooks/useEventsStream.ts` opens an `EventSource` (`react-native-sse`) to `${apiUrl}/api/stream` — `apiUrl` comes from `ServerContext`, so the stream follows a self-hosted server too — authenticated with the session `Bearer` token, **plus one stream per federated server** from the registry (member token as bearer), so remote calendars' events and attendance update live too. Incoming frames (`event_created`, `event_updated`, …) are routed to the `local*` store methods; the `external_sync` frame (the server's scheduled Google/CalDAV sync found changes) triggers a **silent delta refresh** — `refresh({ providerSync: false })`, guarded against overlap and careful not to re-trigger the provider sync (that would loop). See the [server-side broadcast](/docs/architecture/api/#realtime-sse) and the [scheduled sync](/docs/architecture/sync/#near-realtime-the-scheduled-sync). The library auto-reconnects every 5 s after a drop; frames missed while down are covered by a one-shot silent delta refresh on the reconnect that follows an error — the delta sync remains the durable path.
 
 ## The custom calendar
 
@@ -133,7 +135,7 @@ Musubi does **not** use a calendar library — the month/week/day views are hand
 | `ModeSwitch.tsx` | month/week/day toggle |
 
 <Aside type="caution">
-**The `live`-ref / shared-value pattern.** Positions, scroll offset, and zoom live in Reanimated `useSharedValue`s and refs — **not** React state — so dragging and pinching never trigger React re-renders (no layout thrash, flicker-free drops). Gestures read a `live` ref to keep their `useMemo` dependency arrays empty. When editing `TimelineView`:
+**The `live`-ref / shared-value pattern.** Positions, scroll offset, and zoom live in Reanimated `useSharedValue`s and refs — **not** React state — so dragging and pinching never trigger React re-renders (no layout thrash, flicker-free drops). The one deliberate exception: a `pinching` boolean flips once per pinch to disable the ScrollView's own scrolling — during a pinch the gesture is the single owner of the scroll position (two owners jittered). Gestures read a `live` ref to keep their `useMemo` dependency arrays empty. When editing `TimelineView`:
 
 - Use `runOnJS()` to call any React setter from a gesture/worklet.
 - Don't lift shared values into `useState`.
