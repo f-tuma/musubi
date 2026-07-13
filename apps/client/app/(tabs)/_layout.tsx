@@ -13,10 +13,18 @@ import { useEventsStore } from '@/store/useEventsStore';
 import { useCalendarsStore } from '@/store/useCalendarsStore';
 import { cacheGetAllEvents, cacheGetCalendars } from '@/services/eventsCache';
 import { select } from '@/lib/haptics';
+import { onSessionExpired, signOutAndReset } from '@/lib/signOut';
+import { GlobalEventModals } from '@/components/calendar/GlobalEventModals';
 
 
 export default function TabLayout() {
-  const { apiUrl, isLoading } = useServer();
+  const { apiUrl, isLoading, authClient } = useServer();
+
+  // Expired session → any API call 401s → run the full sign-out flow once and
+  // land on welcome, instead of every screen failing silently.
+  useEffect(() => onSessionExpired(() => {
+    signOutAndReset(authClient).catch(e => console.warn("Session expiry recovery failed:", e));
+  }), [authClient]);
   const refresh = useRefreshData();
   const { loadEvents } = useEventsStore();
   const { loadCalendars } = useCalendarsStore();
@@ -110,6 +118,7 @@ export default function TabLayout() {
         }} />
       </Tabs>
 
+      <GlobalEventModals />
       <LoadingOverlay ready={dataReady} />
     </GestureHandlerRootView>
   );

@@ -5,11 +5,12 @@ import { toNodeHandler } from "better-auth/node";
 import express from "express";
 import cors from "cors";
 import { middlewareErrorHandler } from "./middleware/error_handler";
-import { handlerCreateCalendar, handlerGetCalendars, handlerGetCalendar, handlerRemoveCalendar, handlerUpdateCalendar, handlerJoinCalendar, handlerLeaveCalendar, handlerGetCalendarFromToken, handlerGetCalendarMembers, handlerSetMemberRole, handlerKickMember } from "./handlers/calendars";
+import { handlerCreateCalendar, handlerGetCalendars, handlerGetCalendar, handlerRemoveCalendar, handlerUpdateCalendar, handlerJoinCalendar, handlerLeaveCalendar, handlerExportCalendar, handlerImportCalendar, handlerGetCalendarFromToken, handlerGetCalendarMembers, handlerSetMemberRole, handlerKickMember } from "./handlers/calendars";
 import { handlerDeleteUser, handlerGetAvatar, handlerResetUsers, handlerUploadAvatar } from "./handlers/users";
-import { handlerCreateEvent, handlerForkEvent, handlerGetEvents, handlerLinkEvent, handlerRemoveEvent, handlerUpdateEvent } from "./handlers/events";
+import { handlerCreateEvent, handlerForkEvent, handlerGetAttendees, handlerGetEvents, handlerLinkEvent, handlerRemoveEvent, handlerSetAttendance, handlerUpdateEvent } from "./handlers/events";
 import { requireAuth } from "./middleware/require_auth";
-import { handlerCreateCalendarInvite } from "./handlers/invites";
+import { rateLimit } from "./middleware/rate_limit";
+import { handlerCreateCalendarInvite, handlerGetCalendarInvites, handlerRevokeInvite } from "./handlers/invites";
 import { handlerStream } from "./handlers/stream";
 import { middlewareLogHandler } from "./middleware/log_handler";
 import { handlerGetSettings, handlerSaveSettings } from "./handlers/settings";
@@ -67,7 +68,8 @@ app.get("/api/stream", requireAuth, wrap(handlerStream));
 // Federation (Musubi ↔ Musubi) — cross-server invite accept (public: the invite
 // token is the credential) and the HTML hand-off page for invite links, so every
 // server serves its own deep links (no dependency on the hosted domain).
-app.post("/api/v1/federation/accept", wrap(handlerFederationAccept));
+// Public + creates accounts/tokens — cap per-IP so tokens can't be farmed or guessed.
+app.post("/api/v1/federation/accept", rateLimit(10, 15 * 60_000), wrap(handlerFederationAccept));
 app.get("/invite/:token", handlerInvitePage(config.api.url));
 // The user's connections to other Musubi servers (member tokens, encrypted at
 // rest) — stored home-side so a connection accepted on one device roams to all.
@@ -82,20 +84,27 @@ app.put("/api/v1/events", requireAuth, wrap(handlerUpdateEvent));
 app.delete("/api/v1/events", requireAuth, wrap(handlerRemoveEvent));
 app.post("/api/v1/events/:eventId/link", requireAuth, wrap(handlerLinkEvent));
 app.post("/api/v1/events/:eventId/fork", requireAuth, wrap(handlerForkEvent));
+app.get("/api/v1/events/:eventId/attendees", requireAuth, wrap(handlerGetAttendees));
+app.put("/api/v1/events/:eventId/attendance", requireAuth, wrap(handlerSetAttendance));
 
 // Calendars — /google must stay before /:id (both one-segment GETs)
 app.get("/api/v1/calendars", requireAuth, wrap(handlerGetCalendars));
 app.get("/api/v1/calendars/google", requireAuth, wrap(handlerGetGoogleCalendars));
 // Public: possession of the (unguessable, expiring) invite token IS the
 // credential — cross-server invitees have no session here yet.
-app.get("/api/v1/calendars/tokens/:token", wrap(handlerGetCalendarFromToken));
+app.get("/api/v1/calendars/tokens/:token", rateLimit(30, 15 * 60_000), wrap(handlerGetCalendarFromToken));
+app.get("/api/v1/calendars/:id/export", requireAuth, wrap(handlerExportCalendar)); // .ics snapshot
 app.get("/api/v1/calendars/:id", requireAuth, wrap(handlerGetCalendar));
 app.post("/api/v1/calendars", requireAuth, wrap(handlerCreateCalendar));
+// Raw iCalendar body — its own text parser (the global 512 KB JSON cap is too small)
+app.post("/api/v1/calendars/import", requireAuth, express.text({ type: "*/*", limit: "10mb" }), wrap(handlerImportCalendar));
 app.put("/api/v1/calendars", requireAuth, wrap(handlerUpdateCalendar));
 app.delete("/api/v1/calendars", requireAuth, wrap(handlerRemoveCalendar));
 
 // Members & invites
 app.post("/api/v1/calendars/invites", requireAuth, wrap(handlerCreateCalendarInvite));
+app.get("/api/v1/calendars/:calendarId/invites", requireAuth, wrap(handlerGetCalendarInvites));
+app.delete("/api/v1/calendars/invites/:inviteId", requireAuth, wrap(handlerRevokeInvite));
 app.get("/api/v1/calendars/:calendarId/members", requireAuth, wrap(handlerGetCalendarMembers));
 app.post("/api/v1/calendars/members/:calendarId", requireAuth, wrap(handlerJoinCalendar));
 app.delete("/api/v1/calendars/members/:calendarId", requireAuth, wrap(handlerLeaveCalendar));

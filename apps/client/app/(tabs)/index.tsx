@@ -6,18 +6,17 @@ import { MonthView } from "@/components/cal/MonthView";
 import { TimelineView } from "@/components/cal/TimelineView";
 import { Draft, DRILL_OPEN_MIN, minutesToY, Rect, ZOOM_IN_MS, ZOOM_OUT_MS } from "@/components/cal/layout";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { BackHandler, View } from "react-native";
 import { expandRecurringEvents, type Mode } from "@musubi/calendar";
 import Animated, {
   Easing, interpolate, useAnimatedStyle, useSharedValue, withTiming,
 } from "react-native-reanimated";
 import dayjs from "dayjs";
-import EventDetailModal from "@/components/calendar/EventDetailModal";
 import { Event } from "@musubi/types";
 import { useEventsStore } from "@/store/useEventsStore";
 import { useImportStore } from "@/store/useImportStore";
-import { liveEventDetail } from "@/lib/liveEvent";
+import { presentEventDetail, useEditComposerStore } from "@/store/useEventDetailStore";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { useApi } from "@/services/api";
@@ -70,10 +69,6 @@ export default function MainTab() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [dockHidden, setDockHidden] = useState(false); // X hides the sheet until the next draft
   const handleDraftChange = useCallback((d: Draft | null) => { setDraft(d); setDockHidden(false); }, []);
-  const [newEventVisible, setNewEventVisible] = useState(false);
-  const [eventDetailVisible, setEventDetailVisible] = useState(false);
-  const [prefilledEvent, setPrefilledEvent] = useState<Event | undefined>(undefined);
-  const [eventDetail, setEventDetail] = useState<Event | null>(null);
   const scrollPosRef = useRef(Math.max(0, minutesToY(new Date().getHours() * 60 - 60)));
   // the drill-in day view has its own scroll memory, always reset to noon on open
   const drillScrollPosRef = useRef(minutesToY(DRILL_OPEN_MIN));
@@ -158,17 +153,25 @@ export default function MainTab() {
     setAnchorDate(now);
   }, []);
 
-  const handlerEventEdit = useCallback((event: Event) => {
-    setEventDetailVisible(false);
-    setPrefilledEvent(event);
-    setNewEventVisible(true);
-  }, []);
+  // Android calendar VIEW intent (com.android.calendar/time/<ms>, routed via
+  // +not-found → root index): jump the calendar to the requested date.
+  const { time } = useLocalSearchParams<{ time?: string }>();
+  useEffect(() => {
+    const ms = Number(time);
+    if (!time || !Number.isFinite(ms)) return;
+    const target = new Date(ms);
+    zoom.value = 0;
+    setDrill(null);
+    setDraft(null);
+    setBase(target);
+    setAnchorDate(target);
+  }, [time]);
 
   // An .ics opened via the OS (parsed in app/_layout) → open the composer prefilled.
   const importPending = useImportStore(s => s.pending);
   useEffect(() => {
     if (!importPending) return;
-    setPrefilledEvent({
+    useEditComposerStore.getState().open({
       title: importPending.title,
       start: importPending.start,
       end: importPending.end,
@@ -176,23 +179,12 @@ export default function MainTab() {
       description: importPending.description ?? null,
       location: importPending.location ?? null,
     } as Event); // no id → composer treats it as a new event
-    setNewEventVisible(true);
     useImportStore.getState().setPending(null);
   }, [importPending]);
 
-  const openEventDetail = useCallback((event: Event) => {
-    // Recurring occurrences have synthetic ids like "<originalId>_<timestamp>".
-    // Display the occurrence's own start/end (the date the user tapped) but
-    // keep the original event's id so that edit/delete targets the full series.
-    const original = events.find(e => e.id === event.id)
-      ?? events.find(e => e.id === event.id?.replace(/_\d+$/, ""));
-    setEventDetail(
-      original && original.id !== event.id
-        ? { ...original, start: event.start, end: event.end }
-        : event,
-    );
-    setEventDetailVisible(true);
-  }, [events]);
+  // Store write, not setState — opening the detail must not re-render MainTab
+  // (and the whole calendar under it). The modal lives in GlobalEventModals.
+  const openEventDetail = useCallback((event: Event) => presentEventDetail(events, event), [events]);
 
   // Snap the expansion anchor to its month; stable across in-month swipes.
   const rangeAnchorMs = useMemo(
@@ -380,21 +372,6 @@ export default function MainTab() {
         />
       )}
 
-      {/* Classic modal — editing an existing event from its detail. */}
-      <AddEventModal
-        visible={newEventVisible}
-        onClose={() => setNewEventVisible(false)}
-        onSave={async (e) => await addEvent(e, api)}
-        onEdit={async (e) => await updateEvent(e, api)}
-        calendars={calendars}
-        event={prefilledEvent}
-      />
-      <EventDetailModal
-        visible={eventDetailVisible}
-        onClose={() => setEventDetailVisible(false)}
-        onEdit={(event: Event) => handlerEventEdit(event)}
-        event={liveEventDetail(events, eventDetail)}
-      />
     </View>
   );
 }

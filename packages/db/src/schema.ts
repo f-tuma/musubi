@@ -208,6 +208,9 @@ export const events = pgTable("events", {
   description: text("description"),
   location: text("location"),
   isCanceled: boolean("is_canceled").notNull().default(false),
+  // Attendance toggle (a "kind of event"). Off hides the attendee UI only —
+  // event_users rows survive the flip, so re-enabling restores the list.
+  hasAttendees: boolean("has_attendees").notNull().default(false),
   organizer: text("organizer").notNull(),
   recurrence: text("recurrence"),
   // reminders:
@@ -242,8 +245,9 @@ export const calendarInvites = pgTable("calendar_invites", {
       onDelete: "cascade",
     })
     .notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  maxUses: integer("max_uses"),
+  expiresAt: timestamp("expires_at"), // null = never expires
+  maxUses: integer("max_uses"), // null = unlimited
+  uses: integer("uses").notNull().default(0), // bumped on join/accept, checked against maxUses
 });
 
 export type NewCalendarInvite = typeof calendarInvites.$inferInsert;
@@ -291,7 +295,7 @@ export const calendarMembers = pgTable("calendar_members", {
     })
     .notNull(),
   role: text("role").notNull().default("viewer"), // owner | editor | viewer
-});
+}, (t) => [unique().on(t.userID, t.calendarID)]); // re-join hits onConflictDoNothing instead of duplicating the membership
 
 export const calendarMembersRelations = relations(calendarMembers, ({ one }) => ({
   calendars: one(calendars, { fields: [calendarMembers.calendarID], references: [calendars.id] }),
@@ -325,6 +329,9 @@ export const calendarEventsRelations = relations(calendarEvents, ({ one }) => ({
 }));
 
 
+// Attendees. Presence in the table = attending; the creator is added on event
+// creation. When RSVP lands (web), add a `status` column — presence + status
+// covers yes/no/maybe with no rework.
 export const eventUsers = pgTable("event_users", {
   id: uuid("id").primaryKey().defaultRandom(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -342,34 +349,13 @@ export const eventUsers = pgTable("event_users", {
       onDelete: "cascade",
     })
     .notNull(),
-});
+}, (t) => [unique().on(t.eventID, t.userID)]); // makes join idempotent (onConflictDoNothing)
 
 
 export const eventUsersRelations = relations(eventUsers, ({ one }) => ({
   user: one(user, { fields: [eventUsers.userID], references: [user.id] }),
   events: one(events, { fields: [eventUsers.eventID], references: [events.id] }),
 }));
-
-
-// export const eventAttendees = pgTable("event_attendees", {
-//   id: uuid("id").primaryKey().defaultRandom(),
-//   createdAt: timestamp("created_at").notNull().defaultNow(),
-//   updatedAt: timestamp("updated_at")
-//     .notNull()
-//     .defaultNow()
-//     .$onUpdate(() => new Date()),
-//   eventID: uuid("event_id")
-//     .references(() => events.id, {
-//       onDelete: "cascade",
-//     })
-//     .notNull(),
-//   userID: text("user_id")
-//     .references(() => user.id, {
-//       onDelete: "cascade",
-//     })
-//     .notNull(),
-//   //TODO: Complete Table
-// });
 
 
 // EXTERNAL CALENDAR SYNC (provider-agnostic — google | microsoft | caldav)

@@ -18,6 +18,17 @@ export async function canDo(userID: string, calendarID: string, action: Calendar
   return can(role, action);
 }
 
+// Event-scoped gate for VIEWING: the user must be a member of some calendar the
+// event is linked to. Returns those calendars (callers usually need them next).
+export async function assertCanViewEvent(userID: string, eventID: string): Promise<string[]> {
+  const eventCalendars = await getEventCalendars(eventID);
+  if (eventCalendars.length === 0) throw new NotFoundError("Event not found...");
+  for (const cal of eventCalendars) {
+    if (await getUserRoleForCalendar(userID, cal)) return eventCalendars;
+  }
+  throw new ForbiddenError("You can't access this event.");
+}
+
 // Event-scoped gate for editing an event's SHARED content. A shared event lives
 // in many calendars, so editing is governed by its home (origin) calendar — not
 // whichever calendar the user is looking at. See ownership model.

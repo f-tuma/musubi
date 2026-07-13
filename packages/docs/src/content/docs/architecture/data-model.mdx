@@ -43,7 +43,7 @@ You rarely edit these — Better Auth's Drizzle adapter owns them. See [Auth in 
 | Table | Purpose | Key columns |
 |---|---|---|
 | `calendars` | A calendar | `creatorID`, `color`, `isDefault` (one auto-created per user, undeletable) |
-| `events` | An event | `title`, `start`/`end`, `isAllDay`, `recurrence`, `creatorID`, **`originCalendarID`**, `deletedAt` |
+| `events` | An event | `title`, `start`/`end`, `isAllDay`, `hasAttendees`, `recurrence`, `creatorID`, **`originCalendarID`**, `deletedAt` |
 | `calendarInvites` | Share links | `calendarID`, `expiresAt`, `maxUses` |
 
 <Aside type="caution">
@@ -67,9 +67,10 @@ erDiagram
 
 | Table | Meaning | Cascade / constraint |
 |---|---|---|
-| `calendarMembers` | who is in a calendar + their `role` | cascades from user & calendar; role defaults `"viewer"` |
+| `calendarMembers` | who is in a calendar + their `role` | cascades from user & calendar; role defaults `"viewer"`; unique `(userID, calendarID)` — re-joins hit `onConflictDoNothing` instead of duplicating |
 | `calendarEvents` | which calendars an event is linked into (M:N) | cascades both sides |
-| `eventUsers` | attendees of an event (creator added on create) | cascades both sides |
+| `eventUsers` | attendees of an event (creator added on create; presence = attending) | cascades both sides; unique `(eventID, userID)` |
+| `calendarInvites` | invite links — the row's uuid `id` IS the token | cascades from calendar; `expiresAt` null = never expires, `maxUses` null = unlimited, `uses` counter checked (with expiry) at every token read |
 
 **Consequences you must respect:**
 
@@ -78,7 +79,7 @@ erDiagram
 - A shared event linked into 3 calendars is *one* row. Editing it edits it everywhere. That's the feature.
 
 <Aside type="note">
-`eventUsers` currently just tracks the creator. A richer attendee model is stubbed (commented `eventAttendees` in `schema.ts`) but intentionally not built yet — it's a planned feature, leave the stub in place.
+`eventUsers` is the attendee list: presence in the table means attending, and anyone who can *view* the event may join/leave (`GET /events/:id/attendees`, `PUT /events/:id/attendance`). The feature is per-event opt-in via `events.hasAttendees` — a UI toggle, **non-destructive**: switching it off keeps the `event_users` rows, so re-enabling restores the same list. The payload is name + avatar only — no emails, since an event can span calendars whose members aren't mutuals. When real RSVP lands (web), add a `status` column (`yes | no | maybe`) — presence + status needs no rework. External sync inserts events directly (not via `createEvent`), so provider-imported events don't get a phantom creator-attendee.
 </Aside>
 
 ### 5. External sync (provider-agnostic)

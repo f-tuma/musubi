@@ -8,10 +8,11 @@ import {
   addMonths, allDaySpans, bucketByDay, dayKey, DOW_H, INK, isSameDay, monthGrid, Rect,
 } from "./layout";
 
-const MAX_CHIPS = 3;       // total visual rows per cell (bars + chips)
 const MONTH_LANES = 2;     // at most this many spanning all-day lanes per week row
 const BAR_H = 16;          // lane height of a spanning bar
 const DAYNUM_H = 27;       // day-number area at the top of a cell
+const OVERFLOW_H = 12;     // the "+N" line at the bottom of a cell
+const MIN_ROWS = 2;        // never fewer event rows than this, even on tiny cells
 
 type Props = {
   base: Date;                       // month shown at page index 0
@@ -34,6 +35,9 @@ export function MonthView({ base, events, weekStartsOn, eventColorOf, onDayPress
 
   const cellW = size.w / 7;
   const cellH = (size.h - DOW_H) / 6;
+  // Event rows per cell FIT to the real cell height (device-dependent) instead
+  // of a fixed count — tall screens show 4-5 rows, small ones fall back to fewer.
+  const rowsPerCell = Math.max(MIN_ROWS, Math.floor((cellH - DAYNUM_H - OVERFLOW_H) / BAR_H));
 
   const renderPage = useCallback(({ index }: { index: number }) => {
     const month = addMonths(base, index);
@@ -52,15 +56,21 @@ export function MonthView({ base, events, weekStartsOn, eventColorOf, onDayPress
           // stay as per-cell chips below them
           const spans = allDaySpans(events, week);
           const bars = spans.filter(sp => sp.lane < MONTH_LANES);
-          const rowLanes = Math.min(Math.max(...spans.map(sp => sp.lane + 1), 0), MONTH_LANES);
+          // Chips shift down PER DAY, by the lanes actually covering that day —
+          // a row-wide count stole chip rows from days no bar passes over.
+          // (Highest covering lane wins: a day under only a lane-1 bar still
+          // offsets past lane 0, because bars sit at fixed lane positions.)
+          const lanesOn = (col: number) =>
+            Math.max(0, ...bars.filter(sp => sp.startCol <= col && col <= sp.endCol).map(sp => sp.lane + 1));
           const hiddenOn = (col: number) =>
             spans.filter(sp => sp.lane >= MONTH_LANES && sp.startCol <= col && col <= sp.endCol).length;
-          const chipRows = MAX_CHIPS - rowLanes;
           return (
             <View key={r} style={{ flex: 1, flexDirection: "row" }}>
               {week.map((day, c) => {
                 const inMonth = day.getMonth() === month.getMonth();
                 const isToday = isSameDay(day, today);
+                const dayLanes = lanesOn(c);
+                const chipRows = rowsPerCell - dayLanes;
                 const timed = (byDay.get(dayKey(day)) ?? []).filter(e => !e.isAllDay);
                 const overflow = timed.length - chipRows + hiddenOn(c);
                 return (
@@ -87,7 +97,7 @@ export function MonthView({ base, events, weekStartsOn, eventColorOf, onDayPress
                         {day.getDate()}
                       </Text>
                     </View>
-                    {rowLanes > 0 && <View style={{ height: rowLanes * BAR_H }} />}
+                    {dayLanes > 0 && <View style={{ height: dayLanes * BAR_H }} />}
                     {timed.slice(0, Math.max(chipRows, 0)).map((e, i) => (
                       <View key={e.id + i} style={{
                         backgroundColor: eventColorOf(e), borderRadius: 3,
@@ -111,8 +121,10 @@ export function MonthView({ base, events, weekStartsOn, eventColorOf, onDayPress
                 {bars.map(sp => (
                   <View key={sp.event.id} style={{
                     position: "absolute",
-                    left: sp.startCol * cellW + 1,
-                    width: (sp.endCol - sp.startCol + 1) * cellW - 2,
+                    // match the chips' horizontal inset (cell paddingHorizontal 2)
+                    // so a single-day bar is exactly as wide as a chip below it
+                    left: sp.startCol * cellW + 2,
+                    width: (sp.endCol - sp.startCol + 1) * cellW - 4,
                     top: DAYNUM_H + sp.lane * BAR_H,
                     height: BAR_H - 2,
                     backgroundColor: eventColorOf(sp.event),

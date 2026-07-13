@@ -13,7 +13,13 @@ export const SNAP_DRAG_MIN = 15;   // minutes — drag resize/move snap
 export const SNAP_TAP_MIN = 30;    // minutes — quick-tap draft snap
 export const HOLD_CREATE_MS = 280; // hold before drag-to-create activates on the grid
 export const HOLD_GRAB_MS = 150;   // hold before an existing draft can be grabbed
-export const GRAB_DOT_HIT = 30;    // draft ghost: corner-box touch zone around each resize dot
+export const GRAB_DOT_HIT = 44;    // draft ghost: corner-box touch zone around each resize dot (finger-sized)
+// Overlapping events cascade (Google-mobile style): each overlap level shifts
+// right and renders ON TOP of the previous, leaving a colored stripe of the
+// one underneath. Levels past the cap stack at the same offset (z-order still
+// keeps the latest on top) so deep clusters can't push events off the column.
+export const CASCADE_OFFSET = 10;  // px shift per overlap level
+export const CASCADE_MAX_LEVELS = 3;
 export const GRAB_SCALE = 1.04;    // "lifted" ghost scale while dragging
 export const GRAB_SPRING = { damping: 30, stiffness: 400 };
 

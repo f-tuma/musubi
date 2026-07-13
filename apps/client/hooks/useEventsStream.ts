@@ -2,8 +2,10 @@ import { useEventsStore } from "@/store/useEventsStore";
 import { useEffect, useRef } from "react";
 import EventSource from "react-native-sse";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
+import { useAttendeesStore } from "@/store/useAttendeesStore";
 import { useServer } from "@/contexts/ServerContext";
 import { useRefreshData } from "@/hooks/useRefreshData";
+import { loadFederatedAccounts } from "@/services/federation";
 
 export function useConnectToEventStream() {
   // apiUrl comes from ServerContext (SecureStore-backed, self-host aware) — the
@@ -12,6 +14,7 @@ export function useConnectToEventStream() {
   const { authClient, apiUrl } = useServer();
   const { localAddEvent, localUpdateEvent, localRemoveEvent, localRemoveCalendarEvents } = useEventsStore();
   const { localUpdateCalendar, localRemoveCalendar } = useCalendarsStore();
+  const setAttendees = useAttendeesStore((s) => s.setAttendees);
   // "external_sync" = the server's scheduled provider sync found changes → run a
   // silent delta refresh (WITHOUT re-triggering the provider sync — that'd loop).
   // Ref so the SSE effect doesn't resubscribe every render; guarded against overlap.
@@ -29,48 +32,75 @@ export function useConnectToEventStream() {
 
   useEffect(() => {
     if (!apiUrl) return;
-    let sse: EventSource;
+    const sources: EventSource[] = [];
+    let cancelled = false;
+
+    const handleMessage = (event: { data?: string | null }) => {
+      if (!event.data) return;
+      const data = JSON.parse(event.data);
+
+      const toEvent = (p: any) => ({ ...p, start: new Date(p.start), end: new Date(p.end) });
+
+      switch (data.type) {
+        case "event_created":
+          localAddEvent(toEvent(data.payload));
+          break;
+        case "event_updated":
+          localUpdateEvent(toEvent(data.payload));
+          break;
+        case "event_removed":
+          localRemoveEvent(toEvent(data.payload));
+          break;
+        case "calendar_updated":
+          localUpdateCalendar(data.payload);
+          break;
+        case "calendar_removed":
+          localRemoveCalendar(data.payload);
+          localRemoveCalendarEvents(data.payload.id);
+          break;
+        case "attendance_changed":
+          setAttendees(data.payload.eventID, data.payload.attendees);
+          break;
+        case "external_sync":
+          silentRefresh();
+          break;
+        default:
+          console.warn(`Uknown event type: ${data.type}`);
+      }
+    };
+
+    const subscribe = (url: string, token: string) => {
+      const sse = new EventSource(`${url}/api/stream`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      // The library auto-reconnects every pollingInterval (5s) after an error or
+      // stream end — but frames sent while we were down are lost. Catch up with
+      // one silent delta refresh on the reconnect that follows an error.
+      let hadError = false;
+      sse.addEventListener("error", () => { hadError = true; });
+      sse.addEventListener("open", () => {
+        if (hadError) { hadError = false; silentRefresh(); }
+      });
+      sse.addEventListener("message", handleMessage);
+      sources.push(sse);
+    };
 
     const connect = async () => {
       const { data } = await authClient.getSession();
       const token = data?.session?.token;
-      sse = new EventSource(`${apiUrl}/api/stream`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      if (cancelled || !token) return;
+      subscribe(apiUrl, token);
 
-      sse.addEventListener("message", (event) => {
-        if (event.data) {
-          const data = JSON.parse(event.data);
-
-          const toEvent = (p: any) => ({ ...p, start: new Date(p.start), end: new Date(p.end) });
-
-          switch (data.type) {
-            case "event_created":
-              localAddEvent(toEvent(data.payload));
-              break;
-            case "event_updated":
-              localUpdateEvent(toEvent(data.payload));
-              break;
-            case "event_removed":
-              localRemoveEvent(toEvent(data.payload));
-              break;
-            case "calendar_updated":
-              localUpdateCalendar(data.payload);
-              break;
-            case "calendar_removed":
-              localRemoveCalendar(data.payload);
-              localRemoveCalendarEvents(data.payload.id);
-              break;
-            case "external_sync":
-              silentRefresh();
-              break;
-            default:
-              console.warn(`Uknown event type: ${data.type}`);
-          }
-        }
-      });
+      // Federated servers stream too (member token as bearer — the server's
+      // requireAuth fallback authenticates it), so events and attendance on
+      // remote calendars update live, same as home ones.
+      // ponytail: registry read once per mount — a freshly accepted server
+      // starts streaming on the next app start; until then pulls cover it.
+      for (const acc of await loadFederatedAccounts()) {
+        if (!cancelled) subscribe(acc.server, acc.token);
+      }
     }
     connect();
-    return () => sse?.close();
+    return () => { cancelled = true; sources.forEach(s => s.close()); };
   }, [apiUrl, authClient]);
 }

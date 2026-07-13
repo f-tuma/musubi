@@ -1,0 +1,1 @@
+ALTER TABLE `events` ADD `hasAttendees` integer DEFAULT false NOT NULL;

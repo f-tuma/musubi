@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import { randomUUID } from "crypto";
-import { NewEvent, createEvent, getCalendarMembers, getEvent, getEventCalendars, getEventOrigin, getUserRoleForCalendar, getUsersEvents, linkEventToCalendars, removeEvent, unlinkEventFromCalendars, updateEvent } from '@musubi/db';
+import { NewEvent, createEvent, getCalendarMembers, getEvent, getEventAttendees, getEventCalendars, getEventOrigin, getUserRoleForCalendar, getUsersEvents, linkEventToCalendars, removeEvent, setAttendance, unlinkEventFromCalendars, updateEvent } from '@musubi/db';
 import { BadRequestError, Event, EventSchema, ForbiddenError, NotFoundError } from "@musubi/types";
 import { notifyCalendarMembers } from "./stream";
 import { pushEventToCalendars, pushEventToProviders } from "../sync/engine";
-import { assertCan, assertCanEditEvent, canDo } from "../permissions";
+import { assertCan, assertCanEditEvent, assertCanViewEvent, canDo } from "../permissions";
 
 export async function handlerCreateEvent(req: Request, res: Response) {
   let event: Event;
@@ -164,15 +164,8 @@ export async function handlerLinkEvent(req: Request, res: Response) {
   const calendarID = req.body?.calendarID as string;
   if (!calendarID) throw new BadRequestError("calendarID is required...");
 
-  const existing = await getEventCalendars(eventID);
-  if (existing.length === 0) throw new NotFoundError("Event not found...");
-
   // Must be able to see the event (member of some calendar it lives in).
-  let canView = false;
-  for (const cal of existing) {
-    if (await getUserRoleForCalendar(req.user!.id, cal)) { canView = true; break; }
-  }
-  if (!canView) throw new ForbiddenError("You can't access this event.");
+  const existing = await assertCanViewEvent(req.user!.id, eventID);
 
   // Must be able to edit the target calendar.
   if (!(await canDo(req.user!.id, calendarID, "editEvents"))) {
@@ -208,15 +201,8 @@ export async function handlerForkEvent(req: Request, res: Response) {
   const calendarID = req.body?.calendarID as string;
   if (!calendarID) throw new BadRequestError("calendarID is required...");
 
-  const sourceCalendars = await getEventCalendars(eventID);
-  if (sourceCalendars.length === 0) throw new NotFoundError("Event not found...");
-
   // Must be able to see the source, and edit the target.
-  let canView = false;
-  for (const cal of sourceCalendars) {
-    if (await getUserRoleForCalendar(req.user!.id, cal)) { canView = true; break; }
-  }
-  if (!canView) throw new ForbiddenError("You can't access this event.");
+  const sourceCalendars = await assertCanViewEvent(req.user!.id, eventID);
   if (!(await canDo(req.user!.id, calendarID, "editEvents"))) {
     throw new ForbiddenError("You can't add events to that calendar.");
   }
@@ -235,6 +221,7 @@ export async function handlerForkEvent(req: Request, res: Response) {
     start: src.start,
     end: src.end,
     isAllDay: src.isAllDay,
+    hasAttendees: src.hasAttendees,
     description: src.description,
     location: src.location,
     organizer: req.user!.id,       // new owner
@@ -251,6 +238,35 @@ export async function handlerForkEvent(req: Request, res: Response) {
   notifyCalendarMembers(members.map(m => m.userID), "event_created", result);
 
   return res.status(201).json(result);
+}
+
+// Attendees: anyone who can VIEW the event sees the list and can join/leave.
+// Viewers RSVP too — that's the point. No emails in the payload (see query).
+export async function handlerGetAttendees(req: Request, res: Response) {
+  const eventID = req.params.eventId as string;
+  await assertCanViewEvent(req.user!.id, eventID);
+  res.status(200).json(await getEventAttendees(eventID));
+}
+
+// PUT desired state ({ attending: boolean }) rather than POST/DELETE — retries
+// are safe and the client just sends what it wants. Returns the fresh list.
+export async function handlerSetAttendance(req: Request, res: Response) {
+  const eventID = req.params.eventId as string;
+  const attending = req.body?.attending;
+  if (typeof attending !== "boolean") throw new BadRequestError("attending (boolean) is required...");
+  const eventCalendars = await assertCanViewEvent(req.user!.id, eventID);
+  await setAttendance(eventID, req.user!.id, attending);
+  const attendees = await getEventAttendees(eventID);
+
+  // Live-update open detail modals for everyone who can see the event. The actor
+  // gets the frame too — it carries the same list the PUT response does, harmless.
+  const memberIDSeen = new Set<string>();
+  for (const cal of eventCalendars) {
+    for (const member of await getCalendarMembers(cal)) memberIDSeen.add(member.userID);
+  }
+  notifyCalendarMembers([...memberIDSeen], "attendance_changed", { eventID, attendees });
+
+  res.status(200).json(attendees);
 }
 
 export async function handlerGetEvents(req: Request, res: Response) {

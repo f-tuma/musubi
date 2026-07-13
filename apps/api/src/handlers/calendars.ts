@@ -1,5 +1,8 @@
 import { Request, Response } from "express";
-import { addCalendarMember, createCalendar, getCalendar, getCalendarEvents, getCalendarIDFromToken, getCalendarMembers, getExternalLinkForCalendar, getUserRoleForCalendar, getUsersCalendars, importExternalCalendar, NewCalendar, removeCalendar, removeCalendarMember, setMemberRole, updateCalendar } from '@musubi/db';
+import ICAL from "ical.js";
+import { randomUUID } from "crypto";
+import { addCalendarMember, consumeInvite, createCalendar, createEvent, getCalendar, getCalendarEvents, getCalendarIDFromToken, getCalendarMembers, getExternalLinkForCalendar, getUserRoleForCalendar, getUsersCalendars, importExternalCalendar, NewCalendar, removeCalendar, removeCalendarMember, setMemberRole, updateCalendar } from '@musubi/db';
+import { toVevent, veventToFields } from "../sync/adapters/caldav";
 import { BadRequestError, Calendar, CalendarSchema, ForbiddenError, NotFoundError, User } from "@musubi/types";
 import { notifyCalendarMembers } from "./stream";
 import { assertCan } from "../permissions";
@@ -58,7 +61,6 @@ export async function handlerCreateCalendar(req: Request, res: Response) {
       ...created,
       role: "owner",
       members: [{ id: req.user!.id, name: req.user!.name, email: req.user!.email }],
-      invites: "wip",
       provider: link?.provider ?? calendar.provider,
       accountId: link?.accountID ?? account.id,
       accountLabel: link?.accountLabel ?? account.label,
@@ -72,7 +74,7 @@ export async function handlerCreateCalendar(req: Request, res: Response) {
     creatorID: req.user!.id,
   }
   const result = await createCalendar(newCalendar);
-  res.status(201).json({ ...result, role: "owner", members: [{ id: req.user!.id, name: req.user!.name, email: req.user!.email }], invites: "wip" });
+  res.status(201).json({ ...result, role: "owner", members: [{ id: req.user!.id, name: req.user!.name, email: req.user!.email }] });
 }
 
 export async function handlerRemoveCalendar(req: Request, res: Response) {
@@ -95,7 +97,7 @@ export async function handlerRemoveCalendar(req: Request, res: Response) {
 
   if (removedCalendar) {
 
-    const result = { ...removedCalendar, members: [], invites: "wip" };
+    const result = { ...removedCalendar, members: [] };
 
     const memberIDSeen = new Set<string>();
 
@@ -132,7 +134,7 @@ export async function handlerUpdateCalendar(req: Request, res: Response) {
 
   if (updatedCalendar) {
 
-    const result = { ...updatedCalendar, members: calendar.members, invite: calendar.invite };
+    const result = { ...updatedCalendar, members: calendar.members };
 
     const memberIDSeen = new Set<string>();
 
@@ -147,7 +149,7 @@ export async function handlerUpdateCalendar(req: Request, res: Response) {
     notifyCalendarMembers([...memberIDSeen], "calendar_updated", result);
 
 
-    return res.status(200).json({ ...result, members: calendar.members, invite: calendar.invite });
+    return res.status(200).json(result);
   }
   throw new NotFoundError("Calendar not found...");
 }
@@ -166,7 +168,6 @@ export async function handlerGetCalendars(req: Request, res: Response) {
     result.push({
       ...calendar.calendars,
       members: members,
-      invite: "wip",
       role: calendar.role, // the requesting user's role on this calendar
       provider: link?.provider ?? null,
       accountId: link?.accountID ?? null,
@@ -210,6 +211,86 @@ export async function handlerGetCalendar(req: Request, res: Response) {
   });
 }
 
+// Import a whole .ics file as a NEW native calendar. Body is raw iCalendar text
+// (route-level express.text — the global JSON parser's 512 KB cap doesn't fit
+// real calendars); name/color ride in the query string.
+export async function handlerImportCalendar(req: Request, res: Response) {
+  const ics = req.body;
+  if (typeof ics !== "string" || !ics.trim()) throw new BadRequestError("Request body must be an iCalendar file...");
+
+  let vcal: ICAL.Component;
+  try {
+    vcal = new ICAL.Component(ICAL.parse(ics));
+  } catch {
+    throw new BadRequestError("That file isn't valid iCalendar data...");
+  }
+
+  const name = (req.query.name as string)
+    || (vcal.getFirstPropertyValue("x-wr-calname") as string | null)
+    || "Imported calendar";
+  const color = (req.query.color as string) || "#7a9e7e";
+
+  const created = await createCalendar({ name, color, creatorID: req.user!.id });
+
+  // ponytail: RECURRENCE-ID overrides (edited single occurrences) are skipped —
+  // the master VEVENT carries the series; per-occurrence edits need detached
+  // instances, which Musubi doesn't model yet. Also one createEvent per VEVENT
+  // (3 inserts each) — batch if huge imports ever matter.
+  let imported = 0;
+  for (const vevent of vcal.getAllSubcomponents("vevent")) {
+    if (vevent.getFirstPropertyValue("recurrence-id")) continue;
+    const fields = veventToFields(vevent);
+    if (!fields) continue;
+    await createEvent({
+      id: randomUUID(),
+      creatorID: req.user!.id,
+      organizer: req.user!.id,
+      title: fields.title,
+      color,
+      start: fields.start,
+      end: fields.end,
+      isAllDay: fields.isAllDay,
+      description: fields.description,
+      location: fields.location,
+      recurrence: fields.recurrence,
+      originCalendarID: created.id,
+    }, [created.id]);
+    imported++;
+  }
+
+  res.status(201).json({
+    ...created,
+    role: "owner",
+    members: [{ id: req.user!.id, name: req.user!.name, email: req.user!.email }],
+    imported,
+  });
+}
+
+// One-shot .ics snapshot of a whole calendar. Any member may export — they can
+// already see every event. Reuses the CalDAV adapter's VEVENT serializer, so
+// recurrence (RRULE + EXDATE) and all-day semantics round-trip identically.
+export async function handlerExportCalendar(req: Request, res: Response) {
+  const calendarID = req.params.id as string;
+  if (!(await getUserRoleForCalendar(req.user!.id, calendarID))) {
+    throw new ForbiddenError("You can't access this calendar.");
+  }
+  const calendar = await getCalendar(calendarID);
+  const rows = await getCalendarEvents(calendarID);
+
+  const vcal = new ICAL.Component("vcalendar");
+  vcal.updatePropertyWithValue("version", "2.0");
+  vcal.updatePropertyWithValue("prodid", "-//Musubi//EN");
+  vcal.updatePropertyWithValue("x-wr-calname", calendar.name);
+  for (const row of rows) {
+    if (!row.events.deletedAt) vcal.addSubcomponent(toVevent(row.events));
+  }
+
+  const filename = `${calendar.name.replace(/[^\w.-]+/g, "_") || "calendar"}.ics`;
+  res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.status(200).send(vcal.toString());
+}
+
 export async function handlerJoinCalendar(req: Request, res: Response) {
   const calendarID = req.params.calendarId as string;
   // Membership is granted by invite only — a bare calendar id is NOT enough
@@ -219,6 +300,8 @@ export async function handlerJoinCalendar(req: Request, res: Response) {
     throw new ForbiddenError("A valid invite is required to join this calendar.");
   }
   const result = await addCalendarMember(req.user?.id!, calendarID);
+  // Empty result = was already a member (conflict) — don't burn a use on re-joins.
+  if (result.length > 0) await consumeInvite(token);
 
   res.status(200).json(result);
 }

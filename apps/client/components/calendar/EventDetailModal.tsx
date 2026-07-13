@@ -10,9 +10,12 @@ import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-ha
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { useEventsStore } from "@/store/useEventsStore";
 import { useApi } from "@/services/api";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CalendarPickerModal from "./CalendarPickerModal";
 import { Tap } from "@/components/ui/Tap";
+import { Avatar } from "@/components/Avatar";
+import { useServer } from "@/contexts/ServerContext";
+import { useAttendeesStore } from "@/store/useAttendeesStore";
 import { chooseOption, confirm } from "@/lib/confirm";
 import { formatDateLong, formatTime } from "@/lib/datetimeFormat";
 import { excludeOccurrence, endSeriesBefore } from "@musubi/calendar";
@@ -38,10 +41,42 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
   const { calendars } = useCalendarsStore();
 
   const api = useApi();
+  const { authClient } = useServer();
+  const { data: session } = authClient.useSession();
+  const userID = session?.user.id;
   const { events, linkEvent, forkEvent, removeEvent, updateEvent } = useEventsStore();
   const [linkVisible, setLinkVisible] = useState(false);
   const [forkVisible, setForkVisible] = useState(false);
   const [unlinkVisible, setUnlinkVisible] = useState(false);
+
+  // Attendees live in a shared store so the SSE "attendance_changed" frame can
+  // update an open modal. Fetched fresh on open (stale entry shows meanwhile);
+  // missing entry (offline / fetch failed) → section stays hidden.
+  const { byEvent, setAttendees } = useAttendeesStore();
+  const attendees = event ? byEvent[event.id] : undefined;
+  useEffect(() => {
+    if (visible && event?.hasAttendees) api.getEventAttendees(event).then(a => setAttendees(event.id!, a)).catch(() => { });
+    // api is a fresh object every render — deps on it would refetch in a loop
+  }, [visible, event?.id, event?.hasAttendees]);
+
+  // Collapsed by default on every open; tap the facepile to expand.
+  const [attendeesOpen, setAttendeesOpen] = useState(false);
+  useEffect(() => { setAttendeesOpen(false); }, [visible]);
+
+  const isAttending = !!userID && !!attendees?.some(a => a.id === userID);
+  const toggleAttendance = async () => {
+    if (!event || !userID || !attendees || !session) return;
+    const next = !isAttending;
+    // Optimistic flip; the server's list (PUT response or SSE frame) replaces it.
+    setAttendees(event.id!, next
+      ? [...attendees, { id: userID, name: session.user.name, image: session.user.image }]
+      : attendees.filter(a => a.id !== userID));
+    try {
+      setAttendees(event.id!, await api.setAttendance(event, next));
+    } catch {
+      setAttendees(event.id!, attendees); // revert
+    }
+  };
 
   // Editing content (and deleting) is governed by the event's HOME (origin) calendar —
   // same rule the server enforces. Not the calendar you happen to be viewing it in.
@@ -148,7 +183,7 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
               <View style={[
                 styles.fieldContainer,
                 { paddingTop: 12, paddingBottom: 12 },
-                !(event?.location || event?.url || event?.description) && { borderBottomWidth: 0 },
+                !(event?.location || event?.url || event?.description || event?.hasAttendees) && { borderBottomWidth: 0 },
               ]}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={styles.horizontalPillView}>
@@ -213,6 +248,74 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
                   </View>
                 </View>
               }
+              {event?.hasAttendees && attendees && (
+                // paddingHorizontal 26 (not the container's 16) — optically lines
+                // up with the title block above; circles at 16 read wider than text.
+                <View style={[styles.fieldContainer, { borderBottomWidth: 0, paddingHorizontal: 26 }]}>
+                  {/* Same row anatomy as MemberRolesModal: label left, pill action right.
+                      The label doubles as the expand/collapse toggle (chevron lives here so
+                      it survives the facepile ↔ list swap below). */}
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                    <Tap scaleTo={1} hitSlop={10} onPress={() => setAttendeesOpen(o => !o)} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Text style={[styles.fieldLabel, { fontFamily: fonts.sans, marginBottom: 0 }]}>
+                        Attendees · {attendees.length}
+                      </Text>
+                      <Feather name={attendeesOpen ? "chevron-up" : "chevron-down"} size={14} color={colors.fg4} />
+                    </Tap>
+                    <Tap
+                      onPress={toggleAttendance}
+                      haptic={isAttending ? "warn" : "success"}
+                      style={{
+                        borderWidth: 1, borderColor: colors.line2, borderRadius: 999, padding: 2,
+                        backgroundColor: isAttending ? "transparent" : colors.fill,
+                      }}
+                    >
+                      <View style={{ paddingHorizontal: 12, paddingVertical: 5 }}>
+                        <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: isAttending ? colors.fg2 : colors.onFill }}>
+                          {isAttending ? "Leave" : "Attend"}
+                        </Text>
+                      </View>
+                    </Tap>
+                  </View>
+                  {/* Facepile "falls apart" into the list on expand — one or the other, never both. */}
+                  {!attendeesOpen ? (
+                    <Tap scaleTo={1} onPress={() => setAttendeesOpen(true)}>
+                      <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        {attendees.slice(0, 7).map((a, i) => (
+                          // bg1 ring separates the overlapping circles from each other
+                          <View key={a.id} style={{ marginLeft: i === 0 ? 0 : -10, borderWidth: 2, borderColor: colors.bg1, borderRadius: 999 }}>
+                            <Avatar name={a.name} image={a.image} size={32} />
+                          </View>
+                        ))}
+                        {attendees.length > 7 && (
+                          <View style={{
+                            marginLeft: -10, width: 36, height: 36, borderRadius: 18,
+                            borderWidth: 2, borderColor: colors.bg1, backgroundColor: colors.bg3,
+                            alignItems: "center", justifyContent: "center",
+                          }}>
+                            <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.fg2 }}>
+                              +{attendees.length - 7}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </Tap>
+                  ) : (
+                    <ScrollView style={{ maxHeight: 216 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+                      <View style={{ gap: 12 }}>
+                        {attendees.map(a => (
+                          <View key={a.id} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                            <Avatar name={a.name} image={a.image} size={32} />
+                            <Text style={{ fontFamily: fonts.sans, fontSize: 14, color: colors.fg, flex: 1 }} numberOfLines={1}>
+                              {a.name}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </ScrollView>
+                  )}
+                </View>
+              )}
             </ScrollView>
             {/* Actions ordered by frequency of use: Edit leads (brightest), sharing
                 verbs sit in the middle, Delete last. */}

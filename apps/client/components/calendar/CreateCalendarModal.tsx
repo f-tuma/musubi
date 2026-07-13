@@ -16,6 +16,10 @@ import { Btn } from "@/components/ui/Btn";
 import * as haptics from "@/lib/haptics";
 import ColorPickerModal from "@/components/ColorPickerModal";
 import { Feather } from "@expo/vector-icons";
+import * as DocumentPicker from "expo-document-picker";
+import { File } from "expo-file-system";
+import { useApi } from "@/services/api";
+import { useRefreshData } from "@/hooks/useRefreshData";
 
 
 type Props = {
@@ -58,6 +62,24 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
   const { data: session } = authClient.useSession();
   const userID = session?.user.id;
 
+  // Import an .ics as the new calendar's content. Picking a file switches the
+  // Create flow to the import endpoint; import is home-server + native only,
+  // so the account choice resets.
+  const api = useApi();
+  const refresh = useRefreshData();
+  const [importFile, setImportFile] = useState<{ uri: string; name: string } | null>(null);
+  const pickImportFile = async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ["text/calendar", "application/ics", "text/plain", "application/octet-stream"],
+      copyToCacheDirectory: true,
+    });
+    const asset = result.assets?.[0];
+    if (result.canceled || !asset) return;
+    setImportFile({ uri: asset.uri, name: asset.name });
+    setAccount(null);
+    if (!newName) setNewName(asset.name.replace(/\.ics$/i, "").slice(0, 16));
+  };
+
   useEffect(() => {
     if (visible) {
       setNewName(calendar?.name ?? "");
@@ -72,7 +94,6 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
       name: newName,
       color: newColor,
       members: calendar?.members ?? [],
-      invite: "create",
       // create into a connected account — the server makes it on the provider first
       provider: calendar ? calendar.provider : account?.provider ?? null,
       accountId: calendar ? calendar.accountId : account?.accountId ?? null,
@@ -102,6 +123,10 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
     try {
       if (calendar) {
         await onEdit(newCalendar);
+      } else if (importFile) {
+        const ics = await new File(importFile.uri).text();
+        await api.importCalendar(ics, newName, newColor);
+        await refresh(); // pulls the new calendar + its events into stores/cache
       } else {
         await onCreate(newCalendar);
       }
@@ -122,6 +147,7 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
     setNameError("");
     setNewColor(appColors[0].color);
     setAccount(null);
+    setImportFile(null);
     setCalendarHint(CALENDAR_HINTS[Math.floor(Math.random() * CALENDAR_HINTS.length)]);
     setIsLoading(false);
   };
@@ -208,7 +234,7 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                 {/* Where the calendar lives — this Musubi server, or a connected
                     provider account (created on the provider, then synced in).
                     Only when creating: calendars can't move between accounts. */}
-                {!calendar && accounts.length > 0 && (
+                {!calendar && accounts.length > 0 && !importFile && (
                   <View style={styles.fieldContainer}>
                     <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Account</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -243,10 +269,36 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                     </ScrollView>
                   </View>
                 )}
+
+                {/* Fill the new calendar from an .ics file — native calendars only,
+                    so picking a file hides the account choice. Only when creating. */}
+                {!calendar && (
+                  <View style={styles.fieldContainer}>
+                    <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Import</Text>
+                    {importFile ? (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 }}>
+                        <Feather name="file-text" size={16} color={colors.fg3} />
+                        <Text numberOfLines={1} style={{ flex: 1, fontFamily: fonts.sans, fontSize: 13, color: colors.fg }}>
+                          {importFile.name}
+                        </Text>
+                        <Tap hitSlop={10} onPress={() => setImportFile(null)}>
+                          <Feather name="x" size={16} color={colors.fg3} />
+                        </Tap>
+                      </View>
+                    ) : (
+                      <Tap onPress={pickImportFile} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8 }}>
+                        <Feather name="upload" size={14} color={colors.fg2} />
+                        <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: colors.fg2 }}>
+                          Import events from an .ics file
+                        </Text>
+                      </Tap>
+                    )}
+                  </View>
+                )}
               </ScrollView>
               <View style={[styles.modalButtons, { paddingBottom: insets.bottom + 16 }]}>
                 <Btn label="Cancel" variant="secondary" onPress={handleClose} />
-                <Btn label={calendar ? "Save" : "Create"} onPress={handleCreate} loading={isLoading} />
+                <Btn label={calendar ? "Save" : importFile ? "Import" : "Create"} onPress={handleCreate} loading={isLoading} />
               </View>
             </Animated.View >
           </GestureDetector>

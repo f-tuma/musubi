@@ -23,6 +23,7 @@ export const eventsTable = sqliteTable("events", {
   description: text(),
   location: text(),
   isCanceled: int({ mode: "boolean" }).notNull().default(false),
+  hasAttendees: int({ mode: "boolean" }).notNull().default(false),
   organizer: text().notNull(),
   recurrence: text(),
   url: text(),

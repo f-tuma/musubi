@@ -63,6 +63,8 @@ All in `apps/client/store/`. Stores are **API-first**: they call the server, and
 | `useCalendarsStore` | calendars + `activeCals` filter + solo mode | **merge, don't replace** on update (see below) |
 | `useSettingsStore` | preferences | **write-through persisted**: every change lands in the local SQLite blob (`cacheSetSettings`), and the store **seeds its initial state synchronously** from that snapshot (`cacheGetSettingsSync` via the raw `sqlite.getFirstSync` handle) — the very first frame is already in the last-known theme; any *async* hydrate here flashes the system theme or a blank window. The server copy (via `api.getSettings()`) still wins on refresh. `onboarded` defaults `true` so returning users never flash onboarding |
 | `useImportStore` | pending ICS draft | tiny bridge between `_layout` and the calendar screen |
+| `useAttendeesStore` | ephemeral attendee lists by event id | fetched when a detail modal opens, live-updated by the `attendance_changed` SSE frame; not persisted or delta-synced |
+| `useEventDetailStore` / `useEditComposerStore` | the global event-detail modal + classic edit composer | written via `getState()` from screens (no subscription), rendered by `GlobalEventModals` in the tabs layout — opening a modal never re-renders the screen under it |
 
 The highest fan-in files in the codebase are `constants/theme.ts` (40+ importers), `services/api.ts`, and these stores — treat their public shapes as load-bearing.
 
@@ -89,6 +91,8 @@ function throwOnError(error): asserts error is null {
 ```
 
 The `asserts error is null` return type is load-bearing — after `throwOnError(error)`, TypeScript knows `data` is non-null. A plain `void` helper would reintroduce `data: T | null` at every call site. Also: the server returns dates as ISO strings, so methods normalise them (`start: new Date(data.start)`) before returning.
+
+`throwOnError` is also the **session-expiry tripwire**: a 401 calls `notifySessionExpired()` (`lib/signOut.ts`), which runs the registered recovery handler once — the full `signOutAndReset` sequence — and lands the user on the welcome screen instead of every screen failing silently. `signOutAndReset` is THE sign-out path (Settings sign-out, account delete and expiry recovery all route through it): stores → SQLite mirror → scheduled notifications → native Google session → Better Auth session → redirect.
 
 - **`contexts/ServerContext.tsx`** provides `{ apiUrl, authClient, setNewServerUrl }`. The API URL is read from `SecureStore` (defaults to prod), so self-hosters can point the app at their own server.
 - **`services/auth-client.ts`** builds the Better Auth client with the Expo plugin (scheme `musubi://`, tokens in `SecureStore`).
@@ -118,7 +122,7 @@ The client has its **own** drizzle schema and migrations (`apps/client/db/schema
 
 ### Realtime
 
-`hooks/useEventsStream.ts` opens an `EventSource` (`react-native-sse`) to `${apiUrl}/api/stream` — `apiUrl` comes from `ServerContext`, so the stream follows a self-hosted server too — authenticated with the session `Bearer` token. Incoming frames (`event_created`, `event_updated`, …) are routed to the `local*` store methods; the `external_sync` frame (the server's scheduled Google/CalDAV sync found changes) triggers a **silent delta refresh** — `refresh({ providerSync: false })`, guarded against overlap and careful not to re-trigger the provider sync (that would loop). See the [server-side broadcast](/docs/architecture/api/#realtime-sse) and the [scheduled sync](/docs/architecture/sync/#near-realtime-the-scheduled-sync). There's no auto-reconnect loop — a dropped stream is picked back up by the next pull-to-refresh delta sync, which is the durable path.
+`hooks/useEventsStream.ts` opens an `EventSource` (`react-native-sse`) to `${apiUrl}/api/stream` — `apiUrl` comes from `ServerContext`, so the stream follows a self-hosted server too — authenticated with the session `Bearer` token, **plus one stream per federated server** from the registry (member token as bearer), so remote calendars' events and attendance update live too. Incoming frames (`event_created`, `event_updated`, …) are routed to the `local*` store methods; the `external_sync` frame (the server's scheduled Google/CalDAV sync found changes) triggers a **silent delta refresh** — `refresh({ providerSync: false })`, guarded against overlap and careful not to re-trigger the provider sync (that would loop). See the [server-side broadcast](/docs/architecture/api/#realtime-sse) and the [scheduled sync](/docs/architecture/sync/#near-realtime-the-scheduled-sync). The library auto-reconnects every 5 s after a drop; frames missed while down are covered by a one-shot silent delta refresh on the reconnect that follows an error — the delta sync remains the durable path.
 
 ## The custom calendar
 
@@ -127,12 +131,14 @@ Musubi does **not** use a calendar library — the month/week/day views are hand
 | File | Role |
 |---|---|
 | `layout.ts` | shared geometry + tuning constants (`HOUR_H`, `GUTTER`, snap sizes) and pure date/bucketing helpers (`minutesToY`, `bucketByDay`, `daySegments`, `dayKeyOf`) |
-| `TimelineView.tsx` | day/week grid; pinch-zoom, drag-to-create, event move; ~3-page infinite pager |
+| `TimelineView.tsx` | day/week grid; pinch-zoom, drag-to-create, event move; ~3-page infinite pager. Overlapping events: **day** lays them side by side in lanes, **week** columns are too narrow — there they **cascade** (Google-mobile style: each overlap level shifts right by `CASCADE_OFFSET` and draws on top, leaving the underlying event's stripe; capped at `CASCADE_MAX_LEVELS`) |
 | `MonthView.tsx` | month grid + animated drill-in to a day |
 | `ModeSwitch.tsx` | month/week/day toggle |
 
 <Aside type="caution">
-**The `live`-ref / shared-value pattern.** Positions, scroll offset, and zoom live in Reanimated `useSharedValue`s and refs — **not** React state — so dragging and pinching never trigger React re-renders (no layout thrash, flicker-free drops). Gestures read a `live` ref to keep their `useMemo` dependency arrays empty. When editing `TimelineView`:
+**The `live`-ref / shared-value pattern.** Positions, scroll offset, and zoom live in Reanimated `useSharedValue`s and refs — **not** React state — so dragging and pinching never trigger React re-renders (no layout thrash, flicker-free drops). The one deliberate exception: a `pinching` boolean flips once per pinch to disable the ScrollView's own scrolling — during a pinch the gesture is the single owner of the scroll position (two owners jittered). Gestures read a `live` ref to keep their `useMemo` dependency arrays empty.
+
+**Mount cost is the timeline's enemy** (measured with a 2 500-event calendar): event blocks are `memo`ized — without it every 15-min ghost snap-step re-rendered every block on screen; locked (non-movable) blocks skip their `GestureDetector` entirely; and buffered pager pages defer their block mount to `requestIdleCallback`, so a mode switch mounts one page's blocks up front, not three. Month cells fit their event-row count to the real cell height (`rowsPerCell` in `MonthView`), and all-day bars shift the timed chips down **per day** — only under bars that actually cross that day. When editing `TimelineView`:
 
 - Use `runOnJS()` to call any React setter from a gesture/worklet.
 - Don't lift shared values into `useState`.
@@ -149,10 +155,14 @@ This subsystem is intentionally dense; the `eslint-disable react-hooks/exhaustiv
 
 `components/calendar/AddEventModal.tsx` has two modes, and knowing which surface uses which matters:
 
-- **Docked** (`docked` prop) — a persistent bottom sheet that *peeks* (title + Save) and expands on pull/focus. This is the **create** path everywhere: the home tab, the agenda (FAB opens it, FAB hides while open), and the calendar-detail view (no FAB — it auto-peeks in day view and rides drag-to-create, mirroring the home model). Docked mode owns its keyboard handling: it lifts by exactly the keyboard's overlap past its resting edge and caps the lift so the sheet's top stays on screen. The resting edge is configurable via `dockBottomInset` (defaults to the tab-bar height; the detail modal passes the safe-area inset because it has no tab bar).
-- **Classic modal** (no `docked`) — used only for **editing** an existing event from its detail. Its keyboard handling lives in `useModalAnimation`.
+- **Docked** (`docked` prop) — a persistent bottom sheet that *peeks* (title + Save) and expands on pull/focus. This is the **create** path everywhere: the home tab, the agenda (FAB opens it, FAB hides while open), and the calendar-detail view (no FAB — it auto-peeks in day view and rides drag-to-create, mirroring the home model). Docked mode owns its keyboard handling: it lifts by exactly the keyboard's overlap past its resting edge and caps the lift so the sheet's top stays on screen. The resting edge is configurable via `dockBottomInset` (defaults to the tab-bar height; the detail modal passes the safe-area inset because it has no tab bar). Dismissal is two-stage: swiping down from **expanded** stops at peek, and from **peek** a further pull (60 px past, or a fling) throws the sheet away entirely — same cleanup as the X.
+- **Classic modal** (no `docked`) — used only for **editing** an existing event from its detail. Its keyboard handling lives in `useModalAnimation`. It is mounted ONCE, globally (see below) — screens never render their own copy.
 
 The [drill](/docs/architecture/glossary/#drill) (month → day zoom) feeds the docked composer: the day view mounts *before* the zoom animation starts (double-`requestAnimationFrame`), the composer peeks only once the zoom settles, and both the drill close and the peek trigger run on **timers, not animation callbacks** — an interrupted Reanimated animation silently drops its callback, which once meant a back-gesture had to be done twice. That rule is documented in `useModalAnimation.ts` and in the [glossary](/docs/architecture/glossary/#timer-not-animation-callback).
+
+### Global event modals
+
+The event **detail** modal and the **classic edit composer** live once in `components/calendar/GlobalEventModals.tsx`, mounted in the tabs layout and driven by `useEventDetailStore` / `useEditComposerStore`. Screens open them with a store write — `presentEventDetail(events, event)` (which also resolves a tapped recurring occurrence to its series master) or `useEditComposerStore.getState().open(event)` — **never** with local `useState`: a `setState` in a heavy screen re-renders the whole calendar/agenda under the modal before it can even start animating, which read as a visible open delay. Apply the same store+host pattern to any future modal opened from a heavy screen.
 
 The composer's RRULE build/parse logic lives in `lib/rrule.ts` and its validation in `lib/eventForm.ts` (both unit-tested — `npx tsx lib/rrule.test.ts`).
 
@@ -166,6 +176,8 @@ The composer's RRULE build/parse logic lives in `lib/rrule.ts` and its validatio
 - **Theme** (`constants/theme.ts`) is a **mutable singleton**, not context: `colors`/`fonts`/`styles` are objects read at render time; `applyTheme()` swaps them in place and the tree remounts via `key={scheme}`. Read `colors.x` at render time — **never** capture a colour into a module-level constant (it freezes to whichever theme loaded first).
 - **Haptics** via `lib/haptics.ts` (`haptics.success()`, `haptics.warn()`).
 - **Year display** uses the shared `YearStamp` (`components/calendar/YearStamp.tsx`) — the two-digit overlined year next to month names and as the agenda's year divider. Don't hand-roll year text.
+- **React Compiler is ON** (`transform.reactCompiler`) — it auto-memoizes, so don't reach for `React.memo` by default; and **never wrap an exported component in `React.memo`** — it crashes at runtime (`Object is not a function`). Module-local memo (e.g. `TimelineEventBlock`) works.
+- **Worklets capture JS refs at creation time** — a function passed to `runOnJS` must be defined *before* the gesture that references it, or the worklet captures `undefined`.
 - **Timers, not animation callbacks**, for anything that must happen after an animation (closing a sheet, clearing the drill) — interrupted Reanimated animations drop their callbacks. See `useModalAnimation.ts` and the [glossary](/docs/architecture/glossary/#timer-not-animation-callback).
 - Magic numbers → named constants (a `layout.ts`-style tuning block or `constants/`). Animation/gesture feel (zoom durations, snap sizes, hold delays) is all tuned in `components/cal/layout.ts` — change it there, not inline.
 

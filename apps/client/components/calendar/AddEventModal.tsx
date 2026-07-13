@@ -3,7 +3,7 @@ import { Calendar, Event, can } from "@musubi/types";
 import { colors, fonts, styles } from "@/constants/theme";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, useWindowDimensions, View } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
+import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
 import { sortCalendars } from "@/lib/calendarOrder";
@@ -80,6 +80,7 @@ const DOCK_MAX_H = 620;              // expanded height cap
 const DOCK_HEIGHT_RATIO = 0.8;       // …or this fraction of the window, whichever is smaller
 const DOCK_HIDDEN_EXTRA = 30;        // pushed this far past its height when hidden
 const DOCK_SNAP_VELOCITY = 400;      // fling speed that snaps open/closed regardless of position
+const DOCK_DISMISS_PAST = 60;        // dragged this far past peek = dismiss the sheet entirely
 const DOCK_SPRING = { damping: 28, stiffness: 240, mass: 0.8 };
 const TAB_BAR_H = 70;                // (tabs)/_layout tabBarStyle.height — sheet rests on top of it
 const KB_SHOW_MS = 220;              // keyboard lift in/out timings
@@ -107,6 +108,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
   const [notifyBeforePickerVisible, setNotifyBeforePickerVisible] = useState(false);
   const [notificationToggle, setNotificationToggle] = useState<boolean>(notificationsOnByDefault);
   const [allDayToggle, setAllDayToggle] = useState(false);
+  const [attendeesToggle, setAttendeesToggle] = useState(false);
   const [newLocation, setNewLocation] = useState("");
   const [newUrl, setNewUrl] = useState("");
   const [newRecurrence, setNewRecurrence] = useState<RecurrenceOption>('none');
@@ -185,6 +187,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
     setNewUrl("");
     setUrlError("");
     setDetailsOpen(false);
+    setAttendeesToggle(false);
     setNewRecurrence('none');
     setRecurrenceExtras([]);
     setSavedUntil(null);
@@ -238,17 +241,38 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
       DOCK_SPRING,
     );
   }, [docked, peekVisible, dockRange]);
+  // Swipe-down past peek: the gesture already animated the sheet off-screen —
+  // just clean up (closeSequence → onClose hides it for real via peekVisible).
+  // Defined BEFORE the gesture: worklets capture JS refs at creation time, so a
+  // later const would be captured as undefined (runOnJS(undefined) crash).
+  const dismissByGesture = () => {
+    Keyboard.dismiss();
+    closeSequence();
+  };
+
   const dockGesture = useMemo(() => Gesture.Pan()
     // need a real vertical drag before we take over — otherwise a still tap on
     // the X / Save buttons (they live inside this handle) reads as a micro-pan
     // and the button press is eaten, so the sheet "won't close".
     .activeOffsetY([-12, 12])
     .onStart(() => { dockStart.value = dockOff.value; })
-    .onUpdate(e => { dockOff.value = Math.min(Math.max(dockStart.value + e.translationY, 0), dockRange); })
+    .onUpdate(e => {
+      // From PEEK the drag may continue past the dock — that's the dismiss path.
+      // From EXPANDED it stops at peek (two-stage), so collapsing a tall sheet
+      // can't accidentally throw the whole composer away.
+      const maxY = dockStart.value >= dockRange - 1 ? DOCK_H + DOCK_HIDDEN_EXTRA : dockRange;
+      dockOff.value = Math.min(Math.max(dockStart.value + e.translationY, 0), maxY);
+    })
     .onEnd(e => {
+      const past = dockOff.value - dockRange;
+      if (past > DOCK_DISMISS_PAST || (past > 0 && e.velocityY > DOCK_SNAP_VELOCITY)) {
+        dockOff.value = withSpring(DOCK_H + DOCK_HIDDEN_EXTRA, { ...DOCK_SPRING, velocity: e.velocityY });
+        runOnJS(dismissByGesture)();
+        return;
+      }
       const expand = e.velocityY < -DOCK_SNAP_VELOCITY || (dockOff.value < dockRange / 2 && e.velocityY < DOCK_SNAP_VELOCITY);
       dockOff.value = withSpring(expand ? 0 : dockRange, DOCK_SPRING);
-    }), [dockRange]);
+    }), [dockRange, DOCK_H]);
 
   // Lift caps at 0 — the expanded sheet keeps its top on screen (title lives
   // there), fields further down scroll instead.
@@ -305,6 +329,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
       setNewLocation(event?.location ?? "");
       setNewUrl(event?.url ?? "");
       setDetailsOpen(!!(event?.description || event?.location || event?.url));
+      setAttendeesToggle(event?.hasAttendees ?? false);
       if (event?.id) {
         // reflect the reminder's REAL state, not the global default
         getEventNotification(event.id).then((row) => {
@@ -389,6 +414,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
       start: allDayToggle ? allDayUTC(newStart) : newStart,
       end: allDayToggle ? allDayUTC(newEnd) : newEnd,
       isAllDay: allDayToggle,
+      hasAttendees: attendeesToggle,
       isCanceled: false,
       description: newDescription,
       location: newLocation,
@@ -694,6 +720,25 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
             }
           </View>
         </View>
+
+        {/* Attendance toggle — a "kind of event". Non-destructive: switching it
+            off keeps event_users rows, re-enabling shows the same people. */}
+        <View style={styles.fieldContainer}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.fieldValueText, { fontFamily: fonts.sans, color: colors.fg2 }]}>Attendees</Text>
+              <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.fg4, marginTop: 2 }}>
+                People can attend and see who's coming
+              </Text>
+            </View>
+            <Switch
+              thumbColor={attendeesToggle ? colors.accent : colors.bg3}
+              trackColor={{ false: colors.line, true: colors.line3 }}
+              onValueChange={(v) => { setAttendeesToggle(v); }}
+              value={attendeesToggle}
+            />
+          </View>
+        </View>
         <View style={styles.fieldContainer}>
           <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Repeat</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -727,6 +772,24 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
               })}
             </View>
           </ScrollView>
+
+          {/* RFC 5545: a rule anchored to a day some months don't have simply
+              skips those months (and Feb 29 → leap years only). Spec-correct,
+              but surprising — say it up front instead of letting users find out. */}
+          {(() => {
+            const day = newStart.getDate();
+            const monthlyRule = newRecurrence === 'monthly' || (newRecurrence === 'custom' && advFreq === 'MONTHLY');
+            const hint = monthlyRule && day >= 29
+              ? `Repeats on day ${day} — months without it are skipped.`
+              : newRecurrence === 'yearly' && day === 29 && newStart.getMonth() === 1
+                ? "February 29 only exists in leap years — this repeats every 4 years."
+                : null;
+            return hint && (
+              <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.fg4, marginTop: 8 }}>
+                {hint}
+              </Text>
+            );
+          })()}
 
           {newRecurrence === 'custom' && (
             <View style={{

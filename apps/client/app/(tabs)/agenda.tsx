@@ -1,14 +1,13 @@
 import { AddEventModal } from "@/components/calendar/AddEventModal";
 import { CalendarFilterBar } from "@/components/calendar/CalendarFilterBar";
-import EventDetailModal from "@/components/calendar/EventDetailModal";
 import { colors, fonts, styles } from "@/constants/theme";
 import { Event } from "@musubi/types";
 import { eventDay } from "@musubi/calendar";
 import { useApi } from "@/services/api";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useEventsStore } from "@/store/useEventsStore";
-import { liveEventDetail } from "@/lib/liveEvent";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { presentEventDetail } from "@/store/useEventDetailStore";
 import { View, Text, ScrollView } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { Tap } from "@/components/ui/Tap";
@@ -36,10 +35,6 @@ export default function AgendaTab() {
   }, [calendars]);
 
   const [createOpen, setCreateOpen] = useState(false);   // docked composer (FAB)
-  const [newEventVisible, setNewEventVisible] = useState(false); // classic modal (edit from detail)
-  const [eventDetailVisible, setEventDetailVisible] = useState<boolean>(false);
-  const [prefilledEvent, setPrefilledEvent] = useState<Event | undefined>(undefined);
-  const [eventDetail, setEventDetail] = useState<Event | null>(null);
 
   const [shown, setShown] = useState(PAGE);
   const scrollRef = useRef<ScrollView>(null);
@@ -95,16 +90,9 @@ export default function AgendaTab() {
     return result;
   }, [events, activeCals]);
 
-  const handlerEventEdit = useCallback((event: Event) => {
-    setEventDetailVisible(false);
-    setPrefilledEvent(event);
-    setNewEventVisible(true);
-  }, []);
-
-  const openEventDetail = useCallback((event: Event) => {
-    setEventDetail(event);
-    setEventDetailVisible(true);
-  }, []);
+  // Store write, not setState — opening the detail must not re-render the
+  // (long) agenda list. The modal lives in GlobalEventModals.
+  const openEventDetail = useCallback((event: Event) => presentEventDetail(events, event), [events]);
 
   // Year dividers are direct ScrollView children so stickyHeaderIndices can
   // pin them: the year stays at the top until the next year's divider pushes
@@ -232,21 +220,6 @@ export default function AgendaTab() {
         onSave={(e) => addEvent(e, api)}
         onEdit={(e) => updateEvent(e, api)}
         calendars={calendars}
-      />
-      {/* Edit — classic modal, opened from an event's detail. */}
-      <AddEventModal
-        visible={newEventVisible}
-        onClose={() => setNewEventVisible(false)}
-        onSave={(e) => addEvent(e, api)}
-        onEdit={(e) => updateEvent(e, api)}
-        calendars={calendars}
-        event={prefilledEvent}
-      />
-      <EventDetailModal
-        visible={eventDetailVisible}
-        onClose={() => setEventDetailVisible(false)}
-        onEdit={(event: Event) => handlerEventEdit(event)}
-        event={liveEventDetail(events, eventDetail)}
       />
     </View>
   );

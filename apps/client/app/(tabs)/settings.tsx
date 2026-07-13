@@ -4,10 +4,7 @@ import { colors, fonts, styles } from "@/constants/theme";
 import { CalendarView, Settings } from "@musubi/types";
 import { useServer } from "@/contexts/ServerContext";
 import { useApi } from "@/services/api";
-import { useCalendarsStore } from "@/store/useCalendarsStore";
-import { useEventsStore } from "@/store/useEventsStore";
 import { useSettingsStore } from "@/store/useSettingsStore";
-import { router } from "expo-router";
 import { useState } from "react";
 import { View, Text, ScrollView, RefreshControl, StyleSheet } from "react-native";
 import { useRefreshData } from "@/hooks/useRefreshData";
@@ -17,22 +14,12 @@ import { success, warn } from "@/lib/haptics";
 import { Avatar } from "@/components/Avatar";
 import { pickAvatarBase64 } from "@/lib/avatar";
 import { Feather } from "@expo/vector-icons";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
-import { cacheClearAll } from "@/services/eventsCache";
-import { clearAllEventNotifications } from "@/services/notifications";
-
-// Clear the natively-cached Google account so the next sign-in shows the account
-// picker again instead of silently reusing the last account.
-const clearGoogleSession = async () => {
-  try { await GoogleSignin.signOut(); } catch { /* not signed in via Google */ }
-};
+import { signOutAndReset } from "@/lib/signOut";
 
 
 export default function SettingsTab() {
   const api = useApi();
   const { authClient, apiUrl } = useServer();
-  const { loadCalendars } = useCalendarsStore();
-  const { loadEvents } = useEventsStore();
   const {
     defaultCalendarView, setDefaultCalendarView,
     weekStartsOn, setWeekStartsOn,
@@ -94,25 +81,11 @@ export default function SettingsTab() {
     }).catch((e) => { warn(); console.error("Settings save failed:", e); });
   };
 
-  const handleSignOut = async () => {
-    loadCalendars([]);
-    loadEvents([]);
-    await cacheClearAll();
-    await clearAllEventNotifications();
-    await clearGoogleSession();
-    await authClient.signOut(); // must finish before next sign-in, else B links onto A's session
-    router.replace('/(auth)/welcome');
-  };
+  const handleSignOut = () => signOutAndReset(authClient);
 
   const handleUserDelete = async () => {
-    loadCalendars([]);
-    loadEvents([]);
-    await api.deleteUser();
-    await cacheClearAll();
-    await clearAllEventNotifications();
-    await clearGoogleSession();
-    await authClient.signOut();
-    router.replace('/(auth)/welcome');
+    await api.deleteUser(); // needs the live session — before the reset
+    await signOutAndReset(authClient);
   }
 
   const testDeleteConfirm = async (v: string) => {

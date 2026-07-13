@@ -119,14 +119,20 @@ The two signature endpoints in `handlers/events.ts`, both `POST /api/v1/events/:
 
 Rule of thumb: *Link* to share one truth; *Fork* to claim your own version.
 
+## Attendees
+
+Attendance is per-event opt-in: the `events.hasAttendees` flag (set in the composer at create/edit) gates the client UI only — the endpoints below don't check it, and flipping it off is non-destructive (`event_users` rows survive, re-enabling restores the list).
+
+`GET /events/:id/attendees` and `PUT /events/:id/attendance` (`{ attending: boolean }`, idempotent — the client sends desired state). Both gate on `assertCanViewEvent` (membership in *any* linked calendar) — viewers RSVP too. Responses carry `{ id, name, image }` only, no emails: an event can span calendars whose members aren't mutuals. Attendance changes broadcast an `attendance_changed` SSE frame (`{ eventID, attendees }`) to members of all linked calendars, so an open detail modal updates live; the client keeps lists in `useAttendeesStore`, fetched fresh on modal open.
+
 ## Realtime (SSE)
 
-`GET /api/stream` is a long-lived [Server-Sent Events](https://developer.mozilla.org/docs/Web/API/Server-sent_events) connection, registered **outside** the `/api/v1` prefix to match the client's URL. `handlerStream` sets the SSE headers and stores the response in a `Map<userID, Response>`; `notifyCalendarMembers(userIds, type, payload)` writes `event_created` / `event_updated` / `event_removed` / `calendar_updated` / `calendar_removed` / `external_sync` frames to the affected users. Every mutating handler calls it after persisting — so a change one member makes appears live for the others — and the [scheduled provider sync](/docs/architecture/sync/#near-realtime-the-scheduled-sync) sends `external_sync` when Google/CalDAV changes land, which clients answer with a silent delta refresh.
+`GET /api/stream` is a long-lived [Server-Sent Events](https://developer.mozilla.org/docs/Web/API/Server-sent_events) connection, registered **outside** the `/api/v1` prefix to match the client's URL. `handlerStream` sets the SSE headers and stores the response in a `Map<userID, Response>`; `notifyCalendarMembers(userIds, type, payload)` writes `event_created` / `event_updated` / `event_removed` / `calendar_updated` / `calendar_removed` / `attendance_changed` / `external_sync` frames to the affected users. Every mutating handler calls it after persisting — so a change one member makes appears live for the others — and the [scheduled provider sync](/docs/architecture/sync/#near-realtime-the-scheduled-sync) sends `external_sync` when Google/CalDAV changes land, which clients answer with a silent delta refresh.
 
 It's an authenticated route (`requireAuth`): the client sends its session as a `Bearer` token, which Better Auth's bearer plugin validates. The client subscribes via `react-native-sse` (`apps/client/hooks/useEventsStream.ts`).
 
 <Aside type="note">
-Broadcasts are **best-effort and fire-and-forget** — a member with no open connection (offline, backgrounded) simply catches up on their next pull-to-refresh delta sync (`useRefreshData`). There is no auto-reconnect loop and no server-side replay buffer; the delta sync is the durable path, SSE is the live-nicety on top.
+Broadcasts are **best-effort and fire-and-forget** — there is no server-side replay buffer; the delta sync is the durable path, SSE is the live-nicety on top. The client library (`react-native-sse`) auto-reconnects every 5 s after an error or stream end, and the hook runs one silent delta refresh on the reconnect that follows an error to catch up on frames missed while down. The hook also opens a stream **per federated server** from the registry (member token as bearer — `requireAuth`'s fallback authenticates it), so remote calendars' events and attendance update live too.
 </Aside>
 
 ## Route map
@@ -134,16 +140,17 @@ Broadcasts are **best-effort and fire-and-forget** — a member with no open con
 | Group | Routes |
 |---|---|
 | Health | `GET /api/v1/server`, `/server/ok` *(public)* |
-| Events | `GET/POST/PUT/DELETE /api/v1/events`, `POST /api/v1/events/:id/link`, `/fork` |
-| Calendars | `GET/POST/PUT/DELETE /api/v1/calendars`, `GET /calendars/:id`, `/calendars/google`, `/calendars/tokens/:token` |
+| Events | `GET/POST/PUT/DELETE /api/v1/events`, `POST /api/v1/events/:id/link`, `/fork`, `GET /events/:id/attendees`, `PUT /events/:id/attendance` |
+| Calendars | `GET/POST/PUT/DELETE /api/v1/calendars`, `GET /calendars/:id`, `/calendars/google`, `/calendars/tokens/:token`, `GET /calendars/:id/export` (.ics snapshot, any member), `POST /calendars/import` (raw .ics body → new native calendar; own 10 MB text parser) |
 | Members | `GET /calendars/:id/members`, `POST/DELETE /calendars/members/:id` (join/leave), `PUT/DELETE /calendars/:id/members/:userId` (role/kick) |
+| Invites | `POST /calendars/invites` (create — `expiresAt: null` = never, `maxUses: null` = unlimited), `GET /calendars/:id/invites` (list, with `uses`), `DELETE /calendars/invites/:inviteId` (revoke) — all gated on the `invite` action |
 | Users | `GET/PUT /users/settings`, `DELETE /users`, `POST /users/avatar`, `GET /users/:id/avatar` *(public)* |
 | Connections | google check/revoke, caldav check/connect/disconnect, `GET/POST/DELETE /users/connections/musubi` (federated connections, roaming), `POST /users/connections/disconnect` |
 | Federation | `POST /api/v1/federation/accept` *(public — the invite token is the credential)*, `GET /invite/:token` *(public HTML hand-off page, outside `/api`)* — see [Federation](/docs/architecture/federation/) |
 
 `POST /calendars` can carry `provider` + `accountId` to create the calendar **into a connected account** — the server creates it at the provider first, then imports the mirror (see [Calendar-level writes](/docs/architecture/sync/#calendar-level-writes)). `PUT`/`DELETE /calendars` on an external mirror push the rename/recolor/delete to the provider first and abort locally if it refuses.
 
-Two auth notes: `GET /calendars/tokens/:token` is **public** (possession of the unguessable, expiring invite token is the credential — cross-server invitees have no session here), and `requireAuth` has a second path: when no Better Auth session matches, it hashes the presented `Bearer` and looks it up in `member_tokens` — authenticating a federated **shadow member**. Authorization still runs through `calendar_members` on every route, so this fallback grants nothing by itself.
+Two auth notes: `GET /calendars/tokens/:token` is **public** (possession of the unguessable invite token is the credential — cross-server invitees have no session here). The token is fully validated at every read by `getCalendarIDFromToken`: uuid-shaped (a raw string against a uuid column would be a PG 500), unexpired, and under its `maxUses` — and the two public token endpoints (`/calendars/tokens/:token`, `/federation/accept`) sit behind a per-IP in-memory `rateLimit` middleware so tokens can't be farmed or guessed. And `requireAuth` has a second path: when no Better Auth session matches, it hashes the presented `Bearer` and looks it up in `member_tokens` — authenticating a federated **shadow member**. Authorization still runs through `calendar_members` on every route, so this fallback grants nothing by itself.
 
 <Aside type="note">
 `POST /api/v1/users/reset` is public and its inline comment says "password reset entry" — but it maps to `handlerResetUsers`, the **dev-only** full user wipe (guarded by `ENVIRONMENT === "dev"`, throws `Forbidden` otherwise). The comment is misleading; real password reset is a Better Auth route under `/api/auth`. Worth a cleanup.

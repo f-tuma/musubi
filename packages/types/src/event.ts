@@ -12,6 +12,9 @@ export const EventSchema = z.object({
   originCalendarID: z.string().nullish(), // home calendar — governs edit rights
   isCanceled: z.boolean(),
   isAllDay: z.boolean(),
+  // Attendance toggle — hides/shows the attendee UI. Non-destructive: flipping
+  // it off keeps event_users rows, re-enabling shows the same people again.
+  hasAttendees: z.boolean().default(false),
   description: z.string().nullish(),
   location: z.string().nullish(),
   recurrence: z.string().nullish(),

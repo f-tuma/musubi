@@ -1,0 +1,1 @@
+ALTER TABLE "events" ADD COLUMN "has_attendees" boolean DEFAULT false NOT NULL;

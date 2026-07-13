@@ -2,6 +2,7 @@ import { Calendar, CalendarWithEvents, Event, Invite, Settings, GoogleCheck } fr
 import { useServer } from "@/contexts/ServerContext";
 import { apiVersion } from "@/constants/url";
 import { fedFetch, remoteForCalendar } from "@/services/federation";
+import { notifySessionExpired } from "@/lib/signOut";
 
 // Federation: calendars shared from another Musubi server live at that server.
 // Calendar-scoped calls check the registry and, when the calendar is remote,
@@ -9,11 +10,20 @@ import { fedFetch, remoteForCalendar } from "@/services/federation";
 const remoteOf = (calendarID: string | null | undefined) => remoteForCalendar(calendarID);
 const eventHome = (event: Event) => event.originCalendarID ?? event.calendars?.[0];
 
+// Names + avatars only — the API deliberately sends no attendee emails.
+export type Attendee = { id: string; name: string; image?: string | null };
+
 // Every endpoint below did the same check inline; keep it in one place.
 // `asserts error is null` preserves the narrowing the inline `if (error) throw`
 // gave — after the call, TS knows `data` is non-null.
 function throwOnError(error: { status?: number | string; message?: string; statusText?: string } | null): asserts error is null {
-  if (error) { console.error("API error", error); throw new Error(`${error.status}: ${error.message ?? error.statusText}`); }
+  if (error) {
+    // Dead session — hand off to the recovery flow (registered by the signed-in
+    // layout; a no-op on auth screens). Still throws so the caller fails loudly.
+    if (error.status === 401) notifySessionExpired();
+    console.error("API error", error);
+    throw new Error(`${error.status}: ${error.message ?? error.statusText}`);
+  }
 }
 
 export function useApi() {
@@ -36,7 +46,7 @@ export function useApi() {
       // Pass the server response through whole — rebuilding the object here
       // silently dropped `role: "owner"`, so the creator didn't get owner
       // actions (invite, roles) until the next full sync.
-      return { ...data, invite: "WIP" };
+      return data;
     },
 
     async getCalendars() {
@@ -211,6 +221,38 @@ export function useApi() {
       return data;
     },
 
+    async getEventAttendees(event: Event) {
+      const remote = remoteOf(eventHome(event));
+      if (remote) {
+        return (await fedFetch<Attendee[]>(remote, `/api/${apiVersion}/events/${event.id}/attendees`, { method: "GET" })) ?? [];
+      }
+      const { error, data } = await authClient.$fetch<Attendee[]>(`${apiUrl}/api/${apiVersion}/events/${event.id}/attendees`, {
+        method: "GET",
+      });
+
+      throwOnError(error);
+
+      return data ?? [];
+    },
+
+    async setAttendance(event: Event, attending: boolean) {
+      const remote = remoteOf(eventHome(event));
+      if (remote) {
+        return (await fedFetch<Attendee[]>(remote, `/api/${apiVersion}/events/${event.id}/attendance`, {
+          method: "PUT", body: JSON.stringify({ attending }),
+        })) ?? [];
+      }
+      const { error, data } = await authClient.$fetch<Attendee[]>(`${apiUrl}/api/${apiVersion}/events/${event.id}/attendance`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ attending }),
+      });
+
+      throwOnError(error);
+
+      return data ?? [];
+    },
+
     async getEvents(since?: Date) {
       const qs = since ? `?since=${encodeURIComponent(since.toISOString())}` : "";
 
@@ -244,6 +286,62 @@ export function useApi() {
       throwOnError(error);
 
       return data;
+    },
+
+    // Raw iCalendar body — plain fetch (the $fetch helpers assume JSON bodies).
+    // Home server only: importing always creates a native calendar here.
+    async importCalendar(ics: string, name: string, color: string) {
+      const { data } = await authClient.getSession();
+      const qs = `?name=${encodeURIComponent(name)}&color=${encodeURIComponent(color)}`;
+      const res = await fetch(`${apiUrl}/api/${apiVersion}/calendars/import${qs}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${data?.session?.token}`,
+          "content-type": "text/calendar",
+        },
+        body: ics,
+      });
+      if (!res.ok) throw new Error(`${res.status}: import failed`);
+      return res.json() as Promise<Calendar & { imported: number }>;
+    },
+
+    // Returns raw ICS text — plain fetch, not $fetch/fedFetch (both assume JSON).
+    async exportCalendar(calendarID: string): Promise<string> {
+      const remote = remoteOf(calendarID);
+      const url = `${remote?.server ?? apiUrl}/api/${apiVersion}/calendars/${calendarID}/export`;
+      const token = remote?.token ?? (await authClient.getSession()).data?.session?.token;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error(`${res.status}: export failed`);
+      return res.text();
+    },
+
+    async getInvites(calendarID: string) {
+      const remote = remoteOf(calendarID);
+      if (remote) {
+        return (await fedFetch<Invite[]>(remote, `/api/${apiVersion}/calendars/${calendarID}/invites`, { method: "GET" })) ?? [];
+      }
+      const { error, data } = await authClient.$fetch<Invite[]>(`${apiUrl}/api/${apiVersion}/calendars/${calendarID}/invites`, {
+        method: "GET",
+      });
+
+      throwOnError(error);
+
+      return data ?? [];
+    },
+
+    async revokeInvite(calendarID: string, inviteID: string) {
+      const remote = remoteOf(calendarID);
+      if (remote) {
+        await fedFetch(remote, `/api/${apiVersion}/calendars/invites/${inviteID}`, { method: "DELETE" });
+        return true;
+      }
+      const { error } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/calendars/invites/${inviteID}`, {
+        method: "DELETE",
+      });
+
+      throwOnError(error);
+
+      return true;
     },
 
     async acceptInvite(calendarID: string, token: string) {
