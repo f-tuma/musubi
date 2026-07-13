@@ -59,6 +59,9 @@ export default function InvitesModal({ calendar, visible, onClose }: Props) {
   // invites must not depend on the hosted domain.
   const origin = calendar?.provider === "musubi" && calendar.serverUrl ? calendar.serverUrl : apiUrl;
   const linkFor = (i: Invite) => `${origin}/invite/${i.id}`;
+  const shareInvite = (i: Invite) => Share.share({
+    message: `You're invited to join the calendar "${calendar?.name}" on Musubi 🎋\n\nTap the link to accept:\n${linkFor(i)}`,
+  });
 
   const isExpired = (i: Invite) => !!i.expiresAt && new Date(i.expiresAt).getTime() <= Date.now();
   const isExhausted = (i: Invite) => i.maxUses !== null && i.uses >= i.maxUses;
@@ -85,7 +88,7 @@ export default function InvitesModal({ calendar, visible, onClose }: Props) {
         uses: 0,
       });
       setInvites(prev => [invite, ...prev]);
-      await Share.share({ message: linkFor(invite) }); // the point of a new link is sharing it
+      await shareInvite(invite); // the point of a new link is sharing it
     } finally {
       setCreating(false);
     }
@@ -188,7 +191,7 @@ export default function InvitesModal({ calendar, visible, onClose }: Props) {
                             </Text>
                           </View>
                           {!dead && (
-                            <Tap hitSlop={10} onPress={() => Share.share({ message: linkFor(i) })}>
+                            <Tap hitSlop={10} onPress={() => shareInvite(i)}>
                               <Feather name="share-2" size={18} color={colors.fg2} />
                             </Tap>
                           )}
