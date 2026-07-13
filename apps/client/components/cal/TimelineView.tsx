@@ -4,7 +4,7 @@ import { activeScheme, colors, fonts } from "@/constants/theme";
 import { Tap } from "@/components/ui/Tap";
 import { tap as tapHaptic, thump } from "@/lib/haptics";
 import dayjs from "dayjs";
-import { MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
+import { memo, MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import InfinitePager from "react-native-infinite-pager";
 import { Gesture, GestureDetector, ScrollView } from "react-native-gesture-handler";
@@ -12,7 +12,7 @@ import Animated, {
   runOnJS, scrollTo, SharedValue, useAnimatedReaction, useAnimatedRef, useAnimatedStyle, useSharedValue, withSpring, withTiming,
 } from "react-native-reanimated";
 import {
-  addDays, allDaySpans, bucketByDay, clamp, dayKey, daySegments, Draft,
+  addDays, allDaySpans, bucketByDay, CASCADE_MAX_LEVELS, CASCADE_OFFSET, clamp, dayKey, daySegments, Draft,
   GRAB_DOT_HIT, GRAB_SCALE, GRAB_SPRING, GUTTER, HOLD_CREATE_MS, HOLD_GRAB_MS,
   HOUR_H, INK, isSameDay, SNAP_DRAG_MIN, SNAP_TAP_MIN, startOfWeek, ZOOM_HOUR_MAX, ZOOM_HOUR_MIN,
 } from "./layout";
@@ -76,8 +76,9 @@ export function TimelineView({
     <View style={{ flex: 1 }} onLayout={e => setWidth(e.nativeEvent.layout.width)}>
       {width > 0 && (
         <InfinitePager
-          renderPage={({ index }) => (
+          renderPage={({ index, isActive }) => (
             <TimelinePage
+              isActive={isActive}
               days={mode === "week"
                 ? Array.from({ length: 7 }, (_, i) => addDays(pageStart(index), i))
                 : [pageStart(index)]}
@@ -105,6 +106,7 @@ export function TimelineView({
 }
 
 type PageProps = {
+  isActive: boolean;
   days: Date[];
   width: number;
   events: Event[];
@@ -121,7 +123,7 @@ type PageProps = {
 };
 
 function TimelinePage({
-  days, width, events, byDay, hourH, eventColorOf, onPressEvent, draft, onDraftChange, canMoveEvent, onMoveEvent, scrollPosRef, bottomPad,
+  isActive, days, width, events, byDay, hourH, eventColorOf, onPressEvent, draft, onDraftChange, canMoveEvent, onMoveEvent, scrollPosRef, bottomPad,
 }: PageProps) {
   const colW = (width - GUTTER) / days.length;
   const [now, setNow] = useState(() => new Date());
@@ -163,6 +165,16 @@ function TimelinePage({
     () => days.map(d => daySegments(byDay.get(dayKey(d)) ?? [], d)),
     [days, byDay],
   );
+
+  // Buffered (offscreen) pages defer their event blocks until interactions
+  // settle — a mode switch mounts ONE page's blocks up front, not three.
+  const [blocksReady, setBlocksReady] = useState(isActive);
+  useEffect(() => {
+    if (blocksReady) return;
+    if (isActive) { setBlocksReady(true); return; }
+    const id = requestIdleCallback(() => setBlocksReady(true));
+    return () => cancelIdleCallback(id);
+  }, [isActive, blocksReady]);
   // continuous bars across days, not per-day chips
   const spans = useMemo(() => allDaySpans(events, days), [events, days]);
   const visibleSpans = spans.filter(sp => sp.lane < ALLDAY_LANES);
@@ -468,19 +480,28 @@ function TimelinePage({
               <Animated.View style={[{ position: "absolute", left: GUTTER, top: 0, width: width - GUTTER }, gridOverlayStyle]} />
             </GestureDetector>
 
-            {/* events — hold a movable block to pick it up; locked ones wear 🔒 */}
-            {segmentsByDay.map((segs, di) => segs.map((s, si) => {
+            {/* events — hold a movable block to pick it up; locked ones wear 🔒.
+                Overlap layout differs by mode: DAY has room, so overlapping events
+                sit side by side in lanes; WEEK columns are too narrow for lanes —
+                there overlaps CASCADE (Google-mobile style): each level shifts
+                right and draws on top, leaving the underlying event's stripe. */}
+            {blocksReady && segmentsByDay.map((segs, di) => segs.map((s, si) => {
+              const isDayMode = days.length === 1;
               const laneW = (colW - 4) / s.cols;
+              const step = Math.min(CASCADE_OFFSET, (colW - 20) / CASCADE_MAX_LEVELS);
+              const offset = isDayMode ? s.col * laneW : Math.min(s.col, CASCADE_MAX_LEVELS) * step;
+              const w = isDayMode ? laneW - 2 : colW - 4 - offset;
               return (
                 <TimelineEventBlock
                   key={s.event.id + si}
                   event={s.event}
                   startMin={s.startMin}
                   endMin={s.endMin}
-                  left={GUTTER + di * colW + 2 + s.col * laneW}
-                  width={laneW - 2}
+                  left={GUTTER + di * colW + 2 + offset}
+                  width={w}
+                  zIndex={s.col + 1}
                   hourH={hourH}
-                  showTime={s.endMin - s.startMin >= 40 && laneW > 60}
+                  showTime={s.endMin - s.startMin >= 40 && w > 60}
                   timeFormat={timeFormat}
                   color={eventColorOf(s.event)}
                   dayIndex={di}
@@ -563,6 +584,7 @@ type BlockProps = {
   event: Event;
   startMin: number; endMin: number;    // event's minutes-from-midnight (clipped to day)
   left: number; width: number;         // horizontal px — unaffected by vertical zoom
+  zIndex: number;                       // cascade stacking — later overlaps draw on top
   hourH: SharedValue<number>;
   showTime: boolean;
   timeFormat: TimeFormat;
@@ -584,8 +606,10 @@ type BlockProps = {
 // the raw drag is FOLDED into topSV/leftSV while the transforms zero out in the
 // same batch — identical pixel before and after — then the layout effect glides
 // to the snapped spot.
-function TimelineEventBlock({
-  event, startMin, endMin, left, width, hourH, showTime, timeFormat, color, dayIndex, daysCount, colW, movable, onPress, onMove,
+// memo is load-bearing: every draft snap-step re-renders the page — without it
+// each 15-min ghost move re-rendered EVERY block on screen.
+const TimelineEventBlock = memo(function TimelineEventBlock({
+  event, startMin, endMin, left, width, zIndex, hourH, showTime, timeFormat, color, dayIndex, daysCount, colW, movable, onPress, onMove,
 }: BlockProps) {
   const live = useRef({ event, dayIndex, daysCount, colW, onMove });
   live.current = { event, dayIndex, daysCount, colW, onMove };
@@ -710,31 +734,35 @@ function TimelineEventBlock({
   const shiftMs = preview ? (preview.day * 24 * 60 + preview.min) * 60000 : 0;
   const dur = endMin - startMin;
 
-  return (
-    <GestureDetector gesture={gesture}>
-      <Animated.View style={[{ position: "absolute", width }, animStyle]}>
-        <Tap
-          onPress={() => onPress(event)}
-          style={{
-            flex: 1,
-            backgroundColor: color,
-            borderRadius: 5, paddingHorizontal: 5, paddingTop: 3,
-            overflow: "hidden",
-          }}
-        >
-          <Text numberOfLines={dur >= 30 ? 2 : 1} style={{ fontFamily: fonts.sansMedium, fontSize: 10.5, color: INK, paddingRight: movable ? 0 : 10 }}>
-            {event.title}
+  const block = (
+    <Animated.View style={[{ position: "absolute", width, zIndex }, animStyle]}>
+      <Tap
+        onPress={() => onPress(event)}
+        style={{
+          flex: 1,
+          backgroundColor: color,
+          // bg-colored hairline separates cascaded cards from the one beneath
+          borderWidth: 1, borderColor: colors.bg1,
+          borderRadius: 5, paddingHorizontal: 5, paddingTop: 3,
+          overflow: "hidden",
+        }}
+      >
+        <Text numberOfLines={dur >= 30 ? 2 : 1} style={{ fontFamily: fonts.sansMedium, fontSize: 10.5, color: INK, paddingRight: movable ? 0 : 10 }}>
+          {event.title}
+        </Text>
+        {(showTime || preview !== null) && (
+          <Text style={{ fontFamily: fonts.sans, fontSize: 9, color: INK, opacity: 0.65 }}>
+            {formatTime(new Date(event.start.getTime() + shiftMs), timeFormat)} – {formatTime(new Date(event.end.getTime() + shiftMs), timeFormat)}
           </Text>
-          {(showTime || preview !== null) && (
-            <Text style={{ fontFamily: fonts.sans, fontSize: 9, color: INK, opacity: 0.65 }}>
-              {formatTime(new Date(event.start.getTime() + shiftMs), timeFormat)} – {formatTime(new Date(event.end.getTime() + shiftMs), timeFormat)}
-            </Text>
-          )}
-          {!movable && (
-            <Feather name="lock" size={8} color={INK} style={{ position: "absolute", top: 3, right: 3, opacity: 0.5 }} />
-          )}
-        </Tap>
-      </Animated.View>
-    </GestureDetector>
+        )}
+        {!movable && (
+          <Feather name="lock" size={8} color={INK} style={{ position: "absolute", top: 3, right: 3, opacity: 0.5 }} />
+        )}
+      </Tap>
+    </Animated.View>
   );
-}
+
+  // Locked blocks skip the GestureDetector entirely — handler registration is a
+  // real per-mount cost and recurring/read-only events can't be dragged anyway.
+  return movable ? <GestureDetector gesture={gesture}>{block}</GestureDetector> : block;
+})
