@@ -6,7 +6,7 @@ import { MonthView } from "@/components/cal/MonthView";
 import { TimelineView } from "@/components/cal/TimelineView";
 import { Draft, DRILL_OPEN_MIN, minutesToY, Rect, ZOOM_IN_MS, ZOOM_OUT_MS } from "@/components/cal/layout";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { BackHandler, View } from "react-native";
 import { expandRecurringEvents, type Mode } from "@musubi/calendar";
 import Animated, {
@@ -157,6 +157,20 @@ export default function MainTab() {
     setBase(now);       // new base remounts the pager at today
     setAnchorDate(now);
   }, []);
+
+  // Android calendar VIEW intent (com.android.calendar/time/<ms>, routed via
+  // +not-found → root index): jump the calendar to the requested date.
+  const { time } = useLocalSearchParams<{ time?: string }>();
+  useEffect(() => {
+    const ms = Number(time);
+    if (!time || !Number.isFinite(ms)) return;
+    const target = new Date(ms);
+    zoom.value = 0;
+    setDrill(null);
+    setDraft(null);
+    setBase(target);
+    setAnchorDate(target);
+  }, [time]);
 
   const handlerEventEdit = useCallback((event: Event) => {
     setEventDetailVisible(false);
