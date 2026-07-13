@@ -63,12 +63,14 @@ export default function InvitesModal({ calendar, visible, onClose }: Props) {
   const isExpired = (i: Invite) => !!i.expiresAt && new Date(i.expiresAt).getTime() <= Date.now();
   const isExhausted = (i: Invite) => i.maxUses !== null && i.uses >= i.maxUses;
 
-  const statusLabel = (i: Invite) => {
-    if (isExpired(i)) return "Expired";
-    if (isExhausted(i)) return "Used up";
-    const uses = i.maxUses === null ? `${i.uses} joined · ∞` : `${i.uses}/${i.maxUses} uses`;
-    const expiry = i.expiresAt === null ? "never expires" : `expires ${formatDateLong(new Date(i.expiresAt), dateFormat)}`;
-    return `${uses} · ${expiry}`;
+  // Primary line = the link's RULE (what you configured); secondary = what
+  // happened to it. The token itself is meaningless to a human — never shown.
+  const ruleLabel = (i: Invite) =>
+    `${i.maxUses === null ? "Unlimited" : `${i.maxUses} ${i.maxUses === 1 ? "use" : "uses"}`} · ${i.expiresAt === null ? "never expires" : `until ${formatDateLong(new Date(i.expiresAt), dateFormat)}`}`;
+  const usageLabel = (i: Invite) => {
+    if (isExpired(i)) return `Expired · ${i.uses} joined`;
+    if (isExhausted(i)) return `Used up · ${i.uses} joined`;
+    return i.uses === 0 ? "Nobody joined yet" : `${i.uses} joined`;
   };
 
   const create = async () => {
@@ -124,69 +126,83 @@ export default function InvitesModal({ calendar, visible, onClose }: Props) {
             <View style={styles.modalTitleRow}>
               <Text style={styles.modalTitle}>Invite Links</Text>
             </View>
-            <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 16 }} showsVerticalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
 
-              {/* Create: two preset rows + the button. */}
-              <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Max uses</Text>
-              <View style={[styles.horizontalPillView, { marginBottom: 12 }]}>
-                {USES_OPTIONS.map(o => (
-                  <Tap key={o.label} haptic="select" onPress={() => setMaxUses(o.value)}
-                    style={maxUses === o.value ? styles.pillActive : styles.pill}>
-                    <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: maxUses === o.value ? colors.fg : colors.fg3 }}>
-                      {o.label}
-                    </Text>
-                  </Tap>
-                ))}
+              {/* New link — its own bordered section, same rhythm as other modals. */}
+              <View style={styles.fieldContainer}>
+                <View style={{ gap: 14 }}>
+                  <View>
+                    <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Max uses</Text>
+                    <View style={styles.horizontalPillView}>
+                      {USES_OPTIONS.map(o => (
+                        <Tap key={o.label} haptic="select" onPress={() => setMaxUses(o.value)}
+                          style={maxUses === o.value ? styles.pillActive : styles.pill}>
+                          <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: maxUses === o.value ? colors.fg : colors.fg3 }}>
+                            {o.label}
+                          </Text>
+                        </Tap>
+                      ))}
+                    </View>
+                  </View>
+                  <View>
+                    <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Expires</Text>
+                    <View style={styles.horizontalPillView}>
+                      {EXPIRY_OPTIONS.map(o => (
+                        <Tap key={o.label} haptic="select" onPress={() => setExpiryMs(o.ms)}
+                          style={expiryMs === o.ms ? styles.pillActive : styles.pill}>
+                          <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: expiryMs === o.ms ? colors.fg : colors.fg3 }}>
+                            {o.label}
+                          </Text>
+                        </Tap>
+                      ))}
+                    </View>
+                  </View>
+                  <View style={{ marginTop: 8 }}>
+                    <Btn
+                      label="Create Link"
+                      icon={<Feather size={14} name="link" color={colors.bg3} />}
+                      loading={creating}
+                      onPress={create}
+                    />
+                  </View>
+                </View>
               </View>
-              <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Expires</Text>
-              <View style={[styles.horizontalPillView, { marginBottom: 16 }]}>
-                {EXPIRY_OPTIONS.map(o => (
-                  <Tap key={o.label} haptic="select" onPress={() => setExpiryMs(o.ms)}
-                    style={expiryMs === o.ms ? styles.pillActive : styles.pill}>
-                    <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: expiryMs === o.ms ? colors.fg : colors.fg3 }}>
-                      {o.label}
-                    </Text>
-                  </Tap>
-                ))}
-              </View>
-              <Btn
-                label="Create Link"
-                icon={<Feather size={14} name="link" color={colors.bg3} />}
-                loading={creating}
-                onPress={create}
-              />
 
-              {/* Existing links. */}
+              {/* Existing links — rule first, usage second; actions tucked right. */}
               {invites.length > 0 && (
-                <View style={{ marginTop: 20, gap: 14 }}>
-                  {invites.map(i => {
-                    const dead = isExpired(i) || isExhausted(i);
-                    return (
-                      <View key={i.id} style={{ flexDirection: "row", alignItems: "center", gap: 10, opacity: dead ? 0.5 : 1 }}>
-                        <Feather name="link" size={16} color={colors.fg4} />
-                        <View style={{ flex: 1 }}>
-                          <Text numberOfLines={1} style={{ fontFamily: fonts.sans, fontSize: 13, color: colors.fg }}>
-                            …/invite/{i.id.slice(0, 8)}…
-                          </Text>
-                          <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: dead ? colors.accent : colors.fg3 }}>
-                            {statusLabel(i)}
-                          </Text>
-                        </View>
-                        {!dead && (
-                          <Tap hitSlop={8} onPress={() => Share.share({ message: linkFor(i) })}>
-                            <Feather name="share-2" size={18} color={colors.fg2} />
-                          </Tap>
-                        )}
-                        {pending === i.id
-                          ? <ActivityIndicator size="small" color={colors.fg3} />
-                          : (
-                            <Tap hitSlop={8} haptic="warn" onPress={() => revoke(i)}>
-                              <Feather name="trash-2" size={18} color={colors.accent} />
+                <View style={[styles.fieldContainer, { borderBottomWidth: 0 }]}>
+                  <Text style={[styles.fieldLabel, { fontFamily: fonts.sans, marginBottom: 12 }]}>
+                    Active links · {invites.length}
+                  </Text>
+                  <View style={{ gap: 16 }}>
+                    {invites.map(i => {
+                      const dead = isExpired(i) || isExhausted(i);
+                      return (
+                        <View key={i.id} style={{ flexDirection: "row", alignItems: "center", gap: 22 }}>
+                          <View style={{ flex: 1, gap: 2, opacity: dead ? 0.5 : 1 }}>
+                            <Text numberOfLines={1} style={{ fontFamily: fonts.sans, fontSize: 14, color: colors.fg }}>
+                              {ruleLabel(i)}
+                            </Text>
+                            <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: dead ? colors.accent : colors.fg3 }}>
+                              {usageLabel(i)}
+                            </Text>
+                          </View>
+                          {!dead && (
+                            <Tap hitSlop={10} onPress={() => Share.share({ message: linkFor(i) })}>
+                              <Feather name="share-2" size={18} color={colors.fg2} />
                             </Tap>
                           )}
-                      </View>
-                    );
-                  })}
+                          {pending === i.id
+                            ? <ActivityIndicator size="small" color={colors.fg3} />
+                            : (
+                              <Tap hitSlop={10} haptic="warn" onPress={() => revoke(i)}>
+                                <Feather name="trash-2" size={18} color={colors.accent} />
+                              </Tap>
+                            )}
+                        </View>
+                      );
+                    })}
+                  </View>
                 </View>
               )}
             </ScrollView>
