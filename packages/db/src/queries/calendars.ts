@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "..";
 import { calendarEvents, calendarInvites, calendarMembers, calendars, events, NewCalendar } from "../schema";
 import { NotFoundError } from "@musubi/types";
@@ -20,16 +20,20 @@ export async function createCalendar(calendar: NewCalendar) {
 
 // Invite tokens are the calendar_invites uuid. Guard the shape first — a raw
 // string against a uuid column is a Postgres error (500), not a miss (404).
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function getCalendarIDFromToken(token: string) {
   if (!UUID_RE.test(token)) throw new NotFoundError("Invite not found...");
 
   const [result] = await db
     .select().from(calendarInvites)
-    .where(and(eq(calendarInvites.id, token), gt(calendarInvites.expiresAt, new Date())));
+    .where(and(
+      eq(calendarInvites.id, token),
+      // null expiresAt = never expires; expired rows also get purged hourly —
+      // the gt() covers the window in between.
+      or(isNull(calendarInvites.expiresAt), gt(calendarInvites.expiresAt, new Date())),
+    ));
 
-  // Expired rows also get purged hourly — the gt() covers the window in between.
   if (!result) throw new NotFoundError("Invite not found...");
   if (result.maxUses !== null && result.uses >= result.maxUses) {
     throw new NotFoundError("Invite not found..."); // exhausted = gone, same as expired

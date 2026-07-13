@@ -288,6 +288,35 @@ export function useApi() {
       return data;
     },
 
+    async getInvites(calendarID: string) {
+      const remote = remoteOf(calendarID);
+      if (remote) {
+        return (await fedFetch<Invite[]>(remote, `/api/${apiVersion}/calendars/${calendarID}/invites`, { method: "GET" })) ?? [];
+      }
+      const { error, data } = await authClient.$fetch<Invite[]>(`${apiUrl}/api/${apiVersion}/calendars/${calendarID}/invites`, {
+        method: "GET",
+      });
+
+      throwOnError(error);
+
+      return data ?? [];
+    },
+
+    async revokeInvite(calendarID: string, inviteID: string) {
+      const remote = remoteOf(calendarID);
+      if (remote) {
+        await fedFetch(remote, `/api/${apiVersion}/calendars/invites/${inviteID}`, { method: "DELETE" });
+        return true;
+      }
+      const { error } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/calendars/invites/${inviteID}`, {
+        method: "DELETE",
+      });
+
+      throwOnError(error);
+
+      return true;
+    },
+
     async acceptInvite(calendarID: string, token: string) {
       const { error, data } = await authClient.$fetch<Invite>(`${apiUrl}/api/${apiVersion}/calendars/members/${calendarID}`, {
         method: "POST",

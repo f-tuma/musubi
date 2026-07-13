@@ -245,7 +245,7 @@ export const calendarInvites = pgTable("calendar_invites", {
       onDelete: "cascade",
     })
     .notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
+  expiresAt: timestamp("expires_at"), // null = never expires
   maxUses: integer("max_uses"), // null = unlimited
   uses: integer("uses").notNull().default(0), // bumped on join/accept, checked against maxUses
 });

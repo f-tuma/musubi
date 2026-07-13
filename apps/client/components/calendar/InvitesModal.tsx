@@ -1,0 +1,198 @@
+import { colors, fonts, styles } from "@/constants/theme";
+import { useModalAnimation } from "@/hooks/useModalAnimation";
+import { Modal, Pressable, Text, View, ScrollView, Share, ActivityIndicator } from "react-native";
+import { Feather } from "@expo/vector-icons";
+import Animated from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
+import { Calendar, Invite } from "@musubi/types";
+import { useEffect, useState } from "react";
+import { useApi } from "@/services/api";
+import { useServer } from "@/contexts/ServerContext";
+import { useSettingsStore } from "@/store/useSettingsStore";
+import { Tap } from "@/components/ui/Tap";
+import { Btn } from "@/components/ui/Btn";
+import { confirm } from "@/lib/confirm";
+import { formatDateLong } from "@/lib/datetimeFormat";
+
+// Create presets — Discord-style. null = unlimited / never.
+const USES_OPTIONS = [
+  { label: "1", value: 1 },
+  { label: "10", value: 10 },
+  { label: "25", value: 25 },
+  { label: "∞", value: null },
+] as const;
+const HOUR = 3600_000;
+const DAY = 24 * HOUR;
+const EXPIRY_OPTIONS = [
+  { label: "1 hour", ms: HOUR },
+  { label: "1 day", ms: DAY },
+  { label: "7 days", ms: 7 * DAY },
+  { label: "Never", ms: null },
+] as const;
+
+type Props = {
+  calendar: Calendar | null,
+  visible: boolean,
+  onClose: () => void,
+}
+
+export default function InvitesModal({ calendar, visible, onClose }: Props) {
+  const api = useApi();
+  const { apiUrl } = useServer();
+  const { dateFormat } = useSettingsStore();
+  const insets = useSafeAreaInsets();
+  const { slideStyle, fadeStyle, gesture, handleClose } = useModalAnimation(visible, onClose);
+
+  const [invites, setInvites] = useState<Invite[]>([]);
+  const [maxUses, setMaxUses] = useState<number | null>(null);      // default ∞ people
+  const [expiryMs, setExpiryMs] = useState<number | null>(7 * DAY); // default 7 days
+  const [creating, setCreating] = useState(false);
+  const [pending, setPending] = useState<string | null>(null); // inviteID being revoked
+
+  useEffect(() => {
+    if (!visible || !calendar) return;
+    api.getInvites(calendar.id).then(setInvites).catch(() => setInvites([]));
+  }, [visible, calendar?.id]);
+
+  // The calendar's own server serves the invite page — self-hosted and federated
+  // invites must not depend on the hosted domain.
+  const origin = calendar?.provider === "musubi" && calendar.serverUrl ? calendar.serverUrl : apiUrl;
+  const linkFor = (i: Invite) => `${origin}/invite/${i.id}`;
+
+  const isExpired = (i: Invite) => !!i.expiresAt && new Date(i.expiresAt).getTime() <= Date.now();
+  const isExhausted = (i: Invite) => i.maxUses !== null && i.uses >= i.maxUses;
+
+  const statusLabel = (i: Invite) => {
+    if (isExpired(i)) return "Expired";
+    if (isExhausted(i)) return "Used up";
+    const uses = i.maxUses === null ? `${i.uses} joined · ∞` : `${i.uses}/${i.maxUses} uses`;
+    const expiry = i.expiresAt === null ? "never expires" : `expires ${formatDateLong(new Date(i.expiresAt), dateFormat)}`;
+    return `${uses} · ${expiry}`;
+  };
+
+  const create = async () => {
+    if (!calendar) return;
+    setCreating(true);
+    try {
+      const invite = await api.createInvite({
+        id: "create",
+        calendarID: calendar.id,
+        expiresAt: expiryMs === null ? null : new Date(Date.now() + expiryMs),
+        maxUses,
+        uses: 0,
+      });
+      setInvites(prev => [invite, ...prev]);
+      await Share.share({ message: linkFor(invite) }); // the point of a new link is sharing it
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const revoke = (i: Invite) => {
+    confirm({
+      title: "Revoke invite",
+      message: "The link stops working immediately. People who already joined stay.",
+      confirmLabel: "Revoke",
+    }, async () => {
+      if (!calendar) return;
+      setPending(i.id);
+      try {
+        await api.revokeInvite(calendar.id, i.id);
+        setInvites(prev => prev.filter(x => x.id !== i.id));
+      } finally {
+        setPending(null);
+      }
+    });
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      onRequestClose={handleClose}
+      animationType="none"
+      transparent={true}
+      statusBarTranslucent={true}
+    >
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Animated.View style={[styles.modalOverlay, fadeStyle]}>
+          <Pressable style={{ flex: 1 }} onPress={handleClose} />
+        </Animated.View>
+        <GestureDetector gesture={gesture}>
+          <Animated.View style={[styles.modalSheet, fadeStyle, slideStyle]}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalTitleRow}>
+              <Text style={styles.modalTitle}>Invite Links</Text>
+            </View>
+            <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 16 }} showsVerticalScrollIndicator={false}>
+
+              {/* Create: two preset rows + the button. */}
+              <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Max uses</Text>
+              <View style={[styles.horizontalPillView, { marginBottom: 12 }]}>
+                {USES_OPTIONS.map(o => (
+                  <Tap key={o.label} haptic="select" onPress={() => setMaxUses(o.value)}
+                    style={maxUses === o.value ? styles.pillActive : styles.pill}>
+                    <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: maxUses === o.value ? colors.fg : colors.fg3 }}>
+                      {o.label}
+                    </Text>
+                  </Tap>
+                ))}
+              </View>
+              <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Expires</Text>
+              <View style={[styles.horizontalPillView, { marginBottom: 16 }]}>
+                {EXPIRY_OPTIONS.map(o => (
+                  <Tap key={o.label} haptic="select" onPress={() => setExpiryMs(o.ms)}
+                    style={expiryMs === o.ms ? styles.pillActive : styles.pill}>
+                    <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: expiryMs === o.ms ? colors.fg : colors.fg3 }}>
+                      {o.label}
+                    </Text>
+                  </Tap>
+                ))}
+              </View>
+              <Btn
+                label="Create Link"
+                icon={<Feather size={14} name="link" color={colors.bg3} />}
+                loading={creating}
+                onPress={create}
+              />
+
+              {/* Existing links. */}
+              {invites.length > 0 && (
+                <View style={{ marginTop: 20, gap: 14 }}>
+                  {invites.map(i => {
+                    const dead = isExpired(i) || isExhausted(i);
+                    return (
+                      <View key={i.id} style={{ flexDirection: "row", alignItems: "center", gap: 10, opacity: dead ? 0.5 : 1 }}>
+                        <Feather name="link" size={16} color={colors.fg4} />
+                        <View style={{ flex: 1 }}>
+                          <Text numberOfLines={1} style={{ fontFamily: fonts.sans, fontSize: 13, color: colors.fg }}>
+                            …/invite/{i.id.slice(0, 8)}…
+                          </Text>
+                          <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: dead ? colors.accent : colors.fg3 }}>
+                            {statusLabel(i)}
+                          </Text>
+                        </View>
+                        {!dead && (
+                          <Tap hitSlop={8} onPress={() => Share.share({ message: linkFor(i) })}>
+                            <Feather name="share-2" size={18} color={colors.fg2} />
+                          </Tap>
+                        )}
+                        {pending === i.id
+                          ? <ActivityIndicator size="small" color={colors.fg3} />
+                          : (
+                            <Tap hitSlop={8} haptic="warn" onPress={() => revoke(i)}>
+                              <Feather name="trash-2" size={18} color={colors.accent} />
+                            </Tap>
+                          )}
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </ScrollView>
+          </Animated.View>
+        </GestureDetector>
+      </GestureHandlerRootView>
+    </Modal>
+  );
+}
