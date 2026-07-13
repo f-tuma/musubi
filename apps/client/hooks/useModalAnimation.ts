@@ -40,10 +40,10 @@ export function useModalAnimation(visible: boolean, onClose: () => void, keyboar
 
   const gesture = Gesture.Pan()
     .onChange((ev) => {
-      // Down follows the finger; up rubber-bands (sheet resists, doesn't fly).
-      slideAnim.value = ev.translationY > 0
-        ? ev.translationY
-        : ev.translationY / 12;
+      // Down follows the finger; up stops dead — the sheet is anchored to the
+      // screen bottom, so even a rubber-banded upward drag used to reveal a
+      // see-through gap underneath it.
+      slideAnim.value = Math.max(ev.translationY, 0);
     })
     .onEnd((ev) => {
       if (ev.translationY > DISMISS_DISTANCE || ev.velocityY > 900) {
