@@ -3,7 +3,7 @@ import { colors, fonts, styles } from "@/constants/theme";
 import { Calendar, Event, can } from "@musubi/types";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
 import { useEventsStore } from "@/store/useEventsStore";
-import { liveEventDetail } from "@/lib/liveEvent";
+import { presentEventDetail } from "@/store/useEventDetailStore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Modal, Text, Pressable, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,7 +20,6 @@ import { Draft, DRILL_OPEN_MIN, minutesToY, Rect, ZOOM_IN_MS, ZOOM_OUT_MS } from
 import { ModeSwitch } from "@/components/cal/ModeSwitch";
 import { YearStamp } from "@/components/calendar/YearStamp";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
-import EventDetailModal from "./EventDetailModal";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { Feather } from "@expo/vector-icons";
 import CalendarSettingsModal from "./CalendarSettingsModal";
@@ -71,13 +70,9 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
   const [draft, setDraft] = useState<Draft | null>(null);
   const [dockHidden, setDockHidden] = useState(false);   // X hides the sheet until the next draft
   const [dockPeekReady, setDockPeekReady] = useState(false);
-  const [newEventVisible, setNewEventVisible] = useState(false); // classic modal (edit from detail)
   const [newCalendarVisible, setNewCalendarVisible] = useState(false);
-  const [eventDetailVisible, setEventDetailVisible] = useState(false);
   const [calendarSettingsVisible, setCalendarSettingsVisible] = useState(false);
-  const [prefilledEvent, setPrefilledEvent] = useState<Event | undefined>(undefined);
   const [prefilledCalendar, setPreffiledCalendar] = useState<Calendar | undefined>(undefined);
-  const [eventDetail, setEventDetail] = useState<Event | null>(null);
   const [calendarSettings, setCallendarSettings] = useState<Calendar | null>(null);
   const scrollPosRef = useRef(Math.max(0, minutesToY(new Date().getHours() * 60 - 60)));
   // drill-in day view keeps its own scroll memory, reset to noon on each open
@@ -172,12 +167,6 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
     transform: [{ scale: 1 + zoom.value * 0.03 }],
   }));
 
-  const handlerEventEdit = (event: Event) => {
-    setEventDetailVisible(false);
-    setPrefilledEvent(event);
-    setNewEventVisible(true);
-  };
-
   const handlerCalendarEdit = (calendar: Calendar) => {
     setCalendarSettingsVisible(false);
     setPreffiledCalendar(calendar);
@@ -189,16 +178,8 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
     onClose();
   };
 
-  const openEventDetail = useCallback((event: Event) => {
-    const original = events.find(e => e.id === event.id)
-      ?? events.find(e => e.id === event.id?.replace(/_\d+$/, ''));
-    setEventDetail(
-      original && original.id !== event.id
-        ? { ...original, start: event.start, end: event.end }
-        : event,
-    );
-    setEventDetailVisible(true);
-  }, [events]);
+  // Store write — the global host renders the modal; it stacks above this one.
+  const openEventDetail = useCallback((event: Event) => presentEventDetail(events, event), [events]);
 
   const openCalendarSettings = (calendar: Calendar) => {
     setCallendarSettings(calendar);
@@ -412,21 +393,6 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
           />
         )}
       </GestureHandlerRootView>
-      {/* Edit — classic modal, opened from an event's detail. */}
-      <AddEventModal
-        visible={newEventVisible}
-        onClose={() => setNewEventVisible(false)}
-        onSave={(e) => addEvent(e, api)}
-        onEdit={(e) => updateEvent(e, api)}
-        calendars={calendars}
-        event={prefilledEvent}
-      />
-      <EventDetailModal
-        visible={eventDetailVisible}
-        onClose={() => setEventDetailVisible(false)}
-        onEdit={(event: Event) => handlerEventEdit(event)}
-        event={liveEventDetail(events, eventDetail)}
-      />
       <CalendarSettingsModal
         calendar={calendarSettings}
         visible={calendarSettingsVisible}

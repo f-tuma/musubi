@@ -14,6 +14,7 @@ import { useCalendarsStore } from '@/store/useCalendarsStore';
 import { cacheGetAllEvents, cacheGetCalendars } from '@/services/eventsCache';
 import { select } from '@/lib/haptics';
 import { onSessionExpired, signOutAndReset } from '@/lib/signOut';
+import { GlobalEventModals } from '@/components/calendar/GlobalEventModals';
 
 
 export default function TabLayout() {
@@ -117,6 +118,7 @@ export default function TabLayout() {
         }} />
       </Tabs>
 
+      <GlobalEventModals />
       <LoadingOverlay ready={dataReady} />
     </GestureHandlerRootView>
   );
