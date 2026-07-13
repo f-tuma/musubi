@@ -49,9 +49,9 @@ The `user` table gains two columns: `isExternal` (this row is a shadow account �
 |---|---|---|
 | Schema | `packages/db/src/schema.ts` | `user.isExternal` + `user.homeServer`; `member_tokens` (id, userID, `tokenHash` unique, createdAt) |
 | Queries | `packages/db/src/queries/federation.ts` | `findExternalUser`, `createExternalUser`, `saveMemberToken`, `getUserByTokenHash`, `revokeMemberTokens` |
-| Accept handshake | `apps/api/src/handlers/federation.ts` | `POST /api/v1/federation/accept` — public; verifies the invite, find-or-creates the shadow user, adds membership (viewer), returns the raw member token once |
+| Accept handshake | `apps/api/src/handlers/federation.ts` | `POST /api/v1/federation/accept` — public, rate-limited per IP; verifies the invite (consuming a `maxUses` use on a NEW membership), find-or-creates the shadow user, adds membership (viewer), returns the raw member token once |
 | Token auth | `apps/api/src/middleware/require_auth.ts` | after the Better Auth session check fails, hashes the presented `Bearer` and looks it up in `member_tokens` — sets `req.user` to the shadow user |
-| Public preview | `apps/api/src/index.ts` | `GET /api/v1/calendars/tokens/:token` is public — possession of the (unguessable, expiring) invite token is the credential |
+| Public preview | `apps/api/src/index.ts` | `GET /api/v1/calendars/tokens/:token` is public (rate-limited per IP) — possession of the unguessable invite token is the credential; expiry and `maxUses` are enforced at every read |
 | Invite page | `handlers/federation.ts` → `GET /invite/:token` | tiny HTML hand-off every server serves for its **own** invite links; deep-links `musubi://invite/<token>?server=<origin>` |
 | Connection roaming | `musubi_accounts` + `GET/POST/DELETE /api/v1/users/connections/musubi` | the user's connections to *other* servers, stored on their **home** server with the member token AES-GCM encrypted (same key as CalDAV passwords) — accept once, every device inherits it |
 
@@ -83,12 +83,12 @@ Be precise about what protects what:
 - **Client-side routing is routing, not authorization.** `remoteForCalendar()` in the app only decides *which server to call with which credential*. It grants nothing: a client that "skips" it just sends the request to the wrong server, where `assertCan` (and the [server-side shape guards](/docs/architecture/api/#the-server-trusts-nothing-from-the-client)) reject it. The same goes for the composer's same-server guard — it's a friendly error, the server enforces the rule regardless.
 
 <Aside type="caution">
-Known v1 gaps, deliberate and documented: no rate limiting on the accept endpoint; no server-to-server identity proof (the invite token is the proof); member tokens don't expire (revoked implicitly by kick, `revokeMemberTokens` exists for cleanup); a shadow user with no remaining memberships lingers until cleaned up; storing connections requires `CALDAV_ENC_KEY` on the home server (without it, the accept still works but stays device-local). All are contained by the authorization-is-membership rule.
+Known v1 gaps, deliberate and documented: no server-to-server identity proof (the invite token is the proof); member tokens don't expire (revoked implicitly by kick, `revokeMemberTokens` exists for cleanup); a shadow user with no remaining memberships lingers until cleaned up; storing connections requires `CALDAV_ENC_KEY` on the home server (without it, the accept still works but stays device-local). All are contained by the authorization-is-membership rule.
 </Aside>
 
 ## What v1 is — and isn't
 
-**v1 (this)**: the remote calendar lives *only* at its origin. The invitee's app reads and writes it there directly; a full pull per refresh keeps a device-local cache (SQLite) like any other calendar. If the origin is unreachable, the app shows the last synced copy and edits fail loudly.
+**v1 (this)**: the remote calendar lives *only* at its origin. The invitee's app reads and writes it there directly; a full pull per refresh keeps a device-local cache (SQLite) like any other calendar, and the app also holds an SSE stream to each federated server (member token as bearer), so remote events and attendance update live. If the origin is unreachable, the app shows the last synced copy and edits fail loudly.
 
 **v2 — mirror (planned)**: reuse the external-provider engine (`external_calendars` / `external_events`, cursors, `upsertExternalEvent`) with a `musubi` adapter, so server B keeps a *server-side* mirror of the shared calendar. The origin stays **authoritative** — B pulls and pushes back exactly like the Google adapter, reusing the delta endpoint (`GET /events?since` → `{events, deletedIds, serverTime}`) as the cursor. No master-master merging; conflicts stay last-write-wins. This buys offline resilience (and if an origin ever disappears for good, the fork mechanic can promote a mirror into a native calendar).
 
