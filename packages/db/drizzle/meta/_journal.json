@@ -204,6 +204,13 @@
       "when": 1783919592316,
       "tag": "0028_silky_molten_man",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1783922126357,
+      "tag": "0029_parched_leader",
+      "breakpoints": true
     }
   ]
 }

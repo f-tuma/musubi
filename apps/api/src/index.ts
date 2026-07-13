@@ -10,7 +10,7 @@ import { handlerDeleteUser, handlerGetAvatar, handlerResetUsers, handlerUploadAv
 import { handlerCreateEvent, handlerForkEvent, handlerGetAttendees, handlerGetEvents, handlerLinkEvent, handlerRemoveEvent, handlerSetAttendance, handlerUpdateEvent } from "./handlers/events";
 import { requireAuth } from "./middleware/require_auth";
 import { rateLimit } from "./middleware/rate_limit";
-import { handlerCreateCalendarInvite } from "./handlers/invites";
+import { handlerCreateCalendarInvite, handlerGetCalendarInvites, handlerRevokeInvite } from "./handlers/invites";
 import { handlerStream } from "./handlers/stream";
 import { middlewareLogHandler } from "./middleware/log_handler";
 import { handlerGetSettings, handlerSaveSettings } from "./handlers/settings";
@@ -100,6 +100,8 @@ app.delete("/api/v1/calendars", requireAuth, wrap(handlerRemoveCalendar));
 
 // Members & invites
 app.post("/api/v1/calendars/invites", requireAuth, wrap(handlerCreateCalendarInvite));
+app.get("/api/v1/calendars/:calendarId/invites", requireAuth, wrap(handlerGetCalendarInvites));
+app.delete("/api/v1/calendars/invites/:inviteId", requireAuth, wrap(handlerRevokeInvite));
 app.get("/api/v1/calendars/:calendarId/members", requireAuth, wrap(handlerGetCalendarMembers));
 app.post("/api/v1/calendars/members/:calendarId", requireAuth, wrap(handlerJoinCalendar));
 app.delete("/api/v1/calendars/members/:calendarId", requireAuth, wrap(handlerLeaveCalendar));

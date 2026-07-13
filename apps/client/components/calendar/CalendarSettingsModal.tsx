@@ -1,17 +1,18 @@
 import { colors, styles } from "@/constants/theme";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
 import { Feather } from "@expo/vector-icons";
-import { Modal, Pressable, Text, View, ScrollView, Share } from "react-native"
+import { Modal, Pressable, Text, View, ScrollView } from "react-native"
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
-import { Calendar, Invite, can, providerFlavor } from "@musubi/types";
+import { Calendar, can, providerFlavor } from "@musubi/types";
 import { confirm } from "@/lib/confirm";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useState } from "react";
 import { useApi } from "@/services/api";
 import { useServer } from "@/contexts/ServerContext";
 import MemberRolesModal from "./MemberRolesModal";
+import InvitesModal from "./InvitesModal";
 import { Tap } from "@/components/ui/Tap";
 import { Btn } from "@/components/ui/Btn";
 
@@ -27,10 +28,10 @@ type Props = {
 
 export default function CalendarSettingsModal({ calendar, visible, onClose, onDelete, onEdit, onLeave }: Props) {
   const api = useApi();
-  const { authClient, apiUrl } = useServer();
-  const [waitingForInvite, setWaitingForInvite] = useState(false);
+  const { authClient } = useServer();
   const [isLeaving, setIsLeaving] = useState(false);
   const [rolesVisible, setRolesVisible] = useState(false);
+  const [invitesVisible, setInvitesVisible] = useState(false);
 
   const insets = useSafeAreaInsets();
   const { slideStyle, fadeStyle, gesture, handleClose } = useModalAnimation(visible, onClose);
@@ -102,27 +103,9 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
                 <View style={{ gap: 8 }}>
                   {showInvite && (
                   <Btn
-                    label="Send Invite"
+                    label="Invite Links"
                     icon={<Feather size={14} name="send" color={colors.bg3} />}
-                    loading={waitingForInvite}
-                    onPress={async () => {
-                      setWaitingForInvite(true);
-                      const inviteTemplate: Invite = {
-                        id: "create",
-                        calendarID: calendar?.id!,
-                        expiresAt: new Date(),
-                        maxUses: 1,
-                      }
-                      const invite = await api.createInvite(inviteTemplate);
-                      // The calendar's own server serves the invite page — so
-                      // self-hosted (and federated) invites don't depend on the
-                      // hosted domain.
-                      const origin = calendar?.provider === "musubi" && calendar.serverUrl ? calendar.serverUrl : apiUrl;
-                      await Share.share({
-                        message: `${origin}/invite/${invite.id}`,
-                      });
-                      setWaitingForInvite(false);
-                    }}
+                    onPress={() => setInvitesVisible(true)}
                   />
                   )}
                   <Btn
@@ -198,6 +181,11 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
         calendar={calendar}
         visible={rolesVisible}
         onClose={() => setRolesVisible(false)}
+      />
+      <InvitesModal
+        calendar={calendar}
+        visible={invitesVisible}
+        onClose={() => setInvitesVisible(false)}
       />
     </Modal >
   );
