@@ -58,7 +58,6 @@ export async function handlerCreateCalendar(req: Request, res: Response) {
       ...created,
       role: "owner",
       members: [{ id: req.user!.id, name: req.user!.name, email: req.user!.email }],
-      invites: "wip",
       provider: link?.provider ?? calendar.provider,
       accountId: link?.accountID ?? account.id,
       accountLabel: link?.accountLabel ?? account.label,
@@ -72,7 +71,7 @@ export async function handlerCreateCalendar(req: Request, res: Response) {
     creatorID: req.user!.id,
   }
   const result = await createCalendar(newCalendar);
-  res.status(201).json({ ...result, role: "owner", members: [{ id: req.user!.id, name: req.user!.name, email: req.user!.email }], invites: "wip" });
+  res.status(201).json({ ...result, role: "owner", members: [{ id: req.user!.id, name: req.user!.name, email: req.user!.email }] });
 }
 
 export async function handlerRemoveCalendar(req: Request, res: Response) {
@@ -95,7 +94,7 @@ export async function handlerRemoveCalendar(req: Request, res: Response) {
 
   if (removedCalendar) {
 
-    const result = { ...removedCalendar, members: [], invites: "wip" };
+    const result = { ...removedCalendar, members: [] };
 
     const memberIDSeen = new Set<string>();
 
@@ -132,7 +131,7 @@ export async function handlerUpdateCalendar(req: Request, res: Response) {
 
   if (updatedCalendar) {
 
-    const result = { ...updatedCalendar, members: calendar.members, invite: calendar.invite };
+    const result = { ...updatedCalendar, members: calendar.members };
 
     const memberIDSeen = new Set<string>();
 
@@ -147,7 +146,7 @@ export async function handlerUpdateCalendar(req: Request, res: Response) {
     notifyCalendarMembers([...memberIDSeen], "calendar_updated", result);
 
 
-    return res.status(200).json({ ...result, members: calendar.members, invite: calendar.invite });
+    return res.status(200).json(result);
   }
   throw new NotFoundError("Calendar not found...");
 }
@@ -166,7 +165,6 @@ export async function handlerGetCalendars(req: Request, res: Response) {
     result.push({
       ...calendar.calendars,
       members: members,
-      invite: "wip",
       role: calendar.role, // the requesting user's role on this calendar
       provider: link?.provider ?? null,
       accountId: link?.accountID ?? null,

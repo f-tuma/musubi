@@ -46,7 +46,7 @@ export function useApi() {
       // Pass the server response through whole — rebuilding the object here
       // silently dropped `role: "owner"`, so the creator didn't get owner
       // actions (invite, roles) until the next full sync.
-      return { ...data, invite: "WIP" };
+      return data;
     },
 
     async getCalendars() {
