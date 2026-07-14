@@ -97,7 +97,21 @@ const expoConfig = {
     "@react-native-google-signin/google-signin",
     "expo-font",
     "expo-web-browser",
-    "expo-build-properties",
+    [
+      "expo-build-properties",
+      {
+        // @react-native-google-signin pulls AppCheckCore, whose Swift code
+        // imports GoogleUtilities/RecaptchaInterop — those pods don't ship
+        // module maps, so as static libs the build fails. Force module maps
+        // for just those two (CocoaPods' own suggested fix).
+        "ios": {
+          "extraPods": [
+            { "name": "GoogleUtilities", "modular_headers": true },
+            { "name": "RecaptchaInterop", "modular_headers": true }
+          ]
+        }
+      }
+    ],
     "expo-image",
     "./plugins/withCalendarAppCategory"
   ],
