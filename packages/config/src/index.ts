@@ -1,7 +1,6 @@
 import dotenv from "dotenv";
 import { expand } from "dotenv-expand";
 import path from "path";
-import { env } from "process";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

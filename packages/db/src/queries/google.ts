@@ -23,11 +23,14 @@ export async function googleCheck(userID: string): Promise<GoogleCheck> {
 // account ids of the user's Google accounts that granted calendar access —
 // used by the Google adapter's listAccounts (one row per connected account).
 export async function getGoogleAccountIDs(userID: string): Promise<string[]> {
-  const rows = await db.select({ accountId: account.accountId, scope: account.scope })
+  const rows = await db.select({ accountId: account.accountId, scope: account.scope, refreshToken: account.refreshToken })
     .from(account)
     .where(and(eq(account.userId, userID), eq(account.providerId, "google")));
+  // Require a refresh token too — same bar as googleCheck's `calendarConnected`.
+  // Without it the sync can never mint an access token, so syncing the account
+  // only spams FAILED_TO_GET_ACCESS_TOKEN every interval.
   return rows
-    .filter((r) => (r.scope ?? "").includes("https://www.googleapis.com/auth/calendar"))
+    .filter((r) => !!r.refreshToken && (r.scope ?? "").includes("https://www.googleapis.com/auth/calendar"))
     .map((r) => r.accountId);
 }
 
