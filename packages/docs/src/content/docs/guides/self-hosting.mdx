@@ -62,6 +62,8 @@ Use the `docker-compose.selfhost.yml` file — it publishes the API port and run
 
 When users open Musubi for the first time, they can enter a custom server URL on the welcome screen. Give them your server's address — e.g. `https://musubi.yourdomain.com`.
 
+The welcome screen adapts to your server: it asks `GET /api/v1/server` which social logins are configured and shows only those buttons. If you didn't set `GOOGLE_WEB_CLIENT_ID`, the "Continue with Google" button simply won't appear — email/password still works.
+
 ---
 
 ## Updating
