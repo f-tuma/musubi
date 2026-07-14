@@ -40,6 +40,13 @@ export const auth = betterAuth({
       accessType: "offline",
       prompt: "select_account consent",
     },
+    apple: {
+      clientId: config.social.appleClientID,
+      // Native Sign in with Apple only: the identity token's `aud` claim is the
+      // app's bundle id, so Better Auth verifies the token against this (clientId
+      // + clientSecret are for the web redirect flow, which we don't use).
+      appBundleIdentifier: "dev.frgtn.musubi",
+    }
   },
   account: {
     accountLinking: {
