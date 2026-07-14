@@ -12,6 +12,9 @@ import Svg, { Path } from "react-native-svg";
 
 GoogleSignin.configure({
   webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  // Required on iOS — the native Google SDK initializes from the iOS client id
+  // (the webClientId only sets the idToken audience for backend verification).
+  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
 });
 
 function GoogleG({ size = 18 }: { size?: number }) {

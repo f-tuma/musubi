@@ -1,3 +1,16 @@
+// Native Google Sign-In on iOS needs the iOS OAuth client id AND its reversed
+// form as a URL scheme, or @react-native-google-signin can't determine the
+// clientID at runtime. With options the plugin takes the no-Firebase path (adds
+// the scheme); without them it falls back to the Firebase-plist path (a no-op
+// here). Fall back to the bare plugin when the env is unset so a build without
+// the id still succeeds — iOS Google sign-in just stays off until it's provided.
+const iosGoogleClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+const googleSignInPlugin = iosGoogleClientId
+  ? ["@react-native-google-signin/google-signin", {
+      iosUrlScheme: `com.googleusercontent.apps.${iosGoogleClientId.replace(/\.apps\.googleusercontent\.com$/, "")}`,
+    }]
+  : "@react-native-google-signin/google-signin";
+
 const expoConfig = {
   name: "Musubi",
   slug: "musubi",
@@ -94,7 +107,7 @@ const expoConfig = {
     ],
     "expo-secure-store",
     "@react-native-community/datetimepicker",
-    "@react-native-google-signin/google-signin",
+    googleSignInPlugin,
     "expo-font",
     "expo-web-browser",
     [
