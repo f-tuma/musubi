@@ -41,6 +41,7 @@ type SocialConfig = {
   googleWebClientID: string,
   googleIOSClientID: string,
   googleClientSecret: string,
+  appleClientID: string,
 }
 
 type SecurityConfig = {
@@ -85,6 +86,7 @@ const socialConfig: SocialConfig = {
   googleIOSClientID: process.env.GOOGLE_IOS_CLIENT_ID ?? "",
   googleWebClientID: process.env.GOOGLE_WEB_CLIENT_ID ?? "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+  appleClientID: process.env.APPLE_CLIENT_ID ?? "",
 }
 
 const securityConfig: SecurityConfig = {
