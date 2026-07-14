@@ -11,6 +11,7 @@ const expoConfig = {
   ios: {
     "supportsTablet": true,
     "bundleIdentifier": "dev.frgtn.musubi",
+    "usesAppleSignIn": true,
     "infoPlist": {
       "ITSAppUsesNonExemptEncryption": false,
       // Nabídne Musubi v "Otevřít v…" pro .ics soubory/pozvánky (iOS neumí víc — default kalendář nelze).
