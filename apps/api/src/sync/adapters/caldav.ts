@@ -187,11 +187,21 @@ export const caldavAdapter: CalendarAdapter = {
       return { changes: [], nextCursor: null };
     }
 
-    const objects = await client.fetchCalendarObjects({ calendar: cal });
+    // iCloud's calendar-query REPORT returns NOTHING without a time-range filter
+    // (tsdav's default query gets 0 objects). Bound it to a rolling window —
+    // recurring events overlapping it still come back (iCloud returns the master).
+    // ponytail: window, not all-time; widen if someone needs far-past/future events.
+    const now = Date.now();
+    const DAY = 86_400_000;
+    const timeRange = {
+      start: new Date(now - 365 * DAY).toISOString(),      // 1 year back
+      end: new Date(now + 3 * 365 * DAY).toISOString(),     // 3 years ahead
+    };
+    const objects = await client.fetchCalendarObjects({ calendar: cal, timeRange });
     const changes = objects
       .map((o) => icalToNormalized(o))
       .filter((e): e is NormalizedEvent => e !== null);
-    console.log(`[caldav] ${externalCalendarId} → objects=${objects.length} parsed=${changes.length} firstData=${JSON.stringify(objects[0]?.data?.slice(0, 120) ?? null)}`);
+    console.log(`[caldav] ${externalCalendarId} → objects=${objects.length} parsed=${changes.length}`);
 
     // ponytail: full fetch + reset every sync — simple and handles deletions.
     // Upgrade to WebDAV sync-collection (cursor = syncToken) if calendars grow.
