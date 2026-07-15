@@ -6,16 +6,16 @@ import { eventsTable, syncMetaTable } from "@/db/schema";
 // Event <-> SQLite row. Dates as ISO text (new Date() accepts Date or string),
 // calendars as JSON. Read back as real Date objects.
 function toRow(e: Event) {
+  // expo-sqlite on iOS throws on an `undefined` bind (Android coerces to null),
+  // so EVERY column must get a concrete value. NOT NULL columns get a default,
+  // nullable ones get null. (External/imported events often miss creatorID.)
   return {
     id: e.id,
-    creatorID: e.creatorID,
-    title: e.title,
-    color: e.color,
+    creatorID: e.creatorID ?? "",
+    title: e.title ?? "",
+    color: e.color ?? "",
     start: new Date(e.start).toISOString(),
     end: new Date(e.end).toISOString(),
-    // expo-sqlite on iOS throws on an `undefined` bind (Android coerces to null),
-    // so every column must get a concrete value. organizer/isAllDay are NOT NULL
-    // in the schema → default them rather than null.
     isAllDay: e.isAllDay ?? false,
     description: e.description ?? null,
     location: e.location ?? null,
@@ -62,6 +62,7 @@ function hasValidDates(e: Event): boolean {
 export async function cacheUpsertEvents(events: Event[]) {
   // Skip events with malformed dates so one bad import can't crash the whole sync.
   const valid = events.filter((e) => {
+    if (!e.id) { console.warn("Skipping event with no id"); return false; }
     if (hasValidDates(e)) return true;
     console.warn("Skipping event with invalid date:", e.id, e.start, e.end);
     return false;
@@ -85,7 +86,7 @@ export async function cacheDeleteEvents(ids: string[]) {
 // (e.g. stale ids accumulated from past resets) is dropped.
 export async function cacheReplaceAllEvents(events: Event[]) {
   await db.delete(eventsTable);
-  const valid = events.filter(hasValidDates);
+  const valid = events.filter((e) => e.id && hasValidDates(e));
   const rows = valid.map(toRow);
   for (let i = 0; i < rows.length; i += 200) {
     await db.insert(eventsTable).values(rows.slice(i, i + 200));
