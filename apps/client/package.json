@@ -32,7 +32,7 @@
     "dayjs": "^1.11.21",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
-    "expo": "~56.0.15",
+    "expo": "~56.0.16",
     "expo-apple-authentication": "~56.0.4",
     "expo-build-properties": "~56.0.22",
     "expo-constants": "~56.0.20",
