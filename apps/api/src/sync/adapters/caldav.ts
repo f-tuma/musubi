@@ -182,12 +182,16 @@ export const caldavAdapter: CalendarAdapter = {
     const client = await clientForAccount(accountId);
     const cals = await client.fetchCalendars();
     const cal = cals.find((c) => c.url === externalCalendarId);
-    if (!cal) return { changes: [], nextCursor: null };
+    if (!cal) {
+      console.warn(`[caldav] calendar NOT found for ${externalCalendarId}; available: ${cals.map((c) => c.url).join(" | ")}`);
+      return { changes: [], nextCursor: null };
+    }
 
     const objects = await client.fetchCalendarObjects({ calendar: cal });
     const changes = objects
       .map((o) => icalToNormalized(o))
       .filter((e): e is NormalizedEvent => e !== null);
+    console.log(`[caldav] ${externalCalendarId} → objects=${objects.length} parsed=${changes.length} firstData=${JSON.stringify(objects[0]?.data?.slice(0, 120) ?? null)}`);
 
     // ponytail: full fetch + reset every sync — simple and handles deletions.
     // Upgrade to WebDAV sync-collection (cursor = syncToken) if calendars grow.
