@@ -138,7 +138,8 @@ const expoConfig = {
       }
     ],
     "expo-image",
-    "./plugins/withCalendarAppCategory"
+    "./plugins/withCalendarAppCategory",
+    "expo-sharing"
   ],
   experiments: {
     "typedRoutes": true,
