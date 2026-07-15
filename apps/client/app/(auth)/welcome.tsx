@@ -100,11 +100,22 @@ export default function Welcome() {
         alert("No identity token from Apple");
         return;
       }
+      // Apple returns the name ONLY on the first authorization, and NOT inside
+      // the token — forward it in `user.name` so Better Auth sets it on the new
+      // user (which then pre-fills the onboarding name). Nothing to forward on
+      // later sign-ins; the name is already stored. Apple never returns a photo.
+      const fn = credential.fullName;
+      const nameProvided = !!(fn?.givenName || fn?.familyName);
       // ponytail: no nonce — signature + audience + 1h maxAge already verified
       // server-side; add a nonce round-trip if replay hardening is needed.
       const { error } = await authClient.signIn.social({
         provider: "apple",
-        idToken: { token: credential.identityToken },
+        idToken: {
+          token: credential.identityToken,
+          ...(nameProvided && {
+            user: { name: { firstName: fn?.givenName ?? undefined, lastName: fn?.familyName ?? undefined } },
+          }),
+        },
       });
       if (error) {
         warn();

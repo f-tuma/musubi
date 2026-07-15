@@ -44,6 +44,7 @@ export default defineConfig({
             { label: 'Overview', slug: 'architecture/overview' },
             { label: 'Data Model', slug: 'architecture/data-model' },
             { label: 'API Server', slug: 'architecture/api' },
+            { label: 'Authentication', slug: 'architecture/authentication' },
             { label: 'Client App', slug: 'architecture/client' },
             { label: 'Sync Engine', slug: 'architecture/sync' },
             { label: 'Federation', slug: 'architecture/federation' },

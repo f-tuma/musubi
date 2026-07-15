@@ -7,15 +7,15 @@
 const iosGoogleClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 const googleSignInPlugin = iosGoogleClientId
   ? ["@react-native-google-signin/google-signin", {
-      iosUrlScheme: `com.googleusercontent.apps.${iosGoogleClientId.replace(/\.apps\.googleusercontent\.com$/, "")}`,
-    }]
+    iosUrlScheme: `com.googleusercontent.apps.${iosGoogleClientId.replace(/\.apps\.googleusercontent\.com$/, "")}`,
+  }]
   : "@react-native-google-signin/google-signin";
 
 const expoConfig = {
   name: "Musubi",
   slug: "musubi",
   owner: "frgtn",
-  version: "0.0.16",
+  version: "0.0.17",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "musubi",
@@ -25,8 +25,20 @@ const expoConfig = {
     "supportsTablet": true,
     "bundleIdentifier": "dev.frgtn.musubi",
     "usesAppleSignIn": true,
+    // Universal links: an https invite link opens the app directly instead of
+    // bouncing through Safari. Needs the matching apple-app-site-association
+    // file served at each domain's /.well-known/ (see API handler). EAS syncs
+    // the Associated Domains capability to the App ID at build time.
+    "associatedDomains": ["applinks:musubi.frgtn.dev", "applinks:dev-musubi.frgtn.dev"],
     "infoPlist": {
       "ITSAppUsesNonExemptEncryption": false,
+      // We drive the status bar style at runtime from the app theme (root Stack
+      // statusBarStyle) — iOS only honors that with this set to YES.
+      "UIViewControllerBasedStatusBarAppearance": true,
+      // Required whenever CFBundleDocumentTypes is declared (Apple ITMS-90737).
+      // We import .ics into a calendar (read a copy), never edit the original in
+      // place → NO. iOS hands us a sandbox copy of the opened file.
+      "LSSupportsOpeningDocumentsInPlace": false,
       // Nabídne Musubi v "Otevřít v…" pro .ics soubory/pozvánky (iOS neumí víc — default kalendář nelze).
       "CFBundleDocumentTypes": [
         {
@@ -126,7 +138,8 @@ const expoConfig = {
       }
     ],
     "expo-image",
-    "./plugins/withCalendarAppCategory"
+    "./plugins/withCalendarAppCategory",
+    "expo-sharing"
   ],
   experiments: {
     "typedRoutes": true,

@@ -10,3 +10,10 @@ export function setOnboardingRoute(route: string) {
 export function getOnboardingRoute() {
   return lastRoute;
 }
+
+// Sign-out / account switch happens within the same process, so `lastRoute`
+// would otherwise carry the previous user's mid-flow step into a fresh
+// onboarding (landing on step 3 with no back stack). Reset it to the start.
+export function resetOnboardingRoute() {
+  lastRoute = "/onboarding";
+}

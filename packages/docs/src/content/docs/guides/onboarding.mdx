@@ -144,7 +144,7 @@ Handlers never touch tables — all DB access goes through query modules re-expo
 
 Open `packages/db/src/schema.ts` top to bottom — it's organised into six commented domains; the [Data Model page](/docs/architecture/data-model/) annotates each. Reading order:
 
-1. **Auth** (skim — Better Auth owns these)
+1. **Auth** (skim — Better Auth owns these; how sign-in actually works and the iOS setup/gotchas are on the [Authentication](/docs/architecture/authentication/) page)
 2. **Calendars & events** — note `title` (not `name`!), `recurrence` (iCal RRULE text), `deletedAt`
 3. **Link tables** — you met these in Step 1
 4. **External sync** — mirrors of Google/CalDAV calendars
@@ -166,7 +166,7 @@ Five patterns explain almost every client file. Read them here, verify each in t
 1. **Stores are thin, API-first, and paired** (`x` / `localX`) — Step 2.2. Plus one hard rule: **merge, don't replace** calendars (`{ ...existing, ...incoming }`) — SSE payloads omit per-user fields like `role`, and replacing once shipped a bug where editing a calendar locked its owner out.
 2. **Two databases.** PostgreSQL on the server (`packages/db`), **SQLite on the device** (`apps/client/db/` + `drizzle/`) as an offline mirror. They have separate schemas and separate migrations. Boot order: settings seed *synchronously* from SQLite (theme correct on the very first frame — an async read flashes), then events/calendars hydrate on tabs mount, then a delta refresh reconciles with the server.
 3. **The calendar UI is hand-built and gesture-heavy** (`components/cal/`). Its rules: positions live in Reanimated **shared values**, never React state; gestures read a **live ref** so their deps stay empty; anything that must happen after an animation runs on a **timer, not the animation callback** (interrupted animations drop callbacks — this has bitten twice). Geometry constants live in `layout.ts`. *Read this subsystem before touching it; it's intentionally dense.* ([drill](/docs/architecture/glossary/#drill), [ghost](/docs/architecture/glossary/#ghost))
-4. **UI primitives, not ad-hoc.** `Tap` (never bare `Pressable`), `Btn`, `Empty`, `Toast`, `confirm()`, `YearStamp`. Theme colours are **read at render time** from `constants/theme.ts` — never captured into module-level constants (the palette object is swapped in place on theme change).
+4. **UI primitives, not ad-hoc.** `Tap` (never bare `Pressable`), `Btn`, `Empty`, `Toast`, `confirm()`, `YearStamp`, and **`ModalPortal`** for any modal (never RN `<Modal>` directly — nested native modals break touch on iOS; everything renders through one root Portal host). Theme colours are **read at render time** from `constants/theme.ts` — never captured into module-level constants (the palette object is swapped in place on theme change).
 5. **Realtime is a nicety, delta sync is the truth.** SSE frames patch stores live; the durable path is always the next delta refresh. The `external_sync` frame (server's scheduled Google/CalDAV poll found changes) triggers a silent refresh.
 
 **Exercise:** find where the app decides which theme to render on the very first frame (hint: it's *not* in a component — `store/useSettingsStore.ts` seeds itself synchronously). Then find why `AddEventModal` docked mode lifts with the keyboard but the calendar-detail sheet doesn't (`keyboardAware` in `useModalAnimation`).
@@ -232,6 +232,7 @@ Check the [GitHub issues](https://github.com/f-tuma/musubi/issues) and the [road
 | Before any change | [Architecture Overview](/docs/architecture/overview/) — the map |
 | Touching the backend | [API Server](/docs/architecture/api/) |
 | Touching the app | [Client App](/docs/architecture/client/) |
+| Touching sign-in / an iOS build | [Authentication](/docs/architecture/authentication/) |
 | Touching data | [Data Model](/docs/architecture/data-model/) + [Shared Packages](/docs/architecture/packages/) |
 | Touching sync/providers | [Sync Engine](/docs/architecture/sync/) |
 | Touching invites/servers | [Federation](/docs/architecture/federation/) |

@@ -1,7 +1,8 @@
 import { colors, fonts, styles } from "@/constants/theme";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
 import Animated from "react-native-reanimated";
-import { KeyboardAvoidingView, Modal, Platform, Pressable, TextInput, View, Text } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, TextInput, View, Text } from "react-native";
+import { ModalPortal as Modal } from "@/components/ui/ModalPortal";
 import { useState } from "react";
 import { Btn } from "@/components/ui/Btn";
 import * as haptics from "@/lib/haptics";

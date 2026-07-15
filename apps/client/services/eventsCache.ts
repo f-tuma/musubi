@@ -6,19 +6,22 @@ import { eventsTable, syncMetaTable } from "@/db/schema";
 // Event <-> SQLite row. Dates as ISO text (new Date() accepts Date or string),
 // calendars as JSON. Read back as real Date objects.
 function toRow(e: Event) {
+  // expo-sqlite on iOS throws on an `undefined` bind (Android coerces to null),
+  // so EVERY column must get a concrete value. NOT NULL columns get a default,
+  // nullable ones get null. (External/imported events often miss creatorID.)
   return {
     id: e.id,
-    creatorID: e.creatorID,
-    title: e.title,
-    color: e.color,
+    creatorID: e.creatorID ?? "",
+    title: e.title ?? "",
+    color: e.color ?? "",
     start: new Date(e.start).toISOString(),
     end: new Date(e.end).toISOString(),
-    isAllDay: e.isAllDay,
+    isAllDay: e.isAllDay ?? false,
     description: e.description ?? null,
     location: e.location ?? null,
     isCanceled: e.isCanceled ?? false,
     hasAttendees: e.hasAttendees ?? false,
-    organizer: e.organizer,
+    organizer: e.organizer ?? "",
     recurrence: e.recurrence ?? null,
     url: e.url ?? null,
     calendars: JSON.stringify(e.calendars ?? []),
@@ -59,6 +62,7 @@ function hasValidDates(e: Event): boolean {
 export async function cacheUpsertEvents(events: Event[]) {
   // Skip events with malformed dates so one bad import can't crash the whole sync.
   const valid = events.filter((e) => {
+    if (!e.id) { console.warn("Skipping event with no id"); return false; }
     if (hasValidDates(e)) return true;
     console.warn("Skipping event with invalid date:", e.id, e.start, e.end);
     return false;
@@ -82,21 +86,26 @@ export async function cacheDeleteEvents(ids: string[]) {
 // (e.g. stale ids accumulated from past resets) is dropped.
 export async function cacheReplaceAllEvents(events: Event[]) {
   await db.delete(eventsTable);
-  const valid = events.filter(hasValidDates);
+  const valid = events.filter((e) => e.id && hasValidDates(e));
   const rows = valid.map(toRow);
   for (let i = 0; i < rows.length; i += 200) {
     await db.insert(eventsTable).values(rows.slice(i, i + 200));
   }
 }
 
+// Upsert one sync_meta row. drizzle's onConflictDoUpdate emits a bind that
+// expo-sqlite on iOS rejects (InvalidConvertibleException, aborting the whole
+// refresh); a delete-then-insert on the PK is the driver-agnostic equivalent.
+async function setMeta(key: string, value: string) {
+  await db.delete(syncMetaTable).where(eq(syncMetaTable.key, key));
+  await db.insert(syncMetaTable).values({ key, value });
+}
+
 // Calendars are few and have no Date fields → stored as one JSON blob. Cached so
 // the boot hydrate has calendars too (activeCals derives from them; without it,
 // cached events render but get filtered out until calendars arrive over the network).
 export async function cacheSetCalendars(calendars: Calendar[]) {
-  const value = JSON.stringify(calendars);
-  await db.insert(syncMetaTable)
-    .values({ key: "calendars", value })
-    .onConflictDoUpdate({ target: syncMetaTable.key, set: { value } });
+  await setMeta("calendars", JSON.stringify(calendars));
 }
 
 export async function cacheGetCalendars(): Promise<Calendar[]> {
@@ -110,20 +119,19 @@ export async function getLastSync(): Promise<string | null> {
 }
 
 export async function setLastSync(iso: string) {
-  if (!iso || isNaN(new Date(iso).getTime())) return; // never persist a garbage cursor
-  await db.insert(syncMetaTable)
-    .values({ key: "lastSync", value: iso })
-    .onConflictDoUpdate({ target: syncMetaTable.key, set: { value: iso } });
+  // Better Auth's fetch revives ISO fields to Date objects, so `iso` can actually
+  // arrive as a Date. Normalize to an ISO string — expo-sqlite (iOS) can't bind a
+  // Date and throws InvalidConvertibleException, which aborted the whole refresh.
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return; // never persist a garbage cursor
+  await setMeta("lastSync", d.toISOString());
 }
 
 // Settings snapshot (same blob pattern as calendars). Read back SYNCHRONOUSLY
 // at store creation so the very first frame renders in the last-known theme —
 // any async gap here shows as a flash (system theme, or worse a white window).
 export async function cacheSetSettings(settings: Settings) {
-  const value = JSON.stringify(settings);
-  await db.insert(syncMetaTable)
-    .values({ key: "settings", value })
-    .onConflictDoUpdate({ target: syncMetaTable.key, set: { value } });
+  await setMeta("settings", JSON.stringify(settings));
 }
 
 export function cacheGetSettingsSync(): Settings | null {

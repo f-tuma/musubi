@@ -2,7 +2,7 @@ import { betterAuth } from 'better-auth';
 import { bearer } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { createCalendar, db, schema } from '@musubi/db';
+import { createCalendar, db, getUserSettings, schema } from '@musubi/db';
 import { config } from '@musubi/config';
 import { sendEmail } from '../../../../apps/api/src/emails';
 import { getPasswordResetHtml } from '../../../../apps/api/src/emails/password_reset';
@@ -73,6 +73,14 @@ export const auth = betterAuth({
           } catch (e) {
             // Never block registration on this; onboarding self-heals a miss.
             console.error("Failed to create personal calendar for", user.id, e);
+          }
+          try {
+            // Materialize the settings row now (onboarded=false) so the client's
+            // first GET returns it and the onboarding gate fires — relying on a
+            // lazy create left new users with no row (and PUT settings 404s).
+            await getUserSettings(user.id);
+          } catch (e) {
+            console.error("Failed to create settings for", user.id, e);
           }
         },
       },

@@ -6,7 +6,8 @@ import { useModalAnimation } from "@/hooks/useModalAnimation";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { ProviderIcon } from "@/components/calendar/ReorderableCalendarList";
 import { useEffect, useMemo, useState } from "react";
-import { Text, Modal, Pressable, ScrollView, View, TextInput, Alert } from "react-native";
+import { Text, Pressable, ScrollView, View, TextInput, Alert } from "react-native";
+import { ModalPortal as Modal } from "@/components/ui/ModalPortal";
 import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated from "react-native-reanimated";
@@ -302,14 +303,17 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
               </View>
             </Animated.View >
           </GestureDetector>
+          {/* Rendered INSIDE the Modal window so its absolute overlay sits on
+              top of the sheet — as a Modal sibling it was a modal-in-modal
+              (broken on iOS: didn't show + ate touches). */}
+          <ColorPickerModal
+            visible={pickerOpen}
+            value={newColor}
+            onConfirm={setNewColor}
+            onClose={() => setPickerOpen(false)}
+          />
         </GestureHandlerRootView>
       </Modal >
-      <ColorPickerModal
-        visible={pickerOpen}
-        value={newColor}
-        onConfirm={setNewColor}
-        onClose={() => setPickerOpen(false)}
-      />
     </>
   );
 }

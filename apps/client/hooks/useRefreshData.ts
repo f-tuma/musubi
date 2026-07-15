@@ -15,7 +15,20 @@ export function useRefreshData() {
   // providerSync=false: skip triggering the server-side provider sync — used by
   // the SSE "external_sync" handler, where the server JUST synced (re-triggering
   // would loop) and the delta below picks up exactly what changed.
-  return async (opts?: { providerSync?: boolean }) => {
+  // full=true forces a full (non-delta) event sync — needed after JOINING a
+  // calendar (invite accept): its existing events predate `lastSync`, so a delta
+  // would never pull them (you'd only see them after a cache-clearing reinstall).
+  return async (opts?: { providerSync?: boolean; full?: boolean }) => {
+    // Load settings FIRST and independently: the onboarding gate (and theme)
+    // depend on `onboarded` arriving. It must not be held hostage to the
+    // events/calendar pipeline below — a throw there used to leave `onboarded`
+    // at its default (true), silently skipping onboarding for new users.
+    try {
+      loadSettings(await api.getSettings());
+    } catch (e) {
+      console.error("Settings load failed:", e);
+    }
+
     if (opts?.providerSync !== false) {
       // trigger server-side provider sync first, so its imported/changed events
       // show up in the delta below (best-effort, no-op for unconnected providers)
@@ -24,7 +37,7 @@ export function useRefreshData() {
 
     // delta: only events changed since our last sync (+ tombstones to drop).
     // Tolerate a garbage stored value → fall back to a full sync (self-heals).
-    const lastSync = await getLastSync();
+    const lastSync = opts?.full ? null : await getLastSync();
     const sinceDate = lastSync ? new Date(lastSync) : null;
     const since = sinceDate && !isNaN(sinceDate.getTime()) ? sinceDate : undefined;
     const { events, deletedIds, serverTime } = await api.getEvents(since);
@@ -36,11 +49,7 @@ export function useRefreshData() {
     }
     await setLastSync(serverTime);
 
-    const [settings, homeCalendars] = await Promise.all([
-      api.getSettings(),
-      api.getCalendars(),
-    ]);
-    loadSettings(settings);
+    const homeCalendars = await api.getCalendars();
 
     // Federated servers: the registry's source of truth is the HOME server
     // (connections roam across devices); SecureStore is the offline fallback.
@@ -89,7 +98,7 @@ export function useRefreshData() {
     if (fixed.length) await cacheUpsertEvents(fixed);
 
     loadEvents(kept);
-    cacheSetCalendars(calendars);
+    await cacheSetCalendars(calendars);
     // fire-and-forget: drop reminders of gone events, refresh the rest
     reconcileEventNotifications(kept).catch(() => { });
   };

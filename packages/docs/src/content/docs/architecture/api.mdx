@@ -24,7 +24,7 @@ flowchart TD
 
 Two route namespaces exist and never overlap:
 
-- **`/api/auth/*`** — entirely owned by Better Auth. Don't add routes here.
+- **`/api/auth/*`** — entirely owned by Better Auth (email/password + native Google/Apple sign-in). Don't add routes here. See [Authentication](/docs/architecture/authentication/).
 - **`/api/v1/*`** — the application API. Everything you add goes here.
 
 <Aside type="caution">

@@ -36,6 +36,7 @@ Edit `.env` with your production values. Key variables:
 | `ENVIRONMENT` | Set to anything other than `dev` for production |
 | `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth credentials — needed for Google sign-in and Google Calendar sync |
 | `APPLE_CLIENT_ID` | Enables native Sign in with Apple (iOS) — set to the app bundle id (`dev.frgtn.musubi`); the server verifies the identity token's audience against it |
+| `APPLE_TEAM_ID` | Apple Developer Team ID — serves the apple-app-site-association file so iOS invite links open the app directly (universal links). Optional; unset → the Safari hand-off still works |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL` | Outgoing mail for password-reset emails |
 | `CALDAV_ENC_KEY` | Encrypts stored CalDAV passwords — required before anyone connects a CalDAV account |
 
@@ -45,6 +46,10 @@ Required to boot: the `POSTGRES_*` credentials, `BETTER_AUTH_SECRET`, `BETTER_AU
 
 <Aside type="caution">
 `BETTER_AUTH_SECRET` must be kept private and consistent. If you change it, all existing sessions are invalidated — every user gets logged out.
+</Aside>
+
+<Aside type="tip">
+Which social logins your build offers is decided at runtime from what you configure: the app asks `GET /api/v1/server` and shows only those buttons. Full setup (Google/Apple client ids, the client-side `EXPO_PUBLIC_*` build vars, and the iOS-specific gotchas) is on the [Authentication](/docs/architecture/authentication/) page.
 </Aside>
 
 ## 3. Start everything

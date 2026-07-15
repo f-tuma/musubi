@@ -11,8 +11,8 @@ import { ShipporiMinchoB1_400Regular } from '@expo-google-fonts/shippori-mincho-
 import { colors, styles } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { PortalProvider } from '@/components/ui/Portal';
 import { ToastHost } from '@/components/ui/Toast';
-import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import semver from "semver";
 import Constants from "expo-constants";
@@ -168,8 +168,11 @@ function AppLoader() {
   }, [scheme]);
 
   return (
+    // Status bar style is driven by the root Stack's `statusBarStyle` (VC-based,
+    // needs UIViewControllerBasedStatusBarAppearance=YES). We deliberately do NOT
+    // also mount expo-status-bar's <StatusBar> — that's the imperative
+    // RCTStatusBarManager path, which requires the key be NO and conflicts.
     <SafeAreaView key={scheme} style={styles.screen} edges={['top', 'left', 'right']}>
-      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <AppContent key={apiUrl ?? 'loading'} />
       </View>
@@ -187,7 +190,12 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ServerProvider>
-        <AppLoader />
+        {/* Portal host lives here — under ServerProvider (portaled modals keep
+            useServer) and SafeAreaProvider (expo-router root, above), and its
+            overlay host renders above AppLoader = above every screen. */}
+        <PortalProvider>
+          <AppLoader />
+        </PortalProvider>
       </ServerProvider>
       <ToastHost />
     </GestureHandlerRootView>

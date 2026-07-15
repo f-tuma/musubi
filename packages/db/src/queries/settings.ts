@@ -1,6 +1,5 @@
 import { eq } from "drizzle-orm";
 import { db, NewSettings, userSettings } from "..";
-import { NotFoundError } from "@musubi/types";
 
 
 export async function getUserSettings(userID: string) {
@@ -14,11 +13,11 @@ export async function getUserSettings(userID: string) {
 }
 
 export async function saveUserSettings(userID: string, settings: NewSettings) {
-  const [result] = await db.update(userSettings).set(settings).where(eq(userSettings.id, userID)).returning();
+  const [updated] = await db.update(userSettings).set(settings).where(eq(userSettings.id, userID)).returning();
+  if (updated) return updated;
 
-  if (!result) {
-    throw new NotFoundError("User settings not found...");
-  }
-
-  return result;
+  // No row yet (settings can be saved before any GET materialized it, e.g. the
+  // last onboarding step). Create it instead of 404ing.
+  const [inserted] = await db.insert(userSettings).values({ ...settings, id: userID }).returning();
+  return inserted;
 }

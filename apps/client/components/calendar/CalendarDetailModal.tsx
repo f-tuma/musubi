@@ -5,7 +5,8 @@ import { useModalAnimation } from "@/hooks/useModalAnimation";
 import { useEventsStore } from "@/store/useEventsStore";
 import { presentEventDetail } from "@/store/useEventDetailStore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Modal, Text, Pressable, View, useWindowDimensions } from "react-native";
+import { Text, Pressable, View, useWindowDimensions } from "react-native";
+import { ModalPortal as Modal } from "@/components/ui/ModalPortal";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   Easing, interpolate, useAnimatedStyle, useSharedValue, withTiming,
