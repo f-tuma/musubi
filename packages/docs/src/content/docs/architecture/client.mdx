@@ -13,7 +13,7 @@ The client (`apps/client/`) is an **Expo / React Native** app using **Expo Route
 
 ```mermaid
 flowchart TD
-    Z["settings store seeds itself SYNCHRONOUSLY from the local SQLite snapshot — the first frame is already in the last-known theme (no flash)"] --> A["GestureHandlerRootView → ServerProvider → ToastHost"]
+    Z["settings store seeds itself SYNCHRONOUSLY from the local SQLite snapshot — the first frame is already in the last-known theme (no flash)"] --> A["GestureHandlerRootView → ServerProvider → PortalProvider (modal host) → ToastHost"]
     A --> B["useMigrations(db) — run local SQLite migrations"]
     B --> C["load fonts (InterTight, NotoSerif, ShipporiMinchoB1)"]
     C --> D["authClient.useSession() — is there a session?"]
@@ -105,12 +105,19 @@ The `asserts error is null` return type is load-bearing — after `throwOnError(
 `hooks/useRefreshData.ts` is the sync orchestrator (runs on tab mount and pull-to-refresh):
 
 <Steps>
-1. Best-effort provider sync (`api.getGoogleCalendars()`).
-2. Delta fetch: `api.getEvents(since)` → `{ events, deletedIds, serverTime }`.
-3. Cache: first run → `cacheReplaceAllEvents` (authoritative); delta → `cacheUpsertEvents` + `cacheDeleteEvents`. Save `serverTime` as the new cursor.
-4. Reconcile membership: drop events whose calendars the user is no longer in (delta can't tombstone access loss).
-5. Push into the stores.
+1. **Settings first, in its own try** — `loadSettings(await api.getSettings())` runs before anything else so `onboarded` (and the theme) always arrive; a throw later in the pipeline must never gate the onboarding decision.
+2. Best-effort provider sync (`api.getGoogleCalendars()`).
+3. Delta fetch: `api.getEvents(since)` → `{ events, deletedIds, serverTime }`.
+4. Cache: first run → `cacheReplaceAllEvents` (authoritative); delta → `cacheUpsertEvents` + `cacheDeleteEvents`. Save `serverTime` as the new cursor.
+5. Reconcile membership: drop events whose calendars the user is no longer in (delta can't tombstone access loss).
+6. Push into the stores.
 </Steps>
+
+<Aside type="caution">
+Two traps that bit here (both iOS-only symptoms, both aborted the *whole* refresh):
+- **Joining a calendar needs a full sync.** After accepting an invite, call `refresh({ full: true })` — the joined calendar's events predate the delta cursor, so a normal delta never pulls them (they'd only appear after a cache-clearing reinstall).
+- **Never bind a `Date` (or `undefined`) to SQLite.** Better Auth's fetch revives ISO fields to `Date` objects, so `serverTime` arrives as a `Date`; `setLastSync` normalizes it to an ISO string. expo-sqlite on iOS throws `InvalidConvertibleException` on a `Date`/`undefined` bind (Android silently coerces). Coalesce every cached column.
+</Aside>
 
 ### Offline cache
 
@@ -172,7 +179,8 @@ The composer's RRULE build/parse logic lives in `lib/rrule.ts` and its validatio
 
 ## Conventions
 
-- **UI primitives** in `components/ui/` — use `Tap` (not bare `Pressable`; it adds press-scale + haptics), `Btn`, `Empty`, `Toast` (`showToast({ message, actionLabel, onAction })`), and `confirm()`. Hand-rolled equivalents get flagged in review.
+- **UI primitives** in `components/ui/` — use `Tap` (not bare `Pressable`; it adds press-scale + haptics), `Btn`, `Empty`, `Toast` (`showToast({ message, actionLabel, onAction })`), `confirm()`, and `ModalPortal`/`Portal` (see below). Hand-rolled equivalents get flagged in review.
+- **Modals go through the Portal host — never RN `<Modal>` directly.** Every modal renders through the root `PortalProvider` (mounted in `app/_layout.tsx`, under `ServerProvider`/`SafeAreaProvider` so portaled content keeps `useServer()`/insets) via **`ModalPortal`** (`components/ui/ModalPortal.tsx`) — a drop-in for RN `<Modal>` with the same props. Why: each RN `<Modal>` is a separate **native window**, and opening one from *inside* another is broken on iOS — the inner one never appears and its transparent layer eats every touch (the app looks frozen). `ModalPortal` renders into **one in-tree host** so modals stack correctly by mount order on both platforms, and it wires the Android hardware back (RN `<Modal>`'s one freebie). Pair it with `useModalAnimation` for the fade/slide + swipe-to-dismiss. A small overlay opened from inside a modal (e.g. `ColorPickerModal`) can instead be a plain in-tree absolute overlay in its parent — same reason, never a nested `<Modal>`.
 - **Theme** (`constants/theme.ts`) is a **mutable singleton**, not context: `colors`/`fonts`/`styles` are objects read at render time; `applyTheme()` swaps them in place and the tree remounts via `key={scheme}`. Read `colors.x` at render time — **never** capture a colour into a module-level constant (it freezes to whichever theme loaded first).
 - **Haptics** via `lib/haptics.ts` (`haptics.success()`, `haptics.warn()`).
 - **Year display** uses the shared `YearStamp` (`components/calendar/YearStamp.tsx`) — the two-digit overlined year next to month names and as the agenda's year divider. Don't hand-roll year text.
