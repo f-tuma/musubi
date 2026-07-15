@@ -160,7 +160,9 @@ export default function CalendarsTab() {
       <SyncCalendarModal
         visible={syncModalVisible}
         onClose={() => setSyncModalVisible(false)}
-        onConnected={onRefresh}
+        // Full (not delta) sync: a newly connected account's events predate the
+        // delta cursor, so a delta wouldn't pull them (same trap as invite join).
+        onConnected={() => { refresh({ full: true }).catch(() => { }); }}
       />
       <CalendarDetail
         calendar={prefilledCalendar}

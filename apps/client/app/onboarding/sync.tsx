@@ -113,7 +113,7 @@ export default function OnboardingSync() {
       <SyncCalendarModal
         visible={syncVisible}
         onClose={() => setSyncVisible(false)}
-        onConnected={() => { refresh().catch(() => { }); }}
+        onConnected={() => { refresh({ full: true }).catch(() => { }); }}
         callbackURL="/onboarding/sync"
       />
     </OnboardingScaffold>
