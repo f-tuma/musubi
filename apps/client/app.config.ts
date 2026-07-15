@@ -25,6 +25,11 @@ const expoConfig = {
     "supportsTablet": true,
     "bundleIdentifier": "dev.frgtn.musubi",
     "usesAppleSignIn": true,
+    // Universal links: an https invite link opens the app directly instead of
+    // bouncing through Safari. Needs the matching apple-app-site-association
+    // file served at each domain's /.well-known/ (see API handler). EAS syncs
+    // the Associated Domains capability to the App ID at build time.
+    "associatedDomains": ["applinks:musubi.frgtn.dev", "applinks:dev-musubi.frgtn.dev"],
     "infoPlist": {
       "ITSAppUsesNonExemptEncryption": false,
       // We drive the status bar style at runtime from the app theme (root Stack
