@@ -34,6 +34,10 @@ export default function OnboardingCalendar() {
   };
 
   return (
+    // Wrap so the color-picker overlay (now a plain absolute overlay, not a
+    // Modal) has a full-screen root to fill — inside the scaffold's ScrollView
+    // it would size to the field, not the screen.
+    <View style={{ flex: 1 }}>
     <OnboardingScaffold
       step={2}
       kanji="暦"
@@ -86,16 +90,17 @@ export default function OnboardingCalendar() {
             </Tap>
           </View>
         </ScrollView>
-        <ColorPickerModal
-          visible={pickerOpen}
-          value={shownColor}
-          onConfirm={setColor}
-          onClose={() => setPickerOpen(false)}
-        />
         <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.fg4, marginTop: 10 }}>
           This calendar is yours alone and always stays with your account.
         </Text>
       </View>
     </OnboardingScaffold>
+    <ColorPickerModal
+      visible={pickerOpen}
+      value={shownColor}
+      onConfirm={setColor}
+      onClose={() => setPickerOpen(false)}
+    />
+    </View>
   );
 }

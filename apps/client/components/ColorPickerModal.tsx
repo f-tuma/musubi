@@ -1,7 +1,7 @@
 import { colors, fonts, styles } from "@/constants/theme";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
 import Animated from "react-native-reanimated";
-import { Modal, Pressable, View, Text, TextInput } from "react-native";
+import { Pressable, View, Text, TextInput, StyleSheet } from "react-native";
 import { useEffect, useRef, useState } from "react";
 import ColorPicker, { HueSlider, Panel1, Preview } from "reanimated-color-picker";
 import { Btn } from "@/components/ui/Btn";
@@ -47,15 +47,15 @@ export default function ColorPickerModal({ visible, value, onConfirm, onClose }:
     }
   };
 
+  // In-tree absolute overlay, NOT a RN <Modal>: this is opened from *inside*
+  // other modals (CreateCalendarModal) and modal-in-modal is broken on iOS (the
+  // inner one doesn't show and its transparent layer eats all touches). Works
+  // the same over a plain screen (onboarding). visible stays true through the
+  // exit fade (useModalAnimation delays onClose), so the fade-out still plays.
+  if (!visible) return null;
   return (
-    <Modal
-      visible={visible}
-      onRequestClose={handleClose}
-      animationType="none"
-      transparent={true}
-      statusBarTranslucent={true}
-    >
-      <Animated.View style={[styles.modalOverlay, fadeStyle]}>
+    <View style={[StyleSheet.absoluteFill, { zIndex: 1000 }]} pointerEvents="box-none">
+      <Animated.View style={[StyleSheet.absoluteFill, styles.modalOverlay, fadeStyle]}>
         <Pressable style={{ flex: 1 }} onPress={handleClose} />
       </Animated.View>
       <View
@@ -104,6 +104,6 @@ export default function ColorPickerModal({ visible, value, onConfirm, onClose }:
           </Pressable>
         </Animated.View>
       </View>
-    </Modal>
+    </View>
   );
 }
