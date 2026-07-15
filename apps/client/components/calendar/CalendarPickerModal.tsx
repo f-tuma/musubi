@@ -1,6 +1,7 @@
 import { colors, fonts, styles } from "@/constants/theme";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
-import { Modal, Pressable, Text, View, ScrollView } from "react-native";
+import { Pressable, Text, View, ScrollView } from "react-native";
+import { ModalPortal as Modal } from "@/components/ui/ModalPortal";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
