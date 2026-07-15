@@ -302,14 +302,17 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
               </View>
             </Animated.View >
           </GestureDetector>
+          {/* Rendered INSIDE the Modal window so its absolute overlay sits on
+              top of the sheet — as a Modal sibling it was a modal-in-modal
+              (broken on iOS: didn't show + ate touches). */}
+          <ColorPickerModal
+            visible={pickerOpen}
+            value={newColor}
+            onConfirm={setNewColor}
+            onClose={() => setPickerOpen(false)}
+          />
         </GestureHandlerRootView>
       </Modal >
-      <ColorPickerModal
-        visible={pickerOpen}
-        value={newColor}
-        onConfirm={setNewColor}
-        onClose={() => setPickerOpen(false)}
-      />
     </>
   );
 }
