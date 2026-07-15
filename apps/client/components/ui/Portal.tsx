@@ -27,18 +27,23 @@ export function PortalProvider({ children }: { children: ReactNode }) {
     }),
   };
 
+  const ids = Object.keys(nodes);
   return (
     <PortalContext.Provider value={ctx}>
       {children}
-      {/* box-none: the host itself never blocks touches; each overlay decides
-          for itself (a modal's own backdrop is what captures taps). */}
-      <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-        {Object.entries(nodes).map(([id, node]) => (
-          <View key={id} pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-            {node}
-          </View>
-        ))}
-      </View>
+      {/* Mount the host ONLY when something is portaled. An always-present
+          absoluteFill host — even with pointerEvents="box-none" — swallowed all
+          touches on Android (box-none pass-through to a lower-z sibling is
+          unreliable there); with no overlays there must be no host at all. */}
+      {ids.length > 0 && (
+        <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
+          {ids.map((id) => (
+            <View key={id} pointerEvents="box-none" style={StyleSheet.absoluteFill}>
+              {nodes[id]}
+            </View>
+          ))}
+        </View>
+      )}
     </PortalContext.Provider>
   );
 }
