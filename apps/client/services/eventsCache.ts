@@ -119,8 +119,12 @@ export async function getLastSync(): Promise<string | null> {
 }
 
 export async function setLastSync(iso: string) {
-  if (!iso || isNaN(new Date(iso).getTime())) return; // never persist a garbage cursor
-  await setMeta("lastSync", iso);
+  // Better Auth's fetch revives ISO fields to Date objects, so `iso` can actually
+  // arrive as a Date. Normalize to an ISO string — expo-sqlite (iOS) can't bind a
+  // Date and throws InvalidConvertibleException, which aborted the whole refresh.
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return; // never persist a garbage cursor
+  await setMeta("lastSync", d.toISOString());
 }
 
 // Settings snapshot (same blob pattern as calendars). Read back SYNCHRONOUSLY

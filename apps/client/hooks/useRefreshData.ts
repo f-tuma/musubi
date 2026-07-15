@@ -95,7 +95,7 @@ export function useRefreshData() {
     if (fixed.length) await cacheUpsertEvents(fixed);
 
     loadEvents(kept);
-    cacheSetCalendars(calendars);
+    await cacheSetCalendars(calendars);
     // fire-and-forget: drop reminders of gone events, refresh the rest
     reconcileEventNotifications(kept).catch(() => { });
   };
