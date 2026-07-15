@@ -13,12 +13,15 @@ function toRow(e: Event) {
     color: e.color,
     start: new Date(e.start).toISOString(),
     end: new Date(e.end).toISOString(),
-    isAllDay: e.isAllDay,
+    // expo-sqlite on iOS throws on an `undefined` bind (Android coerces to null),
+    // so every column must get a concrete value. organizer/isAllDay are NOT NULL
+    // in the schema → default them rather than null.
+    isAllDay: e.isAllDay ?? false,
     description: e.description ?? null,
     location: e.location ?? null,
     isCanceled: e.isCanceled ?? false,
     hasAttendees: e.hasAttendees ?? false,
-    organizer: e.organizer,
+    organizer: e.organizer ?? "",
     recurrence: e.recurrence ?? null,
     url: e.url ?? null,
     calendars: JSON.stringify(e.calendars ?? []),
