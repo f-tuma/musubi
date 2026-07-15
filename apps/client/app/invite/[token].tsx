@@ -1,7 +1,6 @@
 import { colors, fonts, styles } from "@/constants/theme";
 import { CalendarWithEvents } from "@musubi/types";
 import { useApi } from "@/services/api";
-import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useServer } from "@/contexts/ServerContext";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -15,7 +14,6 @@ import { useRefreshData } from "@/hooks/useRefreshData";
 export default function Invite() {
   const api = useApi();
   const { authClient, apiUrl } = useServer();
-  const { loadCalendars } = useCalendarsStore();
   const { token, server } = useLocalSearchParams();
   const router = useRouter();
   const refresh = useRefreshData();
@@ -150,7 +148,9 @@ export default function Invite() {
               await refresh();
             } else {
               await api.acceptInvite(calendarData?.id!, token as string);
-              loadCalendars(await api.getCalendars());
+              // Full (not delta) sync: the joined calendar's events predate our
+              // lastSync cursor, so a delta wouldn't pull them.
+              await refresh({ full: true });
             }
             success();
             router.canGoBack() ? router.back() : router.replace("/(tabs)");
