@@ -7,15 +7,15 @@
 const iosGoogleClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 const googleSignInPlugin = iosGoogleClientId
   ? ["@react-native-google-signin/google-signin", {
-      iosUrlScheme: `com.googleusercontent.apps.${iosGoogleClientId.replace(/\.apps\.googleusercontent\.com$/, "")}`,
-    }]
+    iosUrlScheme: `com.googleusercontent.apps.${iosGoogleClientId.replace(/\.apps\.googleusercontent\.com$/, "")}`,
+  }]
   : "@react-native-google-signin/google-signin";
 
 const expoConfig = {
   name: "Musubi",
   slug: "musubi",
   owner: "frgtn",
-  version: "0.0.16",
+  version: "0.0.17",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "musubi",
