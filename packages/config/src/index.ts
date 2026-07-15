@@ -41,6 +41,9 @@ type SocialConfig = {
   googleIOSClientID: string,
   googleClientSecret: string,
   appleClientID: string,
+  // Apple Developer Team ID (10 chars) — used to build the apple-app-site-
+  // association file for iOS universal links (seamless invite opening).
+  appleTeamID: string,
 }
 
 type SecurityConfig = {
@@ -86,6 +89,7 @@ const socialConfig: SocialConfig = {
   googleWebClientID: process.env.GOOGLE_WEB_CLIENT_ID ?? "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
   appleClientID: process.env.APPLE_CLIENT_ID ?? "",
+  appleTeamID: process.env.APPLE_TEAM_ID ?? "",
 }
 
 const securityConfig: SecurityConfig = {

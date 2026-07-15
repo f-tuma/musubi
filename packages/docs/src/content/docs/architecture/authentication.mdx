@@ -136,3 +136,14 @@ The iOS path has several sharp edges that don't exist on Android. If you're new 
 <Aside type="note">
 `app.config.ts` and `eas.json` hold all of the above. The `development`, `preview`, and `production` EAS profiles each carry the `EXPO_PUBLIC_GOOGLE_*` env; for TestFlight use the `production` profile (`distribution: store`) — `preview` is `internal` (ad-hoc) and won't reach TestFlight.
 </Aside>
+
+## Invite links (universal links on iOS)
+
+An invite is an `https://<server>/invite/<token>` link. Android opens the app directly via an `autoVerify` intent filter. iOS needs **universal links**:
+
+- **`ios.associatedDomains`** in `app.config.ts` (`applinks:musubi.frgtn.dev`, `applinks:dev-musubi.frgtn.dev`) — EAS syncs the Associated Domains capability to the App ID at build time.
+- **An [apple-app-site-association](https://developer.apple.com/documentation/xcode/supporting-associated-domains) file** served at `https://<server>/.well-known/apple-app-site-association` — the API's `handlerAppleAppSiteAssociation` builds it from `APPLE_TEAM_ID` (`<team>.dev.frgtn.musubi` → `/invite/*`). It 404s until `APPLE_TEAM_ID` is set; must be HTTPS, `application/json`, no redirect.
+
+<Aside type="caution">
+iOS fetches the AASA when the app is **installed**, so deploy the file **before** installing/reinstalling the build — otherwise universal links stay dormant until the OS re-checks. Without any of this, invites still work through the server's Safari **hand-off page** (`handlerInvitePage`), which deep-links into the app via the `musubi://` scheme — just with a Safari bounce.
+</Aside>
