@@ -11,6 +11,7 @@ import { ShipporiMinchoB1_400Regular } from '@expo-google-fonts/shippori-mincho-
 import { colors, styles } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { PortalProvider } from '@/components/ui/Portal';
 import { ToastHost } from '@/components/ui/Toast';
 import * as SystemUI from 'expo-system-ui';
 import semver from "semver";
@@ -189,7 +190,12 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ServerProvider>
-        <AppLoader />
+        {/* Portal host lives here — under ServerProvider (portaled modals keep
+            useServer) and SafeAreaProvider (expo-router root, above), and its
+            overlay host renders above AppLoader = above every screen. */}
+        <PortalProvider>
+          <AppLoader />
+        </PortalProvider>
       </ServerProvider>
       <ToastHost />
     </GestureHandlerRootView>
