@@ -1,4 +1,4 @@
-import { config } from "@musubi/config";
+import { config, logger } from "@musubi/config";
 import { auth } from "@musubi/auth";
 import { deleteExpiredInvites, deleteExpiredSessions, purgeDeletedEvents } from "@musubi/db";
 import { toNodeHandler } from "better-auth/node";
@@ -32,6 +32,8 @@ const allowedOrigins = [
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 
+// First so even parser/CORS failures receive a correlation id and completion log.
+app.use(middlewareLogHandler);
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -43,7 +45,6 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json({ limit: "512kb" })); // avatars arrive as base64 JSON
-app.use(middlewareLogHandler);
 
 // Better Auth owns everything under /api/auth (sign-in/up, sessions, reset).
 app.all("/api/auth/{*any}", toNodeHandler(auth));
@@ -131,17 +132,28 @@ app.get("/api/v1/users/:userId/avatar", wrap(handlerGetAvatar)); // public — <
 // Error middleware must be registered last so it catches everything above.
 app.use(middlewareErrorHandler);
 
-app.listen(port, "0.0.0.0")
+app.listen(port, "0.0.0.0", () => {
+  logger.info("server.started", {
+    port,
+    environment: config.api.environment,
+    logLevel: config.api.logLevel,
+    externalSyncIntervalMin: config.api.externalSyncIntervalMin,
+  });
+});
 
 // Periodic cleanup of expired rows (Postgres has no native row TTL).
 // Scheduling lives here (app concern); the deletes live in @musubi/db.
 async function cleanupExpired() {
+  const startedAt = performance.now();
   try {
     await deleteExpiredInvites();
     await deleteExpiredSessions();
     await purgeDeletedEvents(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)); // tombstones > 30d
+    logger.debug("cleanup.completed", {
+      durationMs: Math.round((performance.now() - startedAt) * 10) / 10,
+    });
   } catch (e) {
-    console.error("Cleanup job failed:", e);
+    logger.error("cleanup.failed", { error: e });
   }
 }
 cleanupExpired();                          // run once at boot (setInterval's first tick is delayed)
@@ -154,13 +166,29 @@ setInterval(cleanupExpired, 60 * 60 * 1000); // then hourly
 // public HTTPS endpoint + channel renewal (self-host-unfriendly), and CalDAV has
 // no push protocol at all. EXTERNAL_SYNC_INTERVAL_MIN=0 disables.
 if (config.api.externalSyncIntervalMin > 0) {
+  logger.info("sync.scheduler.enabled", { intervalMin: config.api.externalSyncIntervalMin });
   setInterval(async () => {
+    const startedAt = performance.now();
     try {
-      for (const userID of await getExternalSyncUserIDs()) {
-        await syncUser(userID); // per-provider errors are caught inside
+      const userIDs = await getExternalSyncUserIDs();
+      let changedCalendars = 0;
+      for (const userID of userIDs) {
+        changedCalendars += (await syncUser(userID)).length; // per-provider errors are caught inside
       }
+      const fields = {
+        users: userIDs.length,
+        changedCalendars,
+        durationMs: Math.round((performance.now() - startedAt) * 10) / 10,
+      };
+      if (changedCalendars > 0) logger.info("sync.scheduler.completed", fields);
+      else logger.debug("sync.scheduler.completed", fields);
     } catch (e) {
-      console.error("Scheduled external sync failed:", e);
+      logger.error("sync.scheduler.failed", {
+        durationMs: Math.round((performance.now() - startedAt) * 10) / 10,
+        error: e,
+      });
     }
   }, config.api.externalSyncIntervalMin * 60 * 1000);
+} else {
+  logger.info("sync.scheduler.disabled");
 }

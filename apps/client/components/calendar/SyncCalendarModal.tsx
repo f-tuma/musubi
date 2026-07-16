@@ -19,7 +19,7 @@ type Step = "providers" | "apple" | "caldav";
 type Props = {
   visible: boolean;
   onClose: () => void;
-  onConnected: () => void;
+  onConnected: (provider: "google" | "caldav") => void;
   /** Where the OAuth round-trip lands — onboarding passes its own step so
    *  connecting doesn't dump the user into the app. */
   callbackURL?: string;
@@ -58,7 +58,7 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
       });
       if (error) throw new Error(error.message ?? "Google connect failed");
       haptics.success();
-      onConnected();
+      onConnected("google");
       handleClose();
     } catch (e: any) {
       haptics.warn();
@@ -79,11 +79,14 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
     try {
       await api.connectCaldav(url, username, password);
       haptics.success();
-      onConnected();
+      onConnected("caldav");
       handleClose();
-    } catch {
+    } catch (e: any) {
       haptics.warn();
-      setError("Could not connect — check your credentials.");
+      // The server distinguishes credential/discovery failures from a failed
+      // initial event import. Surface that distinction instead of replacing
+      // every failure with the same credentials hint.
+      setError(e?.message?.replace(/^\d+:\s*/, "") ?? "Could not connect — check your credentials.");
     } finally {
       setIsLoading(false);
     }

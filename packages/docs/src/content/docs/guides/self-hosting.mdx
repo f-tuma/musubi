@@ -34,11 +34,18 @@ Edit `.env` with your production values. Key variables:
 | `BETTER_AUTH_SECRET` | Long random secret — generate with `openssl rand -base64 32` |
 | `BETTER_AUTH_URL` | The public URL of your API, e.g. `https://musubi.yourdomain.com` |
 | `ENVIRONMENT` | Set to anything other than `dev` for production |
+| `LOG_LEVEL` | Server verbosity: `debug`, `info`, `warn`, `error`, or `silent`; defaults to `info` |
 | `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth credentials — needed for Google sign-in and Google Calendar sync |
 | `APPLE_CLIENT_ID` | Enables native Sign in with Apple (iOS) — set to the app bundle id (`dev.frgtn.musubi`); the server verifies the identity token's audience against it |
 | `APPLE_TEAM_ID` | Apple Developer Team ID — serves the apple-app-site-association file so iOS invite links open the app directly (universal links). Optional; unset → the Safari hand-off still works |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL` | Outgoing mail for password-reset emails |
 | `CALDAV_ENC_KEY` | Encrypts stored CalDAV passwords — required before anyone connects a CalDAV account |
+
+The API writes one JSON object per log line to stdout/stderr, which works directly
+with Docker, Dokploy, and most log collectors. Every HTTP response includes an
+`x-request-id` header; the same id appears in request, auth, and error logs. Set
+`LOG_LEVEL=debug` temporarily for per-account and per-calendar provider-sync
+counts and timings. Logs never include request bodies, passwords, or tokens.
 
 <Aside type="caution">
 Required to boot: the `POSTGRES_*` credentials, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, and `ENVIRONMENT`. The Google, SMTP, and `CALDAV_ENC_KEY` variables are optional — the API starts without them and the matching feature just stays off until you set it.

@@ -1,4 +1,5 @@
 import { Event } from "@musubi/types";
+import { logger } from "@musubi/config";
 import {
   deleteExternalEvent,
   getCalendarMembers,
@@ -54,8 +55,11 @@ export async function syncProvider(
   userID: string,
   account: { id: string; label: string },
 ) {
+  const startedAt = performance.now();
   const provider = adapter.provider;
   const accountId = account.id;
+
+  logger.debug("sync.account.started", { provider, userId: userID, accountId });
 
   // keep the human label fresh on this account's calendars
   await setAccountLabel(provider, userID, accountId, account.label);
@@ -63,6 +67,12 @@ export async function syncProvider(
   // 1. reconcile the calendar list
   const remote = await adapter.listCalendars(userID, accountId);
   const remoteIDs = new Set(remote.map((c) => c.externalId));
+  logger.debug("sync.account.calendars_discovered", {
+    provider,
+    userId: userID,
+    accountId,
+    calendars: remote.length,
+  });
 
   // remote calendar gone -> drop the Musubi mirror (removeCalendar handles orphan events)
   for (const link of await getUserExternalCalendars(provider, userID, accountId)) {
@@ -88,6 +98,7 @@ export async function syncProvider(
   // upsert makes a CalDAV full-fetch a quiet no-op when nothing moved.
   const changedCalendarIDs: string[] = [];
   for (const link of await getUserExternalCalendars(provider, userID, accountId)) {
+    const calendarStartedAt = performance.now();
     const { changes, nextCursor, reset } = await adapter.fetchChanges(
       userID,
       accountId,
@@ -120,7 +131,25 @@ export async function syncProvider(
 
     if (changed > 0) changedCalendarIDs.push(link.calendarID);
     await setCursor(link.calendarID, nextCursor);
+    logger.debug("sync.calendar.completed", {
+      provider,
+      userId: userID,
+      accountId,
+      calendarId: link.calendarID,
+      fetchedEvents: changes.length,
+      changedEvents: changed,
+      fullSet: !!reset,
+      durationMs: Math.round((performance.now() - calendarStartedAt) * 10) / 10,
+    });
   }
+  logger.debug("sync.account.completed", {
+    provider,
+    userId: userID,
+    accountId,
+    calendars: remote.length,
+    changedCalendars: changedCalendarIDs.length,
+    durationMs: Math.round((performance.now() - startedAt) * 10) / 10,
+  });
   return changedCalendarIDs;
 }
 
@@ -129,15 +158,31 @@ export async function syncProvider(
 // When anything actually changed, the affected calendars' members get an SSE
 // "external_sync" nudge — connected clients run a silent delta refresh, which is
 // what makes provider changes land in the app without a manual pull-to-refresh.
-export async function syncUser(userID: string) {
+type SyncUserOptions = {
+  /** Limit a strict, user-triggered sync to the account that initiated it. */
+  provider?: string;
+  accountId?: string;
+  /** Scheduled sync stays best-effort; connect flows use this to fail loudly. */
+  throwOnError?: boolean;
+};
+
+export async function syncUser(userID: string, options: SyncUserOptions = {}) {
   const changedCalendarIDs: string[] = [];
   for (const adapter of Object.values(adapters)) {
+    if (options.provider && adapter.provider !== options.provider) continue;
     try {
       for (const account of await adapter.listAccounts(userID)) {
+        if (options.accountId && account.id !== options.accountId) continue;
         changedCalendarIDs.push(...await syncProvider(adapter, userID, account));
       }
     } catch (e) {
-      console.error(`Sync ${adapter.provider} failed:`, e);
+      logger.error("sync.account.failed", {
+        provider: adapter.provider,
+        userId: userID,
+        accountId: options.accountId,
+        error: e,
+      });
+      if (options.throwOnError) throw e;
     }
   }
 
@@ -181,7 +226,15 @@ export async function pushEventToCalendars(event: Event, calendarIDs: string[], 
         }
       }
     } catch (e) {
-      console.error(`Push (${action}) to ${link.provider} failed:`, e);
+      logger.error("sync.push.failed", {
+        action,
+        provider: link.provider,
+        userId: link.userID,
+        accountId: link.accountID,
+        calendarId: calendarID,
+        eventId: event.id,
+        error: e,
+      });
     }
   }
 }

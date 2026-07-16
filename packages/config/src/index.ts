@@ -2,9 +2,14 @@ import dotenv from "dotenv";
 import { expand } from "dotenv-expand";
 import path from "path";
 import { fileURLToPath } from "url";
+import { parseLogLevel, StructuredLogger, type LogLevel } from "./logger";
+
+export { LOG_LEVELS, StructuredLogger, type LogFields, type LogLevel } from "./logger";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const parsed = dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
+// Keep stdout/stderr machine-readable: newer dotenv versions print banners by
+// default, which would otherwise break the logger's one-JSON-object-per-line format.
+const parsed = dotenv.config({ path: path.resolve(__dirname, "../../../.env"), quiet: true });
 expand(parsed);
 
 function envOrThrow(key: string) {
@@ -22,6 +27,7 @@ type APIConfig = {
   // Minutes between scheduled external-provider syncs (Google/CalDAV polling
   // → SSE broadcast). 0 disables the scheduler.
   externalSyncIntervalMin: number,
+  logLevel: LogLevel,
 }
 
 type DBConfig = {
@@ -69,9 +75,8 @@ const apiConfig: APIConfig = {
   externalSyncIntervalMin: process.env.EXTERNAL_SYNC_INTERVAL_MIN === undefined
     ? 5
     : Number(process.env.EXTERNAL_SYNC_INTERVAL_MIN) || 0, // unparsable/0 → disabled
+  logLevel: parseLogLevel(process.env.LOG_LEVEL ?? "info"),
 }
-
-console.log(`USING PORT: ${apiConfig.port}`)
 
 // SMTP + Google are OPTIONAL — the API boots without them so local dev doesn't
 // need mail or OAuth set up. The features that use them fail/verify at call time
@@ -104,3 +109,7 @@ export const config: Config = {
   security: securityConfig,
 }
 
+// One process-wide logger shared by the API and its server-side packages.
+// AsyncLocalStorage lets request middleware attach correlation fields once and
+// have them appear in deeper auth/sync logs without threading ids everywhere.
+export const logger = new StructuredLogger(apiConfig.logLevel);

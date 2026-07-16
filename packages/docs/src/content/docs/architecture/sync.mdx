@@ -87,6 +87,12 @@ Mirrors are editable and deletable from Musubi, and `POST /calendars` can create
 
 `syncUser(userID)` loops every connected provider, each wrapped in try/catch so one provider failing doesn't abort the rest. A missing adapter for a provider is logged and skipped.
 
+The CalDAV connect handler uses the same path in an account-scoped strict mode
+(`syncUser(userID, { provider: "caldav", accountId, throwOnError: true })`). This
+makes the first calendar/event import part of a successful connection and returns
+an import failure to the client. Scheduled syncs keep the default best-effort
+behaviour.
+
 ## Near-realtime: the scheduled sync
 
 Provider changes reach the app without a manual pull-to-refresh through a three-piece loop:

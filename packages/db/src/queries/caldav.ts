@@ -10,12 +10,14 @@ export async function saveCaldavAccount(
   username: string,
   encryptedPassword: string,
 ) {
-  await db.insert(caldavAccounts)
+  const [account] = await db.insert(caldavAccounts)
     .values({ userID, serverUrl, username, encryptedPassword })
     .onConflictDoUpdate({
       target: [caldavAccounts.userID, caldavAccounts.serverUrl, caldavAccounts.username],
       set: { encryptedPassword },
-    });
+    })
+    .returning({ id: caldavAccounts.id });
+  return account;
 }
 
 // account ids (uuid) for this user — used by the adapter's listAccounts.

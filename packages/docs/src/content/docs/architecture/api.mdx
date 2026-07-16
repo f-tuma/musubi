@@ -79,6 +79,22 @@ if (start > end) throw new BadRequestError("Start must precede end.");
 
 Query modules return `undefined`/`[]` for "not found" — the handler decides whether that's a 404.
 
+## Structured logging
+
+The shared logger exported by `@musubi/config` emits one JSON object per line.
+`middlewareLogHandler` assigns every request an `x-request-id`, stores it in an
+`AsyncLocalStorage` context, and returns it as a response header. Logs produced
+deeper in auth, handlers, or sync automatically carry that id; authenticated
+requests also carry the internal `userId`. Route patterns are logged instead of
+concrete URLs so invite and auth tokens in paths are not exposed. Request bodies,
+credentials, and bearer tokens are never logged.
+
+`LOG_LEVEL` accepts `debug`, `info`, `warn`, `error`, or `silent` and defaults to
+`info`. Successful HTTP requests are `info`, 4xx responses are `warn`, and 5xx
+responses are `error`. Provider-sync counts and timings are `debug`; turn that
+level on temporarily when diagnosing Google or CalDAV without making normal
+production logs excessively noisy.
+
 ### The server trusts nothing from the client
 
 Client-side checks (the composer's validation, the same-server guard, federation routing) are **UX only** — every guarantee is re-established here:

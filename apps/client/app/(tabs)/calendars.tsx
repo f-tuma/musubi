@@ -162,7 +162,9 @@ export default function CalendarsTab() {
         onClose={() => setSyncModalVisible(false)}
         // Full (not delta) sync: a newly connected account's events predate the
         // delta cursor, so a delta wouldn't pull them (same trap as invite join).
-        onConnected={() => { refresh({ full: true }).catch(() => { }); }}
+        onConnected={(provider) => {
+          refresh({ full: true, providerSync: provider !== "caldav" }).catch(() => { });
+        }}
       />
       <CalendarDetail
         calendar={prefilledCalendar}

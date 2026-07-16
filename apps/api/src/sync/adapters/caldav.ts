@@ -1,6 +1,7 @@
 import ICAL from "ical.js";
 import { randomUUID } from "crypto";
 import { Event } from "@musubi/types";
+import { logger } from "@musubi/config";
 import { getCaldavAccountById, getCaldavAccountsByUser } from "@musubi/db";
 import { CalendarAdapter, ExternalCalendarInfo, FetchChangesResult, NormalizedEvent } from "../adapter";
 import { createCaldavClient } from "../caldav_client";
@@ -183,7 +184,16 @@ export const caldavAdapter: CalendarAdapter = {
     const cals = await client.fetchCalendars();
     const cal = cals.find((c) => c.url === externalCalendarId);
     if (!cal) {
-      console.warn(`[caldav] calendar NOT found for ${externalCalendarId}; available: ${cals.map((c) => c.url).join(" | ")}`);
+      logger.warn("caldav.calendar.not_found", {
+        accountId,
+        externalCalendarId,
+        availableCalendars: cals.length,
+      });
+      logger.debug("caldav.calendar.not_found.details", {
+        accountId,
+        externalCalendarId,
+        availableExternalCalendarIds: cals.map((c) => c.url),
+      });
       return { changes: [], nextCursor: null };
     }
 
@@ -201,7 +211,12 @@ export const caldavAdapter: CalendarAdapter = {
     const changes = objects
       .map((o) => icalToNormalized(o))
       .filter((e): e is NormalizedEvent => e !== null);
-    console.log(`[caldav] ${externalCalendarId} → objects=${objects.length} parsed=${changes.length}`);
+    logger.debug("caldav.events.fetched", {
+      accountId,
+      externalCalendarId,
+      objects: objects.length,
+      parsedEvents: changes.length,
+    });
 
     // ponytail: full fetch + reset every sync — simple and handles deletions.
     // Upgrade to WebDAV sync-collection (cursor = syncToken) if calendars grow.

@@ -1,15 +1,16 @@
 import { NextFunction, Request, Response } from "express";
 import { AppError } from "@musubi/types";
+import { logger } from "@musubi/config";
 
 
 export function middlewareErrorHandler(
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) {
-  let statusCode: number = 500;
-  let errorMessage: String = "500 - Internal Server Errors";
+  let statusCode = 500;
+  let errorMessage: string = "500 - Internal Server Error";
   const appError = err as AppError;
   switch (appError.kind) {
     case "BadRequest":
@@ -31,8 +32,26 @@ export function middlewareErrorHandler(
     default:
       break;
   }
-  console.error(err.message);
+
+  const fields = {
+    requestId: req.requestId,
+    method: req.method,
+    route: typeof req.route?.path === "string" ? req.route.path : "<unmatched>",
+    status: statusCode,
+    ...(req.user?.id ? { userId: req.user.id } : {}),
+  };
+  if (statusCode >= 500) {
+    logger.error("http.request.failed", { ...fields, error: err });
+  } else {
+    logger.warn("http.request.rejected", {
+      ...fields,
+      errorName: err.name,
+      errorMessage: err.message,
+    });
+  }
+
   res.status(statusCode).json({
     error: errorMessage,
+    requestId: req.requestId,
   });
 }

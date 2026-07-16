@@ -7,8 +7,10 @@ import {
   saveCaldavAccount,
 } from "@musubi/db";
 import { BadRequestError } from "@musubi/types";
+import { logger } from "@musubi/config";
 import { encryptSecret } from "../sync/crypto";
 import { createCaldavClient } from "../sync/caldav_client";
+import { syncUser } from "../sync/engine";
 
 export async function handlerConnectCaldav(req: Request, res: Response) {
   // Trim: pasted app-specific passwords routinely carry a trailing space/newline
@@ -25,12 +27,39 @@ export async function handlerConnectCaldav(req: Request, res: Response) {
     const client = await createCaldavClient(serverUrl, username, password);
     await client.fetchCalendars();
   } catch (err) {
-    console.error("CalDAV connect failed:", serverUrl, username, err);
+    logger.warn("caldav.connect.discovery_failed", {
+      userId: req.user!.id,
+      serverOrigin: safeOrigin(serverUrl),
+      error: err,
+    });
     throw new BadRequestError("Could not connect to CalDAV server — check URL and credentials. (iCloud requires an app-specific password.)");
   }
 
-  await saveCaldavAccount(req.user!.id, serverUrl, username, encryptSecret(password));
+  const account = await saveCaldavAccount(req.user!.id, serverUrl, username, encryptSecret(password));
+
+  // Connecting is not complete until the account's calendars and events can be
+  // imported. Keep this strict (unlike the scheduled best-effort sync) so the
+  // client never reports success after discovery passed but event fetching did
+  // not — notably the failure mode iCloud had with calendar-query REPORTs.
+  try {
+    await syncUser(req.user!.id, { provider: "caldav", accountId: account.id, throwOnError: true });
+  } catch (err) {
+    logger.warn("caldav.connect.initial_sync_failed", {
+      userId: req.user!.id,
+      accountId: account.id,
+      serverOrigin: safeOrigin(serverUrl),
+      error: err,
+    });
+    const detail = err instanceof Error ? ` ${err.message}` : "";
+    throw new BadRequestError(`Credentials were accepted, but the initial calendar sync failed.${detail}`);
+  }
+
   res.sendStatus(200);
+}
+
+function safeOrigin(serverUrl: string) {
+  try { return new URL(serverUrl).origin; }
+  catch { return "invalid-url"; }
 }
 
 export async function handlerCheckCaldavStatus(req: Request, res: Response) {

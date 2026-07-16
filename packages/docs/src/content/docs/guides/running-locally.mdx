@@ -45,6 +45,7 @@ Then edit `.env`. The **required** variables (the API won't boot without them) a
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL` | Password-reset (and other) emails |
 | `CALDAV_ENC_KEY` | Connecting CalDAV accounts and storing federated Musubi connections (encrypts stored secrets) — generate with `openssl rand -hex 32` |
 | `EXTERNAL_SYNC_INTERVAL_MIN` | Minutes between scheduled Google/CalDAV syncs (live updates for members). Defaults to `5`; set `0` to disable |
+| `LOG_LEVEL` | Server verbosity: `debug`, `info`, `warn`, `error`, or `silent`. Defaults to `info`; use `debug` when tracing sync |
 
 <Aside type="caution">
 `BETTER_AUTH_URL` must be the origin only — no `/api` suffix. Both the client and Better Auth append their own paths to it. If you set it to `http://localhost:7531/api`, requests will land at `/api/api/...` and fail.

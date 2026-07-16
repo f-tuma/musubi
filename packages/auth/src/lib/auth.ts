@@ -3,7 +3,7 @@ import { bearer } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { createCalendar, db, getUserSettings, schema } from '@musubi/db';
-import { config } from '@musubi/config';
+import { config, logger } from '@musubi/config';
 import { sendEmail } from '../../../../apps/api/src/emails';
 import { getPasswordResetHtml } from '../../../../apps/api/src/emails/password_reset';
 
@@ -72,7 +72,7 @@ export const auth = betterAuth({
             await createCalendar({ name: user.name?.trim() || "Personal", color: "#C8553D", creatorID: user.id, isDefault: true });
           } catch (e) {
             // Never block registration on this; onboarding self-heals a miss.
-            console.error("Failed to create personal calendar for", user.id, e);
+            logger.error("auth.signup.personal_calendar_failed", { userId: user.id, error: e });
           }
           try {
             // Materialize the settings row now (onboarded=false) so the client's
@@ -80,7 +80,7 @@ export const auth = betterAuth({
             // lazy create left new users with no row (and PUT settings 404s).
             await getUserSettings(user.id);
           } catch (e) {
-            console.error("Failed to create settings for", user.id, e);
+            logger.error("auth.signup.settings_failed", { userId: user.id, error: e });
           }
         },
       },

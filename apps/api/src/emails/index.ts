@@ -1,4 +1,4 @@
-import { config } from "@musubi/config";
+import { config, logger } from "@musubi/config";
 import nodemailer from "nodemailer";
 
 export async function sendEmail(to: string, subject: string, html: string) {
@@ -24,9 +24,9 @@ export async function sendEmail(to: string, subject: string, html: string) {
 
     // Send the email
     const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent:', info.messageId);
+    logger.info("email.sent", { messageId: info.messageId });
   } catch (error) {
-    console.error('Error sending email:', error);
+    logger.error("email.send_failed", { error });
     throw error;
   }
   return;
