@@ -19,6 +19,7 @@ import { notifyCalendarMembers } from "../handlers/stream";
 import { CalendarAdapter, NormalizedEvent } from "./adapter";
 import { googleAdapter } from "./adapters/google";
 import { caldavAdapter } from "./adapters/caldav";
+import { providerAuthErrorFields } from "./errors";
 
 // provider -> adapter. Register new providers here.
 const adapters: Record<string, CalendarAdapter> = {
@@ -170,19 +171,35 @@ export async function syncUser(userID: string, options: SyncUserOptions = {}) {
   const changedCalendarIDs: string[] = [];
   for (const adapter of Object.values(adapters)) {
     if (options.provider && adapter.provider !== options.provider) continue;
+
+    let accounts: { id: string; label: string }[];
     try {
-      for (const account of await adapter.listAccounts(userID)) {
-        if (options.accountId && account.id !== options.accountId) continue;
-        changedCalendarIDs.push(...await syncProvider(adapter, userID, account));
-      }
+      accounts = await adapter.listAccounts(userID);
     } catch (e) {
-      logger.error("sync.account.failed", {
+      logger.error("sync.provider.failed", {
         provider: adapter.provider,
         userId: userID,
-        accountId: options.accountId,
         error: e,
+        ...providerAuthErrorFields(e),
       });
       if (options.throwOnError) throw e;
+      continue;
+    }
+
+    for (const account of accounts) {
+      if (options.accountId && account.id !== options.accountId) continue;
+      try {
+        changedCalendarIDs.push(...await syncProvider(adapter, userID, account));
+      } catch (e) {
+        logger.error("sync.account.failed", {
+          provider: adapter.provider,
+          userId: userID,
+          accountId: account.id,
+          error: e,
+          ...providerAuthErrorFields(e),
+        });
+        if (options.throwOnError) throw e;
+      }
     }
   }
 

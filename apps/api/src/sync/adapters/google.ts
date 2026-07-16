@@ -1,5 +1,10 @@
-import { auth } from "@musubi/auth";
-import { getGoogleAccountIDs } from "@musubi/db";
+import { config } from "@musubi/config";
+import {
+  getGoogleAccountIDs,
+  getGoogleOAuthCredentials,
+  markGoogleAccountReconnectRequired,
+  updateGoogleOAuthTokens,
+} from "@musubi/db";
 import { Event } from "@musubi/types";
 import {
   CalendarAdapter,
@@ -7,8 +12,10 @@ import {
   FetchChangesResult,
   NormalizedEvent,
 } from "../adapter";
+import { ProviderAuthError } from "../errors";
 
 const GCAL = "https://www.googleapis.com/calendar/v3";
+const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
 // Error with Google's own message when available ("Cannot delete primary
 // calendar", …) — status text alone is useless to the user.
@@ -33,10 +40,82 @@ async function patchCalendarColor(accessToken: string, calendarId: string, color
 }
 
 async function getAccessToken(userID: string, accountId: string) {
-  const { accessToken } = await auth.api.getAccessToken({
-    body: { providerId: "google", userId: userID, accountId },
+  const credentials = await getGoogleOAuthCredentials(userID, accountId);
+  if (!credentials) {
+    throw new ProviderAuthError("google", "account_not_found", undefined, false);
+  }
+  if (credentials.syncStatus === "reconnect_required") {
+    throw new ProviderAuthError(
+      "google",
+      credentials.syncErrorCode ?? "reconnect_required",
+      credentials.syncErrorSubtype ?? undefined,
+      true,
+    );
+  }
+
+  const expiresAt = credentials.accessTokenExpiresAt?.getTime();
+  if (credentials.accessToken && expiresAt && expiresAt - Date.now() >= 5_000) {
+    return credentials.accessToken;
+  }
+
+  if (!credentials.refreshToken) {
+    await markGoogleAccountReconnectRequired(userID, accountId, "missing_refresh_token");
+    throw new ProviderAuthError("google", "missing_refresh_token", undefined, true);
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(GOOGLE_TOKEN_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: credentials.refreshToken,
+        client_id: config.social.googleWebClientID,
+        client_secret: config.social.googleClientSecret,
+      }),
+    });
+  } catch {
+    throw new ProviderAuthError("google", "token_endpoint_unreachable", undefined, false);
+  }
+
+  const payload = await response.json().catch(() => ({})) as {
+    access_token?: string;
+    refresh_token?: string;
+    expires_in?: number;
+    error?: unknown;
+    error_subtype?: unknown;
+  };
+
+  if (!response.ok) {
+    const code = safeOAuthCode(payload.error) ?? `http_${response.status}`;
+    const subtype = safeOAuthCode(payload.error_subtype);
+    const reconnectRequired = code === "invalid_grant";
+    if (reconnectRequired) {
+      await markGoogleAccountReconnectRequired(userID, accountId, code, subtype);
+    }
+    throw new ProviderAuthError("google", code, subtype, reconnectRequired);
+  }
+
+  if (!payload.access_token) {
+    throw new ProviderAuthError("google", "invalid_token_response", undefined, false);
+  }
+
+  const accessTokenExpiresAt = new Date(Date.now() + validExpiresIn(payload.expires_in) * 1_000);
+  await updateGoogleOAuthTokens(userID, accountId, {
+    accessToken: payload.access_token,
+    accessTokenExpiresAt,
+    refreshToken: payload.refresh_token,
   });
-  return accessToken;
+  return payload.access_token;
+}
+
+function safeOAuthCode(value: unknown) {
+  return typeof value === "string" && /^[a-z0-9_.-]{1,64}$/i.test(value) ? value : undefined;
+}
+
+function validExpiresIn(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 3_600;
 }
 
 // "What UTC instant is <local wall-clock time> in <tz>?" — via Intl, no tz lib.
