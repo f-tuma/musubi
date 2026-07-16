@@ -15,6 +15,8 @@ export const CalendarSchema = z.object({
   accountId: z.string().nullish(),
   accountLabel: z.string().nullish(),
   serverUrl: z.string().nullish(), // caldav only — icloud.com host = Apple Calendar
+  syncStatus: z.enum(["active", "reconnect_required"]).nullish(),
+  syncErrorCode: z.string().nullish(),
 });
 
 // Which icon/name to show for a calendar's sync origin ("apple" is caldav

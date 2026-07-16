@@ -21,6 +21,7 @@ import { handlerDisconnectAccount } from "./handlers/connections";
 import { handlerDeleteMusubiAccount, handlerFederationAccept, handlerGetMusubiAccounts, handlerInvitePage, handlerSaveMusubiAccount } from "./handlers/federation";
 import { syncUser } from "./sync/engine";
 import { getExternalSyncUserIDs } from "@musubi/db";
+import { middlewareMetrics, startMetricsServer } from "./metrics";
 
 const app = express()
 const port = config.api.port;
@@ -32,7 +33,8 @@ const allowedOrigins = [
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 
-// First so even parser/CORS failures receive a correlation id and completion log.
+// First so even parser/CORS failures are measured and receive a correlation id.
+app.use(middlewareMetrics);
 app.use(middlewareLogHandler);
 app.use(cors({
   origin: (origin, callback) => {
@@ -140,6 +142,12 @@ app.listen(port, "0.0.0.0", () => {
     externalSyncIntervalMin: config.api.externalSyncIntervalMin,
   });
 });
+
+if (config.api.metricsPort > 0) {
+  startMetricsServer(config.api.metricsPort);
+} else {
+  logger.info("metrics.server.disabled");
+}
 
 // Periodic cleanup of expired rows (Postgres has no native row TTL).
 // Scheduling lives here (app concern); the deletes live in @musubi/db.

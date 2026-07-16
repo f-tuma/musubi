@@ -16,7 +16,7 @@ export function handlerServerStatus(_: Request, res: Response) {
 }
 
 export function handlerServer(_: Request, res: Response) {
-  res.status(200).json({ minClientVersion: "0.0.17", socials: enabledSocials() });
+  res.status(200).json({ minClientVersion: "0.0.18", socials: enabledSocials() });
 }
 
 // Apple universal links: iOS fetches this to learn which app owns which paths

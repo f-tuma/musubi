@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   caldavAccounts,
+  account,
   calendarEvents,
   calendarMembers,
   calendars,
@@ -96,9 +97,16 @@ export async function getExternalLinkForCalendar(calendarID: string) {
       accountID: externalCalendars.accountID,
       accountLabel: externalCalendars.accountLabel,
       serverUrl: caldavAccounts.serverUrl,
+      syncStatus: account.syncStatus,
+      syncErrorCode: account.syncErrorCode,
     })
     .from(externalCalendars)
     .leftJoin(caldavAccounts, eq(externalCalendars.accountID, sql`${caldavAccounts.id}::text`))
+    .leftJoin(account, and(
+      eq(externalCalendars.provider, account.providerId),
+      eq(externalCalendars.userID, account.userId),
+      eq(externalCalendars.accountID, account.accountId),
+    ))
     .where(eq(externalCalendars.calendarID, calendarID));
   return res ?? null;
 }

@@ -20,6 +20,8 @@ export type CalendarGroup = {
   native?: boolean;             // the Musubi group — pinned first, header not draggable
   provider?: string;
   accountId?: string;
+  syncStatus?: Calendar["syncStatus"];
+  syncErrorCode?: string | null;
   calendars: Calendar[];
 };
 
@@ -33,6 +35,7 @@ type Props = {
   eventCount: Record<string, number>;
   onOpen: (c: Calendar) => void;
   onDisconnect: (g: CalendarGroup) => void;
+  onReconnect: (g: CalendarGroup) => void;
   /** Called with the full new flat calendar-id order after any drag. */
   onReorder: (ids: string[]) => void;
 };
@@ -50,7 +53,7 @@ export function ProviderIcon({ provider }: { provider?: string | null }) {
 // baseY + dragY; at commit its topSV is set to that exact pixel in the same
 // batch, so the formula switch can't move it, and the slot-sync effect then
 // glides it into its final place.
-export function ReorderableCalendarList({ groups, eventCount, onOpen, onDisconnect, onReorder }: Props) {
+export function ReorderableCalendarList({ groups, eventCount, onOpen, onDisconnect, onReconnect, onReorder }: Props) {
   const [drag, setDrag] = useState<DragState>(null);
   const dragRef = useRef<DragState>(null);
   const dragY = useSharedValue(0);
@@ -195,6 +198,7 @@ export function ReorderableCalendarList({ groups, eventCount, onOpen, onDisconne
             group={g}
             draggable={!g.native}
             onDisconnect={g.native ? undefined : () => onDisconnect(g)}
+            onReconnect={g.syncStatus === "reconnect_required" ? () => onReconnect(g) : undefined}
             onDragStart={() => beginGroup(g.key)}
             onDragMove={moveGroup}
             onDragEnd={commit}
@@ -290,10 +294,11 @@ function PositionedItem({ id, y, dragged, baseY, dragY, lift, registry, onMeasur
   );
 }
 
-function SectionHeader({ group, draggable, onDisconnect, onDragStart, onDragMove, onDragEnd, dragY, lift }: {
+function SectionHeader({ group, draggable, onDisconnect, onReconnect, onDragStart, onDragMove, onDragEnd, dragY, lift }: {
   group: CalendarGroup;
   draggable: boolean;
   onDisconnect?: () => void;
+  onReconnect?: () => void;
   onDragStart: () => void;
   onDragMove: (ty: number) => void;
   onDragEnd: () => void;
@@ -318,17 +323,29 @@ function SectionHeader({ group, draggable, onDisconnect, onDragStart, onDragMove
 
   return (
     <GestureDetector gesture={gesture}>
-      <Tap
-        disabled={!onDisconnect}
-        onPress={onDisconnect}
-        style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.bg1 }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.bg1 }}>
+        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8, marginRight: 12 }}>
           {draggable && <Feather name="menu" size={11} color={colors.fg4} />}
-          <Text style={{ fontFamily: fonts.sansMedium, fontSize: 11, color: colors.fg3, letterSpacing: 0.5, textTransform: "uppercase" }}>{group.title}</Text>
+          <View style={{ flex: 1 }}>
+            <Text numberOfLines={1} style={{ fontFamily: fonts.sansMedium, fontSize: 11, color: colors.fg3, letterSpacing: 0.5, textTransform: "uppercase" }}>{group.title}</Text>
+            {onReconnect ? (
+              <Text style={{ fontFamily: fonts.sansMedium, fontSize: 10, color: colors.accent }}>Google authorization expired · reconnect</Text>
+            ) : null}
+          </View>
         </View>
-        {onDisconnect ? <Feather name="log-out" size={13} color={colors.fg4} /> : null}
-      </Tap>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          {onReconnect ? (
+            <Tap onPress={onReconnect} accessibilityLabel="Reconnect Google Calendar" hitSlop={8}>
+              <Feather name="refresh-cw" size={13} color={colors.accent} />
+            </Tap>
+          ) : null}
+          {onDisconnect ? (
+            <Tap onPress={onDisconnect} accessibilityLabel={`Disconnect ${group.title}`} hitSlop={8}>
+              <Feather name="log-out" size={13} color={colors.fg4} />
+            </Tap>
+          ) : null}
+        </View>
+      </View>
     </GestureDetector>
   );
 }

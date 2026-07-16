@@ -68,7 +68,15 @@ export default function CalendarsTab() {
         const flavor = providerFlavor(c);
         const name = flavor === "google" ? "Google" : flavor === "apple" ? "iCloud" : flavor === "caldav" ? "CalDAV" : c.provider;
         const label = c.accountLabel || `${name} Account ${counts[c.provider]}`;
-        map.set(key, { key, title: label, provider: c.provider, accountId: c.accountId, calendars: [] });
+        map.set(key, {
+          key,
+          title: label,
+          provider: c.provider,
+          accountId: c.accountId,
+          syncStatus: c.syncStatus,
+          syncErrorCode: c.syncErrorCode,
+          calendars: [],
+        });
       }
       map.get(key)!.calendars.push(c);
     }
@@ -148,6 +156,7 @@ export default function CalendarsTab() {
           eventCount={eventCountByCal}
           onOpen={handleOpenCalendar}
           onDisconnect={(g) => handleDisconnect(g.provider!, g.accountId!, g.title)}
+          onReconnect={() => setSyncModalVisible(true)}
           onReorder={persistOrder}
         />
       </ScrollView>

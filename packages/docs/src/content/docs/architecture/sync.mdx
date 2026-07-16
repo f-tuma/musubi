@@ -85,7 +85,10 @@ Mirrors are editable and deletable from Musubi, and `POST /calendars` can create
 
 </Steps>
 
-`syncUser(userID)` loops every connected provider, each wrapped in try/catch so one provider failing doesn't abort the rest. A missing adapter for a provider is logged and skipped.
+`syncUser(userID)` discovers accounts per provider, then wraps every account sync
+independently. One expired Google account therefore neither aborts a second Google
+account nor CalDAV. Account failures include the concrete `accountId` in structured
+logs; provider-level discovery failures use `sync.provider.failed`.
 
 The CalDAV connect handler uses the same path in an account-scoped strict mode
 (`syncUser(userID, { provider: "caldav", accountId, throwOnError: true })`). This
@@ -127,7 +130,17 @@ The key is `CALDAV_ENC_KEY` (64 hex chars = 32 bytes; generate with `openssl ran
 Most sync bugs are recurrence and all-day edge cases. The existing adapters already handle these — study them before writing a new one.
 
 **Google (`adapters/google.ts`):**
-- OAuth token refresh delegated to Better Auth (`auth.api.getAccessToken`).
+- The adapter refreshes expired access tokens against Google's token endpoint so
+  it can retain the safe OAuth `error`/`error_subtype` codes that Better Auth's
+  generic `getAccessToken` error otherwise discards. Tokens and error descriptions
+  are never logged.
+- `invalid_grant` is permanent until the user authorizes again. The account row is
+  marked `sync_status = reconnect_required`, its dead tokens are cleared, and
+  `listAccounts()` excludes it from later scheduled runs. Existing mirrors remain
+  visible with a reconnect action. A successful Better Auth OAuth relink resets the
+  status to `active` through the account update hook.
+- Network failures, rate limits, 5xx responses, and server OAuth configuration
+  errors remain retryable and do **not** disable an individual user's account.
 - `sanitizeRecurrence()` fixes three iCal quirks: `EXDATE;TZID=…` (the rrule lib ignores TZID → convert to UTC), all-day `EXDATE` must be `VALUE=DATE`, and `FREQ=YEARLY;BYMONTHDAY` without `BYMONTH` (RFC expands monthly → anchor the month).
 - Incremental sync via `syncToken`; `410 Gone` → return `reset: true`.
 - All-day end is **exclusive** (±1 day on pull/push).
@@ -148,7 +161,7 @@ Most sync bugs are recurrence and all-day edge cases. The existing adapters alre
 
 1. **Create `adapters/<provider>.ts`** implementing `CalendarAdapter`. Translate the provider's API to/from `NormalizedEvent`.
 
-2. **Credentials.** OAuth: add the provider to Better Auth (`packages/auth`), implement `listAccounts()` against the `account` table, get tokens via `auth.api.getAccessToken`. Password-based: model it on `caldav_accounts` and **encrypt with `encryptSecret()`**.
+2. **Credentials.** OAuth: add the provider to Better Auth (`packages/auth`) and implement `listAccounts()` against the `account` table. Preserve the provider's machine-readable refresh error code so permanent revocation can be distinguished from a transient outage. Password-based: model it on `caldav_accounts` and **encrypt with `encryptSecret()`**.
 
 3. **`fetchChanges`.** Paginate internally, accumulate all pages into one `changes` array, return the provider's opaque `nextCursor`. Map cursor-expiry errors to `reset: true`.
 

@@ -62,6 +62,13 @@ export const account = pgTable(
     accessTokenExpiresAt: timestamp("access_token_expires_at"),
     refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
     scope: text("scope"),
+    // Provider sync can be disabled independently from account linking/login.
+    // A revoked Google refresh token should keep the account and its mirrored
+    // calendars, but must stop background retries until OAuth is linked again.
+    syncStatus: text("sync_status").default("active").notNull(),
+    syncErrorCode: text("sync_error_code"),
+    syncErrorSubtype: text("sync_error_subtype"),
+    syncDisabledAt: timestamp("sync_disabled_at"),
     password: text("password"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")

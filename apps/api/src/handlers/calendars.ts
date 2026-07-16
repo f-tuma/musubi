@@ -165,6 +165,7 @@ export async function handlerGetCalendars(req: Request, res: Response) {
       members.push({ id: user.user.id, name: user.user.name, email: user.user.email });
     }
     const link = await getExternalLinkForCalendar(calendar.calendarID);
+    const ownsExternalAccount = link?.userID === req.user!.id;
     result.push({
       ...calendar.calendars,
       members: members,
@@ -173,6 +174,12 @@ export async function handlerGetCalendars(req: Request, res: Response) {
       accountId: link?.accountID ?? null,
       accountLabel: link?.accountLabel ?? null,
       serverUrl: link?.serverUrl ?? null, // caldav only — client uses it to spot iCloud
+      // Only the account owner can repair OAuth. Other Musubi members may see
+      // the shared mirror, but must not be prompted to link their own Google.
+      syncStatus: ownsExternalAccount && (link?.syncStatus === "active" || link?.syncStatus === "reconnect_required")
+        ? link.syncStatus
+        : null,
+      syncErrorCode: ownsExternalAccount ? link?.syncErrorCode ?? null : null,
     })
   }
 
@@ -395,4 +402,3 @@ export async function handlerSetMemberRole(req: Request, res: Response) {
 
   res.status(200).json({ id: targetUserID, role: updated.role });
 }
-
