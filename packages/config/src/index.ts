@@ -20,6 +20,16 @@ function envOrThrow(key: string) {
   return value;
 }
 
+function parseMetricsPort(value: string | undefined) {
+  if (value === undefined) return 9464;
+
+  const port = Number(value);
+  if (!Number.isInteger(port) || port < 0 || port > 65_535) {
+    throw new Error(`Invalid METRICS_PORT "${value}". Expected an integer from 0 to 65535.`);
+  }
+  return port;
+}
+
 type APIConfig = {
   port: number,
   environment: string,
@@ -28,6 +38,8 @@ type APIConfig = {
   // → SSE broadcast). 0 disables the scheduler.
   externalSyncIntervalMin: number,
   logLevel: LogLevel,
+  // Separate internal listener; 0 disables Prometheus metrics.
+  metricsPort: number,
 }
 
 type DBConfig = {
@@ -76,6 +88,7 @@ const apiConfig: APIConfig = {
     ? 5
     : Number(process.env.EXTERNAL_SYNC_INTERVAL_MIN) || 0, // unparsable/0 → disabled
   logLevel: parseLogLevel(process.env.LOG_LEVEL ?? "info"),
+  metricsPort: parseMetricsPort(process.env.METRICS_PORT),
 }
 
 // SMTP + Google are OPTIONAL — the API boots without them so local dev doesn't

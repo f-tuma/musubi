@@ -15,8 +15,10 @@ services:
     expose:
       - "${API_SERVER_PORT:-7531}"
     networks:
-      - dokploy-network
-      - default
+      dokploy-network:
+        aliases:
+          - musubi-api
+      default: {}
     restart: unless-stopped
 
   db:
@@ -35,3 +37,7 @@ services:
 
 volumes:
   data:
+
+networks:
+  dokploy-network:
+    external: true

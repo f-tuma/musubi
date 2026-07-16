@@ -35,6 +35,7 @@ Edit `.env` with your production values. Key variables:
 | `BETTER_AUTH_URL` | The public URL of your API, e.g. `https://musubi.yourdomain.com` |
 | `ENVIRONMENT` | Set to anything other than `dev` for production |
 | `LOG_LEVEL` | Server verbosity: `debug`, `info`, `warn`, `error`, or `silent`; defaults to `info` |
+| `METRICS_PORT` | Internal Prometheus listener; defaults to `9464`, set `0` to disable |
 | `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth credentials — needed for Google sign-in and Google Calendar sync |
 | `APPLE_CLIENT_ID` | Enables native Sign in with Apple (iOS) — set to the app bundle id (`dev.frgtn.musubi`); the server verifies the identity token's audience against it |
 | `APPLE_TEAM_ID` | Apple Developer Team ID — serves the apple-app-site-association file so iOS invite links open the app directly (universal links). Optional; unset → the Safari hand-off still works |
@@ -46,6 +47,28 @@ with Docker, Dokploy, and most log collectors. Every HTTP response includes an
 `x-request-id` header; the same id appears in request, auth, and error logs. Set
 `LOG_LEVEL=debug` temporarily for per-account and per-calendar provider-sync
 counts and timings. Logs never include request bodies, passwords, or tokens.
+
+### Prometheus metrics
+
+The API starts a second HTTP listener for Prometheus on `METRICS_PORT` (default
+`9464`). It serves only `GET /metrics`; the public API and reverse proxy remain
+on `API_SERVER_PORT`. Docker Compose does not publish the metrics port to the
+host. The Dokploy Compose service attaches the stable `musubi-api` alias to the
+shared Docker network, so a Prometheus container on that network can scrape it:
+
+```yaml
+scrape_configs:
+  - job_name: musubi-api
+    static_configs:
+      - targets:
+          - musubi-api:9464
+```
+
+Metrics include Node.js/process health plus bounded HTTP request counts,
+in-flight requests, and latency histograms. HTTP labels use registered route
+patterns rather than concrete URLs, so user IDs, invite tokens, and other path
+parameters are not exposed. Do not add a public domain or host port for the
+metrics listener. Set `METRICS_PORT=0` if metrics are not needed.
 
 <Aside type="caution">
 Required to boot: the `POSTGRES_*` credentials, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, and `ENVIRONMENT`. The Google, SMTP, and `CALDAV_ENC_KEY` variables are optional — the API starts without them and the matching feature just stays off until you set it.
