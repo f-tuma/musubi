@@ -13,6 +13,7 @@ import Animated, {
 } from "react-native-reanimated";
 import {
   addDays, allDaySpans, bucketByDay, CASCADE_MAX_LEVELS, CASCADE_OFFSET, clamp, dayKey, daySegments, Draft,
+  GHOST_DAY_RIGHT_INSET, GHOST_LEFT_INSET, GHOST_WEEK_RIGHT_INSET,
   GRAB_DOT_HIT, GRAB_SCALE, GRAB_SPRING, GUTTER, HOLD_CREATE_MS, HOLD_GRAB_MS,
   HOUR_H, INK, isSameDay, SNAP_DRAG_MIN, SNAP_TAP_MIN, startOfWeek, ZOOM_HOUR_MAX, ZOOM_HOUR_MIN,
 } from "./layout";
@@ -55,11 +56,16 @@ type Props = {
   onPageChange: (start: Date) => void;
   scrollPosRef: MutableRefObject<number>;  // shared so swiped-in pages keep the scroll position
   bottomPad: number;                 // room for the docked composer peek
+  /** Active page has measured and applied its initial scroll position. */
+  onReady?: () => void;
+  /** An external preview hides mount/scroll settling and owns the reveal. */
+  coveredByTransition?: boolean;
 };
 
 export function TimelineView({
   mode, base, events, weekStartsOn, eventColorOf, onPressEvent,
-  draft, onDraftChange, canMoveEvent, onMoveEvent, onPageChange, scrollPosRef, bottomPad,
+  draft, onDraftChange, canMoveEvent, onMoveEvent, onPageChange, scrollPosRef,
+  bottomPad, onReady, coveredByTransition = false,
 }: Props) {
   const [width, setWidth] = useState(0);
   const byDay = useMemo(() => bucketByDay(events), [events]);
@@ -94,6 +100,8 @@ export function TimelineView({
               onMoveEvent={onMoveEvent}
               scrollPosRef={scrollPosRef}
               bottomPad={bottomPad}
+              onReady={onReady}
+              coveredByTransition={coveredByTransition}
             />
           )}
           onPageChange={p => onPageChange(pageStart(p))}
@@ -120,12 +128,18 @@ type PageProps = {
   onMoveEvent: (e: Event, dayDelta: number, minDelta: number) => void;
   scrollPosRef: MutableRefObject<number>;
   bottomPad: number;
+  onReady?: () => void;
+  coveredByTransition: boolean;
 };
 
 function TimelinePage({
-  isActive, days, width, events, byDay, hourH, eventColorOf, onPressEvent, draft, onDraftChange, canMoveEvent, onMoveEvent, scrollPosRef, bottomPad,
+  isActive, days, width, events, byDay, hourH, eventColorOf, onPressEvent, draft,
+  onDraftChange, canMoveEvent, onMoveEvent, scrollPosRef, bottomPad, onReady,
+  coveredByTransition,
 }: PageProps) {
   const colW = (width - GUTTER) / days.length;
+  const ghostRightInset = days.length === 1 ? GHOST_DAY_RIGHT_INSET : GHOST_WEEK_RIGHT_INSET;
+  const ghostWidth = colW - GHOST_LEFT_INSET - ghostRightInset;
   const [now, setNow] = useState(() => new Date());
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollY = useSharedValue(0); // live scroll offset — pinch anchors to it
@@ -140,13 +154,40 @@ function TimelinePage({
   // Content stays invisible until the initial scroll is applied, then reveals —
   // so the mount→scroll settle is never seen (no top → target flash on open),
   // without forcing a synchronous full-height layout the way contentOffset does.
-  const contentOpacity = useSharedValue(0);
+  const contentOpacity = useSharedValue(coveredByTransition ? 1 : 0);
   useEffect(() => {
-    requestAnimationFrame(() => {
+    const frame = requestAnimationFrame(() => {
       scrollRef.current?.scrollTo({ y: scrollPosRef.current, animated: false });
-      contentOpacity.value = withTiming(1, { duration: 100 });
+      // A drill preview already hides this settling phase. Keeping the real
+      // grid fully opaque avoids multiplying its fade with the parent
+      // preview→timeline cross-fade (that product caused a one-frame dim flash).
+      if (!coveredByTransition) contentOpacity.value = withTiming(1, { duration: 100 });
     });
+    return () => cancelAnimationFrame(frame);
   }, []);
+
+  // The transition preview remains fully visible until the active page has
+  // measured and the scroll effect above has been queued. Reporting on the
+  // next frame avoids cross-fading to the timeline's temporary top-of-day
+  // position, which read as a flash on iOS.
+  const didReportReady = useRef(false);
+  useEffect(() => {
+    if (!isActive || didReportReady.current) return;
+    let readyFrame: number | null = null;
+    const settleFrame = requestAnimationFrame(() => {
+      // Scroll was queued by the preceding effect in this frame. Wait one more
+      // complete frame so Fabric has committed the target offset before the
+      // external preview starts revealing this tree.
+      readyFrame = requestAnimationFrame(() => {
+        didReportReady.current = true;
+        onReady?.();
+      });
+    });
+    return () => {
+      cancelAnimationFrame(settleFrame);
+      if (readyFrame !== null) cancelAnimationFrame(readyFrame);
+    };
+  }, [isActive, onReady]);
 
   useEffect(() => {
     if (!hasToday) return;
@@ -248,7 +289,7 @@ function TimelinePage({
   const gDurMin = useSharedValue(60);  // duration, minutes
   const gestureActive = useRef(false);
   const ghostStyle = useAnimatedStyle(() => ({
-    left: GUTTER + gDay.value * colW + 2,
+    left: GUTTER + gDay.value * colW + GHOST_LEFT_INSET,
     top: (gStartMin.value / 60) * hourH.value,
     height: Math.max((gDurMin.value / 60) * hourH.value, 18),
   }));
@@ -300,7 +341,8 @@ function TimelinePage({
     const startMin = draft.start.getHours() * 60 + draft.start.getMinutes();
     const endMin = startMin + (draft.end.getTime() - draft.start.getTime()) / 60000;
     const h = m2y(endMin - startMin);
-    const w = colW - 4; // ghost width
+    const rightInset = days.length === 1 ? GHOST_DAY_RIGHT_INSET : GHOST_WEEK_RIGHT_INSET;
+    const w = colW - GHOST_LEFT_INSET - rightInset;
     // Finger-sized corner zones, but never so big that a short/narrow ghost
     // loses its movable middle — cap by the ghost's own size.
     const hitY = Math.min(GRAB_DOT_HIT, Math.max(h / 3, 16));
@@ -526,7 +568,9 @@ function TimelinePage({
                 <GestureDetector key="draft" gesture={draftGesture}>
                   <Animated.View style={[{
                     position: "absolute",
-                    width: colW - 4,
+                    // Keep some resting room at the screen edge; the original
+                    // centered lift scale can then grow without being clipped.
+                    width: ghostWidth,
                     borderRadius: 5, borderWidth: 1.5,
                     // neutral scrim, not accent: reads over any event color beneath
                     // (dark mode darkens what's under, light mode lightens it)
