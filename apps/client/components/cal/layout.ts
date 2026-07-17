@@ -14,6 +14,9 @@ export const SNAP_TAP_MIN = 30;    // minutes — quick-tap draft snap
 export const HOLD_CREATE_MS = 280; // hold before drag-to-create activates on the grid
 export const HOLD_GRAB_MS = 150;   // hold before an existing draft can be grabbed
 export const GRAB_DOT_HIT = 44;    // draft ghost: corner-box touch zone around each resize dot (finger-sized)
+export const GHOST_LEFT_INSET = 2;
+export const GHOST_DAY_RIGHT_INSET = 28;  // room for the centered lift scale on wide day columns
+export const GHOST_WEEK_RIGHT_INSET = 6;  // keep narrow week columns usable
 // Overlapping events cascade (Google-mobile style): each overlap level shifts
 // right and renders ON TOP of the previous, leaving a colored stripe of the
 // one underneath. Levels past the cap stack at the same offset (z-order still
@@ -24,9 +27,9 @@ export const GRAB_SCALE = 1.04;    // "lifted" ghost scale while dragging
 export const GRAB_SPRING = { damping: 30, stiffness: 400 };
 
 // ── Month → day zoom ─────────────────────────────────────────────────────────
-// Short and snappy — the heavy day view is mounted BEFORE the animation starts
-// (openDrill's double-rAF), so the zoom itself can afford to be quick.
-export const ZOOM_IN_MS = 200;
+// Short and snappy. Geometry begins on Reanimated's UI thread immediately;
+// the heavier day content joins once that moving geometry has landed.
+export const ZOOM_IN_MS = 240;
 export const ZOOM_OUT_MS = 170;
 export const DRILL_OPEN_MIN = 8 * 60 + 45; // minutes-from-midnight the drilled day view scrolls to (08:45)
 

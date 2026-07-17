@@ -4,7 +4,7 @@ import { activeScheme, colors, fonts, styles } from "@/constants/theme";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { ModalPortal as Modal } from "@/components/ui/ModalPortal";
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
+import Animated, { runOnJS, type SharedValue, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
 import { sortCalendars } from "@/lib/calendarOrder";
@@ -38,6 +38,9 @@ type Props = {
   /** Docked only: false slides the sheet fully off-screen (week view waits for
    *  a draft); flipping to true brings it back at peek. */
   peekVisible?: boolean;
+  /** Docked only: optional 0→1 transition shared with the parent surface.
+   *  Keeps the sheet reveal in lockstep with transitions such as month→day. */
+  dockRevealProgress?: SharedValue<number>;
   /** Docked only: gap from the window bottom to the sheet's resting edge, used
    *  by the keyboard-lift math. Defaults to the tab bar height (tab screens);
    *  pass the safe-area inset when the docked sheet lives inside a full-screen
@@ -87,7 +90,7 @@ const TAB_BAR_H = 70;                // (tabs)/_layout tabBarStyle.height — sh
 const KB_SHOW_MS = 220;              // keyboard lift in/out timings
 const KB_HIDE_MS = 180;
 
-export function AddEventModal({ visible, startingDate, endingDate, docked, anchor, peekVisible = true, dockBottomInset = TAB_BAR_H, onClose, onSave, onEdit, calendars, event }: Props) {
+export function AddEventModal({ visible, startingDate, endingDate, docked, anchor, peekVisible = true, dockRevealProgress, dockBottomInset = TAB_BAR_H, onClose, onSave, onEdit, calendars, event }: Props) {
   const {
     notificationsOnByDefault,
     timeFormat,
@@ -277,9 +280,17 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
 
   // Lift caps at 0 — the expanded sheet keeps its top on screen (title lives
   // there), fields further down scroll instead.
-  const dockedSlide = useAnimatedStyle(() => ({
-    transform: [{ translateY: Math.max(dockOff.value - kbLift.value, 0) }],
-  }));
+  const dockedSlide = useAnimatedStyle(() => {
+    // A parent-owned reveal avoids chaining this sheet's spring after a surface
+    // transition. At progress 0 the peek is shifted exactly to the hidden snap;
+    // at 1 the regular dockOff position takes over unchanged.
+    const revealOffset = dockRevealProgress
+      ? (1 - dockRevealProgress.value) * (DOCK_PEEK + DOCK_HIDDEN_EXTRA)
+      : 0;
+    return {
+      transform: [{ translateY: Math.max(dockOff.value - kbLift.value + revealOffset, 0) }],
+    };
+  });
 
   const dockedDismiss = () => {
     Keyboard.dismiss();
