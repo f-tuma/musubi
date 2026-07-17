@@ -9,8 +9,8 @@ import { YearStamp } from "@/components/calendar/YearStamp";
 import { Mode } from "@musubi/calendar";
 import Animated, { interpolate, SharedValue, useAnimatedStyle } from "react-native-reanimated";
 
-const CALENDAR_HEADER_HEIGHT = 68;
-const BACK_BUTTON_SHIFT = 86;
+const CALENDAR_HEADER_HEIGHT = 56;
+const BACK_BUTTON_SHIFT = 74;
 
 type Props = {
   anchorDate: Date;
@@ -43,14 +43,14 @@ export function CalendarHeader({
 
   return (
     // zIndex lifts the mode dropdown above the filter bar / calendar body below
-    <View style={[styles.header, { zIndex: 30, height: CALENDAR_HEADER_HEIGHT }]}>
+    <View style={[styles.header, { zIndex: 30, height: CALENDAR_HEADER_HEIGHT, paddingVertical: 10 }]}>
       <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-        <View style={{ flex: 1, minWidth: 0, height: 36, justifyContent: 'center', overflow: 'hidden' }}>
+        <View style={{ flex: 1, minWidth: 0, height: 36, justifyContent: 'center' }}>
           <Animated.View
-            pointerEvents={onBackToMonth ? "auto" : "none"}
             style={[{
               position: 'absolute', left: 0, zIndex: 2,
               flexDirection: 'row', alignItems: 'center',
+              pointerEvents: onBackToMonth ? 'auto' : 'none',
             }, backStyle]}
           >
             <Tap
@@ -73,9 +73,9 @@ export function CalendarHeader({
               mode={calMode}
               onChange={onModeChange}
               trigger={(open) => (
-                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
-                  <YearStamp date={displayedDate} size={22} />
-                  <Text numberOfLines={1} style={{ flexShrink: 1, fontFamily: fonts.serif, fontSize: 22, color: colors.fg }}>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+                  <YearStamp date={displayedDate} size={15} />
+                  <Text numberOfLines={1} style={{ flexShrink: 1, fontFamily: fonts.serif, fontSize: 20, color: colors.fg }}>
                     {displayedDate.toLocaleString("en-UK", { month: "long" })}
                   </Text>
                   {showKanji ? (
