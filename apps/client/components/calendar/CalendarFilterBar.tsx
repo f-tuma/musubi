@@ -98,6 +98,8 @@ export const CalendarFilterBar = memo(function CalendarFilterBar({
           >
             {cal.provider === "google" ? (
               <Ionicons name="logo-google" size={12} color={cal.color} style={{ opacity: active ? 1 : 0.5 }} />
+            ) : cal.provider === "microsoft" ? (
+              <Ionicons name="logo-microsoft" size={12} color={cal.color} style={{ opacity: active ? 1 : 0.5 }} />
             ) : providerFlavor(cal) === "apple" ? (
               <Ionicons name="logo-apple" size={13} color={cal.color} style={{ opacity: active ? 1 : 0.5 }} />
             ) : cal.provider === "caldav" ? (
