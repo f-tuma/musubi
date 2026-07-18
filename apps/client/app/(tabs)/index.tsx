@@ -2,10 +2,11 @@ import { styles } from "@/constants/theme";
 import { AddEventModal, DOCK_PEEK } from "@/components/calendar/AddEventModal";
 import { CalendarFilterBar } from "@/components/calendar/CalendarFilterBar";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
+import CalendarWidgetSettingsModal from "@/components/calendar/CalendarWidgetSettingsModal";
 import { CalendarDrillView, useCalendarDrill } from "@/components/calendar/CalendarDrillView";
 import { Draft, DRILL_OPEN_MIN, minutesToY, Rect } from "@/components/cal/layout";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { BackHandler, Platform, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { expandRecurringEvents, type Mode } from "@musubi/calendar";
@@ -143,7 +144,11 @@ export default function MainTab() {
 
   // Android calendar VIEW intent (com.android.calendar/time/<ms>, routed via
   // +not-found → root index): jump the calendar to the requested date.
-  const { time } = useLocalSearchParams<{ time?: string }>();
+  const { time, calendarWidgetId } = useLocalSearchParams<{
+    time?: string;
+    calendarWidgetId?: string;
+  }>();
+  const [calendarWidgetSettingsId, setCalendarWidgetSettingsId] = useState<number | null>(null);
   useEffect(() => {
     const ms = Number(time);
     if (!time || !Number.isFinite(ms)) return;
@@ -153,6 +158,17 @@ export default function MainTab() {
     setBase(target);
     setAnchorDate(target);
   }, [time, resetDrill]);
+
+  useEffect(() => {
+    const id = Number(calendarWidgetId);
+    if (!calendarWidgetId || !Number.isInteger(id) || id < 0) return;
+    setCalendarWidgetSettingsId(id);
+  }, [calendarWidgetId]);
+
+  const closeCalendarWidgetSettings = useCallback(() => {
+    setCalendarWidgetSettingsId(null);
+    router.setParams({ calendarWidgetId: "" });
+  }, []);
 
   // An .ics opened via the OS (parsed in app/_layout) → open the composer prefilled.
   const importPending = useImportStore(s => s.pending);
@@ -293,6 +309,11 @@ export default function MainTab() {
             calendars={calendars}
           />
         )}
+
+        <CalendarWidgetSettingsModal
+          widgetId={calendarWidgetSettingsId}
+          onClose={closeCalendarWidgetSettings}
+        />
 
       </View>
     </GestureDetector>

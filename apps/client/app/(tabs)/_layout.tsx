@@ -15,6 +15,7 @@ import { cacheGetAllEvents, cacheGetCalendars } from '@/services/eventsCache';
 import { select } from '@/lib/haptics';
 import { onSessionExpired, signOutAndReset } from '@/lib/signOut';
 import { GlobalEventModals } from '@/components/calendar/GlobalEventModals';
+import { startAgendaWidgetSync } from '@/services/agendaWidget';
 
 
 export default function TabLayout() {
@@ -59,6 +60,14 @@ export default function TabLayout() {
   }, [apiUrl, isLoading]);
 
   useConnectToEventStream();
+
+  // The native Android widget reads a compact persistent snapshot rather than
+  // depending on a live React process. Start only after the cache hydrate so a
+  // cold launch never replaces the last useful widget data with an empty store.
+  useEffect(() => {
+    if (!dataReady) return;
+    return startAgendaWidgetSync();
+  }, [dataReady]);
 
   // First sign-in (any method incl. Google): settings arrive with
   // onboarded=false → hand over to onboarding, resuming at the last step the

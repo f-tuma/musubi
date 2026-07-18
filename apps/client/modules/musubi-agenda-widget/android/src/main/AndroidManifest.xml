@@ -1,0 +1,44 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <receiver
+      android:name="dev.frgtn.musubi.widget.MusubiAgendaWidgetProvider"
+      android:enabled="true"
+      android:exported="false"
+      android:label="@string/musubi_agenda_widget_name">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        <action android:name="android.intent.action.DATE_CHANGED" />
+        <action android:name="android.intent.action.CONFIGURATION_CHANGED" />
+        <action android:name="android.intent.action.LOCALE_CHANGED" />
+        <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+        <action android:name="android.intent.action.TIME_SET" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/musubi_agenda_widget_info" />
+    </receiver>
+
+    <service
+      android:name="dev.frgtn.musubi.widget.MusubiAgendaWidgetService"
+      android:exported="false"
+      android:permission="android.permission.BIND_REMOTEVIEWS" />
+
+    <receiver
+      android:name="dev.frgtn.musubi.widget.MusubiCalendarWidgetProvider"
+      android:enabled="true"
+      android:exported="false"
+      android:label="@string/musubi_calendar_widget_name">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        <action android:name="android.intent.action.DATE_CHANGED" />
+        <action android:name="android.intent.action.CONFIGURATION_CHANGED" />
+        <action android:name="android.intent.action.LOCALE_CHANGED" />
+        <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+        <action android:name="android.intent.action.TIME_SET" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/musubi_calendar_widget_info" />
+    </receiver>
+  </application>
+</manifest>

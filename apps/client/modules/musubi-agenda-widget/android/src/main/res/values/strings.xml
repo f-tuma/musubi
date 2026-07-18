@@ -1,0 +1,12 @@
+<resources>
+  <string name="musubi_agenda_widget_name">Musubi Agenda</string>
+  <string name="musubi_agenda_widget_description">Your next Musubi events at a glance</string>
+  <string name="musubi_agenda_widget_empty">Nothing ahead</string>
+  <string name="musubi_agenda_widget_not_loaded">Open Musubi to load your agenda</string>
+  <string name="musubi_agenda_widget_signed_out">Sign in to see your agenda</string>
+  <string name="musubi_agenda_widget_untitled">Untitled event</string>
+  <string name="musubi_agenda_widget_preview_date">UP NEXT</string>
+  <string name="musubi_calendar_widget_name">Musubi Calendar</string>
+  <string name="musubi_calendar_widget_description">Your Musubi month at a glance</string>
+  <string name="musubi_calendar_widget_calendars">CALENDARS</string>
+</resources>

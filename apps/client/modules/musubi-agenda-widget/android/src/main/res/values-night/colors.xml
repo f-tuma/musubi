@@ -1,0 +1,11 @@
+<resources>
+  <color name="musubi_widget_surface">#131316</color>
+  <color name="musubi_widget_foreground">#E8E4D9</color>
+  <color name="musubi_widget_foreground_secondary">#B8E8E4D9</color>
+  <color name="musubi_widget_foreground_muted">#7AE8E4D9</color>
+  <color name="musubi_widget_accent">#C8553D</color>
+  <color name="musubi_widget_day_feedback">#40C8553D</color>
+  <color name="musubi_widget_line">#18E8E4D9</color>
+  <color name="musubi_widget_pill_ink">#26241F</color>
+  <color name="musubi_widget_on_accent">#F4F1E8</color>
+</resources>

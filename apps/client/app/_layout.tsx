@@ -110,10 +110,14 @@ function AppContent() {
   useEffect(() => {
     if (!ready || navigated.current || updateRequired || initialUrl === undefined) return;
     navigated.current = true;
-    // Cold start via a deep link (invite/[token], …) lands on its own route —
-    // replacing it with the tabs would close the screen under the user.
+    // Cold start via a deep link (invite/[token], Android agenda widget, …)
+    // lands on its own route — replacing it with the tabs would close the
+    // screen under the user.
     const inviteStart = pathname.startsWith('/invite') || initialUrl?.includes('/invite/');
-    if (session && inviteStart) return;
+    const agendaStart = pathname === '/agenda' || initialUrl?.startsWith('musubi://agenda');
+    const calendarStart = !!initialUrl?.startsWith('musubi:///?time=')
+      || !!initialUrl?.startsWith('musubi:///?calendarWidgetId=');
+    if (session && (inviteStart || agendaStart || calendarStart)) return;
     router.replace(session ? '/(tabs)' : '/(auth)/welcome');
   }, [ready, updateRequired, initialUrl]);
 

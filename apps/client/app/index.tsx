@@ -6,8 +6,21 @@ export default function Index() {
   const { data: session } = authClient.useSession();
   // Android calendar VIEW intent (routed via +not-found) — forward the target
   // time to the home tab so the calendar opens at that date.
-  const { time } = useLocalSearchParams<{ time?: string }>();
+  const { time, calendarWidgetId } = useLocalSearchParams<{
+    time?: string;
+    calendarWidgetId?: string;
+  }>();
 
-  if (session) return <Redirect href={{ pathname: "/(tabs)", params: time ? { time } : {} }} />;
+  if (session) return (
+    <Redirect
+      href={{
+        pathname: "/(tabs)",
+        params: {
+          ...(time ? { time } : {}),
+          ...(calendarWidgetId ? { calendarWidgetId } : {}),
+        },
+      }}
+    />
+  );
   return <Redirect href="/(auth)/welcome" />;
 }

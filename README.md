@@ -52,6 +52,7 @@ Nobody else is building exactly this: **an open calendar designed as social infr
 | 月 | **A calendar UI built from scratch** | Month → day zoom animation, drag-to-create with grab handles, docked quick-composer — Google Calendar fluency, none of the Google |
 | 侘 | **Zen aesthetic** | Sumi ink on night / ink on washi paper, spring physics, deliberate haptics, kanji accents |
 | 鈴 | **Notifications** | Local reminders that survive edits, moves, and recurrence — even for synced events |
+| 卓 | **Android home-screen widgets** | Scrollable Agenda + adaptive month Calendar; recurring occurrences, deep-linked event/day detail, per-widget calendar filters, and light/dark themes |
 | 家 | **Self-hosting** | One Postgres + one Node server, `docker-compose.selfhost.yml` included |
 
 ### Sync providers
@@ -106,7 +107,7 @@ Testing on a real device? Set `BETTER_AUTH_URL` and the app's server URL (welcom
 
 | Layer | Tech |
 |---|---|
-| Mobile client | React Native 0.85 · Expo SDK 56 · Expo Router · Zustand · Reanimated · custom calendar engine (`apps/client/components/cal`) |
+| Mobile client | React Native 0.85 · Expo SDK 56 · Expo Router · Zustand · Reanimated · custom calendar engine (`apps/client/components/cal`) · native Android `RemoteViews` widgets bridged through a local Expo module |
 | Server | Express 5 · [Better Auth](https://www.better-auth.com/) · Zod · Server-Sent Events |
 | Data | Postgres · [Drizzle ORM](https://orm.drizzle.team/) · SQLite on-device cache with delta sync |
 | Sync engine | Provider-agnostic adapter interface (`CalendarAdapter`) — Google + CalDAV today, yours tomorrow |

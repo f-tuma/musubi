@@ -1,0 +1,122 @@
+---
+title: Home screen widgets
+description: Add, configure, update, and develop Musubi's Android Agenda and Calendar widgets.
+---
+
+import { Aside, FileTree, Steps } from '@astrojs/starlight/components';
+
+Musubi currently ships two **Android home screen widgets**. Both follow the app's light/dark palette, expand recurring events into their real occurrences, and adapt the amount of information to the space you give them.
+
+| Widget | Small size | More space |
+|---|---|---|
+| **Agenda** | Time, date, title, and calendar | A scrollable list with end time, location, and more events |
+| **Calendar** | Month grid with larger event dots | Full-width month grid with coloured event pills and automatic contrast |
+
+<Aside type="note">
+The Android widgets are native `AppWidgetProvider` / `RemoteViews` surfaces written in Kotlin. Expo is the bridge that sends a compact snapshot from the React Native app. `expo-widgets` is used for iOS widgets later; it does not render the current Android widgets.
+</Aside>
+
+## Add a widget
+
+<Steps>
+1. Long-press an empty area of the Android home screen.
+2. Open **Widgets** and find **Musubi**.
+3. Drag **Musubi Agenda** or **Musubi Calendar** onto the home screen.
+4. Resize it to choose the compact or detailed presentation.
+</Steps>
+
+If a newly added widget says it has no data, open Musubi once. The app writes the first native snapshot after its local calendar cache has loaded.
+
+## Use the Agenda widget
+
+- Scroll the event list when there are more rows than fit.
+- Recurring series are expanded, so every upcoming occurrence appears separately.
+- All-day events use the compact **ALL** label.
+- Wider rows add the end time and location when available.
+- Tap an event to open the Agenda tab with that exact occurrence's detail sheet already open.
+
+The snapshot keeps at most 64 upcoming Agenda rows over a rolling window. This keeps the widget quick while still allowing the native list to work without a running React process.
+
+## Use and filter the Calendar widget
+
+- Tap a day to open Musubi at that date. A short accent ripple confirms the press before the app opens.
+- Compact sizes show event colours as dots. Tall sizes use the same coloured event pills as the app.
+- The number of visible pills is calculated from the actual height available to each week row; overflow is shown when it fits.
+- Pill text automatically switches between dark and light ink for contrast.
+- Tap **CALENDARS** in the header to open **Widget calendars**.
+- Tap calendar pills to show or hide them. Long-press a pill to show only that calendar. **Show all** resets the selection.
+
+Calendar visibility is stored **per widget instance**. Filtering one Calendar widget does not change the Home/Agenda filters in Musubi or another widget on the same launcher.
+
+## When widgets refresh
+
+The widgets do not keep a React Native screen alive. They render a persisted snapshot and refresh through several paths:
+
+| Trigger | What happens |
+|---|---|
+| Events, calendars, or settings change while Musubi is running | `services/agendaWidget.ts` rebuilds the snapshot after a 120 ms debounce |
+| Calendar selection changes in **Widget calendars** | That widget instance is updated immediately |
+| Widget is resized | Android calls `onAppWidgetOptionsChanged`; the adaptive layout is recalculated |
+| Date, time, timezone, locale, or system theme changes | Both native providers redraw from the stored snapshot |
+| Periodic launcher update | Android requests a refresh every 30 minutes |
+| Sign-out | The stored snapshot is marked signed out and both widgets clear private event data |
+
+The Calendar snapshot covers the previous month through the next year, so crossing midnight or a month boundary does not require the React process. Changes arriving from a server still need Musubi's normal sync to reach the local stores before a new widget snapshot can be written.
+
+## Where the implementation lives
+
+<FileTree>
+- apps/client/
+  - services/agendaWidget.ts — builds and debounces the shared JSON snapshot
+  - components/calendar/CalendarWidgetSettingsModal.tsx — per-widget calendar picker
+  - modules/musubi-agenda-widget/
+    - index.ts — typed Expo module bridge
+    - android/src/main/AndroidManifest.xml — providers, service, and refresh broadcasts
+    - android/src/main/java/dev/frgtn/musubi/widget/
+      - MusubiAgendaWidgetProvider.kt — Agenda shell and collection refresh
+      - MusubiAgendaWidgetService.kt — scrollable Agenda rows
+      - MusubiCalendarWidgetProvider.kt — adaptive month grid, dots, pills, and deep links
+      - AgendaWidgetData.kt — snapshot parser and date/time formatting
+      - AgendaWidgetStorage.kt — persisted shared snapshot
+      - CalendarWidgetPreferences.kt — calendar IDs selected per widget instance
+    - android/src/main/res/ — `RemoteViews` layouts, styles, colours, drawables, and widget metadata
+</FileTree>
+
+The three widget deep links are intentionally routed through Expo Router:
+
+- Agenda event → `musubi://agenda?eventId=…&occurrenceStart=…`
+- Calendar day → `musubi:///?time=…`
+- Calendar picker → `musubi:///?calendarWidgetId=…`
+
+Cold-start handling in `app/_layout.tsx` and `app/index.tsx` preserves those parameters until the tabs have loaded.
+
+## Install a local widget build
+
+Widget providers, manifests, Kotlin, XML layouts, drawables, and resource changes are **native changes**. Metro refresh is not enough; build and replace the APK:
+
+```sh
+cd apps/client/android
+./gradlew :app:assembleDebug --no-daemon
+cd ../../..
+adb install -r apps/client/android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+The `-r` flag preserves app data and existing widget instances. A pure TypeScript snapshot or modal change still needs the normal app bundle/dev server, but does not require changing widget registration.
+
+<Aside type="caution">
+Android launchers may reapply a `RemoteViews` update onto a cached tree when the same layout resource ID is reused. If the widget hierarchy changes, give the layout a new resource name and update the provider metadata. This avoids a stale tree producing **Can't load widget** after an APK replacement.
+</Aside>
+
+## Focused test checklist
+
+- Add both widgets, then resize each through compact and detailed sizes.
+- Confirm recurring events appear as separate Agenda rows and Calendar occurrences.
+- Scroll the Agenda and open both a normal event and a recurring occurrence.
+- Tap a Calendar day and confirm the press feedback and selected date in Musubi.
+- Hide one calendar through **CALENDARS** and confirm only that widget changes.
+- Switch Android between dark and light without resizing the widget; day numbers must remain readable.
+- Sign out and confirm event content is removed from both widgets.
+
+## iOS status
+
+The current implementation is Android-only. The intended iOS version will preserve the same Agenda/Calendar concepts, **CALENDARS** wording, and picker explanation, while using WidgetKit through Expo's iOS widget tooling rather than Android `RemoteViews`.

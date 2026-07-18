@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v4 adds calendar settings and day press feedback. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/musubi_calendar_root"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:background="@drawable/musubi_widget_background"
+  android:clipToOutline="true"
+  android:orientation="vertical"
+  android:paddingTop="13dp">
+
+  <LinearLayout
+    android:id="@+id/musubi_calendar_header"
+    android:layout_width="match_parent"
+    android:layout_height="30dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="13dp"
+    android:paddingEnd="13dp">
+
+    <TextView
+      android:id="@+id/musubi_calendar_year"
+      style="@style/MusubiCalendarYearStamp"
+      android:text="26" />
+
+    <TextView
+      android:id="@+id/musubi_calendar_month"
+      style="@style/MusubiCalendarMonthTitle"
+      android:layout_marginStart="5dp"
+      android:text="July" />
+
+    <TextView
+      android:id="@+id/musubi_calendar_kanji"
+      style="@style/MusubiCalendarMonthKanji"
+      android:text="七月" />
+
+    <LinearLayout
+      android:layout_width="0dp"
+      android:layout_height="1dp"
+      android:layout_weight="1" />
+
+    <TextView
+      android:id="@+id/musubi_calendar_today"
+      style="@style/MusubiCalendarTodayLabel"
+      android:text="@string/musubi_calendar_widget_calendars" />
+  </LinearLayout>
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="20dp"
+    android:layout_marginTop="4dp"
+    android:orientation="horizontal">
+    <TextView android:id="@+id/musubi_calendar_weekday_1" style="@style/MusubiCalendarWeekday" android:text="M" />
+    <TextView android:id="@+id/musubi_calendar_weekday_2" style="@style/MusubiCalendarWeekday" android:text="T" />
+    <TextView android:id="@+id/musubi_calendar_weekday_3" style="@style/MusubiCalendarWeekday" android:text="W" />
+    <TextView android:id="@+id/musubi_calendar_weekday_4" style="@style/MusubiCalendarWeekday" android:text="T" />
+    <TextView android:id="@+id/musubi_calendar_weekday_5" style="@style/MusubiCalendarWeekday" android:text="F" />
+    <TextView android:id="@+id/musubi_calendar_weekday_6" style="@style/MusubiCalendarWeekday" android:text="S" />
+    <TextView android:id="@+id/musubi_calendar_weekday_7" style="@style/MusubiCalendarWeekday" android:text="S" />
+  </LinearLayout>
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_marginTop="2dp"
+    android:layout_weight="1"
+    android:orientation="vertical">
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="horizontal">
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_1" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_1" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_1" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_1" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_1" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_2" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_2" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_2" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_2" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_2" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_3" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_3" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_3" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_3" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_3" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_4" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_4" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_4" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_4" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_4" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_5" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_5" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_5" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_5" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_5" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_6" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_6" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_6" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_6" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_6" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_7" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_7" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_7" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_7" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_7" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="horizontal">
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_8" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_8" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_8" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_8" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_8" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_9" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_9" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_9" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_9" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_9" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_10" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_10" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_10" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_10" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_10" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_11" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_11" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_11" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_11" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_11" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_12" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_12" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_12" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_12" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_12" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_13" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_13" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_13" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_13" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_13" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_14" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_14" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_14" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_14" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_14" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="horizontal">
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_15" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_15" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_15" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_15" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_15" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_16" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_16" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_16" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_16" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_16" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_17" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_17" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_17" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_17" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_17" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_18" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_18" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_18" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_18" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_18" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_19" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_19" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_19" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_19" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_19" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_20" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_20" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_20" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_20" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_20" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_21" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_21" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_21" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_21" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_21" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="horizontal">
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_22" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_22" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_22" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_22" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_22" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_23" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_23" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_23" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_23" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_23" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_24" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_24" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_24" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_24" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_24" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_25" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_25" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_25" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_25" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_25" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_26" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_26" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_26" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_26" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_26" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_27" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_27" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_27" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_27" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_27" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_28" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_28" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_28" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_28" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_28" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="horizontal">
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_29" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_29" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_29" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_29" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_29" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_30" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_30" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_30" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_30" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_30" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_31" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_31" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_31" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_31" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_31" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_32" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_32" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_32" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_32" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_32" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_33" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_33" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_33" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_33" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_33" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_34" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_34" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_34" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_34" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_34" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_35" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_35" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_35" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_35" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_35" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="horizontal">
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_36" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_36" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_36" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_36" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_36" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_37" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_37" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_37" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_37" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_37" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_38" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_38" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_38" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_38" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_38" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_39" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_39" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_39" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_39" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_39" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_40" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_40" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_40" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_40" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_40" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_41" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_41" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_41" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_41" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_41" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_large_day_42" style="@style/MusubiCalendarLargeDay">
+          <TextView android:id="@+id/musubi_calendar_large_number_42" style="@style/MusubiCalendarLargeNumber" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_1_42" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_pill_2_42" style="@style/MusubiCalendarEventPill" android:visibility="gone" />
+          <TextView android:id="@+id/musubi_calendar_large_overflow_42" style="@style/MusubiCalendarOverflow" android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
+  </LinearLayout>
+</LinearLayout>

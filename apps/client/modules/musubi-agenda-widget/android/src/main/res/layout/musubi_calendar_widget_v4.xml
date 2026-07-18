@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v4 adds calendar settings and day press feedback. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/musubi_calendar_root"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:background="@drawable/musubi_widget_background"
+  android:orientation="vertical"
+  android:padding="13dp">
+
+  <LinearLayout
+    android:id="@+id/musubi_calendar_header"
+    android:layout_width="match_parent"
+    android:layout_height="30dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <TextView
+      android:id="@+id/musubi_calendar_year"
+      style="@style/MusubiCalendarYearStamp"
+      android:text="26" />
+
+    <TextView
+      android:id="@+id/musubi_calendar_month"
+      style="@style/MusubiCalendarMonthTitle"
+      android:layout_marginStart="5dp"
+      android:text="July" />
+
+    <TextView
+      android:id="@+id/musubi_calendar_kanji"
+      style="@style/MusubiCalendarMonthKanji"
+      android:text="七月" />
+
+    <LinearLayout
+      android:layout_width="0dp"
+      android:layout_height="1dp"
+      android:layout_weight="1" />
+
+    <TextView
+      android:id="@+id/musubi_calendar_today"
+      style="@style/MusubiCalendarTodayLabel"
+      android:text="@string/musubi_calendar_widget_calendars" />
+  </LinearLayout>
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="20dp"
+    android:layout_marginTop="4dp"
+    android:orientation="horizontal">
+    <TextView android:id="@+id/musubi_calendar_weekday_1" style="@style/MusubiCalendarWeekday" android:text="M" />
+    <TextView android:id="@+id/musubi_calendar_weekday_2" style="@style/MusubiCalendarWeekday" android:text="T" />
+    <TextView android:id="@+id/musubi_calendar_weekday_3" style="@style/MusubiCalendarWeekday" android:text="W" />
+    <TextView android:id="@+id/musubi_calendar_weekday_4" style="@style/MusubiCalendarWeekday" android:text="T" />
+    <TextView android:id="@+id/musubi_calendar_weekday_5" style="@style/MusubiCalendarWeekday" android:text="F" />
+    <TextView android:id="@+id/musubi_calendar_weekday_6" style="@style/MusubiCalendarWeekday" android:text="S" />
+    <TextView android:id="@+id/musubi_calendar_weekday_7" style="@style/MusubiCalendarWeekday" android:text="S" />
+  </LinearLayout>
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_marginTop="2dp"
+    android:layout_weight="1"
+    android:orientation="vertical">
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="horizontal">
+        <TextView android:id="@+id/musubi_calendar_day_1" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_2" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_3" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_4" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_5" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_6" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_7" style="@style/MusubiCalendarDay" />
+    </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="horizontal">
+        <TextView android:id="@+id/musubi_calendar_day_8" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_9" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_10" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_11" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_12" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_13" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_14" style="@style/MusubiCalendarDay" />
+    </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="horizontal">
+        <TextView android:id="@+id/musubi_calendar_day_15" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_16" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_17" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_18" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_19" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_20" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_21" style="@style/MusubiCalendarDay" />
+    </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="horizontal">
+        <TextView android:id="@+id/musubi_calendar_day_22" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_23" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_24" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_25" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_26" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_27" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_28" style="@style/MusubiCalendarDay" />
+    </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="horizontal">
+        <TextView android:id="@+id/musubi_calendar_day_29" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_30" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_31" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_32" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_33" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_34" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_35" style="@style/MusubiCalendarDay" />
+    </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="horizontal">
+        <TextView android:id="@+id/musubi_calendar_day_36" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_37" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_38" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_39" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_40" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_41" style="@style/MusubiCalendarDay" />
+        <TextView android:id="@+id/musubi_calendar_day_42" style="@style/MusubiCalendarDay" />
+    </LinearLayout>
+  </LinearLayout>
+</LinearLayout>

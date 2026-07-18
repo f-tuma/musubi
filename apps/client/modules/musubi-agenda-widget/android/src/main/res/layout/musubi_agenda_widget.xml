@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/musubi_widget_root"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:background="@drawable/musubi_widget_background"
+  android:orientation="vertical"
+  android:padding="13dp">
+
+  <LinearLayout
+    android:id="@+id/musubi_widget_header"
+    android:layout_width="match_parent"
+    android:layout_height="30dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <TextView
+      android:layout_width="30dp"
+      android:layout_height="match_parent"
+      android:fontFamily="serif"
+      android:gravity="center_vertical"
+      android:includeFontPadding="false"
+      android:text="結"
+      android:textColor="@color/musubi_widget_accent"
+      android:textSize="22sp" />
+
+    <TextView
+      style="@style/MusubiWidgetHeaderLabel"
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:layout_weight="1"
+      android:text="AGENDA" />
+
+    <TextView
+      android:id="@+id/musubi_widget_date"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:fontFamily="sans-serif"
+      android:includeFontPadding="false"
+      android:maxLines="1"
+      android:text="@string/musubi_agenda_widget_preview_date"
+      android:textColor="@color/musubi_widget_foreground_muted"
+      android:textSize="9sp" />
+  </LinearLayout>
+
+  <FrameLayout
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_marginTop="8dp"
+    android:layout_weight="1">
+
+    <ListView
+      android:id="@+id/musubi_widget_events"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:divider="@null"
+      android:scrollbars="none" />
+
+    <TextView
+      android:id="@+id/musubi_widget_empty"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:ellipsize="end"
+      android:fontFamily="serif"
+      android:gravity="center_vertical"
+      android:maxLines="2"
+      android:text="@string/musubi_agenda_widget_not_loaded"
+      android:textColor="@color/musubi_widget_foreground_secondary"
+      android:textSize="13sp" />
+  </FrameLayout>
+</LinearLayout>

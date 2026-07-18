@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/musubi_widget_event"
+  style="@style/MusubiWidgetEventRow">
+
+  <TextView
+    android:id="@+id/musubi_widget_stripe"
+    android:layout_width="3dp"
+    android:layout_height="30dp"
+    android:layout_marginEnd="7dp"
+    android:background="@color/musubi_widget_accent" />
+
+  <LinearLayout
+    android:layout_width="48dp"
+    android:layout_height="wrap_content"
+    android:layout_marginEnd="8dp"
+    android:gravity="start"
+    android:orientation="vertical">
+
+    <TextView
+      android:id="@+id/musubi_widget_time"
+      style="@style/MusubiWidgetTime" />
+
+    <TextView
+      android:id="@+id/musubi_widget_day"
+      style="@style/MusubiWidgetDate" />
+  </LinearLayout>
+
+  <LinearLayout
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:orientation="vertical">
+
+    <TextView
+      android:id="@+id/musubi_widget_title"
+      style="@style/MusubiWidgetTitle" />
+
+    <TextView
+      android:id="@+id/musubi_widget_meta"
+      style="@style/MusubiWidgetMeta" />
+  </LinearLayout>
+</LinearLayout>

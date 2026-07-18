@@ -5,15 +5,18 @@ import { useEventsStore } from "@/store/useEventsStore";
 import { cacheClearAll } from "@/services/eventsCache";
 import { clearAllEventNotifications } from "@/services/notifications";
 import { resetOnboardingRoute } from "@/lib/onboardingState";
+import { clearAgendaWidget } from "@/services/agendaWidget";
 
 // THE sign-out sequence — Settings (user action), account delete and session
 // expiry recovery all route through here so no path forgets a cleanup step:
-// stores → SQLite mirror → scheduled notifications → native Google session →
-// Better Auth session → welcome screen.
+// stores → launcher widget → SQLite mirror → scheduled notifications → native
+// Google session → Better Auth session → welcome screen.
 export async function signOutAndReset(authClient: { signOut: () => Promise<unknown> }) {
   useCalendarsStore.getState().loadCalendars([]);
   useEventsStore.getState().loadEvents([]);
   resetOnboardingRoute(); // next account starts onboarding at step 1, not mid-flow
+  // Remove private agenda data from the launcher as soon as local state is gone.
+  await clearAgendaWidget();
   await cacheClearAll();
   await clearAllEventNotifications();
   // Clear the natively-cached Google account so the next sign-in shows the

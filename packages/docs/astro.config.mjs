@@ -34,6 +34,7 @@ export default defineConfig({
           label: 'Getting Started',
           items: [
             { label: 'Introduction', slug: 'guides/introduction' },
+            { label: 'Home Screen Widgets', slug: 'guides/widgets' },
             { label: 'Running Locally', slug: 'guides/running-locally' },
             { label: 'Self-Hosting', slug: 'guides/self-hosting' },
           ],
