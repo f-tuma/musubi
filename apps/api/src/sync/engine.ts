@@ -21,6 +21,7 @@ import { googleAdapter } from "./adapters/google";
 import { caldavAdapter } from "./adapters/caldav";
 import { microsoftAdapter } from "./adapters/microsoft";
 import { providerAuthErrorFields } from "./errors";
+import { recordExternalSyncFailure } from "../metrics";
 
 // provider -> adapter. Register new providers here.
 const adapters: Record<string, CalendarAdapter> = {
@@ -177,6 +178,7 @@ export async function syncUser(userID: string, options: SyncUserOptions = {}) {
     try {
       accounts = await adapter.listAccounts(userID);
     } catch (e) {
+      recordExternalSyncFailure("discovery", adapter.provider);
       logger.error("sync.provider.failed", {
         provider: adapter.provider,
         userId: userID,
@@ -192,6 +194,7 @@ export async function syncUser(userID: string, options: SyncUserOptions = {}) {
       try {
         changedCalendarIDs.push(...await syncProvider(adapter, userID, account));
       } catch (e) {
+        recordExternalSyncFailure("account", adapter.provider);
         logger.error("sync.account.failed", {
           provider: adapter.provider,
           userId: userID,
@@ -244,6 +247,7 @@ export async function pushEventToCalendars(event: Event, calendarIDs: string[], 
         }
       }
     } catch (e) {
+      recordExternalSyncFailure("push", link.provider);
       logger.error("sync.push.failed", {
         action,
         provider: link.provider,

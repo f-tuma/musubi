@@ -33,6 +33,27 @@ const httpRequestsInFlight = new Gauge({
   registers: [registry],
 });
 
+const externalSyncFailures = new Counter({
+  name: "musubi_external_sync_failures_total",
+  help: "Total number of failed external calendar synchronization operations.",
+  labelNames: ["stage", "provider"] as const,
+  registers: [registry],
+});
+
+export type ExternalSyncFailureStage = "account" | "discovery" | "push" | "scheduler";
+
+const KNOWN_SYNC_PROVIDERS = new Set(["caldav", "google", "microsoft", "all"]);
+
+export function recordExternalSyncFailure(
+  stage: ExternalSyncFailureStage,
+  provider: string,
+) {
+  externalSyncFailures.inc({
+    stage,
+    provider: KNOWN_SYNC_PROVIDERS.has(provider) ? provider : "unknown",
+  });
+}
+
 const KNOWN_HTTP_METHODS = new Set([
   "DELETE",
   "GET",

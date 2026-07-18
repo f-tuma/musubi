@@ -21,7 +21,7 @@ import { handlerDisconnectAccount } from "./handlers/connections";
 import { handlerDeleteMusubiAccount, handlerFederationAccept, handlerGetMusubiAccounts, handlerInvitePage, handlerSaveMusubiAccount } from "./handlers/federation";
 import { syncUser } from "./sync/engine";
 import { getExternalSyncUserIDs } from "@musubi/db";
-import { middlewareMetrics, startMetricsServer } from "./metrics";
+import { middlewareMetrics, recordExternalSyncFailure, startMetricsServer } from "./metrics";
 
 const app = express()
 const port = config.api.port;
@@ -191,6 +191,7 @@ if (config.api.externalSyncIntervalMin > 0) {
       if (changedCalendars > 0) logger.info("sync.scheduler.completed", fields);
       else logger.debug("sync.scheduler.completed", fields);
     } catch (e) {
+      recordExternalSyncFailure("scheduler", "all");
       logger.error("sync.scheduler.failed", {
         durationMs: Math.round((performance.now() - startedAt) * 10) / 10,
         error: e,
