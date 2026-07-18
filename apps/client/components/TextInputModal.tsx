@@ -67,7 +67,7 @@ export default function InputModal({ visible, isDelete, title, placeholder, onCo
       statusBarTranslucent={true}
     >
       <Animated.View style={[styles.modalOverlay, fadeStyle]}>
-        <Pressable style={{ flex: 1 }} />
+        <Pressable style={{ flex: 1 }} accessible={false} />
       </Animated.View>
       <KeyboardAvoidingView
         behavior="padding"
@@ -114,6 +114,7 @@ export default function InputModal({ visible, isDelete, title, placeholder, onCo
             autoCapitalize={autoCapitalize}
             autoCorrect={false}
             editable={!isWaiting}
+            accessibilityLabel={title}
           />
           {valueError ? <Text style={[styles.errorText, { alignSelf: "center" }]}>{valueError}</Text> : null}
           <View style={{

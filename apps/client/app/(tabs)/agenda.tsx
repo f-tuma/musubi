@@ -22,6 +22,7 @@ import { useLocalSearchParams } from "expo-router";
 import * as Linking from "expo-linking";
 import { showToast } from "@/components/ui/Toast";
 import { userFacingError } from "@/lib/network";
+import { useCurrentDay } from "@/hooks/useCurrentDay";
 
 
 
@@ -76,7 +77,8 @@ export default function AgendaTab() {
     [calendars]
   );
 
-  const todayKey = useMemo(() => dateKey(new Date()), []);
+  const currentDay = useCurrentDay();
+  const todayKey = useMemo(() => dateKey(currentDay), [currentDay]);
 
   const groups = useMemo(() => {
     const now = new Date();
@@ -122,7 +124,7 @@ export default function AgendaTab() {
       }
     }
     return result;
-  }, [events, activeCals]);
+  }, [events, activeCals, currentDay]);
 
   // Store write, not setState — opening the detail must not re-render the
   // (long) agenda list. The modal lives in GlobalEventModals.
@@ -218,7 +220,14 @@ export default function AgendaTab() {
         <View>
           {
             g.items.map(e => (
-              <Tap onPress={() => openEventDetail(e)} key={e.id} style={styles.timelineRow}>
+              <Tap
+                onPress={() => openEventDetail(e)}
+                key={e.id}
+                accessibilityLabel={e.isAllDay
+                  ? `All-day event, ${e.title || "Untitled event"}`
+                  : `${e.title || "Untitled event"}, ${formatTime(e.start, timeFormat)} to ${formatTime(e.end, timeFormat)}`}
+                style={styles.timelineRow}
+              >
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg2 }}>
                     {formatTime(e.start, timeFormat)}
@@ -279,7 +288,12 @@ export default function AgendaTab() {
       {/* FAB hides while the docked composer is open (mirrors the home screen). */}
       {!createOpen && (
         <Animated.View entering={FadeIn.duration(400)}>
-          <Tap style={styles.fab} haptic="thump" onPress={() => setCreateOpen(true)}>
+          <Tap
+            style={styles.fab}
+            haptic="thump"
+            onPress={() => setCreateOpen(true)}
+            accessibilityLabel="Create event"
+          >
             <Text style={{ color: colors.onFill, fontSize: 28, lineHeight: 30 }}>+</Text>
           </Tap>
         </Animated.View>

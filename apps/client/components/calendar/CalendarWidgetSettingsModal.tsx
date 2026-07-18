@@ -68,7 +68,7 @@ export default function CalendarWidgetSettingsModal({ widgetId, onClose }: Props
     <Modal visible={visible} onRequestClose={handleClose} transparent animationType="none" statusBarTranslucent>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <Animated.View style={[styles.modalOverlay, fadeStyle]}>
-          <Pressable style={{ flex: 1 }} onPress={handleClose} />
+          <Pressable style={{ flex: 1 }} onPress={handleClose} accessible={false} />
         </Animated.View>
         <GestureDetector gesture={gesture}>
           <Animated.View style={[styles.modalSheet, fadeStyle, slideStyle]}>

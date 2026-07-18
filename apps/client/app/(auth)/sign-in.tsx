@@ -103,6 +103,7 @@ export default function SignIn() {
                   autoCorrect={false}
                   textContentType="emailAddress"
                   autoComplete="email"
+                  accessibilityLabel="Email"
                   returnKeyType="next"
                   onSubmitEditing={() => passwordRef.current?.focus()}
                 />
@@ -122,6 +123,7 @@ export default function SignIn() {
                   autoCorrect={false}
                   textContentType="password"
                   autoComplete="current-password"
+                  accessibilityLabel="Passphrase"
                   returnKeyType="done"
                   onSubmitEditing={handleSignIn}
                 />

@@ -37,7 +37,7 @@ export default function CalendarPickerModal({ title, visible, onClose, onSelect,
     >
       <GestureHandlerRootView style={{ flex: 1 }}>
         <Animated.View style={[styles.modalOverlay, fadeStyle]}>
-          <Pressable style={{ flex: 1 }} onPress={handleClose} />
+          <Pressable style={{ flex: 1 }} onPress={handleClose} accessible={false} />
         </Animated.View>
         <GestureDetector gesture={gesture}>
           <Animated.View style={[styles.modalSheet, fadeStyle, slideStyle]}>
@@ -56,6 +56,7 @@ export default function CalendarPickerModal({ title, visible, onClose, onSelect,
                   haptic="select"
                   scaleTo={0.99}
                   disabled={pending === c.id}
+                  accessibilityLabel={`${c.name} calendar`}
                   style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10, opacity: pending === c.id ? 0.4 : 1 }}
                   onPress={async () => {
                     setPending(c.id);

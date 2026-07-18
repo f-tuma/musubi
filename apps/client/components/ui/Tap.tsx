@@ -17,7 +17,10 @@ type Props = PressableProps & {
 // scale on press-in, springs back on release. Replaces bare <Pressable> so
 // every touch in the app answers the finger the same way.
 export const Tap = forwardRef<View, Props>(function Tap(
-  { haptic = false, scaleTo = 0.97, onPressIn, onPressOut, style, disabled, ...rest }, ref,
+  {
+    haptic = false, scaleTo = 0.97, onPress, onPressIn, onPressOut, style, disabled,
+    accessibilityRole, accessibilityState, ...rest
+  }, ref,
 ) {
   const pressed = useSharedValue(0);
 
@@ -33,6 +36,11 @@ export const Tap = forwardRef<View, Props>(function Tap(
       // cancels the press before the dim/scale ever shows (native-ripple feel).
       unstable_pressDelay={90}
       disabled={disabled}
+      onPress={onPress}
+      accessibilityRole={accessibilityRole ?? (onPress ? "button" : undefined)}
+      accessibilityState={disabled
+        ? { ...accessibilityState, disabled: true }
+        : accessibilityState}
       style={[style as any, feedback]}
       onPressIn={(e) => {
         pressed.value = 1;

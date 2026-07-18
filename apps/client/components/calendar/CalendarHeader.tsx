@@ -45,7 +45,7 @@ export function CalendarHeader({
     // zIndex lifts the mode dropdown above the filter bar / calendar body below
     <View style={[styles.header, { zIndex: 30, height: SCREEN_HEADER_HEIGHT }]}>
       <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-        <View style={{ flex: 1, minWidth: 0, height: 36, justifyContent: 'center' }}>
+        <View style={{ flex: 1, minWidth: 0, height: 44, justifyContent: 'center' }}>
           <Animated.View
             style={[{
               position: 'absolute', left: 0, zIndex: 2,
@@ -58,7 +58,7 @@ export function CalendarHeader({
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel="Back to month"
-              style={{ flexDirection: 'row', alignItems: 'center', marginLeft: -7, paddingVertical: 4, paddingRight: 4 }}
+              style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', marginLeft: -7, paddingRight: 4 }}
             >
               <Feather name="chevron-left" size={22} color={colors.accent} />
               <Text style={{ fontFamily: fonts.sansMedium, fontSize: 14, color: colors.accent }}>
@@ -90,15 +90,23 @@ export function CalendarHeader({
           </Animated.View>
         </View>
 
-        <View style={{ flexShrink: 0, flexDirection: 'row', alignItems: 'center', gap: 18 }}>
-          <Tap onPress={onTodayPress} hitSlop={8}>
+        <View style={{ flexShrink: 0, flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+          <Tap
+            onPress={onTodayPress}
+            style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: 6 }}
+            accessibilityLabel="Go to today"
+          >
             <Text style={{ color: colors.fg3, fontSize: 12, letterSpacing: 1.5 }}>TODAY</Text>
           </Tap>
           {onRefresh ? (
             refreshing ? (
               <ActivityIndicator size="small" color={colors.fg3} />
             ) : (
-              <Tap onPress={onRefresh} hitSlop={10}>
+              <Tap
+                onPress={onRefresh}
+                style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}
+                accessibilityLabel="Refresh calendars"
+              >
                 <Feather name="refresh-cw" size={16} color={colors.fg3} />
               </Tap>
             )

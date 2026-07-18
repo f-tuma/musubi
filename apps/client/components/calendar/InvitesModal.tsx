@@ -134,7 +134,7 @@ export default function InvitesModal({ calendar, visible, onClose }: Props) {
     >
       <GestureHandlerRootView style={{ flex: 1 }}>
         <Animated.View style={[styles.modalOverlay, fadeStyle]}>
-          <Pressable style={{ flex: 1 }} onPress={handleClose} />
+          <Pressable style={{ flex: 1 }} onPress={handleClose} accessible={false} />
         </Animated.View>
         <GestureDetector gesture={gesture}>
           <Animated.View style={[styles.modalSheet, fadeStyle, slideStyle]}>
@@ -152,6 +152,8 @@ export default function InvitesModal({ calendar, visible, onClose }: Props) {
                     <View style={styles.horizontalPillView}>
                       {USES_OPTIONS.map(o => (
                         <Tap key={o.label} haptic="select" onPress={() => setMaxUses(o.value)}
+                          accessibilityRole="radio" accessibilityLabel={`Maximum uses ${o.label}`}
+                          accessibilityState={{ checked: maxUses === o.value }}
                           style={maxUses === o.value ? styles.pillActive : styles.pill}>
                           <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: maxUses === o.value ? colors.fg : colors.fg3 }}>
                             {o.label}
@@ -165,6 +167,8 @@ export default function InvitesModal({ calendar, visible, onClose }: Props) {
                     <View style={styles.horizontalPillView}>
                       {EXPIRY_OPTIONS.map(o => (
                         <Tap key={o.label} haptic="select" onPress={() => setExpiryMs(o.ms)}
+                          accessibilityRole="radio" accessibilityLabel={`Expires ${o.label.toLowerCase()}`}
+                          accessibilityState={{ checked: expiryMs === o.ms }}
                           style={expiryMs === o.ms ? styles.pillActive : styles.pill}>
                           <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: expiryMs === o.ms ? colors.fg : colors.fg3 }}>
                             {o.label}
@@ -204,14 +208,23 @@ export default function InvitesModal({ calendar, visible, onClose }: Props) {
                             </Text>
                           </View>
                           {!dead && (
-                            <Tap hitSlop={10} onPress={() => shareInvite(i)}>
+                            <Tap
+                              onPress={() => shareInvite(i)}
+                              accessibilityLabel="Share invite link"
+                              style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}
+                            >
                               <Feather name="share-2" size={18} color={colors.fg2} />
                             </Tap>
                           )}
                           {pending === i.id
                             ? <ActivityIndicator size="small" color={colors.fg3} />
                             : (
-                              <Tap hitSlop={10} haptic="warn" onPress={() => revoke(i)}>
+                              <Tap
+                                haptic="warn"
+                                onPress={() => revoke(i)}
+                                accessibilityLabel="Revoke invite link"
+                                style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}
+                              >
                                 <Feather name="trash-2" size={18} color={colors.accent} />
                               </Tap>
                             )}

@@ -56,7 +56,7 @@ export default function ColorPickerModal({ visible, value, onConfirm, onClose }:
   return (
     <View style={[StyleSheet.absoluteFill, { zIndex: 1000 }]} pointerEvents="box-none">
       <Animated.View style={[StyleSheet.absoluteFill, styles.modalOverlay, fadeStyle]}>
-        <Pressable style={{ flex: 1 }} onPress={handleClose} />
+        <Pressable style={{ flex: 1 }} onPress={handleClose} accessible={false} />
       </Animated.View>
       <View
         pointerEvents="box-none"
@@ -67,6 +67,7 @@ export default function ColorPickerModal({ visible, value, onConfirm, onClose }:
           <Pressable
             style={{ gap: 16, backgroundColor: colors.bg3, padding: 16, borderRadius: 15 }}
             onPress={() => inputRef.current?.blur()}
+            accessible={false}
           >
             <Text style={{ color: colors.fg, fontFamily: fonts.serif, fontSize: 18 }}>Custom color</Text>
             <ColorPicker
@@ -85,6 +86,7 @@ export default function ColorPickerModal({ visible, value, onConfirm, onClose }:
                   autoCapitalize="none"
                   autoCorrect={false}
                   maxLength={7}
+                  accessibilityLabel="Hex color"
                   style={{
                     position: "absolute", top: 0, bottom: 0, left: 0, right: 0,
                     textAlign: "center",

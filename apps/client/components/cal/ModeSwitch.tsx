@@ -23,7 +23,14 @@ export function ModeSwitch({ mode, onChange, trigger }: Props) {
 
   return (
     <View>
-      <Tap onPress={() => setOpen(o => !o)} scaleTo={0.98}>
+      <Tap
+        onPress={() => setOpen(o => !o)}
+        scaleTo={0.98}
+        style={{ minHeight: 44, justifyContent: "center" }}
+        accessibilityLabel={`Calendar view, ${mode}`}
+        accessibilityHint="Opens the day, week, and month view choices"
+        accessibilityState={{ expanded: open }}
+      >
         {trigger(open)}
       </Tap>
 
@@ -32,6 +39,7 @@ export function ModeSwitch({ mode, onChange, trigger }: Props) {
           {/* invisible backdrop — tap anywhere else to close */}
           <Pressable
             onPress={() => setOpen(false)}
+            accessible={false}
             style={{ position: "absolute", top: -200, left: -1000, width: 4000, height: 4000 }}
           />
           <Animated.View
@@ -51,6 +59,9 @@ export function ModeSwitch({ mode, onChange, trigger }: Props) {
               <Tap
                 key={m}
                 onPress={() => { setOpen(false); onChange(m); }}
+                accessibilityRole="radio"
+                accessibilityLabel={`${m} view`}
+                accessibilityState={{ checked: m === mode }}
                 style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 11 }}
               >
                 <Text style={{

@@ -167,7 +167,12 @@ export default function SettingsTab() {
       <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         {/* Who you are — tap the avatar to change the photo, tap the name to rename. */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 14, padding: 20, borderBottomWidth: 1, borderColor: colors.line }}>
-          <Tap onPress={changeAvatar} disabled={avatarBusy} scaleTo={0.95}>
+          <Tap
+            onPress={changeAvatar}
+            disabled={avatarBusy}
+            scaleTo={0.95}
+            accessibilityLabel="Change profile photo"
+          >
             <View style={{ opacity: avatarBusy ? 0.5 : 1 }}>
               <Avatar name={userSession.data?.user.name ?? "?"} image={userSession.data?.user.image} size={52} />
               <View style={{
@@ -180,7 +185,12 @@ export default function SettingsTab() {
               </View>
             </View>
           </Tap>
-          <Tap onPress={() => setNameModalVisible(true)} scaleTo={1} style={{ flex: 1, gap: 2 }}>
+          <Tap
+            onPress={() => setNameModalVisible(true)}
+            scaleTo={1}
+            style={{ flex: 1, gap: 2 }}
+            accessibilityLabel={`Change display name. Current name ${userSession.data?.user.name ?? "unknown"}`}
+          >
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
               <Text style={{ fontFamily: fonts.serif, fontSize: 19, color: colors.fg }}>
                 {userSession.data?.user.name}

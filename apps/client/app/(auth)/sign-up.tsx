@@ -102,6 +102,7 @@ export default function SignUp() {
                   autoCorrect={false}
                   textContentType="name"
                   autoComplete="name"
+                  accessibilityLabel="Name"
                   returnKeyType="next"
                   onSubmitEditing={() => emailRef.current?.focus()}
                 />
@@ -121,6 +122,7 @@ export default function SignUp() {
                   autoCorrect={false}
                   textContentType="emailAddress"
                   autoComplete="email"
+                  accessibilityLabel="Email"
                   returnKeyType="next"
                   onSubmitEditing={() => passwordRef.current?.focus()}
                 />
@@ -140,6 +142,7 @@ export default function SignUp() {
                   autoCorrect={false}
                   textContentType="newPassword"
                   autoComplete="new-password"
+                  accessibilityLabel="Passphrase"
                   returnKeyType="next"
                   onSubmitEditing={() => confirmPasswordRef.current?.focus()}
                 />
@@ -159,6 +162,7 @@ export default function SignUp() {
                   autoCorrect={false}
                   textContentType="newPassword"
                   autoComplete="new-password"
+                  accessibilityLabel="Confirm passphrase"
                   returnKeyType="done"
                   onSubmitEditing={handleSignUp}
                 />
