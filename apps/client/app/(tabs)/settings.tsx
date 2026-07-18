@@ -162,9 +162,7 @@ export default function SettingsTab() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <Text style={{ fontFamily: fonts.serif, fontSize: 26, color: colors.fg }}>
-          Settings
-        </Text>
+        <Text style={styles.screenTitle}>Settings</Text>
       </View>
       <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         {/* Who you are — tap the avatar to change the photo, tap the name to rename. */}

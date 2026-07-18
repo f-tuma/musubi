@@ -28,6 +28,7 @@ import { Btn } from "@/components/ui/Btn";
 import * as haptics from "@/lib/haptics";
 import { userFacingError } from "@/lib/network";
 import { showToast } from "@/components/ui/Toast";
+import { tabBarHeight } from "@/constants/layout";
 
 type Props = {
   visible: boolean;
@@ -88,11 +89,10 @@ const DOCK_HIDDEN_EXTRA = 30;        // pushed this far past its height when hid
 const DOCK_SNAP_VELOCITY = 400;      // fling speed that snaps open/closed regardless of position
 const DOCK_DISMISS_PAST = 60;        // dragged this far past peek = dismiss the sheet entirely
 const DOCK_SPRING = { damping: 28, stiffness: 240, mass: 0.8 };
-const TAB_BAR_H = 70;                // (tabs)/_layout tabBarStyle.height — sheet rests on top of it
 const KB_SHOW_MS = 220;              // keyboard lift in/out timings
 const KB_HIDE_MS = 180;
 
-export function AddEventModal({ visible, startingDate, endingDate, docked, anchor, peekVisible = true, dockRevealProgress, dockBottomInset = TAB_BAR_H, onClose, onSave, onEdit, calendars, event }: Props) {
+export function AddEventModal({ visible, startingDate, endingDate, docked, anchor, peekVisible = true, dockRevealProgress, dockBottomInset, onClose, onSave, onEdit, calendars, event }: Props) {
   const {
     notificationsOnByDefault,
     timeFormat,
@@ -101,6 +101,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
   } = useSettingsStore();
 
   const insets = useSafeAreaInsets();
+  const restingBottomInset = dockBottomInset ?? tabBarHeight(insets.bottom);
   const { authClient } = useServer();
 
   const [newTitle, setNewTitle] = useState("");
@@ -227,7 +228,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
     if (!docked) return;
     const show = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
       e => {
-        const containerBottom = win.height - dockBottomInset; // sheet's resting bottom, window coords
+        const containerBottom = win.height - restingBottomInset; // sheet's resting bottom, window coords
         const overlap = Math.max(containerBottom - e.endCoordinates.screenY, 0);
         kbLift.value = withTiming(overlap, { duration: KB_SHOW_MS });
         setKbPad(overlap);
@@ -235,7 +236,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
     const hide = Keyboard.addListener(Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
       () => { kbLift.value = withTiming(0, { duration: KB_HIDE_MS }); setKbPad(0); });
     return () => { show.remove(); hide.remove(); };
-  }, [docked, win.height, dockBottomInset]);
+  }, [docked, win.height, restingBottomInset]);
 
 
   // Hide/show the docked sheet (week view: appears with the first draft).

@@ -252,9 +252,7 @@ export default function AgendaTab() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <Text style={{ fontFamily: fonts.serif, fontSize: 26, color: colors.fg }}>
-          Agenda
-        </Text>
+        <Text style={styles.screenTitle}>Agenda</Text>
       </View>
       <CalendarFilterBar
         calendars={calendars}

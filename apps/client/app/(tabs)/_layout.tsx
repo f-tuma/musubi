@@ -1,4 +1,5 @@
-import { colors, fonts } from '@/constants/theme';
+import { colors } from '@/constants/theme';
+import { TAB_BAR_ITEM_HEIGHT, tabBarBottomInset, tabBarHeight } from '@/constants/layout';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { useServer } from '@/contexts/ServerContext';
 import { useConnectToEventStream } from '@/hooks/useEventsStream';
@@ -16,10 +17,13 @@ import { select } from '@/lib/haptics';
 import { onSessionExpired, signOutAndReset } from '@/lib/signOut';
 import { GlobalEventModals } from '@/components/calendar/GlobalEventModals';
 import { startAgendaWidgetSync } from '@/services/agendaWidget';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 export default function TabLayout() {
   const { apiUrl, isLoading, authClient } = useServer();
+  const insets = useSafeAreaInsets();
+  const bottomInset = tabBarBottomInset(insets.bottom);
 
   // Expired session → any API call 401s → run the full sign-out flow once and
   // land on welcome, instead of every screen failing silently.
@@ -90,18 +94,16 @@ export default function TabLayout() {
             backgroundColor: colors.bg1,
             borderTopColor: colors.line,
             borderTopWidth: 1,
-            height: 70,
+            height: tabBarHeight(insets.bottom),
+            paddingBottom: bottomInset,
           },
           tabBarItemStyle: {
-            paddingVertical: 5,
+            height: TAB_BAR_ITEM_HEIGHT,
+            paddingVertical: 0,
           },
+          tabBarShowLabel: false,
           tabBarActiveTintColor: colors.fg,
           tabBarInactiveTintColor: colors.fg3,
-          tabBarLabelStyle: {
-            fontFamily: fonts.sans,
-            fontSize: 10,
-            letterSpacing: 0.4,
-          },
           headerShown: false,
         }}
       >

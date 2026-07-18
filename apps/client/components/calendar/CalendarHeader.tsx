@@ -8,8 +8,8 @@ import { ModeSwitch } from "@/components/cal/ModeSwitch";
 import { YearStamp } from "@/components/calendar/YearStamp";
 import { Mode } from "@musubi/calendar";
 import Animated, { interpolate, SharedValue, useAnimatedStyle } from "react-native-reanimated";
+import { SCREEN_HEADER_HEIGHT } from "@/constants/layout";
 
-const CALENDAR_HEADER_HEIGHT = 56;
 const BACK_BUTTON_SHIFT = 74;
 
 type Props = {
@@ -43,7 +43,7 @@ export function CalendarHeader({
 
   return (
     // zIndex lifts the mode dropdown above the filter bar / calendar body below
-    <View style={[styles.header, { zIndex: 30, height: CALENDAR_HEADER_HEIGHT, paddingVertical: 10 }]}>
+    <View style={[styles.header, { zIndex: 30, height: SCREEN_HEADER_HEIGHT }]}>
       <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
         <View style={{ flex: 1, minWidth: 0, height: 36, justifyContent: 'center' }}>
           <Animated.View

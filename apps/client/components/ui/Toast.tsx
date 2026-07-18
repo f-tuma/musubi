@@ -6,6 +6,7 @@ import { create } from "zustand";
 import { colors, fonts } from "@/constants/theme";
 import { Tap } from "@/components/ui/Tap";
 import { usePathname } from "expo-router";
+import { tabBarHeight } from "@/constants/layout";
 
 // A single bottom toast — transient message with an optional action (e.g. Undo).
 // Imperative API so any code can raise one: `showToast({ message, actionLabel, onAction })`.
@@ -29,7 +30,6 @@ export const showToast = (t: Omit<Toast, "id">) => useToastStore.getState().show
 const VISIBLE_MS = 4200;  // auto-dismiss after this
 const REVEAL_MS = 260;    // ease-in-out fade + small rise, both directions
 const TRAVEL = 14;        // it only nudges up a little; the fade does the reveal
-const TAB_BAR_H = 70;     // (tabs)/_layout tabBarStyle.height — rest just above it
 const SIGN_IN_ACTIONS_H = 154; // Forgot + Continue + gap/padding; toast sits above both
 const TAB_PATHS = new Set(["/", "/calendars", "/agenda", "/settings"]);
 
@@ -39,11 +39,11 @@ export function ToastHost() {
   const hide = useToastStore((s) => s.hide);
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
-  const bottom = insets.bottom + (
-    pathname === "/sign-in"
-      ? SIGN_IN_ACTIONS_H
-      : TAB_PATHS.has(pathname) ? TAB_BAR_H + 10 : 16
-  );
+  const bottom = pathname === "/sign-in"
+    ? insets.bottom + SIGN_IN_ACTIONS_H
+    : TAB_PATHS.has(pathname)
+      ? tabBarHeight(insets.bottom) + 10
+      : insets.bottom + 16;
   const ty = useSharedValue(TRAVEL);
   const op = useSharedValue(0);
   const reveal = useAnimatedStyle(() => ({ transform: [{ translateY: ty.value }], opacity: op.value }));

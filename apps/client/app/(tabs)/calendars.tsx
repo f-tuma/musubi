@@ -3,7 +3,7 @@ import { CalendarGroup, ReorderableCalendarList } from "@/components/calendar/Re
 import { useSettingsStore } from "@/store/useSettingsStore";
 import CreateCalendarModal from "@/components/calendar/CreateCalendarModal";
 import SyncCalendarModal from "@/components/calendar/SyncCalendarModal";
-import { colors, fonts, styles } from "@/constants/theme";
+import { colors, styles } from "@/constants/theme";
 import { Calendar, providerFlavor } from "@musubi/types";
 import { useApi } from "@/services/api";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
@@ -142,9 +142,7 @@ export default function CalendarsTab() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <Text style={{ fontFamily: fonts.serif, fontSize: 26, color: colors.fg }}>
-          Calendars
-        </Text>
+        <Text style={styles.screenTitle}>Calendars</Text>
       </View>
       <View style={[styles.modalButtons, { backgroundColor: colors.bg }]}>
         <Btn
