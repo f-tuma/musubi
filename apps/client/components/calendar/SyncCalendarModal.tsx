@@ -2,7 +2,7 @@ import { colors, fonts, styles } from "@/constants/theme";
 import { useServer } from "@/contexts/ServerContext";
 import { useApi } from "@/services/api";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Text, Pressable, ScrollView, View, TextInput, Alert, Linking } from "react-native";
 import { ModalPortal as Modal } from "@/components/ui/ModalPortal";
 import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
@@ -26,8 +26,21 @@ type Props = {
 };
 
 export default function SyncCalendarModal({ visible, onClose, onConnected, callbackURL = "/(tabs)" }: Props) {
-  const { authClient } = useServer();
+  const { authClient, apiUrl } = useServer();
   const api = useApi();
+
+  // Which providers this server can actually sync (same pattern as the welcome
+  // screen's social buttons). null = unknown (old server / fetch failed) →
+  // show everything rather than an empty modal.
+  const [available, setAvailable] = useState<string[] | null>(null);
+  useEffect(() => {
+    if (!visible || !apiUrl) return;
+    fetch(`${apiUrl}/api/v1/server`)
+      .then((res) => res.json())
+      .then(({ syncProviders }) => setAvailable(Array.isArray(syncProviders) ? syncProviders : null))
+      .catch(() => setAvailable(null));
+  }, [visible, apiUrl]);
+  const shows = (provider: string) => !available || available.includes(provider);
 
   const [step, setStep] = useState<Step>("providers");
   const [serverUrl, setServerUrl] = useState("");
@@ -125,32 +138,40 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
             <ScrollView showsVerticalScrollIndicator={false}>
               {step === "providers" && (
                 <View style={styles.modalButtonsColumn}>
-                  <Btn
-                    label="Google Calendar"
-                    variant="secondary"
-                    icon={<Ionicons name="logo-google" size={16} color={colors.fg2} />}
-                    loading={loadingProvider === "google"}
-                    onPress={handleGoogle}
-                  />
-                  <Btn
-                    label="Outlook"
-                    variant="secondary"
-                    icon={<Ionicons name="logo-microsoft" size={16} color={colors.fg2} />}
-                    loading={loadingProvider === "microsoft"}
-                    onPress={handleMicrosoft}
-                  />
-                  <Btn
-                    label="Apple / iCloud"
-                    variant="secondary"
-                    icon={<Ionicons name="logo-apple" size={16} color={colors.fg2} />}
-                    onPress={() => setStep("apple")}
-                  />
-                  <Btn
-                    label="Other (CalDAV)"
-                    variant="secondary"
-                    icon={<Ionicons name="cloud" size={16} color={colors.fg2} />}
-                    onPress={() => setStep("caldav")}
-                  />
+                  {shows("google") && (
+                    <Btn
+                      label="Google Calendar"
+                      variant="secondary"
+                      icon={<Ionicons name="logo-google" size={16} color={colors.fg2} />}
+                      loading={loadingProvider === "google"}
+                      onPress={handleGoogle}
+                    />
+                  )}
+                  {shows("microsoft") && (
+                    <Btn
+                      label="Outlook"
+                      variant="secondary"
+                      icon={<Ionicons name="logo-microsoft" size={16} color={colors.fg2} />}
+                      loading={loadingProvider === "microsoft"}
+                      onPress={handleMicrosoft}
+                    />
+                  )}
+                  {shows("caldav") && (
+                    <>
+                      <Btn
+                        label="Apple / iCloud"
+                        variant="secondary"
+                        icon={<Ionicons name="logo-apple" size={16} color={colors.fg2} />}
+                        onPress={() => setStep("apple")}
+                      />
+                      <Btn
+                        label="Other (CalDAV)"
+                        variant="secondary"
+                        icon={<Ionicons name="cloud" size={16} color={colors.fg2} />}
+                        onPress={() => setStep("caldav")}
+                      />
+                    </>
+                  )}
                 </View>
               )}
 
