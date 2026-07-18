@@ -84,7 +84,7 @@ function envOrThrow(key: string): string {
 ```
 
 **Required at boot** (server won't start without them): `DATABASE_URL`, `ENVIRONMENT`, `BETTER_AUTH_URL`.
-**Optional, gated at use**: SMTP, Google OAuth credentials, `CALDAV_ENC_KEY`. The pattern is deliberate — a missing optional key disables *one* feature instead of crashing the server, so you can run a minimal stack locally. See [Running Locally](/docs/guides/running-locally/) for the full variable table.
+**Optional, gated at use**: SMTP, Google/Microsoft OAuth credentials, `CALDAV_ENC_KEY`. The pattern is deliberate — a missing optional key disables *one* feature instead of crashing the server, so you can run a minimal stack locally. See [Running Locally](/docs/guides/running-locally/) for the full variable table.
 
 `LOG_LEVEL` is optional and defaults to `info`; invalid values fail fast at boot.
 The config package also exports the process-wide structured `logger`, shared by

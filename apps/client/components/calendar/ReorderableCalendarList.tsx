@@ -42,6 +42,7 @@ type Props = {
 
 export function ProviderIcon({ provider }: { provider?: string | null }) {
   if (provider === "google") return <Ionicons name="logo-google" size={13} color={colors.fg3} />;
+  if (provider === "microsoft") return <Ionicons name="logo-microsoft" size={13} color={colors.fg3} />;
   if (provider === "apple") return <Ionicons name="logo-apple" size={14} color={colors.fg3} />;
   if (provider === "caldav") return <Ionicons name="cloud" size={14} color={colors.fg3} />;
   return <Feather name="calendar" size={13} color={colors.fg3} />;
@@ -329,13 +330,13 @@ function SectionHeader({ group, draggable, onDisconnect, onReconnect, onDragStar
           <View style={{ flex: 1 }}>
             <Text numberOfLines={1} style={{ fontFamily: fonts.sansMedium, fontSize: 11, color: colors.fg3, letterSpacing: 0.5, textTransform: "uppercase" }}>{group.title}</Text>
             {onReconnect ? (
-              <Text style={{ fontFamily: fonts.sansMedium, fontSize: 10, color: colors.accent }}>Google authorization expired · reconnect</Text>
+              <Text style={{ fontFamily: fonts.sansMedium, fontSize: 10, color: colors.accent }}>Authorization expired · reconnect</Text>
             ) : null}
           </View>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
           {onReconnect ? (
-            <Tap onPress={onReconnect} accessibilityLabel="Reconnect Google Calendar" hitSlop={8}>
+            <Tap onPress={onReconnect} accessibilityLabel={`Reconnect ${group.title}`} hitSlop={8}>
               <Feather name="refresh-cw" size={13} color={colors.accent} />
             </Tap>
           ) : null}

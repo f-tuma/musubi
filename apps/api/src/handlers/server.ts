@@ -11,12 +11,23 @@ function enabledSocials(): string[] {
   return socials;
 }
 
+// Same idea for calendar sync — the client's "Sync a Calendar" modal shows
+// only providers this server can actually run. OAuth sync needs the secret
+// too (refresh flow); CalDAV needs the key that encrypts stored passwords.
+function enabledSyncProviders(): string[] {
+  const providers: string[] = [];
+  if (config.social.googleWebClientID && config.social.googleClientSecret) providers.push("google");
+  if (config.social.microsoftClientID && config.social.microsoftClientSecret) providers.push("microsoft");
+  if (config.security.caldavEncKey) providers.push("caldav");
+  return providers;
+}
+
 export function handlerServerStatus(_: Request, res: Response) {
   res.status(200).json({ ok: true });
 }
 
 export function handlerServer(_: Request, res: Response) {
-  res.status(200).json({ minClientVersion: "0.0.18", socials: enabledSocials() });
+  res.status(200).json({ minClientVersion: "0.0.19", socials: enabledSocials(), syncProviders: enabledSyncProviders() });
 }
 
 // Apple universal links: iOS fetches this to learn which app owns which paths

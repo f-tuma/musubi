@@ -1,17 +1,14 @@
-import { colors, styles } from "@/constants/theme";
+import { styles } from "@/constants/theme";
 import { AddEventModal, DOCK_PEEK } from "@/components/calendar/AddEventModal";
 import { CalendarFilterBar } from "@/components/calendar/CalendarFilterBar";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
-import { MonthView } from "@/components/cal/MonthView";
-import { TimelineView } from "@/components/cal/TimelineView";
-import { Draft, DRILL_OPEN_MIN, minutesToY, Rect, ZOOM_IN_MS, ZOOM_OUT_MS } from "@/components/cal/layout";
+import { CalendarDrillView, useCalendarDrill } from "@/components/calendar/CalendarDrillView";
+import { Draft, DRILL_OPEN_MIN, minutesToY, Rect } from "@/components/cal/layout";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
-import { BackHandler, View } from "react-native";
+import { BackHandler, Platform, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { expandRecurringEvents, type Mode } from "@musubi/calendar";
-import Animated, {
-  Easing, interpolate, useAnimatedStyle, useSharedValue, withTiming,
-} from "react-native-reanimated";
 import dayjs from "dayjs";
 import { Event } from "@musubi/types";
 import { useEventsStore } from "@/store/useEventsStore";
@@ -27,6 +24,10 @@ import { warn } from "@/lib/haptics";
 import { showToast } from "@/components/ui/Toast";
 
 type CalMode = "month" | "week" | "day";
+
+const IOS_BACK_EDGE = 24;
+const IOS_BACK_DISTANCE = 64;
+const IOS_BACK_VELOCITY = 650;
 
 // Expansion window around the anchor month. Swipes within a month reuse the
 // expand memo below; month view gets a wider window for its buffered pages.
@@ -57,21 +58,16 @@ export default function MainTab() {
     setCalMode(normalizeMode(defaultCalendarView));
   }, [defaultCalendarView]);
 
-  // month → day zoom: the tapped cell rect grows into a full day view overlay
-  const [drill, setDrill] = useState<null | { date: Date; rect: Rect }>(null);
-  // whether the drill's composer should peek: flipped true when the zoom-in
-  // finishes (so it slides up after the day has settled, not before/during),
-  // false on close so it ducks out as the day zooms back to the month.
-  const [dockPeekReady, setDockPeekReady] = useState(false);
-  const zoom = useSharedValue(0);
-  const [bodySize, setBodySize] = useState({ w: 0, h: 0 });
-
   const [draft, setDraft] = useState<Draft | null>(null);
   const [dockHidden, setDockHidden] = useState(false); // X hides the sheet until the next draft
   const handleDraftChange = useCallback((d: Draft | null) => { setDraft(d); setDockHidden(false); }, []);
   const scrollPosRef = useRef(Math.max(0, minutesToY(new Date().getHours() * 60 - 60)));
   // the drill-in day view has its own scroll memory, always reset to noon on open
   const drillScrollPosRef = useRef(minutesToY(DRILL_OPEN_MIN));
+  const {
+    drill, contentReady: drillContentReady, zoom, monthTransition, drillOpacity,
+    openDrill: beginDrill, closeDrill: animateDrillClosed, resetDrill,
+  } = useCalendarDrill(anchorDate);
 
   const refresh = useRefreshData();
   const refreshRef = useRef(refresh);
@@ -84,42 +80,20 @@ export default function MainTab() {
   }, []);
 
   const openDrill = useCallback((date: Date, rect: Rect) => {
-    if (closeTimer.current) clearTimeout(closeTimer.current); // don't let a pending close wipe this drill
     setDraft(null);
     setDockHidden(false); // a fresh drill always re-shows the composer, even if X hid it last time
     drillScrollPosRef.current = minutesToY(DRILL_OPEN_MIN); // day view always opens at this time
+    beginDrill(date, rect);
     setAnchorDate(date); // header + composer follow the drilled day (and its swipes)
-    setDrill({ date, rect });
-    zoom.value = 0;
-    // Mount the (heavy) day view while the overlay is still at the tapped cell and
-    // invisible (zoom 0), THEN animate a frame later — so the mount + scroll cost
-    // lands before the animation, not on its frames. The zoom then runs on
-    // already-mounted, already-scrolled content and stays smooth. The composer
-    // slides up only once the zoom finishes.
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      zoom.value = withTiming(1, { duration: ZOOM_IN_MS, easing: Easing.out(Easing.cubic) });
-      // Timer, not the animation callback (interrupted animations drop it) —
-      // harmless if the drill closed meanwhile: dockPeeking requires `drill`.
-      setTimeout(() => setDockPeekReady(true), ZOOM_IN_MS);
-    }));
-  }, []);
+  }, [beginDrill]);
 
-  const clearDrill = useCallback(() => {
-    setDrill(null);
-    setDraft(null);
-  }, []);
-
-  // Clear on a plain timer, NOT the animation callback — an interrupted
-  // animation drops its callback (same pitfall as useModalAnimation), which
-  // stranded the drill "open" and made the first back gesture appear to do
-  // nothing (the second one then worked).
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeDrill = useCallback(() => {
-    setDockPeekReady(false); // sheet ducks out while the day zooms back
-    zoom.value = withTiming(0, { duration: ZOOM_OUT_MS, easing: Easing.in(Easing.cubic) });
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    closeTimer.current = setTimeout(clearDrill, ZOOM_OUT_MS + 20);
-  }, [clearDrill]);
+    const sourceHeaderDate = drill?.sourceHeaderDate;
+    animateDrillClosed(() => {
+      setDraft(null);
+      if (sourceHeaderDate) setAnchorDate(sourceHeaderDate);
+    });
+  }, [animateDrillClosed, drill]);
 
   // Android back while drilled into a day → zoom back out to the month.
   // Registered via useFocusEffect (not a plain useEffect) so it's ordered
@@ -131,27 +105,41 @@ export default function MainTab() {
     return () => sub.remove();
   }, [drill, closeDrill]));
 
+  // iOS has no global Back action. Recreate the platform's navigation gesture
+  // for this local (non-router) drill state, and only from the leading edge so
+  // horizontal swipes elsewhere remain available to the day pager.
+  const edgeBackGesture = useMemo(() => Gesture.Pan()
+    .enabled(Platform.OS === "ios" && !!drill)
+    .hitSlop({ left: 0, width: IOS_BACK_EDGE })
+    .activeOffsetX(12)
+    .failOffsetY([-16, 16])
+    .runOnJS(true)
+    .onEnd(e => {
+      if (
+        e.translationX >= IOS_BACK_DISTANCE
+        || (e.translationX >= IOS_BACK_EDGE && e.velocityX >= IOS_BACK_VELOCITY)
+      ) closeDrill();
+    }), [drill, closeDrill]);
+
   const switchMode = useCallback((m: Mode) => {
     if (m !== "month" && m !== "week" && m !== "day") return;
     setDraft(null);
     if (drill) {
       if (m === "month") { closeDrill(); return; }
       // jump straight from the drilled day into another mode, no zoom-out
-      zoom.value = 0;
-      setDrill(null);
+      resetDrill();
     }
     setBase(anchorDate);
     setCalMode(m);
-  }, [drill, anchorDate, closeDrill]);
+  }, [drill, anchorDate, closeDrill, resetDrill]);
 
   const onTodayPress = useCallback(() => {
     const now = new Date();
-    zoom.value = 0;
-    setDrill(null);
+    resetDrill();
     setDraft(null);
     setBase(now);       // new base remounts the pager at today
     setAnchorDate(now);
-  }, []);
+  }, [resetDrill]);
 
   // Android calendar VIEW intent (com.android.calendar/time/<ms>, routed via
   // +not-found → root index): jump the calendar to the requested date.
@@ -160,12 +148,11 @@ export default function MainTab() {
     const ms = Number(time);
     if (!time || !Number.isFinite(ms)) return;
     const target = new Date(ms);
-    zoom.value = 0;
-    setDrill(null);
+    resetDrill();
     setDraft(null);
     setBase(target);
     setAnchorDate(target);
-  }, [time]);
+  }, [time, resetDrill]);
 
   // An .ics opened via the OS (parsed in app/_layout) → open the composer prefilled.
   const importPending = useImportStore(s => s.pending);
@@ -240,138 +227,74 @@ export default function MainTab() {
   const dockVisible = calMode !== "month" || !!drill;
   // one truth for "is the sheet peeking" — drives the sheet AND the timeline's
   // bottom padding (no dead gap under midnight when the sheet is hidden)
-  // The composer peeks the instant a drill opens (not after the zoom) so the day
-  // view is laid out with its space reserved from frame one — no slide-in, no jump.
-  const dockPeeking = !!draft || ((calMode === "day" || (!!drill && dockPeekReady)) && !dockHidden);
-
-  // Overlay geometry: tapped cell rect → full calendar body. Content is laid out
-  // at full size inside and fades in, so nothing reflows mid-animation.
-  const overlayStyle = useAnimatedStyle(() => {
-    if (!drill) return { opacity: 0 };
-    const r = drill.rect;
-    return {
-      // Invisible until the zoom actually starts — the day view mounts during
-      // the pre-animation frames (zoom exactly 0), and showing the empty
-      // overlay box then read as the tapped cell "blacking out".
-      opacity: zoom.value === 0 ? 0 : 1,
-      left: interpolate(zoom.value, [0, 1], [r.x, 0]),
-      top: interpolate(zoom.value, [0, 1], [r.y, 0]),
-      width: interpolate(zoom.value, [0, 1], [r.w, bodySize.w]),
-      height: interpolate(zoom.value, [0, 1], [r.h, bodySize.h]),
-      borderRadius: interpolate(zoom.value, [0, 1], [10, 0]),
-      borderWidth: zoom.value < 1 ? 1 : 0, // hairline helps mid-zoom, but at rest it's a visible edge
-    };
-  });
-  const overlayContentStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(zoom.value, [0, 0.35, 1], [0, 0.2, 1]),
-  }));
-  const monthUnderStyle = useAnimatedStyle(() => ({
-    flex: 1,
-    opacity: 1 - zoom.value * 0.5,
-    transform: [{ scale: 1 + zoom.value * 0.03 }],
-  }));
+  // A drill reserves the composer's space from frame one; its visual reveal is
+  // driven separately by monthTransition, in lockstep with the zoom.
+  const dockPeeking = !!draft || ((calMode === "day" || !!drill) && !dockHidden);
 
   return (
-    <View style={styles.screen}>
-      <CalendarHeader
-        anchorDate={anchorDate}
-        calMode={drill ? "day" : calMode}
-        onModeChange={switchMode}
-        onTodayPress={onTodayPress}
-        onRefresh={onRefresh}
-        refreshing={refreshing}
-      />
-      <CalendarFilterBar
-        calendars={calendars}
-        activeCals={activeCals}
-        soloCalId={soloCalId}
-        onToggle={toggleCal}
-        onSolo={soloCalendar}
-      />
-      <View
-        style={{ flex: 1 }}
-        onLayout={e => setBodySize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
-      >
-        {calMode === "month" ? (
-          <Animated.View style={monthUnderStyle}>
-            <MonthView
-              key={`m-${base.getTime()}`}
-              base={base}
-              events={visibleEvents}
-              weekStartsOn={weekStartsOn === "sunday" ? 0 : 1}
-              eventColorOf={eventColorOf}
-              onDayPress={openDrill}
-              onPageChange={onPageChange}
-            />
-          </Animated.View>
-        ) : (
-          <TimelineView
-            key={`${calMode}-${base.getTime()}`}
-            mode={calMode}
-            base={base}
-            events={visibleEvents}
-            weekStartsOn={weekStartsOn === "sunday" ? 0 : 1}
-            eventColorOf={eventColorOf}
-            onPressEvent={openEventDetail}
-            draft={draft}
-            onDraftChange={handleDraftChange}
-            canMoveEvent={canMoveEvent}
-            onMoveEvent={onMoveEvent}
-            onPageChange={onPageChange}
-            scrollPosRef={scrollPosRef}
-            bottomPad={dockPeeking ? DOCK_PEEK + 14 : 28}
+    <GestureDetector gesture={edgeBackGesture}>
+      <View style={styles.screen}>
+        <CalendarHeader
+          anchorDate={anchorDate}
+          calMode={drill ? "day" : calMode}
+          onModeChange={switchMode}
+          onBackToMonth={drill ? closeDrill : undefined}
+          drillSourceDate={drill?.sourceHeaderDate}
+          drillProgress={monthTransition}
+          onTodayPress={onTodayPress}
+          onRefresh={onRefresh}
+          refreshing={refreshing}
+        />
+        <CalendarFilterBar
+          calendars={calendars}
+          activeCals={activeCals}
+          soloCalId={soloCalId}
+          onToggle={toggleCal}
+          onSolo={soloCalendar}
+        />
+        <CalendarDrillView
+          calMode={calMode}
+          base={base}
+          events={visibleEvents}
+          weekStartsOn={weekStartsOn === "sunday" ? 0 : 1}
+          eventColorOf={eventColorOf}
+          onDayPress={openDrill}
+          onPageChange={onPageChange}
+          onPressEvent={openEventDetail}
+          draft={draft}
+          onDraftChange={handleDraftChange}
+          canMoveEvent={canMoveEvent}
+          onMoveEvent={onMoveEvent}
+          scrollPosRef={scrollPosRef}
+          drillScrollPosRef={drillScrollPosRef}
+          bottomPad={dockPeeking ? DOCK_PEEK + 14 : 28}
+          drillBottomPad={dockHidden && !draft ? 28 : DOCK_PEEK + 14}
+          drill={drill}
+          drillContentReady={drillContentReady}
+          zoom={zoom}
+          monthTransition={monthTransition}
+          drillOpacity={drillOpacity}
+        />
+
+        {/* Docked event composer — peek with title + quick save, pull up for the
+            full form. The draft ghost on the grid feeds its times live. */}
+        {dockVisible && (
+          <AddEventModal
+            docked
+            visible={true}
+            peekVisible={dockPeeking}
+            dockRevealProgress={drill ? monthTransition : undefined}
+            anchor={anchorDate}
+            startingDate={draft?.start}
+            endingDate={draft?.end}
+            onClose={() => { setDraft(null); setDockHidden(true); }}
+            onSave={async (e) => await addEvent(e, api)}
+            onEdit={async (e) => await updateEvent(e, api)}
+            calendars={calendars}
           />
         )}
 
-        {drill && (
-          <Animated.View style={[{
-            position: "absolute",
-            backgroundColor: colors.bg,
-            overflow: "hidden",
-            borderColor: colors.line2,
-          }, overlayStyle]}>
-            <Animated.View style={[{ width: bodySize.w, height: bodySize.h }, overlayContentStyle]}>
-              <TimelineView
-                key={`drill-${drill.date.getTime()}`}
-                mode="day"
-                base={drill.date}
-                events={visibleEvents}
-                weekStartsOn={weekStartsOn === "sunday" ? 0 : 1}
-                eventColorOf={eventColorOf}
-                onPressEvent={openEventDetail}
-                draft={draft}
-                onDraftChange={handleDraftChange}
-                canMoveEvent={canMoveEvent}
-                onMoveEvent={onMoveEvent}
-                onPageChange={onPageChange}
-                scrollPosRef={drillScrollPosRef}
-                // gap reserved by default; only cut when the composer is hidden —
-                // which only happens on a user X (already after open), so the cut
-                // just shrinks the bottom of an open view and nothing jumps.
-                bottomPad={dockHidden && !draft ? 28 : DOCK_PEEK + 14}
-              />
-            </Animated.View>
-          </Animated.View>
-        )}
       </View>
-
-      {/* Docked event composer — peek with title + quick save, pull up for the
-          full form. The draft ghost on the grid feeds its times live. */}
-      {dockVisible && (
-        <AddEventModal
-          docked
-          visible={true}
-          peekVisible={dockPeeking}
-          anchor={anchorDate}
-          startingDate={draft?.start}
-          endingDate={draft?.end}
-          onClose={() => { setDraft(null); setDockHidden(true); }}
-          onSave={async (e) => await addEvent(e, api)}
-          onEdit={async (e) => await updateEvent(e, api)}
-          calendars={calendars}
-        />
-      )}
-
-    </View>
+    </GestureDetector>
   );
 }

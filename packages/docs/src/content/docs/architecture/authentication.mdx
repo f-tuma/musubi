@@ -74,9 +74,9 @@ The client loads settings **first and independently** in `useRefreshData` — th
 
 Other Better Auth options in use: **account linking** (`allowDifferentEmails: true`, so a signed-in user can connect a second Google account with a different email), and **user deletion** (`deleteUser.enabled`).
 
-## Google Calendar connection is *not* sign-in
+## Calendar connection is *not* sign-in
 
-Signing in with Google gives you an account — it does **not** grant calendar access. Connecting a Google Calendar for [sync](/docs/architecture/sync/) is a separate, explicit action (`SyncCalendarModal` → `authClient.linkSocial({ provider: "google", scopes: ["…/auth/calendar"] })`) that runs the **OAuth authorization-code redirect** with `access_type=offline` + `prompt=consent` to obtain a **refresh token**. The sync engine only syncs Google accounts that have both the calendar scope **and** a refresh token — see `getGoogleAccountIDs`. Apple/iCloud calendars connect over CalDAV with an app-specific password, not Sign in with Apple.
+Signing in with Google gives you an account — it does **not** grant calendar access. Connecting a Google Calendar for [sync](/docs/architecture/sync/) is a separate, explicit action (`SyncCalendarModal` → `authClient.linkSocial({ provider: "google", scopes: ["…/auth/calendar"] })`) that runs the **OAuth authorization-code redirect** with `access_type=offline` + `prompt=consent` to obtain a **refresh token**. The sync engine only syncs Google accounts that have both the calendar scope **and** a refresh token — see `getOAuthAccountIDs`. Outlook connects the same way (`linkSocial({ provider: "microsoft", scopes: ["Calendars.ReadWrite"] })`): `offline_access` is in Microsoft's default scopes so the refresh token comes for free, and the provider sits in `accountLinking.trustedProviders` because Microsoft omits the `email_verified` claim — better-auth would otherwise refuse the link. Apple/iCloud calendars connect over CalDAV with an app-specific password, not Sign in with Apple.
 
 ## Setup
 

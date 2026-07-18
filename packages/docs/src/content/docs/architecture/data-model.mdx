@@ -129,7 +129,7 @@ Without `since`, the server returns the full active set (`deletedAt IS NULL`) an
 export const db = drizzle(config.db.databaseUrl, { schema });
 export * from './queries/events';
 export * from './queries/calendars';
-// … users, settings, invites, sessions, external, caldav, google
+// … users, settings, invites, sessions, external, caldav, oauth
 export * as schema from './schema';
 ```
 

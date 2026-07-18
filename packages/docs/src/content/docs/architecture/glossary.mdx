@@ -77,10 +77,10 @@ A latched ref in `app/_layout.tsx`: once the app has been ready once, it stays "
 A provider's calendar imported as a normal Musubi calendar with an `external_calendars` mapping. Events flow in/out through the sync engine; the provider stays authoritative. Mirrors are editable/deletable from Musubi (and creatable into an account) — the change is pushed to the provider first and aborts locally if refused.
 
 ### Adapter
-An implementation of the `CalendarAdapter` contract (`sync/adapter.ts`) translating one provider's API to `NormalizedEvent`s, plus calendar-level writes (`createCalendar`/`updateCalendar`/`deleteCalendar`): `google`, `caldav` today. The engine never talks to providers directly.
+An implementation of the `CalendarAdapter` contract (`sync/adapter.ts`) translating one provider's API to `NormalizedEvent`s, plus calendar-level writes (`createCalendar`/`updateCalendar`/`deleteCalendar`): `google`, `microsoft`, `caldav` today. The engine never talks to providers directly.
 
 ### Cursor
-The provider's opaque "changes since" token (`external_calendars.cursor`) — Google's `syncToken`, CalDAV's `syncToken` (unused: it full-fetches), the delta `serverTime` on the client. Cursor expiry (`410 Gone`) → the adapter returns `reset: true` and the engine reconciles against the full set (see Sweep).
+The provider's opaque "changes since" token (`external_calendars.cursor`) — Google's `syncToken`, Microsoft's `deltaLink`, CalDAV's `syncToken` (unused: it full-fetches), the delta `serverTime` on the client. Cursor expiry (`410 Gone`) → the adapter returns `reset: true` and the engine reconciles against the full set (see Sweep).
 
 ### Sweep
 The full-set reconciliation (`sweepExternalEvents`): after a `reset: true` fetch, the mirror's events whose external id was **not** in the fetched set get tombstoned — they were deleted on the provider. Paired with etag-aware upserts, it's what lets the [scheduled sync](/docs/architecture/sync/#near-realtime-the-scheduled-sync) tell "nothing changed" from "something changed" and only then wake clients with an SSE `external_sync`.

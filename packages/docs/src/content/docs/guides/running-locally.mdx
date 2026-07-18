@@ -42,9 +42,10 @@ Then edit `.env`. The **required** variables (the API won't boot without them) a
 | Variable | Enables |
 |---|---|
 | `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in and Google Calendar sync |
+| `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` | Outlook calendar sync (Microsoft Entra ID app registration) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL` | Password-reset (and other) emails |
 | `CALDAV_ENC_KEY` | Connecting CalDAV accounts and storing federated Musubi connections (encrypts stored secrets) — generate with `openssl rand -hex 32` |
-| `EXTERNAL_SYNC_INTERVAL_MIN` | Minutes between scheduled Google/CalDAV syncs (live updates for members). Defaults to `5`; set `0` to disable |
+| `EXTERNAL_SYNC_INTERVAL_MIN` | Minutes between scheduled provider syncs (Google/Outlook/CalDAV) (live updates for members). Defaults to `5`; set `0` to disable |
 | `LOG_LEVEL` | Server verbosity: `debug`, `info`, `warn`, `error`, or `silent`. Defaults to `info`; use `debug` when tracing sync |
 
 <Aside type="caution">

@@ -13,6 +13,7 @@ Two-way external calendar sync is Musubi's most distinctive subsystem. It lives 
 flowchart LR
     subgraph P[External providers]
       G[Google]
+      M[Microsoft]
       C[CalDAV]
     end
     subgraph EN[engine.ts]
@@ -145,6 +146,28 @@ Most sync bugs are recurrence and all-day edge cases. The existing adapters alre
 - Incremental sync via `syncToken`; `410 Gone` → return `reset: true`.
 - All-day end is **exclusive** (±1 day on pull/push).
 
+**Microsoft (`adapters/microsoft.ts`):**
+- OAuth mirrors the Google lifecycle exactly — both adapters share `sync/oauth.ts`
+  (token refresh, `invalid_grant` → `reconnect_required`) and the generic
+  `queries/oauth.ts` account queries. One Microsoft quirk handled there: the
+  refresh token **rotates on every refresh** and must be re-persisted.
+- Incremental sync via Graph **calendarView delta**. v1.0 has no unbounded event
+  delta, so the delta token is bound to a fixed date window (`WINDOW_*` constants,
+  currently −180d…+730d). The cursor stores `{link, windowEnd}`; when the future
+  edge gets within 90 days, the adapter forces `reset: true` with a fresh window.
+  Events outside the window don't exist in the mirror — a rolling view, not full
+  history.
+- **Recurring series arrive pre-expanded**: calendarView returns occurrences and
+  exceptions as individual events, so `recurrence` is always `null` on pull — no
+  RRULE conversion, and Outlook-side exceptions come for free. The flip side:
+  pushing a *Musubi-created* recurring event into an Outlook mirror is rejected
+  with a clear error (Graph models recurrence as structured patterns, not
+  RRULE/EXDATE; converting is the upgrade path).
+- `Prefer: outlook.timezone="UTC", outlook.body-content-type="text"` on every
+  read — times come back UTC and bodies as plain text.
+- Calendar color is not pushed (Graph only accepts ~9 preset names; `hexColor`
+  is read-only). The Musubi side keeps the chosen color.
+
 **CalDAV (`adapters/caldav.ts` + `caldav_client.ts`):**
 - Wraps `tsdav`; Basic auth; principal/home discovery is automatic (incl. iCloud hosts).
 - Events parsed via `ical.js`; `externalId` is the **resource URL**, not the UID.
@@ -193,6 +216,8 @@ Most sync bugs are recurrence and all-day edge cases. The existing adapters alre
 | `sync/engine.ts` | `syncProvider`, `syncUser`, `pushEventToCalendars`, registry |
 | `sync/adapter.ts` | `NormalizedEvent`, `ExternalCalendarInfo`, `FetchChangesResult`, `CalendarAdapter` |
 | `sync/adapters/google.ts` | Google Calendar adapter |
+| `sync/adapters/microsoft.ts` | Microsoft Outlook adapter (Graph calendarView delta) |
 | `sync/adapters/caldav.ts` + `caldav_client.ts` | CalDAV adapter (Apple/iCloud + generic) |
+| `sync/oauth.ts` | shared OAuth access-token refresh (google + microsoft) |
 | `sync/crypto.ts` | AES-256-GCM `encryptSecret`/`decryptSecret` |
 | `packages/db/src/queries/external.ts` | `upsertExternalEvent`, `clearCalendarEvents`, cursor & link helpers |

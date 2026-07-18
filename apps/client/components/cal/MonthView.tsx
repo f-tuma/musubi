@@ -1,7 +1,7 @@
 import { Event } from "@musubi/types";
 import { colors, fonts } from "@/constants/theme";
 import { Tap } from "@/components/ui/Tap";
-import { useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { Text, View } from "react-native";
 import InfinitePager from "react-native-infinite-pager";
 import {
@@ -23,7 +23,7 @@ type Props = {
   onPageChange: (monthStart: Date) => void;
 };
 
-export function MonthView({ base, events, weekStartsOn, eventColorOf, onDayPress, onPageChange }: Props) {
+export const MonthView = memo(function MonthView({ base, events, weekStartsOn, eventColorOf, onDayPress, onPageChange }: Props) {
   const [size, setSize] = useState({ w: 0, h: 0 });
   const byDay = useMemo(() => bucketByDay(events), [events]);
   const today = new Date();
@@ -155,4 +155,4 @@ export function MonthView({ base, events, weekStartsOn, eventColorOf, onDayPress
       )}
     </View>
   );
-}
+});

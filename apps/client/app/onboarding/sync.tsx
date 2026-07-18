@@ -66,6 +66,7 @@ export default function OnboardingSync() {
 
   const ProviderIcon = ({ flavor }: { flavor: string | null }) => {
     if (flavor === "google") return <Ionicons name="logo-google" size={16} color={colors.fg2} />;
+    if (flavor === "microsoft") return <Ionicons name="logo-microsoft" size={16} color={colors.fg2} />;
     if (flavor === "apple") return <Ionicons name="logo-apple" size={17} color={colors.fg2} />;
     return <Ionicons name="cloud" size={16} color={colors.fg2} />;
   };
@@ -93,7 +94,7 @@ export default function OnboardingSync() {
         <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: colors.fg2, marginTop: 12, textAlign: "center" }}>
           {accounts.length > 0
             ? "Connected — events will appear after the first sync."
-            : "Connect Google or Apple/iCloud. You can also do this anytime later from the Calendars tab."}
+            : "Connect Google, Outlook, or Apple/iCloud. You can also do this anytime later from the Calendars tab."}
         </Text>
       </View>
       {accounts.length > 0 && (

@@ -62,6 +62,11 @@ type SocialConfig = {
   // Apple Developer Team ID (10 chars) — used to build the apple-app-site-
   // association file for iOS universal links (seamless invite opening).
   appleTeamID: string,
+  microsoftClientID: string,
+  microsoftClientSecret: string,
+  // Entra tenant: "common" (any account incl. personal) unless self-hosting
+  // inside a single organization.
+  microsoftTenantID: string,
 }
 
 type SecurityConfig = {
@@ -108,6 +113,9 @@ const socialConfig: SocialConfig = {
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
   appleClientID: process.env.APPLE_CLIENT_ID ?? "",
   appleTeamID: process.env.APPLE_TEAM_ID ?? "",
+  microsoftClientID: process.env.MICROSOFT_CLIENT_ID ?? "",
+  microsoftClientSecret: process.env.MICROSOFT_CLIENT_SECRET ?? "",
+  microsoftTenantID: process.env.MICROSOFT_TENANT_ID ?? "common",
 }
 
 const securityConfig: SecurityConfig = {

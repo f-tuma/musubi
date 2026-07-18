@@ -1,6 +1,6 @@
 import { appColors } from "@/constants/colors";
 import { colors, fonts, styles } from "@/constants/theme";
-import { Calendar, providerFlavor } from "@musubi/types";
+import { Calendar, MICROSOFT_CALENDAR_COLORS, nearestMicrosoftCalendarColor, providerFlavor } from "@musubi/types";
 import { useServer } from "@/contexts/ServerContext";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
@@ -42,7 +42,6 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
   const [nameError, setNameError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const isCustomColor = !appColors.some(c => c.color === newColor);
 
   // Where to create: null = this Musubi server, otherwise a connected provider
   // account — one entry per (provider, accountId), derived from synced calendars.
@@ -59,6 +58,20 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
     return [...map.values()];
   }, [allCalendars]);
   const [account, setAccount] = useState<(typeof accounts)[number] | null>(null);
+
+  // Outlook calendars only accept Graph's 9 preset colors — swap the palette
+  // and drop the free color picker when the calendar lives (or will live) in
+  // a Microsoft account.
+  const isMicrosoft = (calendar ? calendar.provider : account?.provider) === "microsoft";
+  const palette = isMicrosoft
+    ? MICROSOFT_CALENDAR_COLORS.map((c) => ({ name: c.name, color: c.hex }))
+    : appColors;
+  const isCustomColor = !palette.some(c => c.color === newColor);
+  useEffect(() => {
+    // Snap a non-preset color (custom pick before switching account, or an
+    // imported Outlook hexColor) to the nearest preset.
+    if (isMicrosoft && isCustomColor) setNewColor(nearestMicrosoftCalendarColor(newColor).hex);
+  }, [isMicrosoft, newColor, isCustomColor]);
 
   const { data: session } = authClient.useSession();
   const userID = session?.user.id;
@@ -195,7 +208,7 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                   
   showsHorizontalScrollIndicator={false}>
                     <View style={styles.horizontalPillView}>
-                      {appColors.map((c) => (
+                      {palette.map((c) => (
                         <Tap
                           key={c.name}
                           haptic="select"
@@ -216,18 +229,21 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                         </Tap>
                       ))}
                       {/* Custom color — opens the picker; filled with the picked
-                          color once chosen, the plus stays on top. */}
-                      <Tap haptic="select" onPress={() => setPickerOpen(true)}>
-                        <View style={[styles.calendarCircle, {
-                          borderWidth: isCustomColor ? 2 : 1,
-                          borderColor: isCustomColor ? colors.fg3 : colors.line3,
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }]}>
-                          {isCustomColor && <View style={[styles.calendarCircleInner, { backgroundColor: newColor }]} />}
-                          <Feather name="plus" size={14} color={isCustomColor ? colors.bg : colors.fg3} />
-                        </View>
-                      </Tap>
+                          color once chosen, the plus stays on top. Outlook
+                          calendars are preset-only, so no free picker there. */}
+                      {!isMicrosoft && (
+                        <Tap haptic="select" onPress={() => setPickerOpen(true)}>
+                          <View style={[styles.calendarCircle, {
+                            borderWidth: isCustomColor ? 2 : 1,
+                            borderColor: isCustomColor ? colors.fg3 : colors.line3,
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }]}>
+                            {isCustomColor && <View style={[styles.calendarCircleInner, { backgroundColor: newColor }]} />}
+                            <Feather name="plus" size={14} color={isCustomColor ? colors.bg : colors.fg3} />
+                          </View>
+                        </Tap>
+                      )}
                     </View>
                   </ScrollView>
                 </View>

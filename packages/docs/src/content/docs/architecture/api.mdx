@@ -48,7 +48,7 @@ export async function handlerCreateEvent(req: Request, res: Response) {
   event.creatorID = req.user!.id;                       //    never trust client for identity
   await assertCan(req.user!.id, event.calendars[0], "editEvents"); // 2. authorise
   const created = await createEvent(event, event.calendars);       // 3. persist (packages/db)
-  await pushEventToProviders(created, "create");        // 4. sync outward (Google/CalDAV)
+  await pushEventToProviders(created, "create");        // 4. sync outward (Google/Outlook/CalDAV)
   notifyCalendarMembers(memberIds, "event_created", created);       // 5. broadcast
   res.status(201).json(created);
 }
@@ -92,7 +92,7 @@ credentials, and bearer tokens are never logged.
 `LOG_LEVEL` accepts `debug`, `info`, `warn`, `error`, or `silent` and defaults to
 `info`. Successful HTTP requests are `info`, 4xx responses are `warn`, and 5xx
 responses are `error`. Provider-sync counts and timings are `debug`; turn that
-level on temporarily when diagnosing Google or CalDAV without making normal
+level on temporarily when diagnosing Google, Outlook, or CalDAV without making normal
 production logs excessively noisy.
 
 ## Prometheus metrics
@@ -163,7 +163,7 @@ Attendance is per-event opt-in: the `events.hasAttendees` flag (set in the compo
 
 ## Realtime (SSE)
 
-`GET /api/stream` is a long-lived [Server-Sent Events](https://developer.mozilla.org/docs/Web/API/Server-sent_events) connection, registered **outside** the `/api/v1` prefix to match the client's URL. `handlerStream` sets the SSE headers and stores the response in a `Map<userID, Response>`; `notifyCalendarMembers(userIds, type, payload)` writes `event_created` / `event_updated` / `event_removed` / `calendar_updated` / `calendar_removed` / `attendance_changed` / `external_sync` frames to the affected users. Every mutating handler calls it after persisting — so a change one member makes appears live for the others — and the [scheduled provider sync](/docs/architecture/sync/#near-realtime-the-scheduled-sync) sends `external_sync` when Google/CalDAV changes land, which clients answer with a silent delta refresh.
+`GET /api/stream` is a long-lived [Server-Sent Events](https://developer.mozilla.org/docs/Web/API/Server-sent_events) connection, registered **outside** the `/api/v1` prefix to match the client's URL. `handlerStream` sets the SSE headers and stores the response in a `Map<userID, Response>`; `notifyCalendarMembers(userIds, type, payload)` writes `event_created` / `event_updated` / `event_removed` / `calendar_updated` / `calendar_removed` / `attendance_changed` / `external_sync` frames to the affected users. Every mutating handler calls it after persisting — so a change one member makes appears live for the others — and the [scheduled provider sync](/docs/architecture/sync/#near-realtime-the-scheduled-sync) sends `external_sync` when provider changes land, which clients answer with a silent delta refresh.
 
 It's an authenticated route (`requireAuth`): the client sends its session as a `Bearer` token, which Better Auth's bearer plugin validates. The client subscribes via `react-native-sse` (`apps/client/hooks/useEventsStream.ts`).
 

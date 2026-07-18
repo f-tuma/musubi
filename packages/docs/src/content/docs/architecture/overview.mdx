@@ -119,7 +119,7 @@ The client and server never trust raw JSON. They communicate through **Zod schem
 | **Roles** | owner / editor / viewer → `can(role, action)` | `packages/types/src/permissions.ts` |
 | **Soft delete** | `deletedAt` tombstone drives delta sync | `packages/db/src/queries/events.ts` |
 | **Delta sync** | Client asks "what changed since T?" | `apps/client/hooks/useRefreshData.ts` |
-| **Mirror calendars** | External (Google/CalDAV) calendars imported as normal calendars | `apps/api/src/sync/` |
+| **Mirror calendars** | External (Google/Outlook/CalDAV) calendars imported as normal calendars | `apps/api/src/sync/` |
 | **Federation** | Cross-server sharing: invite-as-capability + shadow accounts | `apps/api/src/handlers/federation.ts`, `apps/client/services/federation.ts` |
 | **Recurrence** | Stored as iCal RRULE text, expanded at read time | `packages/calendar/src/recurrence.ts` |
 

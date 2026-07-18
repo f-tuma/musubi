@@ -19,13 +19,14 @@ import { notifyCalendarMembers } from "../handlers/stream";
 import { CalendarAdapter, NormalizedEvent } from "./adapter";
 import { googleAdapter } from "./adapters/google";
 import { caldavAdapter } from "./adapters/caldav";
+import { microsoftAdapter } from "./adapters/microsoft";
 import { providerAuthErrorFields } from "./errors";
 
 // provider -> adapter. Register new providers here.
 const adapters: Record<string, CalendarAdapter> = {
   google: googleAdapter,
   caldav: caldavAdapter,
-  // microsoft: microsoftAdapter,   // (next)
+  microsoft: microsoftAdapter,
 };
 
 export function getAdapter(provider: string): CalendarAdapter | null {

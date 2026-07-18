@@ -3,9 +3,10 @@ import { colors, fonts, styles } from "@/constants/theme";
 import { useServer } from "@/contexts/ServerContext";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
-import { View, Text, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TextInput, Alert, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { Btn } from "@/components/ui/Btn";
 import { success, warn } from "@/lib/haptics";
+import SocialAuthButtons from "@/components/auth/SocialAuthButtons";
 
 export default function SignIn() {
   const { authClient } = useServer();
@@ -58,67 +59,76 @@ export default function SignIn() {
 
   return (
     <View style={styles.screen}>
-      <KeyboardAvoidingView behavior="padding" style={{ justifyContent: "space-between", flex: 1 }}>
-        <View style={[{ gap: 28 }, styles.container]}>
-          <View>
-            <Text style={{ color: colors.fg3 }}>Welcome back</Text>
-            <Text style={{ color: colors.fg, fontFamily: fonts.serif, fontSize: 28 }}>
-              Pick up where you left off
-            </Text>
-          </View>
-          <View style={{ gap: 16 }}>
-            <View style={{ borderBottomWidth: 1, borderColor: colors.line }}>
-              <Text style={{ color: colors.fg3, fontSize: 12 }}>EMAIL</Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="you@example.com"
-                placeholderTextColor={colors.fg4}
-                style={styles.textInput}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                textContentType="emailAddress"
-                autoComplete="email"
-                returnKeyType="next"
-                onSubmitEditing={() => passwordRef.current?.focus()}
-              />
-              {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, justifyContent: "space-between" }}
+          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={[{ gap: 28 }, styles.container]}>
+            <View>
+              <Text style={{ color: colors.fg3 }}>Welcome back</Text>
+              <Text style={{ color: colors.fg, fontFamily: fonts.serif, fontSize: 28 }}>
+                Pick up where you left off
+              </Text>
             </View>
-            <View style={{ borderBottomWidth: 1, borderColor: colors.line }}>
-              <Text style={{ color: colors.fg3, fontSize: 12 }}>PASSPHRASE</Text>
-              <TextInput
-                ref={passwordRef}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={true}
-                placeholder="At least 8 characters"
-                placeholderTextColor={colors.fg4}
-                style={styles.textInput}
-                autoCapitalize="none"
-                autoCorrect={false}
-                textContentType="password"
-                autoComplete="current-password"
-                returnKeyType="done"
-                onSubmitEditing={handleSignIn}
-              />
-              {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+            {/* Same as sign-up: people whose account IS a Google/Apple account
+                land here too — don't make them hunt for the button. */}
+            <SocialAuthButtons separatorLabel="or with email" />
+            <View style={{ gap: 16 }}>
+              <View style={{ borderBottomWidth: 1, borderColor: colors.line }}>
+                <Text style={{ color: colors.fg3, fontSize: 12 }}>EMAIL</Text>
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="you@example.com"
+                  placeholderTextColor={colors.fg4}
+                  style={styles.textInput}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="emailAddress"
+                  autoComplete="email"
+                  returnKeyType="next"
+                  onSubmitEditing={() => passwordRef.current?.focus()}
+                />
+                {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+              </View>
+              <View style={{ borderBottomWidth: 1, borderColor: colors.line }}>
+                <Text style={{ color: colors.fg3, fontSize: 12 }}>PASSPHRASE</Text>
+                <TextInput
+                  ref={passwordRef}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={true}
+                  placeholder="At least 8 characters"
+                  placeholderTextColor={colors.fg4}
+                  style={styles.textInput}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="password"
+                  autoComplete="current-password"
+                  returnKeyType="done"
+                  onSubmitEditing={handleSignIn}
+                />
+                {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+              </View>
             </View>
           </View>
-        </View>
-        <View style={styles.modalButtonsColumn}>
-          <Btn
-            label="Forgotten password?"
-            variant="secondary"
-            disabled={isLoading}
-            onPress={() => setIsPasswordResetVisible(true)}
-          />
-          <Btn
-            label="Continue"
-            loading={isLoading}
-            onPress={handleSignIn}
-          />
-        </View>
+          <View style={styles.modalButtonsColumn}>
+            <Btn
+              label="Forgotten password?"
+              variant="secondary"
+              disabled={isLoading}
+              onPress={() => setIsPasswordResetVisible(true)}
+            />
+            <Btn
+              label="Continue"
+              loading={isLoading}
+              onPress={handleSignIn}
+            />
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
       <InputModal
         visible={isPasswordResetVisible}
