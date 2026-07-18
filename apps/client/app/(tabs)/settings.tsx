@@ -1,4 +1,4 @@
-import { SettingRowOptions, SettingRowToggle } from "@/components/SettingRow";
+import { SettingRowAction, SettingRowOptions, SettingRowToggle } from "@/components/SettingRow";
 import InputModal from "@/components/TextInputModal";
 import { colors, fonts, styles } from "@/constants/theme";
 import { CalendarView, Settings } from "@musubi/types";
@@ -6,7 +6,7 @@ import { useServer } from "@/contexts/ServerContext";
 import { useApi } from "@/services/api";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { useState } from "react";
-import { View, Text, ScrollView, RefreshControl, StyleSheet } from "react-native";
+import { View, Text, ScrollView, RefreshControl, StyleSheet, Linking, Platform } from "react-native";
 import { useRefreshData } from "@/hooks/useRefreshData";
 import { Btn } from "@/components/ui/Btn";
 import { Tap } from "@/components/ui/Tap";
@@ -17,6 +17,12 @@ import { Feather } from "@expo/vector-icons";
 import { signOutAndReset } from "@/lib/signOut";
 import { showToast } from "@/components/ui/Toast";
 import { userFacingError } from "@/lib/network";
+import Constants from "expo-constants";
+
+const SUPPORT_EMAIL = "hello@frgtn.dev";
+const FEEDBACK_URL = "https://feedback.frgtn.dev/";
+const PRIVACY_URL = "https://musubi.frgtn.dev/privacy/";
+const TERMS_URL = "https://musubi.frgtn.dev/terms/";
 
 
 export default function SettingsTab() {
@@ -37,6 +43,34 @@ export default function SettingsTab() {
   const [nameModalVisible, setNameModalVisible] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const userSession = authClient.useSession();
+  const appVersion = Constants.nativeAppVersion ?? Constants.expoConfig?.version ?? "unknown";
+  const appBuild = Constants.nativeBuildVersion
+    ?? String(Platform.OS === "android" ? Constants.expoConfig?.android?.versionCode ?? "dev" : "dev");
+
+  const openExternal = async (url: string, fallback: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      warn();
+      console.warn("Could not open external link:", error);
+      showToast({ message: fallback });
+    }
+  };
+
+  const openProblemReport = () => {
+    const subject = "Musubi problem report";
+    const intro = "What happened, and what did you expect instead?";
+    const diagnostics = [
+      `Musubi ${appVersion} (${appBuild})`,
+      `${Platform.OS} ${String(Platform.Version)}`,
+      `Server: ${apiUrl ?? "unknown"}`,
+    ].join("\n");
+    const body = `${intro}\n\n\n---\n${diagnostics}`;
+    void openExternal(
+      `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
+      `Email us at ${SUPPORT_EMAIL}.`,
+    );
+  };
 
   const changeAvatar = async () => {
     setAvatarBusy(true);
@@ -229,6 +263,30 @@ export default function SettingsTab() {
             save({ notificationsOnByDefault: !notificationsOnByDefault });
           }}
         />
+
+        <Text style={[styles.sectionLabel, local.sectionHeading]}>Help & About</Text>
+        <SettingRowAction
+          label="Feedback & Roadmap"
+          detail="Suggest ideas, vote, and see what is planned"
+          external
+          onPress={() => void openExternal(FEEDBACK_URL, "Feedback is available at feedback.frgtn.dev.")}
+        />
+        <SettingRowAction
+          label="Report a Problem"
+          detail="Includes app, device, and server details"
+          onPress={openProblemReport}
+        />
+        <SettingRowAction
+          label="Privacy Policy"
+          external
+          onPress={() => void openExternal(PRIVACY_URL, "Privacy policy is available at musubi.frgtn.dev/privacy.")}
+        />
+        <SettingRowAction
+          label="Terms of Service"
+          external
+          onPress={() => void openExternal(TERMS_URL, "Terms are available at musubi.frgtn.dev/terms.")}
+        />
+        <SettingRowAction label="Version" value={`${appVersion} (${appBuild})`} />
 
         <Text style={[styles.sectionLabel, local.sectionHeading]}>Account</Text>
         <View style={{ paddingHorizontal: 16, paddingBottom: 32, gap: 10 }}>

@@ -184,6 +184,10 @@ The composer's RRULE build/parse logic lives in `lib/rrule.ts` and its validatio
 
 Notification permission is **contextual**: the app never prompts at launch. `AddEventModal` calls `requestEventNotificationPermission()` only while saving an event whose reminder toggle is on. The event API write completes before the local reminder is scheduled, so denial or a native scheduling failure cannot fail event creation/editing; the user gets a toast instead. Updating a reminder schedules and persists its replacement before cancelling the old identifier, preserving the working reminder if replacement fails.
 
+## Help and diagnostics
+
+Settings exposes `Feedback & Roadmap`, `Report a Problem`, Privacy, Terms, and the native version/build. Public ideas open `feedback.frgtn.dev`, where users can suggest, vote, and follow planned work. Private problem reports open a user-controlled email draft to `hello@frgtn.dev`, prefilled only with app version/build, platform/OS version, and the selected Musubi server. Calendar names, events, account email, and other user content are never attached automatically. Link-opening failures fall back to a toast with a copyable destination.
+
 ## Conventions
 
 - **UI primitives** in `components/ui/` — use `Tap` (not bare `Pressable`; it adds press-scale + haptics), `Btn`, `Empty`, `Toast` (`showToast({ message, actionLabel, onAction })`), `confirm()`, and `ModalPortal`/`Portal` (see below). Hand-rolled equivalents get flagged in review.

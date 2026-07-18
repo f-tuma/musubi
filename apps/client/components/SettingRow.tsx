@@ -2,6 +2,7 @@ import { colors, fonts } from "@/constants/theme";
 import { Switch, View, Text } from "react-native";
 import { Mode } from "@musubi/calendar";
 import { Tap } from "@/components/ui/Tap";
+import { Feather } from "@expo/vector-icons";
 
 
 type ToggleProps = {
@@ -18,6 +19,14 @@ type OptionsProps = {
   onChange: (value: Mode) => void;
   /** Optional display label per option value (else the value, capitalized). */
   labels?: Record<string, string>;
+}
+
+type ActionProps = {
+  label: string;
+  detail?: string;
+  value?: string;
+  external?: boolean;
+  onPress?: () => void;
 }
 
 // Border color applied inline at usage — the theme can swap at runtime.
@@ -87,5 +96,46 @@ export function SettingRowOptions({ label, value, options, onChange, labels }: O
         })}
       </View>
     </View>
+  );
+}
+
+export function SettingRowAction({ label, detail, value, external, onPress }: ActionProps) {
+  const content = (
+    <>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={{ fontFamily: fonts.sans, fontSize: 15, color: colors.fg2 }}>
+          {label}
+        </Text>
+        {detail ? (
+          <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.fg4 }}>
+            {detail}
+          </Text>
+        ) : null}
+      </View>
+      {value ? (
+        <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg4 }}>
+          {value}
+        </Text>
+      ) : null}
+      {onPress ? (
+        <Feather name={external ? "external-link" : "chevron-right"} size={15} color={colors.fg4} />
+      ) : null}
+    </>
+  );
+
+  if (!onPress) {
+    return <View style={[rowStyle, { borderColor: colors.line, gap: 12 }]}>{content}</View>;
+  }
+
+  return (
+    <Tap
+      onPress={onPress}
+      scaleTo={1}
+      style={[rowStyle, { borderColor: colors.line, gap: 12 }]}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      {content}
+    </Tap>
   );
 }
