@@ -2,9 +2,10 @@ import { colors, fonts, styles } from "@/constants/theme";
 import { useServer } from "@/contexts/ServerContext";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
-import { View, Text, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TextInput, Alert, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { Btn } from "@/components/ui/Btn";
 import { success, warn } from "@/lib/haptics";
+import SocialAuthButtons from "@/components/auth/SocialAuthButtons";
 
 
 export default function SignUp() {
@@ -67,101 +68,110 @@ export default function SignUp() {
 
   return (
     <View style={styles.screen}>
-      <KeyboardAvoidingView behavior="padding" style={{ justifyContent: "space-between", flex: 1 }}>
-        <View style={[{ gap: 28 }, styles.container]}>
-          <View>
-            <Text style={{ color: colors.fg3 }}>Create account · 1 of 3</Text>
-            <Text style={{ color: colors.fg, fontFamily: fonts.serif, fontSize: 28 }}>
-              Begin simply
-            </Text>
-            <Text style={{ color: colors.fg2, fontFamily: fonts.serif, fontSize: 16 }}>
-              Your email and a passphrase. That is all.
-            </Text>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, justifyContent: "space-between" }}
+          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={[{ gap: 28 }, styles.container]}>
+            <View>
+              <Text style={{ color: colors.fg3 }}>Create account · 1 of 3</Text>
+              <Text style={{ color: colors.fg, fontFamily: fonts.serif, fontSize: 28 }}>
+                Begin simply
+              </Text>
+              <Text style={{ color: colors.fg2, fontFamily: fonts.serif, fontSize: 16 }}>
+                Your email and a passphrase. That is all.
+              </Text>
+            </View>
+            {/* Social sign-in doubles as sign-up, so make that explicit on the
+                dedicated sign-up screen before the email form. */}
+            <SocialAuthButtons separatorLabel="or simply, with email" />
+            <View style={{ gap: 16 }}>
+              <View style={{ borderBottomWidth: 1, borderColor: colors.line }}>
+                <Text style={{ color: colors.fg3, fontSize: 12 }}>NAME</Text>
+                <TextInput
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="John Anon"
+                  placeholderTextColor={colors.fg4}
+                  style={styles.textInput}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  textContentType="name"
+                  autoComplete="name"
+                  returnKeyType="next"
+                  onSubmitEditing={() => emailRef.current?.focus()}
+                />
+                {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
+              </View>
+              <View style={{ borderBottomWidth: 1, borderColor: colors.line }}>
+                <Text style={{ color: colors.fg3, fontSize: 12 }}>EMAIL</Text>
+                <TextInput
+                  ref={emailRef}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="you@example.com"
+                  placeholderTextColor={colors.fg4}
+                  style={styles.textInput}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="emailAddress"
+                  autoComplete="email"
+                  returnKeyType="next"
+                  onSubmitEditing={() => passwordRef.current?.focus()}
+                />
+                {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+              </View>
+              <View style={{ borderBottomWidth: 1, borderColor: colors.line }}>
+                <Text style={{ color: colors.fg3, fontSize: 12 }}>PASSPHRASE</Text>
+                <TextInput
+                  ref={passwordRef}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={true}
+                  placeholder="At least 8 characters"
+                  placeholderTextColor={colors.fg4}
+                  style={styles.textInput}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="newPassword"
+                  autoComplete="new-password"
+                  returnKeyType="next"
+                  onSubmitEditing={() => confirmPasswordRef.current?.focus()}
+                />
+                {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+              </View>
+              <View style={{ borderBottomWidth: 1, borderColor: colors.line }}>
+                <Text style={{ color: colors.fg3, fontSize: 12 }}>CONFIRM PASSPHRASE</Text>
+                <TextInput
+                  ref={confirmPasswordRef}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={true}
+                  placeholder="..."
+                  placeholderTextColor={colors.fg4}
+                  style={styles.textInput}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="newPassword"
+                  autoComplete="new-password"
+                  returnKeyType="done"
+                  onSubmitEditing={handleSignUp}
+                />
+                {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
+              </View>
+            </View>
           </View>
-          <View style={{ gap: 16 }}>
-            <View style={{ borderBottomWidth: 1, borderColor: colors.line }}>
-              <Text style={{ color: colors.fg3, fontSize: 12 }}>NAME</Text>
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder="John Anon"
-                placeholderTextColor={colors.fg4}
-                style={styles.textInput}
-                autoCapitalize="words"
-                autoCorrect={false}
-                textContentType="name"
-                autoComplete="name"
-                returnKeyType="next"
-                onSubmitEditing={() => emailRef.current?.focus()}
-              />
-              {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
-            </View>
-            <View style={{ borderBottomWidth: 1, borderColor: colors.line }}>
-              <Text style={{ color: colors.fg3, fontSize: 12 }}>EMAIL</Text>
-              <TextInput
-                ref={emailRef}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="you@example.com"
-                placeholderTextColor={colors.fg4}
-                style={styles.textInput}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                textContentType="emailAddress"
-                autoComplete="email"
-                returnKeyType="next"
-                onSubmitEditing={() => passwordRef.current?.focus()}
-              />
-              {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-            </View>
-            <View style={{ borderBottomWidth: 1, borderColor: colors.line }}>
-              <Text style={{ color: colors.fg3, fontSize: 12 }}>PASSPHRASE</Text>
-              <TextInput
-                ref={passwordRef}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={true}
-                placeholder="At least 8 characters"
-                placeholderTextColor={colors.fg4}
-                style={styles.textInput}
-                autoCapitalize="none"
-                autoCorrect={false}
-                textContentType="newPassword"
-                autoComplete="new-password"
-                returnKeyType="next"
-                onSubmitEditing={() => confirmPasswordRef.current?.focus()}
-              />
-              {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
-            </View>
-            <View style={{ borderBottomWidth: 1, borderColor: colors.line }}>
-              <Text style={{ color: colors.fg3, fontSize: 12 }}>CONFIRM PASSPHRASE</Text>
-              <TextInput
-                ref={confirmPasswordRef}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry={true}
-                placeholder="..."
-                placeholderTextColor={colors.fg4}
-                style={styles.textInput}
-                autoCapitalize="none"
-                autoCorrect={false}
-                textContentType="newPassword"
-                autoComplete="new-password"
-                returnKeyType="done"
-                onSubmitEditing={handleSignUp}
-              />
-              {confirmPasswordError ? <Text style={styles.errorText}>{confirmPasswordError}</Text> : null}
-            </View>
+          <View style={styles.modalButtonsColumn}>
+            <Btn
+              label="Continue"
+              loading={isLoading}
+              onPress={handleSignUp}
+            />
           </View>
-        </View>
-        <View style={styles.modalButtonsColumn}>
-          <Btn
-            label="Continue"
-            loading={isLoading}
-            onPress={handleSignUp}
-          />
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
