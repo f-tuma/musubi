@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PortalProvider } from '@/components/ui/Portal';
 import { ToastHost } from '@/components/ui/Toast';
+import { NetworkStatusBanner } from '@/components/ui/NetworkStatusBanner';
 import * as SystemUI from 'expo-system-ui';
 import semver from "semver";
 import Constants from "expo-constants";
@@ -23,6 +24,7 @@ import * as Linking from 'expo-linking';
 import { File } from 'expo-file-system';
 import { parseICS } from '@/lib/ics';
 import { useImportStore } from '@/store/useImportStore';
+import { fetchWithTimeout } from '@/lib/network';
 
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import { db } from '@/services/db';
@@ -34,11 +36,11 @@ SplashScreen.preventAutoHideAsync();
 // URL. Read it, parse the first event, and stash it for the calendar screen.
 async function readIcs(url: string): Promise<string | null> {
   try {
-    if (url.startsWith('http')) return await (await fetch(url)).text();
+    if (url.startsWith('http')) return await (await fetchWithTimeout(url)).text();
     return await new File(url).text(); // file:// (iOS inbox, Android file) + content:// (SAF)
   } catch {
     // ponytail: some Android OEMs reject File.text() on content://; fetch as fallback.
-    try { return await (await fetch(url)).text(); } catch { return null; }
+    try { return await (await fetchWithTimeout(url)).text(); } catch { return null; }
   }
 }
 
@@ -79,7 +81,7 @@ function AppContent() {
       setVersionChecked(true);
       return;
     }
-    fetch(`${apiUrl}/api/${apiVersion}/server`)
+    fetchWithTimeout(`${apiUrl}/api/${apiVersion}/server`)
       .then(r => r.json())
       .then(({ minClientVersion }: { minClientVersion: string }) => {
         const clientVersion = Constants.expoConfig?.version ?? "0.0.0";
@@ -117,9 +119,13 @@ function AppContent() {
     const agendaStart = pathname === '/agenda' || initialUrl?.startsWith('musubi://agenda');
     const calendarStart = !!initialUrl?.startsWith('musubi:///?time=')
       || !!initialUrl?.startsWith('musubi:///?calendarWidgetId=');
-    if (session && (inviteStart || agendaStart || calendarStart)) return;
+    // Invite routes handle signed-out users themselves: they persist the token,
+    // open auth, then restore the invite after a successful sign-in/sign-up.
+    // Keeping the route alive here also covers expo-router resolving the deep
+    // link a moment after `pathname` initially reported "/".
+    if (inviteStart || (session && (agendaStart || calendarStart))) return;
     router.replace(session ? '/(tabs)' : '/(auth)/welcome');
-  }, [ready, updateRequired, initialUrl]);
+  }, [ready, updateRequired, initialUrl, pathname, router, session]);
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();
@@ -177,6 +183,7 @@ function AppLoader() {
     // also mount expo-status-bar's <StatusBar> — that's the imperative
     // RCTStatusBarManager path, which requires the key be NO and conflicts.
     <SafeAreaView key={scheme} style={styles.screen} edges={['top', 'left', 'right']}>
+      <NetworkStatusBanner />
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <AppContent key={apiUrl ?? 'loading'} />
       </View>

@@ -39,6 +39,12 @@ export function useModalAnimation(visible: boolean, onClose: () => void, keyboar
   }, [keyboardAware]);
 
   const gesture = Gesture.Pan()
+    // Let nested horizontal controls (calendar pager, account/color pills)
+    // win immediately. Without a direction threshold this parent sheet pan
+    // briefly competed for every sideways swipe, which made detail paging feel
+    // heavier than the same calendar on Home.
+    .activeOffsetY([-12, 12])
+    .failOffsetX([-12, 12])
     .onChange((ev) => {
       // Down follows the finger; up stops dead — the sheet is anchored to the
       // screen bottom, so even a rubber-banded upward drag used to reveal a

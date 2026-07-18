@@ -82,7 +82,7 @@ const merged = existing ? { ...existing, ...incoming } : incoming;
 
 ### The `useApi` hook
 
-`services/api.ts` exposes `useApi()`, a hook returning one async method per endpoint. It's a thin wrapper over `authClient.$fetch` (Better Auth's client, which injects the session token). Two things to know:
+`services/api.ts` exposes `useApi()`, a hook returning one async method per endpoint. It's a thin wrapper over `authClient.$fetch` (Better Auth's client, which injects the session token). Requests have an 18-second abort deadline; raw and federated fetches use `lib/network.ts`'s matching `fetchWithTimeout`, so a weak connection reaches the normal error UI instead of leaving a spinner forever. Two things to know:
 
 ```ts
 // Collapses the repeated error check AND preserves type narrowing:
@@ -123,6 +123,8 @@ Two traps that bit here (both iOS-only symptoms, both aborted the *whole* refres
 ### Offline cache
 
 `services/eventsCache.ts` mirrors events into local **SQLite** (`services/db.ts` + drizzle, schema in `apps/client/db/schema.ts`). Dates are stored as ISO text, `calendars` as a JSON string. Always `hasValidDates()`-guard before inserting. On sign-out, `cacheClearAll()` wipes it.
+
+Connectivity UX has two layers: `components/ui/NetworkStatusBanner.tsx` watches `expo-network` and keeps an app-wide Offline banner visible while cached data remains usable; user-triggered requests pass failures through `userFacingError()` for consistent offline, timeout, and unavailable-server copy. Pull-to-refresh exposes Retry, and the invite route has explicit loading/error/retry states. If invite acceptance succeeds but its follow-up refresh fails, the app treats the invite as accepted and lets the cache catch up later.
 
 <Aside type="caution">
 The client has its **own** drizzle schema and migrations (`apps/client/db/schema.ts`, `apps/client/drizzle/`) — separate from `packages/db` (the server's PostgreSQL). If you cache a new field, add it here and run the client's `npx drizzle-kit generate` too.
@@ -183,7 +185,8 @@ The composer's RRULE build/parse logic lives in `lib/rrule.ts` and its validatio
 
 - **UI primitives** in `components/ui/` — use `Tap` (not bare `Pressable`; it adds press-scale + haptics), `Btn`, `Empty`, `Toast` (`showToast({ message, actionLabel, onAction })`), `confirm()`, and `ModalPortal`/`Portal` (see below). Hand-rolled equivalents get flagged in review.
 - **Modals go through the Portal host — never RN `<Modal>` directly.** Every modal renders through the root `PortalProvider` (mounted in `app/_layout.tsx`, under `ServerProvider`/`SafeAreaProvider` so portaled content keeps `useServer()`/insets) via **`ModalPortal`** (`components/ui/ModalPortal.tsx`) — a drop-in for RN `<Modal>` with the same props. Why: each RN `<Modal>` is a separate **native window**, and opening one from *inside* another is broken on iOS — the inner one never appears and its transparent layer eats every touch (the app looks frozen). `ModalPortal` renders into **one in-tree host** so modals stack correctly by mount order on both platforms, and it wires the Android hardware back (RN `<Modal>`'s one freebie). Pair it with `useModalAnimation` for the fade/slide + swipe-to-dismiss. A small overlay opened from inside a modal (e.g. `ColorPickerModal`) can instead be a plain in-tree absolute overlay in its parent — same reason, never a nested `<Modal>`.
-- **Theme** (`constants/theme.ts`) is a **mutable singleton**, not context: `colors`/`fonts`/`styles` are objects read at render time; `applyTheme()` swaps them in place and the tree remounts via `key={scheme}`. Read `colors.x` at render time — **never** capture a colour into a module-level constant (it freezes to whichever theme loaded first).
+- **Theme** (`constants/theme.ts`) is a **mutable singleton**, not context: `colors`/`fonts`/`styles` are objects read at render time; `applyTheme()` swaps them in place and the tree remounts via `key={scheme}`. Read `colors.x` at render time — **never** capture a colour into a module-level constant (it freezes to whichever theme loaded first). Native light/dark splash assets and the iOS appearance-specific icons are configured in `app.config.ts`; changing them requires a native rebuild.
+- **Sheet gestures must yield to horizontal children.** The shared `useModalAnimation` pan uses a vertical activation threshold and horizontal fail offset so pagers and pill rows do not wait for the sheet-dismiss gesture. Preserve those direction gates when adding gestures around a horizontally scrollable child.
 - **Haptics** via `lib/haptics.ts` (`haptics.success()`, `haptics.warn()`).
 - **Year display** uses the shared `YearStamp` (`components/calendar/YearStamp.tsx`) — the two-digit overlined year next to month names and as the agenda's year divider. Don't hand-roll year text.
 - **React Compiler is ON** (`transform.reactCompiler`) — it auto-memoizes, so don't reach for `React.memo` by default; and **never wrap an exported component in `React.memo`** — it crashes at runtime (`Object is not a function`). Module-local memo (e.g. `TimelineEventBlock`) works.

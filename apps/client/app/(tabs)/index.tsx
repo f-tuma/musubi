@@ -23,6 +23,7 @@ import { eventColor } from "@/lib/eventColor";
 import { canEditEvent } from "@/lib/eventPermissions";
 import { warn } from "@/lib/haptics";
 import { showToast } from "@/components/ui/Toast";
+import { userFacingError } from "@/lib/network";
 
 type CalMode = "month" | "week" | "day";
 
@@ -74,9 +75,19 @@ export default function MainTab() {
   const refreshRef = useRef(refresh);
   useEffect(() => { refreshRef.current = refresh; });
   const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = useCallback(async () => {
+  const onRefresh = useCallback(async function runRefresh() {
     setRefreshing(true);
-    try { await refreshRef.current(); } catch (e) { console.error(e); }
+    try { await refreshRef.current(); }
+    catch (e) {
+      console.error(e);
+      showToast({
+        message: userFacingError(e, "Could not refresh calendars."),
+        actionLabel: "Retry",
+        // Let the current toast finish dismissing before a fast offline
+        // failure raises the next one; otherwise its hide animation wins.
+        onAction: () => setTimeout(() => { void runRefresh(); }, 320),
+      });
+    }
     finally { setRefreshing(false); }
   }, []);
 
@@ -235,7 +246,12 @@ export default function MainTab() {
       localUpdateEvent(next);
       api.updateEvent(next)
         .then(result => localUpdateEvent(result))
-        .catch(err => { console.error("Move failed:", err); warn(); localUpdateEvent(fallback); });
+        .catch(err => {
+          console.error("Move failed:", err);
+          warn();
+          localUpdateEvent(fallback);
+          showToast({ message: userFacingError(err, "Event could not be moved.") });
+        });
     };
     persist(updated, ev);
     showToast({ message: `“${ev.title || "Event"}” moved`, actionLabel: "Undo", onAction: () => persist(ev, updated) });

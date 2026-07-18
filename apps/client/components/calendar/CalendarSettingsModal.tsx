@@ -19,6 +19,8 @@ import { Btn } from "@/components/ui/Btn";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { warn } from "@/lib/haptics";
+import { showToast } from "@/components/ui/Toast";
+import { userFacingError } from "@/lib/network";
 
 
 type Props = {
@@ -51,6 +53,7 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
     } catch (e) {
       warn();
       console.error("Calendar export failed:", e);
+      showToast({ message: userFacingError(e, "Could not export this calendar.") });
     } finally {
       setExporting(false);
     }

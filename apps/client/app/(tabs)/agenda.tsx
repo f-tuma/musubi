@@ -20,6 +20,8 @@ import { useSettingsStore } from "@/store/useSettingsStore";
 import { formatTime } from "@/lib/datetimeFormat";
 import { useLocalSearchParams } from "expo-router";
 import * as Linking from "expo-linking";
+import { showToast } from "@/components/ui/Toast";
+import { userFacingError } from "@/lib/network";
 
 
 
@@ -55,9 +57,17 @@ export default function AgendaTab() {
 
   const refresh = useRefreshData();
   const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = async () => {
+  const onRefresh = async function runRefresh() {
     setRefreshing(true);
-    try { await refresh(); } catch (e) { console.error(e); }
+    try { await refresh(); }
+    catch (e) {
+      console.error(e);
+      showToast({
+        message: userFacingError(e, "Could not refresh agenda."),
+        actionLabel: "Retry",
+        onAction: () => setTimeout(() => { void runRefresh(); }, 320),
+      });
+    }
     finally { setRefreshing(false); }
   };
 

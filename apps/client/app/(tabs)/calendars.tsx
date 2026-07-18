@@ -17,6 +17,8 @@ import { Btn } from "@/components/ui/Btn";
 import { Empty } from "@/components/ui/Empty";
 import { confirm } from "@/lib/confirm";
 import { warn } from "@/lib/haptics";
+import { showToast } from "@/components/ui/Toast";
+import { userFacingError } from "@/lib/network";
 
 
 export default function CalendarsTab() {
@@ -30,9 +32,17 @@ export default function CalendarsTab() {
 
   const refresh = useRefreshData();
   const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = async () => {
+  const onRefresh = async function runRefresh() {
     setRefreshing(true);
-    try { await refresh(); } catch (e) { console.error(e); }
+    try { await refresh(); }
+    catch (e) {
+      console.error(e);
+      showToast({
+        message: userFacingError(e, "Could not refresh calendars."),
+        actionLabel: "Retry",
+        onAction: () => setTimeout(() => { void runRefresh(); }, 320),
+      });
+    }
     finally { setRefreshing(false); }
   };
 
@@ -104,7 +114,10 @@ export default function CalendarsTab() {
       theme: settings.theme,
       onboarded: settings.onboarded,
       calendarOrder: ids,
-    }).catch((e) => console.error("Order save failed:", e));
+    }).catch((e) => {
+      console.error("Order save failed:", e);
+      showToast({ message: userFacingError(e, "Calendar order will sync later.") });
+    });
   };
 
   const handleOpenCalendar = (calendar: Calendar) => {
@@ -121,7 +134,7 @@ export default function CalendarsTab() {
       },
       async () => {
         try { await api.disconnectAccount(provider, accountId); await onRefresh(); }
-        catch (e) { console.error(e); warn(); Alert.alert("Could not disconnect."); }
+        catch (e) { console.error(e); warn(); Alert.alert("Could not disconnect", userFacingError(e)); }
       },
     );
   };
@@ -185,7 +198,7 @@ export default function CalendarsTab() {
           // The provider can refuse (e.g. Google won't delete a primary
           // calendar) — the store aborts the local removal, surface why.
           removeCalendar(calendar, api).catch((e) =>
-            Alert.alert("Failed to delete", e?.message ?? "An unexpected error occurred."));
+            Alert.alert("Failed to delete", userFacingError(e)));
         }}
       />
     </View>

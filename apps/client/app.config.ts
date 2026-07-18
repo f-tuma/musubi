@@ -25,6 +25,12 @@ const expoConfig = {
     "supportsTablet": true,
     "bundleIdentifier": "dev.frgtn.musubi",
     "usesAppleSignIn": true,
+    // iOS 18 can switch app icons with the system appearance. Keep the warm
+    // paper mark for light mode and the original sumi version for dark mode.
+    "icon": {
+      "light": "./assets/images/icon-light.png",
+      "dark": "./assets/images/icon.png"
+    },
     // Universal links: an https invite link opens the app directly instead of
     // bouncing through Safari. Needs the matching apple-app-site-association
     // file served at each domain's /.well-known/ (see API handler). EAS syncs
@@ -108,11 +114,12 @@ const expoConfig = {
     [
       "expo-splash-screen",
       {
-        "image": "./assets/images/splash-icon.png",
+        "image": "./assets/images/splash-icon-light.png",
         "imageWidth": 200,
         "resizeMode": "contain",
-        "backgroundColor": "#050507",
+        "backgroundColor": "#f4f1e8",
         "dark": {
+          "image": "./assets/images/splash-icon.png",
           "backgroundColor": "#050507"
         }
       }
@@ -153,4 +160,3 @@ const expoConfig = {
 }
 
 export default expoConfig;
-

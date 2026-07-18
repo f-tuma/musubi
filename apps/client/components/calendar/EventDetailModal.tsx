@@ -21,6 +21,8 @@ import { chooseOption, confirm } from "@/lib/confirm";
 import { formatDateLong, formatTime } from "@/lib/datetimeFormat";
 import { excludeOccurrence, endSeriesBefore } from "@musubi/calendar";
 import { syncEventNotification } from "@/services/notifications";
+import { showToast } from "@/components/ui/Toast";
+import { userFacingError } from "@/lib/network";
 
 
 type Props = {
@@ -74,8 +76,9 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
       : attendees.filter(a => a.id !== userID));
     try {
       setAttendees(event.id!, await api.setAttendance(event, next));
-    } catch {
+    } catch (error) {
       setAttendees(event.id!, attendees); // revert
+      showToast({ message: userFacingError(error, "Attendance could not be updated.") });
     }
   };
 

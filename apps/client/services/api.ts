@@ -3,6 +3,7 @@ import { useServer } from "@/contexts/ServerContext";
 import { apiVersion } from "@/constants/url";
 import { fedFetch, remoteForCalendar } from "@/services/federation";
 import { notifySessionExpired } from "@/lib/signOut";
+import { fetchWithTimeout } from "@/lib/network";
 
 // Federation: calendars shared from another Musubi server live at that server.
 // Calendar-scoped calls check the registry and, when the calendar is remote,
@@ -28,7 +29,21 @@ function throwOnError(error: { status?: number | string; message?: string; statu
 
 export function useApi() {
 
-  const { authClient, apiUrl } = useServer();
+  const { authClient: baseAuthClient, apiUrl } = useServer();
+  // Better Auth's facade has no request timeout. Wrap its fetch entry point so
+  // a weak connection resolves into the same friendly error path as offline,
+  // instead of leaving buttons spinning indefinitely.
+  const authClient = {
+    async $fetch<T>(url: string, options: any = {}) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 18_000);
+      try {
+        return await baseAuthClient.$fetch<T>(url, { ...options, signal: controller.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+    },
+  };
 
   return {
     async createCalendar(calendar: Calendar) {
@@ -291,9 +306,9 @@ export function useApi() {
     // Raw iCalendar body — plain fetch (the $fetch helpers assume JSON bodies).
     // Home server only: importing always creates a native calendar here.
     async importCalendar(ics: string, name: string, color: string) {
-      const { data } = await authClient.getSession();
+      const { data } = await baseAuthClient.getSession();
       const qs = `?name=${encodeURIComponent(name)}&color=${encodeURIComponent(color)}`;
-      const res = await fetch(`${apiUrl}/api/${apiVersion}/calendars/import${qs}`, {
+      const res = await fetchWithTimeout(`${apiUrl}/api/${apiVersion}/calendars/import${qs}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${data?.session?.token}`,
@@ -309,8 +324,8 @@ export function useApi() {
     async exportCalendar(calendarID: string): Promise<string> {
       const remote = remoteOf(calendarID);
       const url = `${remote?.server ?? apiUrl}/api/${apiVersion}/calendars/${calendarID}/export`;
-      const token = remote?.token ?? (await authClient.getSession()).data?.session?.token;
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const token = remote?.token ?? (await baseAuthClient.getSession()).data?.session?.token;
+      const res = await fetchWithTimeout(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error(`${res.status}: export failed`);
       return res.text();
     },

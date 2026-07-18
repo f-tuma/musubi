@@ -7,6 +7,7 @@
 // without importing stores — the stores import useApi, which would cycle.
 import * as SecureStore from "expo-secure-store";
 import { Calendar, Event } from "@musubi/types";
+import { fetchWithTimeout } from "@/lib/network";
 
 export type FederatedAccount = {
   server: string;   // origin server URL, e.g. https://musubi.example.com
@@ -69,7 +70,7 @@ export function remoteForCalendar(calendarID: string | null | undefined): Federa
 
 /** Authenticated JSON request against a federated server. Throws like the home api. */
 export async function fedFetch<T>(acc: FederatedAccount, path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${acc.server}${path}`, {
+  const res = await fetchWithTimeout(`${acc.server}${path}`, {
     ...init,
     headers: {
       "content-type": "application/json",
@@ -89,7 +90,7 @@ const reviveEvent = (e: any): Event => ({ ...e, start: new Date(e.start), end: n
 
 /** Public invite preview on a remote server (the token is the credential). */
 export async function fetchRemoteCalendarPreview(server: string, inviteToken: string) {
-  const res = await fetch(`${server}/api/v1/calendars/tokens/${inviteToken}`);
+  const res = await fetchWithTimeout(`${server}/api/v1/calendars/tokens/${inviteToken}`);
   if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
   const data = await res.json();
   return { ...data, events: (data.events ?? []).map(reviveEvent) };
@@ -105,7 +106,7 @@ export async function acceptRemoteInvite(
   inviteToken: string,
   profile: { name: string; email: string; image?: string | null; homeServer: string },
 ) {
-  const res = await fetch(`${server}/api/v1/federation/accept`, {
+  const res = await fetchWithTimeout(`${server}/api/v1/federation/accept`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ token: inviteToken, profile }),

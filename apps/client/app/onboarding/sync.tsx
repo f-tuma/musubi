@@ -12,6 +12,8 @@ import { OnboardingScaffold } from "@/components/OnboardingScaffold";
 import SyncCalendarModal from "@/components/calendar/SyncCalendarModal";
 import * as haptics from "@/lib/haptics";
 import { Feather, Ionicons } from "@expo/vector-icons";
+import { showToast } from "@/components/ui/Toast";
+import { userFacingError } from "@/lib/network";
 
 // Onboarding step 3 — connect external calendars. Finishing flips
 // settings.onboarded on the server.
@@ -56,6 +58,7 @@ export default function OnboardingSync() {
       });
     } catch (e) {
       console.error("Onboarding finish failed:", e); // flag retries on next settings save
+      showToast({ message: userFacingError(e, "You can continue; onboarding will sync later.") });
     } finally {
       settings.setOnboarded(true);
       haptics.success();

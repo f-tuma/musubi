@@ -8,6 +8,8 @@ import { warn } from "@/lib/haptics";
 import { GoogleSignin, isSuccessResponse } from "@react-native-google-signin/google-signin";
 import * as AppleAuthentication from "expo-apple-authentication";
 import Svg, { Path } from "react-native-svg";
+import { fetchWithTimeout, userFacingError } from "@/lib/network";
+import { takePendingInviteHref } from "@/lib/pendingInvite";
 
 GoogleSignin.configure({
   webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
@@ -51,7 +53,7 @@ export default function SocialAuthButtons({ separatorLabel }: { separatorLabel?:
   // buttons. Refetches when the user points at a new server.
   useEffect(() => {
     if (!apiUrl) return;
-    fetch(`${apiUrl}/api/v1/server`)
+    fetchWithTimeout(`${apiUrl}/api/v1/server`)
       .then(r => r.json())
       .then(({ socials }) => setSocials(Array.isArray(socials) ? socials : []))
       .catch(() => setSocials([]));
@@ -75,9 +77,9 @@ export default function SocialAuthButtons({ separatorLabel }: { separatorLabel?:
         });
         if (error) {
           warn();
-          alert(`Server error: ${error.message ?? JSON.stringify(error)}`);
+          alert(userFacingError(error, "Google sign-in failed."));
         } else {
-          router.replace("/(tabs)");
+          router.replace((await takePendingInviteHref() ?? "/(tabs)") as any);
         }
       } else {
         warn();
@@ -85,7 +87,7 @@ export default function SocialAuthButtons({ separatorLabel }: { separatorLabel?:
       }
     } catch (e: any) {
       warn();
-      alert(`Native error: code=${e?.code} ${e?.message ?? String(e)}`);
+      alert(userFacingError(e, "Google sign-in failed."));
     } finally {
       setGoogleBusy(false);
     }
@@ -124,14 +126,14 @@ export default function SocialAuthButtons({ separatorLabel }: { separatorLabel?:
       });
       if (error) {
         warn();
-        alert(`Server error: ${error.message ?? JSON.stringify(error)}`);
+        alert(userFacingError(error, "Apple sign-in failed."));
       } else {
-        router.replace("/(tabs)");
+        router.replace((await takePendingInviteHref() ?? "/(tabs)") as any);
       }
     } catch (e: any) {
       if (e?.code === "ERR_REQUEST_CANCELED") return; // user backed out — not an error
       warn();
-      alert(`Apple error: ${e?.message ?? String(e)}`);
+      alert(userFacingError(e, "Apple sign-in failed."));
     } finally {
       setAppleBusy(false);
     }

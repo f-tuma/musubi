@@ -21,6 +21,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { File } from "expo-file-system";
 import { useApi } from "@/services/api";
 import { useRefreshData } from "@/hooks/useRefreshData";
+import { userFacingError } from "@/lib/network";
 
 
 type Props = {
@@ -148,7 +149,7 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
       handleClose();
     } catch (e: any) {
       haptics.warn();
-      Alert.alert("Failed to save", e?.message ?? "An unexpected error occurred.");
+      Alert.alert("Failed to save", userFacingError(e));
     } finally {
       setIsLoading(false);
     }
@@ -205,8 +206,9 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                   <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Colors</Text>
                   <ScrollView
                     horizontal
-                  
-  showsHorizontalScrollIndicator={false}>
+                    nestedScrollEnabled
+                    directionalLockEnabled
+                    showsHorizontalScrollIndicator={false}>
                     <View style={styles.horizontalPillView}>
                       {palette.map((c) => (
                         <Tap
@@ -254,9 +256,14 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                 {!calendar && accounts.length > 0 && !importFile && (
                   <View style={styles.fieldContainer}>
                     <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Account</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                      <View style={{ flexDirection: "row", gap: 8, paddingVertical: 12 }}>
-                        {[null, ...accounts].map((a) => {
+                    <ScrollView
+                      horizontal
+                      nestedScrollEnabled
+                      directionalLockEnabled
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ gap: 8, paddingVertical: 12, paddingRight: 16 }}
+                    >
+                      {[null, ...accounts].map((a) => {
                           const selected = (a?.accountId ?? null) === (account?.accountId ?? null) && (a?.provider ?? null) === (account?.provider ?? null);
                           return (
                             <Tap
@@ -282,7 +289,6 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                             </Tap>
                           );
                         })}
-                      </View>
                     </ScrollView>
                   </View>
                 )}

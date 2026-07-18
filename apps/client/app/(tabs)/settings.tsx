@@ -15,6 +15,8 @@ import { Avatar } from "@/components/Avatar";
 import { pickAvatarBase64 } from "@/lib/avatar";
 import { Feather } from "@expo/vector-icons";
 import { signOutAndReset } from "@/lib/signOut";
+import { showToast } from "@/components/ui/Toast";
+import { userFacingError } from "@/lib/network";
 
 
 export default function SettingsTab() {
@@ -47,6 +49,7 @@ export default function SettingsTab() {
     } catch (e) {
       warn();
       console.error("Avatar upload failed:", e);
+      showToast({ message: userFacingError(e, "Could not update your photo.") });
     } finally {
       setAvatarBusy(false);
     }
@@ -61,14 +64,23 @@ export default function SettingsTab() {
     } catch (e) {
       warn();
       console.error("Name update failed:", e);
+      showToast({ message: userFacingError(e, "Could not update your name.") });
     }
   };
 
   const refresh = useRefreshData();
   const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = async () => {
+  const onRefresh = async function runRefresh() {
     setRefreshing(true);
-    try { await refresh(); } catch (e) { console.error(e); }
+    try { await refresh(); }
+    catch (e) {
+      console.error(e);
+      showToast({
+        message: userFacingError(e, "Could not refresh settings."),
+        actionLabel: "Retry",
+        onAction: () => setTimeout(() => { void runRefresh(); }, 320),
+      });
+    }
     finally { setRefreshing(false); }
   };
 
@@ -78,7 +90,11 @@ export default function SettingsTab() {
     api.saveSettings({
       showKanji, notificationsOnByDefault, defaultCalendarView, weekStartsOn, timeFormat, dateFormat, theme, onboarded,
       ...patch,
-    }).catch((e) => { warn(); console.error("Settings save failed:", e); });
+    }).catch((e) => {
+      warn();
+      console.error("Settings save failed:", e);
+      showToast({ message: userFacingError(e, "This setting could not be saved.") });
+    });
   };
 
   const handleSignOut = () => signOutAndReset(authClient);

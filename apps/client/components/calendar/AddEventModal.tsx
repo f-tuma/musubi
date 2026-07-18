@@ -26,6 +26,7 @@ import { remoteForCalendar } from "@/services/federation";
 import { Tap } from "@/components/ui/Tap";
 import { Btn } from "@/components/ui/Btn";
 import * as haptics from "@/lib/haptics";
+import { userFacingError } from "@/lib/network";
 
 type Props = {
   visible: boolean;
@@ -483,7 +484,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
       docked ? dockedDismiss() : handleClose();
     } catch (e: any) {
       haptics.warn();
-      Alert.alert("Failed to save", e?.message ?? "An unexpected error occurred.");
+      Alert.alert("Failed to save", userFacingError(e));
     } finally {
       setIsLoading(false);
     }

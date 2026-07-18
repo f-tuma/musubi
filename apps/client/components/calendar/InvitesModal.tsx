@@ -15,6 +15,9 @@ import { Tap } from "@/components/ui/Tap";
 import { Btn } from "@/components/ui/Btn";
 import { confirm } from "@/lib/confirm";
 import { formatDateLong } from "@/lib/datetimeFormat";
+import { showToast } from "@/components/ui/Toast";
+import { userFacingError } from "@/lib/network";
+import { warn } from "@/lib/haptics";
 
 // Create presets — Discord-style. null = unlimited / never.
 const USES_OPTIONS = [
@@ -53,7 +56,10 @@ export default function InvitesModal({ calendar, visible, onClose }: Props) {
 
   useEffect(() => {
     if (!visible || !calendar) return;
-    api.getInvites(calendar.id).then(setInvites).catch(() => setInvites([]));
+    api.getInvites(calendar.id).then(setInvites).catch((error) => {
+      setInvites([]);
+      showToast({ message: userFacingError(error, "Could not load invite links.") });
+    });
   }, [visible, calendar?.id]);
 
   // The calendar's own server serves the invite page — self-hosted and federated
@@ -90,6 +96,9 @@ export default function InvitesModal({ calendar, visible, onClose }: Props) {
       });
       setInvites(prev => [invite, ...prev]);
       await shareInvite(invite); // the point of a new link is sharing it
+    } catch (error) {
+      warn();
+      showToast({ message: userFacingError(error, "Could not create an invite link.") });
     } finally {
       setCreating(false);
     }
@@ -106,6 +115,9 @@ export default function InvitesModal({ calendar, visible, onClose }: Props) {
       try {
         await api.revokeInvite(calendar.id, i.id);
         setInvites(prev => prev.filter(x => x.id !== i.id));
+      } catch (error) {
+        warn();
+        showToast({ message: userFacingError(error, "Could not revoke this invite.") });
       } finally {
         setPending(null);
       }

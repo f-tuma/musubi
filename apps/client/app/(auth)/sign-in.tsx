@@ -7,6 +7,8 @@ import { View, Text, TextInput, Alert, KeyboardAvoidingView, Platform, ScrollVie
 import { Btn } from "@/components/ui/Btn";
 import { success, warn } from "@/lib/haptics";
 import SocialAuthButtons from "@/components/auth/SocialAuthButtons";
+import { userFacingError } from "@/lib/network";
+import { takePendingInviteHref } from "@/lib/pendingInvite";
 
 export default function SignIn() {
   const { authClient } = useServer();
@@ -39,16 +41,16 @@ export default function SignIn() {
         const result = await authClient.signIn.email({ email, password });
         if (result.error) {
           warn();
-          Alert.alert("Sign In Failed", result.error.message);
+          Alert.alert("Sign In Failed", userFacingError(result.error, "Check your email and passphrase."));
           setIsLoading(false);
         } else {
           success();
-          router.replace("/(tabs)");
+          router.replace((await takePendingInviteHref() ?? "/(tabs)") as any);
         }
       } catch (e: any) {
         setIsLoading(false);
         warn();
-        Alert.alert("Sign In Failed", e?.message ?? "An unexpected error occurred.");
+        Alert.alert("Sign In Failed", userFacingError(e));
       }
     }
   };

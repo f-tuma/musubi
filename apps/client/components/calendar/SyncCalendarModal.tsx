@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Tap } from "@/components/ui/Tap";
 import { Btn } from "@/components/ui/Btn";
 import * as haptics from "@/lib/haptics";
+import { fetchWithTimeout, userFacingError } from "@/lib/network";
 
 const ICLOUD_URL = "https://caldav.icloud.com";
 
@@ -35,7 +36,7 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
   const [available, setAvailable] = useState<string[] | null>(null);
   useEffect(() => {
     if (!visible || !apiUrl) return;
-    fetch(`${apiUrl}/api/v1/server`)
+    fetchWithTimeout(`${apiUrl}/api/v1/server`)
       .then((res) => res.json())
       .then(({ syncProviders }) => setAvailable(Array.isArray(syncProviders) ? syncProviders : null))
       .catch(() => setAvailable(null));
@@ -81,7 +82,7 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
       handleClose();
     } catch (e: any) {
       haptics.warn();
-      Alert.alert(`${label} connect failed`, e?.message ?? "An unexpected error occurred.");
+      Alert.alert(`${label} connect failed`, userFacingError(e));
     } finally {
       setLoadingProvider(null);
     }
@@ -107,7 +108,7 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
       // The server distinguishes credential/discovery failures from a failed
       // initial event import. Surface that distinction instead of replacing
       // every failure with the same credentials hint.
-      setError(e?.message?.replace(/^\d+:\s*/, "") ?? "Could not connect — check your credentials.");
+      setError(userFacingError(e, "Could not connect — check your credentials."));
     } finally {
       setIsLoading(false);
     }

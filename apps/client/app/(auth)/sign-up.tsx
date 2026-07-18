@@ -6,6 +6,8 @@ import { View, Text, TextInput, Alert, KeyboardAvoidingView, Platform, ScrollVie
 import { Btn } from "@/components/ui/Btn";
 import { success, warn } from "@/lib/haptics";
 import SocialAuthButtons from "@/components/auth/SocialAuthButtons";
+import { userFacingError } from "@/lib/network";
+import { takePendingInviteHref } from "@/lib/pendingInvite";
 
 
 export default function SignUp() {
@@ -53,15 +55,15 @@ export default function SignUp() {
         if (result.error) {
           setIsLoading(false);
           warn();
-          Alert.alert("Sign Up Failed", result.error.message);
+          Alert.alert("Sign Up Failed", userFacingError(result.error));
         } else {
           success();
-          router.replace("/(tabs)");
+          router.replace((await takePendingInviteHref() ?? "/(tabs)") as any);
         }
       } catch (e: any) {
         setIsLoading(false);
         warn();
-        Alert.alert("Sign Up Failed", e?.message ?? "An unexpected error occurred.");
+        Alert.alert("Sign Up Failed", userFacingError(e));
       }
     }
   };
