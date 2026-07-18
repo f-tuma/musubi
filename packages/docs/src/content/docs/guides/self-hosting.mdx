@@ -66,10 +66,24 @@ scrape_configs:
 ```
 
 Metrics include Node.js/process health plus bounded HTTP request counts,
-in-flight requests, and latency histograms. HTTP labels use registered route
-patterns rather than concrete URLs, so user IDs, invite tokens, and other path
-parameters are not exposed. Do not add a public domain or host port for the
-metrics listener. Set `METRICS_PORT=0` if metrics are not needed.
+in-flight requests, latency histograms, and external-calendar sync failures.
+HTTP labels use registered route patterns rather than concrete URLs, so user
+IDs, invite tokens, and other path parameters are not exposed. Provider and
+sync-stage labels are also constrained to known values.
+
+The repository includes basic alert rules for an unavailable API, repeated 5xx
+responses, and Google/Outlook/CalDAV sync failures:
+
+```yaml
+rule_files:
+  - /etc/prometheus/musubi-alerts.yml
+```
+
+Mount `ops/prometheus/musubi-alerts.yml` at that path and connect Prometheus to
+your Alertmanager notification receiver. The rules create alerts; Alertmanager
+is what delivers them by email, Slack, or another channel. Do not add a public
+domain or host port for the metrics listener. Set `METRICS_PORT=0` if metrics
+are not needed.
 
 <Aside type="caution">
 Required to boot: the `POSTGRES_*` credentials, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, and `ENVIRONMENT`. The Google, Microsoft, SMTP, and `CALDAV_ENC_KEY` variables are optional — the API starts without them and the matching feature just stays off until you set it.
@@ -117,19 +131,63 @@ Migrations run automatically on startup.
 
 ---
 
-## Backups
+## Backups and recovery drills
 
-The only stateful piece is the PostgreSQL database. Run these from the repo directory (Compose resolves the `db` service; use the `POSTGRES_USER` / `POSTGRES_DB` values from your `.env`):
+The only stateful piece is PostgreSQL. Keep at least one encrypted backup outside
+the server running Musubi; a dump on the same disk does not protect against disk
+or host loss.
+
+### Dokploy
+
+For the repository's default Dokploy Compose deployment, configure a scheduled
+backup for the `db` service in Dokploy's **Backups** tab, select an S3-compatible
+destination, set a retention count, and run **Test** before relying on it. A
+daily schedule with at least 14 retained copies is a reasonable starting point.
+Dokploy documents both [scheduled database backups](https://docs.dokploy.com/docs/core/databases/backups)
+and [restoring an S3 backup](https://docs.dokploy.com/docs/core/databases/restore).
+
+After enabling it, confirm that a new object appears in the bucket and record
+the most recent successful run somewhere the team checks. Recheck the job after
+changing database credentials, storage credentials, or deployment names.
+
+### Plain Docker Compose
+
+The bundled script creates a compressed custom-format dump, validates it before
+publishing it, and removes local dumps older than the retention window:
 
 ```sh
-docker compose -f docker-compose.selfhost.yml exec -T db pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" > backup.sql
+./ops/backup-postgres.sh
 ```
 
-Restore with:
+It defaults to `docker-compose.selfhost.yml`, `./backups`, and 14 days. Override
+those settings when scheduling it with cron or your hosting control panel:
 
 ```sh
-cat backup.sql | docker compose -f docker-compose.selfhost.yml exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+MUSUBI_BACKUP_DIR=/var/backups/musubi \
+MUSUBI_BACKUP_RETENTION_DAYS=30 \
+./ops/backup-postgres.sh
 ```
+
+Copy or sync that directory to a separate machine or object-storage bucket.
+
+### Verify that a dump really restores
+
+Run a recovery drill after setting up the job and then regularly. This command
+starts a temporary PostgreSQL 17 container with no published port, restores the
+dump, checks that public tables exist, and removes the container afterwards. It
+does not connect to or change the production database:
+
+```sh
+./ops/verify-postgres-backup.sh /path/to/downloaded-backup.sql.gz
+```
+
+Both the gzipped custom-format dump produced by Dokploy and the uncompressed
+`.dump` produced by the local script are supported.
+
+For an actual recovery, stop the API first, restore into a clean database, run
+the current migrations, start the API, and verify login plus one calendar read
+before reopening traffic. Keep the old database untouched until that check has
+passed.
 
 <Aside type="note">
 Musubi is in active development. Breaking changes are possible before a stable 1.0 release. Check the changelog before updating.

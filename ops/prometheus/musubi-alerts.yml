@@ -1,0 +1,29 @@
+groups:
+  - name: musubi-api
+    rules:
+      - alert: MusubiApiUnavailable
+        expr: up{job="musubi-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Musubi API metrics target is unavailable
+          description: Prometheus has been unable to scrape the Musubi API for two minutes.
+
+      - alert: MusubiApiServerErrors
+        expr: sum(increase(musubi_http_requests_total{status=~"5.."}[10m])) >= 3
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Musubi API is returning server errors
+          description: At least three HTTP 5xx responses were recorded in the last ten minutes.
+
+      - alert: MusubiExternalSyncFailure
+        expr: sum by (stage, provider) (increase(musubi_external_sync_failures_total[15m])) > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Musubi external calendar sync is failing
+          description: "Provider {{ $labels.provider }} failed during {{ $labels.stage }} synchronization."
