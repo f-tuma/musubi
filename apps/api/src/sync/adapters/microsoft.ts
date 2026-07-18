@@ -1,6 +1,6 @@
 import { config } from "@musubi/config";
 import { getOAuthAccountIDs } from "@musubi/db";
-import { Event } from "@musubi/types";
+import { Event, nearestMicrosoftCalendarColor } from "@musubi/types";
 import {
   CalendarAdapter,
   ExternalCalendarInfo,
@@ -271,27 +271,27 @@ export const microsoftAdapter: CalendarAdapter = {
     }
   },
 
-  async createCalendar(userID, accountId, { name }) {
-    // ponytail: color skipped — Graph only accepts ~9 preset color names
-    // (hexColor is read-only), so Outlook shows its default. Cosmetic only;
-    // the Musubi side keeps the chosen color.
+  async createCalendar(userID, accountId, { name, color }) {
+    // Graph only accepts preset color names (hexColor is read-only) — map to
+    // the nearest preset. The client offers exactly these presets for Outlook
+    // calendars, so this is normally an exact match.
     const accessToken = await getAccessToken(userID, accountId);
     const res = await fetch(`${GRAPH}/me/calendars`, {
       method: "POST",
       headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, color: nearestMicrosoftCalendarColor(color).name }),
     });
     if (!res.ok) throw await graphError(res);
     const data = await res.json();
     return { externalId: data.id };
   },
 
-  async updateCalendar(userID, accountId, externalCalendarId, { name }) {
+  async updateCalendar(userID, accountId, externalCalendarId, { name, color }) {
     const accessToken = await getAccessToken(userID, accountId);
     const res = await fetch(`${GRAPH}/me/calendars/${encodeURIComponent(externalCalendarId)}`, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, color: nearestMicrosoftCalendarColor(color).name }),
     });
     if (!res.ok) throw await graphError(res);
   },
