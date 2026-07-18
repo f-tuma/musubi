@@ -61,6 +61,12 @@ async function main() {
   // toGraphEvent: recurring events are rejected, not silently flattened
   assert.throws(() => toGraphEvent({ recurrence: "FREQ=DAILY", isAllDay: false, start: new Date(), end: new Date() } as any));
 
+  // nearestMicrosoftCalendarColor: exact preset, nearby shade, garbage fallback
+  const { nearestMicrosoftCalendarColor, MICROSOFT_CALENDAR_COLORS } = await import("@musubi/types");
+  assert.equal(nearestMicrosoftCalendarColor("#6BB55C").name, "lightGreen");
+  assert.equal(nearestMicrosoftCalendarColor("#e21d1d").name, "lightRed");
+  assert.equal(nearestMicrosoftCalendarColor("not-a-color").name, MICROSOFT_CALENDAR_COLORS[0].name);
+
   // parseCursor: valid JSON cursor, garbage, and null
   assert.deepEqual(parseCursor(JSON.stringify({ link: "https://g/delta?x", windowEnd: 123 })), { link: "https://g/delta?x", windowEnd: 123 });
   assert.equal(parseCursor("https://plain-url-from-older-code"), null);
