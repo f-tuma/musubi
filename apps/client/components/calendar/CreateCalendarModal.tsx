@@ -183,7 +183,7 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
       >
         <GestureHandlerRootView style={{ flex: 1 }}>
           <Animated.View style={[styles.modalOverlay, fadeStyle]}>
-            <Pressable style={{ flex: 1 }} onPress={handleClose} />
+            <Pressable style={{ flex: 1 }} onPress={handleClose} accessible={false} />
           </Animated.View>
           <GestureDetector gesture={gesture}>
             <Animated.View style={[styles.modalSheet, fadeStyle, slideStyle]}>
@@ -224,6 +224,8 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                             gap: 18,
                           }}
                           onPress={() => setNewColor(c.color)}
+                          accessibilityLabel={`${c.name} calendar color`}
+                          accessibilityState={{ selected: c.color === newColor }}
                         >
                           <View style={[styles.calendarCircle, {
                             borderWidth: c.color === newColor ? 2 : 1,
@@ -237,7 +239,12 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                           color once chosen, the plus stays on top. Outlook
                           calendars are preset-only, so no free picker there. */}
                       {!isMicrosoft && (
-                        <Tap haptic="select" onPress={() => setPickerOpen(true)}>
+                        <Tap
+                          haptic="select"
+                          onPress={() => setPickerOpen(true)}
+                          accessibilityLabel="Choose a custom calendar color"
+                          accessibilityState={{ selected: isCustomColor }}
+                        >
                           <View style={[styles.calendarCircle, {
                             borderWidth: isCustomColor ? 2 : 1,
                             borderColor: isCustomColor ? colors.fg3 : colors.line3,
@@ -273,6 +280,9 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                               key={a ? `${a.provider}:${a.accountId}` : "musubi"}
                               haptic="select"
                               onPress={() => setAccount(a)}
+                              accessibilityRole="radio"
+                              accessibilityLabel={a?.label ?? "Musubi"}
+                              accessibilityState={{ checked: selected }}
                               style={{
                                 flexDirection: "row",
                                 alignItems: "center",
@@ -307,12 +317,16 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                         <Text numberOfLines={1} style={{ flex: 1, fontFamily: fonts.sans, fontSize: 13, color: colors.fg }}>
                           {importFile.name}
                         </Text>
-                        <Tap hitSlop={10} onPress={() => setImportFile(null)}>
+                        <Tap hitSlop={14} onPress={() => setImportFile(null)} accessibilityLabel="Remove import file">
                           <Feather name="x" size={16} color={colors.fg3} />
                         </Tap>
                       </View>
                     ) : (
-                      <Tap onPress={pickImportFile} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8 }}>
+                      <Tap
+                        onPress={pickImportFile}
+                        accessibilityLabel="Import events from an ICS file"
+                        style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8 }}
+                      >
                         <Feather name="upload" size={14} color={colors.fg2} />
                         <Text style={{ fontFamily: fonts.sans, fontSize: 13, color: colors.fg2 }}>
                           Import events from an .ics file

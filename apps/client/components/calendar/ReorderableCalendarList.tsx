@@ -334,14 +334,24 @@ function SectionHeader({ group, draggable, onDisconnect, onReconnect, onDragStar
             ) : null}
           </View>
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           {onReconnect ? (
-            <Tap onPress={onReconnect} accessibilityLabel={`Reconnect ${group.title}`} hitSlop={8}>
+            <Tap
+              onPress={onReconnect}
+              accessibilityLabel={`Reconnect ${group.title}`}
+              style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}
+              hitSlop={4}
+            >
               <Feather name="refresh-cw" size={13} color={colors.accent} />
             </Tap>
           ) : null}
           {onDisconnect ? (
-            <Tap onPress={onDisconnect} accessibilityLabel={`Disconnect ${group.title}`} hitSlop={8}>
+            <Tap
+              onPress={onDisconnect}
+              accessibilityLabel={`Disconnect ${group.title}`}
+              style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}
+              hitSlop={4}
+            >
               <Feather name="log-out" size={13} color={colors.fg4} />
             </Tap>
           ) : null}
@@ -382,7 +392,11 @@ const RowItem = memo(function RowItem({ cal, meta, draggable, onOpen, onDragStar
   return (
     <GestureDetector gesture={gesture}>
       <View>
-        <Tap onPress={onOpen}>
+        <Tap
+          onPress={onOpen}
+          accessibilityLabel={`${cal.name} calendar, ${meta}`}
+          accessibilityHint="Opens calendar details"
+        >
           <View style={[styles.container, { overflow: "hidden", flexDirection: "row", justifyContent: "space-between", gap: 18 }]}>
             <View style={styles.calendarCircle}>
               <View style={[styles.calendarCircleInner, { backgroundColor: cal.color }]} />

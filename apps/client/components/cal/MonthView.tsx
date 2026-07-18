@@ -7,6 +7,7 @@ import InfinitePager from "react-native-infinite-pager";
 import {
   addMonths, allDaySpans, bucketByDay, dayKey, DOW_H, INK, isSameDay, monthGrid, Rect,
 } from "./layout";
+import { useCurrentDay } from "@/hooks/useCurrentDay";
 
 const MONTH_LANES = 2;     // at most this many spanning all-day lanes per week row
 const BAR_H = 16;          // lane height of a spanning bar
@@ -26,7 +27,7 @@ type Props = {
 export const MonthView = memo(function MonthView({ base, events, weekStartsOn, eventColorOf, onDayPress, onPageChange }: Props) {
   const [size, setSize] = useState({ w: 0, h: 0 });
   const byDay = useMemo(() => bucketByDay(events), [events]);
-  const today = new Date();
+  const today = useCurrentDay();
 
   const dowLabels = useMemo(() => {
     const names = ["S", "M", "T", "W", "T", "F", "S"];
@@ -71,13 +72,19 @@ export const MonthView = memo(function MonthView({ base, events, weekStartsOn, e
                 const isToday = isSameDay(day, today);
                 const dayLanes = lanesOn(c);
                 const chipRows = rowsPerCell - dayLanes;
-                const timed = (byDay.get(dayKey(day)) ?? []).filter(e => !e.isAllDay);
+                const dayEvents = byDay.get(dayKey(day)) ?? [];
+                const timed = dayEvents.filter(e => !e.isAllDay);
                 const overflow = timed.length - chipRows + hiddenOn(c);
+                const dateLabel = day.toLocaleDateString("en-UK", {
+                  weekday: "long", day: "numeric", month: "long", year: "numeric",
+                });
                 return (
                   <Tap
                     key={c}
                     scaleTo={0.96}
                     onPress={() => onDayPress(day, { x: c * cellW, y: DOW_H + r * cellH, w: cellW, h: cellH })}
+                    accessibilityLabel={`${dateLabel}, ${dayEvents.length} ${dayEvents.length === 1 ? "event" : "events"}`}
+                    accessibilityHint="Opens the day view"
                     style={{
                       flex: 1, paddingTop: 3, paddingHorizontal: 2,
                       borderTopWidth: 1, borderColor: colors.line,
@@ -88,8 +95,14 @@ export const MonthView = memo(function MonthView({ base, events, weekStartsOn, e
                     <View style={{
                       alignSelf: "center", width: 22, height: 22, borderRadius: 11,
                       alignItems: "center", justifyContent: "center", marginBottom: 2,
-                      backgroundColor: isToday ? colors.accent : "transparent",
+                      overflow: "hidden",
                     }}>
+                      {isToday ? (
+                        <View pointerEvents="none" style={{
+                          position: "absolute", inset: 0, borderRadius: 11,
+                          backgroundColor: colors.accent,
+                        }} />
+                      ) : null}
                       <Text style={{
                         fontFamily: fonts.sans, fontSize: 12,
                         color: isToday ? "#f4f1e8" : inMonth ? colors.fg2 : colors.fg4,
@@ -141,7 +154,7 @@ export const MonthView = memo(function MonthView({ base, events, weekStartsOn, e
         })}
       </View>
     );
-  }, [base, byDay, weekStartsOn, dowLabels, cellW, cellH, eventColorOf, onDayPress]);
+  }, [base, byDay, weekStartsOn, dowLabels, cellW, cellH, eventColorOf, onDayPress, today]);
 
   return (
     <View style={{ flex: 1 }} onLayout={e => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>

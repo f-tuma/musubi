@@ -58,6 +58,7 @@ export default function OnboardingCalendar() {
           placeholder="Personal"
           placeholderTextColor={colors.fg4}
           autoCapitalize="words"
+          accessibilityLabel="Personal calendar name"
           style={[styles.fieldValueBig, { fontFamily: fonts.sans }]}
         />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
@@ -66,6 +67,9 @@ export default function OnboardingCalendar() {
               <Tap
                 key={c.color}
                 onPress={() => setColor(c.color)}
+                hitSlop={6}
+                accessibilityLabel={`${c.name} calendar color`}
+                accessibilityState={{ selected: shownColor === c.color }}
                 style={{
                   width: 32, height: 32, borderRadius: 16,
                   backgroundColor: c.color,
@@ -78,6 +82,9 @@ export default function OnboardingCalendar() {
                 once chosen, the plus stays on top. */}
             <Tap
               onPress={() => setPickerOpen(true)}
+              hitSlop={6}
+              accessibilityLabel="Choose a custom calendar color"
+              accessibilityState={{ selected: isCustomColor }}
               style={{
                 width: 32, height: 32, borderRadius: 16,
                 backgroundColor: isCustomColor ? shownColor : "transparent",

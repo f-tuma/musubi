@@ -31,6 +31,7 @@ export function Btn({ label, onPress, variant = "primary", icon, disabled, loadi
       style={[blocked ? styles.btnDisabled : v.box, style]}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ disabled: !!blocked, busy: !!loading }}
     >
       {loading ? <ActivityIndicator size="small" color={v.spinner} /> : icon}
       <Text style={v.text}>{label}</Text>

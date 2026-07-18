@@ -72,7 +72,7 @@ export const CalendarFilterBar = memo(function CalendarFilterBar({
         borderBottomWidth: 1, borderBottomColor: colors.line,
         maxHeight: 52,
       }}
-      contentContainerStyle={{ padding: 10, gap: 6, alignItems: "center" }}
+      contentContainerStyle={{ paddingHorizontal: 10, paddingVertical: 4, gap: 6, alignItems: "center" }}
     >
       {/* Same order as the Calendars tab, including the user's drag order. */}
       {sortCalendars(calendars, calendarOrder).map((cal) => {
@@ -85,7 +85,15 @@ export const CalendarFilterBar = memo(function CalendarFilterBar({
             onPress={() => handleToggle(cal.id)}
             onLongPress={() => handleSolo(cal.id)}
             delayLongPress={350}
+            accessibilityLabel={`${cal.name} calendar`}
+            accessibilityHint="Double tap to show or hide. Long press to show only this calendar."
+            accessibilityState={{ selected: active }}
             style={{
+              height: 44,
+              justifyContent: "center",
+            }}
+          >
+            <View style={{
               flexDirection: 'row', alignItems: 'center', gap: 6,
               paddingHorizontal: 12, paddingVertical: 6,
               borderRadius: 999, borderCurve: 'continuous',
@@ -94,29 +102,29 @@ export const CalendarFilterBar = memo(function CalendarFilterBar({
                 ? colors.fg
                 : active ? colors.line3 : colors.line,
               backgroundColor: active ? colors.bg2 : colors.line,
-            }}
-          >
-            {cal.provider === "google" ? (
-              <Ionicons name="logo-google" size={12} color={cal.color} style={{ opacity: active ? 1 : 0.5 }} />
-            ) : cal.provider === "microsoft" ? (
-              <Ionicons name="logo-microsoft" size={12} color={cal.color} style={{ opacity: active ? 1 : 0.5 }} />
-            ) : providerFlavor(cal) === "apple" ? (
-              <Ionicons name="logo-apple" size={13} color={cal.color} style={{ opacity: active ? 1 : 0.5 }} />
-            ) : cal.provider === "caldav" ? (
-              <Ionicons name="cloud" size={13} color={cal.color} style={{ opacity: active ? 1 : 0.5 }} />
-            ) : (
-              <View style={{
-                width: 7, height: 7, borderRadius: 4,
-                backgroundColor: cal.color,
-                opacity: active ? 1 : 0.5,
-              }} />
-            )}
-            <Text style={{
-              fontFamily: fonts.sans, fontSize: 12,
-              color: active ? colors.fg : colors.fg3,
             }}>
-              {cal.name}
-            </Text>
+              {cal.provider === "google" ? (
+                <Ionicons name="logo-google" size={12} color={cal.color} style={{ opacity: active ? 1 : 0.5 }} />
+              ) : cal.provider === "microsoft" ? (
+                <Ionicons name="logo-microsoft" size={12} color={cal.color} style={{ opacity: active ? 1 : 0.5 }} />
+              ) : providerFlavor(cal) === "apple" ? (
+                <Ionicons name="logo-apple" size={13} color={cal.color} style={{ opacity: active ? 1 : 0.5 }} />
+              ) : cal.provider === "caldav" ? (
+                <Ionicons name="cloud" size={13} color={cal.color} style={{ opacity: active ? 1 : 0.5 }} />
+              ) : (
+                <View style={{
+                  width: 7, height: 7, borderRadius: 4,
+                  backgroundColor: cal.color,
+                  opacity: active ? 1 : 0.5,
+                }} />
+              )}
+              <Text style={{
+                fontFamily: fonts.sans, fontSize: 12,
+                color: active ? colors.fg : colors.fg3,
+              }}>
+                {cal.name}
+              </Text>
+            </View>
           </Tap>
         );
       })}

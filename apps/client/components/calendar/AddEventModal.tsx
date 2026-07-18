@@ -522,10 +522,17 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
             <View style={{ paddingHorizontal: 16, paddingBottom: 4 }}>
               {/* actions live up here — no Cancel/Create row in docked mode */}
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <Tap onPress={dockedDismiss} hitSlop={10}>
+                <Tap onPress={dockedDismiss} hitSlop={14} accessibilityLabel="Close event editor">
                   <Feather name="x" size={20} color={colors.fg2} />
                 </Tap>
-                <Tap haptic="thump" onPress={handleSave} disabled={isLoading} style={{
+                <Tap
+                  haptic="thump"
+                  onPress={handleSave}
+                  disabled={isLoading}
+                  hitSlop={{ top: 6, bottom: 6 }}
+                  accessibilityLabel="Save event"
+                  accessibilityState={{ disabled: isLoading, busy: isLoading }}
+                  style={{
                   backgroundColor: colors.fill, borderRadius: 999, borderCurve: "continuous",
                   paddingHorizontal: 20, paddingVertical: 8, minWidth: 68, alignItems: "center",
                 }}>
@@ -599,6 +606,9 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
                       setSelectedCals(prev => new Set(prev).add(cal.id));
                       setOriginCal(cal.id);
                     }}
+                    accessibilityLabel={`${cal.name} calendar`}
+                    accessibilityHint="Double tap to include. Long press to make it the primary calendar."
+                    accessibilityState={{ selected: active }}
                     style={active ? styles.pillActive : styles.pill}
                   >
                     {isOrigin
@@ -669,6 +679,8 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
                           setDatePickerMode("date");
                           setDatePickerVisible(true);
                         }}
+                        hitSlop={{ top: 6, bottom: 6 }}
+                        accessibilityLabel={`Choose ${label.toLowerCase()} date`}
                         style={[local.chip, { backgroundColor: colors.bg3 }]}
                       >
                         <Text style={[styles.fieldValueText, { fontFamily: fonts.sans }]}>
@@ -682,6 +694,8 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
                             setDatePickerMode("time");
                             setDatePickerVisible(true);
                           }}
+                          hitSlop={{ top: 6, bottom: 6 }}
+                          accessibilityLabel={`Choose ${label.toLowerCase()} time`}
                           style={[local.chip, { backgroundColor: colors.bg3 }]}
                         >
                           <Text style={[styles.fieldValueText, { fontFamily: fonts.sans }]}>
@@ -705,6 +719,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
               ios_backgroundColor={colors.line}
               onValueChange={(v) => { setAllDayToggle(v); }}
               value={allDayToggle}
+              accessibilityLabel="All-day event"
             />
           </View>
 
@@ -726,6 +741,10 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
                         setNewStart(withHours(newStart, from));
                         setNewEnd(withHours(newStart, to));
                       }}
+                      hitSlop={{ top: 6, bottom: 6 }}
+                      accessibilityRole="radio"
+                      accessibilityLabel={`${label} time preset`}
+                      accessibilityState={{ checked: active }}
                       style={active ? styles.pillActive : styles.pill}
                     >
                       <Feather name={icon} color={colors.fg2} />
@@ -753,6 +772,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
                 ios_backgroundColor={colors.line}
                 onValueChange={(v) => { setNotificationToggle(v); }}
                 value={notificationToggle}
+                accessibilityLabel="Event notification"
               />
             </View>
             {notificationToggle &&
@@ -767,6 +787,10 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
                           key={opt.label}
                           haptic="select"
                           onPress={() => setNotifyBeforeTime(opt.value)}
+                          hitSlop={{ top: 6, bottom: 6 }}
+                          accessibilityRole="radio"
+                          accessibilityLabel={`Notify ${opt.label.toLowerCase()} before`}
+                          accessibilityState={{ checked: active }}
                           style={active ? styles.pillActive : styles.pill}
                         >
                           <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: active ? colors.fg : colors.fg3 }}>
@@ -798,6 +822,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
               ios_backgroundColor={colors.line}
               onValueChange={(v) => { setAttendeesToggle(v); }}
               value={attendeesToggle}
+              accessibilityLabel="Allow attendees"
             />
           </View>
         </View>
@@ -823,6 +848,10 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
                         setAdvCount(10);
                       }
                     }}
+                    hitSlop={{ top: 6, bottom: 6 }}
+                    accessibilityRole="radio"
+                    accessibilityLabel={`${isWeekly ? `Weekly on ${weekDay}` : opt.label} recurrence`}
+                    accessibilityState={{ checked: active }}
                     style={active ? styles.pillActive : styles.pill}
                   >
                     <Feather name={opt.icon as any} size={12} color={active ? colors.fg : colors.fg3} />
@@ -868,6 +897,10 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Tap
                     onPress={() => setAdvInterval(v => Math.max(1, v - 1))}
+                    disabled={advInterval === 1}
+                    hitSlop={9}
+                    accessibilityLabel="Decrease recurrence interval"
+                    accessibilityState={{ disabled: advInterval === 1 }}
                     style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bg3, alignItems: 'center', justifyContent: 'center' }}
                   >
                     <Text style={{ fontFamily: fonts.sans, fontSize: 16, color: colors.fg2, lineHeight: 20 }}>−</Text>
@@ -877,6 +910,10 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
                   </Text>
                   <Tap
                     onPress={() => setAdvInterval(v => Math.min(99, v + 1))}
+                    disabled={advInterval === 99}
+                    hitSlop={9}
+                    accessibilityLabel="Increase recurrence interval"
+                    accessibilityState={{ disabled: advInterval === 99 }}
                     style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bg3, alignItems: 'center', justifyContent: 'center' }}
                   >
                     <Text style={{ fontFamily: fonts.sans, fontSize: 16, color: colors.fg2, lineHeight: 20 }}>+</Text>
@@ -890,6 +927,10 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
                       key={f}
                       haptic="select"
                       onPress={() => setAdvFreq(f)}
+                      hitSlop={{ top: 8, bottom: 8 }}
+                      accessibilityRole="radio"
+                      accessibilityLabel={`${label} frequency`}
+                      accessibilityState={{ checked: advFreq === f }}
                       style={{
                         flex: 1, paddingVertical: 5, borderRadius: 8, alignItems: 'center',
                         backgroundColor: advFreq === f ? colors.fill : colors.bg3,
@@ -920,6 +961,9 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
                             else next.add(day);
                             return next;
                           })}
+                          hitSlop={{ top: 3, bottom: 3 }}
+                          accessibilityLabel={['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][i]}
+                          accessibilityState={{ selected: active }}
                           style={{
                             flex: 1, aspectRatio: 1, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
                             backgroundColor: active ? colors.fill : colors.bg3,
@@ -944,6 +988,10 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
                       key={type}
                       haptic="select"
                       onPress={() => setAdvEndType(type)}
+                      hitSlop={{ top: 6, bottom: 6 }}
+                      accessibilityRole="radio"
+                      accessibilityLabel={type === 'never' ? 'Never ends' : 'Ends after a number of occurrences'}
+                      accessibilityState={{ checked: advEndType === type }}
                       style={advEndType === type ? styles.pillActive : styles.pill}
                     >
                       <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: advEndType === type ? colors.fg : colors.fg3 }}>
@@ -955,6 +1003,10 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Tap
                         onPress={() => setAdvCount(v => Math.max(1, v - 1))}
+                        disabled={advCount === 1}
+                        hitSlop={9}
+                        accessibilityLabel="Decrease occurrence count"
+                        accessibilityState={{ disabled: advCount === 1 }}
                         style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bg3, alignItems: 'center', justifyContent: 'center' }}
                       >
                         <Text style={{ fontFamily: fonts.sans, fontSize: 16, color: colors.fg2, lineHeight: 20 }}>−</Text>
@@ -964,6 +1016,10 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
                       </Text>
                       <Tap
                         onPress={() => setAdvCount(v => Math.min(999, v + 1))}
+                        disabled={advCount === 999}
+                        hitSlop={9}
+                        accessibilityLabel="Increase occurrence count"
+                        accessibilityState={{ disabled: advCount === 999 }}
                         style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bg3, alignItems: 'center', justifyContent: 'center' }}
                       >
                         <Text style={{ fontFamily: fonts.sans, fontSize: 16, color: colors.fg2, lineHeight: 20 }}>+</Text>
@@ -1054,7 +1110,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
         <Animated.View
           style={[{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.45)" }, backdropStyle]}
         >
-          <Pressable style={{ flex: 1 }} onPress={dockCollapse} />
+          <Pressable style={{ flex: 1 }} onPress={dockCollapse} accessible={false} />
         </Animated.View>
         <Animated.View style={[styles.modalSheet, {
           height: DOCK_H, maxHeight: DOCK_H, minHeight: 0,
@@ -1075,7 +1131,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
     >
       <GestureHandlerRootView style={{ flex: 1 }}>
         <Animated.View style={[styles.modalOverlay, fadeStyle]}>
-          <Pressable style={{ flex: 1 }} onPress={handleClose} />
+          <Pressable style={{ flex: 1 }} onPress={handleClose} accessible={false} />
         </Animated.View>
         <Animated.View style={[styles.modalSheet, fadeStyle, slideStyle]}>
           {sheetContent}

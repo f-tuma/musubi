@@ -461,8 +461,14 @@ function TimelinePage({
                 <View style={{
                   minWidth: 21, height: 21, borderRadius: 11, paddingHorizontal: 3,
                   alignItems: "center", justifyContent: "center",
-                  backgroundColor: today ? colors.accent : "transparent",
+                  overflow: "hidden",
                 }}>
+                  {today ? (
+                    <View pointerEvents="none" style={{
+                      position: "absolute", inset: 0, borderRadius: 11,
+                      backgroundColor: colors.accent,
+                    }} />
+                  ) : null}
                   <Text style={{ fontFamily: fonts.sansMedium, fontSize: 12, color: today ? "#f4f1e8" : colors.fg2 }}>
                     {d.getDate()}
                   </Text>
@@ -479,7 +485,11 @@ function TimelinePage({
             borderBottomWidth: 1, borderColor: colors.line,
           }}>
             {visibleSpans.map(sp => (
-              <Tap key={sp.event.id} onPress={() => onPressEvent(sp.event)} style={{
+              <Tap
+                key={sp.event.id}
+                onPress={() => onPressEvent(sp.event)}
+                accessibilityLabel={`All-day event, ${sp.event.title || "Untitled event"}`}
+                style={{
                 position: "absolute",
                 left: sp.startCol * colW + 1,
                 width: (sp.endCol - sp.startCol + 1) * colW - 2,
@@ -782,6 +792,7 @@ const TimelineEventBlock = memo(function TimelineEventBlock({
     <Animated.View style={[{ position: "absolute", width, zIndex }, animStyle]}>
       <Tap
         onPress={() => onPress(event)}
+        accessibilityLabel={`${event.title || "Untitled event"}, ${formatTime(new Date(event.start.getTime() + shiftMs), timeFormat)} to ${formatTime(new Date(event.end.getTime() + shiftMs), timeFormat)}`}
         style={{
           flex: 1,
           backgroundColor: color,

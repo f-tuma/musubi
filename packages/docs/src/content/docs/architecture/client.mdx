@@ -128,6 +128,8 @@ Two traps that bit here (both iOS-only symptoms, both aborted the *whole* refres
 
 Connectivity UX has two layers: `components/ui/NetworkStatusBanner.tsx` watches `expo-network` and keeps an app-wide Offline banner visible while cached data remains usable; user-triggered requests pass failures through `userFacingError()` for consistent offline, timeout, and unavailable-server copy. Pull-to-refresh exposes Retry, and the invite route has explicit loading/error/retry states. If invite acceptance succeeds but its follow-up refresh fails, the app treats the invite as accepted and lets the cache catch up later.
 
+Calendar-day UI that can remain mounted overnight uses `hooks/useCurrentDay.ts`. It schedules the next local midnight recursively (so DST is respected) and also refreshes on foreground, rather than waiting for an unrelated store update. The Home month marker uses a conditionally mounted rounded fill: changing only `backgroundColor` from transparent to accent can lose the existing radius during an Android Fabric style diff.
+
 <Aside type="caution">
 The client has its **own** drizzle schema and migrations (`apps/client/db/schema.ts`, `apps/client/drizzle/`) — separate from `packages/db` (the server's PostgreSQL). If you cache a new field, add it here and run the client's `npx drizzle-kit generate` too.
 </Aside>
@@ -188,6 +190,10 @@ Notification permission is **contextual**: the app never prompts at launch. `Add
 ## Help and diagnostics
 
 Settings exposes `Feedback & Roadmap`, `Report a Problem`, Privacy, Terms, and the native version/build. Public ideas open `feedback.frgtn.dev`, where users can suggest, vote, and follow planned work. Private problem reports open a user-controlled email draft to `hello@frgtn.dev`, prefilled only with app version/build, platform/OS version, and the selected Musubi server. Calendar names, events, account email, and other user content are never attached automatically. Link-opening failures fall back to a toast with a copyable destination.
+
+## Accessibility baseline
+
+`Tap` assigns the button role automatically whenever it has `onPress`; specialized controls override it with `switch` or `radio` and expose `checked`, `selected`, `expanded`, `disabled`, and `busy` state where relevant. Icon-only actions need an explicit `accessibilityLabel`. Keep primary navigation and standalone controls at a 44 dp target; dense pills may preserve their small visual shape with vertical `hitSlop` instead of making the visible pill taller. The portal modal host uses `accessibilityViewIsModal`, and decorative dismiss backdrops are excluded from the accessibility tree so VoiceOver/TalkBack stays on meaningful sheet content.
 
 ## Conventions
 

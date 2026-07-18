@@ -34,7 +34,11 @@ export function ModalPortal({ visible, onRequestClose, children }: Props) {
   if (!visible) return null;
   return (
     <Portal>
-      <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      <View
+        style={StyleSheet.absoluteFill}
+        pointerEvents="box-none"
+        accessibilityViewIsModal
+      >
         {children}
       </View>
     </Portal>

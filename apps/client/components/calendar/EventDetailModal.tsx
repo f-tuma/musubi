@@ -152,7 +152,7 @@ export default function EventDetailModal({ event, visible, onClose, onEdit }: Pr
     >
       <GestureHandlerRootView style={{ flex: 1 }}>
         <Animated.View style={[styles.modalOverlay, fadeStyle]}>
-          <Pressable style={{ flex: 1 }} onPress={handleClose} />
+          <Pressable style={{ flex: 1 }} onPress={handleClose} accessible={false} />
         </Animated.View>
         <GestureDetector gesture={gesture}>
           <Animated.View style={[styles.modalSheet, fadeStyle, slideStyle]}>

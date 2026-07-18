@@ -70,7 +70,12 @@ export default function OnboardingProfile() {
       actions={<Btn label="Continue" onPress={continueNext} loading={busy} />}
     >
       <View style={{ alignItems: "center", paddingBottom: 8 }}>
-        <Tap onPress={pickAvatar} disabled={avatarBusy} scaleTo={0.95}>
+        <Tap
+          onPress={pickAvatar}
+          disabled={avatarBusy}
+          scaleTo={0.95}
+          accessibilityLabel={avatarUri ?? session?.user.image ? "Change profile photo" : "Add profile photo"}
+        >
           <View style={{ opacity: avatarBusy ? 0.5 : 1 }}>
             <Avatar name={shownName || "?"} image={avatarUri ?? session?.user.image} size={96} />
             <View style={{
@@ -96,6 +101,7 @@ export default function OnboardingProfile() {
           placeholder="Your name"
           placeholderTextColor={colors.fg4}
           autoCapitalize="words"
+          accessibilityLabel="Display name"
           style={[styles.fieldValueBig, { fontFamily: fonts.sans }]}
         />
         <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.fg4, marginTop: 8 }}>
