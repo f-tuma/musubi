@@ -15,7 +15,7 @@
 [![Self-hostable](https://img.shields.io/badge/self--host-your%20data-a8b5a0?labelColor=0c0c0e)](#-run-it-yourself)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-7a8ba3?labelColor=0c0c0e)](#-contributing)
 
-[**Website**](https://musubi.frgtn.dev) · [**Docs**](https://musubi.frgtn.dev/docs) · [**Roadmap**](https://github.com/users/f-tuma/projects/2) · [**Google Play**](https://play.google.com/store/apps/details?id=dev.frgtn.musubi)
+[**Website**](https://musubi.frgtn.dev) · [**Docs**](https://musubi.frgtn.dev/docs) · [**Roadmap**](https://feedback.frgtn.dev) · [**Google Play**](https://play.google.com/store/apps/details?id=dev.frgtn.musubi)
 
 <img src=".github/assets/banner.svg" alt="Musubi — share, sync, self-host" width="100%" />
 
@@ -30,7 +30,7 @@ Every calendar app treats **sharing as an afterthought**. Google Calendar locks 
 **Musubi** (結び — *the knot*) starts from the other end: **the people come first, the events tie you together.**
 
 - 🪢 **Events are freed from calendars.** An event isn't trapped in one calendar — link it into your partner's, your team's, your friends'. One dinner, visible everywhere it matters, edited once.
-- 🌐 **One node for your whole life.** Work, family, relationship, friends — separate calendars, separate people, one unified view. Your external Google / Apple / CalDAV events flow in and out through two-way sync.
+- 🌐 **One node for your whole life.** Work, family, relationship, friends — separate calendars, separate people, one unified view. Your external Google, Outlook, Apple / iCloud, and CalDAV events flow in and out through two-way sync.
 - 🏠 **Your server, your data.** Self-host the whole thing with Docker, or use it hosted. No ads, no profile building, MIT-licensed.
 
 Nobody else is building exactly this: **an open calendar designed as social infrastructure, without being a social network.**
@@ -47,7 +47,7 @@ Nobody else is building exactly this: **an open calendar designed as social infr
 |---|---|---|
 | 結 | **Shared calendars** | Invite via link, roles (owner / editor / viewer), ownership transfer, live membership |
 | 空 | **Events beyond calendars** | One event in many calendars — link it, fork it, or keep it yours; the origin calendar governs editing |
-| 繋 | **Two-way external sync** | Google Calendar, Apple / iCloud, and any CalDAV server — including recurring events *with exceptions*, read-only detection, multiple accounts |
+| 繋 | **Two-way external sync** | Google Calendar, Outlook / Microsoft 365, Apple / iCloud, and any CalDAV server — including recurring events *with exceptions*, read-only detection, multiple accounts |
 | 速 | **Realtime** | Changes appear on everyone's device instantly (Server-Sent Events), with an offline-tolerant delta cache underneath |
 | 月 | **A calendar UI built from scratch** | Month → day zoom animation, drag-to-create with grab handles, docked quick-composer — Google Calendar fluency, none of the Google |
 | 侘 | **Zen aesthetic** | Sumi ink on night / ink on washi paper, spring physics, deliberate haptics, kanji accents |
@@ -62,7 +62,7 @@ Nobody else is building exactly this: **an open calendar designed as social infr
 | Google Calendar | ✅ two-way |
 | Apple / iCloud | ✅ two-way (CalDAV) |
 | Any CalDAV server (Nextcloud, Radicale, Fastmail…) | ✅ two-way |
-| Outlook / Microsoft 365 | 🚧 planned — [adapter guide](https://musubi.frgtn.dev/docs) is ready if you want to build it |
+| Outlook / Microsoft 365 | ✅ two-way (Microsoft Graph) |
 
 ## Where it's going
 
@@ -74,9 +74,9 @@ The mobile app + self-hostable server are the foundation. The bigger picture:
 - 🚧 **Realtime provider push** — webhook-driven sync from Google/Outlook instead of polling (design done, see docs).
 - 🔮 **Email notifications, attendance tracking, public event pages.**
 
-Full backlog on the [roadmap board](https://github.com/users/f-tuma/projects/2).
+Full backlog on the public [feedback and roadmap board](https://feedback.frgtn.dev).
 
-> ⚠️ **Status: early.** Musubi is pre-1.0 and moving fast. It already runs daily on real devices, but expect sharp edges — and please [report them](https://github.com/f-tuma/Musubi/issues).
+> ⚠️ **Status: early.** Musubi is pre-1.0 and moving fast. It already runs daily on real devices, but expect sharp edges — and please [report them](mailto:hello@frgtn.dev).
 
 ## 📱 Try it
 
@@ -110,7 +110,7 @@ Testing on a real device? Set `BETTER_AUTH_URL` and the app's server URL (welcom
 | Mobile client | React Native 0.85 · Expo SDK 56 · Expo Router · Zustand · Reanimated · custom calendar engine (`apps/client/components/cal`) · native Android `RemoteViews` widgets bridged through a local Expo module |
 | Server | Express 5 · [Better Auth](https://www.better-auth.com/) · Zod · Server-Sent Events |
 | Data | Postgres · [Drizzle ORM](https://orm.drizzle.team/) · SQLite on-device cache with delta sync |
-| Sync engine | Provider-agnostic adapter interface (`CalendarAdapter`) — Google + CalDAV today, yours tomorrow |
+| Sync engine | Provider-agnostic adapter interface (`CalendarAdapter`) — Google + Microsoft + CalDAV today, yours tomorrow |
 | Monorepo | pnpm workspaces · Turborepo · [Astro Starlight](https://starlight.astro.build/) docs |
 
 ```text
@@ -130,7 +130,7 @@ packages/
 
 The most impactful places to jump in:
 
-- **Provider adapters** — Outlook, Fastmail JMAP, anything with an API. The [sync adapter guide](https://musubi.frgtn.dev/docs) walks you through the `CalendarAdapter` interface, field-by-field.
+- **Provider adapters** — Fastmail JMAP, Proton Calendar, anything with an API. The [sync adapter guide](https://musubi.frgtn.dev/docs) walks you through the `CalendarAdapter` interface, field-by-field.
 - **The web client** — greenfield, starting soon.
 - **Bug reports from real usage** — pre-1.0 gold.
 

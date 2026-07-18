@@ -1,0 +1,101 @@
+---
+title: Google Play Release
+description: Maintainer checklist for Musubi's public links, permissions, and Data Safety declaration.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+This page is the release-time source of truth for the Android listing. It was
+last audited against the client and public Google Play listing on **18 July
+2026**. Re-audit it whenever a dependency, permission, analytics SDK, remote
+notification service, payment flow, or collected field changes.
+
+Google requires the declaration to cover data transmitted by the app and its
+third-party SDKs. Data processed only on the device is outside collection scope.
+See Google's current [Data Safety guidance](https://support.google.com/googleplay/android-developer/answer/10787469)
+before submitting; Play Console remains authoritative if its wording changes.
+
+## Public links
+
+| Play Console field | URL |
+|---|---|
+| Store listing | `https://play.google.com/store/apps/details?id=dev.frgtn.musubi` |
+| Privacy policy | `https://musubi.frgtn.dev/privacy` |
+| Account deletion | `https://musubi.frgtn.dev/delete-account` |
+| Support | `mailto:hello@frgtn.dev` |
+| Feedback and roadmap | `https://feedback.frgtn.dev` |
+| Service status | `https://uptime.frgtn.dev/status/musubi` |
+
+Google requires both an in-app deletion path and a functional web resource for
+apps that create accounts. Musubi has both: **Settings → Delete Account** and the
+public deletion form above. See Google's [account deletion requirements](https://support.google.com/googleplay/android-developer/answer/13327111).
+
+## Data collection and security
+
+Use these answers for the hosted Musubi service:
+
+| Question | Answer | Reason |
+|---|---|---|
+| Does the app collect or share required user data types? | **Yes — collects** | Account and calendar data are sent to the Musubi server |
+| Is data shared with third parties? | **No** | Infrastructure/email processors act as service providers; provider sync and calendar sharing are user-initiated |
+| Is all collected data encrypted in transit? | **Yes** | The hosted service and provider APIs use HTTPS/TLS |
+| Can users request deletion? | **Yes** | In-app deletion plus the public web request form |
+
+<Aside type="caution">
+“No sharing” uses Google's service-provider and user-initiated transfer
+exceptions. Revisit it before adding advertising, cross-customer analytics, or
+an SDK that uses Musubi data for its own purposes. A user-selected self-hosted
+server is operated by that user; the hosted-service answer above does not make a
+security promise on behalf of arbitrary self-hosters.
+</Aside>
+
+## Data types
+
+Declare the following collection. Nothing is sold or used for advertising.
+
+| Play data type | Required? | Purpose | Musubi source |
+|---|---|---|---|
+| Personal info → Name | Required | App functionality, Account management | Account display name |
+| Personal info → Email address | Required | App functionality, Account management | Login and password recovery |
+| Personal info → User IDs | Required | App functionality, Account management | Server account identifier |
+| Photos and videos → Photos | Optional | App functionality, Account management | User-selected profile picture |
+| Calendar → Calendar events | Optional | App functionality | Musubi and connected-provider events, notes, locations, links, recurrence, and attendance |
+| App activity → Other user-generated content | Optional | App functionality | User-created calendar names and similar free-form content |
+| App activity → Other actions | Optional | App functionality | Attendance choices, invites, roles, and synced settings |
+| App info and performance → Diagnostics | Optional | App functionality | User-controlled problem-report email with app/build, platform/OS, and selected server |
+| Device or other IDs → Device or other IDs | Required | Fraud prevention, security and compliance; Account management | Session IP address and user agent |
+
+Do **not** declare precise/approximate location, contacts, microphone, camera,
+advertising identifiers, payment information, app analytics, or automatic crash
+logs for the current build. Event locations are free-form calendar content, not
+the device's physical location. Reminder scheduling and widget snapshots stay
+on the device, so no push token or widget data is collected.
+
+### Changes from the public declaration audited on 18 July 2026
+
+Before the next release, update the existing Play Console form as follows:
+
+- add **User IDs** as required account data;
+- add **Photos** as optional profile data;
+- add **Diagnostics** as optional, user-initiated problem-report data;
+- add **Device or other IDs** for the session IP/user-agent security record;
+- mark **Other user-generated content** and **Other actions** optional;
+- remove **Developer communications** from Name and Email unless Musubi starts
+  using account addresses for product announcements (it does not today);
+- keep Calendar events optional, no third-party sharing, encrypted transport,
+  and the deletion-request answer enabled.
+
+The profile picture is selected explicitly and uploaded only after the user
+chooses it. Musubi does not request camera, microphone, or display-over-other-apps
+permission. The native build blocks them so `expo-image-picker` and development
+tooling cannot contribute unused release permissions.
+
+## Before each release
+
+1. Generate or inspect the release manifest and confirm there is no camera,
+   microphone, location, contacts, or broad media permission without a current
+   feature that needs it.
+2. Compare every server-bound field and SDK against the table above.
+3. Verify the Privacy, deletion, support, feedback, status, and Play links.
+4. Submit Data Safety changes before or with the build that changes behavior.
+5. Test account deletion from the app and submit one web deletion request.

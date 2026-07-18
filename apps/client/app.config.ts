@@ -57,6 +57,13 @@ const expoConfig = {
   },
   android: {
     "package": "dev.frgtn.musubi",
+    // Avatars come only from the system photo picker. Block the camera and
+    // microphone permissions that expo-image-picker otherwise contributes.
+    "blockedPermissions": [
+      "android.permission.CAMERA",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.SYSTEM_ALERT_WINDOW"
+    ],
     "adaptiveIcon": {
       "backgroundColor": "#050507",
       "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -145,6 +152,14 @@ const expoConfig = {
       }
     ],
     "expo-image",
+    [
+      "expo-image-picker",
+      {
+        "photosPermission": "Allow Musubi to choose a profile picture.",
+        "cameraPermission": false,
+        "microphonePermission": false
+      }
+    ],
     "./plugins/withCalendarAppCategory",
     "expo-sharing"
   ],
