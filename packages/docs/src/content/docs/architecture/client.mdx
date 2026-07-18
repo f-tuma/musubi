@@ -45,11 +45,11 @@ Expo Router, file-based:
   - index.tsx          redirect — session ? /(tabs) : /(auth)/welcome
   - (auth)/            welcome, sign-in, sign-up
   - (tabs)/            index (calendar), calendars, agenda, settings + _layout (hydrates stores on mount)
-  - onboarding/        index (profile) → calendar → sync
+  - onboarding/        index (profile) → calendar → sync → share
   - invite/[token].tsx deep-link calendar preview + accept
 </FileTree>
 
-- **Onboarding recovery** survives OAuth round-trips via module-level state in `lib/onboardingState.ts`; `(tabs)/_layout.tsx` routes to it when `settings.onboarded === false`.
+- **Onboarding recovery** survives OAuth round-trips via module-level state in `lib/onboardingState.ts`; `(tabs)/_layout.tsx` routes to it when `settings.onboarded === false`. The final share step offers a native Musubi calendar and opens its invite-link flow immediately after creation; it remains skippable.
 - **Signed-out invite recovery** is persisted in platform SecureStore by `lib/pendingInvite.ts`. The invite route records `{ token, server }` before opening auth; successful email, Google, or Apple auth consumes it and returns to `/invite/[token]?afterAuth=1`. Accept/decline then replaces the auth history with tabs, where a new account can continue into onboarding.
 - **ICS deep links** (opening a `.ics` file) are parsed in `_layout.tsx` and stashed in `useImportStore`; the calendar screen picks up the pending draft and opens the composer prefilled.
 - **Android registers Musubi as a calendar app**: `plugins/withCalendarAppCategory.js` adds `APP_CALENDAR` to the launcher intent filter (default-app picker, assistant), and `app.config.ts` declares the AOSP `VIEW content://com.android.calendar` (`time/epoch`) filter so date/clock widgets offer Musubi. Manifest changes → native rebuild required.

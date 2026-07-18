@@ -8,7 +8,7 @@ import { setOnboardingRoute } from "@/lib/onboardingState";
 // keyboard handling, bottom action row. Also records the current route so a
 // re-entry (e.g. after an OAuth round-trip) resumes at the same step.
 export function OnboardingScaffold({ step, kanji, title, subtitle, actions, children }: {
-  step: 1 | 2 | 3;
+  step: 1 | 2 | 3 | 4;
   kanji: string;
   title: string;
   subtitle: string;
@@ -23,7 +23,7 @@ export function OnboardingScaffold({ step, kanji, title, subtitle, actions, chil
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
           <View style={{ flexDirection: "row", gap: 6, justifyContent: "center", paddingTop: 16 }}>
-            {[1, 2, 3].map((s) => (
+            {[1, 2, 3, 4].map((s) => (
               <View key={s} style={{
                 width: s === step ? 18 : 6, height: 6, borderRadius: 3,
                 backgroundColor: s === step ? colors.fg2 : colors.line3,

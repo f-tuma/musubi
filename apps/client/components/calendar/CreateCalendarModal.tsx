@@ -28,12 +28,14 @@ type Props = {
   calendar?: Calendar,
   visible: boolean,
   onClose: () => void,
-  onCreate: (calendar: Calendar) => Promise<void>;
+  onCreate: (calendar: Calendar) => Promise<Calendar | void>;
+  onCreated?: (calendar: Calendar) => void;
   onEdit: (calendar: Calendar) => Promise<void>;
+  musubiOnly?: boolean;
 }
 
 
-export default function CreateCalendarModal({ calendar, visible, onClose, onCreate, onEdit }: Props) {
+export default function CreateCalendarModal({ calendar, visible, onClose, onCreate, onCreated, onEdit, musubiOnly = false }: Props) {
   const insets = useSafeAreaInsets();
   const { authClient } = useServer();
   const [newName, setNewName] = useState("");
@@ -143,7 +145,8 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
         await api.importCalendar(ics, newName, newColor);
         await refresh(); // pulls the new calendar + its events into stores/cache
       } else {
-        await onCreate(newCalendar);
+        const created = await onCreate(newCalendar);
+        onCreated?.(created ?? newCalendar);
       }
       haptics.success();
       handleClose();
@@ -253,7 +256,7 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
                 {/* Where the calendar lives — this Musubi server, or a connected
                     provider account (created on the provider, then synced in).
                     Only when creating: calendars can't move between accounts. */}
-                {!calendar && accounts.length > 0 && !importFile && (
+                {!calendar && !musubiOnly && accounts.length > 0 && !importFile && (
                   <View style={styles.fieldContainer}>
                     <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Account</Text>
                     <ScrollView
@@ -295,7 +298,7 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
 
                 {/* Fill the new calendar from an .ics file — native calendars only,
                     so picking a file hides the account choice. Only when creating. */}
-                {!calendar && (
+                {!calendar && !musubiOnly && (
                   <View style={styles.fieldContainer}>
                     <Text style={[styles.fieldLabel, { fontFamily: fonts.sans }]}>Import</Text>
                     {importFile ? (

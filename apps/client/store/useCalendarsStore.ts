@@ -10,7 +10,7 @@ type CalendarStore = {
   toggleCal: (id: string) => void;
   soloCalendar: (id: string) => void;
   syncActiveCals: (calendars: Calendar[]) => void;
-  addCalendar: (calendar: Calendar, api: ReturnType<typeof useApi>) => Promise<void>;
+  addCalendar: (calendar: Calendar, api: ReturnType<typeof useApi>) => Promise<Calendar>;
   loadCalendars: (calendars: Calendar[]) => void;
   removeCalendar: (calendar: Calendar, api: ReturnType<typeof useApi>) => Promise<void>;
   localRemoveCalendar: (calendar: Calendar) => void;
@@ -61,6 +61,7 @@ export const useCalendarsStore = create<CalendarStore>((set, get) => ({
     set((state) => ({
       calendars: [...state.calendars, result],
     }));
+    return result;
   },
 
   loadCalendars: (calendars: Calendar[]) => set({ calendars }),

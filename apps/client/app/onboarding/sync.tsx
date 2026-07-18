@@ -3,28 +3,20 @@ import { Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { colors, fonts, styles } from "@/constants/theme";
 import { providerFlavor } from "@musubi/types";
-import { useApi } from "@/services/api";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
-import { useSettingsStore } from "@/store/useSettingsStore";
 import { useRefreshData } from "@/hooks/useRefreshData";
 import { Btn } from "@/components/ui/Btn";
 import { OnboardingScaffold } from "@/components/OnboardingScaffold";
 import SyncCalendarModal from "@/components/calendar/SyncCalendarModal";
-import * as haptics from "@/lib/haptics";
 import { Feather, Ionicons } from "@expo/vector-icons";
-import { showToast } from "@/components/ui/Toast";
-import { userFacingError } from "@/lib/network";
 
-// Onboarding step 3 — connect external calendars. Finishing flips
-// settings.onboarded on the server.
+// Onboarding step 3 — connect external calendars. Sharing comes next; the
+// final step flips settings.onboarded on the server.
 export default function OnboardingSync() {
-  const api = useApi();
   const refresh = useRefreshData();
   const { calendars } = useCalendarsStore();
-  const settings = useSettingsStore();
 
   const [syncVisible, setSyncVisible] = useState(false);
-  const [finishing, setFinishing] = useState(false);
 
   // Refresh whenever this step gains focus — the OAuth round-trip lands back
   // here and the freshly synced calendars should show up in the list.
@@ -43,30 +35,6 @@ export default function OnboardingSync() {
     return [...map.values()];
   }, [calendars]);
 
-  const finish = async () => {
-    setFinishing(true);
-    try {
-      await api.saveSettings({
-        showKanji: settings.showKanji,
-        notificationsOnByDefault: settings.notificationsOnByDefault,
-        defaultCalendarView: settings.defaultCalendarView,
-        weekStartsOn: settings.weekStartsOn,
-        timeFormat: settings.timeFormat,
-        dateFormat: settings.dateFormat,
-        theme: settings.theme,
-        onboarded: true,
-      });
-    } catch (e) {
-      console.error("Onboarding finish failed:", e); // flag retries on next settings save
-      showToast({ message: userFacingError(e, "You can continue; onboarding will sync later.") });
-    } finally {
-      settings.setOnboarded(true);
-      haptics.success();
-      setFinishing(false);
-      router.replace("/(tabs)");
-    }
-  };
-
   const ProviderIcon = ({ flavor }: { flavor: string | null }) => {
     if (flavor === "google") return <Ionicons name="logo-google" size={16} color={colors.fg2} />;
     if (flavor === "microsoft") return <Ionicons name="logo-microsoft" size={16} color={colors.fg2} />;
@@ -83,7 +51,7 @@ export default function OnboardingSync() {
       actions={
         <>
           <Btn label="Back" variant="secondary" style={{ flex: 1 }} onPress={() => router.back()} />
-          <Btn label="Start using Musubi" style={{ flex: 2 }} onPress={finish} loading={finishing} />
+          <Btn label="Continue" style={{ flex: 2 }} onPress={() => router.push("/onboarding/share" as any)} />
         </>
       }
     >
