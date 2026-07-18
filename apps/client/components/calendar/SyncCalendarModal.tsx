@@ -35,6 +35,8 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  // which OAuth button is mid-flight — only that one shows a spinner
+  const [loadingProvider, setLoadingProvider] = useState<"google" | "microsoft" | null>(null);
 
   const closeSequence = () => {
     onClose();
@@ -44,6 +46,7 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
     setPassword("");
     setError("");
     setIsLoading(false);
+    setLoadingProvider(null);
   };
 
   const { slideStyle, fadeStyle, gesture, handleClose } = useModalAnimation(visible, closeSequence);
@@ -51,7 +54,8 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
   // Shared OAuth link flow — Google and Microsoft only differ in the
   // calendar scope their provider expects.
   const handleOAuth = async (provider: "google" | "microsoft", scope: string, label: string) => {
-    setIsLoading(true);
+    if (loadingProvider) return; // one OAuth round-trip at a time
+    setLoadingProvider(provider);
     try {
       const { error } = await authClient.linkSocial({
         provider,
@@ -66,7 +70,7 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
       haptics.warn();
       Alert.alert(`${label} connect failed`, e?.message ?? "An unexpected error occurred.");
     } finally {
-      setIsLoading(false);
+      setLoadingProvider(null);
     }
   };
   const handleGoogle = () => handleOAuth("google", "https://www.googleapis.com/auth/calendar", "Google");
@@ -125,14 +129,14 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
                     label="Google Calendar"
                     variant="secondary"
                     icon={<Ionicons name="logo-google" size={16} color={colors.fg2} />}
-                    loading={isLoading}
+                    loading={loadingProvider === "google"}
                     onPress={handleGoogle}
                   />
                   <Btn
                     label="Outlook"
                     variant="secondary"
                     icon={<Ionicons name="logo-microsoft" size={16} color={colors.fg2} />}
-                    loading={isLoading}
+                    loading={loadingProvider === "microsoft"}
                     onPress={handleMicrosoft}
                   />
                   <Btn

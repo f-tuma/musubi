@@ -67,6 +67,10 @@ export const auth = betterAuth({
       // account) whose email differs from their Musubi login. Safe here because
       // linking is always an explicit, authenticated linkSocial action.
       allowDifferentEmails: true,
+      // Microsoft doesn't send the email_verified claim by default, and
+      // better-auth refuses to link unverified-email accounts from providers
+      // outside this list. Same explicit-linkSocial justification as above.
+      trustedProviders: ["microsoft"],
     },
   },
   user: {
