@@ -21,6 +21,7 @@ import Constants from "expo-constants";
 
 const SUPPORT_EMAIL = "hello@frgtn.dev";
 const FEEDBACK_URL = "https://feedback.musubi.pro/";
+const KOFI_URL = "https://ko-fi.com/frgtn";
 const PRIVACY_URL = "https://musubi.pro/privacy/";
 const TERMS_URL = "https://musubi.pro/terms/";
 
@@ -292,6 +293,12 @@ export default function SettingsTab() {
           label="Report a Problem"
           detail="Includes app, device, and server details"
           onPress={openProblemReport}
+        />
+        <SettingRowAction
+          label="Support Us"
+          detail="Buy us a coffee on Ko-fi"
+          external
+          onPress={() => void openExternal(KOFI_URL, "Support us at ko-fi.com/frgtn.")}
         />
         <SettingRowAction
           label="Privacy Policy"
