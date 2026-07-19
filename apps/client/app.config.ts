@@ -35,7 +35,7 @@ const expoConfig = {
     // bouncing through Safari. Needs the matching apple-app-site-association
     // file served at each domain's /.well-known/ (see API handler). EAS syncs
     // the Associated Domains capability to the App ID at build time.
-    "associatedDomains": ["applinks:musubi.frgtn.dev", "applinks:dev-musubi.frgtn.dev"],
+    "associatedDomains": ["applinks:musubi.pro", "applinks:dev.musubi.pro"],
     "infoPlist": {
       "ITSAppUsesNonExemptEncryption": false,
       // We drive the status bar style at runtime from the app theme (root Stack
@@ -78,7 +78,7 @@ const expoConfig = {
         "data": [
           {
             "scheme": "https",
-            "host": "musubi.frgtn.dev",
+            "host": "musubi.pro",
             "pathPrefix": "/invite"
           }
         ],

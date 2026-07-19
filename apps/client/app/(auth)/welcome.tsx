@@ -75,7 +75,7 @@ export default function Welcome() {
                 color: colors.fg3
               }}
               onPress={() => {
-                Linking.openURL("https://musubi.frgtn.dev/terms/");
+                Linking.openURL("https://musubi.pro/terms/");
               }}
             >
               {" terms of service "}
@@ -86,7 +86,7 @@ export default function Welcome() {
                 color: colors.fg3
               }}
               onPress={() => {
-                Linking.openURL("https://musubi.frgtn.dev/privacy/");
+                Linking.openURL("https://musubi.pro/privacy/");
               }}
             >
               {" privacy policy."}

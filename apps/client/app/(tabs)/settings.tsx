@@ -20,9 +20,9 @@ import { userFacingError } from "@/lib/network";
 import Constants from "expo-constants";
 
 const SUPPORT_EMAIL = "hello@frgtn.dev";
-const FEEDBACK_URL = "https://feedback.frgtn.dev/";
-const PRIVACY_URL = "https://musubi.frgtn.dev/privacy/";
-const TERMS_URL = "https://musubi.frgtn.dev/terms/";
+const FEEDBACK_URL = "https://feedback.musubi.pro/";
+const PRIVACY_URL = "https://musubi.pro/privacy/";
+const TERMS_URL = "https://musubi.pro/terms/";
 
 
 export default function SettingsTab() {
@@ -286,7 +286,7 @@ export default function SettingsTab() {
           label="Feedback & Roadmap"
           detail="Suggest ideas, vote, and see what is planned"
           external
-          onPress={() => void openExternal(FEEDBACK_URL, "Feedback is available at feedback.frgtn.dev.")}
+          onPress={() => void openExternal(FEEDBACK_URL, "Feedback is available at feedback.musubi.pro.")}
         />
         <SettingRowAction
           label="Report a Problem"
@@ -296,12 +296,12 @@ export default function SettingsTab() {
         <SettingRowAction
           label="Privacy Policy"
           external
-          onPress={() => void openExternal(PRIVACY_URL, "Privacy policy is available at musubi.frgtn.dev/privacy.")}
+          onPress={() => void openExternal(PRIVACY_URL, "Privacy policy is available at musubi.pro/privacy.")}
         />
         <SettingRowAction
           label="Terms of Service"
           external
-          onPress={() => void openExternal(TERMS_URL, "Terms are available at musubi.frgtn.dev/terms.")}
+          onPress={() => void openExternal(TERMS_URL, "Terms are available at musubi.pro/terms.")}
         />
         <SettingRowAction label="Version" value={`${appVersion} (${appBuild})`} />
 

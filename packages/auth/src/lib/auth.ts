@@ -15,8 +15,8 @@ export const auth = betterAuth({
   baseURL: config.api.url,
   trustedOrigins: [
     "musubi://",
-    "https://musubi.frgtn.dev",
-    "https://dev-musubi.frgtn.dev",
+    "https://musubi.pro",
+    "https://dev.musubi.pro",
     ...(config.api.environment === "dev" ? [
       "exp://",                      // Trust all Expo URLs (prefix matching)
       "exp://**",                    // Trust all Expo URLs (wildcard matching)
@@ -27,7 +27,7 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, token }, _) => {
-      const customUrl = `https://musubi.frgtn.dev/reset-password/?token=${token}&callback=${config.api.url}`
+      const customUrl = `https://musubi.pro/reset-password/?token=${token}&callback=${config.api.url}`
       await sendEmail(user.email, "Reset your password", getPasswordResetHtml(user.name, customUrl, "1 hour"));
     },
   },

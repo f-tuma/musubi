@@ -76,11 +76,11 @@ Other Better Auth options in use: **account linking** (`allowDifferentEmails: tr
 
 ## Password recovery and account deletion
 
-The sign-in screen awaits `authClient.requestPasswordReset` inside the shared `TextInputModal`; the modal remains open and renders a friendly error when the request fails. Success uses non-enumerating copy ("If an account exists…") and the SMTP email links to `musubi.frgtn.dev/reset-password`, which submits the token and new password to Better Auth on the originating server.
+The sign-in screen awaits `authClient.requestPasswordReset` inside the shared `TextInputModal`; the modal remains open and renders a friendly error when the request fails. Success uses non-enumerating copy ("If an account exists…") and the SMTP email links to `musubi.pro/reset-password`, which submits the token and new password to Better Auth on the originating server.
 
 Authenticated deletion stays in the app: Settings requires the exact display name, calls `DELETE /api/v1/users` while the session is still live, and only then runs the full local sign-out/reset sequence. `TextInputModal` awaits the deletion, so a server/network failure cannot close the confirmation and pretend it succeeded.
 
-The public `musubi.frgtn.dev/delete-account` route is the fallback for someone who cannot access the app. It submits to the website's `/account/delete-request` endpoint, which emails a manual request to support through Resend. It **does not delete by unauthenticated email address**; support first verifies ownership, then completes deletion within the published 30-day window. Configure `ACCOUNT_REQUEST_FROM_EMAIL` and `ACCOUNT_REQUEST_TO_EMAIL` in the website environment alongside `RESEND_API_KEY`.
+The public `musubi.pro/delete-account` route is the fallback for someone who cannot access the app. It submits to the website's `/account/delete-request` endpoint, which emails a manual request to support through Resend. It **does not delete by unauthenticated email address**; support first verifies ownership, then completes deletion within the published 30-day window. Configure `ACCOUNT_REQUEST_FROM_EMAIL` and `ACCOUNT_REQUEST_TO_EMAIL` in the website environment alongside `RESEND_API_KEY`.
 
 ## Calendar connection is *not* sign-in
 
@@ -151,7 +151,7 @@ An invite is an `https://<server>/invite/<token>` link. Android opens the app di
 
 The client does not discard an invite when authentication is required. `app/invite/[token].tsx` saves its token and optional origin server in SecureStore, sends the user through welcome/sign-in/sign-up, and all supported auth methods restore that invite after success. The stored value is consumed on return so normal future sign-ins still open the tabs.
 
-- **`ios.associatedDomains`** in `app.config.ts` (`applinks:musubi.frgtn.dev`, `applinks:dev-musubi.frgtn.dev`) — EAS syncs the Associated Domains capability to the App ID at build time.
+- **`ios.associatedDomains`** in `app.config.ts` (`applinks:musubi.pro`, `applinks:dev.musubi.pro`) — EAS syncs the Associated Domains capability to the App ID at build time.
 - **An [apple-app-site-association](https://developer.apple.com/documentation/xcode/supporting-associated-domains) file** served at `https://<server>/.well-known/apple-app-site-association` — the API's `handlerAppleAppSiteAssociation` builds it from `APPLE_TEAM_ID` (`<team>.dev.frgtn.musubi` → `/invite/*`). It 404s until `APPLE_TEAM_ID` is set; must be HTTPS, `application/json`, no redirect.
 
 <Aside type="caution">

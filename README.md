@@ -15,7 +15,7 @@
 [![Self-hostable](https://img.shields.io/badge/self--host-your%20data-a8b5a0?labelColor=0c0c0e)](#-run-it-yourself)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-7a8ba3?labelColor=0c0c0e)](#-contributing)
 
-[**Website**](https://musubi.frgtn.dev) · [**Docs**](https://musubi.frgtn.dev/docs) · [**Discord**](https://discord.musubi.pro) · [**Roadmap**](https://feedback.frgtn.dev) · [**Google Play**](https://play.google.com/store/apps/details?id=dev.frgtn.musubi)
+[**Website**](https://musubi.pro) · [**Docs**](https://musubi.pro/docs) · [**Discord**](https://discord.musubi.pro) · [**Roadmap**](https://feedback.musubi.pro) · [**Google Play**](https://play.google.com/store/apps/details?id=dev.frgtn.musubi)
 
 <img src=".github/assets/banner.svg" alt="Musubi — share, sync, self-host" width="100%" />
 
@@ -74,7 +74,7 @@ The mobile app + self-hostable server are the foundation. The bigger picture:
 - 🚧 **Realtime provider push** — webhook-driven sync from Google/Outlook instead of polling (design done, see docs).
 - 🔮 **Email notifications, attendance tracking, public event pages.**
 
-Full backlog on the public [feedback and roadmap board](https://feedback.frgtn.dev).
+Full backlog on the public [feedback and roadmap board](https://feedback.musubi.pro).
 
 > ⚠️ **Status: early.** Musubi is pre-1.0 and moving fast. It already runs daily on real devices, but expect sharp edges — and please [report them](mailto:hello@frgtn.dev).
 
@@ -101,7 +101,7 @@ pnpm db:migrate
 pnpm dev            # api + client + docs, all in parallel
 ```
 
-Testing on a real device? Set `BETTER_AUTH_URL` and the app's server URL (welcome screen) to your machine's LAN IP (`http://192.168.x.x:7531`), not `localhost`. To run the server + database on a plain Docker host, use `docker compose -f docker-compose.selfhost.yml up -d` (the repo's default `docker-compose.yml` targets Dokploy). Full guides live in [`packages/docs`](./packages/docs/) and at [musubi.frgtn.dev/docs](https://musubi.frgtn.dev/docs).
+Testing on a real device? Set `BETTER_AUTH_URL` and the app's server URL (welcome screen) to your machine's LAN IP (`http://192.168.x.x:7531`), not `localhost`. To run the server + database on a plain Docker host, use `docker compose -f docker-compose.selfhost.yml up -d` (the repo's default `docker-compose.yml` targets Dokploy). Full guides live in [`packages/docs`](./packages/docs/) and at [musubi.pro/docs](https://musubi.pro/docs).
 
 ## 🧱 How it's built
 
@@ -130,7 +130,7 @@ packages/
 
 The most impactful places to jump in:
 
-- **Provider adapters** — Fastmail JMAP, Proton Calendar, anything with an API. The [sync adapter guide](https://musubi.frgtn.dev/docs) walks you through the `CalendarAdapter` interface, field-by-field.
+- **Provider adapters** — Fastmail JMAP, Proton Calendar, anything with an API. The [sync adapter guide](https://musubi.pro/docs) walks you through the `CalendarAdapter` interface, field-by-field.
 - **The web client** — greenfield, starting soon.
 - **Bug reports from real usage** — pre-1.0 gold.
 
