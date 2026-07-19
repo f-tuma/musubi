@@ -1,6 +1,7 @@
 import { useEventsStore } from "@/store/useEventsStore";
 import { useEffect, useRef } from "react";
 import EventSource from "react-native-sse";
+import * as Network from "expo-network";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useAttendeesStore } from "@/store/useAttendeesStore";
 import { useServer } from "@/contexts/ServerContext";
@@ -29,6 +30,19 @@ export function useConnectToEventStream() {
     catch (e) { console.warn("SSE-triggered refresh failed:", e); }
     finally { refreshing.current = false; }
   };
+
+  // Offline → online (airplane mode off, wifi back): sync right away instead
+  // of waiting out the SSE retry cycle. Same guarded refresh, so the two
+  // triggers can't overlap. Refs only inside — mount-once is safe.
+  useEffect(() => {
+    let wasOffline = false;
+    const sub = Network.addNetworkStateListener(({ isConnected, isInternetReachable }) => {
+      const offline = isConnected === false || isInternetReachable === false;
+      if (wasOffline && !offline) silentRefresh();
+      wasOffline = offline;
+    });
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     if (!apiUrl) return;
