@@ -8,7 +8,7 @@ export const TAB_BAR_LABEL_FONT_SIZE = 10;
 // With labels the content reaches lower in the item, so give the bar extra
 // bottom padding. Folded into the shared helpers below so the docked composer
 // and toasts (which rest on the bar) follow the height automatically.
-export const TAB_BAR_LABELS_BOTTOM_EXTRA = 6;
+export const TAB_BAR_LABELS_BOTTOM_EXTRA = 12;
 
 export const tabBarBottomInset = (safeAreaBottom: number, labels = false) =>
   Math.max(safeAreaBottom, TAB_BAR_MIN_BOTTOM_INSET) + (labels ? TAB_BAR_LABELS_BOTTOM_EXTRA : 0);
