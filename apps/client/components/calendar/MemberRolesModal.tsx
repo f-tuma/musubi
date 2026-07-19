@@ -18,7 +18,7 @@ import * as haptics from "@/lib/haptics";
 import { showToast } from "@/components/ui/Toast";
 import { userFacingError } from "@/lib/network";
 
-type Member = { id: string; name: string; email: string; image?: string | null; role: string };
+type Member = { id: string; name: string; image?: string | null; role: string };
 
 type Props = {
   calendar: Calendar | null,
@@ -124,7 +124,6 @@ export default function MemberRolesModal({ calendar, visible, onClose }: Props) 
                     <Avatar name={m.name} image={m.image} size={40} />
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontFamily: fonts.sans, fontSize: 14, color: colors.fg }}>{m.name}</Text>
-                      <Text style={{ fontSize: 11, color: colors.fg3 }}>{m.email}</Text>
                     </View>
                     {isOwner ? (
                       // Non-clickable pill, sized to line up with the role toggle below.

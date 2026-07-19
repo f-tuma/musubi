@@ -352,10 +352,10 @@ export async function handlerGetCalendarMembers(req: Request, res: Response) {
   const role = await getUserRoleForCalendar(req.user!.id, calendarID);
   if (!role) throw new ForbiddenError("You're not a member of this calendar.");
   const members = await getCalendarMembers(calendarID);
+  // No email — members only need to recognize each other, not contact-scrape.
   res.status(200).json(members.map(m => ({
     id: m.user.id,
     name: m.user.name,
-    email: m.user.email,
     image: m.user.image,
     role: m.role,
   })));

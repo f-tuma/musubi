@@ -400,10 +400,10 @@ export function useApi() {
     async getCalendarMembers(calendarID: string) {
       const remote = remoteOf(calendarID);
       if (remote) {
-        return (await fedFetch<{ id: string; name: string; email: string; image?: string | null; role: string }[]>(
+        return (await fedFetch<{ id: string; name: string; image?: string | null; role: string }[]>(
           remote, `/api/${apiVersion}/calendars/${calendarID}/members`, { method: "GET" })) ?? [];
       }
-      const { data, error } = await authClient.$fetch<{ id: string; name: string; email: string; image?: string | null; role: string }[]>(
+      const { data, error } = await authClient.$fetch<{ id: string; name: string; image?: string | null; role: string }[]>(
         `${apiUrl}/api/${apiVersion}/calendars/${calendarID}/members`,
         { method: "GET" },
       );
