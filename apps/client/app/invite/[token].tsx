@@ -1,9 +1,10 @@
 import { colors, fonts, styles } from "@/constants/theme";
 import { CalendarWithEvents } from "@musubi/types";
+import { expandRecurringEvents } from "@musubi/calendar";
 import { useApi } from "@/services/api";
 import { useServer } from "@/contexts/ServerContext";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, View, Text, StyleSheet } from "react-native";
 import { Avatar } from "@/components/Avatar";
 import { Btn } from "@/components/ui/Btn";
@@ -14,6 +15,9 @@ import { Feather } from "@expo/vector-icons";
 import { userFacingError } from "@/lib/network";
 import { showToast } from "@/components/ui/Toast";
 import { rememberPendingInvite } from "@/lib/pendingInvite";
+
+// How far ahead the "WHAT'S ON IT" preview looks.
+const PREVIEW_WINDOW_DAYS = 30;
 
 export default function Invite() {
   const api = useApi();
@@ -94,6 +98,16 @@ export default function Invite() {
     }
   }, [calendarData, session, remoteServer, router]);
 
+  // The server sends raw events — expand recurrences into real occurrences
+  // (a daily event previews as separate days, like the agenda) and sort.
+  const previewEvents = useMemo(() => {
+    if (!calendarData?.events) return [];
+    const from = new Date();
+    const to = new Date(from.getTime() + PREVIEW_WINDOW_DAYS * 86400_000);
+    return expandRecurringEvents(calendarData.events, from, to)
+      .sort((a, b) => a.start.getTime() - b.start.getTime());
+  }, [calendarData]);
+
   const closeInvite = () => {
     if (restoredAfterAuth || !router.canGoBack()) router.replace("/(tabs)");
     else router.back();
@@ -151,9 +165,9 @@ export default function Invite() {
           </View>
         )}
 
-        {!loadError && calendarData && <View style={styles.section}>
+        {!loadError && previewEvents.length > 0 && <View style={styles.section}>
           <Text style={styles.sectionLabel}>WHAT'S ON IT</Text>
-          {calendarData?.events?.map((event) => (
+          {previewEvents.map((event) => (
             <View key={event.id} style={styles.timelineRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.timelineDay}>{event.start.toLocaleString("en-UK", { day: "2-digit" })}</Text>
