@@ -520,6 +520,50 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
     }
   };
 
+  const calendarPicker = (
+    <View style={styles.fieldContainer}>
+      <ScrollView
+        horizontal
+
+        showsHorizontalScrollIndicator={false}>
+        <View style={styles.horizontalPillView}>
+          {/* Same order as the Calendars tab (incl. the user's drag order).
+              Only calendars the user can add events to are offered — no point
+              showing one you can't link into. */}
+          {sortCalendars(calendars, calendarOrder)
+            .filter((cal) => can(cal.role, "editEvents"))
+            .map((cal) => {
+            const active = selectedCals.has(cal.id);
+            const isOrigin = originEffective === cal.id;
+            return (
+              <Tap
+                key={cal.id}
+                haptic="select"
+                onPress={() => toggleCal(cal.id)}
+                onLongPress={() => { // set as home (origin), selecting it if needed
+                  setSelectedCals(prev => new Set(prev).add(cal.id));
+                  setOriginCal(cal.id);
+                }}
+                accessibilityLabel={`${cal.name} calendar`}
+                accessibilityHint="Double tap to include. Long press to make it the primary calendar."
+                accessibilityState={{ selected: active }}
+                style={active ? styles.pillActive : styles.pill}
+              >
+                {isOrigin
+                  ? <Ionicons name="star" size={12} color={cal.color} style={{ opacity: active ? 1 : 0.4 }} />
+                  : <View style={[styles.colorDot, { backgroundColor: cal.color, opacity: active ? 1 : 0.4 }]} />}
+                <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: active ? colors.fg : colors.fg3 }}>
+                  {cal.name}
+                </Text>
+              </Tap>
+            );
+          })}
+        </View>
+      </ScrollView>
+      {calendarsError ? <Text style={styles.errorText}>{calendarsError}</Text> : null}
+    </View>
+  );
+
   const sheetContent = (
     <>
       {/* the top strip is the pull handle: docked = snap peek/full, modal = dismiss */}
@@ -569,6 +613,9 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
           )}
         </View>
       </GestureDetector>
+      {/* Docked: the pills peek together with the title, so they sit fixed
+          under it instead of scrolling away with the form. */}
+      {docked && calendarPicker}
       <ScrollView
         ref={scrollRef}
         keyboardShouldPersistTaps="handled"
@@ -592,47 +639,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
           </View>
         )}
 
-        <View style={styles.fieldContainer}>
-          <ScrollView
-            horizontal
-
-            showsHorizontalScrollIndicator={false}>
-            <View style={styles.horizontalPillView}>
-              {/* Same order as the Calendars tab (incl. the user's drag order).
-                  Only calendars the user can add events to are offered — no point
-                  showing one you can't link into. */}
-              {sortCalendars(calendars, calendarOrder)
-                .filter((cal) => can(cal.role, "editEvents"))
-                .map((cal) => {
-                const active = selectedCals.has(cal.id);
-                const isOrigin = originEffective === cal.id;
-                return (
-                  <Tap
-                    key={cal.id}
-                    haptic="select"
-                    onPress={() => toggleCal(cal.id)}
-                    onLongPress={() => { // set as home (origin), selecting it if needed
-                      setSelectedCals(prev => new Set(prev).add(cal.id));
-                      setOriginCal(cal.id);
-                    }}
-                    accessibilityLabel={`${cal.name} calendar`}
-                    accessibilityHint="Double tap to include. Long press to make it the primary calendar."
-                    accessibilityState={{ selected: active }}
-                    style={active ? styles.pillActive : styles.pill}
-                  >
-                    {isOrigin
-                      ? <Ionicons name="star" size={12} color={cal.color} style={{ opacity: active ? 1 : 0.4 }} />
-                      : <View style={[styles.colorDot, { backgroundColor: cal.color, opacity: active ? 1 : 0.4 }]} />}
-                    <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: active ? colors.fg : colors.fg3 }}>
-                      {cal.name}
-                    </Text>
-                  </Tap>
-                );
-              })}
-            </View>
-          </ScrollView>
-          {calendarsError ? <Text style={styles.errorText}>{calendarsError}</Text> : null}
-        </View>
+        {!docked && calendarPicker}
 
         {/* Android: a native dialog opened from the date/time chips below. iOS
             renders its own inline compact picker in the rows (see below) — the
