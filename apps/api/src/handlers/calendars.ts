@@ -321,6 +321,8 @@ export async function handlerLeaveCalendar(req: Request, res: Response) {
     throw new BadRequestError("The owner can't leave. Transfer ownership or delete the calendar.");
   }
   await removeCalendarMember(req.user?.id!, calendarID);
+  // Tell the leaver's other devices to drop the calendar (mirrors kick below).
+  notifyCalendarMembers([req.user!.id], "calendar_removed", { id: calendarID });
 
   res.sendStatus(200);
 }
