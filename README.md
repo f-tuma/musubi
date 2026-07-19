@@ -76,7 +76,7 @@ The mobile app + self-hostable server are the foundation. The bigger picture:
 
 Full backlog on the public [feedback and roadmap board](https://feedback.musubi.pro).
 
-> ⚠️ **Status: early.** Musubi is pre-1.0 and moving fast. It already runs daily on real devices, but expect sharp edges — and please [report them](mailto:hello@frgtn.dev).
+> ⚠️ **Status: early.** Musubi is pre-1.0 and moving fast. It already runs daily on real devices, but expect sharp edges — and please [report them](https://feedback.musubi.pro).
 
 ## 📱 Try it
 
