@@ -23,7 +23,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function TabLayout() {
   const { apiUrl, isLoading, authClient } = useServer();
   const insets = useSafeAreaInsets();
-  const bottomInset = tabBarBottomInset(insets.bottom);
+  const tabBarLabels = useSettingsStore(s => s.tabBarLabels);
+  const bottomInset = tabBarBottomInset(insets.bottom, tabBarLabels);
 
   // Expired session → any API call 401s → run the full sign-out flow once and
   // land on welcome, instead of every screen failing silently.
@@ -77,7 +78,6 @@ export default function TabLayout() {
   // onboarded=false → hand over to onboarding, resuming at the last step the
   // user reached (an OAuth connect round-trip lands back here mid-flow).
   const onboarded = useSettingsStore(s => s.onboarded);
-  const tabBarLabels = useSettingsStore(s => s.tabBarLabels);
   useEffect(() => {
     // `as any`: expo-router's typed routes regenerate on the next dev run
     if (dataReady && !onboarded) router.replace(getOnboardingRoute() as any);
@@ -95,7 +95,7 @@ export default function TabLayout() {
             backgroundColor: colors.bg1,
             borderTopColor: colors.line,
             borderTopWidth: 1,
-            height: tabBarHeight(insets.bottom),
+            height: tabBarHeight(insets.bottom, tabBarLabels),
             paddingTop: TAB_BAR_TOP_INSET,
             paddingBottom: bottomInset,
           },

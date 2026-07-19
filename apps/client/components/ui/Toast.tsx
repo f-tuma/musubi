@@ -7,6 +7,7 @@ import { colors, fonts } from "@/constants/theme";
 import { Tap } from "@/components/ui/Tap";
 import { usePathname } from "expo-router";
 import { tabBarHeight } from "@/constants/layout";
+import { useSettingsStore } from "@/store/useSettingsStore";
 
 // A single bottom toast — transient message with an optional action (e.g. Undo).
 // Imperative API so any code can raise one: `showToast({ message, actionLabel, onAction })`.
@@ -39,10 +40,11 @@ export function ToastHost() {
   const hide = useToastStore((s) => s.hide);
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
+  const tabBarLabels = useSettingsStore((s) => s.tabBarLabels);
   const bottom = pathname === "/sign-in"
     ? insets.bottom + SIGN_IN_ACTIONS_H
     : TAB_PATHS.has(pathname)
-      ? tabBarHeight(insets.bottom) + 10
+      ? tabBarHeight(insets.bottom, tabBarLabels) + 10
       : insets.bottom + 16;
   const ty = useSharedValue(TRAVEL);
   const op = useSharedValue(0);

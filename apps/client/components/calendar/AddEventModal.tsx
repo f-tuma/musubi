@@ -98,10 +98,11 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
     timeFormat,
     dateFormat,
     calendarOrder,
+    tabBarLabels,
   } = useSettingsStore();
 
   const insets = useSafeAreaInsets();
-  const restingBottomInset = dockBottomInset ?? tabBarHeight(insets.bottom);
+  const restingBottomInset = dockBottomInset ?? tabBarHeight(insets.bottom, tabBarLabels);
   const { authClient } = useServer();
 
   const [newTitle, setNewTitle] = useState("");
