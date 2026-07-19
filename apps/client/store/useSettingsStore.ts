@@ -27,6 +27,8 @@ type SettingsStore = {
   setDateFormat: (value: "dmy" | "mdy" | "ymd") => void,
   theme: "system" | "dark" | "light",
   setTheme: (value: "system" | "dark" | "light") => void,
+  tabBarLabels: boolean,
+  setTabBarLabels: (value: boolean) => void,
   onboarded: boolean,
   setOnboarded: (value: boolean) => void,
   calendarOrder: string[],
@@ -68,6 +70,10 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setTheme: (value) => set(() => ({
     theme: value,
   })),
+  tabBarLabels: true,
+  setTabBarLabels: (value) => set(() => ({
+    tabBarLabels: value,
+  })),
   // default true so existing sessions never flash the onboarding screen —
   // the server's value arrives via loadSettings and wins
   onboarded: true,
@@ -85,9 +91,9 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
 // — no flash of the system theme while waiting for the server.
 useSettingsStore.subscribe((s) => {
   const { showKanji, notificationsOnByDefault, defaultCalendarView, weekStartsOn,
-    timeFormat, dateFormat, theme, onboarded, calendarOrder } = s;
+    timeFormat, dateFormat, theme, onboarded, calendarOrder, tabBarLabels } = s;
   cacheSetSettings({
     showKanji, notificationsOnByDefault, defaultCalendarView, weekStartsOn,
-    timeFormat, dateFormat, theme, onboarded, calendarOrder,
+    timeFormat, dateFormat, theme, onboarded, calendarOrder, tabBarLabels,
   }).catch(() => { }); // fresh install: the table appears once migrations run
 });

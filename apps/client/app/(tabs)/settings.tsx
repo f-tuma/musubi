@@ -36,6 +36,7 @@ export default function SettingsTab() {
     timeFormat, setTimeFormat,
     dateFormat, setDateFormat,
     theme, setTheme,
+    tabBarLabels, setTabBarLabels,
     onboarded,
   } = useSettingsStore();
 
@@ -122,7 +123,7 @@ export default function SettingsTab() {
   // `patch` carries the just-changed value (store reads here would be stale).
   const save = (patch: Partial<Settings>) => {
     api.saveSettings({
-      showKanji, notificationsOnByDefault, defaultCalendarView, weekStartsOn, timeFormat, dateFormat, theme, onboarded,
+      showKanji, notificationsOnByDefault, defaultCalendarView, weekStartsOn, timeFormat, dateFormat, theme, onboarded, tabBarLabels,
       ...patch,
     }).catch((e) => {
       warn();
@@ -222,6 +223,14 @@ export default function SettingsTab() {
           onToggle={() => {
             setShowKanji(!showKanji);
             save({ showKanji: !showKanji });
+          }}
+        />
+        <SettingRowToggle
+          label="Tab Labels"
+          toggle={tabBarLabels}
+          onToggle={() => {
+            setTabBarLabels(!tabBarLabels);
+            save({ tabBarLabels: !tabBarLabels });
           }}
         />
         <SettingRowOptions

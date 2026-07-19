@@ -218,6 +218,13 @@
       "when": 1784195265137,
       "tag": "0030_google_sync_reconnect_state",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1784449739010,
+      "tag": "0031_rich_micromacro",
+      "breakpoints": true
     }
   ]
 }

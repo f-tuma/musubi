@@ -156,6 +156,7 @@ export const userSettings = pgTable("user_settings", {
   timeFormat: text("time_format").notNull().default("24h"),
   dateFormat: text("date_format").notNull().default("dmy"),
   theme: text("theme").notNull().default("system"),
+  tabBarLabels: boolean("tab_bar_labels").notNull().default(true),
   onboarded: boolean("onboarded").notNull().default(false),
   // flat, user-chosen calendar order; group order derives from first appearance
   calendarOrder: jsonb("calendar_order").$type<string[]>().notNull().default([]),

@@ -1,5 +1,5 @@
-import { colors } from '@/constants/theme';
-import { TAB_BAR_ITEM_HEIGHT, TAB_BAR_TOP_INSET, tabBarBottomInset, tabBarHeight } from '@/constants/layout';
+import { colors, fonts } from '@/constants/theme';
+import { TAB_BAR_ITEM_HEIGHT, TAB_BAR_LABEL_FONT_SIZE, TAB_BAR_TOP_INSET, tabBarBottomInset, tabBarHeight } from '@/constants/layout';
 import { LoadingOverlay } from '@/components/LoadingOverlay';
 import { useServer } from '@/contexts/ServerContext';
 import { useConnectToEventStream } from '@/hooks/useEventsStream';
@@ -77,6 +77,7 @@ export default function TabLayout() {
   // onboarded=false → hand over to onboarding, resuming at the last step the
   // user reached (an OAuth connect round-trip lands back here mid-flow).
   const onboarded = useSettingsStore(s => s.onboarded);
+  const tabBarLabels = useSettingsStore(s => s.tabBarLabels);
   useEffect(() => {
     // `as any`: expo-router's typed routes regenerate on the next dev run
     if (dataReady && !onboarded) router.replace(getOnboardingRoute() as any);
@@ -102,7 +103,8 @@ export default function TabLayout() {
             height: TAB_BAR_ITEM_HEIGHT,
             paddingVertical: 0,
           },
-          tabBarShowLabel: false,
+          tabBarShowLabel: tabBarLabels,
+          tabBarLabelStyle: { fontFamily: fonts.sans, fontSize: TAB_BAR_LABEL_FONT_SIZE },
           tabBarActiveTintColor: colors.fg,
           tabBarInactiveTintColor: colors.fg3,
           headerShown: false,

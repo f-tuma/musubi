@@ -1,0 +1,1 @@
+ALTER TABLE "user_settings" ADD COLUMN "tab_bar_labels" boolean DEFAULT true NOT NULL;
