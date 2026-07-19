@@ -29,6 +29,10 @@ export default defineConfig({
     starlight({
       title: 'Musubi',
       customCss: ['./src/styles/custom.css'],
+      social: [
+        { icon: 'discord', label: 'Discord', href: 'https://discord.musubi.pro' },
+        { icon: 'github', label: 'GitHub', href: 'https://github.com/f-tuma/musubi' },
+      ],
       sidebar: [
         {
           label: 'Getting Started',

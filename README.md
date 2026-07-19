@@ -15,7 +15,7 @@
 [![Self-hostable](https://img.shields.io/badge/self--host-your%20data-a8b5a0?labelColor=0c0c0e)](#-run-it-yourself)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-7a8ba3?labelColor=0c0c0e)](#-contributing)
 
-[**Website**](https://musubi.frgtn.dev) · [**Docs**](https://musubi.frgtn.dev/docs) · [**Roadmap**](https://feedback.frgtn.dev) · [**Google Play**](https://play.google.com/store/apps/details?id=dev.frgtn.musubi)
+[**Website**](https://musubi.frgtn.dev) · [**Docs**](https://musubi.frgtn.dev/docs) · [**Discord**](https://discord.musubi.pro) · [**Roadmap**](https://feedback.frgtn.dev) · [**Google Play**](https://play.google.com/store/apps/details?id=dev.frgtn.musubi)
 
 <img src=".github/assets/banner.svg" alt="Musubi — share, sync, self-host" width="100%" />
 
