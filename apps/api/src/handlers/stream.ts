@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 
 
-const clients = new Map<string, Response>();
+// A Set per user — one user can stream from several devices at once, and a
+// single-Response map would let a new connection silently evict the old one.
+const clients = new Map<string, Set<Response>>();
 
 
 export async function handlerStream(req: Request, res: Response) {
@@ -10,17 +12,23 @@ export async function handlerStream(req: Request, res: Response) {
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
 
-  clients.set(req.user!.id, res);
+  const userID = req.user!.id;
+  let connections = clients.get(userID);
+  if (!connections) {
+    connections = new Set();
+    clients.set(userID, connections);
+  }
+  connections.add(res);
 
   req.on('close', () => {
-    clients.delete(req.user!.id);
+    connections.delete(res);
+    if (connections.size === 0) clients.delete(userID);
   });
 }
 
 export function notifyCalendarMembers(memberIDs: string[], type: string, payload: Record<string, any>) {
   for (const memberID of memberIDs) {
-    const res = clients.get(memberID);
-    if (res) {
+    for (const res of clients.get(memberID) ?? []) {
       res.write(`data: ${JSON.stringify({ type, payload })}\n\n`);
     }
   }
