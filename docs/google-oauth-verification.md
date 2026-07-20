@@ -6,19 +6,21 @@ This document tracks the public, non-sensitive work required to verify Musubi's 
 
 ## Verification target
 
-Musubi requests the following Google Calendar scope:
+Musubi requests the following Google Calendar scopes — the narrowest set its sync and calendar-management features need, rather than the broad `https://www.googleapis.com/auth/calendar`:
 
 ```text
-https://www.googleapis.com/auth/calendar
+https://www.googleapis.com/auth/calendar.events
+https://www.googleapis.com/auth/calendar.calendarlist
+https://www.googleapis.com/auth/calendar.calendars
 ```
 
-The long-term product goal is to provide a full Google Calendar client experience, including event synchronization and management of calendar resources and settings.
+Musubi provides event synchronization and management of the user's own calendar resources and calendar-list entries. It does not request access to sharing/ACL rules or account settings.
 
 Google verification should only be submitted when the review build, public website, privacy policy, Play Store listing, scope justification, and demonstration video all describe the same implemented functionality.
 
 ## Current public status
 
-- [x] The mobile client requests the full Google Calendar scope.
+- [x] The mobile client requests the three granular Google Calendar scopes.
 - [x] Musubi can list connected Google calendars.
 - [x] Musubi supports two-way event synchronization.
 - [x] Musubi can create, update, and delete events.
@@ -64,7 +66,7 @@ Do not mention ACL management as an implemented feature until all relevant contr
 
 ### P0 — OAuth and Google Cloud configuration
 
-- [ ] The application, OAuth consent screen, and verification request use exactly the same scope.
+- [ ] The application, OAuth consent screen, and verification request use exactly the same three scopes.
 - [ ] The authorized domain is the verified top private domain used by the public Musubi website.
 - [ ] The domain is verified in Google Search Console by an account with the required project permissions.
 - [ ] OAuth branding uses the production Musubi name and logo.
@@ -90,7 +92,7 @@ Do not mention ACL management as an implemented feature until all relevant contr
 - [ ] The homepage has a dedicated Google Calendar integration section.
 - [ ] The homepage describes only features available in the current public or review build.
 - [ ] Future calendar-management features are clearly marked as roadmap items until released.
-- [ ] The Privacy Policy identifies the full Google Calendar scope and explains its purpose.
+- [ ] The Privacy Policy identifies the three granular Google Calendar scopes and explains each one's purpose.
 - [ ] The Privacy Policy distinguishes currently used functionality from technically possible but unreleased functionality.
 - [ ] The Privacy Policy explains that Google Calendar data is used only for user-requested calendar functionality.
 - [ ] The public website consistently identifies Musubi and its operator.
@@ -110,11 +112,9 @@ Do not mention ACL management as an implemented feature until all relevant contr
 
 ## Safe Privacy Policy copy before full calendar management is released
 
-> Musubi requests the `https://www.googleapis.com/auth/calendar` OAuth scope.
+> Rather than one broad permission, Musubi requests only the narrowest Google Calendar OAuth scopes it needs: `calendar.events` (read, create, update, and delete events), `calendar.calendarlist` (see the calendars in your account and their properties, such as color), and `calendar.calendars` (create, rename, recolor, and delete calendars you own).
 >
-> This permission technically allows access to Google calendars, calendar settings, events, and sharing information. In the current version, Musubi uses it to list calendars and provide two-way synchronization of events. Musubi reads, creates, updates, and deletes events when requested by the user or when synchronization explicitly enabled by the user requires it.
->
-> Functions for managing Google calendar resources, calendar-list settings, and sharing permissions are not used until the corresponding controls are available in the application. This policy will be updated when those features are released.
+> Musubi uses these to list calendars, provide two-way synchronization of events, and manage the user's own calendars. Musubi reads, creates, updates, and deletes events and calendars only when requested by the user or when synchronization explicitly enabled by the user requires it.
 >
 > Musubi uses Google Calendar data only to provide user-requested calendar functionality. It does not use the data for advertising, profiling, or unrelated purposes.
 
@@ -122,11 +122,13 @@ Do not mention ACL management as an implemented feature until all relevant contr
 
 Use this only after the corresponding calendar-management features exist in the review build.
 
-> Musubi uses the `https://www.googleapis.com/auth/calendar` scope to provide a complete Google Calendar management and synchronization experience.
+> Musubi uses three granular Google Calendar scopes to provide calendar management and synchronization:
 >
-> Users can connect one or more Google accounts, view their calendar list, create and manage Google calendars, change calendar properties and calendar-list settings, and read, create, update, or delete events. Musubi respects the permissions reported by Google and disables actions that the user is not authorized to perform.
+> - `calendar.events` — Musubi reads events for two-way synchronization and creates, updates, and deletes events when the user acts in Musubi.
+> - `calendar.calendarlist` — Musubi lists the user's calendars and writes per-user calendar-list properties such as color; read-only access is not sufficient because users recolor calendars from Musubi.
+> - `calendar.calendars` — Musubi creates, renames, recolors, and deletes calendars the user owns.
 >
-> The narrower `calendar.events` scope is not sufficient because Musubi manages calendar resources and user-specific calendar-list settings in addition to events. Read-only calendar-list access is not sufficient because users can change those settings from Musubi.
+> Users can connect one or more Google accounts, view their calendar list, create and manage their own Google calendars, and read, create, update, or delete events. Musubi respects the permissions reported by Google and disables actions that the user is not authorized to perform. It does not request the broad `https://www.googleapis.com/auth/calendar` scope, nor any sharing/ACL or account-settings access.
 >
 > All actions are initiated by the user through the Musubi interface or are part of synchronization explicitly enabled by the user. Google Calendar data is not used for advertising, profiling, or unrelated purposes.
 
@@ -150,7 +152,7 @@ Use this only after the corresponding calendar-management features exist in the 
 
 | ID | Evidence | Status | Public reference |
 |---|---|---:|---|
-| E-01 | Full scope requested by the client | Done | Client calendar connection flow |
+| E-01 | Three granular scopes requested by the client | Done | Client calendar connection flow |
 | E-02 | Event read/create/update/delete | Done | Google synchronization adapter |
 | E-03 | Google calendar creation | Missing | Add implementation and test |
 | E-04 | Google calendar property update | Missing | Add implementation and test |
@@ -183,6 +185,7 @@ The public tracker may record that a private item is complete, but must not incl
 
 - **2026-07-12:** Keep the full Google Calendar scope because Musubi is intended to become a full calendar client.
 - **2026-07-12:** Do not justify the full scope using roadmap functionality alone.
+- **2026-07-20:** Reverse the 2026-07-12 decision. Request the three narrowest scopes actually used (`calendar.events`, `calendar.calendarlist`, `calendar.calendars`) instead of the broad `auth/calendar`, so the request matches implemented functionality and eases verification. Drop the "full calendar client" framing and the ACL/settings ambitions from the justification.
 - **2026-07-12:** Treat ACL management as optional for the first submission unless it is implemented and used in the justification.
 - **2026-07-12:** Keep public website claims aligned with the review build.
 - **2026-07-12:** Keep this tracker English-only and safe for a public repository.
