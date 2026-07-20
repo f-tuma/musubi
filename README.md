@@ -91,7 +91,7 @@ iOS is in testing now; open testing on the App Store lands shortly.
 **Requirements:** Node 20+, pnpm 11+, Postgres 15+ (or just Docker).
 
 ```sh
-git clone https://github.com/f-tuma/Musubi.git && cd Musubi
+git clone https://github.com/frgtn-dot-dev/musubi.git && cd musubi
 pnpm install
 
 cp .env.example .env
