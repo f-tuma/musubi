@@ -77,6 +77,14 @@ export const auth = betterAuth({
       trustedProviders: ["microsoft"],
     },
   },
+  session: {
+    // Disable the "fresh session" requirement for sensitive actions (delete
+    // account, change email/password). Musubi is a mobile app with long-lived
+    // sessions and no re-authentication UI, so the default 1-day freshness makes
+    // account deletion fail for anyone signed in longer than a day. Deletion
+    // stays gated by a valid authenticated session and a client-side confirm.
+    freshAge: 0,
+  },
   user: {
     deleteUser: {
       enabled: true,

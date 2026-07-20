@@ -29,8 +29,17 @@ export function middlewareErrorHandler(
       statusCode = 404;
       errorMessage = appError.message;
       break;
-    default:
+    default: {
+      // Better Auth / better-call APIError carries its own HTTP status (e.g. a
+      // stale session on delete-account is a 400, not a 500). Surface it instead
+      // of masking every library error as an Internal Server Error.
+      const libStatus = (err as { statusCode?: unknown }).statusCode;
+      if (typeof libStatus === "number") {
+        statusCode = libStatus;
+        errorMessage = err.message;
+      }
       break;
+    }
   }
 
   const fields = {
