@@ -104,6 +104,23 @@ export async function getOAuthAccessToken(
   return payload.access_token;
 }
 
+// Best-effort revocation of a Google grant, called on disconnect before local
+// credentials are dropped. Google's revoke endpoint drops the whole grant when
+// given the refresh token. Never throws (a failed revoke must not block the
+// local disconnect) and never logs the token — URLSearchParams encodes it so a
+// token with url-unsafe characters is handled correctly.
+export async function revokeGoogleToken(refreshToken: string): Promise<void> {
+  try {
+    await fetch("https://oauth2.googleapis.com/revoke", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ token: refreshToken }),
+    });
+  } catch {
+    // network/endpoint failure — caller still removes local credentials
+  }
+}
+
 function safeOAuthCode(value: unknown) {
   return typeof value === "string" && /^[a-z0-9_.-]{1,64}$/i.test(value) ? value : undefined;
 }
