@@ -6,6 +6,7 @@ import { CALENDAR_SCOPE, createCalendar, db, getUserSettings, markOAuthAccountAc
 import { config, logger } from '@musubi/config';
 import { sendEmail } from '../../../../apps/api/src/emails';
 import { getPasswordResetHtml } from '../../../../apps/api/src/emails/password_reset';
+import { getDeleteAccountHtml } from '../../../../apps/api/src/emails/delete_account';
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -77,17 +78,18 @@ export const auth = betterAuth({
       trustedProviders: ["microsoft"],
     },
   },
-  session: {
-    // Disable the "fresh session" requirement for sensitive actions (delete
-    // account, change email/password). Musubi is a mobile app with long-lived
-    // sessions and no re-authentication UI, so the default 1-day freshness makes
-    // account deletion fail for anyone signed in longer than a day. Deletion
-    // stays gated by a valid authenticated session and a client-side confirm.
-    freshAge: 0,
-  },
   user: {
     deleteUser: {
       enabled: true,
+      // Email-confirmed deletion. When this is set, the initial request only
+      // sends the email (and returns before the "fresh session" check), so the
+      // stale-session 500 no longer applies. The emailed link lands on the
+      // website, which completes deletion token-only via /users/delete/confirm.
+      deleteTokenExpiresIn: 60 * 60, // 1 hour, same as password reset
+      sendDeleteAccountVerification: async ({ user, token }) => {
+        const url = `https://musubi.pro/delete-account/confirm/?token=${token}&callback=${config.api.url}`;
+        await sendEmail(user.email, "Confirm account deletion", getDeleteAccountHtml(user.name, url, "1 hour"));
+      },
     }
   },
   databaseHooks: {

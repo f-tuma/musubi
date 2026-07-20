@@ -5,6 +5,10 @@ import { auth } from "@musubi/auth";
 import { BadRequestError, NotFoundError } from "@musubi/types";
 
 
+// Step 1 (authenticated, from the app): triggers Better Auth's
+// sendDeleteAccountVerification, which emails a confirmation link and returns
+// without deleting. The account is only removed after the emailed link is
+// confirmed via handlerConfirmDeleteUser.
 export async function handlerDeleteUser(req: Request, res: Response) {
   const result = await auth.api.deleteUser({
     headers: new Headers(req.headers as Record<string, string>),
@@ -14,6 +18,27 @@ export async function handlerDeleteUser(req: Request, res: Response) {
   if (!result.success) {
     throw new Error(result.message);
   }
+  res.sendStatus(200);
+}
+
+// Step 2 (public, from the website link): completes deletion token-only. The
+// emailed token is the proof of email ownership (same model as password reset),
+// so no session is required — the browser opening the link has none. Uses Better
+// Auth's own internal adapter so cleanup matches its native delete flow.
+export async function handlerConfirmDeleteUser(req: Request, res: Response) {
+  const { token } = req.body ?? {};
+  if (!token || typeof token !== "string") throw new BadRequestError("token is required...");
+
+  const ctx = await auth.$context;
+  const record = await ctx.internalAdapter.consumeVerificationValue(`delete-account-${token}`);
+  if (!record || new Date(record.expiresAt).getTime() < Date.now()) {
+    throw new BadRequestError("This deletion link is invalid or has expired.");
+  }
+
+  const userId = record.value;
+  await ctx.internalAdapter.deleteUser(userId);
+  await ctx.internalAdapter.deleteUserSessions(userId);
+  await ctx.internalAdapter.deleteAccounts(userId);
   res.sendStatus(200);
 }
 

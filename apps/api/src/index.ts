@@ -6,7 +6,7 @@ import express from "express";
 import cors from "cors";
 import { middlewareErrorHandler } from "./middleware/error_handler";
 import { handlerCreateCalendar, handlerGetCalendars, handlerGetCalendar, handlerRemoveCalendar, handlerUpdateCalendar, handlerJoinCalendar, handlerLeaveCalendar, handlerExportCalendar, handlerImportCalendar, handlerGetCalendarFromToken, handlerGetCalendarMembers, handlerSetMemberRole, handlerKickMember } from "./handlers/calendars";
-import { handlerDeleteUser, handlerGetAvatar, handlerResetUsers, handlerUploadAvatar } from "./handlers/users";
+import { handlerConfirmDeleteUser, handlerDeleteUser, handlerGetAvatar, handlerResetUsers, handlerUploadAvatar } from "./handlers/users";
 import { handlerCreateEvent, handlerForkEvent, handlerGetAttendees, handlerGetEvents, handlerLinkEvent, handlerRemoveEvent, handlerSetAttendance, handlerUpdateEvent } from "./handlers/events";
 import { requireAuth } from "./middleware/require_auth";
 import { rateLimit } from "./middleware/rate_limit";
@@ -120,6 +120,9 @@ app.delete("/api/v1/calendars/:calendarId/members/:userId", requireAuth, wrap(ha
 app.get("/api/v1/users/settings", requireAuth, wrap(handlerGetSettings));
 app.put("/api/v1/users/settings", requireAuth, wrap(handlerSaveSettings));
 app.delete("/api/v1/users", requireAuth, wrap(handlerDeleteUser));
+// Public: the emailed confirmation link lands on the website (no session); the
+// token is the proof. Rate-limited against token guessing.
+app.post("/api/v1/users/delete/confirm", rateLimit(10, 15 * 60_000), wrap(handlerConfirmDeleteUser));
 app.post("/api/v1/users/avatar", requireAuth, wrap(handlerUploadAvatar));
 app.get("/api/v1/users/connections/google", requireAuth, wrap(handlerCheckGoogleStatus));
 app.post("/api/v1/users/connections/google/revoke", requireAuth, wrap(handlerRevokeGoogle));

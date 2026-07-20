@@ -136,22 +136,18 @@ export default function SettingsTab() {
   const handleSignOut = () => signOutAndReset(authClient);
 
   const handleUserDelete = async () => {
+    // Deletion is confirmed by email: this authenticated request only triggers
+    // the confirmation link. The account is removed when the user opens it, so
+    // we keep them signed in until then rather than claiming it's already gone.
     try {
-      await api.deleteUser(); // needs the live session — before the reset
+      await api.deleteUser();
     } catch (error) {
       warn();
       throw new Error(userFacingError(error, "Your account could not be deleted."));
     }
 
     success();
-    try {
-      await signOutAndReset(authClient);
-    } catch (error) {
-      // The server-side deletion already succeeded. Do not tell the user it
-      // failed just because local cleanup hit a device-specific problem.
-      console.warn("Account deleted, but local cleanup did not finish:", error);
-      showToast({ message: "Account deleted. Restart Musubi to finish local cleanup." });
-    }
+    showToast({ message: "Check your email — open the link we sent to permanently delete your account." });
   }
 
   const testDeleteConfirm = async (v: string) => {
