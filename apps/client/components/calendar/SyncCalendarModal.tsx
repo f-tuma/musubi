@@ -67,13 +67,13 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
 
   // Shared OAuth link flow — Google and Microsoft only differ in the
   // calendar scope their provider expects.
-  const handleOAuth = async (provider: "google" | "microsoft", scope: string, label: string) => {
+  const handleOAuth = async (provider: "google" | "microsoft", scopes: string[], label: string) => {
     if (loadingProvider) return; // one OAuth round-trip at a time
     setLoadingProvider(provider);
     try {
       const { error } = await authClient.linkSocial({
         provider,
-        scopes: [scope],
+        scopes,
         callbackURL,
       });
       if (error) throw new Error(error.message ?? `${label} connect failed`);
@@ -87,8 +87,14 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
       setLoadingProvider(null);
     }
   };
-  const handleGoogle = () => handleOAuth("google", "https://www.googleapis.com/auth/calendar", "Google");
-  const handleMicrosoft = () => handleOAuth("microsoft", "Calendars.ReadWrite", "Outlook");
+  // Narrowest Google scopes for our two-way sync: events R/W, calendarList R/W
+  // (we PATCH entry color), and calendars R/W (create/edit/delete calendars).
+  const handleGoogle = () => handleOAuth("google", [
+    "https://www.googleapis.com/auth/calendar.events",
+    "https://www.googleapis.com/auth/calendar.calendarlist",
+    "https://www.googleapis.com/auth/calendar.calendars",
+  ], "Google");
+  const handleMicrosoft = () => handleOAuth("microsoft", ["Calendars.ReadWrite"], "Outlook");
 
   // Shared for Apple (fixed iCloud server) and generic CalDAV.
   const handleCaldav = async (url: string) => {
