@@ -47,10 +47,10 @@ Checkbox legend: `[x]` done, `[ ]` not started, `[~]` partial (implemented in th
 - [x] Implement at least one meaningful write operation for the user's Google calendar list (per-user calendar color).
 - [~] Distinguish access roles — only a binary editable/read-only flag today (owner/writer vs everything else); full primary/owner/writer/reader/free-busy taxonomy not implemented.
 - [~] Disable operations that the connected Google account is not authorized to perform — driven by the binary read-only flag; verify coverage in the review build.
-- [ ] Clearly distinguish these actions in the UI:
-  - disconnect from Musubi;
-  - remove a calendar from the Google calendar list;
-  - permanently delete a Google calendar.
+- [x] Clearly distinguish these actions in the UI:
+  - disconnect from Musubi — confirm reads "its calendars and events will be removed from Musubi" (`calendars.tsx` handleDisconnect);
+  - permanently delete a Google calendar — two-step confirm that explicitly says "deleting it here also deletes it in Google Calendar" (`CalendarSettingsModal` handleDelete).
+  - Note: Musubi does not expose a separate "remove from the Google calendar list" (calendarList unsubscribe) action — `calendarlist` scope is used only for reads and per-user color — so there is no third action to confuse with delete.
 - [ ] Test calendar and event operations against owned, shared, and read-only calendars.
 - [ ] Handle Google API authorization errors and expired synchronization cursors safely.
 
@@ -84,8 +84,8 @@ Do not mention ACL management as an implemented feature until all relevant contr
 - [x] Access and refresh tokens are never written to logs or returned in error responses.
 - [x] Long-lived Google credentials are encrypted at rest using a documented, production-appropriate mechanism.
 - [x] Disconnect attempts Google token revocation and always removes local credentials afterward.
-- [ ] Every server-side Google operation verifies ownership of the Musubi user, connected account, and calendar mapping.
-- [ ] Destructive calendar operations require explicit user confirmation.
+- [x] Every server-side Google operation verifies ownership of the Musubi user, connected account, and calendar mapping. (`assertCan` role gate + `pushExternal` checks `link.userID === userID` and operates only on that mapping's accountID/externalCalendarID.)
+- [x] Destructive calendar operations require explicit user confirmation. (Delete calendar, disconnect account, delete event, leave calendar, and account deletion all confirm; external delete is a two-step confirm.)
 - [ ] The Privacy Policy accurately describes stored calendar metadata, events, synchronization cursors, and OAuth credentials.
 - [ ] Account deletion, retention, backup handling, and export statements match the actual implementation.
 

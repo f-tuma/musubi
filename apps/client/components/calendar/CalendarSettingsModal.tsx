@@ -108,6 +108,24 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
     }));
   };
 
+  const handleLeave = () => {
+    if (!calendar) return;
+    confirm({
+      title: `Leave "${calendar.name}"?`,
+      message: "You'll lose access until you're invited again. The calendar and its events stay for everyone else.",
+      confirmLabel: "Leave",
+    }, async () => {
+      setIsLeaving(true);
+      await api.leaveCalendar(calendar.id);
+      // Purge the departed calendar's events locally — the leave itself sends
+      // this device no SSE, so ghosts would linger.
+      localRemoveCalendarEvents(calendar.id);
+      loadCalendars(await api.getCalendars());
+      handleClose();
+      onLeave();
+    });
+  };
+
   return (
     <Modal
       visible={visible}
@@ -195,16 +213,7 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
                     style={styles.modalActionBtn}
                     haptic="warn"
                     disabled={isLeaving || !calendar}
-                    onPress={async () => {
-                      setIsLeaving(true);
-                      await api.leaveCalendar(calendar?.id!);
-                      // Purge the departed calendar's events locally — the leave
-                      // itself sends this device no SSE, so ghosts would linger.
-                      localRemoveCalendarEvents(calendar?.id!);
-                      loadCalendars(await api.getCalendars());
-                      handleClose();
-                      onLeave();
-                    }}
+                    onPress={handleLeave}
                   >
                     <Feather size={20} name="arrow-left-circle" color={isLeaving ? colors.fg4 : colors.accent} />
                     <Text style={{ color: isLeaving ? colors.fg4 : colors.accent, fontSize: 10 }}>Leave</Text>
