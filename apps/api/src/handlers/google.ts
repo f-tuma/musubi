@@ -2,6 +2,7 @@ import { cleanUsersOAuthTokens, getOAuthRefreshToken, oauthConnectionCheck } fro
 import { Request, Response } from "express";
 import { syncUser } from "../sync/engine";
 import { revokeGoogleToken } from "../sync/oauth";
+import { decryptToken } from "../tokenCrypto";
 
 export async function handlerCheckGoogleStatus(req: Request, res: Response) {
   const result = await oauthConnectionCheck(req.user!.id, "google");
@@ -9,7 +10,7 @@ export async function handlerCheckGoogleStatus(req: Request, res: Response) {
 }
 
 export async function handlerRevokeGoogle(req: Request, res: Response) {
-  const refreshToken = await getOAuthRefreshToken(req.user!.id, "google");
+  const refreshToken = await decryptToken(await getOAuthRefreshToken(req.user!.id, "google"));
   if (refreshToken) await revokeGoogleToken(refreshToken);
 
   await cleanUsersOAuthTokens(req.user!.id, "google");

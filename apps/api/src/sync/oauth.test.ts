@@ -38,7 +38,25 @@ async function main() {
     globalThis.fetch = realFetch;
   }
 
-  console.log("oauth revoke self-check: OK");
+  // --- token-at-rest encryption interop with Better Auth (tokenCrypto) ---
+  const { symmetricEncrypt, symmetricDecrypt } = await import("better-auth/crypto");
+  const secret = "test-secret-0123456789abcdefABCDEF";
+
+  // Round-trips with a plain string key — the single-secret setup Musubi uses,
+  // where Better Auth's secretConfig IS the secret string.
+  const plain = "1//0gL9-refresh_token.value";
+  const ciphertext = await symmetricEncrypt({ key: secret, data: plain });
+  assert.equal(await symmetricDecrypt({ key: secret, data: ciphertext }), plain);
+
+  // Mirror of tokenCrypto.isLikelyEncrypted: our bare-hex ciphertext is detected,
+  // but real OAuth tokens (with / . _ -) are NOT — so pre-encryption plaintext
+  // passes through untouched instead of being fed to a doomed decrypt.
+  const likelyEncrypted = (t: string) => t.startsWith("$ba$") || (t.length % 2 === 0 && /^[0-9a-f]+$/i.test(t));
+  assert.equal(likelyEncrypted(ciphertext), true);
+  assert.equal(likelyEncrypted("1//0gL9-refresh_token.value"), false);
+  assert.equal(likelyEncrypted("ya29.a0AfB_xyz-token"), false);
+
+  console.log("oauth revoke + token-crypto self-check: OK");
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

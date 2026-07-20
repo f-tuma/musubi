@@ -3,6 +3,7 @@ import { auth } from "@musubi/auth";
 import { deleteCaldavAccount, getOAuthCredentials, getUserExternalCalendars, removeCalendar } from "@musubi/db";
 import { BadRequestError } from "@musubi/types";
 import { revokeGoogleToken } from "../sync/oauth";
+import { decryptToken } from "../tokenCrypto";
 
 // Disconnect one connected account of a provider: revoke the provider grant
 // (Google only), then always remove the account's mirrored Musubi calendars and
@@ -17,7 +18,8 @@ export async function handlerDisconnectAccount(req: Request, res: Response) {
     // Microsoft/CalDAV have no equivalent revoke step here.
     if (provider === "google") {
       const creds = await getOAuthCredentials(req.user!.id, "google", accountId);
-      if (creds?.refreshToken) await revokeGoogleToken(creds.refreshToken);
+      const refreshToken = await decryptToken(creds?.refreshToken);
+      if (refreshToken) await revokeGoogleToken(refreshToken);
     }
   } finally {
     // Always remove local state, even if revoke or credential lookup threw.

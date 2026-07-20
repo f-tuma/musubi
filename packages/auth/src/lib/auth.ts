@@ -55,6 +55,10 @@ export const auth = betterAuth({
     }
   },
   account: {
+    // Encrypt OAuth access/refresh tokens at rest, keyed by the auth secret
+    // (outside the DB). Our sync layer reads these columns directly, so it
+    // decrypts with the same key via apps/api's tokenCrypto helpers.
+    encryptOAuthTokens: true,
     additionalFields: {
       syncStatus: { type: "string", required: false, defaultValue: "active", input: false, returned: false },
       syncErrorCode: { type: "string", required: false, input: false, returned: false },

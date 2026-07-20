@@ -30,8 +30,8 @@ Google verification should only be submitted when the review build, public websi
 - [ ] Musubi can update Google calendar properties.
 - [ ] Musubi can delete an owned secondary Google calendar.
 - [ ] Musubi can modify supported `calendarList` settings.
-- [ ] The normal disconnect flow revokes the Google token before deleting local credentials.
-- [ ] Google OAuth refresh tokens have verified encryption at rest appropriate for long-lived credentials.
+- [x] The normal disconnect flow revokes the Google token before deleting local credentials.
+- [x] Google OAuth refresh tokens have verified encryption at rest appropriate for long-lived credentials.
 
 ## Submission gate
 
@@ -79,9 +79,9 @@ Do not mention ACL management as an implemented feature until all relevant contr
 
 ### P0 — Security and data handling
 
-- [ ] Access and refresh tokens are never written to logs or returned in error responses.
-- [ ] Long-lived Google credentials are encrypted at rest using a documented, production-appropriate mechanism.
-- [ ] Disconnect attempts Google token revocation and always removes local credentials afterward.
+- [x] Access and refresh tokens are never written to logs or returned in error responses.
+- [x] Long-lived Google credentials are encrypted at rest using a documented, production-appropriate mechanism.
+- [x] Disconnect attempts Google token revocation and always removes local credentials afterward.
 - [ ] Every server-side Google operation verifies ownership of the Musubi user, connected account, and calendar mapping.
 - [ ] Destructive calendar operations require explicit user confirmation.
 - [ ] The Privacy Policy accurately describes stored calendar metadata, events, synchronization cursors, and OAuth credentials.
@@ -158,8 +158,8 @@ Use this only after the corresponding calendar-management features exist in the 
 | E-04 | Google calendar property update | Missing | Add implementation and test |
 | E-05 | Google calendar deletion | Missing | Add implementation and test |
 | E-06 | Calendar-list write operation | Missing | Add implementation and test |
-| E-07 | Token revocation during disconnect | Verify | Add integration test or documented code path |
-| E-08 | Encryption of long-lived Google credentials | Verify | Document public architecture without secrets |
+| E-07 | Token revocation during disconnect | Done | Per-account revoke before local cleanup (handlers/connections.ts) |
+| E-08 | Encryption of long-lived Google credentials | Done | Better Auth `encryptOAuthTokens`; key outside DB; decrypt at sync boundary |
 | E-09 | Homepage, Privacy Policy, and Terms alignment | In progress | Public Musubi website |
 | E-10 | Google Play listing alignment | In progress | Production store listing |
 | E-11 | Public account deletion instructions | Missing | Public website page |
@@ -186,6 +186,7 @@ The public tracker may record that a private item is complete, but must not incl
 - **2026-07-12:** Keep the full Google Calendar scope because Musubi is intended to become a full calendar client.
 - **2026-07-12:** Do not justify the full scope using roadmap functionality alone.
 - **2026-07-20:** Reverse the 2026-07-12 decision. Request the three narrowest scopes actually used (`calendar.events`, `calendar.calendarlist`, `calendar.calendars`) instead of the broad `auth/calendar`, so the request matches implemented functionality and eases verification. Drop the "full calendar client" framing and the ACL/settings ambitions from the justification.
+- **2026-07-20:** Encrypt OAuth tokens at rest via Better Auth's built-in `encryptOAuthTokens` rather than a second bespoke crypto path — one maintained mechanism, key outside the DB. The sync layer reads the columns directly, so it decrypts/encrypts with the same key material (`auth.$context.secretConfig`). Chosen over volume-only encryption because it also protects DB dumps and query-level access.
 - **2026-07-12:** Treat ACL management as optional for the first submission unless it is implemented and used in the justification.
 - **2026-07-12:** Keep public website claims aligned with the review build.
 - **2026-07-12:** Keep this tracker English-only and safe for a public repository.

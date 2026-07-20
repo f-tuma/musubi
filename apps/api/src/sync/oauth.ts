@@ -4,6 +4,7 @@ import {
   updateOAuthTokens,
 } from "@musubi/db";
 import { ProviderAuthError } from "./errors";
+import { decryptToken, encryptToken } from "../tokenCrypto";
 
 // Shared OAuth access-token minting for adapter API calls (google, microsoft).
 // Refreshes expired access tokens directly against the provider's token
@@ -43,13 +44,14 @@ export async function getOAuthAccessToken(
 
   const expiresAt = credentials.accessTokenExpiresAt?.getTime();
   if (credentials.accessToken && expiresAt && expiresAt - Date.now() >= 5_000) {
-    return credentials.accessToken;
+    return await decryptToken(credentials.accessToken);
   }
 
   if (!credentials.refreshToken) {
     await markOAuthAccountReconnectRequired(userID, provider, accountId, "missing_refresh_token");
     throw new ProviderAuthError(provider, "missing_refresh_token", undefined, true);
   }
+  const refreshToken = await decryptToken(credentials.refreshToken);
 
   let response: Response;
   try {
@@ -58,7 +60,7 @@ export async function getOAuthAccessToken(
       headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
       body: new URLSearchParams({
         grant_type: "refresh_token",
-        refresh_token: credentials.refreshToken,
+        refresh_token: refreshToken,
         client_id: cfg.clientId,
         client_secret: cfg.clientSecret,
         ...cfg.extraParams,
@@ -94,12 +96,13 @@ export async function getOAuthAccessToken(
   }
 
   const accessTokenExpiresAt = new Date(Date.now() + validExpiresIn(payload.expires_in) * 1_000);
-  // Persist a rotated refresh token when the provider sends one — Microsoft
-  // rotates it on every refresh, Google only occasionally.
+  // Persist encrypted (matching how Better Auth stores tokens on link). A rotated
+  // refresh token is saved when the provider sends one — Microsoft rotates it on
+  // every refresh, Google only occasionally.
   await updateOAuthTokens(userID, provider, accountId, {
-    accessToken: payload.access_token,
+    accessToken: await encryptToken(payload.access_token),
     accessTokenExpiresAt,
-    refreshToken: payload.refresh_token,
+    refreshToken: payload.refresh_token ? await encryptToken(payload.refresh_token) : undefined,
   });
   return payload.access_token;
 }
