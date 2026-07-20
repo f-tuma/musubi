@@ -8,8 +8,10 @@ import { GoogleCheck } from "@musubi/types";
 // (linked → active → reconnect_required → relinked).
 
 // The scope that marks an account as calendar-connected, per provider.
+// Keyed off a scope we always request (checked via `.includes`), so the loose
+// substring match stays unambiguous under Google's granular scopes.
 export const CALENDAR_SCOPE: Record<string, string> = {
-  google: "https://www.googleapis.com/auth/calendar",
+  google: "https://www.googleapis.com/auth/calendar.events",
   microsoft: "Calendars.ReadWrite",
 };
 
