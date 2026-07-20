@@ -69,6 +69,10 @@ internal object AgendaWidgetData {
                           }
                         }
                       },
+                      id = event.optString("id"),
+                      allDay = event.optBoolean("allDay"),
+                      startKey = event.optString("startKey"),
+                      endKey = event.optString("endKey"),
                     ),
                   )
                 }
@@ -192,6 +196,12 @@ internal data class CalendarWidgetChip(
   val title: String,
   val color: String,
   val calendarIds: List<String> = emptyList(),
+  val id: String = "",
+  val allDay: Boolean = false,
+  // Full run of the event (inclusive day keys), not clamped to the grid — lets
+  // the renderer round only the true first/last day of a multi-day bar.
+  val startKey: String = "",
+  val endKey: String = "",
 )
 
 internal data class WidgetEvent(

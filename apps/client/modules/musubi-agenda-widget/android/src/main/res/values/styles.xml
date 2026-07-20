@@ -95,8 +95,8 @@
     <item name="android:gravity">center_horizontal</item>
     <item name="android:foreground">@drawable/musubi_calendar_day_feedback</item>
     <item name="android:orientation">vertical</item>
-    <item name="android:paddingLeft">2dp</item>
-    <item name="android:paddingRight">2dp</item>
+    <!-- No horizontal padding: event pills bleed to the cell edges so multi-day
+         all-day bars join seamlessly across adjacent days. -->
     <item name="android:paddingTop">1dp</item>
   </style>
 

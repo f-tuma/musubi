@@ -1,0 +1,5 @@
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+  <solid android:color="@color/musubi_widget_accent" />
+  <corners android:topRightRadius="3dp" android:bottomRightRadius="3dp"
+    android:topLeftRadius="0dp" android:bottomLeftRadius="0dp" />
+</shape>

@@ -525,6 +525,53 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
       val fullDateFormat = SimpleDateFormat("EEEE, d MMMM yyyy", Locale.UK)
       val selectedCalendars = CalendarWidgetPreferences.read(context, widgetId)
 
+      fun keyForIndex(i: Int): String =
+        dateKeyFormat.format((gridStart.clone() as Calendar).apply {
+          add(Calendar.DAY_OF_MONTH, i)
+        }.time)
+
+      fun chipVisible(chip: CalendarWidgetChip): Boolean =
+        selectedCalendars == null || chip.calendarIds.isEmpty() ||
+          chip.calendarIds.any(selectedCalendars::contains)
+
+      // Multi-day all-day bars: assign each all-day event a stable lane (row) per
+      // week so its per-day segments line up into one continuous bar. Mirrors the
+      // in-app month view's greedy first-fit lane assignment.
+      val barLanes: Array<Array<BarSegment?>> = Array(42) { arrayOfNulls(MAX_EVENT_PILLS) }
+      for (week in 0 until 6) {
+        val base = week * 7
+        // event id -> columns (0..6) it covers this week
+        val cols = LinkedHashMap<String, Pair<CalendarWidgetChip, MutableList<Int>>>()
+        for (col in 0 until 7) {
+          val chips = snapshot.calendarDays[keyForIndex(base + col)]?.events.orEmpty()
+          for (chip in chips) {
+            if (!chip.allDay || !chipVisible(chip)) continue
+            val id = chip.id.ifBlank { "${chip.startKey}:${chip.title}" }
+            cols.getOrPut(id) { chip to mutableListOf() }.second.add(col)
+          }
+        }
+        // start column asc, then width desc (longest bar takes the upper lane)
+        val spans = cols.values
+          .map { (chip, c) -> Triple(chip, c.minOrNull() ?: 0, c.maxOrNull() ?: 0) }
+          .sortedWith(compareBy({ it.second }, { -it.third }))
+        val laneEnds = ArrayList<Int>()
+        for ((chip, startCol, endCol) in spans) {
+          var lane = laneEnds.indexOfFirst { it < startCol }
+          if (lane == -1) { lane = laneEnds.size; laneEnds.add(-1) }
+          laneEnds[lane] = endCol
+          if (lane >= MAX_EVENT_PILLS) continue // no slot → falls into the overflow count
+          for (col in startCol..endCol) {
+            val key = keyForIndex(base + col)
+            barLanes[base + col][lane] = BarSegment(
+              chip = chip,
+              roundLeft = key == chip.startKey,
+              roundRight = key == chip.endKey,
+              showTitle = col == startCol,
+            )
+          }
+        }
+      }
+
       repeat(42) { index ->
         val date = (gridStart.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, index) }
         val key = dateKeyFormat.format(date.time)
@@ -584,21 +631,53 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
             else R.drawable.musubi_calendar_cell,
           )
 
-          val displayed = visibleEvents.take(pillLimit)
-          listOf(day.pillOne, day.pillTwo).forEachIndexed { pillIndex, pillId ->
-            val event = displayed.getOrNull(pillIndex)
-            views.setViewVisibility(pillId, if (event == null) View.GONE else View.VISIBLE)
-            if (event != null) {
-              views.setTextViewText(
-                pillId,
-                event.title.ifBlank { context.getString(R.string.musubi_agenda_widget_untitled) },
-              )
-              val pillColor = AgendaWidgetData.parseColor(event.color)
-              tintPill(views, pillId, pillColor)
-              views.setTextColor(pillId, pillTextColor(context, pillColor))
+          // Slot 0/1 map to lanes 0/1: a multi-day bar keeps the same row across
+          // days. Slots without a bar are filled by that day's timed events.
+          val bars = barLanes[index]
+          val timed = visibleEvents.filter { !it.allDay }
+          var timedPointer = 0
+          var shown = 0
+          listOf(day.pillOne, day.pillTwo).forEachIndexed { slot, pillId ->
+            val bar = if (slot < pillLimit) bars.getOrNull(slot) else null
+            val timedChip = if (bar == null && slot < pillLimit) timed.getOrNull(timedPointer) else null
+            when {
+              bar != null -> {
+                views.setViewVisibility(pillId, View.VISIBLE)
+                views.setTextViewText(
+                  pillId,
+                  if (bar.showTitle) bar.chip.title.ifBlank {
+                    context.getString(R.string.musubi_agenda_widget_untitled)
+                  } else "",
+                )
+                views.setInt(
+                  pillId,
+                  "setBackgroundResource",
+                  pillSegmentDrawable(bar.roundLeft, bar.roundRight),
+                )
+                val pillColor = AgendaWidgetData.parseColor(bar.chip.color)
+                tintPill(views, pillId, pillColor)
+                views.setTextColor(pillId, pillTextColor(context, pillColor))
+                shown++
+              }
+              timedChip != null -> {
+                timedPointer++
+                views.setViewVisibility(pillId, View.VISIBLE)
+                views.setTextViewText(
+                  pillId,
+                  timedChip.title.ifBlank { context.getString(R.string.musubi_agenda_widget_untitled) },
+                )
+                // Reset to the fully-rounded pill — RemoteViews reuse a slot that
+                // may have held a squared bar segment last update.
+                views.setInt(pillId, "setBackgroundResource", R.drawable.musubi_calendar_pill)
+                val pillColor = AgendaWidgetData.parseColor(timedChip.color)
+                tintPill(views, pillId, pillColor)
+                views.setTextColor(pillId, pillTextColor(context, pillColor))
+                shown++
+              }
+              else -> views.setViewVisibility(pillId, View.GONE)
             }
           }
-          val overflow = visibleCount - displayed.size
+          val overflow = visibleCount - shown
           views.setViewVisibility(
             day.overflow,
             if (showOverflow && overflow > 0) View.VISIBLE else View.GONE,
@@ -725,6 +804,13 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
       }
     }
 
+    private fun pillSegmentDrawable(roundLeft: Boolean, roundRight: Boolean): Int = when {
+      roundLeft && roundRight -> R.drawable.musubi_calendar_pill
+      roundLeft -> R.drawable.musubi_calendar_pill_start
+      roundRight -> R.drawable.musubi_calendar_pill_end
+      else -> R.drawable.musubi_calendar_pill_mid
+    }
+
     private fun tintPill(views: RemoteViews, viewId: Int, color: Int) {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         views.setColorStateList(
@@ -801,6 +887,13 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
     }
   }
 }
+
+private data class BarSegment(
+  val chip: CalendarWidgetChip,
+  val roundLeft: Boolean,
+  val roundRight: Boolean,
+  val showTitle: Boolean,
+)
 
 private data class LargeDayViews(
   val container: Int,

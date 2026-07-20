@@ -26,7 +26,10 @@ type AgendaWidgetEvent = {
 type CalendarWidgetDay = {
   date: string;
   colors: string[];
-  events: { title: string; color: string; calendarIds: string[] }[];
+  // startKey/endKey are the event's full run (not clamped to the grid) so the
+  // native widget can draw multi-day all-day events as one continuous bar with
+  // stable lanes. id is stable across the run, unique per occurrence.
+  events: { title: string; color: string; calendarIds: string[]; id: string; allDay: boolean; startKey: string; endKey: string }[];
   count: number;
 };
 
@@ -96,12 +99,17 @@ function buildSnapshot() {
       : event.end;
     const endDay = eventDay(endInstant, event.isAllDay).startOf("day");
     const color = eventColor(event as Event, calendarById);
+    const startKey = startDay.format("YYYY-MM-DD");
+    const endKey = endDay.format("YYYY-MM-DD");
+    // Anchor on the start day so recurring instances stay unique per occurrence
+    // but consistent across all days they cover.
+    const chipId = `${event.id ?? event.title}:${startKey}`;
 
     for (let day = startDay; !day.isAfter(endDay, "day"); day = day.add(1, "day")) {
       const key = day.format("YYYY-MM-DD");
       const summary = calendarDaysByDate.get(key) ?? { colors: [], events: [], count: 0 };
       if (!summary.colors.includes(color) && summary.colors.length < 3) summary.colors.push(color);
-      summary.events.push({ title: event.title, color, calendarIds: event.calendars });
+      summary.events.push({ title: event.title, color, calendarIds: event.calendars, id: chipId, allDay: event.isAllDay, startKey, endKey });
       summary.count += 1;
       calendarDaysByDate.set(key, summary);
     }
