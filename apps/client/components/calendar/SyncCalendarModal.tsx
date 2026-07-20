@@ -10,12 +10,15 @@ import Animated from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { Tap } from "@/components/ui/Tap";
 import { Btn } from "@/components/ui/Btn";
+import { GoogleG } from "@/components/auth/SocialAuthButtons";
 import * as haptics from "@/lib/haptics";
 import { fetchWithTimeout, userFacingError } from "@/lib/network";
+import { hasSeenGoogleDisclosure, markGoogleDisclosureSeen } from "@/lib/googleDisclosure";
 
 const ICLOUD_URL = "https://caldav.icloud.com";
+const PRIVACY_URL = "https://musubi.pro/privacy/";
 
-type Step = "providers" | "apple" | "caldav";
+type Step = "providers" | "google" | "apple" | "caldav";
 
 type Props = {
   visible: boolean;
@@ -34,12 +37,16 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
   // screen's social buttons). null = unknown (old server / fetch failed) →
   // show everything rather than an empty modal.
   const [available, setAvailable] = useState<string[] | null>(null);
+  // Has the user already seen the Google data-use disclosure? Gates whether
+  // tapping "Google Calendar" shows the disclosure step or goes straight to OAuth.
+  const [googleAcked, setGoogleAcked] = useState(false);
   useEffect(() => {
     if (!visible || !apiUrl) return;
     fetchWithTimeout(`${apiUrl}/api/v1/server`)
       .then((res) => res.json())
       .then(({ syncProviders }) => setAvailable(Array.isArray(syncProviders) ? syncProviders : null))
       .catch(() => setAvailable(null));
+    hasSeenGoogleDisclosure().then(setGoogleAcked);
   }, [visible, apiUrl]);
   const shows = (provider: string) => !available || available.includes(provider);
 
@@ -77,6 +84,10 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
         callbackURL,
       });
       if (error) throw new Error(error.message ?? `${label} connect failed`);
+      if (provider === "google") {
+        void markGoogleDisclosureSeen();
+        setGoogleAcked(true);
+      }
       haptics.success();
       onConnected(provider);
       handleClose();
@@ -94,6 +105,9 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
     "https://www.googleapis.com/auth/calendar.calendarlist",
     "https://www.googleapis.com/auth/calendar.calendars",
   ], "Google");
+  // Show the data-use disclosure before the first Google authorization; once
+  // the user has connected a Google calendar, go straight to OAuth.
+  const startGoogle = () => (googleAcked ? handleGoogle() : setStep("google"));
   const handleMicrosoft = () => handleOAuth("microsoft", ["Calendars.ReadWrite"], "Outlook");
 
   // Shared for Apple (fixed iCloud server) and generic CalDAV.
@@ -121,7 +135,10 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
   };
 
   const title =
-    step === "apple" ? "Connect Apple / iCloud" : step === "caldav" ? "Connect CalDAV" : "Sync a Calendar";
+    step === "google" ? "Connect Google Calendar"
+      : step === "apple" ? "Connect Apple / iCloud"
+      : step === "caldav" ? "Connect CalDAV"
+      : "Sync a Calendar";
 
   return (
     <Modal
@@ -151,7 +168,7 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
                       variant="secondary"
                       icon={<Ionicons name="logo-google" size={16} color={colors.fg2} />}
                       loading={loadingProvider === "google"}
-                      onPress={handleGoogle}
+                      onPress={startGoogle}
                     />
                   )}
                   {shows("microsoft") && (
@@ -180,6 +197,34 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
                     </>
                   )}
                 </View>
+              )}
+
+              {step === "google" && (
+                <>
+                  <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, gap: 12 }}>
+                    <Text style={{ fontFamily: fonts.sans, fontSize: 14, color: colors.fg2, lineHeight: 21 }}>
+                      Musubi will access the calendars and events you select to display them in Musubi and synchronize changes both ways. You can create, edit, and delete events and calendars you own. Synced calendar data and OAuth credentials are stored by your Musubi server so synchronization can continue in the background.
+                    </Text>
+                    <Text style={{ fontFamily: fonts.sans, fontSize: 14, color: colors.fg2, lineHeight: 21 }}>
+                      Google Calendar data is not used for advertising, profiling, or AI training. You can disconnect your account at any time to remove stored credentials and synchronized copies.
+                    </Text>
+                    <Tap onPress={() => Linking.openURL(PRIVACY_URL)}>
+                      <Text style={{ fontFamily: fonts.sansMedium, fontSize: 14, color: colors.accent }}>
+                        Privacy Policy
+                      </Text>
+                    </Tap>
+                  </View>
+                  <View style={styles.modalButtonsColumn}>
+                    <Btn
+                      label="Continue to Google"
+                      variant="secondary"
+                      icon={<GoogleG size={18} />}
+                      loading={loadingProvider === "google"}
+                      onPress={handleGoogle}
+                    />
+                    <Btn label="Back" variant="secondary" onPress={() => setStep("providers")} />
+                  </View>
+                </>
               )}
 
               {step === "apple" && (
