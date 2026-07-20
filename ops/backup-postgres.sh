@@ -4,7 +4,7 @@ set -eu
 umask 077
 
 musubi_repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-musubi_compose_file=${MUSUBI_COMPOSE_FILE:-"$musubi_repo_root/docker-compose.selfhost.yml"}
+musubi_compose_file=${MUSUBI_COMPOSE_FILE:-"$musubi_repo_root/docker-compose.yml"}
 musubi_backup_dir=${MUSUBI_BACKUP_DIR:-"$musubi_repo_root/backups"}
 musubi_retention_days=${MUSUBI_BACKUP_RETENTION_DAYS:-14}
 

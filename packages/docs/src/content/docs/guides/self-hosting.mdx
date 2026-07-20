@@ -12,20 +12,23 @@ Musubi is designed to be self-hosted. If you want your calendar data on your own
 - A server with **Docker** and **Docker Compose** installed
 - A domain name (optional but recommended for HTTPS)
 
-## 1. Get the code
+## 1. Download the files
+
+No clone or build needed — the API ships as a prebuilt image (`frgtndev/musubi`). Grab the Compose file and an env template into an empty directory:
 
 ```sh
-git clone https://github.com/f-tuma/musubi.git
-cd musubi
+mkdir musubi && cd musubi
+curl -O https://raw.githubusercontent.com/frgtn-dot-dev/musubi/main/docker-compose.yml
+curl -o .env https://raw.githubusercontent.com/frgtn-dot-dev/musubi/main/.env.example
 ```
+
+<Aside type="tip">
+Prefer to build from source? Clone the repo instead, then in `docker-compose.yml` comment out the `image:` line and uncomment the `build:` block. Everything else below is identical.
+</Aside>
 
 ## 2. Configure environment variables
 
-```sh
-cp .env.example .env
-```
-
-Edit `.env` with your production values. Key variables:
+Edit the `.env` you just downloaded and set your production values. Key variables:
 
 | Variable | Description |
 |---|---|
@@ -100,13 +103,13 @@ Which social logins your build offers is decided at runtime from what you config
 ## 3. Start everything
 
 ```sh
-docker compose -f docker-compose.selfhost.yml up -d
+docker compose up -d
 ```
 
-This starts the API server, the PostgreSQL database, and runs migrations automatically (the API container runs `drizzle-kit migrate` before booting).
+This pulls the API image, starts it alongside a PostgreSQL database, publishes the API on `API_SERVER_PORT`, and runs migrations automatically (the container runs `drizzle-kit migrate` before booting).
 
 <Aside type="note">
-Use the `docker-compose.selfhost.yml` file — it publishes the API port and runs its own Postgres. The repo's default `docker-compose.yml` targets [Dokploy](https://dokploy.com) (it attaches to an external `dokploy-network` and only `expose`s the port for Dokploy's reverse proxy), so a bare `docker compose up` against it won't work on a plain host. For HTTPS, put a reverse proxy in front of the published port and set `BETTER_AUTH_URL` to the public `https://` origin.
+For HTTPS, put a reverse proxy (Caddy, nginx, Traefik…) in front of the published port and set `BETTER_AUTH_URL` to the public `https://` origin. Deploying with [Dokploy](https://dokploy.com) instead of a plain host? Use `docker-compose.dokploy.yml`, which attaches to the external `dokploy-network` and lets Dokploy's proxy terminate TLS.
 </Aside>
 
 ## 4. Point the mobile app at your server
@@ -119,15 +122,14 @@ The welcome screen adapts to your server: it asks `GET /api/v1/server` which soc
 
 ## Updating
 
-To pull the latest version:
+Pull the newest image and restart — migrations run automatically on startup:
 
 ```sh
-git pull
-docker compose -f docker-compose.selfhost.yml down
-docker compose -f docker-compose.selfhost.yml up -d --build
+docker compose pull
+docker compose up -d
 ```
 
-Migrations run automatically on startup.
+Pin a specific version instead of the latest by setting `MUSUBI_TAG` in `.env` (e.g. `MUSUBI_TAG=v1.2.0`). Building from a clone? Use `git pull && docker compose up -d --build`.
 
 ---
 
@@ -159,7 +161,7 @@ publishing it, and removes local dumps older than the retention window:
 ./ops/backup-postgres.sh
 ```
 
-It defaults to `docker-compose.selfhost.yml`, `./backups`, and 14 days. Override
+It defaults to `docker-compose.yml`, `./backups`, and 14 days. Override
 those settings when scheduling it with cron or your hosting control panel:
 
 ```sh

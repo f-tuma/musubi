@@ -1,14 +1,3 @@
-# Generic self-hosting compose — publishes the API on the host and runs an
-# embedded Postgres. Use this on a plain Docker host:
-#
-#   docker compose -f docker-compose.selfhost.yml up -d
-#
-# (The default docker-compose.yml targets Dokploy: it attaches to an external
-# `dokploy-network` and only `expose`s the port for Dokploy's reverse proxy, so
-# it won't work with a bare `docker compose up`.)
-#
-# For HTTPS, put a reverse proxy (Caddy, nginx, Traefik…) in front of the
-# published port and point BETTER_AUTH_URL at the public https:// origin.
 services:
   api:
     build:
@@ -19,13 +8,17 @@ services:
     env_file:
       - .env
     environment:
-      # override .env's DATABASE_URL to point at the db service on the compose network
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - "${API_SERVER_PORT:-7531}:${API_SERVER_PORT:-7531}"
+    expose:
+      - "${API_SERVER_PORT:-7531}"
+    networks:
+      dokploy-network:
+        aliases:
+          - musubi-api
+      default: {}
     restart: unless-stopped
 
   db:
@@ -41,7 +34,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
 
 volumes:
   data:
+
+networks:
+  dokploy-network:
+    external: true
