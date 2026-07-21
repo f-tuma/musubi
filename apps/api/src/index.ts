@@ -15,6 +15,7 @@ import { handlerStream } from "./handlers/stream";
 import { middlewareLogHandler } from "./middleware/log_handler";
 import { handlerGetSettings, handlerSaveSettings } from "./handlers/settings";
 import { handlerAppleAppSiteAssociation, handlerServer, handlerServerStatus } from "./handlers/server";
+import { handlerResetPasswordPage, handlerDeleteAccountPage } from "./handlers/pages";
 import { handlerCheckGoogleStatus, handlerGetGoogleCalendars, handlerRevokeGoogle } from "./handlers/google";
 import { handlerCheckCaldavStatus, handlerConnectCaldav, handlerDisconnectCaldav } from "./handlers/caldav";
 import { handlerDisconnectAccount } from "./handlers/connections";
@@ -74,6 +75,11 @@ app.get("/api/stream", requireAuth, wrap(handlerStream));
 // Public + creates accounts/tokens — cap per-IP so tokens can't be farmed or guessed.
 app.post("/api/v1/federation/accept", rateLimit(10, 15 * 60_000), wrap(handlerFederationAccept));
 app.get("/invite/:token", handlerInvitePage(config.api.url));
+// Self-hosted auth pages — the reset/delete emails link here on this API's own
+// origin, so nothing depends on the central website. Public, no auth (the token
+// in the query string is the credential, read client-side).
+app.get("/reset-password", handlerResetPasswordPage);
+app.get("/delete-account", handlerDeleteAccountPage);
 // iOS universal links — must live at the domain root, public, no auth.
 app.get("/.well-known/apple-app-site-association", handlerAppleAppSiteAssociation);
 // The user's connections to other Musubi servers (member tokens, encrypted at

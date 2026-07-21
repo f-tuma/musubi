@@ -43,7 +43,7 @@ Edit the `.env` you just downloaded and set your production values. Key variable
 | `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` | Microsoft Entra ID app credentials — needed for Outlook calendar sync. Add `{BETTER_AUTH_URL}/api/auth/callback/microsoft` as a Web redirect URI on the app registration; `MICROSOFT_TENANT_ID` defaults to `common` |
 | `APPLE_CLIENT_ID` | Enables native Sign in with Apple (iOS) — set to the app bundle id (`dev.frgtn.musubi`); the server verifies the identity token's audience against it |
 | `APPLE_TEAM_ID` | Apple Developer Team ID — serves the apple-app-site-association file so iOS invite links open the app directly (universal links). Optional; unset → the Safari hand-off still works |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL` | Outgoing mail for password-reset emails |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL` | Outgoing mail for password-reset and account-deletion confirmation emails |
 | `CALDAV_ENC_KEY` | Encrypts stored CalDAV passwords — required before anyone connects a CalDAV account |
 
 The API writes one JSON object per log line to stdout/stderr, which works directly
@@ -110,6 +110,10 @@ This pulls the API image, starts it alongside a PostgreSQL database, publishes t
 
 <Aside type="note">
 For HTTPS, put a reverse proxy (Caddy, nginx, Traefik…) in front of the published port and set `BETTER_AUTH_URL` to the public `https://` origin. Deploying with [Dokploy](https://dokploy.com) instead of a plain host? Use `docker-compose.dokploy.yml`, which attaches to the external `dokploy-network` and lets Dokploy's proxy terminate TLS.
+</Aside>
+
+<Aside type="tip">
+Password reset and account-deletion confirmation are fully self-contained: your API serves those pages from its own origin (`{BETTER_AUTH_URL}/reset-password` and `/delete-account`), and the emails link there. Nothing depends on musubi.pro — you only need SMTP configured so the emails can go out.
 </Aside>
 
 ## 4. Point the mobile app at your server

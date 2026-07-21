@@ -28,7 +28,9 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, token }, _) => {
-      const customUrl = `https://musubi.pro/reset-password/?token=${token}&callback=${config.api.url}`
+      // Served by this API on its own origin (apps/api handlers/pages.ts), so
+      // self-hosters don't depend on the central website.
+      const customUrl = `${config.api.url}/reset-password?token=${token}`
       await sendEmail(user.email, "Reset your password", getPasswordResetHtml(user.name, customUrl, "1 hour"));
     },
   },
@@ -87,7 +89,8 @@ export const auth = betterAuth({
       // website, which completes deletion token-only via /users/delete/confirm.
       deleteTokenExpiresIn: 60 * 60, // 1 hour, same as password reset
       sendDeleteAccountVerification: async ({ user, token }) => {
-        const url = `https://musubi.pro/delete-account/confirm/?token=${token}&callback=${config.api.url}`;
+        // Served by this API on its own origin (apps/api handlers/pages.ts).
+        const url = `${config.api.url}/delete-account?token=${token}`;
         await sendEmail(user.email, "Confirm account deletion", getDeleteAccountHtml(user.name, url, "1 hour"));
       },
     }
