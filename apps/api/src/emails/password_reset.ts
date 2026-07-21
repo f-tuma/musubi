@@ -68,7 +68,7 @@ export function getPasswordResetHtml(userName: string, resetUrl: string, expires
                               <a
                                 class="button"
                                 href="${resetUrl}"
-                                style="line-height:100%;text-decoration:none;display:inline-block;max-width:100%;mso-padding-alt:0px;margin:0;padding:0;padding-top:12px;padding-right:24px;padding-bottom:12px;padding-left:24px;background-color:#ffffff;color:#050507;border-radius:8px;font-weight:500;font-size:0.875em;text-align:center;margin-top:24px;margin-bottom:24px"
+                                style="line-height:100%;text-decoration:none;display:inline-block;max-width:100%;mso-padding-alt:0px;margin:0;padding:0;padding-top:12px;padding-right:24px;padding-bottom:12px;padding-left:24px;background-color:#C8553D;color:#ffffff;border-radius:8px;font-weight:500;font-size:0.875em;text-align:center;margin-top:24px;margin-bottom:24px"
                                 target="_blank"
                                 ><span></span><span
                                   style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:9px"
