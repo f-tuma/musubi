@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { auth } from "@musubi/auth";
-import { deleteCaldavAccount, getOAuthCredentials, getUserExternalCalendars, removeCalendar } from "@musubi/db";
+import { cleanUsersOAuthTokens, deleteCaldavAccount, getOAuthCredentials, getUserExternalCalendars, removeCalendar } from "@musubi/db";
 import { BadRequestError } from "@musubi/types";
 import { revokeGoogleToken } from "../sync/oauth";
 import { decryptToken } from "../tokenCrypto";
@@ -29,11 +29,20 @@ export async function handlerDisconnectAccount(req: Request, res: Response) {
     if (provider === "caldav") {
       await deleteCaldavAccount(req.user!.id, accountId);
     } else {
-      // OAuth providers (google, ...) — unlink this specific account from Better Auth
-      await auth.api.unlinkAccount({
-        body: { providerId: provider, accountId },
-        headers: new Headers(req.headers as Record<string, string>),
-      });
+      // OAuth providers (google, ...) — unlink this specific account from Better
+      // Auth. Better Auth refuses to unlink the user's LAST account (it would
+      // lock them out of login) and also requires a fresh session. The calendar
+      // should disconnect regardless — its mirrored calendars are already gone
+      // above — so on refusal fall back to clearing this provider's stored
+      // tokens/scope: sync stops, but the login account survives.
+      try {
+        await auth.api.unlinkAccount({
+          body: { providerId: provider, accountId },
+          headers: new Headers(req.headers as Record<string, string>),
+        });
+      } catch {
+        await cleanUsersOAuthTokens(req.user!.id, provider);
+      }
     }
   }
 
