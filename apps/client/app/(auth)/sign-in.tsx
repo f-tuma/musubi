@@ -2,19 +2,31 @@ import InputModal from "@/components/TextInputModal";
 import { colors, fonts, styles } from "@/constants/theme";
 import { useServer } from "@/contexts/ServerContext";
 import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { View, Text, TextInput, Alert, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { Btn } from "@/components/ui/Btn";
 import { success, warn } from "@/lib/haptics";
 import SocialAuthButtons from "@/components/auth/SocialAuthButtons";
-import { userFacingError } from "@/lib/network";
+import { fetchWithTimeout, userFacingError } from "@/lib/network";
 import { takePendingInviteHref } from "@/lib/pendingInvite";
 import { showToast } from "@/components/ui/Toast";
 
 export default function SignIn() {
-  const { authClient } = useServer();
+  const { authClient, apiUrl } = useServer();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  // Password reset needs the server to send email. Assume it can until told
+  // otherwise (old servers omit the flag), then hide "Forgotten password?" if
+  // this server has no SMTP configured.
+  const [emailEnabled, setEmailEnabled] = useState(true);
+  useEffect(() => {
+    if (!apiUrl) return;
+    fetchWithTimeout(`${apiUrl}/api/v1/server`)
+      .then((r) => r.json())
+      .then(({ email }) => setEmailEnabled(email !== false))
+      .catch(() => { });
+  }, [apiUrl]);
 
   const [isPasswordResetVisible, setIsPasswordResetVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -132,12 +144,14 @@ export default function SignIn() {
             </View>
           </View>
           <View style={styles.modalButtonsColumn}>
-            <Btn
-              label="Forgotten password?"
-              variant="secondary"
-              disabled={isLoading}
-              onPress={() => setIsPasswordResetVisible(true)}
-            />
+            {emailEnabled && (
+              <Btn
+                label="Forgotten password?"
+                variant="secondary"
+                disabled={isLoading}
+                onPress={() => setIsPasswordResetVisible(true)}
+              />
+            )}
             <Btn
               label="Continue"
               loading={isLoading}

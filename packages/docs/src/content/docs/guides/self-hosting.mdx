@@ -113,7 +113,11 @@ For HTTPS, put a reverse proxy (Caddy, nginx, Traefik…) in front of the publis
 </Aside>
 
 <Aside type="tip">
-Password reset and account-deletion confirmation are fully self-contained: your API serves those pages from its own origin (`{BETTER_AUTH_URL}/reset-password` and `/delete-account`), and the emails link there. Nothing depends on musubi.pro — you only need SMTP configured so the emails can go out.
+Password reset and account-deletion confirmation are fully self-contained: your API serves those pages from its own origin (`{BETTER_AUTH_URL}/reset-password` and `/delete-account`), and the emails link there. Nothing depends on musubi.pro.
+</Aside>
+
+<Aside type="caution">
+Both of those flows send an email, so **without `SMTP_*` configured they don't work**: email/password users can't reset a forgotten password, and in-app account deletion can't be confirmed. The client adapts — the API reports whether it can send email (`GET /api/v1/server` → `email`), so the app hides "Forgotten password?" and, for deletion, tells the user to contact the administrator. As the operator you can still reset a password or delete an account directly in Postgres. If you offer email/password sign-in to real users, configure SMTP. (Social-login users are unaffected by the reset gap — they have no password.)
 </Aside>
 
 ## 4. Point the mobile app at your server
