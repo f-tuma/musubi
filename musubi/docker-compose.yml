@@ -1,0 +1,53 @@
+# Musubi — self-hosting (the comfortable path).
+#
+#   1. Download this file and an env file next to it:
+#        curl -O https://raw.githubusercontent.com/frgtn-dot-dev/musubi/main/docker-compose.yml
+#        curl -o .env https://raw.githubusercontent.com/frgtn-dot-dev/musubi/main/.env.example
+#   2. Edit .env — at minimum POSTGRES_PASSWORD, BETTER_AUTH_SECRET, BETTER_AUTH_URL.
+#   3. Start it:
+#        docker compose up -d
+#
+# This pulls the prebuilt API image (no cloning or building), runs an embedded
+# Postgres, publishes the API on API_SERVER_PORT, and migrates on startup.
+# Upgrade with:  docker compose pull && docker compose up -d
+#
+# For HTTPS, put a reverse proxy (Caddy, nginx, Traefik…) in front of the
+# published port and set BETTER_AUTH_URL to the public https:// origin.
+# Deploying with Dokploy instead? Use docker-compose.dokploy.yml.
+services:
+  api:
+    image: frgtndev/musubi:${MUSUBI_TAG:-latest}
+    # Building from a local clone instead of the published image? Comment out
+    # `image:` above and uncomment this:
+    # build:
+    #   context: .
+    #   dockerfile: apps/api/Dockerfile
+    env_file:
+      - .env
+    environment:
+      # Point at the db service on the compose network, overriding .env.
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${API_SERVER_PORT:-7531}:${API_SERVER_PORT:-7531}"
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set your password inside .env}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  data:

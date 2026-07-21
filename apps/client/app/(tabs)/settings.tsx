@@ -5,7 +5,7 @@ import { CalendarView, Settings } from "@musubi/types";
 import { useServer } from "@/contexts/ServerContext";
 import { useApi } from "@/services/api";
 import { useSettingsStore } from "@/store/useSettingsStore";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, ScrollView, RefreshControl, StyleSheet, Linking, Platform } from "react-native";
 import { useRefreshData } from "@/hooks/useRefreshData";
 import { Btn } from "@/components/ui/Btn";
@@ -16,7 +16,7 @@ import { pickAvatarBase64 } from "@/lib/avatar";
 import { Feather } from "@expo/vector-icons";
 import { signOutAndReset } from "@/lib/signOut";
 import { showToast } from "@/components/ui/Toast";
-import { userFacingError } from "@/lib/network";
+import { fetchWithTimeout, userFacingError } from "@/lib/network";
 import Constants from "expo-constants";
 
 const SUPPORT_EMAIL = "hello@frgtn.dev";
@@ -42,6 +42,16 @@ export default function SettingsTab() {
   } = useSettingsStore();
 
   const [confrimDeleteVisible, setConfirmDeleteVisible] = useState(false);
+  // In-app deletion is email-confirmed, so it needs the server to send email.
+  // Assume it can until told otherwise (old servers omit the flag).
+  const [emailEnabled, setEmailEnabled] = useState(true);
+  useEffect(() => {
+    if (!apiUrl) return;
+    fetchWithTimeout(`${apiUrl}/api/v1/server`)
+      .then((r) => r.json())
+      .then(({ email }) => setEmailEnabled(email !== false))
+      .catch(() => { });
+  }, [apiUrl]);
   const [nameModalVisible, setNameModalVisible] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const userSession = authClient.useSession();
@@ -314,7 +324,9 @@ export default function SettingsTab() {
           <Btn
             label="Delete Account"
             variant="destructive"
-            onPress={() => setConfirmDeleteVisible(true)}
+            onPress={() => emailEnabled
+              ? setConfirmDeleteVisible(true)
+              : showToast({ message: "This server can't send email, so deletion can't be confirmed here. Ask your server's administrator to remove your account." })}
           />
         </View>
       </ScrollView >

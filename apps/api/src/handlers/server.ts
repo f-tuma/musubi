@@ -27,7 +27,14 @@ export function handlerServerStatus(_: Request, res: Response) {
 }
 
 export function handlerServer(_: Request, res: Response) {
-  res.status(200).json({ minClientVersion: "0.1.0", socials: enabledSocials(), syncProviders: enabledSyncProviders() });
+  res.status(200).json({
+    minClientVersion: "0.1.0",
+    socials: enabledSocials(),
+    syncProviders: enabledSyncProviders(),
+    // Whether this server can send email. Password reset and in-app account
+    // deletion both need it, so the client hides/adapts those when it's off.
+    email: config.smtp.host !== "",
+  });
 }
 
 // Apple universal links: iOS fetches this to learn which app owns which paths
