@@ -71,3 +71,6 @@ BUGS.md
 .understand-anything/intermediate/
 .understand-anything/tmp/
 .understand-anything/.trash-*
+
+# local self-host test dir (not part of the repo)
+/musubi/
