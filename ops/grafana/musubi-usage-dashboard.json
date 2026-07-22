@@ -230,15 +230,76 @@
     {
       "id": 8,
       "type": "timeseries",
-      "title": "External sync accounts by status",
+      "title": "Connected providers",
+      "description": "External-calendar accounts by provider (Apple = caldav). Excludes credential (email/password) logins.",
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
       "targets": [
         {
           "refId": "A",
           "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-          "expr": "musubi_sync_accounts{job=\"musubi-api\"}",
-          "legendFormat": "{{status}}"
+          "expr": "sum by (provider) (musubi_sync_accounts{job=\"musubi-api\", provider=~\"google|microsoft|caldav\"})",
+          "legendFormat": "{{provider}}"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["lastNotNull"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "line", "fillOpacity": 20, "gradientMode": "opacity", "lineWidth": 2, "showPoints": "never", "spanNulls": true, "stacking": { "mode": "normal", "group": "A" } }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Live SSE connections",
+      "description": "Open Server-Sent Events connections and how many distinct users hold them. Peaks show real-time load.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "musubi_sse_connections{job=\"musubi-api\"}",
+          "legendFormat": "connections"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "musubi_sse_users{job=\"musubi-api\"}",
+          "legendFormat": "users"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true, "calcs": ["lastNotNull", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "line", "fillOpacity": 15, "gradientMode": "opacity", "lineWidth": 2, "showPoints": "never", "spanNulls": true }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Sync health by provider",
+      "description": "Linked provider accounts split by sync status — a rising non-active line flags providers whose sync broke (revoked token, auth error).",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 28 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum by (provider, status) (musubi_sync_accounts{job=\"musubi-api\", provider=~\"google|microsoft|caldav\"})",
+          "legendFormat": "{{provider}} — {{status}}"
         }
       ],
       "options": {

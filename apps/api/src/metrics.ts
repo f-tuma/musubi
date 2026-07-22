@@ -4,6 +4,7 @@ import { Counter, Gauge, Histogram, Registry, collectDefaultMetrics } from "prom
 import { logger } from "@musubi/config";
 import { db, account, events, session, user, calendars } from "@musubi/db";
 import { count, countDistinct, eq, gt, isNull } from "drizzle-orm";
+import { sseStats } from "./handlers/stream";
 
 const registry = new Registry();
 registry.setDefaultLabels({ service: "api" });
@@ -67,7 +68,7 @@ type UsageSnapshot = {
   calendars: number;
   activeUsers: number;
   activeSessions: number;
-  syncAccounts: { status: string; value: number }[];
+  syncAccounts: { provider: string; status: string; value: number }[];
 };
 
 // ponytail: cache 60s — scrape runs ~every 15s, no need to hit the DB 4×/min.
@@ -91,9 +92,13 @@ async function usageSnapshot(): Promise<UsageSnapshot> {
         .where(gt(session.expiresAt, live)),
       db.select({ v: count() }).from(session).where(gt(session.expiresAt, live)),
       db
-        .select({ status: account.syncStatus, v: count() })
+        .select({
+          provider: account.providerId,
+          status: account.syncStatus,
+          v: count(),
+        })
         .from(account)
-        .groupBy(account.syncStatus),
+        .groupBy(account.providerId, account.syncStatus),
     ]);
 
   usageCache = {
@@ -102,7 +107,11 @@ async function usageSnapshot(): Promise<UsageSnapshot> {
     calendars: cals[0].v,
     activeUsers: activeUsers[0].v,
     activeSessions: activeSessions[0].v,
-    syncAccounts: syncAccounts.map((r) => ({ status: r.status, value: r.v })),
+    syncAccounts: syncAccounts.map((r) => ({
+      provider: r.provider,
+      status: r.status,
+      value: r.v,
+    })),
   };
   usageCachedAt = now;
   return usageCache;
@@ -158,14 +167,35 @@ new Gauge({
 
 new Gauge({
   name: "musubi_sync_accounts",
-  help: "Connected external-calendar accounts, by sync status.",
-  labelNames: ["status"] as const,
+  help: "Linked accounts by provider (google | microsoft | caldav | credential) and sync status.",
+  labelNames: ["provider", "status"] as const,
   registers: [registry],
   async collect() {
     this.reset();
-    for (const { status, value } of (await usageSnapshot()).syncAccounts) {
-      this.set({ status }, value);
+    for (const { provider, status, value } of (await usageSnapshot()).syncAccounts) {
+      this.set({ provider, status }, value);
     }
+  },
+});
+
+// Live SSE (Server-Sent Events) connections — in-memory, so read directly with
+// no cache. Shows real-time connection load; peaks are visible as the max of
+// the time series in Grafana.
+new Gauge({
+  name: "musubi_sse_connections",
+  help: "Currently open Server-Sent Events (live update) connections.",
+  registers: [registry],
+  collect() {
+    this.set(sseStats().connections);
+  },
+});
+
+new Gauge({
+  name: "musubi_sse_users",
+  help: "Distinct users with at least one open SSE connection.",
+  registers: [registry],
+  collect() {
+    this.set(sseStats().users);
   },
 });
 

@@ -26,6 +26,14 @@ export async function handlerStream(req: Request, res: Response) {
   });
 }
 
+// Snapshot for /metrics: total open connections and how many distinct users
+// hold them (a user can stream from several devices at once).
+export function sseStats() {
+  let connections = 0;
+  for (const set of clients.values()) connections += set.size;
+  return { users: clients.size, connections };
+}
+
 export function notifyCalendarMembers(memberIDs: string[], type: string, payload: Record<string, any>) {
   for (const memberID of memberIDs) {
     for (const res of clients.get(memberID) ?? []) {
