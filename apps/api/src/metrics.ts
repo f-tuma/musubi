@@ -2,6 +2,8 @@ import { createServer } from "node:http";
 import type { NextFunction, Request, Response } from "express";
 import { Counter, Gauge, Histogram, Registry, collectDefaultMetrics } from "prom-client";
 import { logger } from "@musubi/config";
+import { db, account, events, session, user, calendars } from "@musubi/db";
+import { count, countDistinct, eq, gt, isNull } from "drizzle-orm";
 
 const registry = new Registry();
 registry.setDefaultLabels({ service: "api" });
@@ -53,6 +55,119 @@ export function recordExternalSyncFailure(
     provider: KNOWN_SYNC_PROVIDERS.has(provider) ? provider : "unknown",
   });
 }
+
+// --- Usage snapshots (DB-backed gauges) --------------------------------------
+// Current-state counts only; Grafana derives "added in last 7d" with PromQL
+// (`delta(musubi_events_total[7d])`). Prometheus stores the time series, so we
+// never query a time window here — just COUNT(*).
+
+type UsageSnapshot = {
+  users: number;
+  events: number;
+  calendars: number;
+  activeUsers: number;
+  activeSessions: number;
+  syncAccounts: { status: string; value: number }[];
+};
+
+// ponytail: cache 60s — scrape runs ~every 15s, no need to hit the DB 4×/min.
+let usageCache: UsageSnapshot | null = null;
+let usageCachedAt = 0n;
+const USAGE_TTL_NS = 60_000_000_000n;
+
+async function usageSnapshot(): Promise<UsageSnapshot> {
+  const now = process.hrtime.bigint();
+  if (usageCache && now - usageCachedAt < USAGE_TTL_NS) return usageCache;
+
+  const live = new Date();
+  const [users, evts, cals, activeUsers, activeSessions, syncAccounts] =
+    await Promise.all([
+      db.select({ v: count() }).from(user).where(eq(user.isExternal, false)),
+      db.select({ v: count() }).from(events).where(isNull(events.deletedAt)),
+      db.select({ v: count() }).from(calendars),
+      db
+        .select({ v: countDistinct(session.userId) })
+        .from(session)
+        .where(gt(session.expiresAt, live)),
+      db.select({ v: count() }).from(session).where(gt(session.expiresAt, live)),
+      db
+        .select({ status: account.syncStatus, v: count() })
+        .from(account)
+        .groupBy(account.syncStatus),
+    ]);
+
+  usageCache = {
+    users: users[0].v,
+    events: evts[0].v,
+    calendars: cals[0].v,
+    activeUsers: activeUsers[0].v,
+    activeSessions: activeSessions[0].v,
+    syncAccounts: syncAccounts.map((r) => ({ status: r.status, value: r.v })),
+  };
+  usageCachedAt = now;
+  return usageCache;
+}
+
+// A single collect() drives every usage gauge so the snapshot (and its cache)
+// is computed once per scrape instead of once per metric.
+new Gauge({
+  name: "musubi_users_total",
+  help: "Local (non-federated) user accounts registered on this server.",
+  registers: [registry],
+  async collect() {
+    const s = await usageSnapshot();
+    this.set(s.users);
+  },
+});
+
+new Gauge({
+  name: "musubi_events_total",
+  help: "Live (non-deleted) events stored on this server.",
+  registers: [registry],
+  async collect() {
+    this.set((await usageSnapshot()).events);
+  },
+});
+
+new Gauge({
+  name: "musubi_calendars_total",
+  help: "Calendars stored on this server.",
+  registers: [registry],
+  async collect() {
+    this.set((await usageSnapshot()).calendars);
+  },
+});
+
+new Gauge({
+  name: "musubi_active_users",
+  help: "Distinct users with a currently valid (non-expired) session.",
+  registers: [registry],
+  async collect() {
+    this.set((await usageSnapshot()).activeUsers);
+  },
+});
+
+new Gauge({
+  name: "musubi_active_sessions",
+  help: "Currently valid (non-expired) sessions.",
+  registers: [registry],
+  async collect() {
+    this.set((await usageSnapshot()).activeSessions);
+  },
+});
+
+new Gauge({
+  name: "musubi_sync_accounts",
+  help: "Connected external-calendar accounts, by sync status.",
+  labelNames: ["status"] as const,
+  registers: [registry],
+  async collect() {
+    this.reset();
+    for (const { status, value } of (await usageSnapshot()).syncAccounts) {
+      this.set({ status }, value);
+    }
+  },
+});
 
 const KNOWN_HTTP_METHODS = new Set([
   "DELETE",
