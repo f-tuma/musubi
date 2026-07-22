@@ -3,7 +3,7 @@ title: Architecture Overview
 description: The big picture — how Musubi's monorepo, data flow, and core concepts fit together before you touch any code.
 ---
 
-import { Aside, CardGrid, LinkCard, FileTree } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard, FileTree } from '@astrojs/starlight/components';
 
 This section is the contributor's map of the codebase. Read this page first — it gives you the mental models that the rest of the code assumes you already have. Then jump to the part you're working on. (Brand new to the project? The [Codebase Onboarding](/docs/guides/onboarding/) course walks you through everything in order, hands-on.)
 
@@ -122,10 +122,6 @@ The client and server never trust raw JSON. They communicate through **Zod schem
 | **Mirror calendars** | External (Google/Outlook/CalDAV) calendars imported as normal calendars | `apps/api/src/sync/` |
 | **Federation** | Cross-server sharing: invite-as-capability + shadow accounts | `apps/api/src/handlers/federation.ts`, `apps/client/services/federation.ts` |
 | **Recurrence** | Stored as iCal RRULE text, expanded at read time | `packages/calendar/src/recurrence.ts` |
-
-<Aside type="tip">
-The repository ships an interactive knowledge graph of itself. Run `pnpm graph` from the repo root to open a browsable map of every file, its layer, and how it connects. It's the visual companion to these docs.
-</Aside>
 
 ## Where to go next
 

@@ -170,7 +170,7 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
     setIsLoading(false);
   };
 
-  const { slideStyle, fadeStyle, gesture, handleClose } = useModalAnimation(visible, closeSequence);
+  const { slideStyle, fadeStyle, gesture, handleClose, onSheetLayout } = useModalAnimation(visible, closeSequence);
 
   return (
     <>
@@ -186,7 +186,7 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
             <Pressable style={{ flex: 1 }} onPress={handleClose} accessible={false} />
           </Animated.View>
           <GestureDetector gesture={gesture}>
-            <Animated.View style={[styles.modalSheet, fadeStyle, slideStyle]}>
+            <Animated.View style={[styles.modalSheet, fadeStyle, slideStyle]} onLayout={e => onSheetLayout(e.nativeEvent.layout.height)}>
               <View style={styles.modalHandle} />
               <View style={styles.modalTitleRow}>
                 <Text style={styles.modalTitle}>{calendar ? "Edit Calendar" : "New Calendar"}</Text>

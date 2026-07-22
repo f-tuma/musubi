@@ -3,6 +3,7 @@ import { Dimensions, Keyboard, Platform } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
 import { Easing, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Programmatic enter/exit use TIMING with a deceleration curve: springs are
 // kept for gesture release only (where finger velocity makes them feel right).
@@ -18,8 +19,13 @@ const DISMISS_DISTANCE = 100;
 // otherwise both move (e.g. the calendar detail view with its docked composer).
 export function useModalAnimation(visible: boolean, onClose: () => void, keyboardAware = true) {
   const offScreen = Dimensions.get("screen").height / 5;
+  const windowH = Dimensions.get("window").height;
+  const insets = useSafeAreaInsets();
   const slideAnim = useSharedValue(offScreen);
   const fadeAnim = useSharedValue(0);
+  // Measured height of the sheet — fed by onSheetLayout. Stays 0 until a sheet
+  // wires it, which keeps the lift clamp a no-op for modals that don't.
+  const sheetHeight = useSharedValue(0);
   // The sheet must ride the keyboard manually on both platforms: edge-to-edge
   // Android has no system adjustResize, and reanimated's useAnimatedKeyboard
   // doesn't see the keyboard inside a native <Modal> window on Android — so we
@@ -81,13 +87,23 @@ export function useModalAnimation(visible: boolean, onClose: () => void, keyboar
     }
   }, [visible]);
 
-  const slideStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: slideAnim.value - keyboardHeight.value }],
-  }));
+  // The sheet is anchored to the bottom, so lifting it by the FULL keyboard
+  // height overshoots once it's tall: a sheet near maxHeight (88%) would push
+  // its top — and the top input — above the screen. Clamp the lift to the
+  // headroom left above the sheet; the sheet's own ScrollView covers the rest.
+  const slideStyle = useAnimatedStyle(() => {
+    const headroom = sheetHeight.value > 0
+      ? Math.max(0, windowH - sheetHeight.value - insets.top)
+      : keyboardHeight.value;
+    const lift = Math.min(keyboardHeight.value, headroom);
+    return { transform: [{ translateY: slideAnim.value - lift }] };
+  });
 
   const fadeStyle = useAnimatedStyle(() => ({
     opacity: fadeAnim.value,
   }));
 
-  return { slideStyle, fadeStyle, gesture, handleClose };
+  const onSheetLayout = (h: number) => { sheetHeight.value = h; };
+
+  return { slideStyle, fadeStyle, gesture, handleClose, onSheetLayout };
 }

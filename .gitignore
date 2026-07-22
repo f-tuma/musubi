@@ -64,13 +64,5 @@ BUGS.md
 *.apk
 *.aab
 
-# Understand-Anything knowledge graph: the graph itself is COMMITTED (per the
-# plugin's team model — "commit it once, teammates skip the pipeline"), so
-# contributors can browse it locally via `pnpm graph` without burning tokens.
-# Only scratch/working dirs are ignored. Refresh: /understand (maintainer).
-.understand-anything/intermediate/
-.understand-anything/tmp/
-.understand-anything/.trash-*
-
 # local self-host test dir (not part of the repo)
 /musubi/

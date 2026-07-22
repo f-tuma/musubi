@@ -31,10 +31,6 @@ Otherwise: read the [Architecture Overview](/docs/architecture/overview/) — it
   <LinkCard title="Shared Packages" href="/docs/architecture/packages/" description="The Zod contract, recurrence, auth, config." />
 </CardGrid>
 
-<Aside type="tip">
-Run `pnpm graph` from the repo root for an interactive, browsable map of the codebase — every file, its architectural layer, and how they connect. The graph data is **committed to the repo**, so this works for everyone with no LLM tokens and no analysis run: with the Understand-Anything plugin installed you get its dashboard, without it the script falls back to the standalone viewer (Node ≥ 18 is all you need). It runs locally, so opening files from the graph lands in your editor. Regenerating the graph after big changes is the maintainer's job (`/understand`, incremental).
-</Aside>
-
 ## Monorepo layout
 
 pnpm workspaces + Turborepo:

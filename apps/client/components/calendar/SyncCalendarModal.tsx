@@ -70,7 +70,7 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
     setLoadingProvider(null);
   };
 
-  const { slideStyle, fadeStyle, gesture, handleClose } = useModalAnimation(visible, closeSequence);
+  const { slideStyle, fadeStyle, gesture, handleClose, onSheetLayout } = useModalAnimation(visible, closeSequence);
 
   // Shared OAuth link flow — Google and Microsoft only differ in the
   // calendar scope their provider expects.
@@ -153,7 +153,7 @@ export default function SyncCalendarModal({ visible, onClose, onConnected, callb
           <Pressable style={{ flex: 1 }} onPress={handleClose} accessible={false} />
         </Animated.View>
         <GestureDetector gesture={gesture}>
-          <Animated.View style={[styles.modalSheet, fadeStyle, slideStyle]}>
+          <Animated.View style={[styles.modalSheet, fadeStyle, slideStyle]} onLayout={e => onSheetLayout(e.nativeEvent.layout.height)}>
             <View style={styles.modalHandle} />
             <View style={styles.modalTitleRow}>
               <Text style={styles.modalTitle}>{title}</Text>
