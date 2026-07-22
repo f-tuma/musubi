@@ -13,6 +13,10 @@ const HOLD_MS = 300;          // hold before a row/group lifts
 const LIFT_SCALE = 1.01;
 const SHIFT_MS = 160;         // make-room / settle animation
 const LIFT_SPRING = { damping: 30, stiffness: 400 };
+// Fixed for EVERY section header: account headers carry 36px icon buttons and
+// the native "Musubi" header only a label, so a single measured headerH used to
+// reserve the taller height under the short one — a gap below "MUSUBI".
+const HEADER_H = 44;
 
 export type CalendarGroup = {
   key: string;
@@ -60,7 +64,7 @@ export function ReorderableCalendarList({ groups, eventCount, onOpen, onDisconne
   const dragY = useSharedValue(0);
   const lift = useSharedValue(1);
   const [rowH, setRowH] = useState(77);      // measured from the first row (rows are uniform)
-  const [headerH, setHeaderH] = useState(34);
+  const [headerH, setHeaderH] = useState(HEADER_H);
   const registry = useRef(new Map<string, SharedValue<number>>());   // id → topSV
   const grabBases = useRef(new Map<string, number>());               // id → visual top at grab
   const live = useRef({ groups, rowH, headerH });
@@ -324,7 +328,7 @@ function SectionHeader({ group, draggable, onDisconnect, onReconnect, onDragStar
 
   return (
     <GestureDetector gesture={gesture}>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.bg1 }}>
+      <View style={{ height: HEADER_H, flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, backgroundColor: colors.bg1 }}>
         <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8, marginRight: 12 }}>
           {draggable && <Feather name="menu" size={11} color={colors.fg4} />}
           <View style={{ flex: 1 }}>
