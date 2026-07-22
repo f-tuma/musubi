@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import type { NextFunction, Request, Response } from "express";
 import { Counter, Gauge, Histogram, Registry, collectDefaultMetrics } from "prom-client";
 import { logger } from "@musubi/config";
-import { db, account, events, session, user, calendars } from "@musubi/db";
+import { db, account, caldavAccounts, events, session, user, calendars } from "@musubi/db";
 import { count, countDistinct, eq, gt, isNull } from "drizzle-orm";
 import { sseStats } from "./handlers/stream";
 
@@ -81,7 +81,7 @@ async function usageSnapshot(): Promise<UsageSnapshot> {
   if (usageCache && now - usageCachedAt < USAGE_TTL_NS) return usageCache;
 
   const live = new Date();
-  const [users, evts, cals, activeUsers, activeSessions, syncAccounts] =
+  const [users, evts, cals, activeUsers, activeSessions, oauthAccounts, caldav] =
     await Promise.all([
       db.select({ v: count() }).from(user).where(eq(user.isExternal, false)),
       db.select({ v: count() }).from(events).where(isNull(events.deletedAt)),
@@ -99,6 +99,9 @@ async function usageSnapshot(): Promise<UsageSnapshot> {
         })
         .from(account)
         .groupBy(account.providerId, account.syncStatus),
+      // CalDAV (Apple/iCloud + generic) lives in its own table, not Better
+      // Auth's `account`, and has no per-account sync status — count as active.
+      db.select({ v: count() }).from(caldavAccounts),
     ]);
 
   usageCache = {
@@ -107,11 +110,16 @@ async function usageSnapshot(): Promise<UsageSnapshot> {
     calendars: cals[0].v,
     activeUsers: activeUsers[0].v,
     activeSessions: activeSessions[0].v,
-    syncAccounts: syncAccounts.map((r) => ({
-      provider: r.provider,
-      status: r.status,
-      value: r.v,
-    })),
+    syncAccounts: [
+      ...oauthAccounts.map((r) => ({
+        provider: r.provider,
+        status: r.status,
+        value: r.v,
+      })),
+      ...(caldav[0].v > 0
+        ? [{ provider: "caldav", status: "active", value: caldav[0].v }]
+        : []),
+    ],
   };
   usageCachedAt = now;
   return usageCache;
