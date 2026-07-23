@@ -7,7 +7,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tsx src/schema.test.ts"
   },
   "keywords": [],
   "author": "frgtn.dev",
@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@types/pg": "^8.20.0",
-    "drizzle-kit": "^0.31.10"
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.22.4"
   }
 }

@@ -17,12 +17,15 @@ export async function createEvent(event: NewEvent, calendars: string[]) {
       eventID: result.id,
     });
 
-    await tx.insert(calendarEvents).values(calendars.map(c => (
-      {
+    await tx
+      .insert(calendarEvents)
+      .values(calendars.map(c => ({
         calendarID: c,
         eventID: result.id,
-      }
-    )));
+      })))
+      .onConflictDoNothing({
+        target: [calendarEvents.eventID, calendarEvents.calendarID],
+      });
 
     return result;
   });

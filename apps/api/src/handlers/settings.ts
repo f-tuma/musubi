@@ -18,7 +18,7 @@ export async function handlerSaveSettings(req: Request, res: Response) {
     throw new BadRequestError("Request is missing valid settings data...");
   }
 
-  const result = await saveUserSettings(req.user!.id, { ...settings, id: req.user!.id });
+  const result = await saveUserSettings(req.user!.id, settings);
 
   res.status(200).json(result);
 }

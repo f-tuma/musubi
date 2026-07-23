@@ -35,7 +35,7 @@ pnpm check
 
 1. client TypeScript (`tsc --noEmit`);
 2. API TypeScript (`tsc --noEmit --skipLibCheck`);
-3. six assertion-based self-check files;
+3. seven assertion-based self-check files;
 4. client ESLint with the repository's locked warning budget; and
 5. the root build (currently the Starlight package is the only workspace with a
    `build` script).
@@ -87,6 +87,7 @@ These are plain Node assertions executed with `tsx`, not a test-runner suite:
 | `apps/api/src/handlers/calendars.test.ts` | Calendar-detail membership authorization and data-read ordering |
 | `apps/api/src/sync/oauth.test.ts` | OAuth refresh/revoke helpers and token crypto |
 | `apps/api/src/sync/adapters/microsoft.test.ts` | Graph date/cursor/event conversion |
+| `packages/db/src/schema.test.ts` | One-row settings and event–calendar uniqueness constraints |
 
 When adding pure logic, follow the current assertion style or introduce a
 project-wide runner as one focused change; do not create a third test convention.

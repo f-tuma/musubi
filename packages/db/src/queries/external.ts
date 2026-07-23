@@ -207,7 +207,12 @@ async function linkEventToCalendarsInTransaction(
   calendarIDs: string[],
 ) {
   if (calendarIDs.length === 0) return;
-  await tx.insert(calendarEvents).values(calendarIDs.map(c => ({ eventID, calendarID: c })));
+  await tx
+    .insert(calendarEvents)
+    .values(calendarIDs.map(c => ({ eventID, calendarID: c })))
+    .onConflictDoNothing({
+      target: [calendarEvents.eventID, calendarEvents.calendarID],
+    });
 }
 
 // Delta sync filters on events.updatedAt, so link/unlink must bump the event row —
@@ -216,9 +221,10 @@ async function touchEvent(tx: DbTransaction, eventID: string) {
   await tx.update(events).set({ updatedAt: new Date() }).where(eq(events.id, eventID));
 }
 
-// Link an event into calendars (calendar_events rows). Caller guarantees these are
-// new links (the "added" diff), so no conflict handling needed. The link set and
-// delta timestamp move together.
+// Link an event into calendars (calendar_events rows). The added diff normally
+// contains only new links; the constraint + conflict handling also absorb
+// retries and concurrent requests. The link set and delta timestamp move
+// together.
 export async function linkEventToCalendars(eventID: string, calendarIDs: string[]) {
   if (calendarIDs.length === 0) return;
   await db.transaction(async (tx) => {

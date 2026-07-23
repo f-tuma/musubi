@@ -21,12 +21,11 @@ provider adapters share a small contract, tombstones make offline deletion
 reliable, secrets are encrypted, request IDs cross subsystem boundaries, and
 backup/restore scripts validate their artifacts.
 
-The calendar-detail P0, multi-row transaction, and quality-gate findings are
+The calendar-detail P0, database-integrity, and quality-gate findings are
 resolved. The largest remaining risks are at boundaries:
 
-1. database constraints do not enforce several assumed uniqueness rules;
-2. provider event delivery is best-effort without a durable retry queue;
-3. process-local schedulers/SSE/rate limiting imply a single API replica.
+1. provider event delivery is best-effort without a durable retry queue;
+2. process-local schedulers/SSE/rate limiting imply a single API replica.
 
 ## Priority model
 
@@ -89,19 +88,23 @@ cross-system boundary is tracked separately under
 
 ## P1 — add database constraints for assumed uniqueness
 
-**Observed:**
+**Status: resolved.** Migration `0033_busy_thunderball.sql` removes historical
+duplicates before adding:
 
-- `calendar_events` has no unique constraint on `(event_id, calendar_id)`;
-- `user_settings.id` is treated as one-row-per-user but is not primary/unique;
-  and
-- lazy settings creation is a select-then-insert race.
+- a primary key on `user_settings.id`; and
+- a unique constraint on `calendar_events(event_id, calendar_id)`.
 
-**Impact:** retries or concurrent requests can create duplicate links/settings;
-queries and updates then return ambiguous or multiplied results.
+Settings creation now absorbs a concurrent insert, settings saves use one
+upsert, and event-link inserts use `ON CONFLICT DO NOTHING`. The schema
+self-check asserts both constraints are present in Drizzle metadata.
 
-**Recommendation:** clean any existing duplicates, add unique indexes in a new
-migration, and make inserts conflict-safe. Add concurrency-oriented database
-tests.
+**Originally observed:** neither invariant was enforced by PostgreSQL. Lazy
+settings creation and event-link retries could create duplicate rows, leaving
+reads and updates ambiguous or multiplied.
+
+**Remaining follow-up:** exercise the migration and concurrent writes against
+disposable PostgreSQL in CI as part of
+[provider and database integration coverage](#p2--improve-provider-and-database-integration-coverage).
 
 ## P1 — make provider event delivery recoverable
 
@@ -129,7 +132,7 @@ confirm convergence manually.
 - the Docker release workflow builds/publishes images without a preceding
   repository check;
 - root `build` exercises only workspaces that declare a build script;
-- the existing tests are six direct `tsx` assertion programs with no runner,
+- the existing tests are seven direct `tsx` assertion programs with no runner,
   coverage, database integration, or authorization matrix; and
 - client lint reports **82 errors and 55 warnings**.
 
@@ -139,7 +142,7 @@ shared values, gesture live refs, and legacy state-reset effects remain visible
 as warnings. `expo lint --max-warnings 108` locks that debt so it can only move
 down, and `pnpm check` now includes lint.
 
-`.github/workflows/quality.yml` runs a frozen install, typechecks, the six
+`.github/workflows/quality.yml` runs a frozen install, typechecks, the seven
 self-checks, lint, docs build, Drizzle generation drift detection, and a
 production API Docker build for every pull request and push to `main`. The
 manual Docker publication workflow calls the same reusable gate before it can
@@ -147,7 +150,7 @@ push an image or create a release.
 
 **Follow-up:** migrate Reanimated `.value` access to compiler-compatible
 `get()`/`set()` where supported, resolve effect dependency findings, and lower
-the warning budget with every cleanup. Expand the six assertion programs into
+the warning budget with every cleanup. Expand the seven assertion programs into
 route/database integration coverage as tracked below.
 
 ## P1 — make horizontal scaling explicit or coordinated
@@ -254,8 +257,8 @@ validation on placeholder distribution URLs.
 
 1. **Completed:** protect calendar-detail reads and add a non-member regression
    self-check.
-2. **In progress:** core transactions are complete; add the remaining uniqueness
-   constraints.
+2. **Completed:** make core writes transactional and enforce the remaining
+   uniqueness constraints.
 3. **Completed:** establish PR CI and make lint green/enforceable.
 4. Add a durable provider outbox plus visible delivery health.
 5. Decide whether production stays single-replica or fund distributed
