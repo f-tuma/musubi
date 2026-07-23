@@ -1,25 +1,38 @@
 name: Publish Docker image
 
-# Builds the API image and pushes it to Docker Hub (frgtndev/musubi).
-# Runs when a GitHub Release is published, or manually.
+# Manually triggered. Builds & pushes the API image to Docker Hub (frgtndev/musubi)
+# FIRST, then creates the git tag + GitHub Release LAST. That ordering matters:
+# Dokploy deploys on the git tag, so the tag must appear only once the image
+# already exists in the registry — otherwise a deploy races an unfinished build.
+#
+# Release flow: Actions → "Publish Docker image" → Run workflow → enter version.
 #
 # Required repo secrets:
 #   DOCKERHUB_USERNAME  — a Docker Hub account with push access to frgtndev/musubi
 #   DOCKERHUB_TOKEN     — a Docker Hub access token (Account Settings → Security)
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, no leading v (e.g. 0.1.2)"
+        required: true
 
 permissions:
-  contents: read
+  contents: write # create the tag + release
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - id: ver
+        run: |
+          V="${{ inputs.version }}"
+          [[ "$V" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::version must be X.Y.Z (no leading v)"; exit 1; }
+          echo "full=$V" >> "$GITHUB_OUTPUT"
+          echo "minor=${V%.*}" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
@@ -34,10 +47,11 @@ jobs:
         with:
           images: frgtndev/musubi
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=${{ steps.ver.outputs.full }}
+            type=raw,value=${{ steps.ver.outputs.minor }}
             type=raw,value=latest
 
+      # 1. Build & push the image FIRST.
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -48,3 +62,12 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # 2. Only now — image is in the registry — create the tag + release. This is
+      #    Dokploy's deploy signal, so the image is guaranteed to exist first.
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.full }}
+          target_commitish: ${{ github.sha }}
+          name: Musubi v${{ steps.ver.outputs.full }}
+          generate_release_notes: true
