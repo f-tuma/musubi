@@ -37,8 +37,10 @@ export default function MemberRolesModal({ calendar, visible, onClose }: Props) 
   const [members, setMembers] = useState<Member[]>([]);
   const [pending, setPending] = useState<string | null>(null); // userID being updated
   const canManage = can(calendar?.role, "manageMembers"); // only owners edit roles
-  // Personal calendars can't change owners — hide the transfer option.
-  const assignable = calendar?.isDefault ? ASSIGNABLE.filter(r => r !== "owner") : ASSIGNABLE;
+  // Personal calendars and provider mirrors can't change owners. A mirror must
+  // stay bound to the user/account that owns its provider credentials.
+  const canTransferOwnership = !calendar?.isDefault && !calendar?.provider;
+  const assignable = canTransferOwnership ? ASSIGNABLE : ASSIGNABLE.filter(r => r !== "owner");
   const swipeRefs = useRef<Map<string, { close: () => void }>>(new Map());
 
   useEffect(() => {

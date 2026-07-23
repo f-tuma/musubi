@@ -9,8 +9,9 @@ import {
   events,
   externalCalendars,
   externalEvents,
+  type NewEvent,
 } from "..";
-import { removeCalendar } from "./calendars";
+import { type DbTransaction, removeCalendarInTransaction } from "./calendars";
 
 // Column values written to the `events` row for a synced event.
 type EventValues = {
@@ -94,27 +95,60 @@ export async function getDisabledExternalCalendarIDs(provider: string, userID: s
 // the tombstone row with it; returns null if the calendar isn't an external
 // mirror owned by this user.
 export async function disableExternalCalendar(userID: string, calendarID: string) {
-  const [row] = await db.update(externalCalendars)
-    .set({ disabled: true, calendarID: null, cursor: null })
-    .where(and(
-      eq(externalCalendars.calendarID, calendarID),
-      eq(externalCalendars.userID, userID),
-    ))
-    .returning({ id: externalCalendars.id });
-  if (!row) return null;
-  await removeCalendar(calendarID);
-  return row;
+  return db.transaction(async (tx) => {
+    const [row] = await tx.update(externalCalendars)
+      .set({ disabled: true, calendarID: null, cursor: null })
+      .where(and(
+        eq(externalCalendars.calendarID, calendarID),
+        eq(externalCalendars.userID, userID),
+      ))
+      .returning({ id: externalCalendars.id });
+    if (!row) return null;
+    await removeCalendarInTransaction(tx, calendarID);
+    return row;
+  });
 }
 
-// Full account disconnect forgets per-calendar opt-outs: drop the disabled
-// tombstones so a later reconnect of the same account imports everything fresh.
-export async function clearDisabledExternalCalendars(provider: string, userID: string, accountID: string) {
-  await db.delete(externalCalendars).where(and(
-    eq(externalCalendars.provider, provider),
-    eq(externalCalendars.userID, userID),
-    eq(externalCalendars.accountID, accountID),
-    eq(externalCalendars.disabled, true),
-  ));
+// Remove every local mirror for one provider account as a single database unit.
+// OAuth unlink/revocation still happens outside PostgreSQL; CalDAV credentials
+// are local, so they can be deleted in this transaction too.
+export async function removeExternalAccountData(
+  provider: string,
+  userID: string,
+  accountID: string,
+) {
+  return db.transaction(async (tx) => {
+    const links = await tx
+      .select({ calendarID: calendars.id })
+      .from(externalCalendars)
+      .innerJoin(calendars, eq(externalCalendars.calendarID, calendars.id))
+      .where(and(
+        eq(externalCalendars.provider, provider),
+        eq(externalCalendars.userID, userID),
+        eq(externalCalendars.accountID, accountID),
+      ));
+
+    for (const link of links) {
+      await removeCalendarInTransaction(tx, link.calendarID);
+    }
+
+    // Live rows cascade with their calendars; this also removes disabled
+    // tombstones so reconnecting the account starts from a clean slate.
+    await tx.delete(externalCalendars).where(and(
+      eq(externalCalendars.provider, provider),
+      eq(externalCalendars.userID, userID),
+      eq(externalCalendars.accountID, accountID),
+    ));
+
+    if (provider === "caldav") {
+      await tx.delete(caldavAccounts).where(and(
+        eq(caldavAccounts.id, accountID),
+        eq(caldavAccounts.userID, userID),
+      ));
+    }
+
+    return links.map((link) => link.calendarID);
+  });
 }
 
 // Keep the account label fresh across all of an account's calendars.
@@ -167,36 +201,109 @@ export async function clearCalendarEvents(calendarID: string) {
     db.select({ id: calendarEvents.eventID }).from(calendarEvents).where(eq(calendarEvents.calendarID, calendarID))));
 }
 
-// Link an event into calendars (calendar_events rows). Caller guarantees these are
-// new links (the "added" diff), so no conflict handling needed.
-export async function linkEventToCalendars(eventID: string, calendarIDs: string[]) {
+async function linkEventToCalendarsInTransaction(
+  tx: DbTransaction,
+  eventID: string,
+  calendarIDs: string[],
+) {
   if (calendarIDs.length === 0) return;
-  await db.insert(calendarEvents).values(calendarIDs.map(c => ({ eventID, calendarID: c })));
-  await touchEvent(eventID);
+  await tx.insert(calendarEvents).values(calendarIDs.map(c => ({ eventID, calendarID: c })));
 }
 
 // Delta sync filters on events.updatedAt, so link/unlink must bump the event row —
 // otherwise offline members never learn the event's calendar membership changed.
-async function touchEvent(eventID: string) {
-  await db.update(events).set({ updatedAt: new Date() }).where(eq(events.id, eventID));
+async function touchEvent(tx: DbTransaction, eventID: string) {
+  await tx.update(events).set({ updatedAt: new Date() }).where(eq(events.id, eventID));
+}
+
+// Link an event into calendars (calendar_events rows). Caller guarantees these are
+// new links (the "added" diff), so no conflict handling needed. The link set and
+// delta timestamp move together.
+export async function linkEventToCalendars(eventID: string, calendarIDs: string[]) {
+  if (calendarIDs.length === 0) return;
+  await db.transaction(async (tx) => {
+    await linkEventToCalendarsInTransaction(tx, eventID, calendarIDs);
+    await touchEvent(tx, eventID);
+  });
 }
 
 // Unlink an event from calendars: drop the calendar_events rows AND any external
 // mapping for those calendars, so re-adding later pushes a fresh external event
 // instead of updating a stale (possibly deleted) one.
-export async function unlinkEventFromCalendars(eventID: string, calendarIDs: string[]) {
+async function unlinkEventFromCalendarsInTransaction(
+  tx: DbTransaction,
+  eventID: string,
+  calendarIDs: string[],
+) {
   if (calendarIDs.length === 0) return;
-  await db.delete(calendarEvents)
+  await tx.delete(calendarEvents)
     .where(and(eq(calendarEvents.eventID, eventID), inArray(calendarEvents.calendarID, calendarIDs)));
 
-  const extCals = await db.select({ ext: externalCalendars.externalCalendarID })
+  const extCals = await tx.select({ ext: externalCalendars.externalCalendarID })
     .from(externalCalendars).where(inArray(externalCalendars.calendarID, calendarIDs));
   const extIDs = extCals.map(e => e.ext);
   if (extIDs.length) {
-    await db.delete(externalEvents)
+    await tx.delete(externalEvents)
       .where(and(eq(externalEvents.eventID, eventID), inArray(externalEvents.externalCalendarID, extIDs)));
   }
-  await touchEvent(eventID);
+}
+
+export async function unlinkEventFromCalendars(eventID: string, calendarIDs: string[]) {
+  if (calendarIDs.length === 0) return;
+  await db.transaction(async (tx) => {
+    await unlinkEventFromCalendarsInTransaction(tx, eventID, calendarIDs);
+    await touchEvent(tx, eventID);
+  });
+}
+
+// Persist an event edit and reconcile every local link/mapping as one unit.
+// Provider deletes happen before this call while their mapping is still present;
+// provider creates/updates happen afterwards and remain best-effort.
+export async function updateEventAndCalendarLinks(
+  event: Partial<NewEvent> & { id: string },
+  addedCalendarIDs: string[],
+  removedCalendarIDs: string[],
+) {
+  return db.transaction(async (tx) => {
+    const [updated] = await tx
+      .update(events)
+      .set(event)
+      .where(eq(events.id, event.id))
+      .returning();
+    if (!updated) return undefined;
+
+    await unlinkEventFromCalendarsInTransaction(tx, event.id, removedCalendarIDs);
+    await linkEventToCalendarsInTransaction(tx, event.id, addedCalendarIDs);
+    return updated;
+  });
+}
+
+// Delete a selected set of links and tombstone the event iff that leaves it
+// orphaned. The returned link set is from the same transaction.
+export async function unlinkEventAndTombstoneIfOrphaned(
+  eventID: string,
+  calendarIDs: string[],
+) {
+  return db.transaction(async (tx) => {
+    await unlinkEventFromCalendarsInTransaction(tx, eventID, calendarIDs);
+
+    const rows = await tx
+      .select({ calendarID: calendarEvents.calendarID })
+      .from(calendarEvents)
+      .where(eq(calendarEvents.eventID, eventID));
+    const remaining = rows.map((row) => row.calendarID);
+    const removed = remaining.length === 0;
+
+    if (removed) {
+      await tx.update(events)
+        .set({ deletedAt: new Date() })
+        .where(eq(events.id, eventID));
+    } else {
+      await touchEvent(tx, eventID);
+    }
+
+    return { remaining, removed };
+  });
 }
 
 /**

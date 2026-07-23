@@ -24,7 +24,7 @@ backup/restore scripts validate their artifacts.
 The largest risks are at boundaries:
 
 1. one calendar-detail route lacks a membership authorization check;
-2. several multi-row invariants are not transactionally protected;
+2. database constraints do not enforce several assumed uniqueness rules;
 3. provider event delivery is best-effort without a durable retry queue;
 4. the repository has no pull-request CI and lint is not currently enforceable;
 5. process-local schedulers/SSE/rate limiting imply a single API replica.
@@ -58,25 +58,31 @@ resource ID using an authorization matrix.
 
 ## P1 — make multi-row invariants atomic
 
-**Observed:** important workflows perform dependent writes separately:
+**Status: resolved for local database writes.** The query layer now commits each
+of these invariants in one Drizzle transaction:
 
-- calendar row, then owner membership;
-- event, attendee, then calendar links;
-- event update, link reconciliation, and provider mappings;
-- ownership transfer across member roles and `creatorID`; and
-- several provider-delete/local-delete combinations.
+- a calendar row and its owner membership;
+- an event, its creator-attendee row, and all initial calendar links;
+- an event edit, link reconciliation, and removed provider mappings;
+- unlinking an event and tombstoning it when the final link disappears;
+- calendar deletion, origin tombstones, cascaded links, and orphan cleanup; and
+- external-mirror disablement or whole-account disconnect plus all local mirror
+  cleanup (including CalDAV credentials).
 
-Some external upsert paths already use transactions, showing the intended
-pattern is available.
+Ownership transfer also locks the calendar row before changing both member roles
+and `creatorID`, so concurrent transfers cannot both proceed from the same owner
+snapshot. Provider mirrors reject ownership transfer because their credentials
+remain scoped to the original connected account.
 
-**Impact:** a database error, process exit, or provider failure between steps can
-leave ownerless calendars, partially linked events, duplicate roles, or local
-and provider state that disagree.
+**Originally observed:** these writes ran as independent statements. A database
+error or process exit between them could leave ownerless calendars, partially
+linked events, stale mappings, or roles that disagreed with `creatorID`.
 
-**Recommendation:** define invariants first, then wrap database-only write sets
-in one Drizzle transaction. For external side effects, use an explicit state
-machine/outbox rather than pretending a database transaction covers the
-provider.
+**Provider boundary:** a PostgreSQL transaction cannot roll back Google,
+Microsoft, or CalDAV. Calendar writes retain their documented provider-first
+ordering, while event delivery remains best-effort. Durable recovery for that
+cross-system boundary is tracked separately under
+[make provider event delivery recoverable](#p1--make-provider-event-delivery-recoverable).
 
 ## P1 — add database constraints for assumed uniqueness
 
@@ -234,7 +240,8 @@ validation on placeholder distribution URLs.
 
 1. Fix the calendar-detail authorization gap and add route-level regression
    coverage.
-2. Add uniqueness constraints and transactions around core database invariants.
+2. Finish database hardening: the core transactions are complete; add the
+   remaining uniqueness constraints.
 3. Establish PR CI and make lint green/enforceable.
 4. Add a durable provider outbox plus visible delivery health.
 5. Decide whether production stays single-replica or fund distributed

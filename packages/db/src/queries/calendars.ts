@@ -1,21 +1,24 @@
 import { and, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "..";
-import { calendarEvents, calendarInvites, calendarMembers, calendars, events, NewCalendar } from "../schema";
+import { calendarEvents, calendarInvites, calendarMembers, calendars, events, externalCalendars, NewCalendar } from "../schema";
 import { NotFoundError } from "@musubi/types";
 
+export type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export async function createCalendar(calendar: NewCalendar) {
-  const [result] = await db
-    .insert(calendars)
-    .values(calendar)
-    .onConflictDoNothing()
-    .returning();
-  await db.insert(calendarMembers).values({
-    userID: result.creatorID,
-    calendarID: result.id,
-    role: "owner",
-  })
-  return result;
+  return db.transaction(async (tx) => {
+    const [result] = await tx
+      .insert(calendars)
+      .values(calendar)
+      .onConflictDoNothing()
+      .returning();
+    await tx.insert(calendarMembers).values({
+      userID: result.creatorID,
+      calendarID: result.id,
+      role: "owner",
+    });
+    return result;
+  });
 }
 
 // Invite tokens are the calendar_invites uuid. Guard the shape first — a raw
@@ -63,32 +66,38 @@ export async function getCalendar(id: string) {
   return result;
 }
 
-export async function removeCalendar(calendarID: string) {
+// Internal transaction-aware form used when calendar removal is one step in a
+// larger local invariant (for example disabling an external mirror).
+export async function removeCalendarInTransaction(tx: DbTransaction, calendarID: string) {
   // Events HOMED here die with the calendar — including copies linked into
   // other calendars. Tombstone (not hard-delete) so other members' delta sync
   // drops them; must run BEFORE the calendar row goes, because the FK would
   // set originCalendarID to null and hide them from this query.
-  await db.update(events)
+  await tx.update(events)
     .set({ deletedAt: new Date() })
     .where(eq(events.originCalendarID, calendarID));
 
-  const eIDs = await db.select({ eventID: calendarEvents.eventID }).from(calendarEvents).where(eq(calendarEvents.calendarID, calendarID));
+  const eIDs = await tx.select({ eventID: calendarEvents.eventID }).from(calendarEvents).where(eq(calendarEvents.calendarID, calendarID));
 
-  const [result] = await db.delete(calendars).where(eq(calendars.id, calendarID)).returning();
+  const [result] = await tx.delete(calendars).where(eq(calendars.id, calendarID)).returning();
 
-  const stillLinked = await db
+  const stillLinked = eIDs.length === 0 ? [] : await tx
     .select({ eventID: calendarEvents.eventID })
     .from(calendarEvents)
-    .where(inArray(calendarEvents.eventID, eIDs.map(e => (e.eventID))))
+    .where(inArray(calendarEvents.eventID, eIDs.map(e => (e.eventID))));
 
   const orphanedEvents = eIDs.filter(candidate =>
     !stillLinked.some(linked => linked.eventID === candidate.eventID));
 
   if (orphanedEvents.length > 0) {
-    await db.delete(events).where(inArray(events.id, orphanedEvents.map(e => (e.eventID))));
+    await tx.delete(events).where(inArray(events.id, orphanedEvents.map(e => (e.eventID))));
   }
 
   return result;
+}
+
+export async function removeCalendar(calendarID: string) {
+  return db.transaction((tx) => removeCalendarInTransaction(tx, calendarID));
 }
 
 export async function updateCalendar(calendar: NewCalendar) {
@@ -158,8 +167,8 @@ export async function addCalendarMember(userID: string, calendarID: string) {
   return result;
 }
 
-// Change a member's role. Owner is intentionally not assignable here (no accidental
-// second owner / ownership transfer) — validated in the handler.
+// Low-level role update for provider sync. User-facing member management uses
+// setCalendarMemberRole()/transferCalendarOwnership() so owner invariants lock.
 export async function setMemberRole(userID: string, calendarID: string, role: string) {
   const [result] = await db
     .update(calendarMembers)
@@ -170,12 +179,159 @@ export async function setMemberRole(userID: string, calendarID: string, role: st
   return result;
 }
 
-export async function removeCalendarMember(userID: string, calendarID: string) {
-  const [result] = await db
-    .delete(calendarMembers)
-    .where(and(eq(calendarMembers.userID, userID), eq(calendarMembers.calendarID, calendarID)))
-    .returning();
+export type SetCalendarMemberRoleResult =
+  | { status: "updated"; member: typeof calendarMembers.$inferSelect }
+  | { status: "calendar_not_found" }
+  | { status: "not_owner" }
+  | { status: "owner" }
+  | { status: "member_not_found" };
 
-  return result
+// User-facing role changes serialize with ownership transfers. The sync engine
+// uses setMemberRole() directly because provider read-only mirrors intentionally
+// allow their creator membership to be "viewer".
+export async function setCalendarMemberRole(
+  actingUserID: string,
+  userID: string,
+  calendarID: string,
+  role: "viewer" | "editor",
+): Promise<SetCalendarMemberRoleResult> {
+  return db.transaction(async (tx) => {
+    const [calendar] = await tx
+      .select({ creatorID: calendars.creatorID })
+      .from(calendars)
+      .where(eq(calendars.id, calendarID))
+      .for("update");
+    if (!calendar) return { status: "calendar_not_found" };
+    if (calendar.creatorID !== actingUserID) return { status: "not_owner" };
+    if (calendar.creatorID === userID) return { status: "owner" };
+
+    const [member] = await tx
+      .update(calendarMembers)
+      .set({ role })
+      .where(and(
+        eq(calendarMembers.userID, userID),
+        eq(calendarMembers.calendarID, calendarID),
+      ))
+      .returning();
+
+    return member
+      ? { status: "updated", member }
+      : { status: "member_not_found" };
+  });
 }
 
+export type TransferCalendarOwnershipResult =
+  | { status: "updated"; calendar: typeof calendars.$inferSelect }
+  | { status: "calendar_not_found" }
+  | { status: "not_owner" }
+  | { status: "default_calendar" }
+  | { status: "external_calendar" }
+  | { status: "member_not_found" };
+
+export async function transferCalendarOwnership(
+  calendarID: string,
+  currentOwnerID: string,
+  targetUserID: string,
+): Promise<TransferCalendarOwnershipResult> {
+  return db.transaction(async (tx) => {
+    // Serialize transfers for this calendar. Without the row lock, two requests
+    // can both observe the same owner and leave multiple memberships as owner.
+    const [calendar] = await tx
+      .select()
+      .from(calendars)
+      .where(eq(calendars.id, calendarID))
+      .for("update");
+
+    if (!calendar) return { status: "calendar_not_found" };
+    if (calendar.creatorID !== currentOwnerID) return { status: "not_owner" };
+    if (calendar.isDefault) return { status: "default_calendar" };
+
+    // A mirror stays bound to the user/account that owns its provider
+    // credentials. Transferring only creatorID would create a fake owner who
+    // cannot perform the provider-side half of calendar mutations.
+    const [externalLink] = await tx
+      .select({ id: externalCalendars.id })
+      .from(externalCalendars)
+      .where(eq(externalCalendars.calendarID, calendarID));
+    if (externalLink) return { status: "external_calendar" };
+
+    const members = await tx
+      .select({ userID: calendarMembers.userID })
+      .from(calendarMembers)
+      .where(and(
+        eq(calendarMembers.calendarID, calendarID),
+        inArray(calendarMembers.userID, [currentOwnerID, targetUserID]),
+      ))
+      .for("update");
+
+    if (!members.some((member) => member.userID === targetUserID)) {
+      return { status: "member_not_found" };
+    }
+    if (!members.some((member) => member.userID === currentOwnerID)) {
+      throw new Error("Calendar owner is missing their membership row.");
+    }
+
+    await tx
+      .update(calendarMembers)
+      .set({ role: "owner" })
+      .where(and(
+        eq(calendarMembers.userID, targetUserID),
+        eq(calendarMembers.calendarID, calendarID),
+      ));
+    await tx
+      .update(calendarMembers)
+      .set({ role: "editor" })
+      .where(and(
+        eq(calendarMembers.userID, currentOwnerID),
+        eq(calendarMembers.calendarID, calendarID),
+      ));
+    const [updatedCalendar] = await tx
+      .update(calendars)
+      .set({ creatorID: targetUserID })
+      .where(eq(calendars.id, calendarID))
+      .returning();
+    if (!updatedCalendar) {
+      throw new Error("Calendar disappeared during ownership transfer.");
+    }
+
+    return { status: "updated", calendar: updatedCalendar };
+  });
+}
+
+export type RemoveCalendarMemberResult =
+  | { status: "removed"; member: typeof calendarMembers.$inferSelect }
+  | { status: "calendar_not_found" }
+  | { status: "not_owner" }
+  | { status: "owner" }
+  | { status: "member_not_found" };
+
+export async function removeCalendarMember(
+  userID: string,
+  calendarID: string,
+  actingUserID?: string,
+): Promise<RemoveCalendarMemberResult> {
+  return db.transaction(async (tx) => {
+    const [calendar] = await tx
+      .select({ creatorID: calendars.creatorID })
+      .from(calendars)
+      .where(eq(calendars.id, calendarID))
+      .for("update");
+    if (!calendar) return { status: "calendar_not_found" };
+    if (actingUserID && calendar.creatorID !== actingUserID) {
+      return { status: "not_owner" };
+    }
+    if (calendar.creatorID === userID) return { status: "owner" };
+
+    const [member] = await tx
+      .delete(calendarMembers)
+      .where(and(
+        eq(calendarMembers.userID, userID),
+        eq(calendarMembers.calendarID, calendarID),
+      ))
+      .returning();
+
+    return member
+      ? { status: "removed", member }
+      : { status: "member_not_found" };
+  });
+}

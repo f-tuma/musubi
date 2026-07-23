@@ -90,18 +90,31 @@ and CalDAV uses raw `MKCALENDAR` / `PROPPATCH` / `DELETE`.
 
 ### Write path and failure semantics
 
-Event writes use a different contract: Musubi persists the local event first,
-then `pushEventToCalendars()` attempts each provider. Provider exceptions are
-counted and logged but intentionally caught, so the API request can succeed
-while a provider copy remains stale. No durable retry outbox currently exists.
+Event writes use a different contract. Every dependent **local** write is
+transactional: create commits the event, creator-attendee, and links together;
+update commits the event, link diff, and removed mappings together; delete
+commits unlinking and the possible final tombstone together.
+
+Provider calls remain outside PostgreSQL. `pushEventToCalendars()` counts and
+logs provider exceptions but intentionally catches them, so the local
+transaction still commits when a provider copy cannot be changed. Deletes for
+removed links run before the local transaction only because the external
+mapping is needed to address the provider copy; creates and updates run after
+commit. No durable retry outbox currently exists.
 
 This distinction matters during incidents:
 
 | Mutation | Ordering | Current failure result |
 |---|---|---|
 | Calendar create/update/delete | Provider, then local DB | Provider rejection aborts local change; later DB failure can diverge |
-| Event create/update/delete | Local DB, then provider(s) | Provider failure is logged; request continues |
+| Event create | Local DB transaction, then provider(s) | Provider failure is logged; request continues |
+| Event update/delete | Provider delete for removed links, local DB transaction, then provider create/update | Provider failure is logged; local reconciliation continues |
 | Scheduled pull | Provider fetch, then local reconciliation | Account/provider failures are isolated and retried next cycle |
+
+Disconnecting one provider account uses `removeExternalAccountData()` to remove
+all of its local mirrors, events, opt-out tombstones, and (for CalDAV) stored
+credentials in one transaction. Google revocation and Better Auth OAuth unlink
+still sit outside PostgreSQL and therefore keep the same cross-system boundary.
 
 See the [observability runbook](/docs/operations/observability/#incident-triage)
 and [audit recommendation](/docs/contributing/codebase-audit/#p1--make-provider-event-delivery-recoverable).
@@ -264,4 +277,4 @@ For setup and provider-specific debugging, use the dedicated guides:
 | `sync/adapters/caldav.ts` + `caldav_client.ts` | CalDAV adapter (Apple/iCloud + generic) |
 | `sync/oauth.ts` | shared OAuth access-token refresh (google + microsoft) |
 | `sync/crypto.ts` | AES-256-GCM `encryptSecret`/`decryptSecret` |
-| `packages/db/src/queries/external.ts` | `upsertExternalEvent`, `clearCalendarEvents`, cursor & link helpers |
+| `packages/db/src/queries/external.ts` | `upsertExternalEvent`, `clearCalendarEvents`, `removeExternalAccountData`, cursor & link helpers |

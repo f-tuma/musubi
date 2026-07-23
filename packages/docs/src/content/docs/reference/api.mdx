@@ -184,7 +184,7 @@ does not allow `creatorID` or `originCalendarID` to change. The home
 | `GET /api/v1/calendars/:calendarId/members` | `[{ id, name, image, role }]` |
 | `POST /api/v1/calendars/members/:calendarId` | `{ token }`; join as viewer |
 | `DELETE /api/v1/calendars/members/:calendarId` | Leave; owner cannot leave |
-| `PUT /api/v1/calendars/:calendarId/members/:userId` | `{ role }`; owner transfer supported |
+| `PUT /api/v1/calendars/:calendarId/members/:userId` | `{ role }`; ownership transfer is limited to non-default native calendars |
 | `DELETE /api/v1/calendars/:calendarId/members/:userId` | Remove member; owner cannot be removed |
 | `POST /api/v1/calendars/invites` | `Invite` |
 | `GET /api/v1/calendars/:calendarId/invites` | Active invite records |
