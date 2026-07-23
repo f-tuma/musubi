@@ -26,6 +26,16 @@ export function providerFlavor(cal: Pick<Calendar, "provider" | "serverUrl">): s
   return cal.provider ?? null;
 }
 
+// Human name of the provider a calendar syncs from — for confirm dialogs etc.
+export function providerDisplayName(cal: Pick<Calendar, "provider" | "serverUrl">): string {
+  switch (providerFlavor(cal)) {
+    case "apple": return "Apple Calendar";
+    case "google": return "Google Calendar";
+    case "microsoft": return "Outlook";
+    default: return "the CalDAV server";
+  }
+}
+
 // Outlook calendars only accept 9 preset colors (Graph's `color` enum;
 // `hexColor` is read-only, and Microsoft doesn't document the presets' hex
 // values). These hexes are close visual matches used for the client swatches;

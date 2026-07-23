@@ -6,7 +6,7 @@ import { ModalPortal as Modal } from "@/components/ui/ModalPortal";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
-import { Calendar, can, providerFlavor } from "@musubi/types";
+import { Calendar, can, providerDisplayName } from "@musubi/types";
 import { confirm } from "@/lib/confirm";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useEventsStore } from "@/store/useEventsStore";
@@ -97,8 +97,7 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
       });
       return;
     }
-    const flavor = providerFlavor(calendar);
-    const providerName = flavor === "apple" ? "Apple Calendar" : flavor === "google" ? "Google Calendar" : "the CalDAV server";
+    const providerName = providerDisplayName(calendar);
     confirm({
       title: "External calendar",
       message: `"${calendar.name}" is synced from ${calendar.accountLabel ?? "a connected account"}. Deleting it here also deletes it in ${providerName}.`,
@@ -133,8 +132,7 @@ export default function CalendarSettingsModal({ calendar, visible, onClose, onDe
 
   const handleDisconnect = () => {
     if (!calendar) return;
-    const flavor = providerFlavor(calendar);
-    const providerName = flavor === "apple" ? "Apple Calendar" : flavor === "google" ? "Google Calendar" : "the CalDAV server";
+    const providerName = providerDisplayName(calendar);
     confirm({
       title: `Disconnect "${calendar.name}"?`,
       message: `It will stop syncing and its events will be removed from Musubi. The calendar stays untouched in ${providerName}, and you can add it back later from ${providerName}.`,
