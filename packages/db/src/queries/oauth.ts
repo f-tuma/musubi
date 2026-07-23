@@ -135,11 +135,14 @@ export async function getOAuthRefreshToken(userID: string, provider: string) {
   return row?.refreshToken;
 }
 
-export async function cleanUsersOAuthTokens(userID: string, provider: string) {
+// Provider-wide legacy cleanup. Do not use this for an account-specific
+// disconnect; it intentionally clears every matching account for the user.
+export async function cleanProviderOAuthTokens(userID: string, provider: string) {
   await db.update(account).set({
     refreshToken: null,
     accessToken: null,
     accessTokenExpiresAt: null,
+    refreshTokenExpiresAt: null,
     scope: null,
     syncStatus: "active",
     syncErrorCode: null,
@@ -149,5 +152,31 @@ export async function cleanUsersOAuthTokens(userID: string, provider: string) {
     .where(and(
       eq(account.userId, userID),
       eq(account.providerId, provider),
+    ));
+}
+
+// Account-scoped fallback for the modern disconnect flow. Better Auth may
+// refuse to unlink a login's last account; in that case calendar sync must stop
+// without clearing credentials for sibling accounts of the same provider.
+export async function cleanOAuthAccountTokens(
+  userID: string,
+  provider: string,
+  accountID: string,
+) {
+  await db.update(account).set({
+    refreshToken: null,
+    accessToken: null,
+    accessTokenExpiresAt: null,
+    refreshTokenExpiresAt: null,
+    scope: null,
+    syncStatus: "active",
+    syncErrorCode: null,
+    syncErrorSubtype: null,
+    syncDisabledAt: null,
+  })
+    .where(and(
+      eq(account.userId, userID),
+      eq(account.providerId, provider),
+      eq(account.accountId, accountID),
     ));
 }

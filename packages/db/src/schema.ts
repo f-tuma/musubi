@@ -139,10 +139,10 @@ export const userAvatars = pgTable("user_avatars", {
 
 export const userSettings = pgTable("user_settings", {
   id: text("id")
+    .primaryKey()
     .references(() => user.id, {
       onDelete: "cascade",
-    })
-    .notNull(),
+    }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at")
     .notNull()
@@ -328,7 +328,9 @@ export const calendarEvents = pgTable("calendar_events", {
       onDelete: "cascade",
     })
     .notNull(),
-});
+}, (t) => [
+  unique("calendar_events_event_id_calendar_id_unique").on(t.eventID, t.calendarID),
+]);
 
 
 export const calendarEventsRelations = relations(calendarEvents, ({ one }) => ({

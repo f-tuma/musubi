@@ -1,18 +1,31 @@
 import { Request, Response } from "express";
 import { randomUUID } from "crypto";
-import { NewEvent, createEvent, getCalendarMembers, getEvent, getEventAttendees, getEventCalendars, getEventOrigin, getUserRoleForCalendar, getUsersEvents, linkEventToCalendars, removeEvent, setAttendance, unlinkEventFromCalendars, updateEvent } from '@musubi/db';
+import { NewEvent, createEvent, getCalendarMembers, getEvent, getEventAttendees, getEventCalendars, getEventOrigin, getUserRoleForCalendar, getUsersEvents, linkEventToCalendars, setAttendance, unlinkEventAndTombstoneIfOrphaned, updateEventAndCalendarLinks } from '@musubi/db';
 import { BadRequestError, Event, EventSchema, ForbiddenError, NotFoundError } from "@musubi/types";
 import { notifyCalendarMembers } from "./stream";
 import { pushEventToCalendars, pushEventToProviders } from "../sync/engine";
 import { assertCan, assertCanEditEvent, assertCanViewEvent, canDo } from "../permissions";
+import { optionalDateQuery, requireUUID } from "../request_validation";
 
-export async function handlerCreateEvent(req: Request, res: Response) {
+function parseEvent(body: unknown, message: string): Event {
   let event: Event;
   try {
-    event = EventSchema.parse(req.body);
-  } catch (err) {
-    throw new BadRequestError("Request is missing valid event data...");
+    event = EventSchema.parse(body);
+  } catch {
+    throw new BadRequestError(message);
   }
+
+  event.id = requireUUID(event.id, "event.id");
+  event.calendars = event.calendars.map((calendarID) =>
+    requireUUID(calendarID, "event.calendars[]"));
+  if (event.originCalendarID) {
+    event.originCalendarID = requireUUID(event.originCalendarID, "event.originCalendarID");
+  }
+  return event;
+}
+
+export async function handlerCreateEvent(req: Request, res: Response) {
+  const event = parseEvent(req.body, "Request is missing valid event data...");
   // Server-side shape guards (don't trust the client): an event needs at least
   // one calendar, and its HOME must be one of the linked calendars — those are
   // membership-verified below, which also proves they exist (clean 400/403
@@ -51,12 +64,7 @@ export async function handlerCreateEvent(req: Request, res: Response) {
 }
 
 export async function handlerUpdateEvent(req: Request, res: Response) {
-  let event: Event;
-  try {
-    event = EventSchema.parse(req.body);
-  } catch (err) {
-    throw new BadRequestError("Request missing valid event data...");
-  }
+  const event = parseEvent(req.body, "Request missing valid event data...");
 
   await assertCanEditEvent(req.user!.id, event.id!); // edit-content gated by home calendar
 
@@ -73,14 +81,18 @@ export async function handlerUpdateEvent(req: Request, res: Response) {
   // creatorID / originCalendarID are immutable — never trust them from the client
   // (creator is the permission fallback, origin governs who may edit).
   const { creatorID: _c, originCalendarID: _o, ...editable } = event;
-  const updatedEvent = await updateEvent({ ...editable, id: event.id! });
+  // Remove provider copies while their mappings still exist. Provider delivery
+  // is best-effort; the local event + link reconciliation below is one DB unit.
+  await pushEventToCalendars(event, removed, "delete");
+  const updatedEvent = await updateEventAndCalendarLinks(
+    { ...editable, id: event.id! },
+    added,
+    removed,
+  );
 
   if (updatedEvent) {
 
-    // Reconcile links + propagate to external providers.
-    await pushEventToCalendars(event, removed, "delete"); // remove from Google while the mapping still exists
-    await unlinkEventFromCalendars(event.id!, removed);   // then drop the links + stale mappings
-    await linkEventToCalendars(event.id!, added);         // add new links
+    // The local transaction has committed; propagate its new state outward.
     await pushEventToCalendars(event, added, "create");   // create in Google (+ mapping)
     await pushEventToCalendars(event, kept, "update");     // update the rest
 
@@ -101,14 +113,15 @@ export async function handlerUpdateEvent(req: Request, res: Response) {
 }
 
 export async function handlerRemoveEvent(req: Request, res: Response) {
-  const event = EventSchema.parse(req.body);
-  if (!event.id) throw new BadRequestError("Event id is required...");
+  const event = parseEvent(req.body, "Request missing valid event data...");
 
   // "Delete" = unlink from every calendar the user is allowed to edit. Calendars
   // they can only view are left untouched. The event row is tombstoned only once
   // its last link is gone.
   const existing = await getEventCalendars(event.id);
-  const unlinkCalendarID = req.body?.unlinkCalendarID as string | undefined;
+  const unlinkCalendarID = req.body?.unlinkCalendarID === undefined
+    ? undefined
+    : requireUUID(req.body.unlinkCalendarID, "unlinkCalendarID");
 
   let targets: string[];
   if (unlinkCalendarID) {
@@ -133,11 +146,7 @@ export async function handlerRemoveEvent(req: Request, res: Response) {
   }
 
   await pushEventToCalendars(event, targets, "delete"); // remove from external while mapping still exists
-  await unlinkEventFromCalendars(event.id, targets);    // then drop links + stale mappings
-
-  const remaining = await getEventCalendars(event.id);
-  const removed = remaining.length === 0;
-  if (removed) await removeEvent(event.id);              // tombstone the now-orphaned event
+  const { remaining, removed } = await unlinkEventAndTombstoneIfOrphaned(event.id, targets);
 
   const result = { id: event.id, calendars: remaining, removed };
 
@@ -160,9 +169,8 @@ export async function handlerRemoveEvent(req: Request, res: Response) {
 // event may link it into a calendar they can EDIT — no edit-on-event needed. To
 // change the event itself they'd have to fork it.
 export async function handlerLinkEvent(req: Request, res: Response) {
-  const eventID = req.params.eventId as string;
-  const calendarID = req.body?.calendarID as string;
-  if (!calendarID) throw new BadRequestError("calendarID is required...");
+  const eventID = requireUUID(req.params.eventId, "eventId");
+  const calendarID = requireUUID(req.body?.calendarID, "calendarID");
 
   // Must be able to see the event (member of some calendar it lives in).
   const existing = await assertCanViewEvent(req.user!.id, eventID);
@@ -197,9 +205,8 @@ export async function handlerLinkEvent(req: Request, res: Response) {
 // edit. New id + creatorID + origin = target, no external mapping to the original.
 // Detached from the previous owner — editing the fork never touches the source.
 export async function handlerForkEvent(req: Request, res: Response) {
-  const eventID = req.params.eventId as string;
-  const calendarID = req.body?.calendarID as string;
-  if (!calendarID) throw new BadRequestError("calendarID is required...");
+  const eventID = requireUUID(req.params.eventId, "eventId");
+  const calendarID = requireUUID(req.body?.calendarID, "calendarID");
 
   // Must be able to see the source, and edit the target.
   const sourceCalendars = await assertCanViewEvent(req.user!.id, eventID);
@@ -243,7 +250,7 @@ export async function handlerForkEvent(req: Request, res: Response) {
 // Attendees: anyone who can VIEW the event sees the list and can join/leave.
 // Viewers RSVP too — that's the point. No emails in the payload (see query).
 export async function handlerGetAttendees(req: Request, res: Response) {
-  const eventID = req.params.eventId as string;
+  const eventID = requireUUID(req.params.eventId, "eventId");
   await assertCanViewEvent(req.user!.id, eventID);
   res.status(200).json(await getEventAttendees(eventID));
 }
@@ -251,7 +258,7 @@ export async function handlerGetAttendees(req: Request, res: Response) {
 // PUT desired state ({ attending: boolean }) rather than POST/DELETE — retries
 // are safe and the client just sends what it wants. Returns the fresh list.
 export async function handlerSetAttendance(req: Request, res: Response) {
-  const eventID = req.params.eventId as string;
+  const eventID = requireUUID(req.params.eventId, "eventId");
   const attending = req.body?.attending;
   if (typeof attending !== "boolean") throw new BadRequestError("attending (boolean) is required...");
   const eventCalendars = await assertCanViewEvent(req.user!.id, eventID);
@@ -270,7 +277,7 @@ export async function handlerSetAttendance(req: Request, res: Response) {
 }
 
 export async function handlerGetEvents(req: Request, res: Response) {
-  const since = req.query.since ? new Date(req.query.since as string) : undefined;
+  const since = optionalDateQuery(req.query.since, "since");
   const serverTime = new Date().toISOString(); // client stores this as its next `since`
   const rows = await getUsersEvents(req.user!.id!, since);
   const seen = new Map<string, Event>();
@@ -290,4 +297,3 @@ export async function handlerGetEvents(req: Request, res: Response) {
     serverTime,
   });
 }
-

@@ -166,7 +166,7 @@ export default function Invite() {
         )}
 
         {!loadError && previewEvents.length > 0 && <View style={styles.section}>
-          <Text style={styles.sectionLabel}>WHAT'S ON IT</Text>
+          <Text style={styles.sectionLabel}>WHAT&apos;S ON IT</Text>
           {previewEvents.map((event) => (
             <View key={event.id} style={styles.timelineRow}>
               <View style={{ flex: 1 }}>

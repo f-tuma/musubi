@@ -204,11 +204,13 @@ One rule from Shared Packages worth repeating because it orders your work: **whe
 ### The verification loop
 
 ```sh
-pnpm check       # typecheck + six self-checks + production docs build
-pnpm lint        # currently red; compare with the recorded audit baseline
+pnpm check       # typecheck + ten self-checks + lint + production docs build
 ```
 
-When you extract pure logic, leave a self-check behind in the same style — `lib/rrule.test.ts` and `lib/eventForm.test.ts` are the pattern.
+Lint passes with a locked budget for known React Compiler/hook warnings, so a
+net increase fails the command. When you extract pure logic, leave a self-check
+behind in the same style — `lib/rrule.test.ts` and `lib/eventForm.test.ts` are
+the pattern.
 
 ### What reviewers look for
 
