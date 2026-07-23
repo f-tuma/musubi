@@ -118,12 +118,12 @@ confirm convergence manually.
 - the Docker release workflow builds/publishes images without a preceding
   repository check;
 - root `build` exercises only workspaces that declare a build script;
-- the existing tests are five direct `tsx` assertion programs with no runner,
+- the existing tests are six direct `tsx` assertion programs with no runner,
   coverage, database integration, or authorization matrix; and
 - client lint reports **82 errors and 55 warnings**.
 
 The new `pnpm check` command creates a reproducible passing baseline for client
-typecheck, API typecheck, those five self-checks, and docs build. Lint remains
+typecheck, API typecheck, those six self-checks, and docs build. Lint remains
 separate because its baseline is already red.
 
 **Recommendation:** classify compiler/lint false positives around Reanimated
@@ -133,6 +133,8 @@ Docker build. Protect release publication on the same gate.
 
 ## P1 — make horizontal scaling explicit or coordinated
 
+**Status: remediated as an enforced single-replica contract on 2026-07-23.**
+
 **Observed:** scheduled provider sync, cleanup timers, SSE clients, rate limits,
 and metrics are process-local. Each API replica starts the timers and sees only
 its own connections/requests.
@@ -140,9 +142,17 @@ its own connections/requests.
 **Impact:** multiple replicas can duplicate scheduled work, miss cross-replica
 SSE broadcasts, and apply per-instance rather than global rate limits.
 
-**Recommendation:** keep one documented API replica until job leadership,
-distributed locking, shared pub/sub, and shared rate limiting exist. Add
-overlap prevention even for one process when a sync cycle exceeds its interval.
+**Resolution:** the API now holds a dedicated PostgreSQL session advisory lock
+and refuses to start a second process against the same database. Both Compose
+files explicitly declare one API replica. Cleanup and external sync use a
+tested single-flight wrapper; an overlong run skips the next tick and emits a
+structured warning plus `musubi_scheduled_task_skips_total{task}`. The shipped
+Prometheus rules alert on any skip.
+
+**Follow-up:** horizontal scaling remains intentionally unsupported. Replacing
+the singleton contract still requires job leadership/distributed locking,
+shared pub/sub for SSE, a shared rate limiter, and per-instance metric
+aggregation.
 
 ## P1 — disconnect exactly one OAuth account
 

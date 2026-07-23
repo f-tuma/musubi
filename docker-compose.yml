@@ -32,6 +32,10 @@ services:
         condition: service_healthy
     ports:
       - "${API_SERVER_PORT:-7531}:${API_SERVER_PORT:-7531}"
+    # Musubi intentionally supports one API process per database today. The API
+    # also enforces this with a PostgreSQL advisory lock at startup.
+    deploy:
+      replicas: 1
     restart: unless-stopped
 
   db:

@@ -142,9 +142,13 @@ Why polling and not push? True Google push (watch webhooks) needs a publicly rea
 </Aside>
 
 <Aside type="caution">
-The timer and its overlap state are process-local. Multiple API replicas each
-start their own scheduler, and one long cycle can overlap the next interval.
-Operate one API replica until job leadership/distributed locking exists; see
+The API supports one process per database and enforces that boundary with a
+session-scoped PostgreSQL advisory lock. Within that process, the scheduler is
+single-flight: if a run outlasts its interval, the next tick is skipped, logged
+as `sync.scheduler.skipped`, and counted by
+`musubi_scheduled_task_skips_total{task="external_sync"}`. Do not bypass the
+singleton lock to scale horizontally; shared pub/sub and rate limiting are
+still required. See
 [Current scaling boundary](/docs/operations/observability/#current-scaling-boundary).
 </Aside>
 

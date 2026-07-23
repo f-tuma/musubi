@@ -43,6 +43,19 @@ const externalSyncFailures = new Counter({
   registers: [registry],
 });
 
+const scheduledTaskSkips = new Counter({
+  name: "musubi_scheduled_task_skips_total",
+  help: "Scheduled task ticks skipped because the previous run was still active.",
+  labelNames: ["task"] as const,
+  registers: [registry],
+});
+
+export type ScheduledTaskName = "cleanup" | "external_sync";
+
+export function recordScheduledTaskSkip(task: ScheduledTaskName) {
+  scheduledTaskSkips.inc({ task });
+}
+
 export type ExternalSyncFailureStage = "account" | "discovery" | "push" | "scheduler";
 
 const KNOWN_SYNC_PROVIDERS = new Set(["caldav", "google", "microsoft", "all"]);

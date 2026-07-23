@@ -27,3 +27,11 @@ groups:
         annotations:
           summary: Musubi external calendar sync is failing
           description: "Provider {{ $labels.provider }} failed during {{ $labels.stage }} synchronization."
+
+      - alert: MusubiScheduledTaskOverlap
+        expr: sum by (task) (increase(musubi_scheduled_task_skips_total[15m])) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: A Musubi scheduled task outlasted its interval
+          description: "Task {{ $labels.task }} skipped a tick because its previous run was still active."

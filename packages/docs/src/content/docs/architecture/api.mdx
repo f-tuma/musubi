@@ -123,6 +123,7 @@ metrics (prefixed `musubi_`) and these application metrics:
 | `musubi_http_request_duration_seconds` | Request-duration histogram using the same bounded labels |
 | `musubi_http_requests_in_flight` | Requests currently being processed by method |
 | `musubi_external_sync_failures_total` | Failed provider discovery, account sync, event push, or scheduler runs by provider |
+| `musubi_scheduled_task_skips_total` | Cleanup/provider-sync ticks skipped because the previous run is still active |
 
 Unknown HTTP methods collapse to `OTHER`, unmatched paths collapse to
 `<unmatched>`, and registered Express patterns are used instead of concrete
