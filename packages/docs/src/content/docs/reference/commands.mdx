@@ -35,7 +35,7 @@ pnpm check
 
 1. client TypeScript (`tsc --noEmit`);
 2. API TypeScript (`tsc --noEmit --skipLibCheck`);
-3. five assertion-based self-check files;
+3. six assertion-based self-check files;
 4. the root build (currently the Starlight package is the only workspace with a
    `build` script).
 
@@ -68,6 +68,7 @@ These are plain Node assertions executed with `tsx`, not a test-runner suite:
 | `apps/client/lib/eventForm.test.ts` | Event-form validation |
 | `apps/client/lib/rrule.test.ts` | RRULE building and parsing |
 | `apps/client/lib/ics.test.ts` | Lightweight client `.ics` import |
+| `apps/api/src/request_validation.test.ts` | UUID/timestamp guards and HTTP error classification |
 | `apps/api/src/sync/oauth.test.ts` | OAuth refresh/revoke helpers and token crypto |
 | `apps/api/src/sync/adapters/microsoft.test.ts` | Graph date/cursor/event conversion |
 

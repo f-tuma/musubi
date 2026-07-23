@@ -87,6 +87,11 @@ Handlers throw the typed error classes from `@musubi/types` (`errors.ts`). `midd
 | `NotFoundError` | 404 |
 | anything else | 500 |
 
+`ZodError` is a special route-boundary case and maps to `400` even if a handler
+did not wrap `Schema.parse()` itself. Event requests additionally use
+`request_validation.ts` to reject malformed UUID/timestamp values before
+PostgreSQL can turn them into internal errors.
+
 ```ts
 if (!event) throw new NotFoundError("Event not found...");
 if (start > end) throw new BadRequestError("Start must precede end.");
