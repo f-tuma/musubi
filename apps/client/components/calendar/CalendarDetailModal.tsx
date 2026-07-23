@@ -181,6 +181,7 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
 
   const activeCal = useMemo(() => calendar ? new Set<string>([calendar.id]) : new Set<string>(), [calendar]);
   const { visibleEvents } = useVisibleEvents(events, activeCal);
+  const anchorMonth = dayjs(anchorDate).startOf("month").valueOf();
 
   const [rangeStart, rangeEnd] = useMemo(
     () => {
@@ -188,7 +189,7 @@ export default function CalendarDetail({ calendar, visible, onClose, onDelete, o
       const span = calMode === "month" ? 2 : 1;
       return [d.subtract(span, "month").startOf("month").toDate(), d.add(span, "month").endOf("month").toDate()] as [Date, Date];
     },
-    [calMode, dayjs(anchorDate).startOf("month").valueOf()],
+    [calMode, anchorMonth],
   );
 
   const expandedEvents = useMemo(

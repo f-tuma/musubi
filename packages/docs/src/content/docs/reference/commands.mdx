@@ -36,7 +36,8 @@ pnpm check
 1. client TypeScript (`tsc --noEmit`);
 2. API TypeScript (`tsc --noEmit --skipLibCheck`);
 3. six assertion-based self-check files;
-4. the root build (currently the Starlight package is the only workspace with a
+4. client ESLint with the repository's locked warning budget; and
+5. the root build (currently the Starlight package is the only workspace with a
    `build` script).
 
 Run an individual layer while iterating:
@@ -50,14 +51,29 @@ Run an individual layer while iterating:
 | Root Turbo build | `pnpm build` |
 | Client ESLint | `pnpm lint` |
 
-<Aside type="caution" title="Lint has a known failing baseline">
-As of the 2026-07 audit, `pnpm lint` reports 82 errors and 55 warnings, largely
-from React Compiler rules interacting with Reanimated/live-ref patterns plus a
-smaller set of genuine hygiene findings. It is intentionally not hidden inside
-`pnpm check`. Do not claim lint passed; compare your touched files against the
-baseline and avoid adding findings. See the
+<Aside type="note" title="The lint gate uses a warning budget">
+`pnpm lint` has zero errors and permits exactly 108 known warnings from React
+Compiler/hook diagnostics. Most are Reanimated shared-value, gesture live-ref,
+and legacy effect-dependency findings. The three compiler rules that previously
+made lint unusable remain visible as warnings, while `--max-warnings 108`
+prevents the baseline from growing. Fixing a warning lowers the budget in
+`apps/client/package.json`; never raise it to land a change. See the
 [codebase audit](/docs/contributing/codebase-audit/#p1--restore-an-enforceable-quality-gate).
 </Aside>
+
+## Continuous integration
+
+`.github/workflows/quality.yml` runs for every pull request and every push to
+`main`. It has two independent jobs:
+
+1. frozen install → `pnpm check` → regenerate Drizzle migrations and fail if
+   the working tree changes; and
+2. build the production API image without publishing it.
+
+The manual Docker release workflow calls the same reusable quality workflow and
+cannot publish an image or GitHub release until both jobs pass. Keep local
+verification fast with `pnpm check`; CI owns the clean-install, migration-drift,
+and container-build checks.
 
 ### Existing self-checks
 
@@ -176,7 +192,6 @@ script restores into an isolated temporary PostgreSQL container.
 git status --short
 git diff --check
 pnpm check
-pnpm lint          # record/compare the known baseline
 ```
 
 Then run the platform-specific flow you changed. Examples:

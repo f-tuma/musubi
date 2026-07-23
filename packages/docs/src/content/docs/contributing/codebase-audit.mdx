@@ -21,13 +21,12 @@ provider adapters share a small contract, tombstones make offline deletion
 reliable, secrets are encrypted, request IDs cross subsystem boundaries, and
 backup/restore scripts validate their artifacts.
 
-The original calendar-detail P0 is resolved. The largest remaining risks are at
-boundaries:
+The original calendar-detail P0 and quality-gate finding are resolved. The
+largest remaining risks are at boundaries:
 
 1. several multi-row invariants are not transactionally protected;
 2. provider event delivery is best-effort without a durable retry queue;
-3. the repository has no pull-request CI and lint is not currently enforceable;
-4. process-local schedulers/SSE/rate limiting imply a single API replica.
+3. process-local schedulers/SSE/rate limiting imply a single API replica.
 
 ## Priority model
 
@@ -116,6 +115,8 @@ confirm convergence manually.
 
 ## P1 — restore an enforceable quality gate
 
+**Status: remediated on 2026-07-23.**
+
 **Observed on 2026-07-23:**
 
 - there is no pull-request CI workflow;
@@ -126,14 +127,22 @@ confirm convergence manually.
   coverage, database integration, or authorization matrix; and
 - client lint reports **82 errors and 55 warnings**.
 
-The new `pnpm check` command creates a reproducible passing baseline for client
-typecheck, API typecheck, those six self-checks, and docs build. Lint remains
-separate because its baseline is already red.
+**Resolution:** the genuine lint errors and ordinary hygiene warnings were
+fixed. React Compiler diagnostics that currently reject Reanimated mutable
+shared values, gesture live refs, and legacy state-reset effects remain visible
+as warnings. `expo lint --max-warnings 108` locks that debt so it can only move
+down, and `pnpm check` now includes lint.
 
-**Recommendation:** classify compiler/lint false positives around Reanimated
-refs separately from real defects, burn the count to zero, then add required CI
-for install, generated/schema drift, typecheck, tests, lint, docs build, and
-Docker build. Protect release publication on the same gate.
+`.github/workflows/quality.yml` runs a frozen install, typechecks, the six
+self-checks, lint, docs build, Drizzle generation drift detection, and a
+production API Docker build for every pull request and push to `main`. The
+manual Docker publication workflow calls the same reusable gate before it can
+push an image or create a release.
+
+**Follow-up:** migrate Reanimated `.value` access to compiler-compatible
+`get()`/`set()` where supported, resolve effect dependency findings, and lower
+the warning budget with every cleanup. Expand the six assertion programs into
+route/database integration coverage as tracked below.
 
 ## P1 — make horizontal scaling explicit or coordinated
 
