@@ -28,7 +28,7 @@ export function handlerServerStatus(_: Request, res: Response) {
 
 export function handlerServer(_: Request, res: Response) {
   res.status(200).json({
-    minClientVersion: "0.1.0",
+    minClientVersion: "0.1.1",
     socials: enabledSocials(),
     syncProviders: enabledSyncProviders(),
     // Whether this server can send email. Password reset and in-app account
