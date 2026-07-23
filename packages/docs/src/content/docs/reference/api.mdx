@@ -221,6 +221,12 @@ intentional so older clients cannot reset newer settings when saving.
 | `POST /api/v1/users/connections/disconnect` | Disconnect one `{ provider, accountId }` |
 | `POST /api/v1/users/connections/calendars/disconnect` | Disable one mirrored `{ calendarId }` without touching provider |
 
+The exact-account disconnect accepts `google`, `microsoft`, or `caldav`.
+OAuth unlink refusal falls back to clearing calendar credentials only for the
+matching `(user, provider, accountId)` row, so sibling accounts remain
+connected. The legacy Google revoke route is provider-wide because its request
+shape predates multi-account support and contains no account ID.
+
 Provider behavior and limitations:
 [Google](/docs/providers/google/),
 [Microsoft / Outlook](/docs/providers/microsoft/), and

@@ -14,6 +14,7 @@
     "docs:build": "pnpm --filter @musubi/docs build",
     "typecheck": "pnpm --filter @musubi/client exec tsc --noEmit && pnpm exec tsc -p apps/api/tsconfig.json --noEmit --skipLibCheck",
     "test": "pnpm --filter @musubi/client exec tsx lib/eventForm.test.ts && pnpm --filter @musubi/client exec tsx lib/rrule.test.ts && pnpm --filter @musubi/client exec tsx lib/ics.test.ts && pnpm --filter @musubi/api exec tsx src/sync/oauth.test.ts && pnpm --filter @musubi/api exec tsx src/sync/adapters/microsoft.test.ts",
+    "test:db:oauth": "pnpm --filter @musubi/api exec tsx src/handlers/connections.integration.test.ts",
     "check": "pnpm typecheck && pnpm test && pnpm build",
     "lint": "pnpm --filter @musubi/client lint",
     "db:generate": "pnpm -F @musubi/db exec drizzle-kit generate",

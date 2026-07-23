@@ -146,6 +146,8 @@ overlap prevention even for one process when a sync cycle exceeds its interval.
 
 ## P1 — disconnect exactly one OAuth account
 
+**Status: remediated on 2026-07-23.**
+
 **Observed:** the connection handler asks Better Auth to unlink one account. If
 that fails, its fallback calls `cleanUsersOAuthTokens(userID, provider)`, which
 is provider-wide rather than account-specific.
@@ -153,8 +155,16 @@ is provider-wide rather than account-specific.
 **Impact:** disconnecting one of several Google or Microsoft accounts can clear
 tokens for sibling accounts in the fallback path.
 
-**Recommendation:** add an account-ID-scoped database fallback and multi-account
-tests. Never describe provider-wide cleanup as exact account removal.
+**Resolution:** the modern disconnect fallback now calls
+`cleanOAuthAccountTokens(userID, provider, accountID)`, whose update predicate
+contains all three identifiers. Unsupported providers are rejected before any
+cleanup. A disposable-PostgreSQL integration test proves the target row is
+cleared while a sibling account for the same provider, another provider, and
+the same account ID owned by another user remain unchanged.
+
+The old Google revoke endpoint has no account ID and remains explicitly
+provider-wide for backward compatibility; its helper is named
+`cleanProviderOAuthTokens` so it cannot be mistaken for exact-account cleanup.
 
 ## P2 — normalize malformed-input responses
 

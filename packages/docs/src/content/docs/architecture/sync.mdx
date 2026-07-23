@@ -154,6 +154,24 @@ Two correctness details worth knowing: provider **deletions tombstone** (`delete
 `organizer` is `NOT NULL` in the schema but adapters may hand back `null` — the engine falls back to `""`. `color` on synced events comes from the **mirror calendar**, not the provider event.
 </Aside>
 
+## Account disconnect semantics
+
+The current client disconnects exactly one `{ provider, accountId }` through
+`POST /api/v1/users/connections/disconnect`. The handler:
+
+1. best-effort revokes that Google account's refresh token (Microsoft has no
+   equivalent step here);
+2. removes only mirror calendars and disabled-calendar markers for that account;
+3. asks Better Auth to unlink that exact account; and
+4. if Better Auth refuses—most commonly because it is the user's final login
+   account—clears calendar tokens/scope only on the matching
+   `(user, provider, accountId)` row.
+
+This preserves sibling Google/Microsoft accounts. The legacy
+`POST /api/v1/users/connections/google/revoke` route has no `accountId` and is
+intentionally provider-wide for old clients; do not use or describe it as an
+exact-account operation.
+
 ## Credential crypto
 
 `sync/crypto.ts` encrypts CalDAV passwords with **AES-256-GCM** before they hit `caldav_accounts.encryptedPassword`:

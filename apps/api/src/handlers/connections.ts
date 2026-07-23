@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
 import { auth } from "@musubi/auth";
-import { cleanUsersOAuthTokens, clearDisabledExternalCalendars, deleteCaldavAccount, disableExternalCalendar, getOAuthCredentials, getUserExternalCalendars, removeCalendar } from "@musubi/db";
+import { cleanOAuthAccountTokens, clearDisabledExternalCalendars, deleteCaldavAccount, disableExternalCalendar, getOAuthCredentials, getUserExternalCalendars, removeCalendar } from "@musubi/db";
 import { BadRequestError } from "@musubi/types";
 import { revokeGoogleToken } from "../sync/oauth";
 import { decryptToken } from "../tokenCrypto";
+
+const DISCONNECT_PROVIDERS = new Set(["caldav", "google", "microsoft"]);
 
 // Disconnect one connected account of a provider: revoke the provider grant
 // (Google only), then always remove the account's mirrored Musubi calendars and
@@ -12,6 +14,7 @@ import { decryptToken } from "../tokenCrypto";
 export async function handlerDisconnectAccount(req: Request, res: Response) {
   const { provider, accountId } = req.body ?? {};
   if (!provider || !accountId) throw new BadRequestError("provider and accountId are required...");
+  if (!DISCONNECT_PROVIDERS.has(provider)) throw new BadRequestError("Unsupported provider");
 
   try {
     // Best-effort revoke of THIS account's grant before we drop its token.
@@ -43,7 +46,7 @@ export async function handlerDisconnectAccount(req: Request, res: Response) {
           headers: new Headers(req.headers as Record<string, string>),
         });
       } catch {
-        await cleanUsersOAuthTokens(req.user!.id, provider);
+        await cleanOAuthAccountTokens(req.user!.id, provider, accountId);
       }
     }
   }

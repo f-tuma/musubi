@@ -84,6 +84,21 @@ project-wide runner as one focused change; do not create a third test convention
 | Inspect database service | `docker compose ps db` |
 | Tail database logs | `docker compose logs -f db` |
 
+The account-scoped OAuth fallback has a PostgreSQL integration self-check:
+
+```sh
+ENVIRONMENT=test \
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/musubi_test \
+BETTER_AUTH_URL=http://localhost:7531 \
+pnpm test:db:oauth
+```
+
+<Aside type="caution">
+Use a disposable, migrated test database. The script refuses to run unless
+`ENVIRONMENT=test`, creates uniquely named users/accounts, asserts isolation
+across users, providers, and sibling accounts, then removes its fixtures.
+</Aside>
+
 Always review generated SQL:
 
 ```sh

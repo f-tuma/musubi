@@ -1,4 +1,4 @@
-import { cleanUsersOAuthTokens, getOAuthRefreshToken, oauthConnectionCheck } from "@musubi/db";
+import { cleanProviderOAuthTokens, getOAuthRefreshToken, oauthConnectionCheck } from "@musubi/db";
 import { Request, Response } from "express";
 import { syncUser } from "../sync/engine";
 import { revokeGoogleToken } from "../sync/oauth";
@@ -13,7 +13,8 @@ export async function handlerRevokeGoogle(req: Request, res: Response) {
   const refreshToken = await decryptToken(await getOAuthRefreshToken(req.user!.id, "google"));
   if (refreshToken) await revokeGoogleToken(refreshToken);
 
-  await cleanUsersOAuthTokens(req.user!.id, "google");
+  // Legacy endpoint has no accountId and is intentionally provider-wide.
+  await cleanProviderOAuthTokens(req.user!.id, "google");
 
   res.sendStatus(200);
 }
