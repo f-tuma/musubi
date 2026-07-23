@@ -53,6 +53,7 @@ export default function InvitesModal({ calendar, visible, onClose }: Props) {
   const [expiryMs, setExpiryMs] = useState<number | null>(7 * DAY); // default 7 days
   const [creating, setCreating] = useState(false);
   const [pending, setPending] = useState<string | null>(null); // inviteID being revoked
+  const [now, setNow] = useState(Date.now);
 
   useEffect(() => {
     if (!visible || !calendar) return;
@@ -62,6 +63,13 @@ export default function InvitesModal({ calendar, visible, onClose }: Props) {
     });
   }, [visible, calendar?.id]);
 
+  useEffect(() => {
+    if (!visible) return;
+    setNow(Date.now());
+    const interval = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(interval);
+  }, [visible]);
+
   // The calendar's own server serves the invite page — self-hosted and federated
   // invites must not depend on the hosted domain.
   const origin = calendar?.provider === "musubi" && calendar.serverUrl ? calendar.serverUrl : apiUrl;
@@ -70,7 +78,7 @@ export default function InvitesModal({ calendar, visible, onClose }: Props) {
     message: `You're invited to join the calendar "${calendar?.name}" on Musubi 🎋\n\nTap the link to accept:\n${linkFor(i)}`,
   });
 
-  const isExpired = (i: Invite) => !!i.expiresAt && new Date(i.expiresAt).getTime() <= Date.now();
+  const isExpired = (i: Invite) => !!i.expiresAt && new Date(i.expiresAt).getTime() <= now;
   const isExhausted = (i: Invite) => i.maxUses !== null && i.uses >= i.maxUses;
 
   // Primary line = the link's RULE (what you configured); secondary = what

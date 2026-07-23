@@ -8,12 +8,11 @@ import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { useEventsStore } from "@/store/useEventsStore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { presentEventDetail } from "@/store/useEventDetailStore";
-import { View, Text, ScrollView } from "react-native";
+import { RefreshControl, ScrollView, Text, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { Tap } from "@/components/ui/Tap";
 import { Empty } from "@/components/ui/Empty";
 import { YearStamp } from "@/components/calendar/YearStamp";
-import { RefreshControl } from "react-native";
 import { useRefreshData } from "@/hooks/useRefreshData";
 import { eventColor } from "@/lib/eventColor";
 import { useSettingsStore } from "@/store/useSettingsStore";
@@ -33,7 +32,7 @@ const RECURRENCE_HORIZON_YEARS = 2;
 
 export default function AgendaTab() {
   const api = useApi();
-  const { events, addEvent, updateEvent, removeEvent } = useEventsStore();
+  const { events, addEvent, updateEvent } = useEventsStore();
   const { calendars, activeCals, soloCalId, toggleCal, soloCalendar, syncActiveCals } = useCalendarsStore();
   const timeFormat = useSettingsStore((s) => s.timeFormat);
   const { eventId, occurrenceStart } = useLocalSearchParams<{

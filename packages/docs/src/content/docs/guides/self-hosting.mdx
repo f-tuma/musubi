@@ -120,8 +120,10 @@ For HTTPS, put a reverse proxy (Caddy, nginx, Traefik…) in front of the publis
 
 <Aside type="caution" title="Run one API replica">
 The scheduler, cleanup jobs, SSE registry, and rate limiter are process-local.
-Multiple replicas can duplicate jobs and miss cross-replica live updates. Keep
-one API replica until distributed coordination/pub-sub exists; see the
+Both Compose files declare one replica, and the API holds a PostgreSQL advisory
+lock for its lifetime. A second API using the same database exits before
+listening; losing the lock connection also terminates the process. Keep this
+guard in place until distributed coordination/pub-sub exists; see the
 [observability scaling boundary](/docs/operations/observability/#current-scaling-boundary).
 </Aside>
 

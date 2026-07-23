@@ -22,7 +22,9 @@ import { handlerDisconnectAccount, handlerDisconnectExternalCalendar } from "./h
 import { handlerDeleteMusubiAccount, handlerFederationAccept, handlerGetMusubiAccounts, handlerInvitePage, handlerSaveMusubiAccount } from "./handlers/federation";
 import { syncUser } from "./sync/engine";
 import { getExternalSyncUserIDs } from "@musubi/db";
-import { middlewareMetrics, recordExternalSyncFailure, startMetricsServer } from "./metrics";
+import { middlewareMetrics, recordExternalSyncFailure, recordScheduledTaskSkip, startMetricsServer } from "./metrics";
+import { nonOverlapping } from "./scheduling";
+import { acquireApiSingletonLock } from "./singleton";
 
 const app = express()
 const port = config.api.port;
@@ -144,21 +146,6 @@ app.get("/api/v1/users/:userId/avatar", wrap(handlerGetAvatar)); // public — <
 // Error middleware must be registered last so it catches everything above.
 app.use(middlewareErrorHandler);
 
-app.listen(port, "0.0.0.0", () => {
-  logger.info("server.started", {
-    port,
-    environment: config.api.environment,
-    logLevel: config.api.logLevel,
-    externalSyncIntervalMin: config.api.externalSyncIntervalMin,
-  });
-});
-
-if (config.api.metricsPort > 0) {
-  startMetricsServer(config.api.metricsPort);
-} else {
-  logger.info("metrics.server.disabled");
-}
-
 // Periodic cleanup of expired rows (Postgres has no native row TTL).
 // Scheduling lives here (app concern); the deletes live in @musubi/db.
 async function cleanupExpired() {
@@ -174,8 +161,6 @@ async function cleanupExpired() {
     logger.error("cleanup.failed", { error: e });
   }
 }
-cleanupExpired();                          // run once at boot (setInterval's first tick is delayed)
-setInterval(cleanupExpired, 60 * 60 * 1000); // then hourly
 
 // Near-realtime external sync: poll every connected Google/CalDAV account on a
 // schedule; syncUser broadcasts an SSE "external_sync" to affected members when
@@ -183,31 +168,77 @@ setInterval(cleanupExpired, 60 * 60 * 1000); // then hourly
 // Polling is the uniform answer here — true Google push (watch webhooks) needs a
 // public HTTPS endpoint + channel renewal (self-host-unfriendly), and CalDAV has
 // no push protocol at all. EXTERNAL_SYNC_INTERVAL_MIN=0 disables.
-if (config.api.externalSyncIntervalMin > 0) {
-  logger.info("sync.scheduler.enabled", { intervalMin: config.api.externalSyncIntervalMin });
-  setInterval(async () => {
-    const startedAt = performance.now();
-    try {
-      const userIDs = await getExternalSyncUserIDs();
-      let changedCalendars = 0;
-      for (const userID of userIDs) {
-        changedCalendars += (await syncUser(userID)).length; // per-provider errors are caught inside
-      }
-      const fields = {
-        users: userIDs.length,
-        changedCalendars,
-        durationMs: Math.round((performance.now() - startedAt) * 10) / 10,
-      };
-      if (changedCalendars > 0) logger.info("sync.scheduler.completed", fields);
-      else logger.debug("sync.scheduler.completed", fields);
-    } catch (e) {
-      recordExternalSyncFailure("scheduler", "all");
-      logger.error("sync.scheduler.failed", {
-        durationMs: Math.round((performance.now() - startedAt) * 10) / 10,
-        error: e,
-      });
+async function syncExternalAccounts() {
+  const startedAt = performance.now();
+  try {
+    const userIDs = await getExternalSyncUserIDs();
+    let changedCalendars = 0;
+    for (const userID of userIDs) {
+      changedCalendars += (await syncUser(userID)).length; // per-provider errors are caught inside
     }
-  }, config.api.externalSyncIntervalMin * 60 * 1000);
-} else {
-  logger.info("sync.scheduler.disabled");
+    const fields = {
+      users: userIDs.length,
+      changedCalendars,
+      durationMs: Math.round((performance.now() - startedAt) * 10) / 10,
+    };
+    if (changedCalendars > 0) logger.info("sync.scheduler.completed", fields);
+    else logger.debug("sync.scheduler.completed", fields);
+  } catch (e) {
+    recordExternalSyncFailure("scheduler", "all");
+    logger.error("sync.scheduler.failed", {
+      durationMs: Math.round((performance.now() - startedAt) * 10) / 10,
+      error: e,
+    });
+  }
 }
+
+const runCleanup = nonOverlapping(cleanupExpired, () => {
+  recordScheduledTaskSkip("cleanup");
+  logger.warn("cleanup.skipped", { reason: "previous_run_active" });
+});
+
+const runExternalSync = nonOverlapping(syncExternalAccounts, () => {
+  recordScheduledTaskSkip("external_sync");
+  logger.warn("sync.scheduler.skipped", { reason: "previous_run_active" });
+});
+
+async function start() {
+  // The dedicated PostgreSQL session lock makes the documented deployment
+  // boundary fail-safe: a second API process sharing this DB does not serve
+  // traffic with split SSE/rate-limit/scheduler state.
+  await acquireApiSingletonLock();
+
+  app.listen(port, "0.0.0.0", () => {
+    logger.info("server.started", {
+      port,
+      environment: config.api.environment,
+      deploymentMode: "single-replica",
+      logLevel: config.api.logLevel,
+      externalSyncIntervalMin: config.api.externalSyncIntervalMin,
+    });
+  });
+
+  if (config.api.metricsPort > 0) {
+    startMetricsServer(config.api.metricsPort);
+  } else {
+    logger.info("metrics.server.disabled");
+  }
+
+  void runCleanup(); // run once at boot (setInterval's first tick is delayed)
+  setInterval(() => void runCleanup(), 60 * 60 * 1000);
+
+  if (config.api.externalSyncIntervalMin > 0) {
+    logger.info("sync.scheduler.enabled", { intervalMin: config.api.externalSyncIntervalMin });
+    setInterval(
+      () => void runExternalSync(),
+      config.api.externalSyncIntervalMin * 60 * 1000,
+    );
+  } else {
+    logger.info("sync.scheduler.disabled");
+  }
+}
+
+void start().catch((error) => {
+  logger.error("server.start_failed", { error });
+  process.exit(1);
+});

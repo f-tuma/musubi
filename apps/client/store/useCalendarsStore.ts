@@ -26,7 +26,11 @@ export const useCalendarsStore = create<CalendarStore>((set, get) => ({
 
   toggleCal: (id) => {
     const next = new Set(get().activeCals);
-    next.has(id) ? next.delete(id) : next.add(id);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
     set({ activeCals: next, soloCalId: null });
   },
 

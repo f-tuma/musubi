@@ -2,9 +2,8 @@ import { colors, fonts } from "@/constants/theme";
 import { Tap } from "@/components/ui/Tap";
 import { Feather } from "@expo/vector-icons";
 import { ReactNode, useState } from "react";
-import { Pressable, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import Animated, { FadeInDown, FadeOut } from "react-native-reanimated";
-import { Text } from "react-native";
 
 type CalMode = "day" | "week" | "month";
 

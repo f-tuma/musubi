@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { caldavAccounts, db } from "..";
 
 // Stores the ALREADY-ENCRYPTED password blob — this layer never sees plaintext.
@@ -43,8 +43,4 @@ export async function getCaldavAccountById(id: string) {
     .from(caldavAccounts)
     .where(eq(caldavAccounts.id, id));
   return res ?? null;
-}
-
-export async function deleteCaldavAccount(userID: string, id: string) {
-  await db.delete(caldavAccounts).where(and(eq(caldavAccounts.id, id), eq(caldavAccounts.userID, userID)));
 }

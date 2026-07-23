@@ -52,6 +52,12 @@ tokens therefore do not become high-cardinality labels.
 classes. `stage` is one of `account`, `discovery`, `push`, or `scheduler`;
 provider is a known provider name, `all`, or `unknown`.
 
+`musubi_scheduled_task_skips_total{task}` increments when `cleanup` or
+`external_sync` is still running at its next tick. One increment means overlap
+was prevented, not that two runs executed. Investigate duration, provider
+latency, and interval sizing; the shipped `MusubiScheduledTaskOverlap` alert
+fires on any increase.
+
 ### Usage snapshot
 
 The API computes current-state gauges from PostgreSQL and caches the snapshot for
@@ -79,7 +85,9 @@ gauges are per process:
 - `musubi_sse_users`; and
 - `musubi_process_*` / `musubi_nodejs_*`.
 
-With more than one API replica, aggregate SSE gauges with `sum(...)`.
+The supported deployment has one API replica, so these gauges describe the
+whole service. A future coordinated multi-replica design would need to aggregate
+them with `sum(...)`.
 
 ## Structured logs
 
@@ -170,13 +178,27 @@ sum(rate(musubi_http_requests_total[5m]))
 ## Current scaling boundary
 
 The scheduler, cleanup timers, SSE registry, rate limiter, and metrics registry
-are process-local. Multiple API replicas therefore create these operational
-requirements:
+are process-local. Musubi therefore enforces **one active API process per
+database**:
+
+- `apps/api/src/singleton.ts` holds a dedicated, session-scoped PostgreSQL
+  advisory lock for the process lifetime;
+- a second API pointed at the same database exits before listening;
+- both shipped Compose files declare `deploy.replicas: 1`; and
+- losing the lock connection terminates the process instead of silently serving
+  with an invalid coordination assumption.
+
+Cleanup and external sync additionally use an in-process single-flight guard.
+If one run exceeds its interval, the next tick is skipped and observable through
+logs plus `musubi_scheduled_task_skips_total`.
+
+True horizontal scaling still requires:
 
 - coordinate or singleton-run scheduled jobs;
 - use shared pub/sub for cross-replica SSE delivery;
 - replace the in-memory rate limiter for a global policy; and
 - aggregate per-instance metrics.
 
-Until those pieces exist, one API replica is the documented safe operating
-model. A database alone does not coordinate these in-memory behaviors.
+Do not remove or bypass the singleton lock until those pieces exist. A database
+alone does not coordinate these in-memory behaviors; its advisory lock currently
+prevents the unsupported topology rather than making it safe.

@@ -19,6 +19,10 @@ services:
         aliases:
           - musubi-api
       default: {}
+    # Do not scale this service horizontally. A second process sharing the same
+    # DB is rejected by the API's singleton advisory lock.
+    deploy:
+      replicas: 1
     restart: unless-stopped
 
   db:

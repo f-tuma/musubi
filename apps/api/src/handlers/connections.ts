@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
 import { auth } from "@musubi/auth";
-import { cleanUsersOAuthTokens, clearDisabledExternalCalendars, deleteCaldavAccount, disableExternalCalendar, getOAuthCredentials, getUserExternalCalendars, removeCalendar } from "@musubi/db";
+import { cleanOAuthAccountTokens, disableExternalCalendar, getOAuthCredentials, removeExternalAccountData } from "@musubi/db";
 import { BadRequestError } from "@musubi/types";
 import { revokeGoogleToken } from "../sync/oauth";
 import { decryptToken } from "../tokenCrypto";
+
+const DISCONNECT_PROVIDERS = new Set(["caldav", "google", "microsoft"]);
 
 // Disconnect one connected account of a provider: revoke the provider grant
 // (Google only), then always remove the account's mirrored Musubi calendars and
@@ -12,6 +14,7 @@ import { decryptToken } from "../tokenCrypto";
 export async function handlerDisconnectAccount(req: Request, res: Response) {
   const { provider, accountId } = req.body ?? {};
   if (!provider || !accountId) throw new BadRequestError("provider and accountId are required...");
+  if (!DISCONNECT_PROVIDERS.has(provider)) throw new BadRequestError("Unsupported provider");
 
   try {
     // Best-effort revoke of THIS account's grant before we drop its token.
@@ -23,14 +26,8 @@ export async function handlerDisconnectAccount(req: Request, res: Response) {
     }
   } finally {
     // Always remove local state, even if revoke or credential lookup threw.
-    for (const link of await getUserExternalCalendars(provider, req.user!.id, accountId)) {
-      await removeCalendar(link.calendarID);
-    }
-    // Forget per-calendar opt-outs so reconnecting starts clean.
-    await clearDisabledExternalCalendars(provider, req.user!.id, accountId);
-    if (provider === "caldav") {
-      await deleteCaldavAccount(req.user!.id, accountId);
-    } else {
+    await removeExternalAccountData(provider, req.user!.id, accountId);
+    if (provider !== "caldav") {
       // OAuth providers (google, ...) — unlink this specific account from Better
       // Auth. Better Auth refuses to unlink the user's LAST account (it would
       // lock them out of login) and also requires a fresh session. The calendar
@@ -43,7 +40,7 @@ export async function handlerDisconnectAccount(req: Request, res: Response) {
           headers: new Headers(req.headers as Record<string, string>),
         });
       } catch {
-        await cleanUsersOAuthTokens(req.user!.id, provider);
+        await cleanOAuthAccountTokens(req.user!.id, provider, accountId);
       }
     }
   }

@@ -210,15 +210,10 @@ Before editing code, establish the same baseline contributors use:
 pnpm check
 ```
 
-This runs client + API typechecks, the six existing assertion-based self-checks,
-and the docs build. The client lint currently has a known failing baseline, so
-it is intentionally separate:
-
-```sh
-pnpm lint
-```
-
-The current lint debt is recorded in the
+This runs client + API typechecks, the nine existing assertion-based self-checks,
+client lint, and the docs build. Lint has zero errors and a locked budget for
+108 known React Compiler/hook warnings; a net increase fails the command. The
+remaining migration is recorded in the
 [codebase audit](/docs/contributing/codebase-audit/#p1--restore-an-enforceable-quality-gate).
 
 ## What to do in the app

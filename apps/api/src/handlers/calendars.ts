@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import ICAL from "ical.js";
 import { randomUUID } from "crypto";
-import { addCalendarMember, consumeInvite, createCalendar, createEvent, getCalendar, getCalendarEvents, getCalendarIDFromToken, getCalendarMembers, getExternalLinkForCalendar, getUserRoleForCalendar, getUsersCalendars, importExternalCalendar, NewCalendar, removeCalendar, removeCalendarMember, setMemberRole, updateCalendar } from '@musubi/db';
+import { addCalendarMember, consumeInvite, createCalendar, createEvent, getCalendar, getCalendarEvents, getCalendarIDFromToken, getCalendarMembers, getExternalLinkForCalendar, getUserRoleForCalendar, getUsersCalendars, importExternalCalendar, NewCalendar, removeCalendar, removeCalendarMember, setCalendarMemberRole, transferCalendarOwnership, updateCalendar } from '@musubi/db';
 import { toVevent, veventToFields } from "../sync/adapters/caldav";
 import { BadRequestError, Calendar, CalendarSchema, ForbiddenError, NotFoundError, User } from "@musubi/types";
 import { notifyCalendarMembers } from "./stream";
@@ -204,18 +204,50 @@ export async function handlerGetCalendarFromToken(req: Request, res: Response) {
   });
 }
 
-export async function handlerGetCalendar(req: Request, res: Response) {
-  const result = await getCalendar(req.params.id as string);
+type CalendarDetailDependencies = {
+  getUserRoleForCalendar: typeof getUserRoleForCalendar;
+  getCalendar: typeof getCalendar;
+  getCalendarMembers: typeof getCalendarMembers;
+};
 
-  const members = await getCalendarMembers(req.params.id as string);
+const calendarDetailDependencies: CalendarDetailDependencies = {
+  getUserRoleForCalendar,
+  getCalendar,
+  getCalendarMembers,
+};
 
-  res.status(200).json({
-    ...result, members: members.map(u => ({
+// Load a calendar detail only after proving the caller belongs to it. Keep this
+// authorization before both data reads: the response contains member emails,
+// and an authenticated non-member must not be able to enumerate either the
+// calendar or its membership by UUID.
+export async function getCalendarDetailsForUser(
+  userID: string,
+  calendarID: string,
+  dependencies: CalendarDetailDependencies = calendarDetailDependencies,
+) {
+  const role = await dependencies.getUserRoleForCalendar(userID, calendarID);
+  if (!role) throw new ForbiddenError("You're not a member of this calendar.");
+
+  const result = await dependencies.getCalendar(calendarID);
+  if (!result) throw new NotFoundError("Calendar not found...");
+
+  const members = await dependencies.getCalendarMembers(calendarID);
+  return {
+    ...result,
+    members: members.map(u => ({
       name: u.user.name,
       email: u.user.email,
       id: u.user.id,
     })),
-  });
+  };
+}
+
+export async function handlerGetCalendar(req: Request, res: Response) {
+  const result = await getCalendarDetailsForUser(
+    req.user!.id,
+    req.params.id as string,
+  );
+  res.status(200).json(result);
 }
 
 // Import a whole .ics file as a NEW native calendar. Body is raw iCalendar text
@@ -315,12 +347,17 @@ export async function handlerJoinCalendar(req: Request, res: Response) {
 
 export async function handlerLeaveCalendar(req: Request, res: Response) {
   const calendarID = req.params.calendarId as string;
-  const calendar = await getCalendar(calendarID);
-  if (req.user!.id === calendar.creatorID) {
+  const removal = await removeCalendarMember(req.user!.id, calendarID);
+  if (removal.status === "calendar_not_found") {
+    throw new NotFoundError("Calendar not found...");
+  }
+  if (removal.status === "owner") {
     // Would orphan the calendar — transfer ownership (setMemberRole "owner") or delete it.
     throw new BadRequestError("The owner can't leave. Transfer ownership or delete the calendar.");
   }
-  await removeCalendarMember(req.user?.id!, calendarID);
+  if (removal.status === "member_not_found") {
+    throw new NotFoundError("Member not found on this calendar...");
+  }
   // Tell the leaver's other devices to drop the calendar (mirrors kick below).
   notifyCalendarMembers([req.user!.id], "calendar_removed", { id: calendarID });
 
@@ -333,13 +370,19 @@ export async function handlerKickMember(req: Request, res: Response) {
 
   await assertCan(req.user!.id, calendarID, "manageMembers");
 
-  const calendar = await getCalendar(calendarID);
-  if (!calendar) throw new NotFoundError("Calendar not found...");
-  if (targetUserID === calendar.creatorID) {
+  const removal = await removeCalendarMember(targetUserID, calendarID, req.user!.id);
+  if (removal.status === "calendar_not_found") {
+    throw new NotFoundError("Calendar not found...");
+  }
+  if (removal.status === "not_owner") {
+    throw new ForbiddenError("Only the owner can remove members.");
+  }
+  if (removal.status === "owner") {
     throw new BadRequestError("The calendar owner can't be removed.");
   }
-
-  await removeCalendarMember(targetUserID, calendarID);
+  if (removal.status === "member_not_found") {
+    throw new NotFoundError("Member not found on this calendar...");
+  }
   // Tell the removed user's client to drop the calendar.
   notifyCalendarMembers([targetUserID], "calendar_removed", { id: calendarID });
 
@@ -379,28 +422,52 @@ export async function handlerSetMemberRole(req: Request, res: Response) {
 
   if (role === "owner") {
     // Ownership transfer: only the current owner may hand it off. They step
-    // down to editor; creatorID moves so owner-guards keep working.
+    // down to editor; creatorID moves so owner-guards keep working. The query
+    // locks the calendar and commits all three writes as one transaction.
     if (req.user!.id !== calendar.creatorID) {
       throw new ForbiddenError("Only the owner can transfer ownership.");
     }
     if (calendar.isDefault) {
       throw new BadRequestError("Your personal calendar's ownership can't be transferred.");
     }
-    const updated = await setMemberRole(targetUserID, calendarID, "owner");
-    if (!updated) throw new NotFoundError("Member not found on this calendar...");
-    await updateCalendar({ ...calendar, creatorID: targetUserID });
-    await setMemberRole(req.user!.id, calendarID, "editor");
+    const transfer = await transferCalendarOwnership(calendarID, req.user!.id, targetUserID);
+    if (transfer.status === "calendar_not_found") {
+      throw new NotFoundError("Calendar not found...");
+    }
+    if (transfer.status === "not_owner") {
+      throw new ForbiddenError("Only the owner can transfer ownership.");
+    }
+    if (transfer.status === "default_calendar") {
+      throw new BadRequestError("Your personal calendar's ownership can't be transferred.");
+    }
+    if (transfer.status === "external_calendar") {
+      throw new BadRequestError("A connected provider calendar's ownership can't be transferred.");
+    }
+    if (transfer.status === "member_not_found") {
+      throw new NotFoundError("Member not found on this calendar...");
+    }
     // Role is per-user → personalized payloads, so open clients update live.
-    notifyCalendarMembers([targetUserID], "calendar_updated", { ...calendar, creatorID: targetUserID, role: "owner" });
-    notifyCalendarMembers([req.user!.id], "calendar_updated", { ...calendar, creatorID: targetUserID, role: "editor" });
+    notifyCalendarMembers([targetUserID], "calendar_updated", { ...transfer.calendar, role: "owner" });
+    notifyCalendarMembers([req.user!.id], "calendar_updated", { ...transfer.calendar, role: "editor" });
     return res.status(200).json({ id: targetUserID, role: "owner" });
   }
 
-  const updated = await setMemberRole(targetUserID, calendarID, role);
-  if (!updated) throw new NotFoundError("Member not found on this calendar...");
+  const roleUpdate = await setCalendarMemberRole(req.user!.id, targetUserID, calendarID, role);
+  if (roleUpdate.status === "calendar_not_found") {
+    throw new NotFoundError("Calendar not found...");
+  }
+  if (roleUpdate.status === "not_owner") {
+    throw new ForbiddenError("Only the owner can change member roles.");
+  }
+  if (roleUpdate.status === "owner") {
+    throw new BadRequestError("The calendar owner's role can't be changed.");
+  }
+  if (roleUpdate.status === "member_not_found") {
+    throw new NotFoundError("Member not found on this calendar...");
+  }
 
   // Tell the affected user right away — no reload needed to gain/lose edit UI.
   notifyCalendarMembers([targetUserID], "calendar_updated", { ...calendar, role });
 
-  res.status(200).json({ id: targetUserID, role: updated.role });
+  res.status(200).json({ id: targetUserID, role: roleUpdate.member.role });
 }

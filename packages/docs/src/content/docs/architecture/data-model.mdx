@@ -30,7 +30,7 @@ You rarely edit these — Better Auth's Drizzle adapter owns them. See [Auth in 
 
 | Table | Purpose | Notes |
 |---|---|---|
-| `userSettings` | Preferences (theme, formats, `onboarded`, `calendarOrder` jsonb) | **Lazy-created on first read**, not at signup |
+| `userSettings` | Preferences (theme, formats, `onboarded`, `calendarOrder` jsonb) | `id` is the user's FK + primary key; lazy-created conflict-safely on first read |
 | `userAvatars` | Avatar bytes | Stored as a custom **`bytea`** type — see below |
 | `userStatus` | `isSponsor` / `isPremium` flags | |
 
@@ -68,7 +68,7 @@ erDiagram
 | Table | Meaning | Cascade / constraint |
 |---|---|---|
 | `calendarMembers` | who is in a calendar + their `role` | cascades from user & calendar; role defaults `"viewer"`; unique `(userID, calendarID)` — re-joins hit `onConflictDoNothing` instead of duplicating |
-| `calendarEvents` | which calendars an event is linked into (M:N) | cascades both sides |
+| `calendarEvents` | which calendars an event is linked into (M:N) | cascades both sides; unique `(eventID, calendarID)` so retries cannot duplicate a link |
 | `eventUsers` | attendees of an event (creator added on create; presence = attending) | cascades both sides; unique `(eventID, userID)` |
 | `calendarInvites` | invite links — the row's uuid `id` IS the token | cascades from calendar; `expiresAt` null = never expires, `maxUses` null = unlimited, `uses` counter checked (with expiry) at every token read |
 
@@ -135,8 +135,27 @@ export * as schema from './schema';
 
 Query functions are the backend's whole DB vocabulary. Two conventions that matter:
 
-- **They return data or `undefined`/`[]` — they do not throw `NotFound`.** Throwing is the handler's job. Keep it that way.
+- **Keep a complete database invariant inside one query function.** Calendar
+  creation, event creation/link reconciliation/deletion, calendar deletion, and
+  ownership transfer use `db.transaction()`. Handlers should not coordinate a
+  dependent sequence of raw query calls.
+- **Most queries return data or `undefined`/`[]`; handlers map that to HTTP
+  errors.** Token and direct calendar lookups are the deliberate exceptions:
+  `getCalendarIDFromToken()` and `getCalendar()` throw `NotFoundError`.
 - **Delta-aware reads take an optional `since: Date`.** `getUsersEvents(userID, since?)` returns the full set or the changed-since set accordingly.
+
+Ownership transfer additionally selects the calendar `FOR UPDATE`. The row lock
+serializes competing transfers before the transaction updates the new owner's
+membership, the previous owner's membership, and `calendars.creatorID`.
+Provider mirrors cannot transfer ownership: `external_calendars.userID` must
+remain the user who owns the corresponding OAuth or CalDAV credentials.
+
+<Aside type="caution">
+A database transaction covers PostgreSQL only. Never hold one open while calling
+Google, Microsoft, or CalDAV, and never describe provider + database work as
+atomic. Use the ordering and recovery semantics in the
+[sync architecture](/docs/architecture/sync/#write-path-and-failure-semantics).
+</Aside>
 
 ## Migration workflow
 
