@@ -17,7 +17,11 @@ Musubi is built around three core concepts: **calendars**, **events**, and **inv
 
 **Calendars** are the main organisational unit. You create a calendar, give it a name and colour, and it becomes a shared space for events. You can own multiple calendars — one for family, one for a project, one for a sports team.
 
-**Events** live inside calendars. An event can belong to more than one calendar at the same time — if you share an event across a work calendar and a personal one, all members of both calendars can see it. Events support titles, start/end times, optional notes, location, a link, and recurrence rules (see [Recurring events](#recurring-events) below).
+**Events** are linked into calendars rather than nested inside one. The same
+event can be linked to a work calendar and a personal calendar, edited once, and
+seen by members of both. Its **home calendar** controls who may edit it. Events
+support titles, start/end times, optional notes, location, a link, and recurrence
+rules (see [Recurring events](#recurring-events) below).
 
 **Invites** are how other people join your calendar. You generate a shareable invite link from within the app; anyone who opens it and has an account can accept and become a member.
 
@@ -33,7 +37,10 @@ Musubi supports recurring events using [RFC 5545 RRULE](https://datatracker.ietf
 
 ## Real-time sync
 
-When someone in your calendar creates or updates an event, everyone else sees it immediately. The server pushes updates over a persistent **Server-Sent Events** (SSE) connection — no polling, no refresh needed.
+When someone creates or updates an event, the server nudges connected members
+over **Server-Sent Events** (SSE). SSE is best-effort; reconnect and delta sync
+are the durable recovery path. External providers are polled on a schedule and
+send the same kind of refresh nudge when their mirror changes.
 
 ---
 
@@ -61,7 +68,7 @@ A few settings worth knowing about:
 | Recurrence / dates | `@musubi/calendar` — logic-only package (RRULE + date helpers) |
 | Animations | Reanimated v4 + Gesture Handler |
 | Server | Express.js (Node.js) |
-| Auth | Better Auth — email/password + Google |
+| Auth | Better Auth — email/password + Google/Apple |
 | ORM | Drizzle ORM |
 | Database | PostgreSQL |
 | Real-time | Server-Sent Events (SSE) |

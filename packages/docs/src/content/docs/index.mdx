@@ -1,43 +1,88 @@
 ---
-title: Musubi
-description: A privacy-first shared calendar. Connect your schedules, own your data.
+title: Musubi documentation
+description: Learn the Musubi codebase, contribute safely, and operate a self-hosted shared-calendar server.
 template: splash
 hero:
-  tagline: One app for all your shared calendars. Privacy-first, self-hostable, and built for people who care where their data lives.
+  tagline: From first boot to confident contribution — architecture, workflows, provider sync, API reference, and production operations.
   actions:
-    - text: Get Started
-      link: /docs/guides/introduction/
+    - text: Start onboarding
+      link: /docs/guides/onboarding/
       icon: right-arrow
       variant: primary
-    - text: Self-Host
-      link: /docs/guides/self-hosting/
-      icon: open-book
+    - text: Run locally
+      link: /docs/guides/running-locally/
+      icon: rocket
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-## What is Musubi?
+## Choose your path
 
-Musubi (結び) is a Japanese word meaning *knot* or *bond*. The app ties people's schedules together — shared calendars that you control, running on infrastructure you own.
+<CardGrid>
+  <LinkCard
+    title="I am new to the codebase"
+    href="/docs/guides/onboarding/"
+    description="A guided, source-driven course: run Musubi, learn its core model, trace a request, and make a safe first change."
+  />
+  <LinkCard
+    title="I want to contribute"
+    href="/docs/guides/contributing/"
+    description="Branching, verification, database migrations, project conventions, and the pull-request checklist."
+  />
+  <LinkCard
+    title="I operate a Musubi server"
+    href="/docs/guides/self-hosting/"
+    description="Docker Compose, secrets, HTTPS, updates, backups, recovery drills, metrics, logs, and alerts."
+  />
+  <LinkCard
+    title="I am integrating with the API"
+    href="/docs/reference/api/"
+    description="Authentication, public routes, endpoint inventory, response conventions, realtime events, and source locations."
+  />
+</CardGrid>
 
-<CardGrid stagger>
-  <Card title="Privacy First" icon="padlock">
-    No ads, no tracking, no third-party calendar vendor with your schedule. Run it yourself or use the hosted version at musubi.pro.
+## The idea everything else builds on
+
+Musubi (結び, *knot* or *bond*) is an open, self-hostable shared calendar. Its
+data model deliberately differs from most calendar systems:
+
+> **An event is not nested inside one calendar. It is linked into one or more calendars.**
+
+The `events` table has no `calendarId`. `calendar_events` links one event to
+many calendars, while `events.originCalendarID` identifies the home calendar
+whose role controls editing. Once this is clear, permissions, link vs fork,
+external mirrors, federation, realtime updates, and the client cache all become
+much easier to reason about.
+
+<CardGrid>
+  <Card title="One shared contract" icon="puzzle">
+    Zod schemas and permission rules live in `@musubi/types`, imported by both
+    the Express server and the Expo client.
   </Card>
-  <Card title="Shared Calendars" icon="star">
-    Create calendars and invite others with owner, editor, and viewer roles. Owners can hand a calendar off entirely — ownership transfer built in.
+  <Card title="Offline-tolerant client" icon="laptop">
+    Zustand is the live state; SQLite is the local mirror; delta sync is the
+    durable reconciliation path; SSE makes changes feel immediate.
   </Card>
-  <Card title="External Calendar Sync" icon="random">
-    Connect Google Calendar, Outlook, and any CalDAV server — including iCloud. Two-way sync, multiple accounts, and automatic read-only detection for calendars you can't write to.
+  <Card title="Provider-agnostic sync" icon="random">
+    Google, Microsoft, and CalDAV adapters normalize calendars and events behind
+    one `CalendarAdapter` contract.
   </Card>
-  <Card title="Recurring Events" icon="approve-check-circle">
-    Full RFC 5545 RRULE support — weekly workouts, monthly syncs, yearly reminders — including per-occurrence exceptions: delete or skip a single occurrence without touching the series.
-  </Card>
-  <Card title="Real-Time Sync" icon="rocket">
-    Events update live across all connected clients via Server-Sent Events. No polling, no manual refresh.
-  </Card>
-  <Card title="Light & Dark" icon="sun">
-    Two hand-tuned zen palettes — sumi ink on night, ink on washi paper. Follows your system setting, or pick one and stay.
+  <Card title="Self-hostable operations" icon="server">
+    One Node API and PostgreSQL database, with migrations on boot, JSON logs,
+    Prometheus metrics, dashboards, alerts, and tested backup scripts.
   </Card>
 </CardGrid>
+
+## Fast reference
+
+| Need | Go to |
+|---|---|
+| Start every workspace | [Run locally](/docs/guides/running-locally/) |
+| Find the right file | [Architecture overview](/docs/architecture/overview/) |
+| Understand a project term | [Glossary](/docs/architecture/glossary/) |
+| Look up a command | [Commands & checks](/docs/reference/commands/) |
+| Configure the server | [Environment variables](/docs/reference/environment/) |
+| Add or debug an endpoint | [API server](/docs/architecture/api/) and [HTTP API reference](/docs/reference/api/) |
+| Add a sync provider | [Sync engine](/docs/architecture/sync/#how-to-add-a-provider) |
+| Review known risks | [Codebase audit](/docs/contributing/codebase-audit/) |

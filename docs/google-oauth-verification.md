@@ -2,6 +2,11 @@
 
 This document tracks the public, non-sensitive work required to verify Musubi's Google OAuth integration.
 
+For implementation and troubleshooting details, use the maintained
+[Google provider guide](../packages/docs/src/content/docs/providers/google.mdx).
+This file remains separate because it is a release/compliance checklist, not
+general product documentation.
+
 > Public repository rule: do not add credentials, tokens, private email addresses, unpublished infrastructure details, reviewer credentials, internal account IDs, security keys, or screenshots containing user data.
 
 ## Verification target

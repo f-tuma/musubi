@@ -10,6 +10,12 @@
   "scripts": {
     "dev": "turbo run dev --ui=tui",
     "build": "turbo run build",
+    "docs:dev": "pnpm --filter @musubi/docs dev",
+    "docs:build": "pnpm --filter @musubi/docs build",
+    "typecheck": "pnpm --filter @musubi/client exec tsc --noEmit && pnpm exec tsc -p apps/api/tsconfig.json --noEmit --skipLibCheck",
+    "test": "pnpm --filter @musubi/client exec tsx lib/eventForm.test.ts && pnpm --filter @musubi/client exec tsx lib/rrule.test.ts && pnpm --filter @musubi/client exec tsx lib/ics.test.ts && pnpm --filter @musubi/api exec tsx src/sync/oauth.test.ts && pnpm --filter @musubi/api exec tsx src/sync/adapters/microsoft.test.ts",
+    "check": "pnpm typecheck && pnpm test && pnpm build",
+    "lint": "pnpm --filter @musubi/client lint",
     "db:generate": "pnpm -F @musubi/db exec drizzle-kit generate",
     "db:migrate": "pnpm -F @musubi/db exec drizzle-kit migrate"
   },

@@ -1,0 +1,182 @@
+---
+title: Observability runbook
+description: Scrape Musubi metrics, query structured logs, import dashboards, and triage production failures.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+Musubi exposes Prometheus metrics on a private listener and writes structured
+JSON logs to stdout/stderr. The implementation lives in
+`apps/api/src/metrics.ts`; dashboards and alerts live under `ops/`.
+
+## Metrics endpoint
+
+| Property | Value |
+|---|---|
+| Listener | Separate from the public API |
+| Port | `METRICS_PORT`, default `9464`; `0` disables it |
+| Path | `GET /metrics` |
+| Bind address | `0.0.0.0` |
+| Prefix | `musubi_` |
+| Constant label | `service="api"` |
+
+The bundled Compose files do not publish this port to the host. Scrape it from a
+trusted Docker network:
+
+```yaml
+scrape_configs:
+  - job_name: musubi-api
+    static_configs:
+      - targets: ["musubi-api:9464"]
+```
+
+Keep the job name `musubi-api`; the shipped dashboards and alert rules expect
+it.
+
+## Metric catalog
+
+### HTTP
+
+| Metric | Type | Labels |
+|---|---|---|
+| `musubi_http_requests_total` | counter | `method`, `route`, `status` |
+| `musubi_http_request_duration_seconds` | histogram | `method`, `route`, `status` |
+| `musubi_http_requests_in_flight` | gauge | `method` |
+
+Routes use registered Express patterns, never concrete URLs. UUIDs and invite
+tokens therefore do not become high-cardinality labels.
+
+### Provider sync
+
+`musubi_external_sync_failures_total{stage,provider}` counts bounded failure
+classes. `stage` is one of `account`, `discovery`, `push`, or `scheduler`;
+provider is a known provider name, `all`, or `unknown`.
+
+### Usage snapshot
+
+The API computes current-state gauges from PostgreSQL and caches the snapshot for
+60 seconds:
+
+| Metric | Meaning |
+|---|---|
+| `musubi_users_total` | Non-federated local users |
+| `musubi_events_total` | Live events |
+| `musubi_calendars_total` | Calendars |
+| `musubi_active_users` | Users with a valid session |
+| `musubi_active_sessions` | Non-expired sessions |
+| `musubi_sync_accounts{provider,status}` | Connected credential/provider accounts |
+
+CalDAV credentials live outside Better Auth and have no OAuth account status, so
+they appear with `status="active"`. Use the failure counter and logs for their
+health.
+
+### Process and live connections
+
+`prom-client` Node/process defaults are exported under the same prefix. SSE
+gauges are per process:
+
+- `musubi_sse_connections`;
+- `musubi_sse_users`; and
+- `musubi_process_*` / `musubi_nodejs_*`.
+
+With more than one API replica, aggregate SSE gauges with `sum(...)`.
+
+## Structured logs
+
+Every completed request emits `http.request.completed` with:
+
+- `method`, registered `route`, `status`, and `durationMs`;
+- `requestId`, also returned as the `x-request-id` response header; and
+- `userId` when authenticated.
+
+Status determines level: 5xx is `error`, 4xx is `warn`, everything else is
+`info`. Provider-sync debug logs add per-account/per-calendar counts and timing
+when `LOG_LEVEL=debug`.
+
+<Aside type="caution">
+Do not add request bodies, passwords, OAuth codes, refresh tokens, CalDAV
+credentials, invite tokens, or member tokens to logs. A request ID is the safe
+join key between client reports and server activity.
+</Aside>
+
+## Shipped operations assets
+
+| Path | Purpose |
+|---|---|
+| `ops/prometheus/musubi-alerts.yml` | Target-down, 5xx, and provider-sync alerts |
+| `ops/grafana/musubi-usage-dashboard.json` | Users, calendars, events, sessions, accounts, sync and SSE |
+| `ops/grafana/musubi-api-dashboard.json` | Throughput, failures, latency and process health |
+| `ops/grafana/musubi-logs-metrics-dashboard.json` | Combined Prometheus and Loki investigation |
+
+Import dashboard JSON through Grafana's **Dashboards → New → Import**. Select the
+Prometheus/Loki data sources requested by the template variables.
+
+Useful queries:
+
+```text
+# State growth is derived from stored gauge history
+delta(musubi_events_total[7d])
+delta(musubi_users_total[24h])
+
+# Connected external providers
+sum by (provider) (
+  musubi_sync_accounts{provider=~"google|microsoft|caldav"}
+)
+
+# API 5xx ratio
+sum(rate(musubi_http_requests_total{status=~"5.."}[5m]))
+/
+sum(rate(musubi_http_requests_total[5m]))
+```
+
+## Incident triage
+
+<Steps>
+
+1. **Define the blast radius.**
+
+   Check API reachability, 5xx ratio, latency, database availability, sync
+   failures, and whether only one provider/account is affected.
+
+2. **Capture a request ID.**
+
+   Ask for the `x-request-id` from the failing response, or reproduce once. Find
+   the same ID across request, auth, handler, sync, and error log entries.
+
+3. **Separate local persistence from provider delivery.**
+
+   Calendar-level provider mutations are attempted before the local mirror
+   changes. Event provider push is currently best-effort after local
+   persistence; a successful API response can therefore still require
+   reconciliation. See [Sync failure semantics](/docs/architecture/sync/#write-path-and-failure-semantics).
+
+4. **Inspect the account and cursor.**
+
+   Determine provider, exact connection, `syncStatus`, calendar cursor/window,
+   last successful sync, and whether a legitimate reset is in progress.
+
+5. **Enable debug logs briefly.**
+
+   Set `LOG_LEVEL=debug`, reproduce one bounded operation, then restore the
+   production level. Never collect secrets while increasing detail.
+
+6. **Verify recovery.**
+
+   Confirm a subsequent pull converges database, provider, and client cache.
+   Record the alert, request ID, provider/account scope, cause, and prevention.
+
+</Steps>
+
+## Current scaling boundary
+
+The scheduler, cleanup timers, SSE registry, rate limiter, and metrics registry
+are process-local. Multiple API replicas therefore create these operational
+requirements:
+
+- coordinate or singleton-run scheduled jobs;
+- use shared pub/sub for cross-replica SSE delivery;
+- replace the in-memory rate limiter for a global policy; and
+- aggregate per-instance metrics.
+
+Until those pieces exist, one API replica is the documented safe operating
+model. A database alone does not coordinate these in-memory behaviors.

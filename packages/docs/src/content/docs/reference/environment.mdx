@@ -1,0 +1,192 @@
+---
+title: Environment variables
+description: Every Musubi server, provider, client-build, Compose, logging, and metrics environment variable with defaults and security notes.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The API loads the repository-root `.env` through `@musubi/config`. Docker
+Compose also reads that file, then overrides `DATABASE_URL` inside the API
+container so it can reach the `db` service.
+
+## Minimal development configuration
+
+```dotenv
+POSTGRES_USER=musubi
+POSTGRES_DB=musubi
+POSTGRES_PASSWORD=local-development-only
+DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}
+
+API_SERVER_PORT=7531
+ENVIRONMENT=dev
+BETTER_AUTH_URL=http://localhost:7531
+BETTER_AUTH_SECRET=replace-with-a-long-random-value
+```
+
+Generate the auth secret with `openssl rand -base64 32`.
+
+## Boot and runtime
+
+| Variable | Required | Default | Used by |
+|---|---:|---:|---|
+| `DATABASE_URL` | Yes | — | API, Drizzle, migrations |
+| `ENVIRONMENT` | Yes | — | API feature gates and dev origins |
+| `BETTER_AUTH_URL` | Yes | — | Better Auth base URL, emails, invites, avatar URLs |
+| `BETTER_AUTH_SECRET` | Yes | — | Session signing and OAuth-token encryption |
+| `API_SERVER_PORT` | No | `7531` | Public API listener |
+| `EXTERNAL_SYNC_INTERVAL_MIN` | No | `5` | Provider polling interval; `0` disables scheduled sync |
+| `LOG_LEVEL` | No | `info` | `debug`, `info`, `warn`, `error`, or `silent` |
+| `METRICS_PORT` | No | `9464` | Separate Prometheus listener; `0` disables it |
+
+`BETTER_AUTH_URL` must be an origin, with no `/api` suffix:
+
+```dotenv
+BETTER_AUTH_URL=https://calendar.example.com
+```
+
+It affects security-sensitive and user-visible URLs. In production, use the
+same public HTTPS origin users enter in the app.
+
+<Aside type="caution">
+`ENVIRONMENT=dev` enables development behavior, including the full-user reset
+endpoint and extra trusted Expo/browser origins. Use a different value in
+production.
+</Aside>
+
+## Docker Compose
+
+These values configure the bundled PostgreSQL service rather than the API
+directly:
+
+| Variable | Required for Compose | Default / notes |
+|---|---:|---|
+| `POSTGRES_USER` | Yes | Example uses `musubi` |
+| `POSTGRES_DB` | Yes | Example uses `musubi` |
+| `POSTGRES_PASSWORD` | Yes | Compose refuses to start when missing |
+| `MUSUBI_TAG` | No | `latest`; pin a published image tag for controlled upgrades |
+
+The plain Compose stack publishes `API_SERVER_PORT`. The Dokploy stack exposes
+it only to Docker networks and attaches the stable `musubi-api` alias to
+`dokploy-network`.
+
+## Email
+
+All email settings are optional at boot, but the feature needs the complete set:
+
+| Variable | Purpose |
+|---|---|
+| `SMTP_HOST` | SMTP hostname; also drives `/api/v1/server` → `email` capability |
+| `SMTP_PORT` | Commonly `587` (STARTTLS) or `465` (implicit TLS) |
+| `SMTP_USER` | SMTP username |
+| `SMTP_PASS` | SMTP password/token |
+| `FROM_EMAIL` | Envelope/from address |
+
+Without SMTP, email/password sign-in still works, but forgotten-password
+recovery and email-confirmed account deletion cannot send. The client adapts to
+`email: false`.
+
+## Google
+
+### Server runtime
+
+| Variable | Purpose |
+|---|---|
+| `GOOGLE_WEB_CLIENT_ID` | Better Auth web OAuth client and Google id-token audience |
+| `GOOGLE_CLIENT_SECRET` | Server-side OAuth code exchange and token refresh |
+| `GOOGLE_IOS_CLIENT_ID` | Reserved in config; the current server path does not consume it |
+
+Both web id and secret are required for Google Calendar sync to appear in the
+server's `syncProviders`. A web id alone enables the Google entry in `socials`,
+but a native build also needs the public values below.
+
+### Mobile build time
+
+| Variable | Purpose |
+|---|---|
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Native Google sign-in id-token audience on both platforms |
+| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | iOS native client id and derived URL scheme |
+
+`EXPO_PUBLIC_*` values are compiled into the app. Changing them requires a new
+native build; restarting the API is not enough. They are identifiers, not
+secrets.
+
+See [Authentication](/docs/architecture/authentication/) and the
+[Google provider guide](/docs/providers/google/).
+
+## Microsoft / Outlook
+
+| Variable | Required for Outlook sync | Purpose |
+|---|---:|---|
+| `MICROSOFT_CLIENT_ID` | Yes | Entra application id |
+| `MICROSOFT_CLIENT_SECRET` | Yes | Server-side code exchange and refresh |
+| `MICROSOFT_TENANT_ID` | No | Defaults to `common`; set a tenant id to restrict accounts |
+
+Register this exact **Web** redirect URI:
+
+```text
+{BETTER_AUTH_URL}/api/auth/callback/microsoft
+```
+
+See [Microsoft / Outlook](/docs/providers/microsoft/).
+
+## Apple
+
+| Variable | Purpose |
+|---|---|
+| `APPLE_CLIENT_ID` | Enables native Sign in with Apple; use bundle id `dev.frgtn.musubi` |
+| `APPLE_TEAM_ID` | Enables the root `apple-app-site-association` response for iOS invite universal links |
+
+With no `APPLE_TEAM_ID`, `/.well-known/apple-app-site-association` returns 404.
+The HTML hand-off page and `musubi://` deep link still work.
+
+## CalDAV and federation secret storage
+
+| Variable | Required when | Format |
+|---|---|---|
+| `CALDAV_ENC_KEY` | Connecting CalDAV accounts or storing federated Musubi connections | 32 random bytes as 64 hexadecimal characters |
+
+Generate it with:
+
+```sh
+openssl rand -hex 32
+```
+
+The key protects CalDAV passwords and remote Musubi member tokens with
+AES-256-GCM. The database stores only ciphertext.
+
+<Aside type="danger" title="Keep encryption keys stable">
+Changing `CALDAV_ENC_KEY` makes existing CalDAV credentials and federated
+connection tokens undecryptable. Changing `BETTER_AUTH_SECRET` invalidates
+sessions and also changes the key material Better Auth uses for encrypted OAuth
+tokens. Back up both outside the database before rotating or restoring.
+</Aside>
+
+## Capability discovery
+
+The public `GET /api/v1/server` response lets one mobile build adapt to any
+self-hosted server:
+
+```json
+{
+  "minClientVersion": "0.1.1",
+  "socials": ["google", "apple"],
+  "syncProviders": ["google", "microsoft", "caldav"],
+  "email": true
+}
+```
+
+- `socials` depends on runtime sign-in configuration.
+- `syncProviders` requires the full credential/key pair for each adapter.
+- `email` is true when `SMTP_HOST` is non-empty.
+
+Use this endpoint during setup before debugging the client UI.
+
+## Production checklist
+
+- [ ] `BETTER_AUTH_URL` is the final public HTTPS origin.
+- [ ] `ENVIRONMENT` is not `dev`.
+- [ ] Database, auth, SMTP, OAuth, and CalDAV secrets are stored outside Git.
+- [ ] `MUSUBI_TAG` is pinned when upgrades must be controlled.
+- [ ] `METRICS_PORT` is reachable only from the monitoring network.
+- [ ] `CALDAV_ENC_KEY` and `BETTER_AUTH_SECRET` are backed up separately from PostgreSQL.
+- [ ] Client `EXPO_PUBLIC_*` ids match the server's OAuth project and production bundle ids.

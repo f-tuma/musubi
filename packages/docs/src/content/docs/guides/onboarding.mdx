@@ -11,13 +11,17 @@ The reference pages ([Architecture](/docs/architecture/overview/), [Glossary](/d
 
 ## Step 0 — Run it
 
-Don't read code you can't run. Follow [Running Locally](/docs/guides/running-locally/) until you have the API and the Expo client up:
+Don't read code you can't run. Follow
+[Run Musubi locally](/docs/guides/running-locally/) until PostgreSQL, the API,
+docs, and a native development client work independently. Expo Go is not
+supported because the app includes custom native modules.
 
 ```sh
 pnpm install
 cp .env.example .env       # fill DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL, ENVIRONMENT=dev
+docker compose up -d db
 pnpm db:migrate
-pnpm dev                    # turbo runs api + client + docs in one TUI
+pnpm check                  # establish the verified repository baseline
 ```
 
 Then, in the app: **create an account, create a calendar, create an event, drag it around in day view.** Everything you just did is the exact flow you'll trace in Step 2.
@@ -109,7 +113,8 @@ app.post("/api/v1/events", requireAuth, wrap(handlerCreateEvent));
 
 ### 2.5 The handler (`apps/api/src/handlers/events.ts`)
 
-Every mutating handler follows the same **five-beat rhythm** — learn it once, read every handler for free:
+Most mutating handlers cover the same **five concerns**. This event path uses
+the common order:
 
 ```ts
 export async function handlerCreateEvent(req, res) {
@@ -124,7 +129,9 @@ export async function handlerCreateEvent(req, res) {
 }
 ```
 
-**validate → authorise → persist → sync outward → broadcast.** The server re-checks *everything* — client-side checks are UX only ([details](/docs/architecture/api/#the-server-trusts-nothing-from-the-client)).
+**validate → authorise → persist → sync outward → broadcast.** The server must
+re-establish every client-side guarantee; client checks are UX only
+([details](/docs/architecture/api/#the-server-must-trust-nothing-from-the-client)).
 
 ### 2.6 The query (`packages/db/src/queries/events.ts`)
 
@@ -197,9 +204,8 @@ One rule from Shared Packages worth repeating because it orders your work: **whe
 ### The verification loop
 
 ```sh
-cd apps/client && npx tsc --noEmit --skipLibCheck   # 0 errors is the baseline
-cd apps/api    && npx tsc --noEmit --skipLibCheck
-cd apps/client && npx tsx lib/rrule.test.ts          # runnable self-checks (no framework)
+pnpm check       # typecheck + five self-checks + production docs build
+pnpm lint        # currently red; compare with the recorded audit baseline
 ```
 
 When you extract pure logic, leave a self-check behind in the same style — `lib/rrule.test.ts` and `lib/eventForm.test.ts` are the pattern.
@@ -218,7 +224,12 @@ The condensed checklist (full version in [Contributing](/docs/guides/contributin
 
 ### Where to find something to do
 
-Check the [GitHub issues](https://github.com/f-tuma/musubi/issues) and the [roadmap](https://github.com/orgs/frgtn-dot-dev/projects/1/views/1). Good first shapes: a UI polish task inside `components/calendar/` (the primitives make these safe), a new user setting end-to-end (the recipe above, all seams well-trodden), or a `ponytail:`-commented shortcut whose upgrade path is spelled out right there in the comment.
+Check the [GitHub issues](https://github.com/frgtn-dot-dev/musubi/issues), the
+[roadmap](https://github.com/orgs/frgtn-dot-dev/projects/1/views/1), and the
+[codebase audit](/docs/contributing/codebase-audit/). Good first shapes: a
+scoped UI polish task inside `components/calendar/`, a documented user setting
+threaded end to end, or a small test around an existing invariant. Coordinate
+before taking an audit item that changes security or data semantics.
 
 ## Cheat sheet — the reading order
 
@@ -233,6 +244,7 @@ Check the [GitHub issues](https://github.com/f-tuma/musubi/issues) and the [road
 | Touching sync/providers | [Sync Engine](/docs/architecture/sync/) |
 | Touching invites/servers | [Federation](/docs/architecture/federation/) |
 | A term confuses you | [Glossary](/docs/architecture/glossary/) |
+| Evaluating debt/risk | [Codebase Audit](/docs/contributing/codebase-audit/) |
 | Ready to open a PR | [Contributing](/docs/guides/contributing/) |
 
 Stuck or unsure about an approach? Open a GitHub issue or discussion *before* investing the time — that's what they're for. Welcome aboard. 結び

@@ -1,0 +1,138 @@
+---
+title: Google Calendar
+description: Configure, understand, debug, and extend Musubi's two-way Google Calendar adapter.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+Google Calendar is a two-way provider implemented in
+`apps/api/src/sync/adapters/google.ts`. One Musubi user can connect multiple
+Google accounts; every imported calendar retains the account that owns its
+provider credentials.
+
+Read [Sync engine architecture](/docs/architecture/sync/) first if you are
+changing adapter code. This page focuses on Google-specific behavior.
+
+## Configure the provider
+
+<Steps>
+
+1. **Create Google OAuth clients.**
+
+   The API needs a Web client. Native sign-in also needs platform-facing client
+   identifiers compiled into the app.
+
+2. **Set the server variables.**
+
+   ```dotenv
+   GOOGLE_WEB_CLIENT_ID=...
+   GOOGLE_CLIENT_SECRET=...
+   ```
+
+   Better Auth requests offline access and explicit consent so Google returns a
+   refresh token. Calendar read/write scope is required.
+
+3. **Set the native build variables when testing the mobile flow.**
+
+   ```dotenv
+   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=...
+   EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=...
+   ```
+
+   Rebuild the development client after changing `EXPO_PUBLIC_*`; Metro cannot
+   replace values compiled into native configuration.
+
+4. **Confirm capability discovery.**
+
+   ```sh
+   curl http://localhost:7531/api/v1/server
+   ```
+
+   `syncProviders` should contain `google`. Then connect the account in
+   Settings and inspect API logs using the response `x-request-id`.
+
+</Steps>
+
+See [Environment variables](/docs/reference/environment/#google) and
+[Authentication](/docs/architecture/authentication/) for the full native and
+Better Auth setup.
+
+## Calendar mapping
+
+- Calendars come from `users/me/calendarList`.
+- A calendar is read-only unless Google reports `owner` or `writer`.
+- Color is user-specific and comes from the `calendarList` entry's
+  `backgroundColor`.
+- Renaming or recoloring a linked calendar patches Google before Musubi updates
+  its local mirror.
+
+## Incremental sync
+
+Google provides an unbounded `syncToken`:
+
+1. the first pull paginates through the full event history;
+2. the final page returns `nextSyncToken`;
+3. later pulls send that token and receive only changes;
+4. `410 Gone` means the cursor expired, so the adapter performs a reset pull and
+   the engine reconciles the full result.
+
+Persist the next cursor only after a successful pull. A partially consumed page
+sequence must never advance it.
+
+## Event mapping
+
+| Google shape | Musubi behavior |
+|---|---|
+| `start.date` | All-day event at UTC midnight |
+| Exclusive `end.date` | Subtract one day for Musubi's inclusive all-day end |
+| Recurrence array | Preserve RRULE/EXDATE text on the series master |
+| Cancelled item | Tombstone the mirrored event |
+| Conference entry point | Store as the event URL |
+| `htmlLink` | Deliberately ignored; it is a Google UI link, not the meeting |
+
+`sanitizeRecurrence()` repairs provider quirks seen in received recurrence
+rules. `toGoogleRecurrence()` keeps all-day `EXDATE` and `UNTIL` values
+DATE-typed when pushing them back.
+
+## Failure modes
+
+### The account needs reconnecting
+
+A revoked or unusable refresh token sets the account sync status to a reconnect
+state. Reconnect that exact account; do not delete other accounts belonging to
+the same provider.
+
+### A full sync repeats
+
+Look for a Google `410`, failed pagination, or a cursor that was not persisted.
+A legitimate expired token causes one reset. Repeated resets indicate cursor
+storage or token-refresh trouble.
+
+### A calendar is unexpectedly read-only
+
+Inspect `accessRole` in the Google Calendar List response. Subscribed holiday
+calendars and calendars shared as `reader` are intentionally not writable.
+
+### The OAuth option is missing
+
+Check `GOOGLE_WEB_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`, restart the API, then
+inspect `/api/v1/server`. Native values alone do not enable server-side sync.
+
+## Contributor checklist
+
+When changing this adapter:
+
+- preserve pagination and cursor atomicity;
+- cover all-day inclusive/exclusive conversion in both directions;
+- test recurring master, EXDATE, cancelled item, and `410` reset behavior;
+- keep calendar-list colors separate from calendar resources;
+- use the shared OAuth refresh/encryption path;
+- record provider failures with bounded metric labels; and
+- run `pnpm check`, then a real sandbox-account round trip when credentials are
+  available.
+
+<Aside type="note">
+The automated repository checks exercise the shared sync contract but do not
+currently provide a live Google integration environment. Treat a provider
+sandbox smoke test as part of release validation.
+</Aside>

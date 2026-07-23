@@ -46,6 +46,9 @@ Edit the `.env` you just downloaded and set your production values. Key variable
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL` | Outgoing mail for password-reset and account-deletion confirmation emails |
 | `CALDAV_ENC_KEY` | Encrypts stored CalDAV passwords — required before anyone connects a CalDAV account |
 
+Use the [Environment variable reference](/docs/reference/environment/) for the
+complete list, exact defaults, build-time variables, and rotation consequences.
+
 The API writes one JSON object per log line to stdout/stderr, which works directly
 with Docker, Dokploy, and most log collectors. Every HTTP response includes an
 `x-request-id` header; the same id appears in request, auth, and error logs. Set
@@ -106,10 +109,20 @@ Which social logins your build offers is decided at runtime from what you config
 docker compose up -d
 ```
 
-This pulls the API image, starts it alongside a PostgreSQL database, publishes the API on `API_SERVER_PORT`, and runs migrations automatically (the container runs `drizzle-kit migrate` before booting).
+This pulls the API image, starts it alongside PostgreSQL, publishes the API on
+`API_SERVER_PORT`, and runs migrations automatically. The image executes the
+Drizzle ORM migrator in `packages/db/src/migrate.ts` before starting Express; it
+does not need the development-only `drizzle-kit` CLI at runtime.
 
 <Aside type="note">
 For HTTPS, put a reverse proxy (Caddy, nginx, Traefik…) in front of the published port and set `BETTER_AUTH_URL` to the public `https://` origin. Deploying with [Dokploy](https://dokploy.com) instead of a plain host? Use `docker-compose.dokploy.yml`, which attaches to the external `dokploy-network` and lets Dokploy's proxy terminate TLS.
+</Aside>
+
+<Aside type="caution" title="Run one API replica">
+The scheduler, cleanup jobs, SSE registry, and rate limiter are process-local.
+Multiple replicas can duplicate jobs and miss cross-replica live updates. Keep
+one API replica until distributed coordination/pub-sub exists; see the
+[observability scaling boundary](/docs/operations/observability/#current-scaling-boundary).
 </Aside>
 
 <Aside type="tip">
@@ -137,7 +150,10 @@ docker compose pull
 docker compose up -d
 ```
 
-Pin a specific version instead of the latest by setting `MUSUBI_TAG` in `.env` (e.g. `MUSUBI_TAG=v1.2.0`). Building from a clone? Use `git pull && docker compose up -d --build`.
+Pin a specific version instead of `latest` by setting `MUSUBI_TAG` to the
+published image tag in `.env` (for example `MUSUBI_TAG=1.2.0`). Building from a
+clone? Review incoming changes first, then rebuild with
+`docker compose up -d --build`.
 
 ---
 

@@ -1,0 +1,127 @@
+---
+title: Microsoft / Outlook
+description: Configure Entra ID and work safely with Musubi's windowed Microsoft Graph calendar adapter.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+Outlook sync is a two-way adapter in
+`apps/api/src/sync/adapters/microsoft.ts`, built on Microsoft Graph v1.0. It
+supports multiple Microsoft accounts per Musubi user, but Graph's event delta
+semantics create important differences from Google.
+
+## Configure Entra ID
+
+<Steps>
+
+1. **Create an app registration.**
+
+   Use a multitenant registration when both organizational and personal
+   Microsoft accounts should work.
+
+2. **Add a Web redirect URI.**
+
+   ```text
+   {BETTER_AUTH_URL}/api/auth/callback/microsoft
+   ```
+
+   This must be a **Web** platform redirect, not SPA or Mobile. Musubi performs a
+   server-side authorization-code exchange using the client secret.
+
+3. **Grant the required scopes.**
+
+   ```text
+   openid User.Read Calendars.ReadWrite offline_access
+   ```
+
+4. **Configure and restart the API.**
+
+   ```dotenv
+   MICROSOFT_CLIENT_ID=...
+   MICROSOFT_CLIENT_SECRET=...
+   MICROSOFT_TENANT_ID=common
+   ```
+
+   `common` accepts organizational and personal accounts. Set one tenant ID only
+   when the deployment should be organization-restricted.
+
+5. **Verify discovery.**
+
+   `/api/v1/server` should list `microsoft` in `syncProviders`.
+
+</Steps>
+
+Microsoft may rotate its refresh token. The shared OAuth helper persists the
+replacement token; an adapter change that discards it will eventually break the
+connection.
+
+## Windowed change tracking
+
+Graph v1.0 exposes event delta through `calendarView`, whose date range is baked
+into the delta token. Musubi uses:
+
+- 180 days in the past;
+- 730 days in the future; and
+- a full-window renewal when the future edge is within 90 days.
+
+An expired delta token (`410`) also triggers a reset pull. Events outside this
+window are not mirrored. This is a provider constraint, not a client filter.
+
+Requests prefer UTC timestamps and plain-text bodies:
+
+```text
+Prefer: outlook.timezone="UTC", outlook.body-content-type="text"
+```
+
+## Recurring event model
+
+`calendarView` returns expanded occurrences and exceptions rather than a
+portable RRULE series. A recurring occurrence may be only a lightweight stub:
+subject, all-day state, body, and other fields live on its series master.
+
+The adapter therefore:
+
+1. groups occurrences by `seriesMasterId`;
+2. fetches each missing master once per sync run;
+3. fills absent fields from the master; and
+4. preserves occurrence-specific ID, start/end, and exception overrides.
+
+Cost: one extra Graph request per unique series during a full sync.
+
+<Aside type="caution" title="Native Musubi recurrence cannot be pushed yet">
+Musubi stores iCalendar RRULE/EXDATE text, while Graph expects structured
+recurrence patterns and exception operations. The adapter throws when asked to
+push a Musubi-native recurring event instead of silently losing recurrence.
+</Aside>
+
+## Other mappings
+
+- Graph all-day end is exclusive; Musubi stores an inclusive end, so pull
+  subtracts one day.
+- Graph calendar colors are a preset enum. The adapter maps arbitrary Musubi hex
+  values to the nearest supported preset.
+- Calendar create, update, event write, and delete use the account connected to
+  that calendar.
+
+## Troubleshooting
+
+| Symptom | Cause and response |
+|---|---|
+| `AADSTS90023` | Redirect URI missing, mismatched, or registered as SPA. Add the exact URI under **Web**. |
+| `AADSTS7000215` | Secret is wrong or expired. Copy the secret **value**, not its ID. |
+| OAuth page says `invalid_code` | Inspect API logs for the underlying `AADSTS…` code and matching request ID. |
+| Recurring items are untitled/timed | Master hydration failed or stub detection regressed. |
+| Older/far-future item is absent | It may be outside the 180/730-day window. |
+| Color differs slightly | Graph accepted the nearest provider preset. |
+
+Portal changes can take a short time to propagate. Do not repeatedly rotate
+secrets until the exact redirect and platform type have been verified.
+
+## Contributor checklist
+
+- test initial, delta, renewed-window, and `410` reset pulls;
+- retain rotated refresh tokens;
+- cover lightweight occurrence, exception, all-day series, and missing master;
+- keep the fixed-window limitation explicit in UI and docs;
+- reject unsupported recurrence without partial writes; and
+- run the shared checks plus a sandbox-account round trip before release.

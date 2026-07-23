@@ -88,7 +88,7 @@ iOS is in testing now; open testing on the App Store lands shortly.
 
 ## Run it yourself
 
-**Requirements:** Node 20+, pnpm 11+, Postgres 15+ (or just Docker).
+**Requirements:** Node 22.12+, pnpm 11.8+, Postgres 15+ (or just Docker).
 
 ```sh
 git clone https://github.com/frgtn-dot-dev/musubi.git && cd musubi
@@ -101,7 +101,7 @@ pnpm db:migrate
 pnpm dev            # api + client + docs, all in parallel
 ```
 
-Testing on a real device? Set `BETTER_AUTH_URL` and the app's server URL (welcome screen) to your machine's LAN IP (`http://192.168.x.x:7531`), not `localhost`. To run the server + database on a plain Docker host, use `docker compose -f docker-compose.selfhost.yml up -d` (the repo's default `docker-compose.yml` targets Dokploy). Full guides live in [`packages/docs`](./packages/docs/) and at [musubi.pro/docs](https://musubi.pro/docs).
+The client uses custom native modules, so it needs a development build rather than Expo Go. Testing on a real device? Set `BETTER_AUTH_URL` and the app's server URL (welcome screen) to your machine's LAN IP (`http://192.168.x.x:7531`), not `localhost`. The default `docker-compose.yml` is the plain self-hosting stack; Dokploy has its own `docker-compose.dokploy.yml`. Follow the [local development guide](https://musubi.pro/docs/guides/running-locally/) or the [self-hosting runbook](https://musubi.pro/docs/guides/self-hosting/).
 
 ## How it's built
 
@@ -130,7 +130,7 @@ packages/
 
 The most impactful places to jump in:
 
-- **Provider adapters** — Fastmail JMAP, Proton Calendar, anything with an API. The [sync adapter guide](https://musubi.pro/docs) walks you through the `CalendarAdapter` interface, field-by-field.
+- **Provider adapters** — Fastmail JMAP, Proton Calendar, anything with an API. The [sync adapter guide](https://musubi.pro/docs/architecture/sync/#how-to-add-a-provider) walks through the `CalendarAdapter` interface field-by-field.
 - **The web client** — greenfield, starting soon.
 - **Bug reports from real usage** — pre-1.0 gold.
 

@@ -1,0 +1,146 @@
+---
+title: Writing documentation
+description: Keep Musubi's Starlight documentation accurate, navigable, testable, and connected to code changes.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+The Starlight site in `packages/docs/` is the canonical project documentation.
+Files under the repository-root `docs/` exist only as compatibility pointers or
+special-purpose release records.
+
+## Information architecture
+
+Put a page where its reader will look first:
+
+| Section | Use it for |
+|---|---|
+| Start Here | First run, onboarding, and symptom-based recovery |
+| Architecture | Mental models, invariants, and cross-layer flows |
+| Provider Guides | Provider-specific setup, mapping, limits, and debugging |
+| Reference | Exact commands, environment, HTTP surface, vocabulary |
+| Operations | Deployment, observability, release, and native-widget runbooks |
+| Contributing | Workflow, documentation standards, and audit debt |
+
+A page should begin with its purpose and audience. Prefer one canonical
+explanation, then link to it from related pages instead of maintaining several
+slightly different copies.
+
+## Local workflow
+
+<Steps>
+
+1. **Run Starlight.**
+
+   ```sh
+   pnpm docs:dev
+   ```
+
+   Open `http://localhost:4321/docs/`. The `/docs` base path is part of the
+   production contract, so root-relative internal links start with `/docs/`.
+
+2. **Edit content.**
+
+   Pages live in `packages/docs/src/content/docs/`. Use lowercase, stable
+   filenames and descriptive frontmatter:
+
+   ```md
+   ---
+   title: Provider name
+   description: What a contributor can accomplish after reading this page.
+   ---
+   ```
+
+3. **Add navigation deliberately.**
+
+   The sidebar is explicit in `packages/docs/astro.config.mjs`. New pages are not
+   discoverable until their `slug` is placed in the appropriate section.
+
+4. **Build the production site.**
+
+   ```sh
+   pnpm docs:build
+   ```
+
+   This catches MDX, frontmatter, component, icon, and configuration failures.
+   It also produces the Pagefind search index.
+
+5. **Exercise the reader journey.**
+
+   Check the page from a sidebar entry, follow every local link, use search, and
+   repeat at a narrow mobile viewport. Inspect the browser console.
+
+</Steps>
+
+## Writing rules
+
+- Lead with the supported path, then explain alternatives.
+- Put commands in repository-root context unless a preceding step changes
+  directories.
+- State prerequisites and expected output.
+- Separate verified current behavior from roadmap ideas.
+- Name the source file or subsystem when a statement is code-sensitive.
+- Document failure semantics, irreversible steps, secret handling, and provider
+  limits next to the happy path.
+- Use tables for lookup and comparison, `<Steps>` for an ordered flow, and
+  `<Aside>` only when the callout materially changes behavior.
+- Avoid screenshots for changing settings screens unless layout is the subject;
+  text remains searchable and survives UI updates.
+
+<Aside type="tip">
+Starlight automatically supplies search, heading anchors, previous/next links,
+last-updated metadata, and GitHub edit links. Use those capabilities before
+adding custom UI.
+</Aside>
+
+## Link and terminology conventions
+
+- Internal content: `/docs/architecture/sync/`
+- Heading: `/docs/architecture/sync/#incremental-sync`
+- Source path: inline code such as `apps/api/src/sync/engine.ts`
+- External documentation: use the authoritative project/vendor URL
+- UI label: match the capitalization visible in the product
+
+Use terms from the [Glossary](/docs/architecture/glossary/). If a new concept
+appears in three pages, define it there.
+
+## Keep docs coupled to code
+
+Update documentation in the same change when modifying:
+
+| Code change | Documentation to review |
+|---|---|
+| Script, runtime, package manager | README, local setup, command reference |
+| Environment variable or capability | `.env.example`, environment reference, deployment guide |
+| Route or response | HTTP API, architecture/API, affected client flow |
+| Schema or invariant | Data model, onboarding walkthrough, glossary |
+| Provider mapping/limit | Provider guide and sync architecture |
+| Timer, metric, log, dashboard | Observability runbook and self-hosting |
+| Native module or build variable | Local setup, authentication, widget/release docs |
+
+## Review checklist
+
+- [ ] The command was run from the directory shown.
+- [ ] Version and environment claims match package manifests/config.
+- [ ] New pages appear in the sidebar.
+- [ ] Every internal link resolves under `/docs/`.
+- [ ] Secret examples are placeholders and logs redact sensitive values.
+- [ ] Limitations and failure behavior are explicit.
+- [ ] `pnpm docs:build` passes.
+- [ ] Desktop and mobile navigation were exercised without console errors.
+- [ ] A code-sensitive page names the source of truth.
+
+## Starlight configuration
+
+The site uses explicit navigation, Pagefind search, edit links, last-updated
+metadata, and the Node adapter. Reference the current upstream documentation
+when changing configuration:
+
+- [Starlight configuration](https://starlight.astro.build/reference/configuration/)
+- [Authoring content](https://starlight.astro.build/guides/authoring-content/)
+- [Sidebar navigation](https://starlight.astro.build/guides/sidebar/)
+- [Built-in components](https://starlight.astro.build/components/using-components/)
+
+Astro's Markdown defaults already include GitHub-flavored Markdown and smart
+punctuation. Do not reintroduce removed `markdown.gfm` or
+`markdown.smartypants` compatibility options.

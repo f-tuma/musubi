@@ -103,7 +103,11 @@ sequenceDiagram
     API-->>S: write store + local SQLite cache
 ```
 
-Every write follows the same five-beat rhythm on the server — **validate → authorise → persist → sync outward → broadcast**. Learn this rhythm once and every handler reads the same way. It's spelled out in the [API guide](/docs/architecture/api/).
+Most writes cover the same five concerns on the server — **validate → authorise
+→ persist → sync outward → broadcast**. Provider-backed calendar writes may
+order provider and database work differently; the exact failure semantics are
+in the [API guide](/docs/architecture/api/) and
+[sync guide](/docs/architecture/sync/#write-path-and-failure-semantics).
 
 ## The shared contract
 

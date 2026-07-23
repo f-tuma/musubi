@@ -1,0 +1,189 @@
+---
+title: Commands & checks
+description: The canonical command reference for development, verification, migrations, docs, Docker, backups, and release work.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Run workspace commands from the repository root unless a section says
+otherwise. Prefer `pnpm --filter <workspace> ...` over changing directories:
+copy-pasted commands then work from the same location in local shells and CI.
+
+## Daily development
+
+| Goal | Command |
+|---|---|
+| Install exactly the workspace declared by the lockfile | `pnpm install` |
+| Start API, client Metro, and docs in the Turbo TUI | `pnpm dev` |
+| Start all dev tasks with copyable logs | `pnpm exec turbo run dev --ui=stream` |
+| Start only the API | `pnpm --filter @musubi/api dev` |
+| Start only Expo/Metro | `pnpm --filter @musubi/client start` |
+| Build/install Android development client | `pnpm --filter @musubi/client android` |
+| Build/install iOS development client (macOS) | `pnpm --filter @musubi/client ios` |
+| Start only Starlight | `pnpm docs:dev` |
+
+The client package's `dev` script uses Metro's `--localhost` mode. Use `start`
+when a physical device needs LAN discovery.
+
+## Verification
+
+```sh
+pnpm check
+```
+
+`check` is the contributor baseline and runs, in order:
+
+1. client TypeScript (`tsc --noEmit`);
+2. API TypeScript (`tsc --noEmit --skipLibCheck`);
+3. five assertion-based self-check files;
+4. the root build (currently the Starlight package is the only workspace with a
+   `build` script).
+
+Run an individual layer while iterating:
+
+| Check | Command |
+|---|---|
+| Client TypeScript | `pnpm --filter @musubi/client exec tsc --noEmit` |
+| API TypeScript | `pnpm exec tsc -p apps/api/tsconfig.json --noEmit --skipLibCheck` |
+| All existing self-checks | `pnpm test` |
+| Docs production build + Pagefind index | `pnpm docs:build` |
+| Root Turbo build | `pnpm build` |
+| Client ESLint | `pnpm lint` |
+
+<Aside type="caution" title="Lint has a known failing baseline">
+As of the 2026-07 audit, `pnpm lint` reports 82 errors and 55 warnings, largely
+from React Compiler rules interacting with Reanimated/live-ref patterns plus a
+smaller set of genuine hygiene findings. It is intentionally not hidden inside
+`pnpm check`. Do not claim lint passed; compare your touched files against the
+baseline and avoid adding findings. See the
+[codebase audit](/docs/contributing/codebase-audit/#p1--restore-an-enforceable-quality-gate).
+</Aside>
+
+### Existing self-checks
+
+These are plain Node assertions executed with `tsx`, not a test-runner suite:
+
+| File | Covers |
+|---|---|
+| `apps/client/lib/eventForm.test.ts` | Event-form validation |
+| `apps/client/lib/rrule.test.ts` | RRULE building and parsing |
+| `apps/client/lib/ics.test.ts` | Lightweight client `.ics` import |
+| `apps/api/src/sync/oauth.test.ts` | OAuth refresh/revoke helpers and token crypto |
+| `apps/api/src/sync/adapters/microsoft.test.ts` | Graph date/cursor/event conversion |
+
+When adding pure logic, follow the current assertion style or introduce a
+project-wide runner as one focused change; do not create a third test convention.
+
+## Database
+
+| Goal | Command |
+|---|---|
+| Generate SQL from `schema.ts` | `pnpm db:generate` |
+| Apply pending PostgreSQL migrations | `pnpm db:migrate` |
+| Start only the bundled database | `docker compose up -d db` |
+| Inspect database service | `docker compose ps db` |
+| Tail database logs | `docker compose logs -f db` |
+
+Always review generated SQL:
+
+```sh
+pnpm db:generate
+git diff -- packages/db/drizzle
+pnpm db:migrate
+```
+
+Schema changes and their migration must ship together. Drizzle cannot infer
+intent for every rename; verify that a rename did not become destructive
+drop-and-create SQL.
+
+## Documentation
+
+```sh
+pnpm docs:dev
+pnpm docs:build
+```
+
+The dev URL is `http://localhost:4321/docs/`. The build validates Starlight
+frontmatter, MDX/component rendering and Mermaid transformation, then creates
+the Pagefind search index. Browser QA/link crawling is a separate verification
+step; a successful build alone does not prove every handwritten URL resolves.
+
+The docs are served under `/docs`, so test that prefix explicitly. The generated
+files live under `packages/docs/dist/` and are ignored.
+
+## Docker and self-hosting
+
+<Tabs>
+  <TabItem label="Plain Docker Compose">
+
+  ```sh
+  docker compose up -d
+  docker compose ps
+  docker compose logs -f api
+  docker compose pull
+  docker compose up -d
+  ```
+
+  </TabItem>
+  <TabItem label="Dokploy">
+
+  ```sh
+  docker compose -f docker-compose.dokploy.yml config
+  docker compose -f docker-compose.dokploy.yml up -d
+  ```
+
+  The Dokploy file expects the external `dokploy-network`.
+
+  </TabItem>
+  <TabItem label="Build API locally">
+
+  In `docker-compose.yml`, replace the published `image:` with the commented
+  `build:` block, then run:
+
+  ```sh
+  docker compose up -d --build
+  ```
+
+  </TabItem>
+</Tabs>
+
+Container startup applies PostgreSQL migrations through
+`packages/db/src/migrate.ts` before starting the API.
+
+## Backups
+
+```sh
+./ops/backup-postgres.sh
+./ops/verify-postgres-backup.sh /path/to/musubi-backup.dump
+```
+
+Common overrides:
+
+```sh
+MUSUBI_BACKUP_DIR=/var/backups/musubi \
+MUSUBI_BACKUP_RETENTION_DAYS=30 \
+./ops/backup-postgres.sh
+```
+
+The backup script uses a private umask, writes to a partial file, validates the
+dump with `pg_restore --list`, and only then publishes it. The verification
+script restores into an isolated temporary PostgreSQL container.
+
+## Before opening a pull request
+
+```sh
+git status --short
+git diff --check
+pnpm check
+pnpm lint          # record/compare the known baseline
+```
+
+Then run the platform-specific flow you changed. Examples:
+
+- API handler: happy path, unauthorized request, forbidden role, invalid body.
+- Client interaction: iOS and Android where practical, plus cold cache and
+  refreshed data.
+- Provider adapter: create/update/delete, all-day, recurrence, cursor reset,
+  read-only calendar, token expiry.
+- Documentation: desktop + mobile navigation, search, changed links, and a
+  production build.

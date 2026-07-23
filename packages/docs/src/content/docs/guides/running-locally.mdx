@@ -1,85 +1,235 @@
 ---
-title: Running Locally
-description: How to run the Musubi client and API server on your own machine for development.
+title: Run Musubi locally
+description: A verified development setup for PostgreSQL, the Express API, the native Expo client, and the Starlight docs.
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+This is the shortest reliable path from a fresh clone to a working development
+environment. It deliberately separates the backend, docs, and native client so
+you can run only the layer you are changing.
 
 ## Prerequisites
 
-- **Node.js 20+**
-- **pnpm 11+** — install with `npm i -g pnpm`
-- **PostgreSQL 15+** — running and accessible
-- **[Expo Go](https://expo.dev/go)** on your phone, or an Android/iOS simulator
-
-## 1. Install dependencies
-
-From the monorepo root:
-
-```sh
-pnpm install
-```
-
-## 2. Set up environment variables
-
-Copy the example file:
-
-```sh
-cp .env.example .env
-```
-
-Then edit `.env`. The **required** variables (the API won't boot without them) are:
-
-| Variable | Description |
+| Tool | Version / notes |
 |---|---|
-| `DATABASE_URL` | PostgreSQL connection string, e.g. `postgresql://user:pass@localhost:5432/musubi` |
-| `BETTER_AUTH_SECRET` | Any long random string — used to sign sessions |
-| `BETTER_AUTH_URL` | The **origin** of the API server, e.g. `http://localhost:7531`. **No trailing slash, no `/api` suffix.** |
-| `ENVIRONMENT` | Set to `dev` during development — enables CORS for localhost |
+| Node.js | **22.12 or newer**. Astro 7 requires it. |
+| pnpm | **11.8 or newer**. The repository pins `pnpm@11.8.0`. |
+| PostgreSQL | 15+ locally, or Docker. The bundled Compose stack uses PostgreSQL 17. |
+| Git | Any recent version. |
+| Native client | Android Studio for Android; Xcode on macOS for iOS; or an EAS development build. |
 
-`API_SERVER_PORT` is optional (defaults to `7531`). Everything else is **optional** — the API boots without it, and the feature that uses it simply won't work until set:
-
-| Variable | Enables |
-|---|---|
-| `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in and Google Calendar sync |
-| `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` | Outlook calendar sync (Microsoft Entra ID app registration) |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL` | Password-reset (and other) emails |
-| `CALDAV_ENC_KEY` | Connecting CalDAV accounts and storing federated Musubi connections (encrypts stored secrets) — generate with `openssl rand -hex 32` |
-| `EXTERNAL_SYNC_INTERVAL_MIN` | Minutes between scheduled provider syncs (Google/Outlook/CalDAV) (live updates for members). Defaults to `5`; set `0` to disable |
-| `LOG_LEVEL` | Server verbosity: `debug`, `info`, `warn`, `error`, or `silent`. Defaults to `info`; use `debug` when tracing sync |
-
-<Aside type="caution">
-`BETTER_AUTH_URL` must be the origin only — no `/api` suffix. Both the client and Better Auth append their own paths to it. If you set it to `http://localhost:7531/api`, requests will land at `/api/api/...` and fail.
+<Aside type="caution" title="Expo Go is not supported">
+The client includes custom native code and native dependencies: the Android
+home-screen widget module, native Google sign-in, Apple authentication, and
+SQLite. Use a **development build** (`expo run:*` or EAS), not Expo Go.
 </Aside>
 
-## 3. Run database migrations
+## First boot
 
-```sh
-pnpm db:migrate
-```
+<Steps>
 
-This applies all pending Drizzle migrations to your PostgreSQL database.
+1. **Clone and install the pinned workspace.**
 
-## 4. Start everything
+   ```sh
+   git clone https://github.com/frgtn-dot-dev/musubi.git
+   cd musubi
+   pnpm install
+   ```
 
-From the monorepo root:
+2. **Create the local environment file.**
+
+   ```sh
+   cp .env.example .env
+   ```
+
+   For a minimal local stack, set:
+
+   ```dotenv
+   POSTGRES_USER=musubi
+   POSTGRES_DB=musubi
+   POSTGRES_PASSWORD=local-development-only
+   DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}
+   API_SERVER_PORT=7531
+   ENVIRONMENT=dev
+   BETTER_AUTH_URL=http://localhost:7531
+   BETTER_AUTH_SECRET=replace-with-a-long-random-value
+   ```
+
+   Generate secrets instead of inventing production values:
+
+   ```sh
+   openssl rand -base64 32   # BETTER_AUTH_SECRET
+   openssl rand -hex 32      # CALDAV_ENC_KEY, when testing CalDAV/federation
+   ```
+
+   See [Environment variables](/docs/reference/environment/) for every setting,
+   feature gate, and rotation consequence.
+
+3. **Start PostgreSQL.**
+
+   <Tabs>
+     <TabItem label="Docker (recommended)">
+
+     ```sh
+     docker compose up -d db
+     docker compose ps
+     ```
+
+     </TabItem>
+     <TabItem label="Existing PostgreSQL">
+
+     Create the database named in `DATABASE_URL` and make sure it is reachable:
+
+     ```sh
+     pg_isready -h localhost -p 5432 -U musubi -d musubi
+     ```
+
+     </TabItem>
+   </Tabs>
+
+4. **Apply every server migration.**
+
+   ```sh
+   pnpm db:migrate
+   ```
+
+   Migrations live in `packages/db/drizzle/` and are applied in journal order.
+
+5. **Start the API and verify it.**
+
+   ```sh
+   pnpm --filter @musubi/api dev
+   ```
+
+   In a second terminal:
+
+   ```sh
+   curl http://localhost:7531/api/v1/server/ok
+   # {"ok":true}
+   ```
+
+6. **Start the documentation site.**
+
+   ```sh
+   pnpm docs:dev
+   ```
+
+   Open `http://localhost:4321/docs/`.
+
+7. **Build and start the native client.**
+
+   <Tabs>
+     <TabItem label="Android">
+
+     Connect a device with USB debugging or start an emulator, then run:
+
+     ```sh
+     pnpm --filter @musubi/client android
+     ```
+
+     The first run generates the ignored native project and installs a
+     development build. Later JavaScript-only sessions can use:
+
+     ```sh
+     pnpm --filter @musubi/client start
+     ```
+
+     </TabItem>
+     <TabItem label="iOS (macOS)">
+
+     ```sh
+     pnpm --filter @musubi/client ios
+     ```
+
+     A paid Apple account is needed for some device capabilities. See
+     [Authentication](/docs/architecture/authentication/#ios-build--dev--things-to-watch-out-for)
+     before testing Google/Apple sign-in or universal links.
+
+     </TabItem>
+     <TabItem label="EAS development build">
+
+     ```sh
+     cd apps/client
+     eas build --profile development --platform android
+     # or: --platform ios
+     pnpm start
+     ```
+
+     Install the resulting development build once; Metro then hot-reloads
+     JavaScript changes.
+
+     </TabItem>
+   </Tabs>
+
+</Steps>
+
+## Emulator vs physical device
+
+`localhost` means different things depending on where the client runs:
+
+| Client | API URL to enter on the welcome screen |
+|---|---|
+| iOS simulator | `http://localhost:7531` |
+| Android emulator | `http://10.0.2.2:7531` |
+| Physical phone | `http://<your-computer-LAN-IP>:7531` |
+
+For a physical phone, the computer and phone must be on the same network. Set
+`BETTER_AUTH_URL` to that same LAN origin before starting the API, for example
+`http://192.168.1.42:7531`. Run the client with `pnpm --filter
+@musubi/client start`; the workspace-wide `pnpm dev` uses the client's
+localhost-only Metro mode and is best suited to simulators.
+
+<Aside type="tip">
+OAuth redirects and universal links are much easier to validate against a real
+HTTPS hostname. Local email/password auth, calendars, events, SSE, imports, and
+most UI work do not require provider credentials.
+</Aside>
+
+## Run the whole workspace
+
+Once each layer works independently:
 
 ```sh
 pnpm dev
 ```
 
-Turborepo runs the API, the Expo client, and the docs site in parallel with an interactive TUI — each gets its own pane. Use `--ui=stream` for plain output.
-
-To run a single piece in isolation:
+Turborepo starts every workspace that declares `dev` and displays the API,
+client, and docs in a terminal UI. Use stream output when logs need to be
+copyable:
 
 ```sh
-cd apps/api && pnpm dev        # API only  → http://localhost:7531
-cd apps/client && pnpm dev     # Expo client only
-cd packages/docs && pnpm dev   # Docs site only → http://localhost:4321/docs
+pnpm exec turbo run dev --ui=stream
 ```
 
-The Expo dev server will print a QR code. Scan it with Expo Go on your phone, or press `i` for an iOS simulator or `a` for Android.
+## Verify the setup
 
-<Aside type="tip">
-If you're testing on a **real phone** (not a simulator), `localhost` won't work — your phone and computer are different machines. Set `BETTER_AUTH_URL` and the app's server URL to your machine's local network IP, e.g. `http://192.168.1.42:7531`. You can find it with `ip addr` (Linux) or `ifconfig` (macOS).
-</Aside>
+Before editing code, establish the same baseline contributors use:
+
+```sh
+pnpm check
+```
+
+This runs client + API typechecks, the five existing assertion-based self-checks,
+and the docs build. The client lint currently has a known failing baseline, so
+it is intentionally separate:
+
+```sh
+pnpm lint
+```
+
+The current lint debt is recorded in the
+[codebase audit](/docs/contributing/codebase-audit/#p1--restore-an-enforceable-quality-gate).
+
+## What to do in the app
+
+Use this five-minute smoke flow before beginning onboarding:
+
+1. Enter the local server URL and create an email/password account.
+2. Finish onboarding and rename the auto-created personal calendar.
+3. Create a second calendar and an event.
+4. Edit the event, enable attendees, and move it in day view.
+5. Restart the app and confirm cached calendars/events render before refresh.
+
+Continue with [Codebase Onboarding](/docs/guides/onboarding/) and trace those
+actions through the client, API, database, provider boundary, and SSE echo.

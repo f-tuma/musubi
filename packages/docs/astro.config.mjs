@@ -5,10 +5,8 @@ import mermaid from 'astro-mermaid';
 import node from '@astrojs/node';
 
 export default defineConfig({
-  // Astro 6 leaves markdown.gfm unset in the resolved config and only the .md
-  // pipeline fills the default — MDX inherits `undefined` and drops tables.
-  // Explicit gfm keeps tables working in .mdx pages.
-  markdown: { gfm: true, smartypants: true },
+  site: 'https://musubi.pro',
+  base: '/docs',
 
   integrations: [
     // astro-mermaid must come BEFORE starlight so its rehype step runs first.
@@ -28,19 +26,24 @@ export default defineConfig({
     }),
     starlight({
       title: 'Musubi',
+      description: 'Learn Musubi’s architecture, run it locally, contribute safely, and operate your own server.',
       customCss: ['./src/styles/custom.css'],
+      editLink: {
+        baseUrl: 'https://github.com/frgtn-dot-dev/musubi/edit/main/packages/docs/',
+      },
+      lastUpdated: true,
       social: [
         { icon: 'discord', label: 'Discord', href: 'https://discord.musubi.pro' },
-        { icon: 'github', label: 'GitHub', href: 'https://github.com/f-tuma/musubi' },
+        { icon: 'github', label: 'GitHub', href: 'https://github.com/frgtn-dot-dev/musubi' },
       ],
       sidebar: [
         {
-          label: 'Getting Started',
+          label: 'Start Here',
           items: [
             { label: 'Introduction', slug: 'guides/introduction' },
-            { label: 'Home Screen Widgets', slug: 'guides/widgets' },
-            { label: 'Running Locally', slug: 'guides/running-locally' },
-            { label: 'Self-Hosting', slug: 'guides/self-hosting' },
+            { label: 'Run Locally', slug: 'guides/running-locally' },
+            { label: 'Codebase Onboarding', slug: 'guides/onboarding' },
+            { label: 'Troubleshooting', slug: 'guides/troubleshooting' },
           ],
         },
         {
@@ -54,14 +57,47 @@ export default defineConfig({
             { label: 'Sync Engine', slug: 'architecture/sync' },
             { label: 'Federation', slug: 'architecture/federation' },
             { label: 'Shared Packages', slug: 'architecture/packages' },
+          ],
+        },
+        {
+          label: 'Provider Guides',
+          collapsed: true,
+          items: [
+            { label: 'Google Calendar', slug: 'providers/google' },
+            { label: 'Microsoft / Outlook', slug: 'providers/microsoft' },
+            { label: 'Apple & CalDAV', slug: 'providers/caldav' },
+          ],
+        },
+        {
+          label: 'Reference',
+          collapsed: true,
+          items: [
+            { label: 'Commands & Checks', slug: 'reference/commands' },
+            { label: 'Environment Variables', slug: 'reference/environment' },
+            { label: 'HTTP API', slug: 'reference/api' },
             { label: 'Glossary', slug: 'architecture/glossary' },
+          ],
+        },
+        {
+          label: 'Operations',
+          collapsed: true,
+          items: [
+            { label: 'Self-Hosting', slug: 'guides/self-hosting' },
+            { label: 'Observability', slug: 'operations/observability' },
+            { label: 'Android Widgets', slug: 'guides/widgets' },
+            { label: 'Google Play Release', slug: 'guides/google-play-release' },
           ],
         },
         {
           label: 'Contributing',
           items: [
-            { label: 'Codebase Onboarding', slug: 'guides/onboarding' },
             { label: 'Contributing Guide', slug: 'guides/contributing' },
+            { label: 'Documentation Guide', slug: 'contributing/documentation' },
+            {
+              label: 'Codebase Audit',
+              slug: 'contributing/codebase-audit',
+              badge: { text: '2026-07', variant: 'note' },
+            },
           ],
         },
       ],
@@ -71,6 +107,4 @@ export default defineConfig({
   adapter: node({
     mode: 'standalone',
   }),
-
-  base: "/docs"
 });

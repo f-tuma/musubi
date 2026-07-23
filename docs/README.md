@@ -1,13 +1,16 @@
-# Musubi docs
+# Musubi documentation
 
-Developer & self-hosting documentation.
+The canonical, searchable contributor and operator documentation is the
+Starlight site in [`packages/docs`](../packages/docs/).
 
-## External calendar sync
-- [Overview & architecture](./sync/README.md) — adapter model, mirror model, per-calendar disconnect
-- [Google Calendar](./sync/google.md)
-- [Microsoft / Outlook](./sync/microsoft.md)
-- [Apple / iCloud & generic CalDAV](./sync/caldav.md)
+- Published documentation: <https://musubi.pro/docs/>
+- Run locally: `pnpm docs:dev`
+- Production build: `pnpm docs:build`
+- Documentation contribution guide:
+  <https://musubi.pro/docs/contributing/documentation/>
+- Current codebase audit:
+  <https://musubi.pro/docs/contributing/codebase-audit/>
 
-## Operations
-- [Observability](./observability.md) — Prometheus metrics, Grafana dashboards, Loki logs
-- [Google OAuth verification](./google-oauth-verification.md)
+Files in this directory are compatibility pointers for older repository links,
+except [`google-oauth-verification.md`](./google-oauth-verification.md), which is
+a working release/compliance tracker.

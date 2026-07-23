@@ -1,0 +1,255 @@
+---
+title: HTTP API
+description: Musubi v1 routes, authentication, request and response contracts, errors, realtime frames, and source-of-truth locations.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The mobile client uses a JSON REST API plus Server-Sent Events. The application
+API is versioned under `/api/v1`; Better Auth owns `/api/auth/*`; a few public
+HTML and platform-association routes live at the origin root.
+
+This page is an **implementation inventory**, not a promise of long-term API
+stability. Musubi is pre-1.0 and does not currently generate an OpenAPI schema.
+The route registry in `apps/api/src/index.ts`, shared Zod schemas in
+`packages/types`, and handlers in `apps/api/src/handlers/` are authoritative.
+
+## Authentication
+
+Most application routes require:
+
+```http
+Authorization: Bearer <session-token>
+```
+
+`requireAuth` resolves the token in two stages:
+
+1. Better Auth session (`auth.api.getSession`);
+2. SHA-256 lookup in `member_tokens` for a federated shadow member.
+
+The second path authenticates identity only. Resource handlers must still
+authorize calendar or event access through `calendar_members` and the shared
+permission matrix. One known route currently violates that rule, called out
+under [Public routes](#public-routes) and in the audit.
+
+Better Auth also supports its normal cookie-based flows under `/api/auth/*`.
+Use the generated `authClient` in the app instead of reimplementing sign-in,
+sign-up, session, social-linking, password-reset, or deletion calls.
+
+## Conventions
+
+### JSON and dates
+
+Application JSON uses the schemas from `@musubi/types`. Date fields cross HTTP
+as ISO 8601 strings and are coerced back to `Date` by Zod or client/cache
+boundaries.
+
+The global JSON body limit is **512 KB**. Calendar import is the exception: it
+uses `text/calendar` with a route-local **10 MB** limit.
+
+### Success and errors
+
+Creates normally return `201`; reads/updates/deletes return `200`; several
+side-effect-only routes return an empty `200`.
+
+Typed application errors map to:
+
+| Error kind | HTTP |
+|---|---:|
+| `BadRequest` | 400 |
+| `Unauthorized` | 401 |
+| `Forbidden` | 403 |
+| `NotFound` | 404 |
+| Unknown/unhandled | 500 |
+
+Error JSON always includes the request correlation id:
+
+```json
+{
+  "error": "You don't have permission to editEvents on this calendar.",
+  "requestId": "..."
+}
+```
+
+The same value is returned in `x-request-id` and attached to structured logs.
+
+## Public routes
+
+| Method and path | Purpose | Rate limit |
+|---|---|---|
+| `GET /api/v1/server` | Minimum client version and configured capabilities | — |
+| `GET /api/v1/server/ok` | Liveness response `{ "ok": true }` | — |
+| `GET /api/v1/calendars/tokens/:token` | Invite preview; token is the capability | 30 / 15 min / IP |
+| `POST /api/v1/federation/accept` | Accept invite as a remote-server shadow user | 10 / 15 min / IP |
+| `POST /api/v1/users/delete/confirm` | Complete email-token account deletion | 10 / 15 min / IP |
+| `POST /api/v1/users/reset` | **Development-only full user reset**; 403 outside `dev` | — |
+| `GET /api/v1/users/:userId/avatar` | Public immutable avatar bytes | — |
+| `GET /invite/:token` | HTML hand-off to `musubi://invite/...` | — |
+| `GET /reset-password` | Self-hosted password reset HTML | — |
+| `GET /delete-account` | Self-hosted account-deletion HTML | — |
+| `GET /.well-known/apple-app-site-association` | iOS invite universal-link association | — |
+
+Invite preview and federation accept validate UUID shape, expiry, and usage
+limit on every request. The rate limiter is in-memory and per process; it is not
+a distributed security boundary.
+
+<Aside type="caution">
+`GET /api/v1/calendars/:id` is session-authenticated but the current handler
+does not verify membership before returning calendar/member data. Treat it as a
+known P0 authorization finding until fixed; see the
+[codebase audit](/docs/contributing/codebase-audit/#p0--authorize-calendar-detail-reads).
+</Aside>
+
+## Server and realtime
+
+| Method and path | Auth | Response |
+|---|---:|---|
+| `GET /api/v1/server` | Public | `{ minClientVersion, socials, syncProviders, email }` |
+| `GET /api/v1/server/ok` | Public | `{ ok: true }` |
+| `GET /api/stream` | Required | Long-lived `text/event-stream` |
+
+SSE frames contain one JSON object:
+
+```text
+data: {"type":"event_updated","payload":{...}}
+```
+
+Current event types:
+
+| Type | Client reaction |
+|---|---|
+| `event_created` | `localAddEvent` |
+| `event_updated` | `localUpdateEvent` |
+| `event_removed` | `localRemoveEvent` |
+| `calendar_updated` | Merge into calendar store |
+| `calendar_removed` | Drop calendar and its orphaned event links |
+| `attendance_changed` | Refresh open attendee state |
+| `external_sync` | Silent delta refresh; do not trigger provider sync again |
+
+SSE is best-effort and has no replay buffer. The durable recovery path is event
+delta sync.
+
+## Events
+
+| Method and path | Request | Response / notes |
+|---|---|---|
+| `GET /api/v1/events?since=<ISO>` | Optional delta cursor | `{ events, deletedIds, serverTime }` |
+| `POST /api/v1/events` | `Event` | Created `Event`; validates every linked calendar |
+| `PUT /api/v1/events` | Complete `Event` | Updated `Event`; home calendar controls editing |
+| `DELETE /api/v1/events` | `Event` plus optional `unlinkCalendarID` | `{ id, calendars, removed }` |
+| `POST /api/v1/events/:eventId/link` | `{ calendarID }` | Same event linked into target |
+| `POST /api/v1/events/:eventId/fork` | `{ calendarID }` | Independent new `Event` |
+| `GET /api/v1/events/:eventId/attendees` | — | `[{ id, name, image }]`; no emails |
+| `PUT /api/v1/events/:eventId/attendance` | `{ attending: boolean }` | Fresh attendee list |
+
+`Event` is defined in `packages/types/src/event.ts`. The important fields are:
+
+```ts
+type Event = {
+  id: string;
+  creatorID: string;
+  organizer: string;
+  title: string;
+  color: string;
+  start: Date;
+  end: Date;
+  calendars: string[];
+  originCalendarID?: string | null;
+  isCanceled: boolean;
+  isAllDay: boolean;
+  hasAttendees: boolean;
+  description?: string | null;
+  location?: string | null;
+  recurrence?: string | null;
+  url?: string | null;
+};
+```
+
+Identity and authority are server-owned: create overwrites `creatorID`; update
+does not allow `creatorID` or `originCalendarID` to change. The home
+`originCalendarID` must be one of `calendars`.
+
+## Calendars, members, and invites
+
+| Method and path | Request / response |
+|---|---|
+| `GET /api/v1/calendars` | All calendars the user belongs to, enriched with role/provider metadata |
+| `GET /api/v1/calendars/:id` | One calendar + members |
+| `POST /api/v1/calendars` | `Calendar`; optional provider/account creates remotely first |
+| `PUT /api/v1/calendars` | `Calendar`; owner-only calendar metadata update |
+| `DELETE /api/v1/calendars` | `Calendar`; returns removed row |
+| `POST /api/v1/calendars/import?name=&color=` | Raw iCalendar body; returns calendar + `imported` count |
+| `GET /api/v1/calendars/:id/export` | `text/calendar` snapshot; any member |
+| `GET /api/v1/calendars/tokens/:token` | Invite preview with calendar, members, live events |
+| `GET /api/v1/calendars/:calendarId/members` | `[{ id, name, image, role }]` |
+| `POST /api/v1/calendars/members/:calendarId` | `{ token }`; join as viewer |
+| `DELETE /api/v1/calendars/members/:calendarId` | Leave; owner cannot leave |
+| `PUT /api/v1/calendars/:calendarId/members/:userId` | `{ role }`; owner transfer supported |
+| `DELETE /api/v1/calendars/:calendarId/members/:userId` | Remove member; owner cannot be removed |
+| `POST /api/v1/calendars/invites` | `Invite` |
+| `GET /api/v1/calendars/:calendarId/invites` | Active invite records |
+| `DELETE /api/v1/calendars/invites/:inviteId` | Revoke immediately |
+
+New invite members start as `viewer`. An invite can have nullable `expiresAt`
+(never expires) and nullable `maxUses` (unlimited); `uses` increments only for a
+new membership.
+
+## Settings, user, and profile
+
+| Method and path | Request / response |
+|---|---|
+| `GET /api/v1/users/settings` | Materializes defaults when missing |
+| `PUT /api/v1/users/settings` | Complete `Settings`; updates or inserts |
+| `DELETE /api/v1/users` | Starts email-confirmed Better Auth deletion |
+| `POST /api/v1/users/delete/confirm` | `{ token }`; public completion |
+| `POST /api/v1/users/avatar` | `{ data: "<base64>" }`; JPEG/PNG/WebP, max 256 KB decoded |
+| `GET /api/v1/users/:userId/avatar` | Public image bytes with immutable caching |
+
+`Settings` is defined in `packages/types/src/settings.ts`. Optional fields are
+intentional so older clients cannot reset newer settings when saving.
+
+## Provider connections
+
+| Method and path | Purpose |
+|---|---|
+| `GET /api/v1/calendars/google` | Trigger `syncUser` (all configured providers despite the legacy path name) |
+| `GET /api/v1/users/connections/google` | Google connection check |
+| `POST /api/v1/users/connections/google/revoke` | Legacy Google disconnect |
+| `GET /api/v1/users/connections/caldav` | List the caller's CalDAV accounts |
+| `POST /api/v1/users/connections/caldav` | Validate credentials, store encrypted password, strict initial sync |
+| `DELETE /api/v1/users/connections/caldav` | Remove one account and its mirrors |
+| `POST /api/v1/users/connections/disconnect` | Disconnect one `{ provider, accountId }` |
+| `POST /api/v1/users/connections/calendars/disconnect` | Disable one mirrored `{ calendarId }` without touching provider |
+
+Provider behavior and limitations:
+[Google](/docs/providers/google/),
+[Microsoft / Outlook](/docs/providers/microsoft/), and
+[Apple / CalDAV](/docs/providers/caldav/).
+
+## Federation
+
+| Method and path | Auth | Body / response |
+|---|---:|---|
+| `POST /api/v1/federation/accept` | Invite token | `{ token, profile: { name, email, homeServer, image? } }` → `{ memberToken, userID, calendar }` |
+| `GET /api/v1/users/connections/musubi` | Session | Decrypted remote connections for the owner |
+| `POST /api/v1/users/connections/musubi` | Session | `{ server, userID, token }` |
+| `DELETE /api/v1/users/connections/musubi` | Session | `{ server }` |
+
+The returned member token is shown once; the origin stores only its SHA-256
+hash. The home server stores a roaming copy encrypted with `CALDAV_ENC_KEY`.
+Read the [federation trust model](/docs/architecture/federation/#trust--security-model)
+before changing these routes.
+
+## Adding or changing an endpoint
+
+Update all of these seams in one change:
+
+1. shared Zod schema/type when the payload is reusable;
+2. query function in `packages/db/src/queries/`;
+3. handler validation, authorization, persistence, provider behavior, SSE;
+4. route registration and static-before-parameter ordering;
+5. client method in `apps/client/services/api.ts`;
+6. tests for happy, unauthenticated, forbidden, invalid, and retry/idempotency paths;
+7. this inventory and the relevant architecture page.
+
+The full recipe is in [API Server → How to add an endpoint](/docs/architecture/api/#how-to-add-an-endpoint).

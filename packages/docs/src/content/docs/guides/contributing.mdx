@@ -9,9 +9,12 @@ Musubi is open source under the MIT licence and welcomes contributions — bug f
 
 ## Before you start
 
-- Check the [GitHub issues](https://github.com/f-tuma/musubi/issues) — someone may already be on it.
+- Check the [GitHub issues](https://github.com/frgtn-dot-dev/musubi/issues) — someone may already be on it.
 - For larger changes, open an issue first to agree on the approach.
 - Keep PRs focused: one thing per pull request.
+- Review the [current codebase audit](/docs/contributing/codebase-audit/) before
+  working near a recorded risk; avoid folding unrelated audit cleanup into a
+  focused change.
 
 ## Development setup
 
@@ -48,21 +51,25 @@ pnpm workspaces + Turborepo:
 
 ## The verification loop
 
-There is no repo-wide typecheck script; run the compiler per workspace. Establish a **baseline** before you start (some pre-existing errors live in `node_modules` type defs, hence `--skipLibCheck`), and make sure your change doesn't add new ones:
+Run the repository baseline from the root:
 
 ```sh
-cd apps/client && npx tsc --noEmit --skipLibCheck
-cd apps/api    && npx tsc --noEmit --skipLibCheck
+pnpm check
 ```
 
-Some pure logic ships with **runnable self-checks** (no test framework — just assertions run with `tsx`). Run and follow that pattern when you extract testable logic:
+It performs client/API typechecking, all five assertion-based self-checks, and
+the production docs build. The client lint baseline is currently red and
+therefore deliberately separate:
 
 ```sh
-cd apps/client
-npx tsx lib/rrule.test.ts        # RRULE build/parse round-trip
-npx tsx lib/eventForm.test.ts    # event-form validation
-npx tsx lib/ics.test.ts          # ICS import
+pnpm lint
 ```
+
+Do not normalize new lint errors against that debt. The exact baseline and
+recommended recovery are tracked in the
+[audit](/docs/contributing/codebase-audit/#p1--restore-an-enforceable-quality-gate).
+For the individual commands and self-check inventory, see
+[Command reference](/docs/reference/commands/).
 
 ## Database migrations
 
@@ -90,8 +97,12 @@ TypeScript throughout. The conventions reviewers check:
 
 1. Fork and branch from `main`.
 2. Make your change; keep it focused.
-3. Typecheck both workspaces; run any relevant self-checks; test on **iOS and Android** if it touches the client (there are deliberate per-platform branches).
-4. Open a PR with a clear description of **what** changed and **why**.
+3. Run `pnpm check` and the closest targeted verification.
+4. Test on **iOS and Android** if the change touches the native client; deliberate
+   platform branches make one simulator insufficient.
+5. Update code-coupled documentation, environment examples, and migrations.
+6. Open a PR with a clear description of **what** changed, **why**, risk, and
+   verification evidence.
 
 <Aside type="tip">
 The PR description is where context lives — the problem, the alternatives you considered, anything reviewers should watch. The diff shows *what*; the description explains *why*.
@@ -100,3 +111,6 @@ The PR description is where context lives — the problem, the alternatives you 
 ## Questions
 
 Open a GitHub issue or discussion before spending time if you're unsure about the approach.
+
+Changing this site? Follow [Writing documentation](/docs/contributing/documentation/)
+for information architecture, Starlight conventions, and browser QA.

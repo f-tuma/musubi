@@ -5,7 +5,10 @@ description: apps/api/src/sync — the provider-agnostic two-way external calend
 
 import { Aside, Steps } from '@astrojs/starlight/components';
 
-Two-way external calendar sync is Musubi's most distinctive subsystem. It lives in `apps/api/src/sync/` and is **provider-agnostic**: the engine never talks to Google or CalDAV directly — it routes everything through a small adapter contract. Google and CalDAV are just two implementations of that contract.
+Two-way external calendar sync is Musubi's most distinctive subsystem. It lives
+in `apps/api/src/sync/` and is **provider-agnostic**: the engine does not talk to
+a provider directly — it routes through a small adapter contract. Google,
+Microsoft Graph, and CalDAV are the current implementations.
 
 ## Mental model
 
@@ -72,7 +75,36 @@ interface CalendarAdapter {
 
 ### Calendar-level writes
 
-Mirrors are editable and deletable from Musubi, and `POST /calendars` can create a calendar **into** a connected account. The calendar handlers apply these **provider-first**: the adapter call runs before the local write, and a provider rejection (Google refusing to delete a primary calendar, an expired token…) aborts the whole operation — Musubi and the provider never diverge. Only the user whose account backs the mirror may do this (`external_calendars.userID` check); provider-side read-only mirrors have `role: "viewer"`, so `assertCan` blocks them anyway. Provider quirks live in the adapters: Google calendar color sits on the per-user `calendarList` entry (`colorRgbFormat=true`), CalDAV uses raw `MKCALENDAR` / `PROPPATCH` (Apple `calendar-color` namespace) / `DELETE` on the collection URL.
+Mirrors are editable and deletable from Musubi, and `POST /calendars` can create
+a calendar **into** a connected account. The calendar handlers apply these
+**provider-first**: the adapter call runs before the local write, and a provider
+rejection (Google refusing to delete a primary calendar, an expired token…)
+prevents the local mutation. A later local database failure can still leave a
+provider-only change, so this is ordering, not a distributed transaction.
+
+Only the user whose account backs the mirror may perform these operations
+(`external_calendars.userID` check); read-only mirrors map to `viewer`, so
+`assertCan` blocks writes. Provider quirks stay in adapters: Google color lives
+on the per-user `calendarList` entry, Microsoft maps hex to its nearest preset,
+and CalDAV uses raw `MKCALENDAR` / `PROPPATCH` / `DELETE`.
+
+### Write path and failure semantics
+
+Event writes use a different contract: Musubi persists the local event first,
+then `pushEventToCalendars()` attempts each provider. Provider exceptions are
+counted and logged but intentionally caught, so the API request can succeed
+while a provider copy remains stale. No durable retry outbox currently exists.
+
+This distinction matters during incidents:
+
+| Mutation | Ordering | Current failure result |
+|---|---|---|
+| Calendar create/update/delete | Provider, then local DB | Provider rejection aborts local change; later DB failure can diverge |
+| Event create/update/delete | Local DB, then provider(s) | Provider failure is logged; request continues |
+| Scheduled pull | Provider fetch, then local reconciliation | Account/provider failures are isolated and retried next cycle |
+
+See the [observability runbook](/docs/operations/observability/#incident-triage)
+and [audit recommendation](/docs/contributing/codebase-audit/#p1--make-provider-event-delivery-recoverable).
 
 ## The engine
 
@@ -107,6 +139,13 @@ Provider changes reach the app without a manual pull-to-refresh through a three-
 
 <Aside type="note">
 Why polling and not push? True Google push (watch webhooks) needs a publicly reachable HTTPS endpoint plus channel management/renewal — hostile to self-hosting — and **CalDAV has no push protocol at all**. A uniform poll with real change detection gives both providers near-realtime for free. If webhook push ever lands, it slots in as an *additional* trigger for the same `syncUser` path.
+</Aside>
+
+<Aside type="caution">
+The timer and its overlap state are process-local. Multiple API replicas each
+start their own scheduler, and one long cycle can overlap the next interval.
+Operate one API replica until job leadership/distributed locking exists; see
+[Current scaling boundary](/docs/operations/observability/#current-scaling-boundary).
 </Aside>
 
 Two correctness details worth knowing: provider **deletions tombstone** (`deletedAt`) rather than hard-delete, so offline clients learn about them through the delta's `deletedIds` (a hard delete just vanished — stale caches kept the event forever); and a client-originated push echoes back on the next poll as a write (values identical), which is harmless.
@@ -165,8 +204,8 @@ Most sync bugs are recurrence and all-day edge cases. The existing adapters alre
   RRULE/EXDATE; converting is the upgrade path).
 - `Prefer: outlook.timezone="UTC", outlook.body-content-type="text"` on every
   read — times come back UTC and bodies as plain text.
-- Calendar color is not pushed (Graph only accepts ~9 preset names; `hexColor`
-  is read-only). The Musubi side keeps the chosen color.
+- Graph only accepts preset color names (`hexColor` is read-only), so create and
+  update map the chosen Musubi hex to the nearest Graph preset.
 
 **CalDAV (`adapters/caldav.ts` + `caldav_client.ts`):**
 - Wraps `tsdav`; Basic auth; principal/home discovery is automatic (incl. iCloud hosts).
@@ -210,6 +249,11 @@ Most sync bugs are recurrence and all-day edge cases. The existing adapters alre
 - [ ] Calendar-level ops (`createCalendar`/`updateCalendar`/`deleteCalendar`) throw on provider rejection — the handlers rely on that to abort the local write
 
 ## Reference
+
+For setup and provider-specific debugging, use the dedicated guides:
+[Google](/docs/providers/google/),
+[Microsoft / Outlook](/docs/providers/microsoft/), and
+[Apple / CalDAV](/docs/providers/caldav/).
 
 | File | Contents |
 |---|---|

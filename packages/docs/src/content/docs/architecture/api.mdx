@@ -5,7 +5,9 @@ description: apps/api — Express request lifecycle, the handler rhythm, permiss
 
 import { Aside, Steps } from '@astrojs/starlight/components';
 
-The backend is a plain **Express** server in `apps/api/`. No framework magic — routes, middleware, handlers, and a thin permission layer. This page gives you the mental model and the exact pattern every handler follows.
+The backend is a plain **Express** server in `apps/api/`. No framework magic —
+routes, middleware, handlers, and a thin permission layer. This page gives you
+the request lifecycle and the common pattern used by mutating handlers.
 
 ## Boot sequence
 
@@ -13,19 +15,23 @@ The backend is a plain **Express** server in `apps/api/`. No framework magic —
 
 ```mermaid
 flowchart TD
-    A["cors() — origin whitelist + credentials"] --> B["express.json (512 KB cap · base64 avatars)"]
-    B --> C["middlewareLogHandler"]
-    C --> D["/api/auth/* → Better Auth (sign-in/up, sessions, reset)"]
-    D --> E["/api/v1/* → application routes"]
-    E --> F["middlewareErrorHandler — MUST be last"]
-    F --> G["listen(config.api.port · default 7531)"]
-    G --> H["hourly cleanup jobs — expired invites/sessions, purge 30-day tombstones"]
+    A["middlewareMetrics"] --> B["middlewareLogHandler · request id"]
+    B --> C["cors() · origin whitelist + credentials"]
+    C --> D["express.json · 512 KB cap"]
+    D --> E["/api/auth/* · Better Auth"]
+    E --> F["application + public page routes"]
+    F --> G["middlewareErrorHandler · MUST be last"]
+    G --> H["API listener + optional metrics listener"]
+    H --> I["cleanup + external-sync timers"]
 ```
 
-Two route namespaces exist and never overlap:
+The main route surfaces are:
 
 - **`/api/auth/*`** — entirely owned by Better Auth (email/password + native Google/Apple sign-in). Don't add routes here. See [Authentication](/docs/architecture/authentication/).
-- **`/api/v1/*`** — the application API. Everything you add goes here.
+- **`/api/v1/*`** — the versioned application API.
+- **`/api/stream`** — authenticated SSE, kept outside `/api/v1` for the client.
+- **root pages and `/.well-known/*`** — public invite/auth hand-offs and the
+  Apple association document.
 
 <Aside type="caution">
 Route order within a namespace matters — Express matches in registration order. `GET /api/v1/calendars/google` is registered **before** `GET /api/v1/calendars/:id`, otherwise `:id` would swallow `google`. When adding a static path that collides with a param route, register it first.
@@ -33,7 +39,9 @@ Route order within a namespace matters — Express matches in registration order
 
 ## The handler rhythm
 
-Every mutating handler follows the same five beats. Internalise this and the whole backend reads identically:
+Most mutating handlers follow the same five concerns. Their order can differ
+when an external provider participates, so always read the documented failure
+semantics:
 
 ```mermaid
 flowchart LR
@@ -44,12 +52,19 @@ A representative handler (`handlerCreateEvent` in `handlers/events.ts`):
 
 ```ts
 export async function handlerCreateEvent(req: Request, res: Response) {
-  const event = EventSchema.parse(req.body);          // 1. validate (throws BadRequest)
-  event.creatorID = req.user!.id;                       //    never trust client for identity
-  await assertCan(req.user!.id, event.calendars[0], "editEvents"); // 2. authorise
-  const created = await createEvent(event, event.calendars);       // 3. persist (packages/db)
-  await pushEventToProviders(created, "create");        // 4. sync outward (Google/Outlook/CalDAV)
-  notifyCalendarMembers(memberIds, "event_created", created);       // 5. broadcast
+  const event = parseEventOrBadRequest(req.body);            // 1. validate
+  for (const calendarID of event.calendars) {
+    await assertCan(req.user!.id, calendarID, "editEvents"); // 2. authorise all
+  }
+  const created = await createEvent(                        // 3. persist
+    { ...event, creatorID: req.user!.id },
+    event.calendars,
+  );
+  await pushEventToProviders(                               // 4. best-effort push
+    { ...created, calendars: event.calendars },
+    "create",
+  );
+  notifyCalendarMembers(memberIds, "event_created", created); // 5. broadcast
   res.status(201).json(created);
 }
 ```
@@ -118,13 +133,21 @@ from entering the monitoring system. The Dokploy Compose network alias is
 Ready-to-use availability, HTTP 5xx, and provider-sync alert rules live in
 `ops/prometheus/musubi-alerts.yml`.
 
-### The server trusts nothing from the client
+### The server must trust nothing from the client
 
 Client-side checks (the composer's validation, the same-server guard, federation routing) are **UX only** — every guarantee is re-established here:
 
 - **`assertCan`/`canDo` double as existence checks.** A calendar id with no membership row yields a null role → `ForbiddenError`. Since every calendar id a mutation touches passes through one of these gates *before* any insert, an unknown or foreign id gets a clean 403 — never an FK violation.
 - **`handlerCreateEvent` validates the event's shape**: at least one calendar, and `originCalendarID` must be **one of the linked calendars** (defaulting to the first). The home calendar governs edit rights, so a client must not be able to smuggle in a foreign calendar as origin — and since the linked calendars are membership-verified, this also proves the origin exists (clean 400 instead of an FK 500).
 - **Identity fields are overwritten server-side** (`creatorID` on create, `creatorID`/`originCalendarID` stripped on update), as described above.
+
+<Aside type="caution">
+This is the required design rule, not a claim that every current route satisfies
+it. The 2026-07-23 audit found that `GET /api/v1/calendars/:id` authenticates but
+does not verify membership before returning calendar/member details. Treat that
+as a P0 authorization gap; see the
+[codebase audit](/docs/contributing/codebase-audit/#p0--authorize-calendar-detail-reads).
+</Aside>
 
 ## Permissions
 
@@ -166,7 +189,7 @@ Attendance is per-event opt-in: the `events.hasAttendees` flag (set in the compo
 
 ## Realtime (SSE)
 
-`GET /api/stream` is a long-lived [Server-Sent Events](https://developer.mozilla.org/docs/Web/API/Server-sent_events) connection, registered **outside** the `/api/v1` prefix to match the client's URL. `handlerStream` sets the SSE headers and stores the response in a `Map<userID, Response>`; `notifyCalendarMembers(userIds, type, payload)` writes `event_created` / `event_updated` / `event_removed` / `calendar_updated` / `calendar_removed` / `attendance_changed` / `external_sync` frames to the affected users. Every mutating handler calls it after persisting — so a change one member makes appears live for the others — and the [scheduled provider sync](/docs/architecture/sync/#near-realtime-the-scheduled-sync) sends `external_sync` when provider changes land, which clients answer with a silent delta refresh.
+`GET /api/stream` is a long-lived [Server-Sent Events](https://developer.mozilla.org/docs/Web/API/Server-sent_events) connection, registered **outside** the `/api/v1` prefix to match the client's URL. `handlerStream` sets the SSE headers and stores responses in a `Map<userID, Set<Response>>`, allowing multiple devices/connections per user; `notifyCalendarMembers(userIds, type, payload)` writes `event_created` / `event_updated` / `event_removed` / `calendar_updated` / `calendar_removed` / `attendance_changed` / `external_sync` frames to the affected users. Mutating handlers broadcast after persistence, and the [scheduled provider sync](/docs/architecture/sync/#near-realtime-the-scheduled-sync) sends `external_sync` when provider changes land, which clients answer with a silent delta refresh.
 
 It's an authenticated route (`requireAuth`): the client sends its session as a `Bearer` token, which Better Auth's bearer plugin validates. The client subscribes via `react-native-sse` (`apps/client/hooks/useEventsStream.ts`).
 
@@ -175,6 +198,10 @@ Broadcasts are **best-effort and fire-and-forget** — there is no server-side r
 </Aside>
 
 ## Route map
+
+For payloads, status codes, authentication, and response shapes, use the
+[HTTP API reference](/docs/reference/api/). This table is only an orientation
+map.
 
 | Group | Routes |
 |---|---|
@@ -191,7 +218,7 @@ Broadcasts are **best-effort and fire-and-forget** — there is no server-side r
 
 `POST /calendars` can carry `provider` + `accountId` to create the calendar **into a connected account** — the server creates it at the provider first, then imports the mirror (see [Calendar-level writes](/docs/architecture/sync/#calendar-level-writes)). `PUT`/`DELETE /calendars` on an external mirror push the rename/recolor/delete to the provider first and abort locally if it refuses.
 
-Two auth notes: `GET /calendars/tokens/:token` is **public** (possession of the unguessable invite token is the credential — cross-server invitees have no session here). The token is fully validated at every read by `getCalendarIDFromToken`: uuid-shaped (a raw string against a uuid column would be a PG 500), unexpired, and under its `maxUses` — and the two public token endpoints (`/calendars/tokens/:token`, `/federation/accept`) sit behind a per-IP in-memory `rateLimit` middleware so tokens can't be farmed or guessed. And `requireAuth` has a second path: when no Better Auth session matches, it hashes the presented `Bearer` and looks it up in `member_tokens` — authenticating a federated **shadow member**. Authorization still runs through `calendar_members` on every route, so this fallback grants nothing by itself.
+Two auth notes: `GET /calendars/tokens/:token` is **public** (possession of the unguessable invite token is the credential — cross-server invitees have no session here). The token is fully validated at every read by `getCalendarIDFromToken`: uuid-shaped (a raw string against a uuid column would be a PG 500), unexpired, and under its `maxUses` — and the two public token endpoints (`/calendars/tokens/:token`, `/federation/accept`) sit behind a per-IP in-memory `rateLimit` middleware. And `requireAuth` has a second path: when no Better Auth session matches, it hashes the presented `Bearer` and looks it up in `member_tokens` — authenticating a federated **shadow member**. This is authentication only; each protected resource route must still authorize against `calendar_members`.
 
 <Aside type="note">
 `POST /api/v1/users/reset` is public and its inline comment says "password reset entry" — but it maps to `handlerResetUsers`, the **dev-only** full user wipe (guarded by `ENVIRONMENT === "dev"`, throws `Forbidden` otherwise). The comment is misleading; real password reset is a Better Auth route under `/api/auth`. Worth a cleanup.
@@ -213,7 +240,8 @@ Two auth notes: `GET /calendars/tokens/:token` is **public** (possession of the 
 
 4. **Add the client method** in `apps/client/services/api.ts` (see the [client guide](/docs/architecture/client/#the-useapi-hook)) and call `throwOnError(error)` after the fetch.
 
-5. **Typecheck** both apps: `cd apps/api && npx tsc --noEmit --skipLibCheck`.
+5. **Run the repository check** from the root: `pnpm check`. Run `pnpm lint`
+   separately until the known client lint baseline is repaired.
 
 </Steps>
 

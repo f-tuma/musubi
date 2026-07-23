@@ -1,0 +1,129 @@
+---
+title: Apple / iCloud and CalDAV
+description: Configure and extend Musubi's encrypted, full-fetch CalDAV integration.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+The adapter at `apps/api/src/sync/adapters/caldav.ts` serves Apple/iCloud,
+Nextcloud, Radicale, Fastmail, and other CalDAV servers. It is two-way, supports
+multiple accounts, and uses Basic authentication rather than OAuth.
+
+## Connect an account
+
+<Steps>
+
+1. **Configure credential encryption.**
+
+   ```sh
+   openssl rand -hex 32
+   ```
+
+   Put the result in the API environment:
+
+   ```dotenv
+   CALDAV_ENC_KEY=<64-hex-characters>
+   ```
+
+   Changing this key without migrating stored ciphertext makes existing CalDAV
+   credentials and federated member tokens unreadable.
+
+2. **Collect server credentials.**
+
+   You need a CalDAV server URL, username, and password. iCloud requires an
+   Apple **app-specific password**, never the Apple ID password.
+
+3. **Connect through Settings.**
+
+   Credentials are stored in `caldav_accounts`, separate from Better Auth's
+   OAuth `account` table. Passwords are AES-GCM encrypted before persistence.
+
+4. **Inspect discovery and the first pull.**
+
+   Use `LOG_LEVEL=debug` temporarily and correlate failures by `requestId`.
+   Verify calendar discovery before diagnosing individual event mapping.
+
+</Steps>
+
+`providerFlavor()` labels an `icloud.com` server as Apple for display. The
+underlying sync path remains CalDAV.
+
+## Full-fetch reconciliation
+
+This adapter currently has no delta cursor. Each scheduled pull:
+
+1. fetches a rolling window from one year ago to three years ahead;
+2. maps every resource and records its ETag;
+3. upserts changed items;
+4. treats unchanged live ETags as verified no-ops; and
+5. sweeps local mirror items absent from the reset result.
+
+iCloud returns no `calendar-query` results without a `time-range`, so the window
+is correctness-critical there. WebDAV `sync-collection` is the natural future
+upgrade if full fetches become too expensive.
+
+<Aside type="note">
+CalDAV sync status metrics report the connection as active because these
+credentials do not use Better Auth's per-account OAuth status model. Provider
+failures are still exported through sync-failure counters and structured logs.
+</Aside>
+
+## Event mapping
+
+| CalDAV/iCalendar shape | Musubi behavior |
+|---|---|
+| Resource URL | Stable `externalId`; UID alone is not used |
+| DATE `DTSTART` | All-day event at UTC midnight |
+| Exclusive `DTEND` | Subtract one day for inclusive Musubi end |
+| `RRULE` + `EXDATE` | Round-trip recurrence and exceptions |
+| ETag unchanged | No database write and no `updatedAt` bump |
+
+All-day recurrence exceptions must stay DATE-typed on push. Losing that type can
+make the next full pull overwrite or resurrect exceptions.
+
+## Calendar-level operations
+
+Event objects use the typed `tsdav` client. Calendar lifecycle operations use
+raw WebDAV so Musubi controls XML and Apple properties:
+
+- `MKCALENDAR` for creation;
+- `PROPPATCH` for display name and Apple calendar color; and
+- `DELETE` for removal.
+
+The adapter derives the calendar-home URL from an existing calendar. A
+`207 Multi-Status` response to `PROPPATCH` is successful; a server that ignores
+Apple's color property is non-fatal.
+
+## Troubleshooting
+
+### iCloud authentication fails
+
+Generate a fresh app-specific password after confirming two-factor
+authentication is enabled. Do not enter the normal Apple ID password.
+
+### Discovery succeeds but no events arrive
+
+Check the calendar query time range, the exact collection URL, and the event
+dates. Events outside the one-year/three-year window are intentionally absent.
+
+### Every poll appears to rewrite everything
+
+Inspect ETag preservation and reset-upsert behavior. A quiet, unchanged
+full-fetch should not bump local timestamps or emit an external-sync nudge.
+
+### Credentials became unreadable after deployment
+
+Verify the deployment still has the original `CALDAV_ENC_KEY`. Restore that key
+from the secret manager; guessing or regenerating it cannot decrypt existing
+rows.
+
+## Contributor checklist
+
+- test against a generic CalDAV server and iCloud when feasible;
+- preserve resource URLs, ETags, inclusive/exclusive dates, and DATE-typed
+  exceptions;
+- cover `207 Multi-Status` and ignored color-property behavior;
+- never log Basic auth values, encrypted payloads, tokens, or full request
+  bodies;
+- measure full-fetch cost before expanding the time window; and
+- run `pnpm check` plus a disposable-account round trip.

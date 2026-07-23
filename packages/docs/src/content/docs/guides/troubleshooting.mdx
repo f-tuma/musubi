@@ -1,0 +1,236 @@
+---
+title: Troubleshooting
+description: Symptom-driven fixes for local development, the native client, PostgreSQL, authentication, provider sync, and the docs site.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Start with the smallest failing boundary. Confirm PostgreSQL, then the API health
+route, then authentication, then the client. For provider problems, first prove
+normal Musubi events work so the failure is isolated to the adapter.
+
+## Quick diagnostics
+
+```sh
+# Database container
+docker compose ps
+docker compose logs db --tail=100
+
+# Public API health
+curl -i http://localhost:7531/api/v1/server/ok
+
+# Server capabilities (configured auth/sync providers + email)
+curl -s http://localhost:7531/api/v1/server
+
+# Repository checks
+pnpm check
+```
+
+API logs are JSON. Copy the `x-request-id` response header from a failed request
+and search logs for the same `requestId`; request middleware, auth, handlers,
+sync, and the error middleware share that correlation value.
+
+## Install and tooling
+
+### Astro or another dependency rejects Node
+
+**Symptom:** `Unsupported engine`, or the docs fail before compilation.
+
+Use Node **22.12+**. Astro 7 is the strictest workspace dependency:
+
+```sh
+node --version
+pnpm --version
+```
+
+The root manifest pins `pnpm@11.8.0`. Do not use a package-local
+`packageManager` field as the workspace version; several package manifests still
+contain older metadata and the root is authoritative.
+
+### pnpm reports a stale or incompatible install
+
+Run from the repository root:
+
+```sh
+pnpm install
+pnpm check
+```
+
+Do not switch the workspace back to pnpm's isolated linker: Expo and Metro rely
+on the configured `nodeLinker: hoisted`.
+
+## PostgreSQL and migrations
+
+### `ECONNREFUSED` or the API exits during import
+
+Check that `DATABASE_URL` points to a reachable server:
+
+```sh
+docker compose up -d db
+docker compose ps
+```
+
+For development on the host, the hostname is `localhost`. Inside Docker
+Compose, the API uses `db`; the Compose file overrides `DATABASE_URL`
+accordingly.
+
+### `relation ... does not exist`
+
+Apply the committed migration journal:
+
+```sh
+pnpm db:migrate
+```
+
+If you changed `packages/db/src/schema.ts`, generate and inspect a new migration
+instead of editing an old applied migration:
+
+```sh
+pnpm db:generate
+git diff -- packages/db/drizzle
+pnpm db:migrate
+```
+
+See [Migration workflow](/docs/architecture/data-model/#migration-workflow).
+
+## API and environment
+
+### API exits with `Missing value from ENV`
+
+`@musubi/config` loads only the repository-root `.env`. Confirm the file exists
+next to the root `package.json`, not only inside `apps/api/`.
+
+The direct boot requirements are `DATABASE_URL`, `ENVIRONMENT`, and
+`BETTER_AUTH_URL`; Better Auth also needs a stable `BETTER_AUTH_SECRET`. Use the
+[environment reference](/docs/reference/environment/) for feature-specific keys.
+
+### Requests go to `/api/api/...` and return 404
+
+`BETTER_AUTH_URL` must be the **origin only**:
+
+```dotenv
+# correct
+BETTER_AUTH_URL=http://localhost:7531
+
+# wrong
+BETTER_AUTH_URL=http://localhost:7531/api
+```
+
+The client and Better Auth append their own `/api/...` paths.
+
+### A browser request fails CORS
+
+Development currently allows the configured API origin plus
+`http://localhost:3000` and `http://localhost:8081`. Native requests normally
+have no browser origin. If you add a web client on a different port, update
+`allowedOrigins` in `apps/api/src/index.ts`; do not use a wildcard with
+credentials.
+
+## Native client
+
+### Expo Go cannot open the project
+
+This is expected. Musubi requires native modules. Build a development client:
+
+```sh
+pnpm --filter @musubi/client android
+# or, on macOS:
+pnpm --filter @musubi/client ios
+```
+
+### A physical phone cannot reach the API
+
+`localhost` on the phone is the phone itself. Use your computer's LAN address in
+both the welcome screen and `BETTER_AUTH_URL`, then restart the API. Keep the
+phone and computer on the same network and allow port `7531` through the local
+firewall.
+
+Use `pnpm --filter @musubi/client start` for LAN Metro discovery. The
+workspace's `dev` script deliberately starts Metro with `--localhost`, which is
+for simulators.
+
+### Android emulator cannot reach `localhost`
+
+Use `http://10.0.2.2:7531`. Android maps `10.0.2.2` to the host loopback.
+
+### The first frame has the wrong theme or no cached events
+
+Settings hydrate synchronously from SQLite, while calendars/events hydrate
+asynchronously in the tabs layout. Check the native SQLite migration first
+(`apps/client/drizzle/`) and then `services/eventsCache.ts`. Do not convert the
+settings seed to an async effect; that reintroduces a first-frame theme flash.
+
+## Authentication and email
+
+### A social-login button is missing
+
+The UI is capability-driven. Inspect:
+
+```sh
+curl -s http://localhost:7531/api/v1/server
+```
+
+`socials` controls sign-in buttons; `syncProviders` controls calendar connection
+options. Both the server credential and, for native Google sign-in, the
+build-time `EXPO_PUBLIC_*` values must be present. See
+[Authentication setup](/docs/architecture/authentication/#setup).
+
+### Password reset or account deletion cannot send
+
+The API can boot without SMTP, but those flows need all `SMTP_*` values. The
+server advertises `email: false` when `SMTP_HOST` is empty and the client hides
+or adapts the UI.
+
+## External calendar sync
+
+### Provider changes do not appear
+
+1. Temporarily set `LOG_LEVEL=debug`.
+2. Confirm `EXTERNAL_SYNC_INTERVAL_MIN` is not `0`.
+3. Inspect `syncProviders` from `/api/v1/server`.
+4. Trigger a manual refresh in the client.
+5. Search for `sync.account.*`, `sync.calendar.completed`, and
+   `sync.*.failed` log events.
+
+Provider failures also increment
+`musubi_external_sync_failures_total{stage,provider}`. See
+[Observability](/docs/operations/observability/).
+
+### Google or Microsoft says reconnect is required
+
+An `invalid_grant` marks only that OAuth account as `reconnect_required` and
+stops background retries. Relink the same account; the Better Auth account hook
+returns it to `active` after a fresh refresh token with calendar scope arrives.
+
+### iCloud accepts credentials but imports no events
+
+Use an Apple **app-specific password**, not the Apple ID password. Musubi's
+CalDAV adapter sends the time range iCloud requires; an initial-sync error is
+returned to the connect screen instead of reporting false success. Enable debug
+logs and follow the [CalDAV guide](/docs/providers/caldav/).
+
+## Documentation site
+
+### Tables disappear or Markdown warnings appear
+
+Astro 7 uses Sätteri for Markdown and MDX, with GFM and smart punctuation
+enabled by default. Do not re-add the deprecated top-level `markdown.gfm` or
+`markdown.smartypants` options. Run:
+
+```sh
+pnpm docs:build
+```
+
+### A new page builds but is not in the sidebar
+
+This site uses an explicit sidebar in `packages/docs/astro.config.mjs` so the
+learning sequence stays intentional. Add the page there and include it in the
+nearest landing page. The [documentation guide](/docs/contributing/documentation/)
+has the author checklist.
+
+<Aside type="tip">
+If a failure is still unclear, reduce it to one command and include its complete
+error, platform, Node/pnpm versions, and the relevant request id in a GitHub
+issue. Redact cookies, bearer tokens, OAuth codes, credentials, and `.env`
+values.
+</Aside>

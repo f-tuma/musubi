@@ -1,0 +1,249 @@
+---
+title: Codebase audit
+description: Prioritized security, correctness, delivery, testing, and operations findings from the 2026-07-23 documentation audit.
+badge:
+  text: Review
+  variant: caution
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+This is a contributor-facing risk register produced while validating the
+documentation against the entire repository on **2026-07-23**. It records
+observed behavior, not a claim that every item is exploitable in production.
+None of the code risks below was silently changed as part of the documentation
+rewrite.
+
+## Executive summary
+
+The architecture is coherent and unusually well-commented for its size:
+provider adapters share a small contract, tombstones make offline deletion
+reliable, secrets are encrypted, request IDs cross subsystem boundaries, and
+backup/restore scripts validate their artifacts.
+
+The largest risks are at boundaries:
+
+1. one calendar-detail route lacks a membership authorization check;
+2. several multi-row invariants are not transactionally protected;
+3. provider event delivery is best-effort without a durable retry queue;
+4. the repository has no pull-request CI and lint is not currently enforceable;
+5. process-local schedulers/SSE/rate limiting imply a single API replica.
+
+## Priority model
+
+| Priority | Meaning |
+|---|---|
+| P0 | Address before treating the current API as hardened for untrusted multi-user deployment |
+| P1 | High-value reliability/delivery work; plan explicitly |
+| P2 | Important hardening or maintainability work |
+| P3 | Cleanup, consistency, and developer-experience debt |
+
+## P0 — authorize calendar detail reads
+
+**Observed:** `GET /api/v1/calendars/:id` uses `requireAuth`, but
+`handlerGetCalendar` reads the calendar and its members without verifying that
+`req.user` belongs to it. The returned member shape includes names and email
+addresses.
+
+**Impact:** an authenticated user who learns or guesses a calendar UUID can read
+metadata and member contact information for a calendar they do not belong to.
+
+**Source:** `apps/api/src/index.ts` and
+`apps/api/src/handlers/calendars.ts`.
+
+**Recommendation:** call the same membership/view assertion used by protected
+calendar endpoints before any data read. Add an API integration test proving a
+non-member receives `403` and no member data. Audit every route with a
+resource ID using an authorization matrix.
+
+## P1 — make multi-row invariants atomic
+
+**Observed:** important workflows perform dependent writes separately:
+
+- calendar row, then owner membership;
+- event, attendee, then calendar links;
+- event update, link reconciliation, and provider mappings;
+- ownership transfer across member roles and `creatorID`; and
+- several provider-delete/local-delete combinations.
+
+Some external upsert paths already use transactions, showing the intended
+pattern is available.
+
+**Impact:** a database error, process exit, or provider failure between steps can
+leave ownerless calendars, partially linked events, duplicate roles, or local
+and provider state that disagree.
+
+**Recommendation:** define invariants first, then wrap database-only write sets
+in one Drizzle transaction. For external side effects, use an explicit state
+machine/outbox rather than pretending a database transaction covers the
+provider.
+
+## P1 — add database constraints for assumed uniqueness
+
+**Observed:**
+
+- `calendar_events` has no unique constraint on `(event_id, calendar_id)`;
+- `user_settings.id` is treated as one-row-per-user but is not primary/unique;
+  and
+- lazy settings creation is a select-then-insert race.
+
+**Impact:** retries or concurrent requests can create duplicate links/settings;
+queries and updates then return ambiguous or multiplied results.
+
+**Recommendation:** clean any existing duplicates, add unique indexes in a new
+migration, and make inserts conflict-safe. Add concurrency-oriented database
+tests.
+
+## P1 — make provider event delivery recoverable
+
+**Observed:** event create/update/delete persists locally, then
+`pushEventToCalendars` catches and logs individual provider failures. The API can
+therefore succeed while Google, Microsoft, or CalDAV remains stale. There is no
+durable retry queue. Calendar-level operations generally use provider-first
+semantics, so the two write classes behave differently.
+
+**Impact:** temporary provider outages create divergence that may not
+automatically reconcile in the expected direction.
+
+**Recommendation:** persist an idempotent outbox job in the same transaction as
+the local event change, retry with backoff, expose pending/failed delivery state,
+and document conflict resolution. Until then, alert on `stage="push"` and
+confirm convergence manually.
+
+## P1 — restore an enforceable quality gate
+
+**Observed on 2026-07-23:**
+
+- there is no pull-request CI workflow;
+- the Docker release workflow builds/publishes images without a preceding
+  repository check;
+- root `build` exercises only workspaces that declare a build script;
+- the existing tests are five direct `tsx` assertion programs with no runner,
+  coverage, database integration, or authorization matrix; and
+- client lint reports **82 errors and 55 warnings**.
+
+The new `pnpm check` command creates a reproducible passing baseline for client
+typecheck, API typecheck, those five self-checks, and docs build. Lint remains
+separate because its baseline is already red.
+
+**Recommendation:** classify compiler/lint false positives around Reanimated
+refs separately from real defects, burn the count to zero, then add required CI
+for install, generated/schema drift, typecheck, tests, lint, docs build, and
+Docker build. Protect release publication on the same gate.
+
+## P1 — make horizontal scaling explicit or coordinated
+
+**Observed:** scheduled provider sync, cleanup timers, SSE clients, rate limits,
+and metrics are process-local. Each API replica starts the timers and sees only
+its own connections/requests.
+
+**Impact:** multiple replicas can duplicate scheduled work, miss cross-replica
+SSE broadcasts, and apply per-instance rather than global rate limits.
+
+**Recommendation:** keep one documented API replica until job leadership,
+distributed locking, shared pub/sub, and shared rate limiting exist. Add
+overlap prevention even for one process when a sync cycle exceeds its interval.
+
+## P1 — disconnect exactly one OAuth account
+
+**Observed:** the connection handler asks Better Auth to unlink one account. If
+that fails, its fallback calls `cleanUsersOAuthTokens(userID, provider)`, which
+is provider-wide rather than account-specific.
+
+**Impact:** disconnecting one of several Google or Microsoft accounts can clear
+tokens for sibling accounts in the fallback path.
+
+**Recommendation:** add an account-ID-scoped database fallback and multi-account
+tests. Never describe provider-wide cleanup as exact account removal.
+
+## P2 — normalize malformed-input responses
+
+**Observed:**
+
+- event delete parses `EventSchema` outside the handler's validation catch; and
+- `GET /events?since=` constructs a `Date` without rejecting an invalid value.
+
+**Impact:** malformed client input may surface as `500` instead of a stable
+`400`, polluting error alerts and hiding the actual caller defect.
+
+**Recommendation:** use shared request/query schemas at the route boundary and
+test invalid UUID, body, enum, timestamp, and cursor cases for every endpoint.
+
+## P2 — review federation identity and token lifecycle
+
+**Observed:** invite acceptance trusts the remote profile supplied by the bearer
+of the invite; it does not prove control of the claimed home server. Member
+tokens have no expiry, and the exported revocation helper is not part of a clear
+lifecycle. Kicking a member removes calendar authorization, but stale
+authentication tokens can remain stored.
+
+The public invite-preview endpoint also returns live calendar context, including
+events and member email data, to anyone possessing a valid invite token. That
+may be intended capability behavior, but it is a meaningful privacy surface.
+
+**Recommendation:** document the trust model, minimize preview data, add expiry
+and revocation/rotation, and authenticate remote identity if it is used for more
+than display. Include invite leakage and replay in threat modeling.
+
+## P2 — improve provider and database integration coverage
+
+Current self-checks cover selected pure behavior, but not:
+
+- PostgreSQL constraints, migrations, transactions, or concurrent writes;
+- route authentication/authorization and error mapping;
+- provider cursor reset, token rotation, retry, and partial failure as a suite;
+- federation invite/token lifecycle; or
+- offline-client behavior beyond the tombstone retention window.
+
+Use disposable PostgreSQL in CI, fake provider servers at adapter boundaries,
+and a small route-level test matrix. Keep live sandbox smoke tests as a separate
+release check.
+
+## P3 — align versions and build reproducibility
+
+**Observed:**
+
+- root pins `pnpm@11.8.0`, while some package metadata/Dockerfiles still declare
+  pnpm 10;
+- root, workspace, docs, and native app versions do not express one clear
+  release version;
+- the docs image installs an unpinned global pnpm and the full workspace without
+  a frozen lockfile;
+- API image installation also relaxes lockfile reproducibility; and
+- the iOS forced-update URL still contains an `<APP_ID>` placeholder.
+
+**Recommendation:** choose one toolchain/version source, use Corepack and a
+frozen lockfile in every image, automate version propagation, and fail release
+validation on placeholder distribution URLs.
+
+## Strengths worth preserving
+
+- Provider-neutral sync contract with provider-specific behavior isolated in
+  adapters.
+- Soft tombstones and client delta reconciliation for offline correctness.
+- AES-GCM encryption for stored CalDAV credentials and roaming member tokens;
+  only member-token hashes authenticate at origin.
+- Registered-route metric labels and structured request correlation.
+- Provider cursor reset/full-set sweep semantics are documented in code.
+- Backup scripts use restrictive permissions, validate partial dumps, and keep
+  restore isolated.
+- Source comments explain several load-bearing client state and recurrence
+  decisions.
+
+## Suggested remediation sequence
+
+1. Fix the calendar-detail authorization gap and add route-level regression
+   coverage.
+2. Add uniqueness constraints and transactions around core database invariants.
+3. Establish PR CI and make lint green/enforceable.
+4. Add a durable provider outbox plus visible delivery health.
+5. Decide whether production stays single-replica or fund distributed
+   coordination.
+6. Harden federation/token lifecycle and expand integration testing.
+7. Consolidate toolchain, image, and release versioning.
+
+<Aside type="note">
+Treat this page as a living risk register. When closing an item, link the change
+or decision record and move enduring behavior into the relevant architecture or
+operations page instead of deleting the historical rationale.
+</Aside>
