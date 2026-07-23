@@ -4,28 +4,31 @@ import { NewEvent, calendarEvents, calendarMembers, eventUsers, events } from ".
 
 
 export async function createEvent(event: NewEvent, calendars: string[]) {
-  // Home calendar = where it's created (first picked). Edit-content is gated by
-  // editEvents on this calendar; the other picked calendars are read-only shares.
-  const [result] = await db
-    .insert(events)
-    .values({ ...event, originCalendarID: event.originCalendarID ?? calendars[0] })
-    .onConflictDoNothing()
-    .returning();
-  await db.insert(eventUsers).values({
-    userID: result.creatorID,
-    eventID: result.id,
-  })
-
-  await db.insert(calendarEvents).values(calendars.map(c => (
-    {
-      calendarID: c,
+  return db.transaction(async (tx) => {
+    // Home calendar = where it's created (first picked). Edit-content is gated by
+    // editEvents on this calendar; the other picked calendars are read-only shares.
+    const [result] = await tx
+      .insert(events)
+      .values({ ...event, originCalendarID: event.originCalendarID ?? calendars[0] })
+      .onConflictDoNothing()
+      .returning();
+    await tx.insert(eventUsers).values({
+      userID: result.creatorID,
       eventID: result.id,
-    }
-  ))).onConflictDoNothing({
-    target: [calendarEvents.eventID, calendarEvents.calendarID],
-  });
+    });
 
-  return result;
+    await tx
+      .insert(calendarEvents)
+      .values(calendars.map(c => ({
+        calendarID: c,
+        eventID: result.id,
+      })))
+      .onConflictDoNothing({
+        target: [calendarEvents.eventID, calendarEvents.calendarID],
+      });
+
+    return result;
+  });
 }
 
 // Who governs editing this event's shared content: its home calendar (+ creator

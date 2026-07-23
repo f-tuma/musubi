@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { randomUUID } from "crypto";
-import { NewEvent, createEvent, getCalendarMembers, getEvent, getEventAttendees, getEventCalendars, getEventOrigin, getUserRoleForCalendar, getUsersEvents, linkEventToCalendars, removeEvent, setAttendance, unlinkEventFromCalendars, updateEvent } from '@musubi/db';
+import { NewEvent, createEvent, getCalendarMembers, getEvent, getEventAttendees, getEventCalendars, getEventOrigin, getUserRoleForCalendar, getUsersEvents, linkEventToCalendars, setAttendance, unlinkEventAndTombstoneIfOrphaned, updateEventAndCalendarLinks } from '@musubi/db';
 import { BadRequestError, Event, EventSchema, ForbiddenError, NotFoundError } from "@musubi/types";
 import { notifyCalendarMembers } from "./stream";
 import { pushEventToCalendars, pushEventToProviders } from "../sync/engine";
@@ -73,14 +73,18 @@ export async function handlerUpdateEvent(req: Request, res: Response) {
   // creatorID / originCalendarID are immutable — never trust them from the client
   // (creator is the permission fallback, origin governs who may edit).
   const { creatorID: _c, originCalendarID: _o, ...editable } = event;
-  const updatedEvent = await updateEvent({ ...editable, id: event.id! });
+  // Remove provider copies while their mappings still exist. Provider delivery
+  // is best-effort; the local event + link reconciliation below is one DB unit.
+  await pushEventToCalendars(event, removed, "delete");
+  const updatedEvent = await updateEventAndCalendarLinks(
+    { ...editable, id: event.id! },
+    added,
+    removed,
+  );
 
   if (updatedEvent) {
 
-    // Reconcile links + propagate to external providers.
-    await pushEventToCalendars(event, removed, "delete"); // remove from Google while the mapping still exists
-    await unlinkEventFromCalendars(event.id!, removed);   // then drop the links + stale mappings
-    await linkEventToCalendars(event.id!, added);         // add new links
+    // The local transaction has committed; propagate its new state outward.
     await pushEventToCalendars(event, added, "create");   // create in Google (+ mapping)
     await pushEventToCalendars(event, kept, "update");     // update the rest
 
@@ -133,11 +137,7 @@ export async function handlerRemoveEvent(req: Request, res: Response) {
   }
 
   await pushEventToCalendars(event, targets, "delete"); // remove from external while mapping still exists
-  await unlinkEventFromCalendars(event.id, targets);    // then drop links + stale mappings
-
-  const remaining = await getEventCalendars(event.id);
-  const removed = remaining.length === 0;
-  if (removed) await removeEvent(event.id);              // tombstone the now-orphaned event
+  const { remaining, removed } = await unlinkEventAndTombstoneIfOrphaned(event.id, targets);
 
   const result = { id: event.id, calendars: remaining, removed };
 
@@ -290,4 +290,3 @@ export async function handlerGetEvents(req: Request, res: Response) {
     serverTime,
   });
 }
-

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { auth } from "@musubi/auth";
-import { cleanUsersOAuthTokens, clearDisabledExternalCalendars, deleteCaldavAccount, disableExternalCalendar, getOAuthCredentials, getUserExternalCalendars, removeCalendar } from "@musubi/db";
+import { cleanUsersOAuthTokens, disableExternalCalendar, getOAuthCredentials, removeExternalAccountData } from "@musubi/db";
 import { BadRequestError } from "@musubi/types";
 import { revokeGoogleToken } from "../sync/oauth";
 import { decryptToken } from "../tokenCrypto";
@@ -23,14 +23,8 @@ export async function handlerDisconnectAccount(req: Request, res: Response) {
     }
   } finally {
     // Always remove local state, even if revoke or credential lookup threw.
-    for (const link of await getUserExternalCalendars(provider, req.user!.id, accountId)) {
-      await removeCalendar(link.calendarID);
-    }
-    // Forget per-calendar opt-outs so reconnecting starts clean.
-    await clearDisabledExternalCalendars(provider, req.user!.id, accountId);
-    if (provider === "caldav") {
-      await deleteCaldavAccount(req.user!.id, accountId);
-    } else {
+    await removeExternalAccountData(provider, req.user!.id, accountId);
+    if (provider !== "caldav") {
       // OAuth providers (google, ...) — unlink this specific account from Better
       // Auth. Better Auth refuses to unlink the user's LAST account (it would
       // lock them out of login) and also requires a fresh session. The calendar

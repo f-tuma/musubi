@@ -74,6 +74,10 @@ Conventions baked into that snippet:
 - **`req.user`** is set by the `requireAuth` middleware (type augmented in `apps/api/src/express.d.ts`). Public routes omit `requireAuth`.
 - **Identity fields (`creatorID`, `originCalendarID`) are set server-side**, never taken from the client body. `handlerUpdateEvent` strips them: `const { creatorID, originCalendarID, ...editable } = event`.
 - **Handlers throw; they don't return error responses.** A `wrap()` helper (`const wrap = h => (req,res,next) => Promise.resolve(h(req,res)).catch(next)`) funnels rejected promises into the error middleware. That's why every route is `wrap(handlerX)`.
+- **Multi-row database invariants belong in one `@musubi/db` query.** The query
+  owns its Drizzle transaction; the handler authorizes first, calls the single
+  persistence operation, and broadcasts only after commit. Provider calls stay
+  outside that transaction.
 
 ## Errors → HTTP status
 
@@ -142,11 +146,14 @@ Client-side checks (the composer's validation, the same-server guard, federation
 - **Identity fields are overwritten server-side** (`creatorID` on create, `creatorID`/`originCalendarID` stripped on update), as described above.
 
 <Aside type="caution">
-This is the required design rule, not a claim that every current route satisfies
-it. The 2026-07-23 audit found that `GET /api/v1/calendars/:id` authenticates but
-does not verify membership before returning calendar/member details. Treat that
-as a P0 authorization gap; see the
+`requireAuth` proves identity but grants no resource access by itself. The
+calendar-detail route now enforces this through
+`getCalendarDetailsForUser()`: it loads the caller's role first and returns
+`Forbidden` before reading calendar/member data for a non-member. This closes
+the original P0 finding in the
 [codebase audit](/docs/contributing/codebase-audit/#p0--authorize-calendar-detail-reads).
+Every new resource route still needs an explicit authorization gate and a
+non-member regression test.
 </Aside>
 
 ## Permissions
@@ -249,6 +256,6 @@ Two auth notes: `GET /calendars/tokens/:token` is **public** (possession of the 
 
 - **Body limit is 512 KB** (base64 avatars). Larger payloads 413.
 - **Avatar upload sniffs magic bytes** — no extension trust; served from a public, timestamp-versioned URL (`<Image>` can't send auth headers).
-- **Owner can't leave** a calendar (`handlerLeaveCalendar` blocks it) — transfer ownership or delete. Prevents orphaned calendars.
+- **Owner can't leave** a calendar (`handlerLeaveCalendar` blocks it) — transfer ownership or delete. Prevents orphaned calendars. Ownership transfer is unavailable for personal calendars and provider mirrors; a mirror must remain attached to the user who owns its provider credentials.
 - **Invites are token-based, not email-based** — `handlerJoinCalendar` requires a token matching the calendar, preventing ID enumeration.
 - **Broadcasts target all members of affected calendars**, deduped via a `Set`, not just the requester.

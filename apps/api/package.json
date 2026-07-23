@@ -4,7 +4,8 @@
   "description": "Musubi REST + SSE backend (Express, Better Auth, Drizzle, Postgres).",
   "main": "index.js",
   "scripts": {
-    "dev": "npx tsx src/index.ts"
+    "dev": "npx tsx src/index.ts",
+    "test": "tsx src/handlers/calendars.test.ts && tsx src/sync/oauth.test.ts && tsx src/sync/adapters/microsoft.test.ts"
   },
   "keywords": [],
   "author": "frgtn.dev",

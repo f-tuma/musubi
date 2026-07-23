@@ -94,9 +94,10 @@ limit on every request. The rate limiter is in-memory and per process; it is not
 a distributed security boundary.
 
 <Aside type="caution">
-`GET /api/v1/calendars/:id` is session-authenticated but the current handler
-does not verify membership before returning calendar/member data. Treat it as a
-known P0 authorization finding until fixed; see the
+`GET /api/v1/calendars/:id` now checks membership before reading either the
+calendar detail or its member emails. A non-member receives `403`; the
+regression self-check also verifies that neither protected read runs. This
+closes the original P0 finding recorded in the
 [codebase audit](/docs/contributing/codebase-audit/#p0--authorize-calendar-detail-reads).
 </Aside>
 
@@ -174,7 +175,7 @@ does not allow `creatorID` or `originCalendarID` to change. The home
 | Method and path | Request / response |
 |---|---|
 | `GET /api/v1/calendars` | All calendars the user belongs to, enriched with role/provider metadata |
-| `GET /api/v1/calendars/:id` | One calendar + members |
+| `GET /api/v1/calendars/:id` | One calendar + members; membership required |
 | `POST /api/v1/calendars` | `Calendar`; optional provider/account creates remotely first |
 | `PUT /api/v1/calendars` | `Calendar`; owner-only calendar metadata update |
 | `DELETE /api/v1/calendars` | `Calendar`; returns removed row |
@@ -184,7 +185,7 @@ does not allow `creatorID` or `originCalendarID` to change. The home
 | `GET /api/v1/calendars/:calendarId/members` | `[{ id, name, image, role }]` |
 | `POST /api/v1/calendars/members/:calendarId` | `{ token }`; join as viewer |
 | `DELETE /api/v1/calendars/members/:calendarId` | Leave; owner cannot leave |
-| `PUT /api/v1/calendars/:calendarId/members/:userId` | `{ role }`; owner transfer supported |
+| `PUT /api/v1/calendars/:calendarId/members/:userId` | `{ role }`; ownership transfer is limited to non-default native calendars |
 | `DELETE /api/v1/calendars/:calendarId/members/:userId` | Remove member; owner cannot be removed |
 | `POST /api/v1/calendars/invites` | `Invite` |
 | `GET /api/v1/calendars/:calendarId/invites` | Active invite records |
