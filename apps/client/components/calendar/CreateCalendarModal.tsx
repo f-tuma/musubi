@@ -40,7 +40,9 @@ export default function CreateCalendarModal({ calendar, visible, onClose, onCrea
   const { authClient } = useServer();
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState(appColors[0].color);
-  const [calendarHint, setCalendarHint] = useState(CALENDAR_HINTS[Math.floor(Math.random() * CALENDAR_HINTS.length)]);
+  const [calendarHint, setCalendarHint] = useState(
+    () => CALENDAR_HINTS[Math.floor(Math.random() * CALENDAR_HINTS.length)],
+  );
 
   const [nameError, setNameError] = useState("");
   const [isLoading, setIsLoading] = useState(false);

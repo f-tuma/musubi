@@ -11,7 +11,7 @@ import { sortCalendars } from "@/lib/calendarOrder";
 import { formatDateMedium, formatTime } from "@/lib/datetimeFormat";
 import { appColors } from "@/constants/colors";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
-import DateTimePicker from '@expo/ui/community/datetime-picker';
+import { DateTimePicker } from '@expo/ui/community/datetime-picker';
 import { useServer } from "@/contexts/ServerContext";
 import { EVENT_HINTS } from "@/constants/event_hints";
 import { Feather, Ionicons } from "@expo/vector-icons";
@@ -20,7 +20,7 @@ import { cancelEventNotification, getEventNotification, requestEventNotification
 import dayjs from "dayjs";
 import { uuidv7 } from 'uuidv7';
 import { joinRecurrence, splitRecurrence } from '@musubi/calendar';
-import { AdvancedEndType, AdvancedFreq, AdvancedRRuleConfig, buildRRule, describeAdvanced, parseAdvanced, parseRRule, RecurrenceOption } from "@/lib/rrule";
+import { AdvancedEndType, AdvancedFreq, buildRRule, describeAdvanced, parseAdvanced, parseRRule, RecurrenceOption } from "@/lib/rrule";
 import { validateEventForm } from "@/lib/eventForm";
 import { remoteForCalendar } from "@/services/federation";
 import { Tap } from "@/components/ui/Tap";
@@ -113,7 +113,6 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
   const [datePickerMode, setDatePickerMode] = useState<"date" | "time">("date");
   const [datePickerTarget, setDatePickerTarget] = useState<"start" | "end">("start");
   const [notifyBeforeTime, setNotifyBeforeTime] = useState<number>(15);
-  const [notifyBeforePickerVisible, setNotifyBeforePickerVisible] = useState(false);
   const [notificationToggle, setNotificationToggle] = useState<boolean>(notificationsOnByDefault);
   const [allDayToggle, setAllDayToggle] = useState(false);
   const [attendeesToggle, setAttendeesToggle] = useState(false);
@@ -147,7 +146,9 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
     ? originCal
     : [...selectedCals][0];
   const [isLoading, setIsLoading] = useState(false);
-  const [eventHint, setEventHint] = useState(EVENT_HINTS[Math.floor(Math.random() * EVENT_HINTS.length)])
+  const [eventHint, setEventHint] = useState(
+    () => EVENT_HINTS[Math.floor(Math.random() * EVENT_HINTS.length)],
+  );
   // Note/location/URL are the long tail — folded away until asked for.
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -382,7 +383,11 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
     const lastEnd = new Date(newEnd);
 
     if (lastStart.getTime() > lastEnd.getTime()) {
-      datePickerTarget === "start" ? setNewEnd(newStart) : setNewStart(newEnd);
+      if (datePickerTarget === "start") {
+        setNewEnd(newStart);
+      } else {
+        setNewStart(newEnd);
+      }
     }
 
   }, [newStart, newEnd]);
@@ -390,7 +395,11 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
   const toggleCal = (id: string) => {
     setSelectedCals(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
@@ -416,9 +425,17 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
     if (datePickerMode === "date") {
       const fixed_hours = new Date(date.setHours(hours));
       const fixed_minutes = new Date(fixed_hours.setMinutes(minutes));
-      datePickerTarget === "start" ? setNewStart(fixed_minutes) : setNewEnd(fixed_minutes);
+      if (datePickerTarget === "start") {
+        setNewStart(fixed_minutes);
+      } else {
+        setNewEnd(fixed_minutes);
+      }
     } else {
-      datePickerTarget === "start" ? setNewStart(date) : setNewEnd(date);
+      if (datePickerTarget === "start") {
+        setNewStart(date);
+      } else {
+        setNewEnd(date);
+      }
     }
   }
 
@@ -511,7 +528,11 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
         showToast({ message: "Event saved without a reminder. Allow notifications in system settings to enable it." });
       }
       haptics.success();
-      docked ? dockedDismiss() : handleClose();
+      if (docked) {
+        dockedDismiss();
+      } else {
+        handleClose();
+      }
     } catch (e: any) {
       haptics.warn();
       Alert.alert("Failed to save", userFacingError(e));
@@ -684,7 +705,11 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
                       themeVariant={activeScheme}
                       onValueChange={(_event, selectedDate) => {
                         setDatePickerTarget(target);
-                        target === "start" ? setNewStart(selectedDate) : setNewEnd(selectedDate);
+                        if (target === "start") {
+                          setNewStart(selectedDate);
+                        } else {
+                          setNewEnd(selectedDate);
+                        }
                       }}
                     />
                   ) : (
@@ -829,7 +854,7 @@ export function AddEventModal({ visible, startingDate, endingDate, docked, ancho
             <View style={{ flex: 1 }}>
               <Text style={[styles.fieldValueText, { fontFamily: fonts.sans, color: colors.fg2 }]}>Attendees</Text>
               <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: colors.fg4, marginTop: 2 }}>
-                People can attend and see who's coming
+                People can attend and see who&apos;s coming
               </Text>
             </View>
             <Switch

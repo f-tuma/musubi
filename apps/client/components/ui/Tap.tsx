@@ -1,9 +1,10 @@
 import { forwardRef } from "react";
 import { Pressable, PressableProps, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
-import * as haptics from "@/lib/haptics";
+import { select, success, tap, thump, warn } from "@/lib/haptics";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const haptics = { select, success, tap, thump, warn };
 
 type Props = PressableProps & {
   /** Play a haptic on press-in. Default OFF — haptics are reserved for

@@ -84,7 +84,11 @@ export function bucketByDay(events: Event[]): Map<string, Event[]> {
   for (const e of events) {
     for (const k of eventDayKeys(e)) {
       const arr = map.get(k);
-      arr ? arr.push(e) : map.set(k, [e]);
+      if (arr) {
+        arr.push(e);
+      } else {
+        map.set(k, [e]);
+      }
     }
   }
   // all-day chips first, then by start time (events arrive pre-sorted by start)

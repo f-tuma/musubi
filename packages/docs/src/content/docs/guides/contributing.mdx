@@ -58,18 +58,18 @@ pnpm check
 ```
 
 It performs client/API typechecking, all five assertion-based self-checks, and
-the production docs build. The client lint baseline is currently red and
-therefore deliberately separate:
-
-```sh
-pnpm lint
-```
-
-Do not normalize new lint errors against that debt. The exact baseline and
-recommended recovery are tracked in the
+client lint before the production docs build. Lint has zero errors and a locked
+budget for 108 existing React Compiler/hook warnings; a new warning fails the
+command when it increases the total. Fix warnings when practical and lower the
+budget with them—never raise it to make a PR pass. The exact rationale and
+remaining migration are tracked in the
 [audit](/docs/contributing/codebase-audit/#p1--restore-an-enforceable-quality-gate).
 For the individual commands and self-check inventory, see
 [Command reference](/docs/reference/commands/).
+
+Pull requests also run a clean frozen install, verify that generating Drizzle
+migrations leaves no diff, and build the API Docker image. The same workflow
+gates manual releases.
 
 ## Database migrations
 

@@ -50,7 +50,11 @@ export default function CalendarWidgetSettingsModal({ widgetId, onClose }: Props
 
   const toggle = (id: string) => {
     const next = new Set(selected);
-    next.has(id) ? next.delete(id) : next.add(id);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
     commit(next, null);
   };
 
