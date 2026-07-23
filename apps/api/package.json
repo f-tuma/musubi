@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "npx tsx src/index.ts",
-    "test": "tsx src/handlers/calendars.test.ts && tsx src/scheduling.test.ts && tsx src/sync/oauth.test.ts && tsx src/sync/adapters/microsoft.test.ts"
+    "test": "tsx src/handlers/calendars.test.ts && tsx src/request_validation.test.ts && tsx src/scheduling.test.ts && tsx src/sync/oauth.test.ts && tsx src/sync/adapters/microsoft.test.ts"
   },
   "keywords": [],
   "author": "frgtn.dev",

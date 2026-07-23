@@ -133,7 +133,7 @@ confirm convergence manually.
 - the Docker release workflow builds/publishes images without a preceding
   repository check;
 - root `build` exercises only workspaces that declare a build script;
-- the existing tests are eight direct `tsx` assertion programs with no runner,
+- the existing tests are nine direct `tsx` assertion programs with no runner,
   coverage, database integration, or authorization matrix; and
 - client lint reports **82 errors and 55 warnings**.
 
@@ -143,7 +143,7 @@ shared values, gesture live refs, and legacy state-reset effects remain visible
 as warnings. `expo lint --max-warnings 108` locks that debt so it can only move
 down, and `pnpm check` now includes lint.
 
-`.github/workflows/quality.yml` runs a frozen install, typechecks, the eight
+`.github/workflows/quality.yml` runs a frozen install, typechecks, the nine
 self-checks, lint, docs build, Drizzle generation drift detection, and a
 production API Docker build for every pull request and push to `main`. The
 manual Docker publication workflow calls the same reusable gate before it can
@@ -151,7 +151,7 @@ push an image or create a release.
 
 **Follow-up:** migrate Reanimated `.value` access to compiler-compatible
 `get()`/`set()` where supported, resolve effect dependency findings, and lower
-the warning budget with every cleanup. Expand the eight assertion programs into
+the warning budget with every cleanup. Expand the nine assertion programs into
 route/database integration coverage as tracked below.
 
 ## P1 — make horizontal scaling explicit or coordinated
@@ -201,6 +201,8 @@ provider-wide for backward compatibility; its helper is named
 
 ## P2 — normalize malformed-input responses
 
+**Status: remediated for the observed event paths on 2026-07-23.**
+
 **Observed:**
 
 - event delete parses `EventSchema` outside the handler's validation catch; and
@@ -209,8 +211,18 @@ provider-wide for backward compatibility; its helper is named
 **Impact:** malformed client input may surface as `500` instead of a stable
 `400`, polluting error alerts and hiding the actual caller defect.
 
-**Recommendation:** use shared request/query schemas at the route boundary and
-test invalid UUID, body, enum, timestamp, and cursor cases for every endpoint.
+**Resolution:** event create/update/delete share one body parser that converts
+shape failures to `BadRequestError` and validates every event/calendar UUID
+before a query. Event route parameters use the same UUID guard.
+`GET /events?since=` now rejects empty, invalid, array, and object values before
+calling the database. The global error mapper also treats uncaught `ZodError`
+as `400` rather than `500`.
+
+A direct self-check covers malformed UUIDs, timestamps and Zod bodies plus the
+error mapper's `400`/`500` boundary.
+
+**Follow-up:** extend the same route-boundary matrix to calendars, invites,
+federation and user routes, including invalid enum and cursor cases.
 
 ## P2 — review federation identity and token lifecycle
 

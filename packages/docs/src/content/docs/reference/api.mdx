@@ -62,6 +62,11 @@ Typed application errors map to:
 | `NotFound` | 404 |
 | Unknown/unhandled | 500 |
 
+Uncaught Zod validation failures are also normalized to `400`. Event endpoints
+validate canonical UUID shape before issuing PostgreSQL queries, and
+`GET /events?since=` rejects non-string or invalid timestamps. Malformed client
+input must not surface as a database-flavoured `500`.
+
 Error JSON always includes the request correlation id:
 
 ```json
@@ -142,6 +147,10 @@ delta sync.
 | `POST /api/v1/events/:eventId/fork` | `{ calendarID }` | Independent new `Event` |
 | `GET /api/v1/events/:eventId/attendees` | — | `[{ id, name, image }]`; no emails |
 | `PUT /api/v1/events/:eventId/attendance` | `{ attending: boolean }` | Fresh attendee list |
+
+Event/calendar identifiers on this surface must use canonical hyphenated UUID
+form. Invalid body references, route parameters, `unlinkCalendarID`, and
+`since` cursors return `400` before authorization or database access.
 
 `Event` is defined in `packages/types/src/event.ts`. The important fields are:
 
