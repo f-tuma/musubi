@@ -578,6 +578,18 @@ export function useApi() {
       });
 
       throwOnError(error);
+    },
+
+    // Stop syncing ONE external calendar (drop its mirror) without disconnecting
+    // the account or touching the calendar on the provider.
+    async disconnectExternalCalendar(calendarId: string) {
+      const { error } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/users/connections/calendars/disconnect`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ calendarId }),
+      });
+
+      throwOnError(error);
     }
   }
 };

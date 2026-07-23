@@ -146,6 +146,23 @@ async function graphGet(accessToken: string, url: string): Promise<Response> {
   });
 }
 
+// calendarView/delta returns recurring-series OCCURRENCES as lightweight stubs:
+// only id/start/end/seriesMasterId — no subject, isAllDay, body, etc. Those live
+// on the series master, which is usually outside the sync window (its start is
+// the first-ever instance), so it isn't in the delta stream. Fetch it by id and
+// cache per sync run so a holiday calendar costs one extra GET per series.
+async function fetchSeriesMaster(
+  accessToken: string,
+  id: string,
+  cache: Map<string, any>,
+): Promise<any> {
+  if (cache.has(id)) return cache.get(id);
+  const res = await graphGet(accessToken, `${GRAPH}/me/events/${encodeURIComponent(id)}`);
+  const master = res.ok ? await res.json() : null;
+  cache.set(id, master);
+  return master;
+}
+
 export const microsoftAdapter: CalendarAdapter = {
   provider: "microsoft",
 
@@ -201,6 +218,7 @@ export const microsoftAdapter: CalendarAdapter = {
     let windowEnd = parsed?.windowEnd ?? Date.now() + WINDOW_FUTURE_DAYS * DAY_MS;
     let url = parsed?.link ?? initialDeltaUrl(externalCalendarId, windowEnd);
     let deltaLink: string | null = null;
+    const seriesMasters = new Map<string, any>();
 
     while (!deltaLink) {
       const res = await graphGet(accessToken, url);
@@ -216,8 +234,14 @@ export const microsoftAdapter: CalendarAdapter = {
       if (!res.ok) throw await graphError(res);
 
       const data = await res.json();
-      for (const item of data.value ?? []) {
-        if (item.type === "seriesMaster") continue; // occurrences carry the data
+      for (let item of data.value ?? []) {
+        if (item.type === "seriesMaster") continue; // definition only; occurrences carry the instances
+        // Occurrences/exceptions inherit subject, isAllDay, body, … from their
+        // master; backfill them (the occurrence's own start/end/id win on spread).
+        if (item.seriesMasterId && !item["@removed"]) {
+          const master = await fetchSeriesMaster(accessToken, item.seriesMasterId, seriesMasters);
+          if (master) item = { ...master, ...item };
+        }
         changes.push(toNormalized(item));
       }
 

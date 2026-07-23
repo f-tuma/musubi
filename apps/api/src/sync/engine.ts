@@ -4,6 +4,7 @@ import {
   deleteExternalEvent,
   getCalendarMembers,
   getExternalEventID,
+  getDisabledExternalCalendarIDs,
   getExternalLinkForCalendar,
   getUserExternalCalendars,
   importExternalCalendar,
@@ -86,7 +87,9 @@ export async function syncProvider(
   // new remote calendar -> import; existing -> keep the read-only flag fresh
   // (also self-heals calendars imported before readOnly existed, e.g. holidays)
   const links = await getUserExternalCalendars(provider, userID, accountId);
+  const disabled = new Set(await getDisabledExternalCalendarIDs(provider, userID, accountId));
   for (const cal of remote) {
+    if (disabled.has(cal.externalId)) continue; // user opted this calendar out of sync
     const desiredRole = cal.readOnly ? "viewer" : "owner";
     const link = links.find((l) => l.externalCalendarID === cal.externalId);
     if (!link) {

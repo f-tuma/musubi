@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { auth } from "@musubi/auth";
-import { cleanUsersOAuthTokens, deleteCaldavAccount, getOAuthCredentials, getUserExternalCalendars, removeCalendar } from "@musubi/db";
+import { cleanUsersOAuthTokens, clearDisabledExternalCalendars, deleteCaldavAccount, disableExternalCalendar, getOAuthCredentials, getUserExternalCalendars, removeCalendar } from "@musubi/db";
 import { BadRequestError } from "@musubi/types";
 import { revokeGoogleToken } from "../sync/oauth";
 import { decryptToken } from "../tokenCrypto";
@@ -26,6 +26,8 @@ export async function handlerDisconnectAccount(req: Request, res: Response) {
     for (const link of await getUserExternalCalendars(provider, req.user!.id, accountId)) {
       await removeCalendar(link.calendarID);
     }
+    // Forget per-calendar opt-outs so reconnecting starts clean.
+    await clearDisabledExternalCalendars(provider, req.user!.id, accountId);
     if (provider === "caldav") {
       await deleteCaldavAccount(req.user!.id, accountId);
     } else {
@@ -45,6 +47,22 @@ export async function handlerDisconnectAccount(req: Request, res: Response) {
       }
     }
   }
+
+  res.sendStatus(200);
+}
+
+// Opt ONE external calendar out of sync without disconnecting its account: the
+// local mirror + events are dropped, a tombstone stays so discovery won't re-
+// import it, and the calendar is left untouched on the provider. This is the
+// only way to get rid of a read-only mirror (holidays, a calendar you were
+// invited to as viewer) — deleting those isn't allowed, and they aren't yours
+// to delete on the provider.
+export async function handlerDisconnectExternalCalendar(req: Request, res: Response) {
+  const { calendarId } = req.body ?? {};
+  if (!calendarId) throw new BadRequestError("calendarId is required");
+
+  const row = await disableExternalCalendar(req.user!.id, calendarId);
+  if (!row) throw new BadRequestError("Not an external calendar you can disconnect");
 
   res.sendStatus(200);
 }

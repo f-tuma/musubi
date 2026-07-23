@@ -10,6 +10,7 @@ import {
   externalCalendars,
   externalEvents,
 } from "..";
+import { removeCalendar } from "./calendars";
 
 // Column values written to the `events` row for a synced event.
 type EventValues = {
@@ -30,7 +31,9 @@ type EventValues = {
 export async function getUserExternalCalendars(provider: string, userID: string, accountID: string) {
   return db
     .select({
-      calendarID: externalCalendars.calendarID,
+      // From the joined calendars row so the type is non-null — the inner join
+      // already excludes disabled tombstones (calendarID null).
+      calendarID: calendars.id,
       externalCalendarID: externalCalendars.externalCalendarID,
       cursor: externalCalendars.cursor,
       calColor: calendars.color,
@@ -69,6 +72,49 @@ export async function importExternalCalendar(
     await tx.insert(calendarMembers).values({ userID, calendarID: created.id, role });
     return created;
   });
+}
+
+// External calendars the user opted OUT of syncing (mirror deleted, tombstone
+// kept). Discovery consults this to avoid re-importing them on the next sync.
+export async function getDisabledExternalCalendarIDs(provider: string, userID: string, accountID: string) {
+  const rows = await db
+    .select({ externalCalendarID: externalCalendars.externalCalendarID })
+    .from(externalCalendars)
+    .where(and(
+      eq(externalCalendars.provider, provider),
+      eq(externalCalendars.userID, userID),
+      eq(externalCalendars.accountID, accountID),
+      eq(externalCalendars.disabled, true),
+    ));
+  return rows.map((r) => r.externalCalendarID);
+}
+
+// Opt a single external calendar out of sync without disconnecting the whole
+// account. Detaches the FK BEFORE deleting the mirror so the cascade can't take
+// the tombstone row with it; returns null if the calendar isn't an external
+// mirror owned by this user.
+export async function disableExternalCalendar(userID: string, calendarID: string) {
+  const [row] = await db.update(externalCalendars)
+    .set({ disabled: true, calendarID: null, cursor: null })
+    .where(and(
+      eq(externalCalendars.calendarID, calendarID),
+      eq(externalCalendars.userID, userID),
+    ))
+    .returning({ id: externalCalendars.id });
+  if (!row) return null;
+  await removeCalendar(calendarID);
+  return row;
+}
+
+// Full account disconnect forgets per-calendar opt-outs: drop the disabled
+// tombstones so a later reconnect of the same account imports everything fresh.
+export async function clearDisabledExternalCalendars(provider: string, userID: string, accountID: string) {
+  await db.delete(externalCalendars).where(and(
+    eq(externalCalendars.provider, provider),
+    eq(externalCalendars.userID, userID),
+    eq(externalCalendars.accountID, accountID),
+    eq(externalCalendars.disabled, true),
+  ));
 }
 
 // Keep the account label fresh across all of an account's calendars.

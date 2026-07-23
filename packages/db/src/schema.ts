@@ -382,11 +382,14 @@ export const externalCalendars = pgTable("external_calendars", {
     .notNull(),
   accountID: text("account_id").notNull(),
   accountLabel: text("account_label"),
+  // Null while disabled: the user opted this calendar out of sync, so its local
+  // mirror was deleted but the row survives as a tombstone. Discovery keys off
+  // (provider, accountID, externalCalendarID) to skip re-importing it.
   calendarID: uuid("calendar_id")
-    .references(() => calendars.id, { onDelete: "cascade" })
-    .notNull(),
+    .references(() => calendars.id, { onDelete: "cascade" }),
   externalCalendarID: text("external_calendar_id").notNull(),
   cursor: text("cursor"),
+  disabled: boolean("disabled").notNull().default(false),
 }, (t) => [
   unique().on(t.provider, t.accountID, t.externalCalendarID),
   unique().on(t.calendarID),

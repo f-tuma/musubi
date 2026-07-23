@@ -18,7 +18,7 @@ import { handlerAppleAppSiteAssociation, handlerServer, handlerServerStatus } fr
 import { handlerResetPasswordPage, handlerDeleteAccountPage } from "./handlers/pages";
 import { handlerCheckGoogleStatus, handlerGetGoogleCalendars, handlerRevokeGoogle } from "./handlers/google";
 import { handlerCheckCaldavStatus, handlerConnectCaldav, handlerDisconnectCaldav } from "./handlers/caldav";
-import { handlerDisconnectAccount } from "./handlers/connections";
+import { handlerDisconnectAccount, handlerDisconnectExternalCalendar } from "./handlers/connections";
 import { handlerDeleteMusubiAccount, handlerFederationAccept, handlerGetMusubiAccounts, handlerInvitePage, handlerSaveMusubiAccount } from "./handlers/federation";
 import { syncUser } from "./sync/engine";
 import { getExternalSyncUserIDs } from "@musubi/db";
@@ -136,6 +136,7 @@ app.get("/api/v1/users/connections/caldav", requireAuth, wrap(handlerCheckCaldav
 app.post("/api/v1/users/connections/caldav", requireAuth, wrap(handlerConnectCaldav));
 app.delete("/api/v1/users/connections/caldav", requireAuth, wrap(handlerDisconnectCaldav));
 app.post("/api/v1/users/connections/disconnect", requireAuth, wrap(handlerDisconnectAccount));
+app.post("/api/v1/users/connections/calendars/disconnect", requireAuth, wrap(handlerDisconnectExternalCalendar));
 app.post("/api/v1/users/reset", wrap(handlerResetUsers)); // public — password reset entry
 app.get("/api/v1/users/:userId/avatar", wrap(handlerGetAvatar)); // public — <Image> can't send auth headers
 
