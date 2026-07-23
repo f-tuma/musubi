@@ -89,7 +89,12 @@ The full-set reconciliation (`sweepExternalEvents`): after a `reset: true` fetch
 Federation's key trick: a normal `user` row on the origin server (`isExternal`, `homeServer`) standing in for someone whose real account lives elsewhere — so membership, roles and attribution work *natively*, with no changes to the permission model. Created on invite accept.
 
 ### Member token
-The bearer credential a federated member uses against the origin server: 32 random bytes, stored only as a SHA-256 hash (`member_tokens`). **Authenticates only** — authorization is always membership (`calendar_members`), so a kick cuts access instantly. Roams across the user's devices via `musubi_accounts` on their home server (AES-GCM encrypted).
+The bearer credential a federated member uses against the origin server:
+version + client-readable issue time + 32 random bytes, stored only as a SHA-256
+hash (`member_tokens`). It expires after 90 days and rotates during the final
+14 days. **Authenticates only** — authorization is membership
+(`calendar_members`); removing the last membership also revokes the token.
+Roams across the user's devices through AES-GCM-encrypted `musubi_accounts`.
 
 ### Invite-as-capability
 The design stance that an invite token *is* the credential for everything invite-shaped: previewing the calendar, joining it, and (federation) the accept handshake. Unguessable, scoped to one calendar, and validated at every read against its own expiry (`null` = never) and use limit (`maxUses`/`uses`; `null` = unlimited).

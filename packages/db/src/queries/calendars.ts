@@ -1,6 +1,6 @@
 import { and, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "..";
-import { calendarEvents, calendarInvites, calendarMembers, calendars, events, NewCalendar } from "../schema";
+import { calendarEvents, calendarInvites, calendarMembers, calendars, events, memberTokens, NewCalendar } from "../schema";
 import { NotFoundError } from "@musubi/types";
 
 
@@ -171,11 +171,23 @@ export async function setMemberRole(userID: string, calendarID: string, role: st
 }
 
 export async function removeCalendarMember(userID: string, calendarID: string) {
-  const [result] = await db
-    .delete(calendarMembers)
-    .where(and(eq(calendarMembers.userID, userID), eq(calendarMembers.calendarID, calendarID)))
-    .returning();
+  return db.transaction(async (tx) => {
+    const [result] = await tx
+      .delete(calendarMembers)
+      .where(and(eq(calendarMembers.userID, userID), eq(calendarMembers.calendarID, calendarID)))
+      .returning();
 
-  return result
+    if (result) {
+      const [remainingMembership] = await tx
+        .select({ calendarID: calendarMembers.calendarID })
+        .from(calendarMembers)
+        .where(eq(calendarMembers.userID, userID))
+        .limit(1);
+      if (!remainingMembership) {
+        await tx.delete(memberTokens).where(eq(memberTokens.userID, userID));
+      }
+    }
+
+    return result;
+  });
 }
-

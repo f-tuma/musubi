@@ -25,7 +25,8 @@ Authorization: Bearer <session-token>
 `requireAuth` resolves the token in two stages:
 
 1. Better Auth session (`auth.api.getSession`);
-2. SHA-256 lookup in `member_tokens` for a federated shadow member.
+2. SHA-256 lookup of a non-expired credential in `member_tokens` for a
+   federated shadow member.
 
 The second path authenticates identity only. Resource handlers must still
 authorize calendar or event access through `calendar_members` and the shared
@@ -180,7 +181,7 @@ does not allow `creatorID` or `originCalendarID` to change. The home
 | `DELETE /api/v1/calendars` | `Calendar`; returns removed row |
 | `POST /api/v1/calendars/import?name=&color=` | Raw iCalendar body; returns calendar + `imported` count |
 | `GET /api/v1/calendars/:id/export` | `text/calendar` snapshot; any member |
-| `GET /api/v1/calendars/tokens/:token` | Invite preview with calendar, members, live events |
+| `GET /api/v1/calendars/tokens/:token` | Minimal invite preview: calendar identity, member names/avatars, 30-day event summaries |
 | `GET /api/v1/calendars/:calendarId/members` | `[{ id, name, image, role }]` |
 | `POST /api/v1/calendars/members/:calendarId` | `{ token }`; join as viewer |
 | `DELETE /api/v1/calendars/members/:calendarId` | Leave; owner cannot leave |
@@ -230,13 +231,22 @@ Provider behavior and limitations:
 
 | Method and path | Auth | Body / response |
 |---|---:|---|
-| `POST /api/v1/federation/accept` | Invite token | `{ token, profile: { name, email, homeServer, image? } }` → `{ memberToken, userID, calendar }` |
+| `POST /api/v1/federation/accept` | Invite token; optional current member bearer proves an existing shadow | `{ token, profile: { name, email, homeServer, image? } }` → `{ memberToken, memberTokenExpiresAt, userID, calendar }` |
+| `POST /api/v1/federation/token/rotate` | Member token | Compare-and-swap exchange → `{ memberToken, memberTokenExpiresAt }` |
 | `GET /api/v1/users/connections/musubi` | Session | Decrypted remote connections for the owner |
 | `POST /api/v1/users/connections/musubi` | Session | `{ server, userID, token }` |
 | `DELETE /api/v1/users/connections/musubi` | Session | `{ server }` |
 
 The returned member token is shown once; the origin stores only its SHA-256
-hash. The home server stores a roaming copy encrypted with `CALDAV_ENC_KEY`.
+hash. It expires after 90 days and the client rotates it in the final 14 days.
+Removing the shadow's last calendar membership revokes its token rows
+transactionally. The home server stores a roaming copy encrypted with
+`CALDAV_ENC_KEY`.
+
+Profile claims on a first accept are display-only and always create an isolated
+shadow. The origin reuses an existing shadow only when the request presents its
+current bearer token; submitted email/home-server text alone cannot inherit
+prior memberships.
 Read the [federation trust model](/docs/architecture/federation/#trust--security-model)
 before changing these routes.
 

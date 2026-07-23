@@ -118,12 +118,12 @@ confirm convergence manually.
 - the Docker release workflow builds/publishes images without a preceding
   repository check;
 - root `build` exercises only workspaces that declare a build script;
-- the existing tests are five direct `tsx` assertion programs with no runner,
+- the existing tests are six direct `tsx` assertion programs with no runner,
   coverage, database integration, or authorization matrix; and
 - client lint reports **82 errors and 55 warnings**.
 
 The new `pnpm check` command creates a reproducible passing baseline for client
-typecheck, API typecheck, those five self-checks, and docs build. Lint remains
+typecheck, API typecheck, those six self-checks, and docs build. Lint remains
 separate because its baseline is already red.
 
 **Recommendation:** classify compiler/lint false positives around Reanimated
@@ -171,6 +171,9 @@ test invalid UUID, body, enum, timestamp, and cursor cases for every endpoint.
 
 ## P2 — review federation identity and token lifecycle
 
+**Status: remediated on 2026-07-23, with the first-contact trust boundary
+documented explicitly.**
+
 **Observed:** invite acceptance trusts the remote profile supplied by the bearer
 of the invite; it does not prove control of the claimed home server. Member
 tokens have no expiry, and the exported revocation helper is not part of a clear
@@ -184,6 +187,34 @@ may be intended capability behavior, but it is a meaningful privacy surface.
 **Recommendation:** document the trust model, minimize preview data, add expiry
 and revocation/rotation, and authenticate remote identity if it is used for more
 than display. Include invite leakage and replay in threat modeling.
+
+**Resolution:** unverified `homeServer + email` claims are no longer used to
+find an existing shadow user. First contact always creates an isolated identity;
+reusing a shadow across later invites requires its current member token as
+proof. This closes the cross-calendar privilege escalation where a holder of
+one invite could claim another shadow's profile and inherit all of its
+memberships.
+
+Member tokens now expire after 90 days. Versioned token values carry a
+client-readable issue time, the client rotates in the final 14 days, and the
+origin performs compare-and-swap rotation so one credential cannot be exchanged
+twice. Expired hashes are purged hourly. Removing a shadow's final membership
+revokes its tokens in the same database transaction.
+
+The invite preview now returns only calendar identity, member names/avatars,
+and minimal event fields for the 30-day UI window. It omits member email,
+event description, location, URL, attribution and unrelated historical
+one-off events.
+
+A pure security self-check covers token format/timing, origin validation and
+preview minimization. A disposable-PostgreSQL integration test covers expiry,
+single-use rotation, unproved profile isolation, proved identity reuse and
+last-membership revocation.
+
+**Remaining boundary:** v1 still does not prove that the first-contact person
+controls the claimed home server. Those claims are display metadata and cannot
+bind to existing access. Add a signed or callback-based server-to-server
+assertion before treating them as globally verified identity.
 
 ## P2 — improve provider and database integration coverage
 
@@ -204,7 +235,8 @@ release check.
 **Observed:**
 
 - root pins `pnpm@11.8.0`, while some package metadata/Dockerfiles still declare
-  pnpm 10;
+  pnpm 10; the API image build prepares pnpm 10 but root metadata still makes
+  Corepack download pnpm 11.8.0 during `pnpm install`;
 - root, workspace, docs, and native app versions do not express one clear
   release version;
 - the docs image installs an unpinned global pnpm and the full workspace without

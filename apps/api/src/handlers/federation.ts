@@ -1,12 +1,14 @@
 import { Request, Response } from "express";
-import { createHash, randomBytes } from "node:crypto";
+import { z } from "zod";
 import {
-  addCalendarMember, consumeInvite, createExternalUser, deleteMusubiAccount, findExternalUser,
-  getCalendar, getCalendarIDFromToken, getMusubiAccounts, saveMemberToken,
-  upsertMusubiAccount,
+  addCalendarMember, consumeInvite, createExternalUser, deleteMusubiAccount,
+  getCalendar, getCalendarIDFromToken, getMusubiAccounts, getUserByTokenHash,
+  replaceMemberToken, rotateMemberToken, upsertMusubiAccount,
 } from "@musubi/db";
-import { BadRequestError } from "@musubi/types";
+import { BadRequestError, UnauthorizedError } from "@musubi/types";
 import { decryptSecret, encryptSecret } from "../sync/crypto";
+import { bearerMemberToken, hashMemberToken, issueMemberToken } from "../federation_tokens";
+import { canonicalHttpOrigin } from "../federation_origin";
 
 // Federation (Musubi ↔ Musubi), v1: an invite token doubles as the cross-server
 // capability. A user from another server accepts an invite here and becomes a
@@ -15,41 +17,100 @@ import { decryptSecret, encryptSecret } from "../sync/crypto";
 // attribution then work unchanged; the only new mechanics are this accept
 // handshake and member-token authentication (see middleware/require_auth.ts).
 
-export function hashMemberToken(raw: string): string {
-  return createHash("sha256").update(raw).digest("hex");
-}
+const FederationProfileSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  email: z.string().trim().email().max(320),
+  homeServer: z.string().trim(),
+  image: z.string().max(2048).nullish(),
+});
 
 /**
  * POST /api/v1/federation/accept — public (the invite token IS the credential).
  * Body: { token, profile: { name, email, homeServer, image? } }
- * Verifies the invite, finds-or-creates the shadow user, adds them as a member
- * (viewer — the owner promotes via the normal member management), and issues a
- * bearer member token. The raw token is returned exactly once; only its SHA-256
- * hash is stored. Authorization stays with calendar_members — kicking the
- * member cuts access even though the token still authenticates.
+ * Verifies the invite, creates a shadow user, adds them as a viewer and issues
+ * a bearer member token. An existing shadow identity is reused only when the
+ * caller proves control by presenting its current member token. Unverified
+ * profile fields therefore cannot bind to somebody else's memberships.
  */
 export async function handlerFederationAccept(req: Request, res: Response) {
   const { token, profile } = req.body ?? {};
   if (!token || typeof token !== "string") throw new BadRequestError("Missing invite token...");
-  const { name, email, homeServer, image } = profile ?? {};
-  if (!name || !email || !homeServer) throw new BadRequestError("Profile needs name, email and homeServer...");
-  if (!/^https?:\/\//.test(homeServer)) throw new BadRequestError("homeServer must be an http(s) origin...");
+
+  const parsedProfile = FederationProfileSchema.safeParse(profile);
+  if (!parsedProfile.success) throw new BadRequestError("Profile needs a valid name, email and homeServer...");
+  const { name, email, image } = parsedProfile.data;
+  const homeServer = canonicalHttpOrigin(parsedProfile.data.homeServer);
+  if (!homeServer) throw new BadRequestError("homeServer must be an http(s) origin...");
 
   // Same semantics as the native join: token must exist (expired ones are
   // purged hourly); throws NotFound otherwise.
   const calendarID = await getCalendarIDFromToken(token);
 
-  const shadow = await findExternalUser(homeServer, email)
-    ?? await createExternalUser({ name, email, image, homeServer });
+  const currentToken = bearerMemberToken(req.headers.authorization);
+  let shadow;
+  if (currentToken) {
+    const proved = await getUserByTokenHash(hashMemberToken(currentToken));
+    const provedHome = proved?.homeServer
+      ? canonicalHttpOrigin(proved.homeServer)
+      : null;
+    if (!proved || !proved.isExternal || provedHome !== homeServer) {
+      throw new UnauthorizedError("The existing federation credential is invalid.");
+    }
+    shadow = proved;
+  } else {
+    // The submitted profile is display-only on first contact. Never look up an
+    // existing shadow by these unverified claims.
+    shadow = await createExternalUser({ name, email, image, homeServer });
+  }
 
   const added = await addCalendarMember(shadow.id, calendarID); // viewer; conflict-safe on re-accept
   if (added.length > 0) await consumeInvite(token); // burn a use only on a NEW membership
 
-  const raw = randomBytes(32).toString("hex");
-  await saveMemberToken(shadow.id, hashMemberToken(raw));
+  const issued = issueMemberToken();
+  if (currentToken) {
+    const rotated = await rotateMemberToken(
+      shadow.id,
+      hashMemberToken(currentToken),
+      issued.tokenHash,
+    );
+    if (!rotated) {
+      throw new UnauthorizedError("The federation credential was already rotated.");
+    }
+  } else {
+    await replaceMemberToken(shadow.id, issued.tokenHash);
+  }
 
   const calendar = await getCalendar(calendarID);
-  res.status(200).json({ memberToken: raw, userID: shadow.id, calendar });
+  res.status(200).json({
+    memberToken: issued.raw,
+    memberTokenExpiresAt: issued.expiresAt.toISOString(),
+    userID: shadow.id,
+    calendar,
+  });
+}
+
+/** Exchange a still-valid member token for a fresh 90-day credential. */
+export async function handlerFederationRotateToken(req: Request, res: Response) {
+  const currentToken = bearerMemberToken(req.headers.authorization);
+  const external = req.user as typeof req.user & { isExternal?: boolean };
+  if (!currentToken || !external?.isExternal) {
+    throw new UnauthorizedError("A federated member token is required.");
+  }
+
+  const issued = issueMemberToken();
+  const rotated = await rotateMemberToken(
+    external.id,
+    hashMemberToken(currentToken),
+    issued.tokenHash,
+  );
+  if (!rotated) {
+    throw new UnauthorizedError("The federation credential was already rotated.");
+  }
+
+  res.status(200).json({
+    memberToken: issued.raw,
+    memberTokenExpiresAt: issued.expiresAt.toISOString(),
+  });
 }
 
 // ── Home side: the user's connections to OTHER Musubi servers ────────────────
@@ -70,8 +131,9 @@ export async function handlerGetMusubiAccounts(req: Request, res: Response) {
 export async function handlerSaveMusubiAccount(req: Request, res: Response) {
   const { server, userID, token } = req.body ?? {};
   if (!server || !userID || !token) throw new BadRequestError("server, userID and token are required...");
-  if (!/^https?:\/\//.test(server)) throw new BadRequestError("server must be an http(s) origin...");
-  await upsertMusubiAccount(req.user!.id, server, userID, encryptSecret(token));
+  const origin = canonicalHttpOrigin(server);
+  if (!origin) throw new BadRequestError("server must be an http(s) origin...");
+  await upsertMusubiAccount(req.user!.id, origin, userID, encryptSecret(token));
   res.sendStatus(200);
 }
 
@@ -79,7 +141,9 @@ export async function handlerSaveMusubiAccount(req: Request, res: Response) {
 export async function handlerDeleteMusubiAccount(req: Request, res: Response) {
   const { server } = req.body ?? {};
   if (!server) throw new BadRequestError("server is required...");
-  await deleteMusubiAccount(req.user!.id, server);
+  const origin = canonicalHttpOrigin(server);
+  if (!origin) throw new BadRequestError("server must be an http(s) origin...");
+  await deleteMusubiAccount(req.user!.id, origin);
   res.sendStatus(200);
 }
 

@@ -1,18 +1,12 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, lte, gt } from "drizzle-orm";
 import { db, user, memberTokens, musubiAccounts } from "..";
 import { randomUUID } from "node:crypto";
+import { MEMBER_TOKEN_TTL_MS } from "@musubi/types";
 
 // Federation (Musubi ↔ Musubi): shadow accounts + member tokens.
 // A shadow account is a normal `user` row (isExternal) standing in for someone
 // whose real account lives on another Musubi server — so membership, roles and
 // event attribution work natively. See apps/api/src/handlers/federation.ts.
-
-/** The shadow user for (homeServer, email), or null. Never matches local users. */
-export async function findExternalUser(homeServer: string, email: string) {
-  const [row] = await db.select().from(user)
-    .where(and(eq(user.isExternal, true), eq(user.homeServer, homeServer), eq(user.email, email)));
-  return row ?? null;
-}
 
 /**
  * Create a shadow user. Security invariant: NEVER binds to an existing local
@@ -42,24 +36,61 @@ export async function createExternalUser(profile: { name: string; email: string;
   }
 }
 
-/** Persist a member token (SHA-256 hash only — the raw token is never stored). */
-export async function saveMemberToken(userID: string, tokenHash: string) {
-  await db.insert(memberTokens).values({ userID, tokenHash });
+/** Replace every prior credential for this shadow user with one fresh token. */
+export async function replaceMemberToken(userID: string, tokenHash: string) {
+  return db.transaction(async (tx) => {
+    await tx.delete(memberTokens).where(eq(memberTokens.userID, userID));
+    const [created] = await tx.insert(memberTokens).values({ userID, tokenHash }).returning();
+    return created;
+  });
 }
 
-/** Resolve a presented token hash to its (external) user, or null. */
-export async function getUserByTokenHash(tokenHash: string) {
+/**
+ * Compare-and-swap rotation. Concurrent clients cannot both exchange the same
+ * credential: only the transaction that deletes currentTokenHash may insert.
+ */
+export async function rotateMemberToken(
+  userID: string,
+  currentTokenHash: string,
+  nextTokenHash: string,
+) {
+  return db.transaction(async (tx) => {
+    const [removed] = await tx.delete(memberTokens)
+      .where(and(
+        eq(memberTokens.userID, userID),
+        eq(memberTokens.tokenHash, currentTokenHash),
+      ))
+      .returning({ id: memberTokens.id });
+    if (!removed) return null;
+
+    // Collapse any legacy multi-token state while the proved credential is
+    // being exchanged. New lifecycle permits one active token per shadow.
+    await tx.delete(memberTokens).where(eq(memberTokens.userID, userID));
+    const [created] = await tx.insert(memberTokens)
+      .values({ userID, tokenHash: nextTokenHash })
+      .returning();
+    return created;
+  });
+}
+
+/** Resolve a non-expired token hash to its external user, or null. */
+export async function getUserByTokenHash(tokenHash: string, now = new Date()) {
+  const oldestAccepted = new Date(now.getTime() - MEMBER_TOKEN_TTL_MS);
   const [row] = await db
     .select({ user })
     .from(memberTokens)
     .innerJoin(user, eq(memberTokens.userID, user.id))
-    .where(eq(memberTokens.tokenHash, tokenHash));
+    .where(and(
+      eq(memberTokens.tokenHash, tokenHash),
+      gt(memberTokens.createdAt, oldestAccepted),
+      eq(user.isExternal, true),
+    ));
   return row?.user ?? null;
 }
 
-/** Drop all of a user's member tokens (e.g. when their last membership ends). */
-export async function revokeMemberTokens(userID: string) {
-  await db.delete(memberTokens).where(eq(memberTokens.userID, userID));
+export async function deleteExpiredMemberTokens(now = new Date()) {
+  const cutoff = new Date(now.getTime() - MEMBER_TOKEN_TTL_MS);
+  await db.delete(memberTokens).where(lte(memberTokens.createdAt, cutoff));
 }
 
 // ── Home side: this user's connections to OTHER Musubi servers ───────────────

@@ -212,13 +212,20 @@ map.
 | Invites | `POST /calendars/invites` (create — `expiresAt: null` = never, `maxUses: null` = unlimited), `GET /calendars/:id/invites` (list, with `uses`), `DELETE /calendars/invites/:inviteId` (revoke) — all gated on the `invite` action |
 | Users | `GET/PUT /users/settings`, `DELETE /users`, `POST /users/avatar`, `GET /users/:id/avatar` *(public)* |
 | Connections | google check/revoke, caldav check/connect/disconnect, `GET/POST/DELETE /users/connections/musubi` (federated connections, roaming), `POST /users/connections/disconnect` |
-| Federation | `POST /api/v1/federation/accept` *(public — the invite token is the credential)*, `GET /invite/:token` *(public HTML hand-off page, outside `/api`)* — see [Federation](/docs/architecture/federation/) |
+| Federation | `POST /api/v1/federation/accept` *(public — invite capability; optional current member bearer proves identity reuse)*, `POST /api/v1/federation/token/rotate`, `GET /invite/:token` *(public HTML hand-off page, outside `/api`)* — see [Federation](/docs/architecture/federation/) |
 
 `GET /api/v1/server` is public and returns `{ minClientVersion, socials }` — `socials` lists the social logins this server has credentials for (e.g. `["google"]`), so the client's welcome screen renders only the buttons that will work against it (matters for self-hosted servers with a partial config).
 
 `POST /calendars` can carry `provider` + `accountId` to create the calendar **into a connected account** — the server creates it at the provider first, then imports the mirror (see [Calendar-level writes](/docs/architecture/sync/#calendar-level-writes)). `PUT`/`DELETE /calendars` on an external mirror push the rename/recolor/delete to the provider first and abort locally if it refuses.
 
-Two auth notes: `GET /calendars/tokens/:token` is **public** (possession of the unguessable invite token is the credential — cross-server invitees have no session here). The token is fully validated at every read by `getCalendarIDFromToken`: uuid-shaped (a raw string against a uuid column would be a PG 500), unexpired, and under its `maxUses` — and the two public token endpoints (`/calendars/tokens/:token`, `/federation/accept`) sit behind a per-IP in-memory `rateLimit` middleware. And `requireAuth` has a second path: when no Better Auth session matches, it hashes the presented `Bearer` and looks it up in `member_tokens` — authenticating a federated **shadow member**. This is authentication only; each protected resource route must still authorize against `calendar_members`.
+Two auth notes: `GET /calendars/tokens/:token` is **public** (possession of the unguessable invite token is the credential — cross-server invitees have no session here). The token is fully validated at every read by `getCalendarIDFromToken`: uuid-shaped (a raw string against a uuid column would be a PG 500), unexpired, and under its `maxUses` — and the two public token endpoints (`/calendars/tokens/:token`, `/federation/accept`) sit behind a per-IP in-memory `rateLimit` middleware. The preview contract deliberately omits email and full event records.
+
+`requireAuth` has a second path: when no Better Auth session matches, it hashes
+the presented `Bearer` and looks up an external user through a member-token row
+younger than 90 days. This is authentication only; each protected resource
+route must still authorize against `calendar_members`. Clients rotate in the
+final 14 days through a compare-and-swap endpoint, and removing the final
+membership revokes token hashes transactionally.
 
 <Aside type="note">
 `POST /api/v1/users/reset` is public and its inline comment says "password reset entry" — but it maps to `handlerResetUsers`, the **dev-only** full user wipe (guarded by `ENVIRONMENT === "dev"`, throws `Forbidden` otherwise). The comment is misleading; real password reset is a Better Auth route under `/api/auth`. Worth a cleanup.

@@ -24,6 +24,9 @@ importers:
       '@musubi/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@musubi/calendar':
+        specifier: workspace:*
+        version: link:../../packages/calendar
       '@musubi/config':
         specifier: workspace:*
         version: link:../../packages/config

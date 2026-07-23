@@ -2,7 +2,7 @@ import { auth } from "@musubi/auth";
 import { getUserByTokenHash } from "@musubi/db";
 import { UnauthorizedError } from "@musubi/types";
 import { NextFunction, Request, Response } from "express";
-import { hashMemberToken } from "../handlers/federation";
+import { bearerMemberToken, hashMemberToken } from "../federation_tokens";
 import { logger } from "@musubi/config";
 
 
@@ -17,7 +17,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   // Federation fallback: external (shadow) members authenticate with a member
   // token issued on invite accept — not a Better Auth session. Authentication
   // only; every route still authorizes via calendar_members/assertCan.
-  const bearer = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  const bearer = bearerMemberToken(req.headers.authorization);
   if (bearer) {
     const external = await getUserByTokenHash(hashMemberToken(bearer));
     if (external) {

@@ -1,4 +1,4 @@
-import { Calendar, CalendarWithEvents, Event, Invite, Settings, GoogleCheck } from "@musubi/types";
+import { Calendar, CalendarInvitePreview, Event, Invite, Settings, GoogleCheck } from "@musubi/types";
 import { useServer } from "@/contexts/ServerContext";
 import { apiVersion } from "@/constants/url";
 import { fedFetch, remoteForCalendar } from "@/services/federation";
@@ -83,12 +83,19 @@ export function useApi() {
     },
 
     async getCalendarFromToken(token: string) {
-      const { error, data } = await authClient.$fetch<CalendarWithEvents>(`${apiUrl}/api/${apiVersion}/calendars/tokens/${token}`, {
+      const { error, data } = await authClient.$fetch<CalendarInvitePreview>(`${apiUrl}/api/${apiVersion}/calendars/tokens/${token}`, {
         method: "GET",
       });
 
       throwOnError(error);
-      return data;
+      return {
+        ...data,
+        events: data.events.map(event => ({
+          ...event,
+          start: new Date(event.start),
+          end: new Date(event.end),
+        })),
+      };
     },
 
     async createEvent(event: Event) {

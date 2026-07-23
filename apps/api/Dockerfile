@@ -12,6 +12,7 @@ WORKDIR /repo
 FROM base AS build
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
 COPY apps/api/package.json apps/api/
+COPY packages/calendar/package.json packages/calendar/
 COPY packages/db/package.json packages/db/
 COPY packages/auth/package.json packages/auth/
 COPY packages/types/package.json packages/types/
@@ -24,6 +25,7 @@ COPY packages/config/package.json packages/config/
 RUN pnpm install --filter @musubi/api... --prod --node-linker=isolated \
       --config.auto-install-peers=false
 COPY apps/api apps/api
+COPY packages/calendar packages/calendar
 COPY packages/db packages/db
 COPY packages/auth packages/auth
 COPY packages/types packages/types

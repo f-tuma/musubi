@@ -1,6 +1,6 @@
 import { config, logger } from "@musubi/config";
 import { auth } from "@musubi/auth";
-import { deleteExpiredInvites, deleteExpiredSessions, purgeDeletedEvents } from "@musubi/db";
+import { deleteExpiredInvites, deleteExpiredMemberTokens, deleteExpiredSessions, purgeDeletedEvents } from "@musubi/db";
 import { toNodeHandler } from "better-auth/node";
 import express from "express";
 import cors from "cors";
@@ -19,7 +19,7 @@ import { handlerResetPasswordPage, handlerDeleteAccountPage } from "./handlers/p
 import { handlerCheckGoogleStatus, handlerGetGoogleCalendars, handlerRevokeGoogle } from "./handlers/google";
 import { handlerCheckCaldavStatus, handlerConnectCaldav, handlerDisconnectCaldav } from "./handlers/caldav";
 import { handlerDisconnectAccount, handlerDisconnectExternalCalendar } from "./handlers/connections";
-import { handlerDeleteMusubiAccount, handlerFederationAccept, handlerGetMusubiAccounts, handlerInvitePage, handlerSaveMusubiAccount } from "./handlers/federation";
+import { handlerDeleteMusubiAccount, handlerFederationAccept, handlerFederationRotateToken, handlerGetMusubiAccounts, handlerInvitePage, handlerSaveMusubiAccount } from "./handlers/federation";
 import { syncUser } from "./sync/engine";
 import { getExternalSyncUserIDs } from "@musubi/db";
 import { middlewareMetrics, recordExternalSyncFailure, startMetricsServer } from "./metrics";
@@ -74,6 +74,7 @@ app.get("/api/stream", requireAuth, wrap(handlerStream));
 // server serves its own deep links (no dependency on the hosted domain).
 // Public + creates accounts/tokens — cap per-IP so tokens can't be farmed or guessed.
 app.post("/api/v1/federation/accept", rateLimit(10, 15 * 60_000), wrap(handlerFederationAccept));
+app.post("/api/v1/federation/token/rotate", requireAuth, wrap(handlerFederationRotateToken));
 app.get("/invite/:token", handlerInvitePage(config.api.url));
 // Self-hosted auth pages — the reset/delete emails link here on this API's own
 // origin, so nothing depends on the central website. Public, no auth (the token
@@ -165,6 +166,7 @@ async function cleanupExpired() {
   const startedAt = performance.now();
   try {
     await deleteExpiredInvites();
+    await deleteExpiredMemberTokens();
     await deleteExpiredSessions();
     await purgeDeletedEvents(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)); // tombstones > 30d
     logger.debug("cleanup.completed", {

@@ -96,7 +96,7 @@ The `(calendarID)` scoping on `externalEvents` is deliberate: two users can mirr
 
 | Table | Purpose | Notes |
 |---|---|---|
-| `memberTokens` | Bearer tokens for federated shadow members (origin side) | `tokenHash` unique (SHA-256 — the raw token is never stored); cascades from `user`. Authentication only — authorization stays with `calendar_members`, so a kick cuts access. |
+| `memberTokens` | Bearer tokens for federated shadow members (origin side) | `tokenHash` unique (SHA-256 — raw value never stored); `createdAt` enforces the 90-day lifetime. Rotation is compare-and-swap; removing the final membership deletes the rows transactionally. Authorization remains in `calendar_members`. |
 | `musubiAccounts` | This user's connections to *other* Musubi servers (home side) | member token AES-GCM encrypted (same key as CalDAV passwords); `unique(userID, server)` — accept once, every device inherits. See [Federation](/docs/architecture/federation/). |
 
 ## The custom `bytea` type

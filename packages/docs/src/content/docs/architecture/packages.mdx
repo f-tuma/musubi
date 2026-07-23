@@ -14,7 +14,8 @@ The **client/server contract**. Every data shape is a Zod schema; the TypeScript
 | File | Exports |
 |---|---|
 | `event.ts` | `EventSchema`, `Event` — `start`/`end` via `z.coerce.date()`, `calendars: string[]`, `originCalendarID` nullish, `recurrence` nullish |
-| `calendar.ts` | `CalendarSchema`, `Calendar`, `CalendarWithEvents`, `providerFlavor()` (detects `"apple"` from iCloud CalDAV) |
+| `calendar.ts` | `CalendarSchema`, `Calendar`, minimal `CalendarInvitePreview`, `providerFlavor()` (detects `"apple"` from iCloud CalDAV) |
+| `federation.ts` | Member-token lifetime, timestamp parsing, proactive-rotation decision |
 | `settings.ts` | `SettingsSchema`, `Settings`, `CalendarView` enum |
 | `invite.ts`, `user.ts`, `google.ts` | their schemas + inferred types |
 | `errors.ts` | `BadRequestError`, `UnauthorizedError`, `ForbiddenError`, `NotFoundError` (each has a `kind` for HTTP mapping) |

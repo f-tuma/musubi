@@ -7,6 +7,7 @@ import { BadRequestError, Calendar, CalendarSchema, ForbiddenError, NotFoundErro
 import { notifyCalendarMembers } from "./stream";
 import { assertCan } from "../permissions";
 import { getAdapter } from "../sync/engine";
+import { buildInvitePreview } from "../invite_preview";
 
 // External mirror? Then only the person whose provider account backs it may
 // change/delete it — and the change must land on the provider FIRST (throwing
@@ -188,20 +189,11 @@ export async function handlerGetCalendars(req: Request, res: Response) {
 
 export async function handlerGetCalendarFromToken(req: Request, res: Response) {
   const calendarID = await getCalendarIDFromToken(req.params.token as string);
-  const result = await getCalendar(calendarID);
+  const calendar = await getCalendar(calendarID);
   const members = await getCalendarMembers(calendarID);
   const events = await getCalendarEvents(calendarID);
 
-  res.status(200).json({
-    ...result,
-    members: members.map(u => ({
-      name: u.user.name,
-      email: u.user.email,
-      id: u.user.id,
-      image: u.user.image,
-    })),
-    events: events.map(e => e.events).filter(e => !e.deletedAt), // exclude soft-deleted
-  });
+  res.status(200).json(buildInvitePreview(calendar, members, events));
 }
 
 export async function handlerGetCalendar(req: Request, res: Response) {

@@ -59,6 +59,12 @@ export function useRefreshData() {
     // full fetch — no delta). A server that's down keeps its last-cached
     // calendars so the reconcile below doesn't wipe local copies.
     const fed = await syncFederatedAccounts(await cacheGetCalendars());
+    // Rotation succeeds at the origin first. Roam the replacement token back
+    // through the home server so other signed-in devices inherit it.
+    for (const account of fed.rotatedAccounts) {
+      try { await api.saveMusubiAccount(account); }
+      catch (e) { console.warn("Could not persist rotated federation token:", e); }
+    }
     if (fed.syncedServers.size) {
       // full-set semantics per synced server: cached events living only in that
       // server's calendars and absent from the fresh pull were deleted remotely

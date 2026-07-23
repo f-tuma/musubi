@@ -11,7 +11,7 @@ This page is the contributor's reference for how that works: the design, the tru
 
 ## The design in one paragraph
 
-A calendar lives on exactly **one** server — its *origin*. An invite token is already a capability scoped to one calendar (it fetches the preview, it grants membership, it expires). Federation extends that: the invite link carries the origin server's address, and accepting it from another server runs a small handshake that creates a **shadow account** — a normal `user` row on the origin representing the remote person — adds it as a member, and issues a **member token** the invitee's app uses to read *and write* that calendar directly at its origin. Everything else (roles, permissions, attribution, member management) is the unmodified native machinery, because to the origin server the remote member **is just a user**.
+A calendar lives on exactly **one** server — its *origin*. An invite token is already a capability scoped to one calendar (it fetches the preview, it grants membership, it expires). Federation extends that: the invite link carries the origin server's address, and accepting it from another server runs a small handshake that creates a **shadow account** — a normal `user` row on the origin representing the remote person — adds it as a member, and issues a **member token** the invitee's app uses to read *and write* that calendar directly at its origin. A later invite reuses that shadow only when the app proves control with its current member token. Everything else (roles, permissions, attribution, member management) is the unmodified native machinery, because to the origin server the remote member **is just a user**.
 
 ```mermaid
 sequenceDiagram
@@ -19,15 +19,16 @@ sequenceDiagram
     participant A as Origin server A
     Note over U,A: Invite link: https://A/invite/T → musubi://invite/T?server=A
     U->>A: GET /api/v1/calendars/tokens/T (public preview)
-    A-->>U: calendar name, members, events
-    U->>A: POST /api/v1/federation/accept { token: T, profile: {name, email, homeServer: B} }
-    A->>A: find-or-create shadow user (isExternal, homeServer=B)
+    A-->>U: minimal calendar/member/30-day event preview
+    U->>A: POST /api/v1/federation/accept { token: T, profile } + optional Bearer M
+    A->>A: no M → isolated shadow; valid M → reuse proved shadow
     A->>A: addCalendarMember(shadow, calendar) — viewer
-    A->>A: issue member token M (store SHA-256 hash)
-    A-->>U: { memberToken: M, userID, calendar }
-    Note over U: stores {server: A, token: M} on home server B (encrypted) — all devices inherit it
-    U->>A: GET /api/v1/calendars, /api/v1/events (Bearer M) — sync
-    U->>A: POST/PUT/DELETE /api/v1/events (Bearer M) — edits, gated by assertCan
+    A->>A: issue 90-day member token M2 (store SHA-256 hash)
+    A-->>U: { memberToken: M2, memberTokenExpiresAt, userID, calendar }
+    Note over U: stores {server: A, token: M2} on home server B (encrypted) — all devices inherit it
+    U->>A: GET /api/v1/calendars, /api/v1/events (Bearer M2) — sync
+    U->>A: POST /api/v1/federation/token/rotate near expiry
+    U->>A: POST/PUT/DELETE /api/v1/events (Bearer M2) — edits, gated by assertCan
 ```
 
 ## Why shadow accounts (and not a federation protocol)
@@ -37,7 +38,8 @@ The alternative — teaching `calendar_members`, event attribution and every per
 - `calendar_members` points at the shadow user; the owner promotes/demotes/kicks them with the **existing** member management UI and endpoints.
 - `events.creatorID` / `organizer` attribute to the shadow user — edits show who made them.
 - `assertCan` / `assertCanEditEvent` run unchanged; the origin server enforces its own permissions on every request.
-- `getCalendarMembers` returns them like anyone else (name, email, avatar URL from their profile).
+- `getCalendarMembers` returns them like anyone else (name and avatar; member
+  lists deliberately omit email).
 
 The `user` table gains two columns: `isExternal` (this row is a shadow account — no password, no session) and `homeServer` (their origin). That is the entire data-model footprint besides the token table.
 
@@ -48,10 +50,10 @@ The `user` table gains two columns: `isExternal` (this row is a shadow account �
 | Piece | File | What it does |
 |---|---|---|
 | Schema | `packages/db/src/schema.ts` | `user.isExternal` + `user.homeServer`; `member_tokens` (id, userID, `tokenHash` unique, createdAt) |
-| Queries | `packages/db/src/queries/federation.ts` | `findExternalUser`, `createExternalUser`, `saveMemberToken`, `getUserByTokenHash`, `revokeMemberTokens` |
-| Accept handshake | `apps/api/src/handlers/federation.ts` | `POST /api/v1/federation/accept` — public, rate-limited per IP; verifies the invite (consuming a `maxUses` use on a NEW membership), find-or-creates the shadow user, adds membership (viewer), returns the raw member token once |
-| Token auth | `apps/api/src/middleware/require_auth.ts` | after the Better Auth session check fails, hashes the presented `Bearer` and looks it up in `member_tokens` — sets `req.user` to the shadow user |
-| Public preview | `apps/api/src/index.ts` | `GET /api/v1/calendars/tokens/:token` is public (rate-limited per IP) — possession of the unguessable invite token is the credential; expiry and `maxUses` are enforced at every read |
+| Queries | `packages/db/src/queries/federation.ts` | isolated shadow creation; token replace, compare-and-swap rotate, non-expired lookup and cleanup |
+| Accept handshake | `apps/api/src/handlers/federation.ts` | `POST /api/v1/federation/accept` — public, rate-limited per IP; verifies the invite, creates an isolated shadow or reuses one proved by its current bearer, adds membership (viewer), returns the replacement raw token once |
+| Token auth + rotation | `apps/api/src/middleware/require_auth.ts`, `handlers/federation.ts` | hash lookup accepts only external users and hashes younger than 90 days; `POST /api/v1/federation/token/rotate` exchanges a still-valid token once |
+| Public preview | `apps/api/src/invite_preview.ts` | `GET /api/v1/calendars/tokens/:token` is public and rate-limited; returns only calendar identity, member names/avatars and minimal 30-day event data |
 | Invite page | `handlers/federation.ts` → `GET /invite/:token` | tiny HTML hand-off every server serves for its **own** invite links; deep-links `musubi://invite/<token>?server=<origin>` |
 | Connection roaming | `musubi_accounts` + `GET/POST/DELETE /api/v1/users/connections/musubi` | the user's connections to *other* servers, stored on their **home** server with the member token AES-GCM encrypted (same key as CalDAV passwords) — accept once, every device inherits it |
 
@@ -59,7 +61,7 @@ The `user` table gains two columns: `isExternal` (this row is a shadow account �
 
 | Piece | File | What it does |
 |---|---|---|
-| Registry | `apps/client/services/federation.ts` | federated accounts `{server, token, userID}` — **source of truth is the home server** (`getMusubiAccounts` on every refresh), SecureStore is the offline fallback cache; `calendarID → account` origin map; `fedFetch`, `acceptRemoteInvite`, `fetchRemoteCalendarPreview`, `syncFederatedAccounts` |
+| Registry | `apps/client/services/federation.ts` | federated accounts `{server, token, userID}` — **source of truth is the home server** (`getMusubiAccounts` on every refresh), SecureStore is the offline fallback cache; proves an existing shadow on later accepts and rotates legacy/near-expiry tokens |
 | Invite screen | `app/invite/[token].tsx` | reads the `?server=` param; remote → public preview + federation accept; local → the native join, unchanged |
 | Sync | `hooks/useRefreshData.ts` | after the home sync, pulls calendars + events from every federated server (v1: full fetch), tags calendars `provider: "musubi"` + `serverUrl`, merges into the same stores/cache |
 | Write routing | `services/api.ts` | calendar-scoped methods consult `remoteForCalendar()`; remote calendars go to their origin with the member token — same endpoints, same shapes |
@@ -74,16 +76,37 @@ Android app links only open the app for domains the build verifies (`musubi.pro`
 
 Be precise about what protects what:
 
-- **The member token is the security boundary.** 32 random bytes; the origin stores only its SHA-256 hash and returns the raw token exactly once. Presenting it authenticates you *as that shadow user* — nothing more.
+- **The member token is the security boundary.** It contains a version, a
+  client-readable issue timestamp and 32 random bytes. The origin stores only
+  its SHA-256 hash and authoritative database `createdAt`, and returns the raw
+  value exactly once. Presenting it authenticates you *as that shadow user* —
+  nothing more.
+- **Tokens expire and rotate.** Authentication rejects hashes aged 90 days.
+  The client exchanges legacy tokens immediately and versioned tokens during
+  their final 14 days. Rotation is compare-and-swap: the same old token cannot
+  produce two successors. The home server stores the successor for other
+  devices.
 - **Your home server holds your tokens** (in `musubi_accounts`, AES-GCM encrypted with the same key as CalDAV passwords) so connections roam across your devices. The deliberate trade-off: a home-server admin with the encryption key could act as you *on the origin calendar* — the same class of trust you already extend by storing CalDAV credentials there. Self-hosters trust themselves; hosted users trust the host.
-- **Authorization is membership, always.** Every route the token reaches still runs `assertCan`/`assertCanEditEvent` against `calendar_members`. **Kicking a member cuts their access instantly**, even though their token still authenticates — it authenticates a user with no rights.
-- **Profile claims are display-only.** The accept handshake trusts the submitted name/email/avatar for *display*; it grants nothing beyond what the invite token itself grants. v1 does not verify "user U really exists on server B" server-to-server — that's a v2 hardening step.
+- **Authorization is membership, always.** Every route the token reaches still
+  runs `assertCan`/`assertCanEditEvent` against `calendar_members`. A kick cuts
+  resource access immediately; removing the shadow's last membership also
+  deletes its token hashes in the same transaction.
+- **First-contact profile claims are display-only.** v1 does not prove
+  server-to-server that “user U controls server B.” An accept without a current
+  member token therefore creates a new isolated shadow and never looks up an
+  existing identity by submitted email/home server. Reusing an existing shadow
+  requires that shadow's valid bearer token.
 - **Shadow accounts can never collide into local accounts.** `createExternalUser` never binds to an existing local user; an email collision falls back to a synthetic unique email. An unverified email claim must not impersonate a local account — this is an invariant, keep it.
-- **Invite semantics are unchanged** — same expiry/purge behaviour as a native join, same "token required, calendar id is not enough" rule.
+- **Invite semantics are unchanged** — same expiry/purge behaviour as a native join, same "token required, calendar id is not enough" rule. Preview possession reveals names/avatars and a minimal 30-day agenda, not email or full event records; treat invite links as private capabilities.
 - **Client-side routing is routing, not authorization.** `remoteForCalendar()` in the app only decides *which server to call with which credential*. It grants nothing: a client that "skips" it just sends the request to the wrong server, where `assertCan` (and the [server-side shape guards](/docs/architecture/api/#the-server-must-trust-nothing-from-the-client)) reject it. The same goes for the composer's same-server guard — it's a friendly error, the server enforces the rule regardless.
 
 <Aside type="caution">
-Known v1 gaps, deliberate and documented: no server-to-server identity proof (the invite token is the proof); member tokens don't expire (revoked implicitly by kick, `revokeMemberTokens` exists for cleanup); a shadow user with no remaining memberships lingers until cleaned up; storing connections requires `CALDAV_ENC_KEY` on the home server (without it, the accept still works but stays device-local). All are contained by the authorization-is-membership rule.
+Known v1 gaps, deliberate and documented: first contact has no server-to-server
+identity proof; an orphaned shadow user row remains after its last membership
+and token are removed; storing connections requires `CALDAV_ENC_KEY` on the
+home server (without it, accept still works but stays device-local). Do not use
+submitted profile claims as verified global identity without adding a signed or
+callback-based home-server assertion.
 </Aside>
 
 ## What v1 is — and isn't
@@ -101,4 +124,7 @@ Known v1 gaps, deliberate and documented: no server-to-server identity proof (th
 2. Sign in to server A (as the owner), create a calendar, share an invite — the link is `http://<A>/invite/<token>`.
 3. On a device signed in to server B, open the link → the hand-off page deep-links into the app with `?server=<A>` → accept.
 4. The calendar appears grouped under server A's host in the calendar list, with your role. Create/edit an event in it — the write lands on A; A's local members see it (SSE/refresh). On A, the owner sees you as a member and can change your role or kick you; after a kick, your next request fails with 403 and the next refresh drops the calendar.
+5. Run `pnpm test:federation-db` against a disposable migrated PostgreSQL database
+   with `ENVIRONMENT=test` to verify expiry, rotation, identity isolation and
+   last-membership revocation.
 </Steps>

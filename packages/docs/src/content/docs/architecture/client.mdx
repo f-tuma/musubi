@@ -99,7 +99,7 @@ The `asserts error is null` return type is load-bearing — after `throwOnError(
 
 - **`contexts/ServerContext.tsx`** provides `{ apiUrl, authClient, setNewServerUrl }`. The API URL is read from `SecureStore` (defaults to prod), so self-hosters can point the app at their own server.
 - **`services/auth-client.ts`** builds the Better Auth client with the Expo plugin (scheme `musubi://`, tokens in `SecureStore`).
-- **`services/federation.ts`** holds the federated-server registry: member tokens for calendars shared from *other* Musubi servers, and a `calendarID → origin server` map that `useApi` consults to route writes. Calendars from federated servers carry `provider: "musubi"` + `serverUrl` and sync in `useRefreshData` after the home pull. Full picture in [Federation](/docs/architecture/federation/).
+- **`services/federation.ts`** holds the federated-server registry: member tokens for calendars shared from *other* Musubi servers, and a `calendarID → origin server` map that `useApi` consults to route writes. It rotates legacy tokens immediately and 90-day credentials during their final 14 days, then persists the successor through the home server. Calendars from federated servers carry `provider: "musubi"` + `serverUrl` and sync in `useRefreshData` after the home pull. Full picture in [Federation](/docs/architecture/federation/).
 
 ## Realtime + offline
 

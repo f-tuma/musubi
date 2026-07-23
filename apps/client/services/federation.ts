@@ -6,7 +6,12 @@
 // Registry lives here (not in a store) so services/api.ts can consult it
 // without importing stores — the stores import useApi, which would cycle.
 import * as SecureStore from "expo-secure-store";
-import { Calendar, Event } from "@musubi/types";
+import {
+  Calendar,
+  CalendarInvitePreview,
+  Event,
+  shouldRotateMemberToken,
+} from "@musubi/types";
 import { fetchWithTimeout } from "@/lib/network";
 
 export type FederatedAccount = {
@@ -87,13 +92,34 @@ export async function fedFetch<T>(acc: FederatedAccount, path: string, init?: Re
 }
 
 const reviveEvent = (e: any): Event => ({ ...e, start: new Date(e.start), end: new Date(e.end) });
+const revivePreviewEvent = (e: any) => ({ ...e, start: new Date(e.start), end: new Date(e.end) });
+
+async function rotateFederatedAccount(acc: FederatedAccount): Promise<FederatedAccount> {
+  const res = await fetchWithTimeout(`${acc.server}/api/v1/federation/token/rotate`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      Authorization: `Bearer ${acc.token}`,
+    },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(`${res.status}: ${body?.error ?? res.statusText}`);
+  }
+
+  const { memberToken } = await res.json();
+  if (typeof memberToken !== "string") throw new Error("Origin returned an invalid member token.");
+  const rotated = { ...acc, token: memberToken };
+  await addFederatedAccount(rotated);
+  return rotated;
+}
 
 /** Public invite preview on a remote server (the token is the credential). */
 export async function fetchRemoteCalendarPreview(server: string, inviteToken: string) {
   const res = await fetchWithTimeout(`${server}/api/v1/calendars/tokens/${inviteToken}`);
   if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
-  const data = await res.json();
-  return { ...data, events: (data.events ?? []).map(reviveEvent) };
+  const data = await res.json() as CalendarInvitePreview;
+  return { ...data, events: (data.events ?? []).map(revivePreviewEvent) };
 }
 
 /**
@@ -106,9 +132,16 @@ export async function acceptRemoteInvite(
   inviteToken: string,
   profile: { name: string; email: string; image?: string | null; homeServer: string },
 ) {
+  // A current token proves control of the existing shadow identity. Without
+  // it, the origin creates an isolated shadow instead of trusting profile
+  // claims to find somebody else's account.
+  const existing = (await loadFederatedAccounts()).find(account => account.server === server);
   const res = await fetchWithTimeout(`${server}/api/v1/federation/accept`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      ...(existing ? { Authorization: `Bearer ${existing.token}` } : {}),
+    },
     body: JSON.stringify({ token: inviteToken, profile }),
   });
   if (!res.ok) {
@@ -131,10 +164,23 @@ export async function syncFederatedAccounts(fallbackCalendars: Calendar[]) {
   const calendars: Calendar[] = [];
   const events: Event[] = [];
   const syncedServers = new Set<string>();
+  const rotatedAccounts: FederatedAccount[] = [];
 
-  for (const acc of accounts) {
+  for (const storedAccount of [...accounts]) {
+    let acc = storedAccount;
     const host = acc.server.replace(/^https?:\/\//, "").replace(/[/:].*$/, "");
     try {
+      if (shouldRotateMemberToken(acc.token)) {
+        try {
+          acc = await rotateFederatedAccount(acc);
+          rotatedAccounts.push(acc);
+        } catch (error) {
+          // Backward compatibility: an older origin has no rotate route.
+          // Keep using the still-valid old token; a genuine expiry will then
+          // fail the normal authenticated fetch below.
+          console.warn(`Federated token rotation failed for ${host}:`, error);
+        }
+      }
       const cals = await fedFetch<Calendar[]>(acc, "/api/v1/calendars");
       const tagged = cals.map(c => ({
         ...c,
@@ -155,5 +201,5 @@ export async function syncFederatedAccounts(fallbackCalendars: Calendar[]) {
       calendars.push(...cached);
     }
   }
-  return { calendars, events, syncedServers };
+  return { calendars, events, syncedServers, rotatedAccounts };
 }

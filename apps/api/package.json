@@ -12,6 +12,7 @@
   "packageManager": "pnpm@10.33.0",
   "dependencies": {
     "@musubi/auth": "workspace:*",
+    "@musubi/calendar": "workspace:*",
     "@musubi/config": "workspace:*",
     "@musubi/db": "workspace:*",
     "@musubi/types": "workspace:*",

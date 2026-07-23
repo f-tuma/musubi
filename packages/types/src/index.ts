@@ -6,3 +6,4 @@ export * from "./invite";
 export * from "./settings";
 export * from "./google";
 export * from "./permissions";
+export * from "./federation";

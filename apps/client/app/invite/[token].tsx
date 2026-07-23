@@ -1,5 +1,5 @@
 import { colors, fonts, styles } from "@/constants/theme";
-import { CalendarWithEvents } from "@musubi/types";
+import { CalendarInvitePreview } from "@musubi/types";
 import { expandRecurringEvents } from "@musubi/calendar";
 import { useApi } from "@/services/api";
 import { useServer } from "@/contexts/ServerContext";
@@ -39,7 +39,7 @@ export default function Invite() {
   const remoteServer = inviteServer && inviteServer !== apiUrl ? inviteServer : null;
 
   const { data: session, isPending: isSessionPending } = authClient.useSession();
-  const [calendarData, setCalendarData] = useState<CalendarWithEvents | null>(null);
+  const [calendarData, setCalendarData] = useState<CalendarInvitePreview | null>(null);
   const [isAccepting, setIsAccepting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");

@@ -76,3 +76,25 @@ export const CalendarWithEventsSchema = CalendarSchema.extend({
 });
 
 export type CalendarWithEvents = z.infer<typeof CalendarWithEventsSchema>;
+
+export const CalendarInvitePreviewSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  color: z.string(),
+  members: z.array(UserSchema.pick({
+    id: true,
+    name: true,
+    image: true,
+  })),
+  events: z.array(EventSchema.pick({
+    id: true,
+    title: true,
+    color: true,
+    start: true,
+    end: true,
+    isAllDay: true,
+    recurrence: true,
+  })),
+});
+
+export type CalendarInvitePreview = z.infer<typeof CalendarInvitePreviewSchema>;

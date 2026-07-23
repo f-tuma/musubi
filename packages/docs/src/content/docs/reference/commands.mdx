@@ -35,7 +35,7 @@ pnpm check
 
 1. client TypeScript (`tsc --noEmit`);
 2. API TypeScript (`tsc --noEmit --skipLibCheck`);
-3. five assertion-based self-check files;
+3. six assertion-based self-check files;
 4. the root build (currently the Starlight package is the only workspace with a
    `build` script).
 
@@ -68,8 +68,21 @@ These are plain Node assertions executed with `tsx`, not a test-runner suite:
 | `apps/client/lib/eventForm.test.ts` | Event-form validation |
 | `apps/client/lib/rrule.test.ts` | RRULE building and parsing |
 | `apps/client/lib/ics.test.ts` | Lightweight client `.ics` import |
+| `apps/api/src/federation.test.ts` | Member-token timing, origin validation, invite-preview minimization |
 | `apps/api/src/sync/oauth.test.ts` | OAuth refresh/revoke helpers and token crypto |
 | `apps/api/src/sync/adapters/microsoft.test.ts` | Graph date/cursor/event conversion |
+
+Federation also has an opt-in database lifecycle check:
+
+```sh
+ENVIRONMENT=test DATABASE_URL=postgresql://... BETTER_AUTH_URL=http://localhost:7531 \
+  pnpm test:federation-db
+```
+
+Run it only against a disposable, fully migrated PostgreSQL database. It creates
+and removes scoped fixtures, and verifies expiry cleanup, compare-and-swap
+rotation, unproved-profile isolation, proved shadow reuse and final-membership
+revocation.
 
 When adding pure logic, follow the current assertion style or introduce a
 project-wide runner as one focused change; do not create a third test convention.

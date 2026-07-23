@@ -447,11 +447,10 @@ export type NewCaldavAccount = typeof caldavAccounts.$inferInsert;
 
 // FEDERATION (Musubi ↔ Musubi)
 
-// Bearer tokens for external (shadow) members. Issued once on invite accept,
-// stored as a SHA-256 hash — the raw token is returned to the remote client
-// exactly once and never persisted. Authentication only: authorization still
-// runs through calendar_members/assertCan, so kicking a member cuts access
-// even while their token row exists.
+// Bearer tokens for external (shadow) members. The raw token is shown once and
+// only this SHA-256 hash persists. Authentication accepts createdAt < 90 days;
+// clients rotate during the final 14 days. Removing a shadow user's last
+// membership revokes the row in the same transaction.
 export const memberTokens = pgTable("member_tokens", {
   id: uuid("id").primaryKey().defaultRandom(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
