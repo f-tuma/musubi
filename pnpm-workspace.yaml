@@ -1,6 +1,8 @@
 packages:
-  - 'apps/*'
-  - 'packages/*'
+  - "apps/*"
+  - "packages/*"
+catalog:
+  expo: ~56.0.17
 # Expo/React Native tooling assumes a flat node_modules (config plugins, Metro).
 # pnpm's default isolated layout hides transitive deps like @expo/config-plugins.
 nodeLinker: hoisted
@@ -14,12 +16,12 @@ allowBuilds:
   sharp: false
   unrs-resolver: false
 overrides:
-  esbuild@<=0.24.2: '>=0.25.0'
-  postcss@<8.5.10: '>=8.5.10'
+  esbuild@<=0.24.2: ">=0.25.0"
+  postcss@<8.5.10: ">=8.5.10"
 minimumReleaseAgeExclude:
   # Expo is a trusted first-party publisher — exclude its packages from the
   # release-age gate by name (globs, not name@version, which never matched).
-  - '@expo/*'
+  - "@expo/*"
   - expo
-  - 'expo-*'
+  - "expo-*"
   - babel-preset-expo
