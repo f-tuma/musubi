@@ -21,7 +21,7 @@ sequenceDiagram
     U->>A: GET /api/v1/calendars/tokens/T (public preview)
     A-->>U: minimal calendar/member/30-day event preview
     U->>A: POST /api/v1/federation/accept { token: T, profile } + optional Bearer M
-    A->>A: no M → isolated shadow; valid M → reuse proved shadow
+    A->>A: no M → isolated shadow, valid M → reuse proved shadow
     A->>A: addCalendarMember(shadow, calendar) — viewer
     A->>A: issue 90-day member token M2 (store SHA-256 hash)
     A-->>U: { memberToken: M2, memberTokenExpiresAt, userID, calendar }
