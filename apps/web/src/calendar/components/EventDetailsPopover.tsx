@@ -44,7 +44,7 @@ import {
 	X,
 } from "lucide-react";
 import type { ReactElement } from "react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { Attendee, RemoveEventResponse } from "~/api/contracts";
 import {
 	answerLabel,
@@ -222,6 +222,16 @@ function CalendarEventDetailsPopover({
   const [saving, setSaving] = useState(false);
   // The overflow menu holds Delete, so its trigger is where a closed prompt returns focus.
   const [moreTriggerElement, setMoreTriggerElement] = useState<HTMLButtonElement | null>(null);
+  // The footer, and the menu trigger with it, unmounts while a calendar list
+  // is open, so returning focus waits for the new trigger to mount.
+  const focusMoreOnMount = useRef(false);
+  const moreTriggerRef = useCallback((node: HTMLButtonElement | null) => {
+    setMoreTriggerElement(node);
+    if (node && focusMoreOnMount.current) {
+      focusMoreOnMount.current = false;
+      requestAnimationFrame(() => node.focus());
+    }
+  }, []);
   const [notesExpanded, setNotesExpanded] = useState(false);
   const editButtonRef = useRef<HTMLButtonElement>(null);
   const wasEditing = useRef(false);
@@ -554,7 +564,7 @@ function CalendarEventDetailsPopover({
 		setActionError(undefined);
 		setTargetAction(undefined);
 		// Link and Copy live in the overflow menu, so its trigger takes focus back.
-		requestAnimationFrame(() => moreTriggerElement?.focus());
+		focusMoreOnMount.current = true;
 	}
 
 	const reminder = reminders ? eventReminder(reminders, master) : undefined;
@@ -975,7 +985,7 @@ function CalendarEventDetailsPopover({
 											<Button
 												aria-label="More event actions"
 												title="More actions"
-												ref={setMoreTriggerElement}
+												ref={moreTriggerRef}
 												size="icon"
 												variant="ghost"
 											>

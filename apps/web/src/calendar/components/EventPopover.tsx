@@ -97,6 +97,7 @@ export function EventPopover({
         data-ghost={ghost ? "" : undefined}
         data-draggable={onBeginDrag ? "" : undefined}
         data-pending={pending ? "" : undefined}
+        data-event-chip=""
         data-event-id={event.id}
         data-task-completed={isCalendarTask(event) && event.calendarTask.status === "completed" ? "" : undefined}
         onPointerDown={onBeginDrag}
@@ -114,7 +115,7 @@ export function EventPopover({
             {getEventRangeLabel(event, timeFormat).split(" ")[0]}
           </span>
         ) : null}
-        <span className={cn("min-w-0 flex-1 truncate text-10 group-data-[task-completed]/chip:line-through in-data-[event-list=overflow]:text-13", event.isAllDay && showLabel && continuesAfter && "overflow-visible text-clip")} aria-hidden="true" data-event-title="">
+        <span className={cn("min-w-0 flex-1 truncate text-10 group-data-[task-completed]/chip:line-through in-data-[event-list=overflow]:text-13", event.isAllDay && showLabel && continuesAfter && "overflow-visible text-clip whitespace-nowrap")} aria-hidden="true" data-event-title="">
           {showLabel ? event.title : ""}
         </span>
         {showLabel && (isCalendarTask(event) || event.recurrence || event.hasAttendees) ? (

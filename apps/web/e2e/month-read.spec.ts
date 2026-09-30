@@ -3174,7 +3174,7 @@ test("transfers calendar ownership", async ({ page }) => {
 	await expect(transferDialog).toBeVisible();
 	await expect(
 		transferDialog.getByText(
-			"You will become an editor and lose access to sharing controls for Studio.",
+			"Sam Rivers takes over members, invite links and settings of Studio. You become an editor.",
 		),
 	).toBeVisible();
 	await transferDialog.evaluate((element) =>
@@ -6905,7 +6905,7 @@ test("says an invitation is spent rather than showing an empty page", async ({
 	await page.goto(`/invite/${INVITE_TOKEN}`);
 
 	await expect(
-		page.getByRole("heading", { name: "This invitation is no longer open." }),
+		page.getByRole("heading", { name: "This invitation is closed" }),
 	).toBeVisible();
 	await expectNoAccessibilityViolations(page);
 });
@@ -7140,6 +7140,7 @@ test("stays inside its box with twenty calendars", async ({ page }) => {
 	const dialogBox = (await dialog.boundingBox())!;
 	expect(dialogBox.height).toBeLessThanOrEqual(page.viewportSize()!.height);
 	await expectNoSidewaysScroll("calendars dialog");
+	await settleAnimations(page);
 	const calendarAccessibility = await new AxeBuilder({ page })
 		.include('[role="dialog"]')
 		.analyze();
@@ -7563,7 +7564,7 @@ test("keeps the time on a chip while the cell can hold one", async ({
 				// single-column chip pushes them under the title and doubles its height.
 				heights: [
 					...new Set(
-						[...cell.querySelectorAll('[data-day-events] > [data-event-id], [data-day-events] [data-event-id]')].map((el) =>
+						[...cell.querySelectorAll('[data-event-chip]')].map((el) =>
 							Math.round(el.getBoundingClientRect().height),
 						),
 					),
@@ -8534,7 +8535,7 @@ for (const [width, theme] of [[390, "dark"], [1280, "light"]] as const) {
     await expect(help).toContainText("Both apps may notify");
     await page.keyboard.press("Escape");
     await expect(help).toHaveCount(0);
-    await expect(page.getByText("Availability: Working elsewhere", { exact: true })).toBeVisible();
+    await expect(page.getByText("Working elsewhere", { exact: true })).toBeVisible();
     await page.locator("summary").filter({ hasText: "Outlook participants" }).click();
     await expect(page.getByRole("list", { name: "Outlook participants" })).toBeVisible();
     await expect(page.getByText("Alex Chen", { exact: true })).toBeVisible();
@@ -9516,7 +9517,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     await chooseTimeZone(page.getByRole("combobox", { name: "Event time zone", exact: true }), "UTC");
     await expect(page.getByLabel("Start time", { exact: true })).toHaveValue("02:30");
     const editor = page.getByRole("dialog", { name: "Edit series", exact: true });
-    await expect(editor.getByText("Changes here apply to the recurring series.")).toBeVisible();
+    await expect(editor.getByText("Changes apply to the whole series.")).toBeVisible();
     await expectNoAccessibilityViolations(page);
     await editor.screenshot({ path: testInfo.outputPath("utc-series-editor.png") });
     await page.getByRole("button", { name: "Save", exact: true }).click();
@@ -9552,7 +9553,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     const editor = page.getByRole("dialog", { name: "Respond in calendar", exact: true });
     await expect(editor.getByRole("button", { name: "Send response to organizer" })).toBeDisabled();
     await chooseSelectOption(page, "Your response", "Tentative");
-    await expect(editor.getByText(/Organizer delivery cannot be verified/)).toBeVisible();
+    await editor.getByRole("button", { name: "About responses" }).focus(); await expect(page.getByRole("tooltip")).toContainText("Organizer delivery cannot be verified");
     await expectNoAccessibilityViolations(page);
     expect(await editor.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
     await editor.screenshot({ path: `/tmp/musubi-k12-live/caldav-rsvp-browser-${theme}.png` });
@@ -9660,7 +9661,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
     await page.screenshot({ path: `/tmp/musubi-grid-${theme}.png` });
     await page.getByRole("button", { name: "Availability", exact: true }).click();
-    await page.getByRole("button", { name: "Sources and interval list", exact: true }).click();
+    await page.getByRole("button", { name: "Sources and intervals", exact: true }).click();
     await expect(page.getByRole("dialog", { name: "Settings", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Check availability", exact: true })).toBeVisible();
     await page.getByRole("dialog", { name: "Settings", exact: true }).getByRole("button", { name: "Close settings", exact: true }).click();
@@ -9691,7 +9692,7 @@ test("Availability grid keeps capped event lanes usable and selection pending ac
   await page.getByRole("button", { name: "Availability", exact: true }).click();
   await page.getByRole("switch", { name: "Show selected availability" }).click(); await page.keyboard.press("Escape");
   await expect(page.getByText(/No availability sources selected/)).toBeVisible();
-  const openConnections = async () => { await page.getByRole("button", { name: "Availability", exact: true }).click(); await page.getByRole("button", { name: "Sources and interval list", exact: true }).click(); };
+  const openConnections = async () => { await page.getByRole("button", { name: "Availability", exact: true }).click(); await page.getByRole("button", { name: "Sources and intervals", exact: true }).click(); };
   await openConnections();
   const select = page.getByRole("switch", { name: "Use Team availability for availability" });
   await select.click(); await expect.poll(() => !!commit).toBe(true);
@@ -9751,7 +9752,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     if (mode === "initial-series") await expect(editor.getByText("Response applies to: Entire series")).toBeVisible();
     if (series) await expect(editor.getByText(/Existing exceptions keep their own response/)).toBeVisible();
     await chooseSelectOption(page, "Your response", "Tentative");
-    await expect(editor.getByText(/Organizer delivery cannot be verified/)).toBeVisible();
+    await editor.getByRole("button", { name: "About responses" }).focus(); await expect(page.getByRole("tooltip")).toContainText("Organizer delivery cannot be verified");
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
     await expectNoAccessibilityViolations(page);
     expect(await editor.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
@@ -9794,7 +9795,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     await page.getByRole("button", { name: "Edit", exact: true }).click();
     await page.getByRole("button", { name: "Expand event editor", exact: true }).click();
     const editor = page.getByRole("dialog", { name: "Edit series", exact: true });
-    await expect(editor.getByText("Changes here apply to the recurring series.")).toBeVisible();
+    await expect(editor.getByText("Changes apply to the whole series.")).toBeVisible();
     await editor.getByRole("button", { name: "Restore 2026-03-29", exact: true }).click();
     await expect(editor.getByRole("combobox", { name: "Repeat", exact: true })).toBeFocused();
     await expect(editor.getByRole("button", { name: "Restore 2026-03-30", exact: true })).toBeVisible();
@@ -9840,7 +9841,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     stale = false;
     await seriesAction.click();
     const editor = page.getByRole("dialog", { name: "CalDAV series alarm", exact: true });
-    await expect(editor.getByText(/applies to every occurrence in this series/)).toBeVisible();
+    await expect(editor.getByText(/Applies to every occurrence in this series/)).toBeVisible();
     await editor.getByRole("textbox", { name: "Reminder 1 minutes before start" }).fill("30");
     await expectNoAccessibilityViolations(page);
     await editor.screenshot({ path: testInfo.outputPath("series-alarm.png") });
@@ -9916,7 +9917,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     await page.getByRole("button", { name: "Edit", exact: true }).click();
     await page.getByRole("button", { name: "Expand event editor", exact: true }).click();
     const editor = page.getByRole("dialog", { name: "Edit series", exact: true });
-    await expect(editor.getByText("Changes here apply to the recurring series.")).toBeVisible();
+    await expect(editor.getByText("Changes apply to the whole series.")).toBeVisible();
     if (remove) await editor.getByRole("button", { name: "Remove additional date", exact: true }).click();
     else {
       await editor.getByRole("button", { name: /^Additional series date:/ }).click();
@@ -10373,12 +10374,13 @@ for (const [width, theme, count] of [[1280, "dark", 5], [1280, "light", 24], [39
     await page.keyboard.press("Shift+Tab");
     await expect(last).toBeFocused();
     const measurements = await last.evaluate(element => {
-      const body = element.closest('[role="dialog"]')!.querySelector('header + div')!;
+      const body = element.closest('[role="dialog"]')!.querySelector('[data-slot="dialog-body"]')!;
       body.scrollTop = body.scrollHeight;
       return { bodyBottom: body.getBoundingClientRect().bottom, lastBottom: element.getBoundingClientRect().bottom };
     });
-    expect(measurements.bodyBottom - measurements.lastBottom).toBeGreaterThanOrEqual(19);
-    expect(measurements.bodyBottom - measurements.lastBottom).toBeLessThanOrEqual(22);
+    // The body closes on the layer's shared 24px inset.
+    expect(measurements.bodyBottom - measurements.lastBottom).toBeGreaterThanOrEqual(23);
+    expect(measurements.bodyBottom - measurements.lastBottom).toBeLessThanOrEqual(26);
     await expectNoAccessibilityViolations(page);
     await dialog.screenshot({ path: testInfo.outputPath("inbox-bottom-spacing.png") });
   });
@@ -10448,7 +10450,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     await expect(page.getByRole("textbox", { name: "Recurrence rule" })).not.toBeVisible();
     await expectNoAccessibilityViolations(page);
     const footerGap = await page.getByRole("button", { name: "Save task", exact: true }).evaluate(button => {
-      const footer = button.closest("footer")!;
+      const footer = button.closest('[data-slot="dialog-footer"]')!;
       const body = footer.previousElementSibling!;
       return button.getBoundingClientRect().top - body.getBoundingClientRect().bottom;
     });

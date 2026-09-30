@@ -119,7 +119,8 @@ function DialogContent({
       {...props}
     >
       <ElevatedLayerContext.Provider value={elevated}>
-        {children}
+        {/* First in the DOM, as the header's first control: tab order and
+            reading order meet the way out before the body. */}
         {closeLabel ? (
           <DialogPrimitive.Close asChild>
             <Button
@@ -133,6 +134,7 @@ function DialogContent({
             </Button>
           </DialogPrimitive.Close>
         ) : null}
+        {children}
       </ElevatedLayerContext.Provider>
     </DialogPrimitive.Content>
   );

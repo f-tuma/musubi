@@ -164,7 +164,7 @@ function InviteRoute() {
             {calendar.members.slice(0, 6).map((member) => (
               <li className="flex min-w-0 items-center gap-2 text-13 text-foreground-secondary" key={member.id}>
                 <Avatar image={member.image} name={member.name} size="compact" />
-                <span className="truncate">{member.name}</span>
+                <span className="min-w-0 wrap-anywhere">{member.name}</span>
               </li>
             ))}
           </ul>

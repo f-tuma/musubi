@@ -648,7 +648,8 @@ function TaskEditorSurface({ busy, inspectorPresentation, ...props }: TaskEditor
         </InspectorHeaderActions>
       </header>
       <DialogBody>{props.children}</DialogBody>
-      <div className="flex-none pb-safe-bottom"><DialogFooter>{props.footer}</DialogFooter></div>
+      {/* The inspector surface already pays the home-indicator inset. */}
+      <DialogFooter>{props.footer}</DialogFooter>
     </InspectorContent>
   </Inspector>;
 }
