@@ -3,8 +3,9 @@ import { spacing, typeSizes } from "@musubi/design-system";
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
 import type { CSSProperties, ReactNode } from "react";
 import { getReadableEventTextColor } from "~/calendar/event-color";
-import { DESKTOP_MODES } from "../../.storybook/modes";
-import styles from "./Foundations.stories.module.css";
+import { DESKTOP_MODES, MOBILE_MODES } from "../../.storybook/modes";
+import { SectionLabel } from "~/components/ui/section-label";
+import { cn } from "~/lib/utils";
 
 const SURFACE_TOKENS = [
   "--surface-canvas",
@@ -94,290 +95,206 @@ const BREAKPOINTS = [
 
 type TokenStyle = CSSProperties & Record<`--story-${string}`, string>;
 
-function storyVariable(name: string, value: string): TokenStyle {
-  return { [name]: value } as TokenStyle;
-}
+const card = "grid min-w-0 gap-1 overflow-hidden rounded-card border border-border-subtle bg-panel p-3";
+const tokenName = "font-mono text-11 break-all text-foreground-secondary";
 
-function PageIntro({ children, title }: { children: ReactNode; title: string }) {
+function Page({ children, title }: { children: ReactNode; title: string }) {
   return (
-    <header className={styles.intro}>
-      <span className={styles.eyebrow}>Implemented source of truth</span>
-      <h1>{title}</h1>
-      <p>{children}</p>
-    </header>
+    <main className="mx-auto grid w-full max-w-wide gap-8 px-4 py-10 sm:px-8">
+      <h1 className="font-serif text-26 font-normal text-foreground">{title}</h1>
+      {children}
+    </main>
   );
 }
 
-function Section({
-  children,
-  description,
-  title,
-}: {
-  children: ReactNode;
-  description: string;
-  title: string;
-}) {
+function Section({ children, title }: { children: ReactNode; title: string }) {
   return (
-    <section className={styles.section}>
-      <header className={styles.sectionHeader}>
-        <h2 className={styles.sectionTitle}>{title}</h2>
-        <p className={styles.sectionCopy}>{description}</p>
-      </header>
+    <section className="grid gap-4 border-t border-border-subtle pt-6">
+      <SectionLabel>{title}</SectionLabel>
       {children}
     </section>
   );
 }
 
+function Grid({ children }: { children: ReactNode }) {
+  return <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">{children}</div>;
+}
+
 function SwatchGrid({ tokens }: { tokens: readonly string[] }) {
   return (
-    <div className={styles.grid}>
+    <Grid>
       {tokens.map((token) => (
-        <article className={styles.tokenCard} key={token}>
-          <div
-            className={styles.swatch}
-            style={storyVariable("--story-token", `var(${token})`)}
-          />
-          <div className={styles.tokenCopy}>
-            <code className={styles.tokenName}>{token}</code>
-          </div>
+        <article className={cn(card, "p-0")} key={token}>
+          <div className="h-24 border-b border-border-subtle bg-(--story-token)" style={{ "--story-token": `var(${token})` } as TokenStyle} />
+          <code className={cn(tokenName, "px-3 py-2")}>{token}</code>
         </article>
       ))}
-    </div>
+    </Grid>
   );
 }
 
 function ColorsStory() {
   return (
-    <main className={styles.page}>
-      <PageIntro title="Color and surfaces">
-        Semantic roles change with the Storybook theme switch. Calendar pigments
-        remain stable and always pair color with readable content.
-      </PageIntro>
-      <Section
-        description="The canvas, panels, raised controls, and transient overlays."
-        title="Surfaces"
-      >
+    <Page title="Color and surfaces">
+      <Section title="Surfaces">
         <SwatchGrid tokens={SURFACE_TOKENS} />
       </Section>
-      <Section
-        description="Text-role pigments shown as tokens. Primary and secondary carry content; muted and faint are reserved for decorative or disabled treatment."
-        title="Text"
-      >
+      <Section title="Text">
         <SwatchGrid tokens={TEXT_TOKENS} />
       </Section>
-      <Section
-        description="Action emphasis, filled controls, and the non-committed draft veil."
-        title="Actions and state"
-      >
+      <Section title="Actions and state">
         <SwatchGrid tokens={ACTION_TOKENS} />
       </Section>
-      <Section
-        description="Borders separate structure without competing with calendar events."
-        title="Borders"
-      >
+      <Section title="Borders">
         <SwatchGrid tokens={BORDER_TOKENS} />
       </Section>
-      <Section
-        description="Named Musubi calendar pigments from the shared types package."
-        title="Calendar pigments"
-      >
-        <div className={styles.grid}>
+      <Section title="Calendar pigments">
+        <Grid>
           {MUSUBI_CALENDAR_COLORS.map((color) => (
             <article
-              className={styles.paletteSwatch}
+              className="grid min-h-32 content-between rounded-card bg-pigment p-3 text-(color:--story-foreground)"
               key={color.hex}
-              style={{
-                ...storyVariable("--story-token", color.hex),
-                "--story-foreground": getReadableEventTextColor(color.hex),
-              } as TokenStyle}
+              style={{ "--pigment": color.hex, "--story-foreground": getReadableEventTextColor(color.hex) } as TokenStyle}
             >
-              <strong>{color.name}</strong>
-              <span>{color.hex}</span>
+              <strong className="font-medium">{color.name}</strong>
+              <span className="font-mono text-11">{color.hex}</span>
             </article>
           ))}
-        </div>
+        </Grid>
       </Section>
-    </main>
+    </Page>
   );
 }
 
 function TypographyStory() {
   return (
-    <main className={styles.page}>
-      <PageIntro title="Typography">
-        Inter Tight carries dense working UI. Serif and kanji faces provide
-        orientation and meaning rather than decoration.
-      </PageIntro>
-      <Section
-        description="Each family has a specific role and should not be substituted ad hoc."
-        title="Families"
-      >
-        <div className={styles.grid}>
+    <Page title="Typography">
+      <Section title="Families">
+        <Grid>
           {FONT_FAMILIES.map((font) => (
-            <article className={styles.typeCard} key={font.token}>
-              <span className={styles.tokenMeta}>{font.label}</span>
-              <p
-                className={styles.typeSample}
-                style={storyVariable("--story-font", `var(${font.token})`)}
-              >
+            <article className={card} key={font.token}>
+              <span className="font-mono text-11 text-muted-foreground">{font.label}</span>
+              <p className="mt-2 font-(family-name:--story-font) text-19 leading-tight" style={{ "--story-font": `var(${font.token})` } as TokenStyle}>
                 {font.sample}
               </p>
-              <code className={styles.tokenName}>{font.token}</code>
+              <code className={tokenName}>{font.token}</code>
             </article>
           ))}
-        </div>
+        </Grid>
       </Section>
-      <Section
-        description="The nominal pixel names keep design handoffs readable while rem values respect browser preferences."
-        title="Type scale"
-      >
-        <div className={styles.grid}>
+      <Section title="Type scale">
+        <Grid>
           {TYPE_SCALE.map((size) => {
             const token = `--text-${size}`;
             return (
-              <article className={styles.typeCard} key={token}>
-                <p
-                  className={styles.typeSample}
-                  style={storyVariable("--story-size", `var(${token})`)}
-                >
+              <article className={card} key={token}>
+                <p className="mt-2 text-(length:--story-size) leading-tight" style={{ "--story-size": `var(${token})` } as TokenStyle}>
                   Week planning
                 </p>
-                <code className={styles.tokenName}>{token}</code>
+                <code className={tokenName}>{token}</code>
               </article>
             );
           })}
-        </div>
+        </Grid>
       </Section>
-    </main>
+    </Page>
+  );
+}
+
+function Metric({ children, token }: { children: ReactNode; token: string }) {
+  return (
+    <article className={card}>
+      <div className="flex min-h-control items-center gap-3">
+        {children}
+        <code className={tokenName}>{token}</code>
+      </div>
+    </article>
   );
 }
 
 function SpacingStory() {
   return (
-    <main className={styles.page}>
-      <PageIntro title="Spacing and geometry">
-        Layout rhythm comes from named tokens. Domain geometry such as the time
-        grid remains owned by its shared calendar math.
-      </PageIntro>
-      <Section
-        description="The eight-step spacing scale used for gaps, padding, and layout rhythm."
-        title="Spacing"
-      >
-        <div className={styles.grid}>
+    <Page title="Spacing and geometry">
+      <Section title="Spacing">
+        <Grid>
           {SPACING_SCALE.map((step) => {
             const token = `--space-${step}`;
             return (
-              <article className={styles.metricCard} key={token}>
-                <div className={styles.metricRow}>
-                  <span
-                    className={styles.spacingBar}
-                    style={storyVariable("--story-size", `var(${token})`)}
-                  />
-                  <code className={styles.tokenName}>{token}</code>
-                </div>
-              </article>
+              <Metric key={token} token={token}>
+                <span className="h-3 w-(--story-size) min-w-px rounded-full bg-primary" style={{ "--story-size": `var(${token})` } as TokenStyle} />
+              </Metric>
             );
           })}
-        </div>
+        </Grid>
       </Section>
-      <Section
-        description="Radius names describe stable component roles rather than one-off shapes."
-        title="Radii"
-      >
-        <div className={styles.grid}>
+      <Section title="Radii">
+        <Grid>
           {RADIUS_TOKENS.map((token) => (
-            <article className={styles.metricCard} key={token}>
-              <div className={styles.metricRow}>
-                <span
-                  className={styles.radiusSample}
-                  style={storyVariable("--story-radius", `var(${token})`)}
-                />
-                <code className={styles.tokenName}>{token}</code>
-              </div>
-            </article>
+            <Metric key={token} token={token}>
+              <span
+                className="size-16 flex-none rounded-(--story-radius) border border-border-strong bg-raised"
+                style={{ "--story-radius": `var(${token})` } as TokenStyle}
+              />
+            </Metric>
           ))}
-        </div>
+        </Grid>
       </Section>
-      <Section
-        description="Pointer and touch density share named control and row contracts rather than screen-owned heights."
-        title="Control geometry"
-      >
-        <div className={styles.grid}>
+      <Section title="Control geometry">
+        <Grid>
           {DIMENSION_TOKENS.map((token) => (
-            <article className={styles.metricCard} key={token}>
-              <div className={styles.metricRow}>
-                <span
-                  className={styles.dimensionBar}
-                  style={storyVariable("--story-size", `var(${token})`)}
-                />
-                <code className={styles.tokenName}>{token}</code>
-              </div>
-            </article>
+            <Metric key={token} token={token}>
+              <span className="h-(--story-size) w-6 flex-none rounded-control bg-primary" style={{ "--story-size": `var(${token})` } as TokenStyle} />
+            </Metric>
           ))}
-        </div>
+        </Grid>
       </Section>
-      <Section
-        description="Overlay elevation is shared instead of recreated per dialog or popover."
-        title="Elevation"
-      >
-        <div className={styles.shadowSample} />
+      <Section title="Elevation">
+        <div className="h-24 w-full rounded-card bg-overlay shadow-overlay" />
       </Section>
-    </main>
+    </Page>
   );
 }
 
 function MotionStory() {
   return (
-    <main className={styles.page}>
-      <PageIntro title="Motion">
-        Motion communicates state and continuity. Hover or keyboard-focus each
-        sample to compare the implemented durations.
-      </PageIntro>
-      <Section
-        description="Reduced-motion preferences globally collapse these durations."
-        title="Duration scale"
-      >
-        <div className={styles.grid}>
+    <Page title="Motion">
+      <Section title="Duration scale">
+        <Grid>
           {MOTION_TOKENS.map((token) => (
-            <article className={styles.metricCard} key={token}>
+            <article className={card} key={token}>
               <div
-                className={styles.motionSample}
-                style={storyVariable("--story-duration", `var(${token})`)}
+                aria-label={`${token} sample`}
+                className="group/motion grid min-h-20 place-items-center rounded-card border border-border-subtle bg-canvas"
+                role="img"
+                style={{ "--story-duration": `var(${token})` } as TokenStyle}
                 tabIndex={0}
               >
-                <span className={styles.motionDot} />
+                <span className="size-7 rounded-full bg-primary transition-transform duration-(--story-duration) group-hover/motion:translate-x-7 group-focus-visible/motion:translate-x-7" />
               </div>
-              <code className={styles.tokenName}>{token}</code>
+              <code className={tokenName}>{token}</code>
             </article>
           ))}
-        </div>
+        </Grid>
       </Section>
-    </main>
+    </Page>
   );
 }
 
 function ResponsiveStory() {
   return (
-    <main className={styles.page}>
-      <PageIntro title="Responsive contract">
-        Musubi adapts hierarchy and interaction at one shared breakpoint ladder;
-        narrow UI is not a scaled-down desktop.
-      </PageIntro>
-      <Section
-        description="All web feature work uses these four ranges."
-        title="Breakpoint ladder"
-      >
-        <div className={styles.grid}>
+    <Page title="Responsive contract">
+      <Section title="Breakpoint ladder">
+        <Grid>
           {BREAKPOINTS.map((breakpoint) => (
-            <article className={styles.breakpointCard} key={breakpoint.label}>
-              <span className={styles.range}>{breakpoint.range}</span>
-              <strong>{breakpoint.label}</strong>
-              <p className={styles.sectionCopy}>{breakpoint.description}</p>
+            <article className={cn(card, "min-h-32 content-start")} key={breakpoint.label}>
+              <span className="font-mono text-11 text-shu">{breakpoint.range}</span>
+              <strong className="font-serif text-19 font-normal text-foreground">{breakpoint.label}</strong>
+              <p className="text-13 leading-normal text-muted-foreground">{breakpoint.description}</p>
             </article>
           ))}
-        </div>
+        </Grid>
       </Section>
-    </main>
+    </Page>
   );
 }
 
@@ -385,7 +302,7 @@ const meta = {
   parameters: {
     layout: "fullscreen",
   },
-  title: "Foundations/Tokens",
+  title: "Design system/Foundations",
 } satisfies Meta;
 
 export default meta;
@@ -394,7 +311,7 @@ type Story = StoryObj<typeof meta>;
 export const Colors: Story = {
   parameters: {
     chromatic: {
-      modes: DESKTOP_MODES,
+      modes: { ...DESKTOP_MODES, ...MOBILE_MODES },
     },
   },
   render: () => <ColorsStory />,

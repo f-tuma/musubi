@@ -125,7 +125,6 @@ export default tseslint.config(
       "src/calendar/components/RecurrenceScopeDialog.tsx",
       "src/calendar/components/SettingsDialog.tsx",
       "src/calendar/components/TimeGridView.tsx",
-      "src/design/Foundations.stories.tsx",
       "src/routes/app/admin.tsx",
       "src/routes/app/p.$pageId.$view.event.$eventId.tsx",
       "src/routes/app/p.$pageId.$view.event.new.tsx",
