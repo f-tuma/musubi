@@ -4,6 +4,7 @@ import { calendarCoverageNotice } from "@musubi/calendar";
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test";
 import { DESKTOP_MODES, MOBILE_MODES } from "../../../.storybook/modes";
 import { Toolbar } from "./Toolbar";
+import { NotificationCenter } from "~/notifications/NotificationCenter";
 
 const meta = {
   title: "Calendar/Toolbar",
@@ -11,6 +12,7 @@ const meta = {
   parameters: { layout: "fullscreen", chromatic: { modes: DESKTOP_MODES } },
   decorators: [(Story) => <div className="w-full self-start"><Story /></div>],
   args: {
+    notifications: <NotificationCenter items={[]} readIds={new Set()} onRead={fn()} onActivate={fn()} onRefresh={fn()} onLoadMore={fn()} />,
     activeView: "month",
     availability: { shown: false, onToggle: fn(), onOpenList: fn() },
     canCreateEvents: true,
@@ -54,10 +56,13 @@ export const NarrowCoverageDetails: Story = {
 const checkConstrainedControls: NonNullable<Story["play"]> = async ({ canvasElement, args }) => {
   const canvas = within(canvasElement);
   const toolbar = canvas.getByRole("banner");
-  await waitFor(() => expect(canvas.getByRole("radio", { name: "Month" })).toBeVisible());
+  const compact = toolbar.clientWidth < 440;
+  const viewControl = compact ? canvas.getByRole("combobox", { name: "Calendar view" }) : canvas.getByRole("radio", { name: "Month" });
+  await waitFor(() => expect(viewControl).toBeVisible());
   const bounds = toolbar.getBoundingClientRect();
   for (const control of [
-    canvas.getByRole("radio", { name: "Month" }),
+    canvas.getByRole("button", { name: "Notifications" }),
+    viewControl,
     canvas.getByRole("button", { name: "Calendar sync coverage" }),
     canvas.getByRole("button", { name: "Availability" }),
     canvas.getByRole("button", { name: "Search events and actions" }),
@@ -69,7 +74,12 @@ const checkConstrainedControls: NonNullable<Story["play"]> = async ({ canvasElem
     expect(controlBounds.right).toBeLessThanOrEqual(bounds.right);
   }
   expect(canvas.getByText(args.periodLabel).scrollWidth).toBeLessThanOrEqual(canvas.getByText(args.periodLabel).clientWidth);
-  await userEvent.click(canvas.getByRole("radio", { name: "Week" }));
+  if (compact) {
+    await userEvent.click(viewControl);
+    await userEvent.click(await screen.findByRole("option", { name: /^Week$/ }));
+  } else {
+    await userEvent.click(canvas.getByRole("radio", { name: "Week" }));
+  }
   await expect(args.onViewChange).toHaveBeenCalledWith("week");
 };
 

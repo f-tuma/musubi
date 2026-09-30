@@ -120,12 +120,12 @@ function EventPanelProposal({ initialEdit = false, longNotes = false }: { initia
     <ConfirmationDialog returnFocus={confirmationReturn} elevated open={pending !== null} onOpenChange={value => { if (!value) setPending(null); }} title="Discard unsaved changes?" description="The original event stays unchanged." closeLabel="Close discard confirmation" cancelLabel="Keep editing" confirmLabel="Discard changes" onConfirm={() => { const next = pending?.next ?? null; if (pending?.target) returnTarget.current = pending.target; confirmationReturn.current = next === null ? returnTarget.current : editButton.current; setPending(null); setEditing(false); setSelected(next); if (next !== null) setDraft(events[next]!); }} />
   </>;
 }
-const meta = { title: "Calendar/Event panel proposal", component: EventPanelProposal, parameters: { layout: "fullscreen", chromatic: { modes: DESKTOP_MODES } }, args: { initialEdit: false, longNotes: false }, play: async ({ canvasElement }) => { const canvas = within(canvasElement); await userEvent.click(canvas.getByRole("button", { name: "Open Design review" })); await expect(within(document.body).getByRole("dialog", { name: "Design review" })).toBeVisible(); } } satisfies Meta<typeof EventPanelProposal>;
+const meta = { title: "Calendar/Event panel proposal", component: EventPanelProposal, parameters: { layout: "fullscreen", chromatic: { modes: DESKTOP_MODES } }, args: { initialEdit: false, longNotes: false }, play: async ({ canvasElement }) => { const canvas = within(canvasElement); await userEvent.click(canvas.getByRole("button", { name: "Open Design review" })); await waitFor(() => expect(within(document.body).getByRole("dialog", { name: "Design review" })).toBeVisible()); } } satisfies Meta<typeof EventPanelProposal>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Detail: Story = {};
 export const LongInvitation: Story = { args: { longNotes: true } };
-export const Edit: Story = { args: { initialEdit: true }, play: async ({ canvasElement }) => { await userEvent.click(within(canvasElement).getByRole("button", { name: "Open Design review" })); await expect(within(document.body).getByRole("dialog", { name: "Edit event" })).toBeVisible(); } };
+export const Edit: Story = { args: { initialEdit: true }, play: async ({ canvasElement }) => { await userEvent.click(within(canvasElement).getByRole("button", { name: "Open Design review" })); await waitFor(() => expect(within(document.body).getByRole("dialog", { name: "Edit event" })).toBeVisible()); } };
 export const Narrow: Story = { parameters: { chromatic: { modes: MOBILE_MODES } } };
 
 export const DraftProtection: Story = {
@@ -135,16 +135,16 @@ export const DraftProtection: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Open Design review" }));
     await userEvent.click(page.getByRole("button", { name: "Edit event" }));
     const title = page.getByRole("textbox", { name: "Title" });
-    await expect(title).toHaveFocus();
+    await waitFor(() => expect(title).toHaveFocus());
     await userEvent.clear(title);
     await userEvent.type(title, "Changed review");
     await userEvent.click(page.getByRole("button", { name: "Cancel" }));
     await userEvent.click(page.getByRole("button", { name: "Keep editing" }));
     await expect(title).toHaveValue("Changed review");
-    await expect(title).toHaveFocus();
+    await waitFor(() => expect(title).toHaveFocus());
     await userEvent.click(page.getByRole("button", { name: "Save changes" }));
-    await expect(page.getByRole("dialog", { name: "Changed review" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Edit event" })).toHaveFocus();
+    await waitFor(() => expect(page.getByRole("dialog", { name: "Changed review" })).toBeVisible());
+    await waitFor(() => expect(page.getByRole("button", { name: "Edit event" })).toHaveFocus());
     await userEvent.click(page.getByRole("button", { name: "Close event panel" }));
     await waitFor(() => expect(canvas.getByRole("button", { name: "Open Changed review" })).toHaveFocus());
   },
@@ -160,10 +160,10 @@ export const SwitchWithDraft: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Open Weekly planning" }));
     await waitFor(() => expect(page.getByRole("dialog", { name: "Discard unsaved changes?" })).toBeVisible());
     await userEvent.click(page.getByRole("button", { name: "Discard changes" }));
-    await expect(page.getByRole("dialog", { name: "Weekly planning" })).toBeVisible();
+    await waitFor(() => expect(page.getByRole("dialog", { name: "Weekly planning" })).toBeVisible());
     await userEvent.click(page.getByRole("button", { name: "Close event panel" }));
     await waitFor(() => expect(canvas.getByRole("button", { name: "Open Weekly planning" })).toHaveFocus());
-    await expect(canvas.getByRole("button", { name: "Open Design review" })).toBeVisible();
+    await waitFor(() => expect(canvas.getByRole("button", { name: "Open Design review" })).toBeVisible());
   },
 };
 
@@ -180,6 +180,6 @@ export const AllDay: Story = {
     await expect(page.getByLabelText("Start")).toHaveValue("10:00");
     await userEvent.click(page.getByRole("switch", { name: "All day" }));
     await userEvent.click(page.getByRole("button", { name: "Save changes" }));
-    await expect(page.getByText("All day", { exact: true })).toBeVisible();
+    await waitFor(() => expect(page.getByText("All day · through 2026-09-11", { exact: true })).toBeVisible());
   },
 };

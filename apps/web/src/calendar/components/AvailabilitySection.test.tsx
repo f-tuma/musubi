@@ -42,8 +42,8 @@ it("requires explicit selection, displays intervals without event actions, and d
 it("never persists interval/source observations and only requests extra consent when enabled", () => {
   for (const suffix of ["sources", "intervals"]) expect(shouldPersistQuery({ queryKey: ["availability", "origin", "owner", suffix], state: { status: "success", data: {} } })).toBe(false);
   expect(providerConnectionScopes("google", false)).not.toContain(GOOGLE_AVAILABILITY_SCOPE);
-  expect(providerConnectionScopes("google", false, true)).toContain(GOOGLE_AVAILABILITY_SCOPE);
-  expect(providerConnectionScopes("microsoft", false, true)).not.toContain(GOOGLE_AVAILABILITY_SCOPE);
+  expect(providerConnectionScopes("google", true)).toContain(GOOGLE_AVAILABILITY_SCOPE);
+  expect(providerConnectionScopes("microsoft", true)).not.toContain(GOOGLE_AVAILABILITY_SCOPE);
 });
 
 it("keeps a saved selection when an older source poll completes after the PUT", async () => {

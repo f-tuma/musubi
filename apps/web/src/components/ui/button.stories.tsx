@@ -83,6 +83,17 @@ export const Loading: Story = {
     const button = within(canvasElement).getByRole("button", { name: "Saving" });
     await expect(button).toBeDisabled();
     await expect(button).toHaveAttribute("aria-busy", "true");
+    await expect(getComputedStyle(button).opacity).toBe("1");
+  },
+};
+
+export const Waiting: Story = {
+  args: { disabled: true, "aria-busy": true, children: "Add task", variant: "ghost" },
+  play: async ({ canvasElement }) => {
+    const button = within(canvasElement).getByRole("button", { name: "Add task" });
+    await expect(button).toBeDisabled();
+    await expect(button).toHaveAttribute("aria-busy", "true");
+    await expect(getComputedStyle(button).opacity).toBe("1");
   },
 };
 

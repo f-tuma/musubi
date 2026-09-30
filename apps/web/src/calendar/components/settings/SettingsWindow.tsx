@@ -225,7 +225,7 @@ function SettingsWindowContent({
                 <h2 className="font-serif text-19 leading-tight font-normal text-foreground">{item.label}</h2>
               </DialogHeader>
               <DialogBody>
-                <div className="flex w-full max-w-form flex-col gap-8">{panel(item.id)}</div>
+                <div data-settings-panel="" className="flex w-full flex-col gap-8">{panel(item.id)}</div>
               </DialogBody>
             </TabsContent>
           ))}

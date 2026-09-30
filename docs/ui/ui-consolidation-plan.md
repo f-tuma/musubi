@@ -366,8 +366,8 @@ pnpm storybook:web:test
 ```
 
 Also run the relevant Playwright flow when interaction, focus, dialog behavior,
-or form submission changes. Check light/dark and regular/touch layouts. Do not
-update `ui-catalog` unless the visual change was approved.
+or form submission changes. Check light/dark and regular/touch layouts in
+Storybook. Approve substantial visual changes before production use.
 
 ## Completion criteria
 
@@ -381,3 +381,80 @@ update `ui-catalog` unless the visual change was approved.
 - Keyboard paths, focus return, light/dark themes, and narrow layouts remain
   correct.
 - This checklist reflects completed work and any deliberate deferrals.
+
+
+## Tailwind v4 follow-up (2026-09-30)
+
+Storybook replaces the screenshot catalogue. It contains production compositions
+and the light/dark modes; the catalogue generator and its stale path table were
+removed. Settings use the full padded right pane. Calendar creation, import and
+export precede the calendar list. Google and Outlook connections always include
+Tasks access in settings and onboarding; there is no separate checkbox.
+
+The event title uses the shared Input title variant (Noto Serif). Event chips
+use the semantic raised shadow generated for both themes. Disabled controls
+keep their contrast while busy, and the moved Kanban task shows a spinner until
+the server responds. The delayed-response browser scenario checks that another
+move cannot start during this wait.
+
+Theme bootstrap reads `musubi-theme` correctly, including reload, stored light
+or dark against the opposite OS scheme, System, invalid and absent preferences.
+The signed-in fixture uses the System account preference, so theme scenarios
+now set the OS scheme as well as localStorage. Previously the account preference
+could overwrite a seeded dark theme with the test browser's light OS scheme.
+
+Final validation: web typecheck, zero-warning lint, 808 unit tests and 132
+Storybook interaction/accessibility tests pass. Storybook build, design-system
+token generation/self-checks and targeted API event/SSE checks pass. Full
+Playwright: 338 passed, 28 failed, one skipped (the opt-in Radicale harness).
+Every failure is mobile; all desktop scenarios pass. Refresh, notifications and
+the updated desktop Google RSVP fixture also passed three repetitions. The
+Desktop tooltip scenario uses click, matching HelpTooltip's keyboard/click
+contract.
+
+Expanded editing now uses the shared wide, tall dialog and three-column form,
+matching event creation. The existing handoff scenario checks its actual width
+and draft retention across reload; nine affected editor scenarios pass.
+InlineError owns a trailing action slot and centers its icon with the content;
+Search puts Retry there, preserving loaded search results.
+
+The toolbar bell replaces Unfinished deliveries in settings. Current source
+adapters cover delivery recovery, reconnecting accounts and changes by another
+member. Subject details come from the current authorized read, including
+cancellations; permission loss removes their title and notes. The extension
+contract and browser-session lifetime are documented in `notifications.md`.
+
+The sidebar server status has a trailing Refresh action. Manual refresh and SSE
+reconnect share account-scoped invalidation. The action waits for every source,
+keeps cached data on an individual failure, blocks repeated clicks while pending
+and returns keyboard focus without taking it from another control. Sidebar
+stories cover connected, offline and refreshing states; the browser scenario
+checks pending state, current date/view and focus in both themes.
+
+### Known mobile debt
+
+Mobile repairs were explicitly deferred. Keep these tests enabled and failing
+until the underlying sheet/menu/focus behavior is repaired; desktop results do
+not make the entire suite green.
+
+| Flow | Remaining failures |
+| --- | --- |
+| Connections mobile sheet | Nested iCloud sheet and focus return |
+| Account nested mobile sheets | Menu detaches during nested navigation |
+| Narrow event details | Opening the full-height event panel |
+| Navigation drawer | Keyboard focus traversal and return |
+| K09 delivery review | Retained deletion after reload, dark 390 px |
+| K14 reminders | Personal reminder conflict; Google reminder retry; four Google instance reminder combinations (zoned/all-day × custom/inherited); CalDAV saved-alarm discard, dark 390 px |
+| K13 responses | Google RSVP; own conflict; Google instance; CalDAV; Graph one-off, occurrence, series and initial-series retry, dark 390 px |
+| Explicit time model | All-day selection/help, dark 390 px |
+| K12 recurrence | Following deletion, following split, future-only split and explicit UTC whole-series conversion, dark 390 px |
+| Graph adoption | Success and Escape paths, dark 390 px |
+| Account help | Avatar and contextual help, dark 390 px |
+
+### Calendar list in the sidebar (proposal)
+
+Keep this as a separate design decision. A compact calendar list below Pages
+could use shared RowToggle controls and calendar dots to edit the active page's
+existing calendar visibility. Reuse page settings as the source of truth rather
+than introducing a second global visibility preference. Review the long-list
+and collapsed navigation variants in Storybook before implementing it.

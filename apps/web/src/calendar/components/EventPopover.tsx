@@ -25,9 +25,9 @@ type ChipShape = { allDay: boolean; continuesAfter?: boolean; continuesBefore?: 
  */
 export function eventChipClassName({ allDay, continuesAfter = false, continuesBefore = false, labelVisible = false }: ChipShape) {
   return cn(
-    "group/chip relative z-1 flex min-h-(--month-chip-height) w-full min-w-0 cursor-pointer items-center gap-1 overflow-hidden rounded-sm border-0 bg-pigment px-1.5 py-0.5 text-left text-(--event-foreground) transition-transform duration-fast hover:-translate-y-px focus-visible:-translate-y-px focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--event-foreground) data-[state=open]:translate-y-0 motion-reduce:transition-none",
+    "group/chip relative z-1 flex min-h-(--month-chip-height) w-full min-w-0 cursor-pointer items-center gap-1 overflow-hidden rounded-sm border-0 bg-pigment shadow-raised px-1.5 py-0.5 text-left text-(--event-foreground) transition-transform duration-fast hover:-translate-y-px focus-visible:-translate-y-px focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--event-foreground) data-[state=open]:translate-y-0 motion-reduce:transition-none",
     "data-[draggable]:cursor-grab data-[pending]:animate-pulse data-[pending]:cursor-progress motion-reduce:data-[pending]:animate-none motion-reduce:data-[pending]:opacity-70",
-    "data-[ghost]:pointer-events-none data-[ghost]:border data-[ghost]:border-dashed data-[ghost]:border-pigment/60 data-[ghost]:bg-pigment/20",
+    "data-[ghost]:pointer-events-none data-[ghost]:border data-[ghost]:border-dashed data-[ghost]:border-pigment/60 data-[ghost]:bg-pigment/20 data-[ghost]:shadow-none",
     // Narrow cells trim the inset; a phone cell holds the title alone.
     "max-md:px-1 max-sm:min-h-5 max-sm:gap-0",
     allDay && "font-medium",

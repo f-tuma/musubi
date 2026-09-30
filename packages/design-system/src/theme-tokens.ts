@@ -29,6 +29,7 @@ export const themeTokens = {
     accentOnPrimary: "#fff",
     controlFill: "#4a4741",
     controlOnFill: "#f4f1e8",
+    shadowRaised: "0 1px 2px rgba(47, 41, 31, 0.12)",
     shadowOverlay: "0 24px 64px rgba(47, 41, 31, 0.16)",
   },
   dark: {
@@ -48,6 +49,7 @@ export const themeTokens = {
     accentOnPrimary: "#000",
     controlFill: "#e8e4d9",
     controlOnFill: "#0c0c0e",
+    shadowRaised: "0 1px 2px rgba(0, 0, 0, 0.32)",
     shadowOverlay: "0 28px 72px rgba(0, 0, 0, 0.48)",
   },
 } as const;
@@ -73,5 +75,6 @@ export const themeTokenCssVariables = {
   accentOnPrimary: "--accent-on-primary",
   controlFill: "--control-fill",
   controlOnFill: "--control-on-fill",
+  shadowRaised: "--shadow-raised",
   shadowOverlay: "--shadow-overlay",
 } as const satisfies Record<ThemeTokenName, `--${string}`>;

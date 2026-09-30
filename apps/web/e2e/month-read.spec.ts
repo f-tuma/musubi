@@ -1,3 +1,4 @@
+import { setTestTheme } from "./theme";
 import AxeBuilder from "@axe-core/playwright";
 import { PRODUCT_VERSION, type Calendar } from "@musubi/types";
 import {
@@ -402,6 +403,7 @@ async function mockAuthenticatedReads(
 		respond(route, { announcements: [], isAdmin: false }),
 	);
 	await page.route("**/api/v1/tasks", (route) => respond(route, { tasks: [] }));
+	await page.route("**/api/v1/event-deliveries", route => respond(route, { items: [], nextCursor: null }));
 	await page.route("**/api/auth/sign-out", (route) => {
 		authenticated = false;
 		return respond(route, { success: true });
@@ -1317,7 +1319,7 @@ test("chooses an event time and duration from the time pickers", async ({
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
 	test(`creation Inspector keeps actions reachable while switching all-day at ${width}px`, async ({ page }, testInfo) => {
 		await page.setViewportSize({ width, height: 800 });
-		await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+		await setTestTheme(page, theme);
 		await mockAuthenticatedReads(page);
 		await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-26`);
 		await openCreateEvent(page);
@@ -4336,7 +4338,7 @@ for (const width of [320, 390]) {
   for (const theme of ["light", "dark"]) {
     test(`keeps narrow toolbar date and actions legible at ${width}px ${theme}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 844 });
-      await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+      await setTestTheme(page, theme);
       await mockAuthenticatedReads(page);
 
       for (const [view, date] of [
@@ -4968,6 +4970,12 @@ for (const reload of [false, true]) {
 			await expect(
 				page.getByRole("heading", { name: "Edit event" }),
 			).toBeVisible();
+			const fullEditor = page.getByRole("dialog", { name: "Edit event", exact: true });
+			await fullEditor.evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
+			const bounds = await fullEditor.boundingBox();
+			expect(bounds?.width).toBeGreaterThan(720);
+			expect(bounds?.x).toBeGreaterThan(0);
+			await expect(fullEditor.locator('[data-layout="page"]')).toBeVisible();
 			await expect(
 				page.getByRole("textbox", { name: "Event title" }),
 			).toHaveValue("Client call revised");
@@ -7153,398 +7161,6 @@ test("stays inside its box with twenty calendars", async ({ page }) => {
 	await expectNoSidewaysScroll("quick create");
 });
 
-/**
- * Every page and every modal, written out as PNGs for design review.
- *
- * Skipped unless a target directory is given, because it is not a test — it
- * asserts nothing. It reuses the mocks above so the shots contain the same
- * calendar the suite exercises rather than an empty one.
- *
- *   UI_SHOTS=ui-catalog pnpm exec playwright test -g "ui catalogue"
- *   UI_SHOTS=ui-catalog UI_SHOTS_THEME=dark pnpm exec playwright test -g "ui catalogue"
- */
-const UI_SHOTS = process.env.UI_SHOTS;
-const UI_SHOTS_THEME = process.env.UI_SHOTS_THEME === "dark" ? "dark" : "light";
-
-test("ui catalogue", async ({ browser, page }) => {
-	test.skip(!UI_SHOTS, "Set UI_SHOTS=<directory> to write the catalogue.");
-	test.setTimeout(600_000);
-
-	await page.setViewportSize({ height: 900, width: 1440 });
-
-	let index = 0;
-	// Reported alongside each shot: on a laptop the page itself should not scroll.
-	const overflow: string[] = [];
-	const shot = async (name: string, target?: Locator, on: Page = page) => {
-		index += 1;
-		const file = `${UI_SHOTS}/${UI_SHOTS_THEME}/${String(index).padStart(2, "0")}-${name}.png`;
-		// Let motion settle: every layer here fades and lifts on open.
-		await on.waitForTimeout(350);
-		await (target ?? on).screenshot({
-			path: file,
-			...(target ? {} : { fullPage: true }),
-		});
-		const size = await on.evaluate(() => ({
-			client: window.document.documentElement.clientHeight,
-			scroll: window.document.documentElement.scrollHeight,
-		}));
-		if (size.scroll > size.client + 2) {
-			overflow.push(`${name}: ${size.scroll}px in ${size.client}px`);
-		}
-	};
-	// The theme is a stored preference, so it has to be there before first paint.
-	await page.addInitScript(
-		(theme) => window.localStorage.setItem("musubi-theme", theme),
-		UI_SHOTS_THEME,
-	);
-
-	// ── Routes available before sign-in ──────────────────────────────────────
-	await page.route("**/api/auth/get-session", (route) => respond(route, null));
-	await page.route("**/api/v1/server", (route) =>
-		respond(route, { syncProviders: ["google", "microsoft", "caldav"] }),
-	);
-	await page.clock.setFixedTime(new Date("2026-08-03T10:00:00"));
-
-	await page.goto("/login");
-	await page.waitForLoadState("networkidle");
-	await shot("login");
-
-	await page.route(`**/api/v1/calendars/tokens/${INVITE_TOKEN}`, (route) =>
-		respond(route, invitePreview()),
-	);
-	await page.goto(`/invite/${INVITE_TOKEN}`);
-	await page.waitForLoadState("networkidle");
-	await shot("public-invite");
-
-	// ── The app ───────────────────────────────────────────────────────────────
-	await mockAuthenticatedReads(page);
-
-	// A date the fixtures have events on, so every view has something in it.
-	for (const view of ["month", "week", "day", "agenda"]) {
-		await page.goto(`/app/p/${DEFAULT_PAGE_ID}/${view}?date=2026-07-23`);
-		await page.waitForLoadState("networkidle");
-		await expect(
-			page.getByRole("button", { name: /Project check-in/ }).first(),
-		).toBeVisible();
-		await shot(`app-${view}`);
-	}
-
-	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-23`);
-	await page.waitForLoadState("networkidle");
-
-	// The event preview, and the composer a press on empty grid opens.
-	await page
-		.getByRole("button", { name: /Project check-in/ })
-		.first()
-		.click();
-	await shot("app-event-preview", page.getByRole("dialog").first());
-	await page.keyboard.press("Escape");
-
-	// Every layer, by the control that opens it. One that cannot be found is
-	// reported and skipped rather than ending the run: this is a catalogue, and a
-	// missing shot is better than nineteen missing ones.
-	const missed: string[] = [];
-	const layer = async (name: string, trigger: string) => {
-		try {
-			await page
-				.getByRole("button", { exact: true, name: trigger })
-				.first()
-				.click({ timeout: 5_000 });
-			const dialog = page.getByRole("dialog").first();
-			await dialog.waitFor({ state: "visible", timeout: 5_000 });
-			await shot(`app-${name}`, dialog);
-		} catch {
-			missed.push(`${name} (${trigger})`);
-		} finally {
-			await page.keyboard.press("Escape");
-			await page.waitForTimeout(250);
-		}
-	};
-
-	await openCreateEvent(page);
-	await shot("app-quick-create", page.getByRole("dialog").first());
-	await page.keyboard.press("Escape");
-	await layer("dialog-settings", "Settings");
-
-	await layer("dialog-calendars", "Calendars");
-
-	// Connections with nothing connected shows none of what the layer is for, so
-	// this one shot runs in its own context: two linked accounts, and a server
-	// that offers every provider. Isolated storage, because the app hydrates the
-	// calendar list from its own cache and would otherwise keep the empty one.
-	const linkedContext = await browser.newContext({
-		locale: "en-GB",
-		timezoneId: "Europe/Prague",
-		viewport: { height: 900, width: 1440 },
-	});
-	const linkedPage = await linkedContext.newPage();
-	await linkedPage.addInitScript(
-		(theme) => window.localStorage.setItem("musubi-theme", theme),
-		UI_SHOTS_THEME,
-	);
-	await mockAuthenticatedReads(linkedPage, events, [
-		...calendars,
-		{
-			accountId: "account-google",
-			accountLabel: "work@gmail.com",
-			color: "#4285f4",
-			creatorID: session.user.id,
-			id: "google-work",
-			members: [],
-			name: "Work",
-			provider: "google",
-			role: "owner",
-			syncStatus: "active",
-		},
-		{
-			accountId: "account-icloud",
-			accountLabel: "home@icloud.com",
-			color: "#7a8ba3",
-			creatorID: session.user.id,
-			id: "icloud-home",
-			members: [],
-			name: "Home",
-			provider: "caldav",
-			role: "owner",
-			syncStatus: "active",
-		},
-	]);
-	await linkedPage.route("**/api/v1/server", (route) =>
-		respond(route, {
-			email: true,
-			pushPublicKey: null,
-			socials: [],
-			socialsWeb: [],
-			syncProviders: ["google", "microsoft", "caldav"],
-		}),
-	);
-	await linkedPage.clock.setFixedTime(new Date("2026-08-03T10:00:00"));
-	await linkedPage.goto(
-		`${new URL(page.url()).origin}/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-23`,
-	);
-	await linkedPage.waitForLoadState("networkidle");
-	await linkedPage
-		.getByRole("button", { exact: true, name: "Connections" })
-		.first()
-		.click();
-	const linkedDialog = linkedPage.getByRole("dialog").first();
-	await linkedDialog.waitFor({ state: "visible", timeout: 5_000 });
-	await shot("app-dialog-connections", linkedDialog, linkedPage);
-	await linkedContext.close();
-	await layer("dialog-account", "Manage account");
-	await layer("dialog-new-page", "New page");
-	// The page each sidebar row edits, which is a hover action rather than a row.
-	await layer("dialog-page-settings", "Edit My calendar");
-
-	await page.getByRole("button", { name: "Search events and actions" }).click();
-	const searchDialog = page.getByRole("dialog", { name: "Search Musubi" });
-	await searchDialog.getByRole("searchbox").fill("review");
-	await shot("app-search", searchDialog);
-
-	// Keyboard shortcuts. A fresh page, because the handler is on the window and
-	// the key means something else inside a field.
-	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-23`);
-	await page.waitForLoadState("networkidle");
-	await page.locator("body").press("?");
-	const shortcuts = page.getByRole("dialog").first();
-	if (await shortcuts.isVisible({ timeout: 2_000 }).catch(() => false)) {
-		await shot("app-dialog-shortcuts", shortcuts);
-		await page.keyboard.press("Escape");
-	} else {
-		missed.push("shortcuts (?)");
-	}
-
-	// The full editor is a route, not a layer.
-	await page.goto(
-		`/app/p/${DEFAULT_PAGE_ID}/event/new?date=2026-07-26&view=month`,
-	);
-	await page.waitForLoadState("networkidle");
-	await shot("app-event-editor");
-
-	// ── Layers reached from inside another layer ──────────────────────────────
-	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-23`);
-	await page.waitForLoadState("networkidle");
-	// Both are reached through the Calendars section of Settings, and sharing
-	// closes the window — so each gets its own trip in from the calendar.
-	for (const [name, row, dialog] of [
-		["app-dialog-share-calendar", /^Share /, /Share/],
-		["app-dialog-calendar-settings", /^Settings for /, /Calendar settings/],
-	] as const) {
-		try {
-			await page
-				.getByRole("button", { exact: true, name: "Calendars" })
-				.click({ timeout: 5_000 });
-			await page
-				.getByRole("button", { name: row })
-				.first()
-				.click({ timeout: 5_000 });
-			const layer = page.getByRole("dialog", { name: dialog });
-			await layer.waitFor({ state: "visible", timeout: 5_000 });
-			await shot(name, layer);
-		} catch {
-			missed.push(name);
-		} finally {
-			await page.keyboard.press("Escape");
-			await page.keyboard.press("Escape");
-			await page.waitForTimeout(250);
-		}
-	}
-
-	// ── Feedback: the question before a write, and the answer after one ────────
-	// Editing one date of a series asks which events it means. It is the only
-	// question this product asks mid-write, so it is worth looking at.
-	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-26`);
-	await page.waitForLoadState("networkidle");
-	try {
-		await page
-			.getByRole("button", { name: /Weekly review/ })
-			.first()
-			.click({ timeout: 5_000 });
-		await page
-			.getByRole("button", { exact: true, name: "Edit" })
-			.click({ timeout: 5_000 });
-		await page
-			.getByRole("textbox", { name: "Event title" })
-			.fill("Weekly retro", { timeout: 5_000 });
-		await page.getByRole("button", { name: "Save" }).click({ timeout: 5_000 });
-		const scope = page.getByRole("dialog", { name: "Change recurring event" });
-		await scope.waitFor({ state: "visible", timeout: 5_000 });
-		await shot("app-dialog-recurrence-scope", scope);
-	} catch {
-		missed.push("recurrence-scope");
-	} finally {
-		await page.keyboard.press("Escape");
-		await page.keyboard.press("Escape");
-		await page.waitForTimeout(250);
-	}
-
-	// A delete and its undo offer, then the same delete refused by the server.
-	// Both are the toast, which is the only thing in the product that speaks
-	// after the fact, and neither had a shot in this catalogue before.
-	const toast = page.locator('[data-slot="toast-region"][data-placement="workspace"]');
-	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-23`);
-	await page.waitForLoadState("networkidle");
-	try {
-		await page
-			.getByRole("button", { name: /Client call/ })
-			.first()
-			.click({ timeout: 5_000 });
-		await page
-			.getByRole("button", { name: "More event actions" })
-			.click({ timeout: 5_000 });
-		await page
-			.getByRole("menuitem", { name: "Delete" })
-			.click({ timeout: 5_000 });
-		await page
-			.getByRole("dialog", { name: "Delete event" })
-			.getByRole("button", { exact: true, name: "Delete" })
-			.click({ timeout: 5_000 });
-		await toast.waitFor({ state: "visible", timeout: 5_000 });
-		await shot("app-toast-undo", toast);
-	} catch {
-		missed.push("toast-undo");
-	}
-
-	// A write the server refuses. It is reported inside the popover the delete was
-	// started from rather than as a toast, so that is what gets photographed.
-	const refuse = (route: Route) =>
-		route.request().method() === "DELETE"
-			? respond(route, { message: "Nope" }, 500)
-			: route.fallback();
-	await page.route("**/api/v1/events**", refuse);
-	try {
-		await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-23`);
-		await page.waitForLoadState("networkidle");
-		await page
-			.getByRole("button", { name: /Project check-in/ })
-			.first()
-			.click({ timeout: 5_000 });
-		const popover = page.getByRole("dialog").first();
-		await page
-			.getByRole("button", { name: "More event actions" })
-			.click({ timeout: 5_000 });
-		await page
-			.getByRole("menuitem", { name: "Delete" })
-			.click({ timeout: 5_000 });
-		await page
-			.getByRole("dialog", { name: "Delete event" })
-			.getByRole("button", { exact: true, name: "Delete" })
-			.click({ timeout: 5_000 });
-		await popover
-			.getByRole("alert")
-			.waitFor({ state: "visible", timeout: 5_000 });
-		await shot("app-event-write-refused", popover);
-	} catch {
-		missed.push("event-write-refused");
-	} finally {
-		await page.unroute("**/api/v1/events**", refuse);
-		await page.keyboard.press("Escape");
-	}
-
-	// ── Nothing yet: the states a new account actually opens on ───────────────
-	const nothing = (route: Route) =>
-		route.request().method() === "GET"
-			? respond(route, { events: [], instances: [] })
-			: route.fallback();
-	await page.route("**/api/v1/events**", nothing);
-	try {
-		await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-23`);
-		await page.waitForLoadState("networkidle");
-		await shot("app-empty-month");
-	} catch {
-		missed.push("empty state");
-	} finally {
-		await page.unroute("**/api/v1/events**", nothing);
-	}
-
-	// Narrow: the sidebar becomes a drawer, and the grid becomes one column.
-	await page.setViewportSize({ height: 844, width: 390 });
-	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-26`);
-	await page.waitForLoadState("networkidle");
-	await shot("app-mobile-month");
-	await page
-		.getByRole("button", { name: /navigation/i })
-		.first()
-		.click();
-	await shot("app-mobile-navigation");
-
-	// Last, because it takes the network away for good: the snapshot start and the
-	// strip that says how old what you are looking at is.
-	await page.setViewportSize({ height: 900, width: 1440 });
-	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-23`);
-	await page.waitForLoadState("networkidle");
-	try {
-		await expect(async () => {
-			expect(
-				await page.evaluate(() =>
-					window.localStorage.getItem("musubi:last-session"),
-				),
-			).toBeTruthy();
-			expect(await snapshotKeys(page)).not.toHaveLength(0);
-		}).toPass({ timeout: 10_000 });
-		const dead = (route: Route) => route.abort();
-		for (const pattern of ["**/api/v1/**", "**/api/auth/**", "**/api/stream"]) {
-			await page.route(pattern, dead);
-		}
-		await page.reload();
-		await page
-			.getByRole("button", { name: /Client call/ })
-			.first()
-			.waitFor({ timeout: 10_000 });
-		await shot("app-offline-snapshot");
-	} catch {
-		missed.push("offline-snapshot");
-	}
-
-	// Said out loud, so a gap in the catalogue is never mistaken for a screen that
-	// does not exist.
-	if (missed.length > 0) console.log(`Not captured: ${missed.join(", ")}`);
-	if (overflow.length > 0) {
-		console.log(`Taller than the window:\n  ${overflow.join("\n  ")}`);
-	}
-	console.log(`${index} screenshots in ${UI_SHOTS}/${UI_SHOTS_THEME}`);
-});
-
 test("keeps the time on a chip while the cell can hold one", async ({
 	page,
 }) => {
@@ -7707,19 +7323,7 @@ for (const width of [1280, 768]) test(`keeps the sidebar's Pages label and manag
   await page.screenshot({ path: testInfo.outputPath(`sidebar-${width}-keyboard.png`), animations: "disabled" });
 });
 
-/**
- * Onboarding is a separate test because it needs an account that has never seen
- * the app, which the catalogue's mocks cannot be talked into mid-run. Its shot
- * numbers are written by hand and start past the catalogue's last one — they used
- * to be 30–32 and collided with the dialogs that now sit there.
- */
 test("walks a new account through onboarding once", async ({ page }) => {
-	if (UI_SHOTS) {
-		await page.addInitScript(
-			(theme) => window.localStorage.setItem("musubi-theme", theme),
-			UI_SHOTS_THEME,
-		);
-	}
 	await mockAuthenticatedReads(page);
 
 	// Overrides after the shared mock, so these win: an account that has never
@@ -7767,12 +7371,6 @@ test("walks a new account through onboarding once", async ({ page }) => {
 	// The step marks are dots; the sentence they replaced lives on their label.
 	await expect(page.getByRole("img", { name: "Step 1 of 3" })).toBeVisible();
 
-	if (UI_SHOTS) {
-		await page.screenshot({
-			fullPage: true,
-			path: `${UI_SHOTS}/${UI_SHOTS_THEME}/27-app-onboarding-1-name.png`,
-		});
-	}
 	await page.getByLabel("Your name").fill("Zoe Novák");
 	await page.getByRole("button", { exact: true, name: "Continue" }).click();
 
@@ -7780,12 +7378,6 @@ test("walks a new account through onboarding once", async ({ page }) => {
 	await expect(
 		page.getByRole("heading", { level: 1, name: "Your calendar" }),
 	).toBeVisible();
-	if (UI_SHOTS) {
-		await page.screenshot({
-			fullPage: true,
-			path: `${UI_SHOTS}/${UI_SHOTS_THEME}/28-app-onboarding-2-calendar.png`,
-		});
-	}
 	await page.getByLabel("Calendar name").fill("Home");
 	await page.getByRole("button", { exact: true, name: "Continue" }).click();
 
@@ -7796,12 +7388,6 @@ test("walks a new account through onboarding once", async ({ page }) => {
 	await expect(
 		page.getByRole("button", { name: /Connect Google Calendar/ }),
 	).toBeVisible();
-	if (UI_SHOTS) {
-		await page.screenshot({
-			fullPage: true,
-			path: `${UI_SHOTS}/${UI_SHOTS_THEME}/29-app-onboarding-3-connect.png`,
-		});
-	}
 	await page.getByRole("button", { name: "Skip for now" }).click();
 
 	// Through to the calendar, and the flag is set so it never asks again.
@@ -7876,14 +7462,11 @@ for (const { provider, width, theme } of [
 	{ provider: "google", width: 1280, theme: "light" },
 	{ provider: "microsoft", width: 390, theme: "dark" },
 ] as const) {
-	test(`optional Tasks consent: ${provider}, ${theme}, ${width}px`, async ({
+	test(`provider connection includes Tasks: ${provider}, ${theme}, ${width}px`, async ({
 		page,
 	}) => {
 		await page.setViewportSize({ width, height: 850 });
-		await page.addInitScript(
-			(value) => localStorage.setItem("musubi-theme", value),
-			theme,
-		);
+		await setTestTheme(page, theme);
 		await mockAuthenticatedReads(page);
 		await page.route("**/api/v1/server", (route) =>
 			respond(route, { syncProviders: ["google", "microsoft"] }),
@@ -7902,9 +7485,7 @@ for (const { provider, width, theme } of [
 			await page.getByRole("button", { name: "Open navigation" }).click();
 		await page.getByRole("button", { name: "Connections" }).click();
 		const dialog = page.getByRole("dialog", { name: "Settings" });
-		const checkbox = dialog.getByRole("checkbox", { name: "Include Tasks" });
-		await expect(checkbox).toBeChecked();
-		await expect(dialog).not.toContainText("Existing permissions stay active.");
+		await expect(dialog.getByRole("checkbox", { name: "Include Tasks" })).toHaveCount(0);
 		const connect = dialog.getByRole("button", {
 			name: provider === "google" ? "Google Calendar" : "Outlook",
 		});
@@ -7915,15 +7496,8 @@ for (const { provider, width, theme } of [
 		await connect.click();
 		await expect.poll(() => requests.length).toBe(1);
 		expect(requests[0].scopes).toContain(taskScope);
-		await expect(checkbox).toBeEnabled();
-		await checkbox.focus();
-		await page.keyboard.press("Space");
-		await expect(checkbox).not.toBeChecked();
-		await connect.click();
-		await expect.poll(() => requests.length).toBe(2);
-		expect(requests[1]).toMatchObject({ provider, callbackURL: page.url() });
-		expect(requests[1].scopes).not.toContain(taskScope);
-		expect(requests[1].scopes).toContain(
+		expect(requests[0]).toMatchObject({ provider, callbackURL: page.url() });
+		expect(requests[0].scopes).toContain(
 			provider === "google"
 				? "https://www.googleapis.com/auth/calendar.events"
 				: "Calendars.ReadWrite",
@@ -8160,7 +7734,7 @@ for (const override of ["description=Restored", "endTime=12%3A30", "recurrence=F
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`K09 delivery review and retained deletion after reload: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript((value) => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const id = "00000000-0000-4000-8000-000000000091";
     const operation = "00000000-0000-4000-8000-000000000092";
     const remoteCalendar = "00000000-0000-4000-8000-000000000093";
@@ -8214,9 +7788,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     await delivery.getByRole("button", { name: "Close delivery", exact: true }).click();
     await expect(eventTrigger).toBeFocused();
     await page.reload();
-    if (width < 600) await page.getByRole("button", { name: "Open navigation" }).click();
-    await page.getByRole("button", { name: "Connections", exact: true }).click();
-    await page.getByRole("button", { name: "Unfinished deliveries", exact: true }).click();
+    await page.getByRole("button", { name: /^Notifications/ }).click();
     await page.getByRole("button", { name: /Deleted appointment/ }).click();
     await expect(delivery.getByText(/Delivery unconfirmed/)).toBeVisible();
     await expect(delivery.getByText("Retained delivery records")).toBeVisible();
@@ -8306,7 +7878,7 @@ test("recovers from unsupported known time metadata after refresh", async ({ pag
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
  test(`saves known civil time and title atomically from the editor: ${theme} ${width}`, async ({ page }, testInfo) => {
   await page.setViewportSize({ width, height: 900 });
-  await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+  await setTestTheme(page, theme);
   const known = event("00000000-0000-4000-8000-000000000151", "Gap appointment", "personal", "red", "2026-03-29T01:30:17.123Z", "2026-03-29T02:30:19.456Z", {
     timeModel: { kind: "zoned", timeZone: "Europe/Prague", startLocal: "2026-03-29T02:30:17.123", endLocal: "2026-03-29T04:30:19.456" },
   });
@@ -8347,7 +7919,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
 for (const [width, theme, target] of [[1280, "light", "zoned"], [390, "dark", "all-day"]] as const) {
   test(`explicit time model selection: ${target} ${theme} ${width}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const source = event("00000000-0000-4000-8000-000000000152", "Choose time model", "personal", "red", "2026-07-25T07:30:17.123Z", "2026-07-25T08:30:19.456Z", target === "all-day" ? {
       timeModel: { kind: "zoned", timeZone: "Europe/Prague", startLocal: "2026-07-25T09:30:17.123", endLocal: "2026-07-25T10:30:19.456" },
     } : {});
@@ -8369,7 +7941,7 @@ for (const [width, theme, target] of [[1280, "light", "zoned"], [390, "dark", "a
     await page.getByRole("button", { name: "Expand event editor", exact: true }).click();
     const timeHelp = page.getByRole("button", { name: "Help for Time model", exact: true });
     await expect(page.getByText("The selected model interprets", { exact: false })).toHaveCount(0);
-    await timeHelp.focus();
+    await timeHelp.click();
     await expect(page.getByRole("tooltip")).toContainText("Changing it may change when the event occurs.");
     await timeHelp.press("Escape");
     await expect(page.getByRole("tooltip")).toHaveCount(0);
@@ -8403,7 +7975,7 @@ for (const [width, theme, target] of [[1280, "light", "zoned"], [390, "dark", "a
 for (const [width, theme, full] of [[390, "dark", false], [1280, "light", true]] as const) {
   test(`whole-series civil date shift ${theme} ${width} full=${full}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const known = event("00000000-0000-4000-8000-000000000154", "Civil series", "personal", "red", "2026-03-28T08:30:17.123Z", "2026-03-28T09:30:19.456Z", {
       recurrence: "FREQ=DAILY;COUNT=4",
       timeModel: { kind: "zoned", timeZone: "Europe/Prague", startLocal: "2026-03-28T09:30:17.123", endLocal: "2026-03-28T10:30:19.456" },
@@ -8457,7 +8029,7 @@ for (const [width, theme, full] of [[390, "dark", false], [1280, "light", true]]
 for (const [width, theme] of [[390, "dark"], [1280, "light"]] as const) {
   test(`explicit time creation retains draft on refusal ${theme} ${width}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const calendarID = "00000000-0000-4000-8000-000000000155";
     await mockAuthenticatedReads(page, { ...events, events: [] }, [{ ...calendars[0]!, id: calendarID }]);
     const writes: any[] = [];
@@ -8521,7 +8093,7 @@ test("explains bounded Outlook coverage without a permanent banner", async ({ pa
 for (const [width, theme] of [[390, "dark"], [1280, "light"]] as const) {
   test(`provider details remain separate ${theme} ${width}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const imported = event("00000000-0000-4000-8000-000000000166", "Provider meeting", "personal", "red", "2026-07-26T09:00:00Z", "2026-07-26T10:00:00Z", { recurrence: "FREQ=DAILY;COUNT=2" });
     await mockAuthenticatedReads(page, { ...events, events: [imported] }, [{ ...calendars[0]!, provider: "microsoft", accountID: "fixture", accountLabel: "Fixture" }]);
     await page.route(`**/api/v1/events/${imported.id}/provider-state*`, route => respond(route, { state: { provider: "microsoft", organizer: { name: "Host", address: "host@example.test", self: false }, isOrganizer: false, attendees: [{ name: "Alex Chen", address: "alex@example.test", self: false, role: "required", response: "accepted" }, { name: "Sam Lee", address: "sam@example.test", self: false, role: "optional", response: "tentative" }], attendeesComplete: false, ownResponse: "notResponded", reminders: { provider: "microsoft", isOn: true, minutesBeforeStart: 15 }, availability: "workingElsewhere", privacy: "confidential", status: null, eventType: "singleInstance", conferenceURLs: [] } }));
@@ -8551,7 +8123,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     page.on("pageerror", error => errors.push(error.message));
     page.on("console", message => { if (message.type() === "error" && !message.text().includes("503 (Service Unavailable)")) errors.push(message.text()); });
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const id = "00000000-0000-4000-8000-000000000141";
     const operation = "00000000-0000-4000-8000-000000000142";
     const saved = event(id, "Reminder appointment", "personal", "#b3492f", "2026-07-23T07:30:00Z", "2026-07-23T08:30:00Z");
@@ -8607,7 +8179,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`K14 Google reminder editor preserves retry: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("console", message => { if (message.type() === "error" && !message.text().includes("503 (Service Unavailable)")) errors.push(message.text()); });
@@ -8661,7 +8233,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`K13 Google RSVP editor preserves retry: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("console", message => { if (message.type() === "error" && !message.text().includes("503 (Service Unavailable)")) errors.push(message.text()); });
@@ -8706,7 +8278,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     page.on("pageerror", error => errors.push(error.message));
     page.on("console", message => { if (message.type() === "error" && !message.text().includes("503 (Service Unavailable)")) errors.push(message.text()); });
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const id = "00000000-0000-4000-8000-000000000151";
     const operation = "00000000-0000-4000-8000-000000000152";
     const saved = event(id, "RSVP appointment", "personal", "#b3492f", "2026-07-23T07:30:00Z", "2026-07-23T08:30:00Z");
@@ -8763,7 +8335,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`K13 Google instance RSVP editor preserves retry: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ colorScheme: theme });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("console", message => { if (message.type() === "error" && !message.text().includes("503 (Service Unavailable)")) errors.push(message.text()); });
@@ -8812,7 +8384,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`K12 following deletion conflict confirmation: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript((value) => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
@@ -8867,7 +8439,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`K12 whole series deletion conflict confirmation: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript((value) => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
@@ -8893,9 +8465,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     await page.goto("/app/p/my-calendar/month?date=2026-07-26");
     await expect(page).toHaveURL(/\/app\/p\/my-calendar\/month\?date=2026-07-26/);
     await expect(page).toHaveTitle(/Musubi/i);
-    if (width < 600) await page.getByRole("button", { name: "Open navigation" }).click();
-    await page.getByRole("button", { name: "Connections", exact: true }).click();
-    await page.getByRole("button", { name: "Unfinished deliveries", exact: true }).click();
+    await page.getByRole("button", { name: /^Notifications/ }).click();
     const trigger = page.getByRole("button", { name: /Whole series deletion/ }).first();
     await trigger.click();
     const delivery = page.getByRole("dialog", { name: "Delivery", exact: true });
@@ -8918,14 +8488,14 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     await expect(delivery.getByText(/Saved changes queued/)).toBeVisible();
     expect(writes).toHaveLength(1); expect(writes[0]).toMatchObject({ expectedScopeResolution: scopeResolution, expectedRemoteEtag: '"fresh"' });
     await delivery.getByRole("button", { name: "Close delivery", exact: true }).click();
-    await expect(trigger).toBeFocused(); expect(errors).toEqual([]);
+    await expect(page.getByRole("button", { name: /^Notifications/ })).toBeFocused(); expect(errors).toEqual([]);
   });
 }
 
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`K12 following split conflict confirmation: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript((value) => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
@@ -8985,7 +8555,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`K12 future-only split confirmation: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript((value) => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
@@ -9044,7 +8614,7 @@ for (const [width, theme] of [[390, "dark"], [1280, "light"]] as const) {
   for (const mode of ["quick-expand", "zoned", "all-day"] as const) {
     test(`creation draft identity survives lost response and expansion or reload ${mode} ${theme}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
-      await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+      await setTestTheme(page, theme);
       const calendarID = "00000000-0000-4000-8000-000000000155";
       await mockAuthenticatedReads(page, { ...events, events: [] }, [{ ...calendars[0]!, id: calendarID, ...(mode === "quick-expand" ? {} : { provider: "microsoft" as const }) }]);
       const writes: any[] = [];
@@ -9105,7 +8675,7 @@ for (const [width, theme] of [[390, "dark"], [1280, "light"]] as const) {
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   for (const inherited of [false, true]) for (const kind of ["zoned", "all-day"] as const) test(`K14 Google instance reminder editor ${kind} ${inherited ? "inherited defaults" : "custom"} preserves retry: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("console", message => { if (message.type() === "error" && !message.text().includes("503 (Service Unavailable)")) errors.push(message.text()); });
@@ -9195,6 +8765,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   for (const openEditor of [false, true]) {
     test(`K14 privacy downgrade retires open ${openEditor ? "editor" : "details"}: ${theme} ${width}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
+      await setTestTheme(page, theme);
       await page.addInitScript(value => {
         localStorage.setItem("musubi-theme", value);
         class FakeEventSource {
@@ -9257,7 +8828,7 @@ for (const mode of ["compact", "generated", "full"] as const) {
   test(`${provider} editor privacy refresh preserves typed deltas (${mode})`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width: mode === "generated" ? 390 : 1280, height: 900 });
     await page.emulateMedia({ reducedMotion: "reduce" });
-    if (mode === "generated") await page.addInitScript(() => localStorage.setItem("musubi-theme", "dark"));
+    if (mode === "generated") await setTestTheme(page, "dark");
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     await page.addInitScript(() => {
@@ -9326,7 +8897,7 @@ for (const mode of ["compact", "generated", "full"] as const) {
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`K14 CalDAV event alarm editor preserves retry: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("console", message => { if (message.type() === "error" && !message.text().includes("503 (Service Unavailable)")) errors.push(message.text()); });
@@ -9380,7 +8951,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`K14 CalDAV saved alarm discard: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
     const id = "00000000-0000-4000-8000-000000000141", operation = "00000000-0000-4000-8000-000000000142";
     const saved = event(id, "Alarm appointment", "personal", "#b3492f", "2026-07-23T07:30:00Z", "2026-07-23T08:30:00Z");
@@ -9447,7 +9018,7 @@ test("K14 CalDAV lost alarm discard retains a usable focus target on Escape", as
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`Google availability explicit selection and unknown results: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     await mockAuthenticatedReads(page);
@@ -9499,7 +9070,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`K12 explicit UTC whole-series clock conversion: ${theme} ${width}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const known = event("00000000-0000-4000-8000-000000000194", "UTC clock series", "personal", "red", "2026-10-23T00:30:00Z", "2026-10-23T01:30:00Z", {
       recurrence: "RRULE:FREQ=DAILY;COUNT=2", seriesID: null, originalStart: null,
       timeModel: { kind: "zoned", timeZone: "Europe/Prague", startLocal: "2026-10-23T02:30:00.000", endLocal: "2026-10-23T03:30:00.000" },
@@ -9530,7 +9101,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`K13 CalDAV RSVP editor preserves retry: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("console", message => { if (message.type() === "error" && !message.text().includes("503 (Service Unavailable)")) errors.push(message.text()); });
@@ -9573,7 +9144,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
 for (const [width, theme, outcome] of [[1280, "light", "success"], [390, "dark", "success"], [1280, "light", "cancel"], [390, "dark", "escape"]] as const) {
   test(`Graph create adoption is an explicit local choice: ${theme} ${width} ${outcome}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("console", message => { if (message.type() === "error" && !message.text().includes("503 (Service Unavailable)") && !message.text().includes("net::ERR_FAILED")) errors.push(message.text()); });
@@ -9631,7 +9202,7 @@ for (const [width, theme, outcome] of [[1280, "light", "success"], [390, "dark",
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`Availability grid explicit static intervals and DST projection: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
     await mockAuthenticatedReads(page, { ...events, events: [] });
     await page.route("**/api/v1/server", route => respond(route, { email: true, pushPublicKey: null, socials: [], socialsWeb: [], syncProviders: ["google"], googleAvailability: true }));
@@ -9720,7 +9291,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     const occurrence = mode !== "one-off", series = mode === "series" || mode === "initial-series";
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ colorScheme: theme });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("console", message => { if (message.type() === "error" && !message.text().includes("503 (Service Unavailable)")) errors.push(message.text()); });
@@ -9780,7 +9351,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`K12 imported all-day exclusion restoration: ${theme} ${width}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const known = event("00000000-0000-4000-8000-000000000201", "Imported excluded dates", "personal", "red", "2026-03-28T00:00:00Z", "2026-03-28T00:00:00Z", {
       recurrence: "RRULE:FREQ=DAILY;COUNT=4\nEXDATE;VALUE=DATE:20260329,20260330", seriesID: null, originalStart: null, isAllDay: true, timeModel: { kind: "all-day" },
     });
@@ -9816,7 +9387,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`K14 explicit CalDAV series alarm: ${theme} ${width}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const master = event("00000000-0000-4000-8000-000000000303", "CalDAV finite alarm series", "personal", "red", "2026-03-28T22:00:00Z", "2026-03-29T00:00:00Z", {
       revision: 7, recurrence: "RRULE:FREQ=DAILY;COUNT=4", timeModel: { kind: "zoned", timeZone: "Europe/Prague", startLocal: "2026-03-28T23:00:00.000", endLocal: "2026-03-29T01:00:00.000" },
     });
@@ -9855,7 +9426,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
 
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) for (const action of ["create", "update", "delete"] as const) {
   test(`Google organizer explicit ${action}: ${theme} ${width}`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 900 }); await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await page.setViewportSize({ width, height: 900 }); await setTestTheme(page, theme);
     const calendarID = "00000000-0000-4000-8000-000000000291", eventID = "00000000-0000-4000-8000-000000000292";
     const saved = { ...event(eventID, "Organizer meeting", calendarID, "red", "2026-07-26T09:00:00Z", "2026-07-26T10:00:00Z"), revision: 4, timeModel: { kind: "zoned", timeZone: "Europe/Prague", startLocal: "2026-07-26T11:00:00.000", endLocal: "2026-07-26T12:00:00.000" } };
     await mockAuthenticatedReads(page, { ...events, events: [saved] }, [{ ...calendars[0]!, id: calendarID, provider: "google", accountID: "fixture", accountLabel: "Fixture" }]);
@@ -9905,7 +9476,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) for (con
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   for (const remove of [false, true]) test(`K12 single CalDAV RDATE ${remove ? "remove" : "add"}: ${theme} ${width}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const known = event("00000000-0000-4000-8000-000000000901", "Additional series date", "personal", "red", "2026-03-28T00:00:00Z", "2026-03-28T00:00:00Z", {
       recurrence: "RRULE:FREQ=DAILY;COUNT=2" + (remove ? "\nRDATE;VALUE=DATE:20260402" : ""), seriesID: null, originalStart: null, isAllDay: true, timeModel: { kind: "all-day" },
     });
@@ -9937,7 +9508,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
 
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) for (const action of ["create", "update", "delete"] as const) {
   test(`CalDAV organizer explicit ${action}: ${theme} ${width}`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 900 }); await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await page.setViewportSize({ width, height: 900 }); await setTestTheme(page, theme);
     const calendarID = "00000000-0000-4000-8000-000000000291", eventID = "00000000-0000-4000-8000-000000000292";
     const saved = { ...event(eventID, "Organizer meeting", calendarID, "red", "2026-07-26T09:00:00Z", "2026-07-26T10:00:00Z"), revision: 4, timeModel: { kind: "zoned", timeZone: "Europe/Prague", startLocal: "2026-07-26T11:00:00.000", endLocal: "2026-07-26T12:00:00.000" } };
     await mockAuthenticatedReads(page, { ...events, events: [saved] }, [{ ...calendars[0]!, id: calendarID, provider: "caldav", accountID: "fixture", accountLabel: "Fixture" }]);
@@ -9990,7 +9561,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) for (con
 
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) for (const action of ["update", "delete"] as const) {
   test(`Google bound occurrence organizer ${action}: ${theme} ${width}`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 900 }); await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await page.setViewportSize({ width, height: 900 }); await setTestTheme(page, theme);
     const calendarID = "00000000-0000-4000-8000-000000000391", eventID = "00000000-0000-4000-8000-000000000392", parentID = "00000000-0000-4000-8000-000000000393";
     const saved = { ...event(eventID, "Bound organizer occurrence", calendarID, "red", "2026-07-26T09:00:00Z", "2026-07-26T10:00:00Z"), revision: 4, seriesID: parentID, originalStart: { kind: "instant", value: "2026-07-25T09:00:00.000Z" }, timeModel: { kind: "zoned", timeZone: "Europe/Prague", startLocal: "2026-07-26T11:00:00.000", endLocal: "2026-07-26T12:00:00.000" } };
     const master = { ...saved, id: parentID, title: "Organizer series", revision: 9, seriesID: null, originalStart: null, recurrence: "RRULE:FREQ=DAILY;COUNT=3" };
@@ -10076,7 +9647,7 @@ test("CalDAV task editor retires coalesced baseline and preserves explicit clear
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) for (const kind of ["zoned", "all-day"] as const) {
   test(`CalDAV organizer retime ${kind}: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const calendarID = "00000000-0000-4000-8000-000000000311", eventID = "00000000-0000-4000-8000-000000000312";
     const saved = { ...event(eventID, "Retime meeting", calendarID, "red", kind === "all-day" ? "2026-07-26T00:00:00Z" : "2026-07-26T09:00:00Z", kind === "all-day" ? "2026-07-26T00:00:00Z" : "2026-07-26T10:00:00Z"), revision: 4, isAllDay: kind === "all-day", timeModel: kind === "all-day" ? { kind } : { kind, timeZone: "Europe/Prague", startLocal: "2026-07-26T11:00:00.000", endLocal: "2026-07-26T12:00:00.000" } };
     await mockAuthenticatedReads(page, { ...events, events: [saved] }, [{ ...calendars[0]!, id: calendarID, provider: "caldav", accountID: "fixture", accountLabel: "Fixture" }]);
@@ -10111,7 +9682,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) for (con
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`Outlook organizer explicit create: ${theme} ${width}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const calendarID = "00000000-0000-4000-8000-000000000291";
     await mockAuthenticatedReads(page, { ...events, events: [] }, [{ ...calendars[0]!, id: calendarID, provider: "microsoft", accountID: "fixture", accountLabel: "Fixture" }]);
     await page.route(`**/api/v1/calendars/${calendarID}/provider-organizer`, route => respond(route, { provider: "microsoft", calendarID, notificationPolicy: "server-invite", createTime: "utc-or-all-day", actions: ["create"] }));
@@ -10228,7 +9799,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   for (const entry of ["toolbar", "calendar"] as const) {
     test(`shared meeting creation from ${entry}: ${theme} ${width}`, async ({ page }, testInfo) => {
       await page.setViewportSize({ width, height: 900 });
-      await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+      await setTestTheme(page, theme);
       // Every request stays inside this fixture, including invitation writes.
       await page.route(url => url.pathname.startsWith("/api/"), route => respond(route, {}));
       const googleID = "00000000-0000-4000-8000-000000000391";
@@ -10308,7 +9879,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
 for (const [width, theme] of [[1280, "dark"], [390, "light"], [320, "dark"]] as const) {
   test(`Google availability setup discovers a shared calendar: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 916 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     await mockAuthenticatedReads(page);
     await page.route("**/api/v1/server", route => respond(route, { email: true, pushPublicKey: null, socials: [], socialsWeb: [], syncProviders: ["google", "microsoft", "caldav"], googleAvailability: true }));
     let discovered = false;
@@ -10326,8 +9897,7 @@ for (const [width, theme] of [[1280, "dark"], [390, "light"], [320, "dark"]] as 
     const connections = page.getByRole("dialog", { name: "Settings", exact: true });
     await expect(connections.getByText("No shared busy-time calendars yet")).toBeVisible();
     await expect(connections.getByRole("button", { name: "Check availability", exact: true })).toHaveCount(0);
-    const tasks = connections.getByRole("checkbox", { name: "Include Tasks" });
-    await expect(tasks).toBeChecked();
+    await expect(connections.getByRole("checkbox", { name: "Include Tasks" })).toHaveCount(0);
     await expectNoAccessibilityViolations(page);
     expect(await connections.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
     await connections.screenshot({ path: `/tmp/musubi-connections-${theme}-${width}.png` });
@@ -10356,31 +9926,29 @@ for (const [width, theme] of [[1280, "dark"], [390, "light"], [320, "dark"]] as 
 for (const [width, theme, count] of [[1280, "dark", 5], [1280, "light", 24], [390, "dark", 24]] as const) {
   test(`Delivery inbox keeps closing space: ${theme} ${width} ${count}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 916 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     await mockAuthenticatedReads(page);
     await page.route("**/api/v1/event-deliveries", route => respond(route, {
       items: Array.from({ length: count }, (_, i) => ({ eventId: `00000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}`, savedTitle: `Saved meeting ${i + 1}` })), nextCursor: null,
     }));
     await page.goto("/app/p/my-calendar/month?date=2026-07-26");
-    if (width < 600) await page.getByRole("button", { name: "Open navigation" }).click();
-    await page.getByRole("button", { name: "Connections", exact: true }).click();
-    await page.getByRole("button", { name: "Unfinished deliveries", exact: true }).click();
-    const dialog = page.getByRole("dialog", { name: "Unfinished deliveries", exact: true });
-    const last = dialog.getByRole("button", { name: `Saved meeting ${count} Open delivery records · saved title`, exact: true });
+    await page.getByRole("button", { name: /^Notifications/ }).click();
+    const dialog = page.getByRole("dialog", { name: "Notifications", exact: true });
+    const last = dialog.getByRole("button", { name: `Saved meeting ${count} Delivery needs attention`, exact: true });
     await expect(last).toBeAttached();
     await last.focus();
-    await last.press("Tab");
-    await expect(dialog.getByRole("button", { name: "Refresh list" })).toBeFocused();
-    await page.keyboard.press("Shift+Tab");
-    await expect(last).toBeFocused();
+    await last.press("Escape");
+    await expect(page.getByRole("button", { name: /^Notifications/ })).toBeFocused();
+    await page.getByRole("button", { name: /^Notifications/ }).click();
+    await expect(dialog.getByRole("button", { name: "Refresh notifications" })).toBeFocused();
     const measurements = await last.evaluate(element => {
-      const body = element.closest('[role="dialog"]')!.querySelector('[data-slot="dialog-body"]')!;
+      const body = element.closest('[role="dialog"]')!.querySelector('[data-notifications-body]')!;
       body.scrollTop = body.scrollHeight;
       return { bodyBottom: body.getBoundingClientRect().bottom, lastBottom: element.getBoundingClientRect().bottom };
     });
-    // The body closes on the layer's shared 24px inset.
-    expect(measurements.bodyBottom - measurements.lastBottom).toBeGreaterThanOrEqual(23);
-    expect(measurements.bodyBottom - measurements.lastBottom).toBeLessThanOrEqual(26);
+    // Anchored notifications use the shared popover 16px inset.
+    expect(measurements.bodyBottom - measurements.lastBottom).toBeGreaterThanOrEqual(15);
+    expect(measurements.bodyBottom - measurements.lastBottom).toBeLessThanOrEqual(18);
     await expectNoAccessibilityViolations(page);
     await dialog.screenshot({ path: testInfo.outputPath("inbox-bottom-spacing.png") });
   });
@@ -10390,7 +9958,7 @@ for (const [width, theme, count] of [[1280, "dark", 5], [1280, "light", 24], [39
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`Account avatar and contextual help: ${theme} ${width}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 916 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     await mockAuthenticatedReads(page);
     await page.goto("/app/p/my-calendar/month?date=2026-07-26");
     if (width < 600) await page.getByRole("button", { name: "Open navigation" }).click();
@@ -10429,7 +9997,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`task shared recurrence editor: ${theme} ${width}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 916 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     await mockAuthenticatedReads(page);
     let saved: Record<string, unknown> | undefined;
     await page.route("**/api/v1/tasks", route => {
@@ -10534,6 +10102,13 @@ for (const width of [1280, 390]) {
       await expect(page.locator("[data-drag-preview]")).toHaveCount(0);
       await expect(board.getByRole("region", { name: "In progress", exact: true }).getByRole("button", { name: "Kanban review", exact: true })).toBeVisible();
       expect(task.status).toBe("needs-action"); // Server has not responded yet.
+      await expect(handle).toBeDisabled();
+      await expect(handle).toHaveAttribute("aria-busy", "true");
+      await expect(handle).toHaveAttribute("data-loading", "");
+      for (const action of await board.getByRole("button", { name: "Add task", exact: true }).all()) {
+        await expect(action).toBeDisabled();
+        await expect(action).toHaveCSS("opacity", "1");
+      }
       releaseResponse?.();
       await expect.poll(() => task.status).toBe("in-process");
     } else {
@@ -10782,7 +10357,7 @@ test("floating event editor preserves its draft, supports movement and nested pi
 });
 
 test("local floating default persists and falls back to a panel on smaller screens", async ({ page }, testInfo) => {
-  await page.addInitScript(() => localStorage.setItem("musubi-theme", "dark"));
+  await setTestTheme(page, "dark");
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.setViewportSize({ width: 1280, height: 900 });
   await mockAuthenticatedReads(page);
@@ -10866,7 +10441,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`Outlook organizer guarded cancellation: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ colorScheme: theme });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const calendarID = "00000000-0000-4000-8000-000000000361", eventID = "00000000-0000-4000-8000-000000000362";
     const saved = { ...event(eventID, "Outlook review meeting", calendarID, "red", "2026-07-26T09:00:00Z", "2026-07-26T10:00:00Z"), revision: 4, timeModel: { kind: "zoned", timeZone: "UTC", startLocal: "2026-07-26T09:00:00.000", endLocal: "2026-07-26T10:00:00.000" } };
     await mockAuthenticatedReads(page, { ...events, events: [saved] }, [{ ...calendars[0]!, id: calendarID, provider: "microsoft", accountID: "fixture", accountLabel: "Fixture" }]);
@@ -10909,7 +10484,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`Outlook recurring cancellation keeps scope and request identity: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ colorScheme: theme });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const calendarID = "00000000-0000-4000-8000-000000000371", eventID = "00000000-0000-4000-8000-000000000372";
     const saved = { ...event(eventID, "Weekly Outlook meeting", calendarID, "red", "2026-07-26T09:00:00Z", "2026-07-26T10:00:00Z"), revision: 4 };
     await mockAuthenticatedReads(page, { ...events, events: [saved] }, [{ ...calendars[0]!, id: calendarID, provider: "microsoft", accountID: "fixture", accountLabel: "Fixture" }]);
@@ -10950,7 +10525,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`Outlook organizer content update: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ colorScheme: theme });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const calendarID = "00000000-0000-4000-8000-000000000361", eventID = "00000000-0000-4000-8000-000000000362";
     const saved = { ...event(eventID, "Outlook review meeting", calendarID, "red", "2026-07-26T09:00:00Z", "2026-07-26T10:00:00Z"), revision: 4, timeModel: { kind: "zoned", timeZone: "UTC", startLocal: "2026-07-26T09:00:00.000", endLocal: "2026-07-26T10:00:00.000" } };
     await mockAuthenticatedReads(page, { ...events, events: [saved] }, [{ ...calendars[0]!, id: calendarID, provider: "microsoft", accountID: "fixture", accountLabel: "Fixture" }]);
@@ -10995,7 +10570,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`Outlook occurrence content update: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ colorScheme: theme });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const calendarID = "00000000-0000-4000-8000-000000000361", eventID = "00000000-0000-4000-8000-000000000362";
     const saved = { ...event(eventID, "Outlook recurring appointment", calendarID, "red", "2026-07-26T09:00:00Z", "2026-07-26T10:00:00Z"), revision: 4, ...(width === 390 ? { seriesID: "00000000-0000-4000-8000-000000000369", originalStart: { kind: "instant", value: "2026-07-25T09:00:00.000Z" } } : {}), timeModel: { kind: "zoned", timeZone: "UTC", startLocal: "2026-07-26T09:00:00.000", endLocal: "2026-07-26T10:00:00.000" } };
     await mockAuthenticatedReads(page, { ...events, events: [saved] }, [{ ...calendars[0]!, id: calendarID, provider: "microsoft", accountID: "fixture", accountLabel: "Fixture" }]);
@@ -11041,7 +10616,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`Outlook series content update: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ colorScheme: theme });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const calendarID = "00000000-0000-4000-8000-000000000361", eventID = "00000000-0000-4000-8000-000000000362";
     const saved = { ...event(eventID, "Outlook recurring appointment", calendarID, "red", "2026-07-26T09:00:00Z", "2026-07-26T10:00:00Z"), revision: 4, ...(width === 390 ? { seriesID: "00000000-0000-4000-8000-000000000369", originalStart: { kind: "instant", value: "2026-07-25T09:00:00.000Z" } } : {}), timeModel: { kind: "zoned", timeZone: "UTC", startLocal: "2026-07-26T09:00:00.000", endLocal: "2026-07-26T10:00:00.000" } };
     await mockAuthenticatedReads(page, { ...events, events: [saved] }, [{ ...calendars[0]!, id: calendarID, provider: "microsoft", accountID: "fixture", accountLabel: "Fixture" }]);
@@ -11088,7 +10663,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`Outlook occurrence time update: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ colorScheme: theme });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const calendarID = "00000000-0000-4000-8000-000000000361", eventID = "00000000-0000-4000-8000-000000000362";
     const saved = { ...event(eventID, "Outlook recurring appointment", calendarID, "red", "2026-07-26T09:00:00Z", "2026-07-26T10:00:00Z"), revision: 4, ...(width === 390 ? { seriesID: "00000000-0000-4000-8000-000000000369", originalStart: { kind: "instant", value: "2026-07-25T09:00:00.000Z" } } : {}), timeModel: { kind: "zoned", timeZone: "UTC", startLocal: "2026-07-26T09:00:00.000", endLocal: "2026-07-26T10:00:00.000" } };
     await mockAuthenticatedReads(page, { ...events, events: [saved] }, [{ ...calendars[0]!, id: calendarID, provider: "microsoft", accountID: "fixture", accountLabel: "Fixture" }]);
@@ -11136,7 +10711,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`Outlook all-day occurrence update: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ colorScheme: theme });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const calendarID = "00000000-0000-4000-8000-000000000361", eventID = "00000000-0000-4000-8000-000000000362";
     const saved = { ...event(eventID, "Outlook all-day appointment", calendarID, "red", "2026-07-26T00:00:00Z", "2026-07-26T00:00:00Z"), revision: 4, isAllDay: true, ...(width === 390 ? { seriesID: "00000000-0000-4000-8000-000000000369", originalStart: { kind: "date", value: "2026-07-25" } } : {}), timeModel: { kind: "all-day" } };
     await mockAuthenticatedReads(page, { ...events, events: [saved] }, [{ ...calendars[0]!, id: calendarID, provider: "microsoft", accountID: "fixture", accountLabel: "Fixture" }]);
@@ -11184,7 +10759,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`Outlook series time update: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ colorScheme: theme });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const calendarID = "00000000-0000-4000-8000-000000000361", eventID = "00000000-0000-4000-8000-000000000362";
     const saved = { ...event(eventID, "Outlook recurring appointment", calendarID, "red", "2026-07-26T09:00:00Z", "2026-07-26T10:00:00Z"), revision: 4, ...(width === 390 ? { seriesID: "00000000-0000-4000-8000-000000000369", originalStart: { kind: "instant", value: "2026-07-25T09:00:00.000Z" } } : {}), timeModel: { kind: "zoned", timeZone: "UTC", startLocal: "2026-07-26T09:00:00.000", endLocal: "2026-07-26T10:00:00.000" } };
     await mockAuthenticatedReads(page, { ...events, events: [saved] }, [{ ...calendars[0]!, id: calendarID, provider: "microsoft", accountID: "fixture", accountLabel: "Fixture" }]);
@@ -11231,7 +10806,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   test(`Outlook selected occurrence move: ${theme} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ colorScheme: theme });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const calendarID = "00000000-0000-4000-8000-000000000361", eventID = "00000000-0000-4000-8000-000000000362", secondID = "00000000-0000-4000-8000-000000000363";
     const saved = { ...event(eventID, "Outlook weekly planning", calendarID, "red", "2026-07-26T07:00:00Z", "2026-07-26T08:00:00Z"), revision: 4 };
     await mockAuthenticatedReads(page, { ...events, events: [saved] }, [{ ...calendars[0]!, id: calendarID, provider: "microsoft", accountID: "fixture", accountLabel: "Fixture" }]);
@@ -11288,5 +10863,97 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     await trigger.click();
     await expect(dialog.getByRole("status")).toContainText(width === 390 ? "Move stopped" : "2 occurrences moved");
     expect(writes).toHaveLength(2); expect(errors).toEqual([]);
+  });
+}
+
+for (const theme of ["light", "dark"] as const) {
+  test(`Notifications identify other members and recover delivery: ${theme} desktop`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 916 });
+    await setTestTheme(page, theme);
+    await mockAuthenticatedReads(page);
+    const id = "00000000-0000-4000-8000-000000000501";
+    let visible = true;
+    const changed = event(id, "Autumn planning", "studio", "red", "2026-10-23T09:00:00Z", "2026-10-23T10:00:00Z", { revision: 3 });
+    await page.route("**/api/v1/events", route => respond(route, { events: visible ? [changed] : [], deletedIds: visible ? [] : [id], serverTime: new Date().toISOString() }));
+    await page.route("**/api/v1/event-deliveries", route => respond(route, { items: [{ eventId: id, savedTitle: "Autumn planning" }], nextCursor: null }));
+    await page.addInitScript(() => {
+      class NotificationSource {
+        onmessage: ((event: { data: string }) => void) | null = null;
+        onopen: (() => void) | null = null;
+        onerror: (() => void) | null = null;
+        constructor() {
+          const host = window as unknown as { __notificationSources: NotificationSource[] };
+          host.__notificationSources ??= [];
+          host.__notificationSources.push(this);
+          setTimeout(() => this.onopen?.(), 0);
+        }
+        close() {}
+      }
+      (window as unknown as { EventSource: unknown }).EventSource = NotificationSource;
+    });
+    await page.goto("/app/p/my-calendar/month?date=2026-07-26");
+    await expect(page.getByRole("button", { name: /^Notifications · 1/ })).toBeVisible();
+    const emit = async (actorID?: string) => page.evaluate(({ id, actorID }) => {
+      const source = (window as unknown as { __notificationSources: { onmessage: (event: { data: string }) => void }[] }).__notificationSources.at(-1)!;
+      source.onmessage({ data: JSON.stringify({ type: "event_updated", payload: { id, revision: 3, actorID, title: "Never expose SSE snapshot" } }) });
+    }, { id, actorID });
+    await emit("user-web-qa");
+    await emit();
+    await page.getByRole("button", { name: /^Notifications/ }).click();
+    const panel = page.getByRole("dialog", { name: "Notifications", exact: true });
+    await expect(panel.getByRole("button", { name: /Changed by another member/ })).toHaveCount(0);
+    await emit("another-member");
+    await expect(panel.getByRole("button", { name: /Autumn planning Changed by another member/ })).toBeVisible();
+    await expect(panel).not.toContainText("Never expose SSE snapshot");
+    await emit("another-member");
+    await expect(panel.getByRole("button", { name: /Changed by another member/ })).toHaveCount(1);
+    await expectNoAccessibilityViolations(page);
+    await panel.screenshot({ path: `/tmp/musubi-notifications-${theme}.png` });
+    await panel.getByRole("button", { name: "Mark all as read" }).click();
+    await expect(panel.getByText("1 need attention")).toBeVisible();
+    await panel.getByRole("button", { name: /Autumn planning Changed by another member/ }).click();
+    const detail = page.getByRole("dialog", { name: "Autumn planning", exact: true });
+    await expect(detail).toBeVisible();
+    await detail.getByRole("button", { name: "Close event", exact: true }).click();
+    await expect(page.getByRole("button", { name: /^Notifications/ })).toBeFocused();
+    await page.getByRole("button", { name: /^Notifications/ }).click();
+    visible = false;
+    await panel.getByRole("button", { name: "Refresh notifications" }).click();
+    await expect(panel.getByRole("button", { name: /Changed by another member/ })).toHaveCount(0);
+    await expect(panel.getByRole("button", { name: /Autumn planning Delivery needs attention/ })).toBeVisible();
+  });
+}
+
+for (const theme of ["light", "dark"] as const) {
+  test(`Manual server refresh preserves calendar context: ${theme} desktop`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 916 });
+    await setTestTheme(page, theme);
+    await mockAuthenticatedReads(page);
+    let release: (() => void) | undefined;
+    let reads = 0;
+    let refreshing = false;
+    await page.route("**/api/v1/calendars", async route => {
+      reads++;
+      if (refreshing) await new Promise<void>(resolve => { release = resolve; });
+      await respond(route, calendars);
+    });
+    await page.goto("/app/p/my-calendar/day?date=2026-07-26");
+    const refresh = page.getByRole("button", { name: "Refresh from server", exact: true });
+    await expect(refresh).toBeVisible();
+    await expect(page.getByText("Connected to server", { exact: true })).toBeVisible();
+    const previousReads = reads, url = page.url();
+    refreshing = true;
+    await refresh.press("Enter");
+    await expect(refresh).toBeDisabled();
+    await expect(refresh).toHaveAttribute("aria-busy", "true");
+    await expect.poll(() => reads).toBeGreaterThan(previousReads);
+    expect(page.url()).toBe(url);
+    refreshing = false;
+    release?.();
+    await expect(refresh).toBeEnabled();
+    await expect(page.getByText("Connected to server", { exact: true })).toBeVisible();
+    await expect(refresh).toBeFocused();
+    expect(page.url()).toBe(url);
+    await expectNoAccessibilityViolations(page);
   });
 }

@@ -10,7 +10,7 @@ import { Spinner } from "~/components/ui/spinner";
  * keyboard focus mode, never from the button.
  */
 const buttonVariants = cva(
-  "relative inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-control border border-transparent font-sans text-13 font-medium whitespace-nowrap no-underline transition-colors duration-fast select-none disabled:cursor-not-allowed disabled:opacity-50 data-[loading]:cursor-wait [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "relative inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-control border border-transparent font-sans text-13 font-medium whitespace-nowrap no-underline transition-colors duration-fast select-none disabled:cursor-not-allowed disabled:not-aria-busy:opacity-50 data-[loading]:cursor-wait [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {

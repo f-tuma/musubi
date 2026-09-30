@@ -1152,10 +1152,10 @@ calendar on web and native.
 
 ### Connection choices and availability setup
 
-Connections presents optional Tasks consent as one full-width toggle button above
-provider buttons, with a checked icon and `aria-pressed`; the choice still controls
-only the requested Google/Microsoft Tasks scope. The permanent helper sentence is
-removed.
+Web Connections and onboarding always request Google/Microsoft Tasks access
+alongside calendar access. There is no Include Tasks checkbox or separate
+consent toggle (approved 2026-09-30). Existing calendar-only credentials remain
+usable; the backend continues to decide task eligibility from the actual grant.
 
 Google availability uses the standard grouped rows. An empty list offers **How to
 set up** instead of an unusable check action. The setup dialog explains sharing

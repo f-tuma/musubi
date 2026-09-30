@@ -23,10 +23,10 @@ const GOOGLE_CALENDAR_SCOPES = [
 ];
 const MICROSOFT_CALENDAR_SCOPES = ["Calendars.ReadWrite"];
 
-export function providerConnectionScopes(provider: "google" | "microsoft", includeTasks: boolean, availability = false) {
+export function providerConnectionScopes(provider: "google" | "microsoft", availability = false) {
   const calendars = provider === "google" ? [...GOOGLE_CALENDAR_SCOPES, ...(availability ? [GOOGLE_AVAILABILITY_SCOPE] : [])] : MICROSOFT_CALENDAR_SCOPES;
   const tasks = provider === "google" ? "https://www.googleapis.com/auth/tasks" : "Tasks.ReadWrite";
-  return includeTasks ? [...calendars, tasks] : [...calendars];
+  return [...calendars, tasks];
 }
 
 // Linking a provider is a full-page trip to Google or Microsoft and back, so no

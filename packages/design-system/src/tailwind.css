@@ -147,6 +147,7 @@
   --spacing-popover: var(--popover-width);
   --spacing-dialog: min(47.5rem, 100dvh - 2 * var(--layer-viewport-gutter));
   --spacing-safe-bottom: var(--layer-safe-bottom);
+  --shadow-raised: var(--shadow-raised);
   --shadow-overlay: var(--shadow-overlay);
   --font-sans: var(--font-sans);
   --font-serif: var(--font-serif);
@@ -197,4 +198,3 @@
 @utility focus-inset {
   outline-offset: -2px;
 }
-

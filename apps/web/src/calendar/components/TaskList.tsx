@@ -448,6 +448,7 @@ export function TaskList({
             onUpdateInline={updateInline}
             busy={inlineBusy || busy}
             saving={inlineBusy}
+            pendingTaskId={optimisticTask?.id}
             controls={inlineControls}
             timeFormat={settings.timeFormat}
             dateFormat={settings.dateFormat ?? "dmy"}
@@ -478,6 +479,7 @@ function TaskGroup({
   busy,
   controls,
   saving,
+  pendingTaskId,
   timeFormat,
   dateFormat,
   tasks,
@@ -497,6 +499,7 @@ function TaskGroup({
   onUpdateInline: (task: Task, patch: Partial<Pick<TaskUpdate, "status" | "priority">>) => Promise<boolean>;
   busy: boolean;
   saving: boolean;
+  pendingTaskId?: string;
   controls: React.RefObject<Map<string, HTMLButtonElement>>;
   timeFormat: Settings["timeFormat"];
   dateFormat: Settings["dateFormat"];
@@ -527,7 +530,7 @@ function TaskGroup({
               {heading}
             </button>}
         </SectionLabel>
-        {kanban && onCreate ? <Button variant="ghost" size="compact" disabled={busy} onClick={onCreate}><Plus aria-hidden="true" />Add task</Button> : null}
+        {kanban && onCreate ? <Button variant="ghost" size="compact" disabled={busy} aria-busy={saving || undefined} onClick={onCreate}><Plus aria-hidden="true" />Add task</Button> : null}
       </div>
       <div id={bodyId} hidden={!kanban && collapsed} className={kanban ? "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-y-contain pb-4 focus-inset" : undefined} data-kanban-column-scroll={kanban ? "" : undefined} tabIndex={kanban ? 0 : undefined} role={kanban ? "region" : undefined} aria-label={kanban ? `${label} tasks` : undefined}>
       {kanban && !tasks.length && !dropActive ? <p className="p-5 text-center text-13 text-foreground-secondary">No tasks</p> : null}
@@ -573,6 +576,8 @@ function TaskGroup({
                   className="absolute top-1/2 right-0 -translate-y-1/2 cursor-grab touch-none active:cursor-grabbing"
                   aria-label={`Drag ${task.title} to another status; press Enter to open task details`}
                   title="Drag to another status"
+                  aria-busy={saving || undefined}
+                  loading={saving && task.id === pendingTaskId}
                   disabled={busy}
                   onPointerDown={event => onDragTask(task, event)}
                   onClick={event => { if (event.detail === 0) onEdit(task); }}><GripVertical aria-hidden="true" /></Button> : <span className="truncate">Read only</span>}

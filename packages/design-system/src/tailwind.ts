@@ -109,6 +109,7 @@ const containers = {
 } as const;
 
 const shadows = {
+  raised: "var(--shadow-raised)",
   overlay: "var(--shadow-overlay)",
 } as const;
 
@@ -301,6 +302,5 @@ export function renderTailwindThemeCss(): string {
     renderStaticTheme(),
     renderInlineTheme(),
     renderUtilities(),
-    "",
-  ].join("\n\n");
+  ].join("\n\n") + "\n";
 }

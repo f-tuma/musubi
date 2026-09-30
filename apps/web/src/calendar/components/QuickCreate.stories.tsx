@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
 import type { Calendar } from "@musubi/types";
 import { useState } from "react";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import { DESKTOP_MODES, MOBILE_MODES } from "../../../.storybook/modes";
 import { Button } from "~/components/ui/button";
 import { fixtureCalendars } from "../fixtures";
@@ -37,7 +37,7 @@ const meta = {
   play: async ({ canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole("button", { name: "New event" }));
     const body = within(document.body);
-    await expect(body.getByRole("dialog", { name: "Create event" })).toBeVisible();
+    await waitFor(() => expect(body.getByRole("dialog", { name: "Create event" })).toBeVisible());
     await expect(body.getByRole("textbox", { name: "Event title" })).toHaveFocus();
     await expect(body.getByPlaceholderText("Add notes")).toBeInTheDocument();
   },
@@ -68,7 +68,7 @@ export const ConnectedAccounts: Story = {
     // Identical account addresses remain distinguishable to assistive technology.
     await expect(within(choices).getByText("· Google Calendar")).toBeInTheDocument();
     await expect(within(choices).getByText("· Outlook")).toBeInTheDocument();
-    const scroller = choices.closest("form")!.querySelector<HTMLElement>('[class*="formBody"]')!;
+    const scroller = choices.closest("form")!.querySelector<HTMLElement>('[data-editor-body]')!;
     scroller.scrollTop += choices.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
   },
 };

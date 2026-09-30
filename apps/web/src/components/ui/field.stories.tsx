@@ -28,6 +28,19 @@ const calendars = [
   { label: "Holidays", value: "holidays", description: "Read only", disabled: true },
 ];
 
+export const InputVariants: Story = {
+  render: () => (
+    <FieldGroup>
+      <Field label="Event title">
+        <Input variant="title" defaultValue="Design review" />
+      </Field>
+      <Field label="Location">
+        <Input defaultValue="Studio" />
+      </Field>
+    </FieldGroup>
+  ),
+};
+
 export const Fields: Story = {
   render: function Render() {
     const [calendar, setCalendar] = useState("studio");

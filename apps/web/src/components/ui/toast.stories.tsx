@@ -57,6 +57,30 @@ export const Errors: Story = {
   ),
 };
 
+export const RetryError: Story = {
+  render: () => (
+    <div className="w-full max-w-default">
+      <InlineError actions={<Button size="compact" variant="ghost">Retry</Button>}>
+        Account search could not load. Showing loaded data.
+      </InlineError>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const alert = within(canvasElement).getByRole("alert");
+    const action = within(alert).getByRole("button", { name: "Retry" });
+    const icon = alert.querySelector("svg")!;
+    const text = alert.querySelector("p")!;
+    const bounds = alert.getBoundingClientRect();
+    const insets = getComputedStyle(alert);
+    const actionBounds = action.getBoundingClientRect();
+    const iconBounds = icon.getBoundingClientRect();
+    const textBounds = text.getBoundingClientRect();
+    expect(actionBounds.right).toBeCloseTo(bounds.right - parseFloat(insets.paddingRight) - parseFloat(insets.borderRightWidth), 0);
+    expect(iconBounds.top + iconBounds.height / 2).toBeCloseTo(textBounds.top + textBounds.height / 2, 0);
+    expect(actionBounds.left - textBounds.right).toBeGreaterThanOrEqual(12);
+  },
+};
+
 export const Banners: Story = {
   parameters: { layout: "fullscreen" },
   render: () => (

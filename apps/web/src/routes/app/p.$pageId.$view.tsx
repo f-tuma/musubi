@@ -12,7 +12,7 @@ import { ApiError, ApiResponseError } from "~/api/http";
 import { useNewerServer } from "~/api/use-newer-server";
 import { getServerOrigin, queryKeys } from "~/api/query-keys";
 import { createTask, getEvents, getTasks, removeTask, updateTask } from "~/api/resources";
-import { useServerStream } from "~/api/realtime";
+import { refreshServerData, useServerStream } from "~/api/realtime";
 import { useReminders } from "~/calendar/use-reminders";
 import { useProviderLinkReturn } from "~/calendar/connections";
 import { useSessionUser } from "~/auth/use-session-user";
@@ -290,6 +290,7 @@ function CalendarScreen({ editorOpen }: { editorOpen: boolean }) {
       tasksResolved={tasksQuery.isSuccess && !tasksQuery.isFetching && !tasksQuery.isPlaceholderData}
       isAdmin={isAdmin}
       isRefreshing={queries.some((query) => query.isFetching)}
+      onRefreshServer={() => refreshServerData(queryClient, userId)}
       newerServer={newerServer}
       offline={offline}
       snapshotAt={snapshot.savedAt}

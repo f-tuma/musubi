@@ -111,16 +111,6 @@ export function CalendarsPanel({
 
   return (
     <>
-      {groups.map((group) => (
-        <CalendarGroup
-          group={group}
-          key={group.key}
-          onCreateMeeting={onCreateMeeting}
-          onEdit={(calendar, trigger) => open({ calendar, kind: "edit" }, trigger)}
-          onManageMembers={onManageMembers}
-        />
-      ))}
-
       <ItemGroup>
         <RowAction
           icon={<Plus />}
@@ -140,6 +130,16 @@ export function CalendarsPanel({
           onClick={(event) => open({ kind: "export" }, event.currentTarget)}
         />
       </ItemGroup>
+
+      {groups.map((group) => (
+        <CalendarGroup
+          group={group}
+          key={group.key}
+          onCreateMeeting={onCreateMeeting}
+          onEdit={(calendar, trigger) => open({ calendar, kind: "edit" }, trigger)}
+          onManageMembers={onManageMembers}
+        />
+      ))}
 
       {dialog?.kind === "create" ? (
         <NewCalendarDialog

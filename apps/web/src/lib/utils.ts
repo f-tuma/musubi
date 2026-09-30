@@ -13,7 +13,7 @@ export const cn = createCn({
       text: typeSizes,
       radius: ["sm", "md", "lg", "sheet", "card", "control", "chip"],
       spacing: ["control", "control-compact", "row", "sidebar", "inspector", "popover", "dialog", "safe-bottom"],
-      shadow: ["overlay"],
+      shadow: ["raised", "overlay"],
       breakpoint: ["sm", "md", "lg"],
       container: ["compact", "form", "default", "wide"],
       tracking: ["normal", "label", "wide"],

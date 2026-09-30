@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import type { Request } from "express";
 import { BadRequestError } from "@musubi/types";
-import { parseAttendanceBody, parseEventReadQuery } from "./events";
+import { eventStreamPayload, parseAttendanceBody, parseEventReadQuery } from "./events";
+
+assert.deepEqual(eventStreamPayload({ id: "event", revision: 2, actorID: "untrusted" }, "authenticated"), {
+  id: "event", revision: 2, actorID: "authenticated",
+});
+assert.deepEqual(eventStreamPayload({ id: "event", revision: 2 }, "authenticated"), {
+  id: "event", revision: 2, actorID: "authenticated",
+});
 
 const query = (value: Record<string, string>) => value as Request["query"];
 

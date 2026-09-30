@@ -35,4 +35,4 @@ Current sources of truth:
 - `packages/design-system`
 - `apps/web/src/design`
 - `apps/web/src/components/ui`
-- `ui-catalog`
+- colocated Storybook stories (`*.stories.tsx`)

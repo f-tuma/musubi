@@ -160,7 +160,11 @@ export function SearchDialog({ activeView, canCreateEvents, canCreateTasks, canC
           <Segmented className="flex-none sm:w-64" label="Search type" value={filter} options={filters} onChange={value => { setFilter(value); setActive(0); setLimit(40); }} />
         </div>
         <p className="-mt-2 min-h-4 text-12 text-muted-foreground" role="status" id={`${id}-status`}>{loading ? "Searching…" : normalized ? `${matches.length} ${matches.length === 1 ? "result" : "results"}` : ""}</p>
-        {error ? <InlineError>Account search could not load. Showing loaded data. <Button size="compact" variant="ghost" onClick={accountSource?.retry}>Retry</Button></InlineError> : null}
+        {error ? (
+          <InlineError actions={<Button size="compact" variant="ghost" onClick={accountSource?.retry}>Retry</Button>}>
+            Account search could not load. Showing loaded data.
+          </InlineError>
+        ) : null}
         <span className="sr-only" aria-live="polite">{shown[selected]?.title ?? actions[selected - shown.length]?.label}</span>
         <div className="grid gap-5 sm:grid-cols-3" ref={listRef} onKeyDown={keyboard}>
           <div className="flex min-w-0 flex-col gap-5 sm:col-span-2">

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
 import type { Calendar, Event } from "@musubi/types";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import { DESKTOP_MODES, MOBILE_MODES } from "../../../.storybook/modes";
 import { Button } from "~/components/ui/button";
 import { fixtureCalendars, fixtureEvents } from "../fixtures";
@@ -46,7 +46,7 @@ const meta = {
     const dialog = within(document.body).getByRole("dialog", { name: event.title });
     const chips = within(within(dialog).getByRole("list", { name: "Calendars" }));
     await expect(chips.getAllByRole("listitem")).toHaveLength(3);
-    await expect(chips.getByRole("listitem", { name: `${home.name} · Home calendar` })).toBeVisible();
+    await waitFor(() => expect(chips.getByRole("listitem", { name: `${home.name} · Home calendar` })).toBeVisible());
   },
 } satisfies Meta<typeof CalendarChipsPreview>;
 export default meta;

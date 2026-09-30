@@ -11,7 +11,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { EventDeliveryDialog } from "./EventDeliveryDialog";
-import { EventDeliveryInboxDialog } from "./EventDeliveryInboxDialog";
+import { ApplicationNotifications } from "~/notifications/ApplicationNotifications";
 import { getServerOrigin, queryKeys } from "~/api/query-keys";
 
 const eventId = "00000000-0000-4000-8000-000000000001";
@@ -291,13 +291,15 @@ it("discovers retained deletions from the server, including the next page", asyn
   clients.push(client);
   render(
     <QueryClientProvider client={client}>
-      <EventDeliveryInboxDialog
+      <ApplicationNotifications
         userId="owner"
-        returnFocus={null}
-        onClose={vi.fn()}
+        calendars={[]}
+        events={[]}
+        onOpenConnections={vi.fn()}
       />
     </QueryClientProvider>,
   );
+  fireEvent.click(await screen.findByRole("button", { name: /^Notifications/ }));
   fireEvent.click(await screen.findByRole("button", { name: "Load more" }));
   fireEvent.click(
     await screen.findByRole("button", { name: /Deleted appointment/ }),

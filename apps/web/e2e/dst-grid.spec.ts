@@ -1,3 +1,4 @@
+import { setTestTheme } from "./theme";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
 const runtimeErrors = new WeakMap<Page, string[]>();
@@ -31,6 +32,7 @@ async function fixture(page: Page, initial = [] as ReturnType<typeof event>[], w
   await page.route("**/api/v1/users/settings", route => respond(route, settings));
   await page.route("**/api/v1/users/settings/document", route => respond(route, { revision: 1, updatedAt: stamp, value: settings }));
   await page.route("**/api/v1/tasks", route => respond(route, { tasks: [] }));
+  await page.route("**/api/v1/event-deliveries", route => respond(route, { items: [], nextCursor: null }));
   await page.route("**/api/v1/announcements", route => respond(route, { announcements: [], isAdmin: false }));
   await page.route("**/api/v1/server", route => respond(route, { email: true, pushPublicKey: null, socials: [], socialsWeb: [], syncProviders: [] }));
   await page.route("**/api/v1/reminders", route => respond(route, { calendars: {}, default: { allDay: null, minutesBefore: null }, events: {} }));
@@ -59,7 +61,7 @@ async function slotPoint(page: Page, date: string, minute: number, dayMinutes = 
 for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
   for (const fold of [0, 1]) test(`DST create fold ${fold} ${theme} ${width} quick/full preserves UTC`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.addInitScript(value => localStorage.setItem("musubi-theme", value), theme);
+    await setTestTheme(page, theme);
     const writes = await fixture(page);
     await page.goto(`/app/p/${pageID}/day?date=2026-10-25`);
     const point = await slotPoint(page, "2026-10-25", 150 + fold * 60);

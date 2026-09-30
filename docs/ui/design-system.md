@@ -19,7 +19,7 @@ orientation and meaningful emphasis, and calm geometry without extra decoration.
 The design evolves rather than resets: preserve the recognizable character and
 make hierarchy, rhythm, states, and consistency more precise. Storybook is the
 review surface for variants and the catalog of components that are actually
-implemented; `ui-catalog/` captures complete screen and layer baselines.
+implemented, including screen and layer compositions.
 
 ### Guide by design, not by text
 
@@ -192,16 +192,14 @@ insets belong to the outermost region.
 
 `SettingsSection` is the canonical scan unit for related preferences. Its title
 and group edge follow the layer axis (24 px regular, 20 px touch), the title sits
-8 px above the group, and separate sections use the 32 px section break. The
+12 px above the group, and separate sections use the 32 px section break. The
 group uses the panel surface, a subtle border, and the 14 px shared radius with
 no gradient or shadow. Rows retain their own 16 px component inset inside that
 edge; this is nested component rhythm, not a competing layer axis.
 
-Inside an already padded parent such as the default `Dialog` body, use
-`SettingsSection inset={false}`. This removes only the section's outer padding;
-the parent supplies spacing between sections, while headings, group surfaces,
-and the rows' own insets retain their normal styling. The default remains inset
-for sections inside flush layers.
+The parent `DialogBody` supplies the outer inset; `SettingsSection` adds no
+outer padding. Structured settings fill the available body width, and the
+parent supplies spacing between sections.
 
 Only repeated rows receive dividers. The group clips its surface and dividers,
 while row focus rings draw inward so keyboard focus is never hidden by the

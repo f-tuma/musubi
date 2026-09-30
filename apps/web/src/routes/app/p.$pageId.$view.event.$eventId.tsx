@@ -182,7 +182,8 @@ function EditEventRoute() {
           <DialogContent
             closeLabel="Close event editor"
             initialFocus={titleRef}
-            side="right"
+            size="wide"
+            tall
             {...(event?.recurrence && editable ? {} : { "aria-describedby": undefined })}
           >
             <DialogHeader>
@@ -213,7 +214,7 @@ function EditEventRoute() {
                     calendars={calendars}
                     localAccountName={user?.name || user?.email}
                     initialValues={draftValues ?? eventFormValues(event)}
-                    layout="panel"
+                    layout="page"
                     onCancel={requestBack}
                     onError={(error) =>
                         getEventMutationError(

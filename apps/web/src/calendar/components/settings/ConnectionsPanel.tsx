@@ -9,18 +9,15 @@ import { useFederatedWorkspace } from "~/calendar/federated-workspace";
 import { ProviderGlyph } from "~/components/provider-glyph";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { Checkbox } from "~/components/ui/checkbox";
-import { HelpTooltip } from "~/components/ui/help-tooltip";
 import { InlineError } from "~/components/ui/inline-error";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "~/components/ui/input-group";
 import { ItemGroup } from "~/components/ui/item";
-import { Row, RowAction } from "~/components/ui/row";
+import { Row } from "~/components/ui/row";
 import { SectionLabel } from "~/components/ui/section-label";
 import { SettingsSection } from "~/components/ui/settings-section";
 import { useAsyncAction } from "~/lib/use-async-action";
 import { AvailabilitySection } from "../AvailabilitySection";
 import { CalendarDot } from "../CalendarDot";
-import { EventDeliveryInboxDialog } from "../EventDeliveryInboxDialog";
 import { AccountMark, ProviderIcon } from "../ProviderIcon";
 import { APPLE_CALDAV_URL, CaldavDialog, type CaldavDraft } from "./CaldavDialog";
 import { Hint } from "./hint";
@@ -74,7 +71,6 @@ function connectedAccounts(calendars: Calendar[]): ConnectedAccount[] {
 
 /** Outside calendars: accounts, how to add one, and shared calendars by link. */
 export function ConnectionsPanel({ calendars, importFailed, importing, onNotice, userId }: ConnectionsPanelProps) {
-  const [deliveryTrigger, setDeliveryTrigger] = useState<HTMLElement | null>(null);
   const connections = useConnections(userId);
   const federated = useFederatedWorkspace(userId);
   const { busy: actionBusy, error, run, setError } = useAsyncAction();
@@ -83,13 +79,10 @@ export function ConnectionsPanel({ calendars, importFailed, importing, onNotice,
   const busy = actionBusy || connections.refreshing;
   const inviteInputRef = useRef<HTMLInputElement>(null);
   const [caldav, setCaldav] = useState<{ draft: CaldavDraft; trigger: HTMLElement }>();
-  // Preserve the existing full-consent default; calendar-only is an explicit choice.
-  const [includeTasks, setIncludeTasks] = useState(true);
   const [inviteValue, setInviteValue] = useState("");
   const [invite, setInvite] = useState<{ parsed: ParsedInvite; preview: InvitePreviewData }>();
 
   const providers = connections.capabilities.data?.syncProviders ?? [];
-  const social = providers.includes("google") || providers.includes("microsoft");
   const accounts = connectedAccounts(calendars);
   const federatedServers = federated.data?.servers ?? [];
 
@@ -104,7 +97,7 @@ export function ConnectionsPanel({ calendars, importFailed, importing, onNotice,
       const result = await authClient.linkSocial({
         callbackURL: window.location.href,
         provider,
-        scopes: providerConnectionScopes(provider, includeTasks, connections.capabilities.data?.googleAvailability),
+        scopes: providerConnectionScopes(provider, connections.capabilities.data?.googleAvailability),
       });
       if (result?.error) throw new Error(result.error.message);
     }, "Could not start the connection.");
@@ -396,19 +389,6 @@ export function ConnectionsPanel({ calendars, importFailed, importing, onNotice,
                 </>
               ) : null}
             </div>
-            {social ? (
-              <div className="flex items-center gap-1">
-                <Checkbox
-                  checked={includeTasks}
-                  disabled={busy}
-                  label="Include Tasks"
-                  onChange={(event) => setIncludeTasks(event.target.checked)}
-                />
-                <HelpTooltip label="About Tasks access">
-                  For Google and Outlook. When off, no Tasks permission is requested; access granted earlier stays.
-                </HelpTooltip>
-              </div>
-            ) : null}
           </div>
         ) : (
           <p className="text-13 text-muted-foreground">This server offers no outside connections.</p>
@@ -449,19 +429,6 @@ export function ConnectionsPanel({ calendars, importFailed, importing, onNotice,
         )}
         {error && errorArea === "invite" ? <InlineError>{error}</InlineError> : null}
       </SettingsSection>
-
-      <SettingsSection title="Sync activity">
-        <RowAction label="Unfinished deliveries" onClick={(event) => setDeliveryTrigger(event.currentTarget)} />
-      </SettingsSection>
-
-      {deliveryTrigger ? (
-        <EventDeliveryInboxDialog
-          key={userId}
-          returnFocus={deliveryTrigger}
-          userId={userId}
-          onClose={() => setDeliveryTrigger(null)}
-        />
-      ) : null}
 
       {caldav ? (
         <CaldavDialog

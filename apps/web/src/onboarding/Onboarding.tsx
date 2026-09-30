@@ -12,7 +12,6 @@ import { ThemeToggle } from "~/calendar/components/ThemeToggle";
 import { AuthMessage, AuthShell, StepDots } from "~/components/auth-shell";
 import { ProviderGlyph } from "~/components/provider-glyph";
 import { Button } from "~/components/ui/button";
-import { Checkbox } from "~/components/ui/checkbox";
 import { Field } from "~/components/ui/field";
 import { HelpTooltip } from "~/components/ui/help-tooltip";
 import { Input } from "~/components/ui/input";
@@ -56,7 +55,6 @@ export function Onboarding({
   const [name, setName] = useState(userName);
   const [calendarName, setCalendarName] = useState(personal?.name ?? "Personal");
   const [color, setColor] = useState(personal?.color ?? "#C8553D");
-  const [includeTasks, setIncludeTasks] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -104,7 +102,7 @@ export function Onboarding({
       const result = await authClient.linkSocial({
         callbackURL: window.location.href,
         provider,
-        scopes: providerConnectionScopes(provider, includeTasks, capabilities.data?.googleAvailability),
+        scopes: providerConnectionScopes(provider, capabilities.data?.googleAvailability),
       });
       if (result?.error) throw new Error(result.error.message);
     }, "Could not start the connection.");
@@ -194,19 +192,6 @@ export function Onboarding({
               </Button>
             ) : null}
             <div className="flex items-center justify-between gap-2">
-              {canConnect ? (
-                <div className="flex items-center gap-1">
-                  <Checkbox
-                    checked={includeTasks}
-                    disabled={busy}
-                    label="Include Tasks"
-                    onChange={(event) => setIncludeTasks(event.target.checked)}
-                  />
-                  <HelpTooltip label="About Tasks access">
-                    When off, no Tasks permission is requested. Access granted earlier is not revoked.
-                  </HelpTooltip>
-                </div>
-              ) : null}
               <div className="ml-auto flex items-center gap-1 text-12 text-muted-foreground">
                 More providers
                 <HelpTooltip label="About other calendar providers">

@@ -20,24 +20,20 @@ function mount(element: ReactElement) {
   return render(<QueryClientProvider client={client}><TooltipProvider>{element}</TooltipProvider></QueryClientProvider>);
 }
 
-it.each([["google", false], ["microsoft", false], ["google", true], ["microsoft", true]] as const)("ConnectionsPanel sends explicit optional Tasks choice to %s; reconnect=%s", async (provider, reconnect) => {
+it.each([["google", false], ["microsoft", false], ["google", true], ["microsoft", true]] as const)("ConnectionsPanel always includes Tasks access to %s; reconnect=%s", async (provider, reconnect) => {
   mount(<ConnectionsPanel calendars={reconnect ? [{ id: "tasks", name: "Tasks", color: "#7A8BA3", creatorID: "owner", role: "owner", members: [], accountId: "account", provider, supportsTasks: true, supportsEvents: false, syncStatus: "reconnect_required" }] : []} onNotice={vi.fn()} userId="owner" />);
-  const taskToggle = screen.getByRole("checkbox", { name: "Include Tasks" }) as HTMLInputElement;
-  expect(taskToggle.checked).toBe(true);
+  expect(screen.queryByRole("checkbox", { name: "Include Tasks" })).toBeNull();
   const button = screen.getByRole("button", { name: reconnect ? "Reconnect" : provider === "google" ? "Google Calendar" : "Outlook" });
   const tasks = provider === "google" ? "https://www.googleapis.com/auth/tasks" : "Tasks.ReadWrite";
-  for (const includeTasks of [true, false]) {
-    if (!includeTasks) fireEvent.click(taskToggle);
-    fireEvent.click(button);
-    await waitFor(() => expect(linkSocial).toHaveBeenCalledTimes(includeTasks ? 1 : 2));
-    const options = linkSocial.mock.lastCall![0];
-    expect(options.provider).toBe(provider);
-    expect(options.callbackURL).toBe(window.location.href);
-    expect(options.scopes.includes(tasks)).toBe(includeTasks);
-    expect(options.scopes).toContain(provider === "google" ? "https://www.googleapis.com/auth/calendar.events" : "Calendars.ReadWrite");
-    expect(window.sessionStorage.getItem("musubi:linking-provider")).toBe(provider);
-    await waitFor(() => expect(button.hasAttribute("disabled")).toBe(false));
-  }
+  fireEvent.click(button);
+  await waitFor(() => expect(linkSocial).toHaveBeenCalledTimes(1));
+  const options = linkSocial.mock.lastCall![0];
+  expect(options.provider).toBe(provider);
+  expect(options.callbackURL).toBe(window.location.href);
+  expect(options.scopes.includes(tasks)).toBe(true);
+  expect(options.scopes).toContain(provider === "google" ? "https://www.googleapis.com/auth/calendar.events" : "Calendars.ReadWrite");
+  expect(window.sessionStorage.getItem("musubi:linking-provider")).toBe(provider);
+  await waitFor(() => expect(button.hasAttribute("disabled")).toBe(false));
 });
 
 it("refresh remains reachable without event mirrors and reports a failed discovery", async () => {

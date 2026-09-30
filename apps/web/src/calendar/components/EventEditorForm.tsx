@@ -399,6 +399,7 @@ export function EventEditorForm({
 			)}>
 				<Field className={cn(pageLayout && "md:col-span-3")} label="Event title" labelHidden>
 					<Input
+						variant="title"
 						autoFocus
 						disabled={saving}
 						placeholder="Event title"

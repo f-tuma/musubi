@@ -44,7 +44,7 @@ does not explain them.
 | Feature compositions | `apps/web/src/calendar/components`, `routes`, `onboarding` |
 | Class merging | `cn` from `~/lib/utils` (shadcn `cn`, taught Musubi's theme) |
 | Component catalog | colocated `*.stories.tsx` |
-| Screen baselines | `ui-catalog/light`, `ui-catalog/dark` |
+| Screen and layer review | colocated Storybook stories, light and dark themes |
 
 Never edit generated files in `packages/design-system`; edit the TypeScript
 and regenerate.
@@ -177,5 +177,6 @@ pnpm --filter @musubi/web test
 pnpm storybook:web:test   # when a component or story changed
 ```
 
-Run the relevant Playwright scenario for a changed flow. Update `ui-catalog`
-only when the baseline change is approved.
+Run the relevant Playwright scenario for a changed flow. Review components,
+screens and layers in Storybook; approve substantial visual changes before
+production use.

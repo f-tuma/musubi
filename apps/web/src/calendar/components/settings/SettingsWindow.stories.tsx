@@ -116,6 +116,7 @@ type Story = StoryObj<typeof meta>;
 async function settingsWindow() {
   const dialog = await screen.findByRole("dialog", { name: "Settings" });
   await waitFor(() => expect(dialog).toBeVisible());
+  await Promise.all(dialog.getAnimations({ subtree: true }).map(animation => animation.finished));
   return within(dialog);
 }
 
@@ -124,6 +125,13 @@ export const General: Story = {
     const dialog = await settingsWindow();
     await dialog.findByRole("radiogroup", { name: "Theme" });
     expect(dialog.getByRole("heading", { name: "Date & time" })).toBeVisible();
+    const theme = dialog.getByRole("radiogroup", { name: "Theme" });
+    const panel = theme.closest<HTMLElement>("[data-settings-panel]")!;
+    const body = panel.parentElement!;
+    const bounds = body.getBoundingClientRect();
+    const insets = getComputedStyle(body);
+    expect(panel.getBoundingClientRect().right).toBeCloseTo(bounds.right - parseFloat(insets.paddingRight), 0);
+    expect(panel.getBoundingClientRect().left).toBeCloseTo(bounds.left + parseFloat(insets.paddingLeft), 0);
   },
 };
 
@@ -133,6 +141,11 @@ export const Calendars: Story = {
     const dialog = await settingsWindow();
     expect(dialog.getByRole("region", { name: "work@example.com" })).toBeVisible();
     expect(dialog.getByRole("button", { name: "Settings for Studio" })).toBeVisible();
+    const firstCalendar = dialog.getByRole("button", { name: "Settings for Personal" });
+    for (const name of ["New calendar", "Import .ics", "Export .ics"]) {
+      expect(dialog.getByRole("button", { name }).getBoundingClientRect().bottom)
+        .toBeLessThan(firstCalendar.getBoundingClientRect().top);
+    }
     // Taking a calendar away lives in its own settings, not loose in the list.
     expect(dialog.queryByRole("button", { name: "Stop syncing Studio" })).toBeNull();
   },
@@ -155,8 +168,13 @@ export const NewCalendar: Story = {
     const dialog = await settingsWindow();
     await userEvent.click(dialog.getByRole("button", { name: "New calendar" }));
     const create = await screen.findByRole("dialog", { name: "New calendar" });
+    await waitFor(() => expect(create).toBeVisible());
+    await Promise.all(create.getAnimations({ subtree: true }).map(animation => animation.finished));
     await userEvent.click(within(create).getByRole("combobox", { name: "Account" }));
     await waitFor(() => expect(screen.getByRole("option", { name: /work@example\.com/ })).toBeVisible());
+    await userEvent.click(screen.getByRole("option", { name: /work@example\.com/ }));
+    await waitFor(() => expect(within(create).getByRole("combobox", { name: "Account" })).toHaveFocus());
+    expect(within(create).getByRole("combobox", { name: "Account" })).toHaveTextContent("work@example.com");
   },
 };
 
@@ -167,6 +185,7 @@ export const Connections: Story = {
     expect(dialog.getByRole("button", { name: "Google Calendar" })).toBeVisible();
     expect(dialog.getByRole("textbox", { name: "Invite link" })).toBeVisible();
     expect(dialog.getByText("Needs attention")).toBeVisible();
+    expect(dialog.queryByRole("checkbox", { name: "Include Tasks" })).toBeNull();
   },
 };
 

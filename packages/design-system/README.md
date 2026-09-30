@@ -75,12 +75,12 @@ Measured against Penpot 2.x through its plugin API, not assumed:
 
 Two things deliberately do not travel:
 
-- **`shadowOverlay`** is a whole CSS shadow — offsets, blur and a colour — not a
-  colour, so it stays here.
+- **`shadowRaised` and `shadowOverlay`** combine offsets, blur and colour;
+  they stay here because they cannot be exported as colour tokens.
 - **Components and screens.** A design tool can redraw a dialog, but nothing
-  keeps the drawing and the code in step afterwards. `ui-catalog/` holds a
-  screenshot of every screen and layer in both themes for looking at; the code is
-  where they are built.
+  keeps the drawing and the code in step afterwards. Storybook shows the
+  implemented components, screens and layers in both themes; the stories use
+  production components.
 
 ## Contrast is checked, not asserted
 

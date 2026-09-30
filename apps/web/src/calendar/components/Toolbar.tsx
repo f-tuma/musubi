@@ -22,6 +22,7 @@ import { offeredViews, type CalendarViewId } from "../view-registry";
 import { CalendarCoverageInfo } from "./CalendarCoverageInfo";
 
 type ToolbarProps = {
+  notifications?: ReactNode;
   taskLayoutControl?: ReactNode;
   availability?: { shown: boolean; onToggle: () => void; onOpenList: (target: HTMLElement | null) => void };
   activeView: CalendarViewId;
@@ -46,6 +47,7 @@ type ToolbarProps = {
 };
 
 export function Toolbar({
+  notifications,
   taskLayoutControl,
   availability,
   activeView,
@@ -140,9 +142,9 @@ export function Toolbar({
         </div>
 
         {/* Exactly one view choice is on screen: pills where they fit, a
-            select where they do not. From 1024 px the pills always win. */}
+            select where the inspector leaves too little room for them. */}
         <Select
-          className="hidden max-md:@max-wide:inline-flex"
+          className="hidden max-md:@max-wide:inline-flex md:@max-compact:inline-flex"
           label="Calendar view"
           options={viewOptions}
           size="compact"
@@ -151,6 +153,7 @@ export function Toolbar({
         />
 
         <div className="ml-auto flex min-w-0 flex-none items-center justify-end gap-2 md:@max-default:ml-0 md:@max-default:flex-wrap md:@max-default:justify-start">
+          {notifications}
           {coverageNotice ? <CalendarCoverageInfo message={coverageNotice} /> : null}
           {availability ? (
             <Popover open={availabilityOpen} onOpenChange={setAvailabilityOpen}>
@@ -210,7 +213,7 @@ export function Toolbar({
             <Search aria-hidden="true" strokeWidth={1.6} />
           </Button>
           <Segmented<CalendarViewId>
-            className="hidden flex-none md:inline-flex @min-wide:inline-flex md:@max-default:max-w-full"
+            className="hidden flex-none md:inline-flex @min-wide:inline-flex md:@max-default:max-w-full md:@max-compact:hidden"
             label="Calendar view"
             options={viewOptions}
             value={activeView}

@@ -96,6 +96,7 @@ import { SettingsWindow, type SettingsSectionId } from "./settings/SettingsWindo
 import { TimeGridView } from "./TimeGridView";
 import { TaskList } from "./TaskList";
 import { Toolbar } from "./Toolbar";
+import { ApplicationNotifications } from "~/notifications/ApplicationNotifications";
 
 const TOAST_ACKNOWLEDGEMENT_MS = 3_500;
 const TOAST_UNDO_MS = 9_000;
@@ -111,6 +112,7 @@ type WorkspaceProps = {
   /** Whether this signed-in account may write announcements on this server. */
   isAdmin?: boolean;
   isRefreshing: boolean;
+  onRefreshServer?: () => Promise<void>;
   /**
    * The server could not be reached, so what is on screen came from the local
    * snapshot. `snapshotAt` is when that snapshot was written.
@@ -293,6 +295,7 @@ export function Workspace({
   events,
   isAdmin = false,
   isRefreshing,
+  onRefreshServer,
   newerServer,
   offline = false,
   snapshotAt,
@@ -386,6 +389,22 @@ export function Workspace({
       }),
     [],
   );
+
+  const [refreshingServer, setRefreshingServer] = useState(false);
+  const refreshInFlight = useRef(false);
+  async function handleRefreshServer() {
+    if (!onRefreshServer || refreshInFlight.current) return;
+    refreshInFlight.current = true;
+    setRefreshingServer(true);
+    try {
+      await onRefreshServer();
+    } catch {
+      notify("The server could not be refreshed.", { tone: "error" });
+    } finally {
+      refreshInFlight.current = false;
+      setRefreshingServer(false);
+    }
+  }
 
   async function runUndo(undo: NonNullable<typeof notice>["undo"]) {
     // Take the offer away first: the toast is gone either way, and a second
@@ -1009,6 +1028,8 @@ export function Workspace({
           })
         }
         onSignOut={onSignOut}
+        onRefreshServer={onRefreshServer ? handleRefreshServer : undefined}
+        refreshingServer={refreshingServer}
         returnFocusRef={sidebarTriggerRef}
         /* Short enough to fit the sidebar's slot on one line. The snapshot's age
            only appears while offline: that is the case where how old the data is
@@ -1020,14 +1041,14 @@ export function Workspace({
               : "Offline — server unreachable"
             : stale
               ? "Refreshing saved data…"
-              : isRefreshing
+              : isRefreshing || refreshingServer
                 ? "Refreshing…"
                 : "Connected to server"
         }
         syncTone={
           offline
             ? "offline"
-            : stale || isRefreshing
+            : stale || isRefreshing || refreshingServer
               ? "refreshing"
               : "connected"
         }
@@ -1056,6 +1077,15 @@ export function Workspace({
           <UpdateBanner onReload={newerServer.reload} />
         ) : null}
         <Toolbar
+          notifications={<ApplicationNotifications
+            userId={user.id}
+            calendars={calendars}
+            events={searchAccount?.data?.events ?? baseEvents ?? events}
+            offline={offline}
+            timeFormat={settings.timeFormat}
+            onOpenConnections={returnFocus => openSettings("connections", returnFocus)}
+            onEditEvent={onOpenFullEditor ? event => onOpenFullEditor(eventFormValues(event), event) : undefined}
+          />}
           taskLayoutControl={activeView === "tasks" ? <TaskLayoutSwitch value={taskLayout ?? localTaskLayout} onChange={next => { setLocalTaskLayout(next); onTaskLayoutChange?.(next); }} /> : undefined}
           activeView={activeView}
           availability={gridAvailability.available ? { shown: gridAvailability.shown, onToggle: gridAvailability.toggle, onOpenList: target => openSettings("connections", target) } : undefined}

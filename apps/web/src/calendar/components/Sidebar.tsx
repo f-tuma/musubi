@@ -79,6 +79,8 @@ type SidebarProps = {
   /** The full page order after a move, which is what the endpoint takes. */
   onReorderPages: (pageIds: string[]) => Promise<unknown> | void;
   onSignOut: () => void;
+  onRefreshServer?: () => void;
+  refreshingServer?: boolean;
   pages: PageDocument[];
   returnFocusRef?: RefObject<HTMLButtonElement | null>;
   syncLabel: string;
@@ -104,6 +106,8 @@ export function Sidebar({
   onPageChange,
   onReorderPages,
   onSignOut,
+  onRefreshServer,
+  refreshingServer = false,
   pages,
   returnFocusRef,
   syncLabel,
@@ -111,6 +115,14 @@ export function Sidebar({
   user,
   weekStartsOn,
 }: SidebarProps) {
+  const refreshButtonRef = useRef<HTMLButtonElement>(null);
+  const restoreRefreshFocus = useRef(false);
+  useEffect(() => {
+    if (refreshingServer || !restoreRefreshFocus.current) return;
+    restoreRefreshFocus.current = false;
+    if (document.activeElement === document.body) refreshButtonRef.current?.focus();
+  }, [refreshingServer]);
+
   const [signingOut, setSigningOut] = useState(false);
   const manageAccountAfterClose = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -400,9 +412,10 @@ export function Sidebar({
               than the app's announcement channel — the toast owns that role, and
               two of them make "the status" ambiguous for readers and tests
               alike. Changes still get announced. */}
+          <div className="ml-2.5 flex items-center gap-2">
           <p
             aria-live="polite"
-            className="mx-2.5 flex min-h-5 items-center gap-2 text-11 text-muted-foreground data-[tone=offline]:text-shu [&>svg]:size-3.5 [&>svg]:flex-none"
+            className="flex min-h-5 min-w-0 flex-1 items-center gap-2 text-11 text-muted-foreground data-[tone=offline]:text-shu [&>svg]:size-3.5 [&>svg]:flex-none"
             data-tone={syncTone}
             title={syncLabel}
           >
@@ -415,6 +428,8 @@ export function Sidebar({
             )}
             <span className="min-w-0 truncate">{syncLabel}</span>
           </p>
+          {onRefreshServer && <Button variant="ghost" size="icon-compact" aria-label="Refresh from server" title="Refresh from server" ref={refreshButtonRef} loading={refreshingServer} onClick={() => { restoreRefreshFocus.current = document.activeElement === refreshButtonRef.current; onRefreshServer(); }}><RefreshCw aria-hidden="true" /></Button>}
+          </div>
           <div className="min-w-0 border-t border-border-subtle pt-2">
             <Menu>
               <SidebarRow>
