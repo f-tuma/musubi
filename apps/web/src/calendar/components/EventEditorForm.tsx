@@ -391,7 +391,7 @@ export function EventEditorForm({
 			onKeyDown={handleKeyDown}
 			onSubmit={handleSubmit}
 		>
-			<div className={cn(
+			<div data-editor-body="" className={cn(
 				"flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto overscroll-contain px-6 pt-1 pb-5",
 				pageLayout && "md:grid md:grid-cols-3 md:content-start md:gap-x-8",
 			)}>

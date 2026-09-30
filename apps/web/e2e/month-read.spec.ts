@@ -1376,7 +1376,7 @@ test("scrolls a long calendar list inside the creation Inspector", async ({ page
 	});
 	await expect(calendarList).toBeVisible();
 	// The form owns the scroller; calendar choices must not introduce another.
-	const body = page.getByRole("dialog", { name: "Create event", exact: true }).locator('[class*="formBody"]');
+	const body = page.getByRole("dialog", { name: "Create event", exact: true }).locator('[data-editor-body]');
 	const lastChoice = calendarList.getByRole("radio", { name: "Project calendar 12 as home calendar" });
 	await lastChoice.scrollIntoViewIfNeeded();
 	await expect(lastChoice).toBeInViewport();
@@ -2051,7 +2051,7 @@ test("keeps the event preview open while its text is being selected", async ({
 		.getByRole("button", { name: /Design review/ })
 		.first()
 		.click();
-	const preview = page.locator('[class*="detailPopover"]');
+	const preview = page.locator('[data-event-preview]');
 	await expect(preview).toBeVisible();
 	await preview.evaluate((el) =>
 		Promise.all(el.getAnimations().map((animation) => animation.finished)),
@@ -5420,7 +5420,7 @@ test("scrolls the calendar and event form with hidden scrollbar chrome", async (
   await expect.poll(() => calendar.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
   await openCreateEvent(page);
   const panel = page.getByRole("dialog", { name: "Create event", exact: true });
-  const body = panel.locator('[class*="formBody"]');
+  const body = panel.locator('[data-editor-body]');
   await expect.poll(() => body.evaluate(element => getComputedStyle(element).scrollbarWidth)).toBe("none");
   await body.hover();
   await page.mouse.wheel(0, 600);

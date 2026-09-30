@@ -646,6 +646,7 @@ function CalendarEventDetailsPopover({
 					{children}
 				</PopoverTrigger>
 				<PopoverContent
+					data-event-preview=""
 					aria-labelledby={titleId}
 					accessibleTitle={editing ? "Edit event" : event.title}
 					persistent={editing}
