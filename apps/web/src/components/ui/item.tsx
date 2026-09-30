@@ -25,7 +25,7 @@ function ItemGroup({ className, ...props }: React.ComponentProps<"div">) {
  * the same slots, so lists line up wherever they appear.
  */
 const itemVariants = cva(
-  "group/item flex w-full min-w-0 items-center gap-3 border-0 bg-transparent text-left text-foreground-secondary",
+  "group/item flex w-full min-w-0 items-center gap-3 bg-transparent text-left text-foreground-secondary",
   {
     variants: {
       size: {

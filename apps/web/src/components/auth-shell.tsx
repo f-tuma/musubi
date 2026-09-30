@@ -27,7 +27,7 @@ type AuthShellProps = {
  */
 export function AuthShell({ aside, children, footer, introduction, progress, title, utility }: AuthShellProps) {
   return (
-    <main id="main-content" tabIndex={-1} className="relative isolate flex min-h-dvh flex-col overflow-hidden bg-canvas outline-none">
+    <main id="main-content" tabIndex={-1} className="relative isolate flex min-h-dvh w-full flex-col overflow-hidden bg-canvas outline-none">
       <PageAmbient />
       <header className="flex h-20 items-center justify-between px-6">
         <div aria-label="Musubi" className="flex items-center gap-2 text-10 tracking-wide text-foreground">

@@ -6,16 +6,19 @@ import "./preview.css";
 
 type ThemeFrameProps = {
   children: ReactNode;
+  fullscreen: boolean;
   theme: "dark" | "light";
 };
 
-function ThemeFrame({ children, theme }: ThemeFrameProps) {
+function ThemeFrame({ children, fullscreen, theme }: ThemeFrameProps) {
   useFocusMode();
 
   useLayoutEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
+  // Fullscreen stories are whole pages and own their own layout.
+  if (fullscreen) return <>{children}</>;
   return <div className="grid min-h-dvh place-items-center p-8">{children}</div>;
 }
 
@@ -23,7 +26,7 @@ const withMusubiTheme: Decorator = (Story, context) => {
   const theme = context.globals.theme === "dark" ? "dark" : "light";
 
   return (
-    <ThemeFrame theme={theme}>
+    <ThemeFrame fullscreen={context.parameters.layout === "fullscreen"} theme={theme}>
       <Story />
     </ThemeFrame>
   );

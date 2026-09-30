@@ -33,7 +33,7 @@ export function RouteState({
     <main
       aria-busy={busy || undefined}
       aria-labelledby={titleId}
-      className={cn("relative isolate grid min-h-dvh place-items-center overflow-hidden bg-canvas p-6 text-center outline-none sm:p-8", className)}
+      className={cn("relative isolate grid min-h-dvh w-full place-items-center overflow-hidden bg-canvas p-6 text-center outline-none sm:p-8", className)}
       id={id}
       tabIndex={-1}
       {...props}
