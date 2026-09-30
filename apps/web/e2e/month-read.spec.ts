@@ -698,7 +698,7 @@ test("redirects an anonymous Month request to sign in", async ({ page }) => {
 
 	await expect(page).toHaveURL(/\/login\?redirect=/);
 	await expect(
-		page.getByRole("heading", { name: "Pick up where you left off." }),
+		page.getByRole("heading", { name: "Sign in" }),
 	).toBeVisible();
 
 	await expectNoAccessibilityViolations(page);
@@ -737,7 +737,7 @@ test("keeps sign in clear and keyboard-usable on a narrow screen", async ({
 	await createAccount.focus();
 	await page.keyboard.press("Enter");
 	await expect(
-		page.getByRole("heading", { name: "Begin simply." }),
+		page.getByRole("heading", { name: "Create your account" }),
 	).toBeVisible();
 	await expect(page.getByRole("textbox", { name: "Name" })).toBeFocused();
 
@@ -755,7 +755,7 @@ test("renders an accessible route state for an unknown page", async ({
 
 	await expect(
 		page.getByRole("heading", {
-			name: "This page is not part of your workspace.",
+			name: "Page not found",
 		}),
 	).toBeVisible();
 	await expect(page.getByRole("link", { name: "Open Musubi" })).toBeVisible();
@@ -6557,7 +6557,7 @@ test("explains an unconfirmed address instead of blaming the passphrase", async 
 	// The passphrase was right. Saying "check your details" here sends someone to
 	// reset a password that works.
 	await expect(
-		page.getByRole("heading", { name: "Check your email." }),
+		page.getByRole("heading", { name: "Check your email" }),
 	).toBeVisible();
 	await expect(page.getByText("unconfirmed@example.com")).toBeVisible();
 	// And the form is gone: nothing typed here can move this forward.
@@ -6602,7 +6602,7 @@ test("says a new account is waiting on its confirmation link", async ({
 	// Redirecting instead would bounce off the session gate straight back to the
 	// login form, which reads as "it did not work".
 	await expect(
-		page.getByRole("heading", { name: "Check your email." }),
+		page.getByRole("heading", { name: "Check your email" }),
 	).toBeVisible();
 	await expect(page).toHaveURL(/\/login/);
 });
@@ -7840,7 +7840,7 @@ test("walks a new account through onboarding once", async ({ page }) => {
 	await page.getByRole("button", { exact: true, name: "Continue" }).click();
 
 	await expect(
-		page.getByRole("heading", { level: 1, name: /Anything to bring/ }),
+		page.getByRole("heading", { level: 1, name: "Bring your calendars" }),
 	).toBeVisible();
 	// Offered because this server advertises it, not because it was hard-coded.
 	await expect(
@@ -7852,7 +7852,7 @@ test("walks a new account through onboarding once", async ({ page }) => {
 			path: `${UI_SHOTS}/${UI_SHOTS_THEME}/29-app-onboarding-3-connect.png`,
 		});
 	}
-	await page.getByRole("button", { name: "Not now" }).click();
+	await page.getByRole("button", { name: "Skip for now" }).click();
 
 	// Through to the calendar, and the flag is set so it never asks again.
 	await expect(page.getByRole("grid").first()).toBeVisible();

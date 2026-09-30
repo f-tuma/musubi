@@ -7,7 +7,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./colors.css": "./src/colors.css",
-    "./foundations.css": "./src/foundations.css"
+    "./foundations.css": "./src/foundations.css",
+    "./tailwind.css": "./src/tailwind.css"
   },
   "scripts": {
     "check-tokens": "tsx scripts/check-tokens.ts",

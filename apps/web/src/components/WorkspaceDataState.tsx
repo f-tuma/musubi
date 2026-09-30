@@ -1,5 +1,5 @@
-import { Button } from "~/ui/Button";
-import { RouteState } from "~/ui/RouteState";
+import { RouteState } from "~/components/route-state";
+import { Button } from "~/components/ui/button";
 
 type WorkspaceDataStateProps = {
   detail: string;
@@ -9,23 +9,12 @@ type WorkspaceDataStateProps = {
   title: string;
 };
 
-export function WorkspaceDataState({
-  detail,
-  kind,
-  onRetry,
-  requestId,
-  title,
-}: WorkspaceDataStateProps) {
+export function WorkspaceDataState({ detail, kind, onRetry, requestId, title }: WorkspaceDataStateProps) {
   return (
     <RouteState
-      actions={
-        onRetry ? <Button onClick={onRetry}>Try again</Button> : undefined
-      }
+      actions={onRetry ? <Button onClick={onRetry}>Try again</Button> : undefined}
       busy={kind === "loading"}
       description={detail}
-      eyebrow={
-        kind === "loading" ? "Loading workspace" : "Calendar unavailable"
-      }
       requestId={requestId}
       title={title}
     />

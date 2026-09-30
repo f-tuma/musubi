@@ -1,8 +1,7 @@
 import type { Decorator, Preview } from "@storybook/tanstack-react";
 import { useLayoutEffect, type ReactNode } from "react";
 import { useFocusMode } from "../src/design/focus-mode";
-import "../src/design/tokens.css";
-import "../src/design/global.css";
+import "../src/design/app.css";
 import "./preview.css";
 
 type ThemeFrameProps = {

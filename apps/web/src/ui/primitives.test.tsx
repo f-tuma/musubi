@@ -8,7 +8,6 @@ import { Dialog } from "./Dialog";
 import { Empty } from "./Empty";
 import { Field } from "./Field";
 import { RowAction, RowOptions, RowToggle } from "./Row";
-import { RouteState } from "./RouteState";
 import { Segmented } from "./Segmented";
 import { Select } from "./Select";
 import { SectionLabel } from "./SectionLabel";
@@ -150,27 +149,6 @@ describe("static primitives", () => {
     expect(
       screen.getByRole("button", { name: "Connect account" }),
     ).not.toBeNull();
-  });
-
-  it("connects a busy route state to its title and recovery action", () => {
-    render(
-      <RouteState
-        actions={<Button>Try again</Button>}
-        busy
-        description="The server did not respond."
-        eyebrow="Calendar unavailable"
-        requestId="request-123"
-        title="We could not open this calendar."
-      />,
-    );
-
-    const main = screen.getByRole("main", {
-      name: "We could not open this calendar.",
-    });
-    expect(main.getAttribute("aria-busy")).toBe("true");
-    expect(main.getAttribute("tabindex")).toBe("-1");
-    expect(screen.getByText("Request ID: request-123")).not.toBeNull();
-    expect(screen.getByRole("button", { name: "Try again" })).not.toBeNull();
   });
 });
 

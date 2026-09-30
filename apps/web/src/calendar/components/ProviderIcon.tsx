@@ -2,7 +2,7 @@ import { CalendarDays, Cloud, CloudCog, Grid2X2 } from "lucide-react";
 import type { CSSProperties } from "react";
 import { BrandMark } from "~/components/BrandMark";
 import { classNames } from "~/ui/class-names";
-import { ProviderGlyph } from "~/ui/ProviderGlyph";
+import { ProviderGlyph } from "~/components/provider-glyph";
 import styles from "./styles/provider-icon.module.css";
 
 type ProviderIconProps = {

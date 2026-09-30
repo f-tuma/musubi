@@ -8,7 +8,6 @@ import { getServerCapabilities } from "~/api/resources";
 import { authClient } from "~/auth/auth-client";
 import { ThemeToggle } from "~/calendar/components/ThemeToggle";
 import {
-  AuthAsideLead,
   AuthForm,
   AuthHint,
   AuthMessage,
@@ -16,11 +15,12 @@ import {
   AuthShell,
   AuthSubmit,
   AuthSwitch,
-} from "~/ui/AuthShell";
-import { Button } from "~/ui/Button";
-import { ProviderGlyph } from "~/ui/ProviderGlyph";
-import { Field } from "~/ui/Field";
-import { RouteState } from "~/ui/RouteState";
+} from "~/components/auth-shell";
+import { ProviderGlyph } from "~/components/provider-glyph";
+import { RouteState } from "~/components/route-state";
+import { Button } from "~/components/ui/button";
+import { Field } from "~/components/ui/field";
+import { Input } from "~/components/ui/input";
 
 const loginSearchSchema = z.object({
   // Better Auth sends the browser back here when a provider round trip fails —
@@ -247,11 +247,7 @@ function LoginRoute() {
 
   if (session.data) {
     return (
-      <RouteState
-        busy
-        eyebrow="Signed in"
-        title="Opening your calendar…"
-      />
+      <RouteState busy title="Opening your calendar…" />
     );
   }
 
@@ -260,14 +256,13 @@ function LoginRoute() {
   if (awaitingConfirmation) {
     return (
       <AuthShell
-        eyebrow="One more step"
         footer={
           <AuthSwitch action="Back to sign in" onAction={switchMode}>
             Confirmed it already?
           </AuthSwitch>
         }
-        introduction={`This server asks you to confirm your address before signing in. We sent a link to ${awaitingConfirmation} — it expires in an hour.`}
-        title="Check your email."
+        introduction={`We sent a link to ${awaitingConfirmation}. It expires in an hour.`}
+        title="Check your email"
         utility={<ThemeToggle />}
       >
         <AuthSubmit
@@ -287,28 +282,22 @@ function LoginRoute() {
     <AuthShell
       aside={
         providers.length > 0 ? (
-          <>
-            <AuthAsideLead>
-              You can also continue with an account you already have.
-            </AuthAsideLead>
-            <AuthProviders>
-              {providers.map((provider) => (
-                <Button
-                  disabled={submitting}
-                  icon={<ProviderGlyph provider={provider.id} />}
-                  key={provider.id}
-                  onClick={() => continueWith(provider.id)}
-                  type="button"
-                  variant="secondary"
-                >
-                  {provider.label}
-                </Button>
-              ))}
-            </AuthProviders>
-          </>
+          <AuthProviders>
+            {providers.map((provider) => (
+              <Button
+                disabled={submitting}
+                key={provider.id}
+                onClick={() => continueWith(provider.id)}
+                type="button"
+                variant="secondary"
+              >
+                <ProviderGlyph provider={provider.id} />
+                {provider.label}
+              </Button>
+            ))}
+          </AuthProviders>
         ) : undefined
       }
-      eyebrow={signingUp ? "A new shared space" : "Welcome back"}
       footer={
         <AuthSwitch
           action={signingUp ? "Sign in" : "Create one"}
@@ -317,18 +306,13 @@ function LoginRoute() {
           {signingUp ? "Already have an account?" : "New to this server?"}
         </AuthSwitch>
       }
-      introduction={
-        signingUp
-          ? "Your name, email and a private passphrase. That is all."
-          : "Sign in to read the calendars held by this Musubi server."
-      }
-      title={signingUp ? "Begin simply." : "Pick up where you left off."}
+      title={signingUp ? "Create your account" : "Sign in"}
       utility={<ThemeToggle />}
     >
       <AuthForm onSubmit={handleSubmit} noValidate>
         {signingUp ? (
-          <Field label="Name" variant="plain">
-            <input
+          <Field label="Name">
+            <Input
               autoComplete="name"
               autoFocus
               name="name"
@@ -338,8 +322,8 @@ function LoginRoute() {
             />
           </Field>
         ) : null}
-        <Field label="Email" variant="plain">
-          <input
+        <Field label="Email">
+          <Input
             autoCapitalize="none"
             autoComplete="email"
             autoFocus={!signingUp}
@@ -351,8 +335,8 @@ function LoginRoute() {
             onChange={(event) => setEmail(event.target.value)}
           />
         </Field>
-        <Field label="Passphrase" variant="plain">
-          <input
+        <Field label="Passphrase">
+          <Input
             autoComplete={signingUp ? "new-password" : "current-password"}
             minLength={8}
             name="password"
@@ -364,24 +348,22 @@ function LoginRoute() {
         </Field>
         {signingUp ? null : resetSent ? (
           <AuthHint>
-            If that address has an account, a link to set a new passphrase is on
-            its way.
+            If that address has an account, a reset link is on its way.
           </AuthHint>
         ) : (
           <AuthHint>
             <Button
               disabled={submitting}
-              size="compact"
-              variant="ghost"
+              variant="link"
               onClick={() => void requestReset()}
             >
-              Forgotten your passphrase?
+              Forgot passphrase?
             </Button>
           </AuthHint>
         )}
         {signingUp ? (
-          <Field label="Confirm passphrase" variant="plain">
-            <input
+          <Field label="Confirm passphrase">
+            <Input
               autoComplete="new-password"
               minLength={8}
               name="confirm-password"

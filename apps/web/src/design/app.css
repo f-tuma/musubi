@@ -1,0 +1,22 @@
+/* The one stylesheet entry. Tailwind, Musubi's theme over it, then the runtime
+   tokens and the global base rules. Components style themselves with
+   utilities; the theme below is the only palette and scale they can reach. */
+@import "tailwindcss";
+@import "@musubi/design-system/tailwind.css";
+/* After the theme: it clears Tailwind's animations, and these are the enter
+   and exit ones the overlays use. */
+@import "tw-animate-css";
+@import "./tokens.css";
+@import "./global.css" layer(base);
+@import "./layers.css";
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    font-size: var(--text-15);
+    line-height: var(--leading-normal);
+  }
+}

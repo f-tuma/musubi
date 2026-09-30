@@ -1,16 +1,18 @@
-import { HelpTooltip } from "~/ui/HelpTooltip";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import type { CSSProperties } from "react";
 import { getServerOrigin, queryKeys } from "~/api/query-keys";
 import { getInvitePreview, joinCalendar } from "~/api/resources";
 import { authClient } from "~/auth/auth-client";
 import { useSessionUser } from "~/auth/use-session-user";
 import { ThemeToggle } from "~/calendar/components/ThemeToggle";
 import { toDateKey } from "~/calendar/date-key";
-import { AuthMessage, AuthShell, AuthSubmit, AuthSwitch } from "~/ui/AuthShell";
-import { Avatar } from "~/ui/Avatar";
-import { RouteState } from "~/ui/RouteState";
-import styles from "./invite.module.css";
+import { AuthMessage, AuthShell, AuthSubmit, AuthSwitch } from "~/components/auth-shell";
+import { RouteState } from "~/components/route-state";
+import { Avatar } from "~/components/ui/avatar";
+import { HelpTooltip } from "~/components/ui/help-tooltip";
+import { Item, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "~/components/ui/item";
+import { SectionLabel } from "~/components/ui/section-label";
 
 // Same shape the API's own invite page accepts, so a link that opens here is a
 // link that would have opened there.
@@ -59,9 +61,8 @@ function InviteRoute() {
   if (!valid) {
     return (
       <AuthShell
-        eyebrow="Invitation"
         introduction="Check that you copied the whole link, or ask for a new one."
-        title="That link is not an invitation."
+        title="That link is not an invitation"
         utility={<ThemeToggle />}
       >
         <AuthMessage>
@@ -73,19 +74,13 @@ function InviteRoute() {
 
   if (preview.isPending) {
     return (
-      <RouteState
-        busy
-        description="Reading who shared it and what is on it."
-        eyebrow="Invitation"
-        title="Opening the invitation…"
-      />
+      <RouteState busy title="Opening the invitation…" />
     );
   }
 
   if (preview.isError) {
     return (
       <AuthShell
-        eyebrow="Invitation"
         footer={
           <AuthSwitch action="Try again" onAction={() => void preview.refetch()}>
             Was that a hiccup?
@@ -93,8 +88,8 @@ function InviteRoute() {
         }
         // An invite is single-use and expires, so "gone" is the likeliest reason
         // and worth saying before blaming the network.
-        introduction="It may have already been used, or it has expired. Ask whoever shared the calendar for a fresh link."
-        title="This invitation is no longer open."
+        introduction="It was used or has expired. Ask for a fresh link."
+        title="This invitation is closed"
         utility={<ThemeToggle />}
       >
         <AuthMessage>{preview.error.message}</AuthMessage>
@@ -118,7 +113,6 @@ function InviteRoute() {
 
   return (
     <AuthShell
-      eyebrow="Invitation"
       footer={
         session.data ? (
           <AuthSwitch
@@ -131,7 +125,7 @@ function InviteRoute() {
               })
             }
           >
-            Rather decide later?
+            Decide later?
           </AuthSwitch>
         ) : (
           <AuthSwitch
@@ -143,7 +137,7 @@ function InviteRoute() {
               })
             }
           >
-            Already have an account on this server?
+            Have an account?
           </AuthSwitch>
         )
       }
@@ -155,55 +149,44 @@ function InviteRoute() {
       title={calendar.name}
       utility={<ThemeToggle />}
     >
-      <div className={styles.card}>
-        <div className={styles.identity}>
-          <span
-            aria-hidden="true"
-            className={styles.swatch}
-            style={{ background: calendar.color }}
-          />
-          <div>
-            <p className={styles.name}>{calendar.name}</p>
-            <p className={styles.detail}>
-              {calendar.members.length === 1
-                ? "1 person"
-                : `${calendar.members.length} people`}
-            </p>
-          </div>
-        </div>
-
+      <ItemGroup>
+        <Item>
+          <span aria-hidden="true" className="h-8 w-2 flex-none rounded-full bg-pigment" style={{ "--pigment": calendar.color } as CSSProperties} />
+          <ItemContent>
+            <ItemTitle>{calendar.name}</ItemTitle>
+            <ItemDescription>
+              {calendar.members.length === 1 ? "1 person" : `${calendar.members.length} people`}
+            </ItemDescription>
+          </ItemContent>
+        </Item>
         {calendar.members.length > 0 ? (
-          <ul aria-label="People on this calendar" className={styles.people}>
+          <ul aria-label="People on this calendar" className="grid gap-2 px-4 py-3">
             {calendar.members.slice(0, 6).map((member) => (
-              <li className={styles.person} key={member.id}>
+              <li className="flex min-w-0 items-center gap-2 text-13 text-foreground-secondary" key={member.id}>
                 <Avatar image={member.image} name={member.name} size="compact" />
-                <span>{member.name}</span>
+                <span className="truncate">{member.name}</span>
               </li>
             ))}
           </ul>
         ) : null}
-
-        {upcoming.length > 0 ? (
-          <div>
-            <p className={styles.sectionLabel}>Next up</p>
-            <ul className={styles.events}>
+        <div className="grid gap-2 px-4 py-3">
+          <SectionLabel level={2}>Next up</SectionLabel>
+          {upcoming.length > 0 ? (
+            <ul className="grid gap-1.5">
               {upcoming.slice(0, PREVIEW_EVENT_LIMIT).map((event) => (
-                <li key={event.id}>
-                  <span className={styles.eventDate}>
-                    {event.start.toLocaleDateString(undefined, {
-                      day: "numeric",
-                      month: "short",
-                    })}
+                <li className="flex min-w-0 gap-3 text-13" key={event.id}>
+                  <span className="w-12 flex-none text-muted-foreground tabular-nums">
+                    {event.start.toLocaleDateString(undefined, { day: "numeric", month: "short" })}
                   </span>
-                  <span className={styles.eventTitle}>{event.title}</span>
+                  <span className="truncate text-foreground">{event.title}</span>
                 </li>
               ))}
             </ul>
-          </div>
-        ) : (
-          <p className={styles.detail}>Nothing scheduled in the next month.</p>
-        )}
-      </div>
+          ) : (
+            <p className="text-13 text-muted-foreground">Nothing in the next month.</p>
+          )}
+        </div>
+      </ItemGroup>
 
       {session.data ? (
         <>
@@ -236,9 +219,8 @@ function InviteRoute() {
           >
             Create an account to join
           </AuthSubmit>
-          {/* A note, not a failure — AuthMessage is the error colour. */}
-          <div className={styles.hint}>
-            Using another Musubi server
+          <div className="-mt-2 flex items-center justify-center gap-1 text-12 text-muted-foreground">
+            On another Musubi server?
             <HelpTooltip label="About joining from another server">
               Paste this link into Connections on your Musubi server, and the
               calendar joins your own account instead.

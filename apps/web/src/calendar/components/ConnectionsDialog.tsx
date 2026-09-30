@@ -39,7 +39,7 @@ import { Row } from "~/ui/Row";
 import { SectionLabel } from "~/ui/SectionLabel";
 import { SettingsSection } from "~/ui/SettingsSection";
 import { useAsyncAction } from "~/ui/useAsyncAction";
-import { ProviderGlyph } from "~/ui/ProviderGlyph";
+import { ProviderGlyph } from "~/components/provider-glyph";
 import { EventDeliveryInboxDialog } from "./EventDeliveryInboxDialog";
 import { AccountMark, ProviderIcon } from "./ProviderIcon";
 import styles from "./styles/connections.module.css";

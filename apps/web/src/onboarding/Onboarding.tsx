@@ -1,4 +1,3 @@
-import { HelpTooltip } from "~/ui/HelpTooltip";
 import type { Calendar, SettingsDocument } from "@musubi/types";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -10,39 +9,16 @@ import {
   rememberProviderLink,
 } from "~/calendar/connections";
 import { ThemeToggle } from "~/calendar/components/ThemeToggle";
-import { AuthShell } from "~/ui/AuthShell";
-import { Button } from "~/ui/Button";
-import { Checkbox } from "~/ui/Checkbox";
+import { AuthMessage, AuthShell, StepDots } from "~/components/auth-shell";
+import { ProviderGlyph } from "~/components/provider-glyph";
+import { Button } from "~/components/ui/button";
+import { Checkbox } from "~/components/ui/checkbox";
+import { Field } from "~/components/ui/field";
+import { HelpTooltip } from "~/components/ui/help-tooltip";
+import { Input } from "~/components/ui/input";
 import { ColorPicker } from "~/ui/ColorPicker";
-import { Field } from "~/ui/Field";
-import { ProviderGlyph } from "~/ui/ProviderGlyph";
-import styles from "./onboarding.module.css";
 
 const STEPS = 3;
-
-/**
- * Three marks, the current one lit.
- *
- * `role="img"` with a label: the dots are a picture of the progress, and a
- * screen reader needs the sentence they replaced, not three empty spans.
- */
-function StepDots({ step }: { step: number }) {
-  return (
-    <span
-      aria-label={`Step ${step} of ${STEPS}`}
-      className={styles.dots}
-      role="img"
-    >
-      {Array.from({ length: STEPS }, (_, index) => (
-        <span
-          aria-hidden="true"
-          data-current={index + 1 === step ? "" : undefined}
-          key={index}
-        />
-      ))}
-    </span>
-  );
-}
 
 /**
  * First run in the browser.
@@ -134,86 +110,65 @@ export function Onboarding({
     }, "Could not start the connection.");
   }
 
-  const primaryAction =
-    step < STEPS ? (
-      <Button
-        loading={busy}
-        onClick={() =>
-          void attempt(async () => {
-            if (step === 1) {
-              const trimmed = name.trim();
-              if (trimmed && trimmed !== userName) {
-                const result = await authClient.updateUser({ name: trimmed });
-                if (result?.error) throw new Error(result.error.message);
-              }
-            }
-            if (step === 2 && personal) {
-              const trimmed = calendarName.trim() || "Personal";
-              if (trimmed !== personal.name || color !== personal.color) {
-                await onUpdateCalendar({ ...personal, color, name: trimmed });
-              }
-            }
-            setStep(step + 1);
-          }, "That could not be saved. Try again.")
+  function next() {
+    void attempt(async () => {
+      if (step === 1) {
+        const trimmed = name.trim();
+        if (trimmed && trimmed !== userName) {
+          const result = await authClient.updateUser({ name: trimmed });
+          if (result?.error) throw new Error(result.error.message);
         }
-      >
-        Continue
-      </Button>
-    ) : (
-      <Button
-        loading={busy}
-        variant={providers.length > 0 ? "secondary" : "primary"}
-        onClick={() =>
-          void attempt(finish, "Could not finish setting up. Try again.")
+      }
+      if (step === 2 && personal) {
+        const trimmed = calendarName.trim() || "Personal";
+        if (trimmed !== personal.name || color !== personal.color) {
+          await onUpdateCalendar({ ...personal, color, name: trimmed });
         }
-      >
-        {providers.length > 0 ? "Not now" : "Open my calendar"}
-      </Button>
-    );
+      }
+      setStep(step + 1);
+    }, "That could not be saved. Try again.");
+  }
+
+  const canConnect = providers.includes("google") || providers.includes("microsoft");
 
   return (
     <AuthShell
-      eyebrow={<StepDots step={step} />}
-      layout="stacked"
-      introduction={
-        step === 1
-          ? "Two questions and you are in. Everything here can be changed later in settings."
-          : step === 2
-            ? "We already made you a personal calendar. Give it a name you recognise."
-            : "Bring in a calendar you already keep somewhere else, or leave it for later."
-      }
+      progress={<StepDots step={step} total={STEPS} />}
       title={
         step === 1
           ? "Welcome to Musubi"
           : step === 2
             ? "Your calendar"
-            : "Anything to bring with you?"
+            : "Bring your calendars"
       }
       utility={<ThemeToggle />}
     >
-      <div className={styles.step}>
-        {/* The step's one answer and the way onward share a line: a single
-            field with the button parked underneath reads as a form that lost
-            the rest of itself. */}
+      <form
+        className="flex min-h-64 flex-col gap-5"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (step < STEPS) next();
+          else void attempt(finish, "Could not finish setting up. Try again.");
+        }}
+      >
         {step === 1 ? (
-          <div className={styles.fieldRow}>
-            <Field label="Your name">
-              <input
-                autoComplete="name"
-                name="name"
-                placeholder="How other people see you"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </Field>
-            {primaryAction}
-          </div>
+          <Field label="Your name">
+            <Input
+              autoComplete="name"
+              autoFocus
+              name="name"
+              placeholder="How other people see you"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
+          </Field>
         ) : null}
 
         {step === 2 ? (
-          <div className={styles.fieldRow}>
-            <Field label="Calendar name">
-              <input
+          <div className="flex items-end gap-3">
+            <Field className="flex-1" label="Calendar name">
+              <Input
+                autoFocus
                 name="calendar"
                 placeholder="Personal"
                 value={calendarName}
@@ -225,69 +180,58 @@ export function Onboarding({
         ) : null}
 
         {step === 3 ? (
-          <div className={styles.providers}>
-            {providers.includes("google") || providers.includes("microsoft") ? (
-              <div className={styles.taskPermission}>
-                <Checkbox
-                  checked={includeTasks}
-                  disabled={busy}
-                  label="Include Tasks (optional)"
-                  onChange={(event) => setIncludeTasks(event.target.checked)}
-                />
-                <HelpTooltip label="About optional Tasks access">
-                  When off, no new Tasks permission is requested. Previously granted access is not revoked.
-                </HelpTooltip>
-              </div>
-            ) : null}
+          <div className="grid gap-2">
             {providers.includes("google") ? (
-              <Button
-                disabled={busy}
-                icon={<ProviderGlyph provider="google" />}
-                variant="secondary"
-                onClick={() => void connect("google")}
-              >
+              <Button disabled={busy} variant="secondary" className="w-full" onClick={() => void connect("google")}>
+                <ProviderGlyph provider="google" />
                 Connect Google Calendar
               </Button>
             ) : null}
             {providers.includes("microsoft") ? (
-              <Button
-                disabled={busy}
-                icon={<ProviderGlyph provider="microsoft" />}
-                variant="secondary"
-                onClick={() => void connect("microsoft")}
-              >
+              <Button disabled={busy} variant="secondary" className="w-full" onClick={() => void connect("microsoft")}>
+                <ProviderGlyph provider="microsoft" />
                 Connect Outlook
               </Button>
             ) : null}
-            <div className={styles.note}>
-              Other calendar providers
-              <HelpTooltip label="About other calendar providers">
-                CalDAV, iCloud and another Musubi server are in settings under
-                Connections, whenever you want them.
-              </HelpTooltip>
+            <div className="flex items-center justify-between gap-2">
+              {canConnect ? (
+                <div className="flex items-center gap-1">
+                  <Checkbox
+                    checked={includeTasks}
+                    disabled={busy}
+                    label="Include Tasks"
+                    onChange={(event) => setIncludeTasks(event.target.checked)}
+                  />
+                  <HelpTooltip label="About Tasks access">
+                    When off, no Tasks permission is requested. Access granted earlier is not revoked.
+                  </HelpTooltip>
+                </div>
+              ) : null}
+              <div className="ml-auto flex items-center gap-1 text-12 text-muted-foreground">
+                More providers
+                <HelpTooltip label="About other calendar providers">
+                  CalDAV, iCloud and other Musubi servers are in Settings → Connections.
+                </HelpTooltip>
+              </div>
             </div>
           </div>
         ) : null}
 
-        {message ? (
-          <p className={styles.error} role="alert">
-            {message}
-          </p>
-        ) : null}
+        <AuthMessage>{message}</AuthMessage>
 
-        {step > 1 ? (
-          <div className={styles.actions}>
-            <Button
-              disabled={busy}
-              variant="secondary"
-              onClick={() => setStep(step - 1)}
-            >
+        <div className="mt-auto flex items-center justify-between gap-3 pt-2">
+          {step > 1 ? (
+            <Button disabled={busy} variant="ghost" onClick={() => setStep(step - 1)}>
               Back
             </Button>
-            {primaryAction}
-          </div>
-        ) : null}
-      </div>
+          ) : (
+            <span />
+          )}
+          <Button loading={busy} type="submit">
+            {step < STEPS ? "Continue" : canConnect ? "Skip for now" : "Open my calendar"}
+          </Button>
+        </div>
+      </form>
     </AuthShell>
   );
 }

@@ -15,10 +15,13 @@ export {
 export {
   componentDimensions,
   controlHeights,
+  fineSpacing,
+  layoutSpacing,
   motionDurations,
   radii,
   spacing,
   typeSizes,
+  type LayoutSpacingStep,
   type MotionRole,
   type RadiusName,
   type SpacingStep,

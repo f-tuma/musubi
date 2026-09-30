@@ -95,7 +95,7 @@ test("round-trips a Task Page edit through API, Postgres and Radicale", async ({
     await page.getByRole("button", { exact: true, name: "Continue" }).click();
     await page.getByLabel("Calendar name").fill("Personal");
     await page.getByRole("button", { exact: true, name: "Continue" }).click();
-    await page.getByRole("button", { name: "Not now" }).click();
+    await page.getByRole("button", { name: "Skip for now" }).click();
 
     await page.getByRole("button", { name: "Connections" }).click();
     const connections = page.getByRole("dialog", { name: "Connections" });
