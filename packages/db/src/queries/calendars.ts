@@ -1,14 +1,19 @@
 import { lockCalendarLifecycle, lockUserLifecycle } from "./calendar-lifecycle";
+import { randomUUID } from "node:crypto";
+import { appendTaskOutbox, prepareTaskOutboxInTransaction, taskOutboxSnapshot } from "./task-outbox";
 import { and, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "..";
 import {
 	calendarEvents,
 	calendarInvites,
 	calendarMembers,
+	calendarTasks,
 	calendars,
 	events,
 	eventOutbox,
 	externalCalendars,
+	tasks,
+	taskOutbox,
 	memberTokens,
 	type NewCalendar,
 } from "../schema";
@@ -116,6 +121,48 @@ export async function lockCalendarRemovalEvents(tx: DbTransaction, calendarIDs: 
     inArray(events.originCalendarID, calendarIDs),
     sql`${events.id} in (select ${calendarEvents.eventID} from ${calendarEvents} where ${inArray(calendarEvents.calendarID, calendarIDs)})`,
   )).orderBy(events.id).for("update");
+  // Complete union once, in the same global event -> task -> link/map order.
+  await tx.select({ id: tasks.id }).from(tasks).where(or(
+    inArray(tasks.originCalendarID, calendarIDs),
+    sql`${tasks.id} in (select ${calendarTasks.taskID} from ${calendarTasks} where ${inArray(calendarTasks.calendarID, calendarIDs)})`,
+  )).orderBy(tasks.id).for("update");
+}
+
+/** Caller holds the full calendar lifecycle removal set and the complete
+ * canonical event -> task row-lock union. Home removal globally tombstones;
+ * secondary removal only versions membership. Retain all delivery addresses. */
+export async function removeCalendarTasksInTransaction(
+  tx: DbTransaction,
+  calendarID: string,
+  removingCalendarIDs: readonly string[] = [calendarID],
+) {
+	const affectedTasks = await tx.select().from(tasks).where(or(
+		eq(tasks.originCalendarID, calendarID),
+		sql`${tasks.id} in (select ${calendarTasks.taskID} from ${calendarTasks} where ${calendarTasks.calendarID} = ${calendarID})`,
+	)).orderBy(tasks.id).for("update");
+	for (const task of affectedTasks) {
+		const [changed] = await tx.update(tasks).set({
+			revision: task.revision + 1,
+			...(task.originCalendarID === calendarID && !task.deletedAt ? { deletedAt: new Date() } : {}),
+		}).where(eq(tasks.id, task.id)).returning();
+		if (task.originCalendarID === calendarID && !task.deletedAt) {
+			const links = await tx.select().from(calendarTasks).where(eq(calendarTasks.taskID, task.id));
+			const surviving = links.map((link) => link.calendarID).filter((id) => !removingCalendarIDs.includes(id));
+			const wire = taskOutboxSnapshot(changed, surviving);
+			const intents = await prepareTaskOutboxInTransaction(tx, wire,
+				surviving.map((id) => ({ calendarID: id, action: "delete" })),
+				{ actorID: task.creatorID, mutationID: randomUUID() }, undefined, true);
+			await appendTaskOutbox(tx, wire, intents);
+		}
+	}
+	// Keep immutable task delivery evidence after disconnect. In-flight responses
+	// lose their lease and cannot resurrect mappings; uncertain effects stay visible.
+	await tx.update(taskOutbox).set({
+		status: "blocked", errorCode: "destination-disconnected",
+		leaseToken: null, leaseUntil: null, updatedAt: new Date(),
+		uncertain: sql`${taskOutbox.uncertain} or ${taskOutbox.status} = 'attempting'`,
+	}).where(and(eq(taskOutbox.calendarID, calendarID),
+		sql`${taskOutbox.status} not in ('completed', 'not-needed', 'cancelled')`));
 }
 
 // Internal transaction-aware form used when calendar removal is one step in a
@@ -149,6 +196,7 @@ export async function removeCalendarInTransaction(
 			})
 			.where(eq(events.id, event.id));
 	}
+	await removeCalendarTasksInTransaction(tx, calendarID);
 	const eIDs = affected.map(({ event }) => ({ eventID: event.id }));
 	await tx.update(eventOutbox).set({
 		status: "cancelled", errorCode: "destination-disconnected",

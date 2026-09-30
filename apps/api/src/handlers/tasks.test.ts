@@ -6,7 +6,7 @@ process.env.ENVIRONMENT ??= "dev";
 process.env.BETTER_AUTH_URL ??= "http://localhost:7531";
 
 async function main() {
-  const { parseTaskCreateBody, parseTaskUpdateBody } = await import("./tasks");
+  const { parseTaskCreateBody, parseTaskUpdateBody, parseTaskPatchBody, normalizeTaskPatch } = await import("./tasks");
 
   const created = parseTaskCreateBody({
     id: "00000000-0000-4000-8000-000000000001",
@@ -66,6 +66,16 @@ async function main() {
   );
   assert.equal(can("editor", "editTasks"), true);
   assert.equal(can("viewer", "editTasks"), false);
+
+  const partial = parseTaskPatchBody({ expectedRevision: 2, patch: { title: "Only title" } });
+  assert.deepEqual(partial.patch, { title: "Only title" });
+  assert.throws(() => parseTaskPatchBody({ patch: { title: "Missing CAS" } }));
+  assert.throws(() => parseTaskPatchBody({ expectedRevision: 1, patch: { calendarIDs: [created.calendarID] } }));
+  assert.throws(() => parseTaskPatchBody({ expectedRevision: 1, patch: { creatorID: "another" } }));
+  const completed = TaskSchema.parse({ ...created, creatorID: "owner" });
+  assert.deepEqual(normalizeTaskPatch(completed, { status: "needs-action" }), { status: "needs-action", completedAt: null, percentComplete: 0 });
+  assert.equal(normalizeTaskPatch(completed, { title: "Keep completion" }).percentComplete, 100);
+  assert.equal(normalizeTaskPatch({ ...completed, status: "needs-action", completedAt: null }, { status: "completed" }).percentComplete, 100);
 
   console.log("task handler contract ok");
 }

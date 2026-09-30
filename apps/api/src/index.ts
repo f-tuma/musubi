@@ -61,7 +61,11 @@ import {
   handlerGetTasks,
   handlerRemoveTask,
   handlerUpdateTask,
+  handlerLinkTask,
+  handlerForkTask,
 } from "./handlers/tasks";
+import { handlerGetTaskDeliveryInbox, handlerGetTaskDelivery, handlerRetryTaskDelivery } from "./handlers/task_delivery";
+import { drainTaskOutbox } from "./sync/engine";
 import { requireAuth } from "./middleware/require_auth";
 import { BadRequestError, ForbiddenError } from "@musubi/types";
 import { rateLimit } from "./middleware/rate_limit";
@@ -359,10 +363,16 @@ app.delete("/api/v1/events", requireAuth, wrap(handlerRemoveEvent));
 
 // Tasks
 app.get("/api/v1/tasks", requireAuth, wrap(handlerGetTasks));
+app.get("/api/v1/task-deliveries", requireAuth, wrap(handlerGetTaskDeliveryInbox));
+app.get("/api/v1/tasks/:taskId/delivery", requireAuth, wrap(handlerGetTaskDelivery));
+app.post("/api/v1/tasks/:taskId/delivery/:operationId/retry", requireAuth, rateLimit(30, 60_000, { byUser: true }), wrap(handlerRetryTaskDelivery));
 app.get("/api/v1/tasks/:taskId", requireAuth, wrap(handlerGetTask));
 app.post("/api/v1/tasks", requireAuth, wrap(handlerCreateTask));
+app.patch("/api/v1/tasks/:taskId", requireAuth, wrap(handlerUpdateTask));
 app.put("/api/v1/tasks/:taskId", requireAuth, wrap(handlerUpdateTask));
 app.delete("/api/v1/tasks/:taskId", requireAuth, wrap(handlerRemoveTask));
+app.post("/api/v1/tasks/:taskId/link", requireAuth, wrap(handlerLinkTask));
+app.post("/api/v1/tasks/:taskId/fork", requireAuth, wrap(handlerForkTask));
 
 app.post("/api/v1/events/:eventId/link", requireAuth, wrap(handlerLinkEvent));
 app.post("/api/v1/events/:eventId/fork", requireAuth, wrap(handlerForkEvent));
@@ -678,7 +688,7 @@ const runExternalSync = nonOverlapping(syncExternalAccounts, () => {
 });
 
 const runEventOutbox = nonOverlapping(async () => {
-  try { await drainEventOutbox(); await drainOutlookMoves(); }
+  try { await drainEventOutbox(); await drainTaskOutbox(); await drainOutlookMoves(); }
   catch { logger.error("sync.event_outbox.scheduler_failed", { code: "delivery-state-unavailable" }); }
 }, () => { recordScheduledTaskSkip("event_outbox"); });
 

@@ -13,6 +13,7 @@ import { readGraphSeriesFamily, readGraphSeriesFamilyOrMissing } from "./microso
 import { microsoftEventState } from "./provider_event_state";
 import { config, logger } from "@musubi/config";
 import { getOAuthAccountIDs, hasOAuthTaskScope } from "@musubi/db";
+import { assertTaskMutationResponse, ProviderTaskWriteError } from "../task_write";
 import {
   DEFAULT_CALENDAR_COLOR,
   EventWriteError,
@@ -269,7 +270,7 @@ function toGraphTaskDate(date: Date | null | undefined) {
     : null;
 }
 
-function toGraphTask(task: Task) {
+export function toGraphTask(task: Task) {
   return {
     body: { content: task.description ?? "", contentType: "text" },
     dueDateTime: toGraphTaskDate(task.due),
@@ -295,6 +296,8 @@ function toGraphTask(task: Task) {
 type MicrosoftTaskRequestOptions = {
   fetchImpl?: typeof fetch;
   graphBase?: string;
+  beforeMutation?: () => Promise<void>;
+  patch?: Record<string, unknown>;
 };
 
 function microsoftTaskPath(taskListId: string, taskId?: string) {
@@ -385,6 +388,7 @@ export async function createMicrosoftTask(
 ) {
   const fetchImpl = options.fetchImpl ?? fetch;
   const graphBase = options.graphBase ?? GRAPH;
+  await options.beforeMutation?.();
   const res = await fetchImpl(`${graphBase}${microsoftTaskPath(taskListId)}`, {
     method: "POST",
     headers: {
@@ -393,8 +397,9 @@ export async function createMicrosoftTask(
     },
     body: JSON.stringify(toGraphTask(task)),
   });
-  if (!res.ok) throw await graphError(res);
+  assertTaskMutationResponse(res);
   const created = await res.json();
+  if (typeof created.id !== "string" || !created.id) throw new ProviderTaskWriteError("task-write-failed", "unconfirmed");
   return {
     etag: created["@odata.etag"] ?? null,
     externalTaskId: created.id,
@@ -413,6 +418,7 @@ export async function updateMicrosoftTask(
   if (!etag) throw new Error("Microsoft task update requires an ETag");
   const fetchImpl = options.fetchImpl ?? fetch;
   const graphBase = options.graphBase ?? GRAPH;
+  await options.beforeMutation?.();
   const res = await fetchImpl(
     `${graphBase}${microsoftTaskPath(taskListId, externalTaskId)}`,
     {
@@ -422,10 +428,10 @@ export async function updateMicrosoftTask(
         "Content-Type": "application/json",
         "If-Match": etag,
       },
-      body: JSON.stringify(toGraphTask(task)),
+      body: JSON.stringify(options.patch ?? toGraphTask(task)),
     },
   );
-  if (!res.ok) throw await graphError(res);
+  assertTaskMutationResponse(res);
   const updated = await res.json();
   return { etag: updated["@odata.etag"] ?? null, icalUid: null };
 }
@@ -440,6 +446,7 @@ export async function deleteMicrosoftTask(
   if (!etag) throw new Error("Microsoft task delete requires an ETag");
   const fetchImpl = options.fetchImpl ?? fetch;
   const graphBase = options.graphBase ?? GRAPH;
+  await options.beforeMutation?.();
   const res = await fetchImpl(
     `${graphBase}${microsoftTaskPath(taskListId, externalTaskId)}`,
     {
@@ -450,9 +457,7 @@ export async function deleteMicrosoftTask(
       },
     },
   );
-  if (!res.ok && res.status !== 404 && res.status !== 410) {
-    throw await graphError(res);
-  }
+  if (res.status !== 404 && res.status !== 410) assertTaskMutationResponse(res);
 }
 
 export function toExternalMicrosoftTaskList(list: any): ExternalCalendarInfo {
@@ -1027,7 +1032,40 @@ export const microsoftAdapter: CalendarAdapter = {
     await deleteMicrosoftPersonalEvent({ token, calendarID: externalCalendarId, eventID: externalEventId, etag: ref.etag, signal });
   },
 
-  async pushTaskCreate(userID, accountId, externalCalendarId, task) {
+  projectTask: toGraphTask,
+
+  async readTask(userID, accountId, externalCalendarId, ref) {
+    const list = microsoftTaskListId(externalCalendarId);
+    if (!list) throw new ProviderTaskWriteError("task-source-read-only");
+    const response = await graphGet(await getAccessToken(userID, accountId, true), `${GRAPH}${microsoftTaskPath(list, ref.externalTaskId)}`);
+    if (response.status === 404 || response.status === 410) return null;
+    if (!response.ok) throw await graphError(response);
+    const value = await response.json();
+    if (value.id !== ref.externalTaskId || typeof value.title !== "string") throw new ProviderTaskWriteError("task-projection-unavailable");
+    return { ref: { externalTaskId: value.id, etag: value["@odata.etag"] ?? null, icalUid: null }, projection: toGraphTask({ ...toNormalizedMicrosoftTask(value), id: value.id, creatorID: userID, calendarID: "" }) };
+  },
+
+  async assertTaskWrite(userID, accountId, externalCalendarId, operation) {
+    const list = microsoftTaskListId(externalCalendarId);
+    if (!list) throw new ProviderTaskWriteError("task-source-read-only");
+    const response = await graphGet(await getAccessToken(userID, accountId, true), `${GRAPH}/me/todo/lists/${encodeURIComponent(list)}`);
+    if (!response.ok) throw await graphError(response);
+    const nativeList = await response.json();
+    if (nativeList.id !== list) throw new ProviderTaskWriteError("task-projection-unavailable");
+    if (operation.secondary && nativeList.isOwner !== true) throw new ProviderTaskWriteError("task-source-read-only");
+    // To Do exposes weak @odata.etag, but its v1.0 update/delete contract does
+    // not document a conditional-write guarantee. New fanout must not mistake
+    // preflight for CAS; existing legacy single-source methods stay separate.
+    if (operation.secondary && operation.action !== "create") throw new ProviderTaskWriteError("task-conditional-write-unsupported");
+    if (operation.action !== "create") {
+      if (!operation.external?.etag) throw new ProviderTaskWriteError("task-version-unavailable");
+      const current = await microsoftAdapter.readTask!(userID, accountId, externalCalendarId, operation.external);
+      if (!current && operation.action === "delete") return;
+      if (!current || current.ref.etag !== operation.external.etag) throw new ProviderTaskWriteError("task-provider-conflict");
+    }
+  },
+
+  async pushTaskCreate(userID, accountId, externalCalendarId, task, beforeMutation) {
     const taskListId = microsoftTaskListId(externalCalendarId);
     if (!taskListId)
       throw new Error("Microsoft task write requires a task list");
@@ -1035,6 +1073,7 @@ export const microsoftAdapter: CalendarAdapter = {
       await getAccessToken(userID, accountId, true),
       taskListId,
       task,
+      { beforeMutation },
     );
   },
 
@@ -1045,6 +1084,7 @@ export const microsoftAdapter: CalendarAdapter = {
     externalTaskId,
     task,
     ref,
+    patch,
   ) {
     const taskListId = microsoftTaskListId(externalCalendarId);
     if (!taskListId)
@@ -1055,6 +1095,7 @@ export const microsoftAdapter: CalendarAdapter = {
       externalTaskId,
       task,
       ref?.etag,
+      { patch, beforeMutation: ref?.beforeMutation },
     );
   },
 
@@ -1073,6 +1114,7 @@ export const microsoftAdapter: CalendarAdapter = {
       taskListId,
       externalTaskId,
       ref?.etag,
+      { beforeMutation: ref?.beforeMutation },
     );
   },
 

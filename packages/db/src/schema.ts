@@ -27,6 +27,7 @@ import {
   type NotificationEmails,
   type ReminderRule,
   type TaskStatus,
+  type Task,
   type Event,
   type EventScopeOutcome,
   type ProviderEventState,
@@ -247,7 +248,9 @@ export type NewCalendar = typeof calendars.$inferInsert;
 export const calendarsRelations = relations(calendars, ({ many, one }) => ({
   calendarEvents: many(calendarEvents),
   calendarMembers: many(calendarMembers),
-  tasks: many(tasks),
+  calendarTasks: many(calendarTasks),
+  tasks: many(tasks, { relationName: "taskLegacyHome" }),
+  originatedTasks: many(tasks, { relationName: "taskHome" }),
   user: one(user, { fields: [calendars.creatorID], references: [user.id] }),
 }));
 
@@ -307,12 +310,13 @@ export const eventsRelations = relations(events, ({ many, one }) => ({
   user: one(user, { fields: [events.creatorID], references: [user.id] }),
 }));
 
-// A task belongs to exactly one calendar collection. Calendar membership owns
-// access; external_tasks keeps provider identity and concurrency metadata.
+// One canonical task, readable through calendar_tasks. Only the home calendar
+// governs content/completion; provider projections keep their own validators.
 export const tasks = pgTable(
   "tasks",
   {
     id: uuid("id").primaryKey(),
+    revision: integer("revision").notNull().default(1),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at")
       .notNull()
@@ -322,8 +326,9 @@ export const tasks = pgTable(
       .references(() => user.id, { onDelete: "cascade" })
       .notNull(),
     calendarID: uuid("calendar_id")
-      .references(() => calendars.id, { onDelete: "cascade" })
-      .notNull(),
+      .references(() => calendars.id, { onDelete: "set null" }),
+    originCalendarID: uuid("origin_calendar_id")
+      .references(() => calendars.id, { onDelete: "set null" }),
     providerReadRetiredGeneration: integer("provider_read_retired_generation"),
     title: text("title").notNull(),
     description: text("description"),
@@ -343,18 +348,57 @@ export const tasks = pgTable(
     url: text("url"),
     deletedAt: timestamp("deleted_at"),
   },
-  (t) => [index("tasks_calendar_updated_at_idx").on(t.calendarID, t.updatedAt)],
+  (t) => [
+    index("tasks_calendar_updated_at_idx").on(t.calendarID, t.updatedAt),
+    index("tasks_origin_updated_at_idx").on(t.originCalendarID, t.updatedAt),
+    check("tasks_revision_check", sql`${t.revision} > 0`),
+  ],
 );
 
 export type NewTask = typeof tasks.$inferInsert;
 
-export const tasksRelations = relations(tasks, ({ one }) => ({
+export const tasksRelations = relations(tasks, ({ one, many }) => ({
+  calendarTasks: many(calendarTasks),
   calendar: one(calendars, {
     fields: [tasks.calendarID],
     references: [calendars.id],
+    relationName: "taskLegacyHome",
+  }),
+  originCalendar: one(calendars, {
+    fields: [tasks.originCalendarID],
+    references: [calendars.id],
+    relationName: "taskHome",
   }),
   user: one(user, { fields: [tasks.creatorID], references: [user.id] }),
 }));
+
+export const calendarTasks = pgTable("calendar_tasks", {
+  taskID: uuid("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  calendarID: uuid("calendar_id").notNull().references(() => calendars.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.taskID, t.calendarID] }),
+  index("calendar_tasks_calendar_task_idx").on(t.calendarID, t.taskID),
+]);
+
+export const calendarTasksRelations = relations(calendarTasks, ({ one }) => ({
+  task: one(tasks, { fields: [calendarTasks.taskID], references: [tasks.id] }),
+  calendar: one(calendars, { fields: [calendarTasks.calendarID], references: [calendars.id] }),
+}));
+
+/** Idempotency applies to native-only operations too. Identity survives a task
+ * tombstone; user removal purges it. No private content is stored here. */
+export const taskMutations = pgTable("task_mutations", {
+  actorID: text("actor_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  mutationID: uuid("mutation_id").notNull(),
+  taskID: uuid("task_id").notNull(),
+  revision: integer("revision").notNull(),
+  operation: text("operation").$type<"create" | "update" | "link" | "unlink" | "fork" | "delete" | "calendar-delete">().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.actorID, t.mutationID] }),
+  check("task_mutations_revision_check", sql`${t.revision} > 0`),
+]);
 
 // Deprecated public-event storage. No runtime code reads or writes this table.
 // Keep through 0.2.0 for rollback safety; drop it in a later contract release.
@@ -993,6 +1037,57 @@ export const eventOutbox = pgTable(
   ],
 );
 
+/** Task delivery evidence deliberately has no task/calendar/source FK. A
+ * disconnected home must not erase an accepted delete or uncertain CREATE. */
+export const taskOutbox = pgTable("task_outbox", {
+  id: uuid("id").primaryKey(),
+  actorID: text("actor_id").notNull(),
+  mutationID: uuid("mutation_id").notNull(),
+  position: integer("position").notNull(),
+  taskID: uuid("task_id").notNull(),
+  revision: integer("revision").notNull(),
+  predecessorID: uuid("predecessor_id"),
+  calendarID: uuid("calendar_id").notNull(),
+  externalCalendarLinkID: uuid("external_calendar_link_id").notNull(),
+  provider: text("provider").notNull(),
+  userID: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  accountID: text("account_id").notNull(),
+  externalCalendarID: text("external_calendar_id").notNull(),
+  externalTaskID: text("external_task_id"),
+  expectedEtag: text("expected_etag"),
+  icalUid: text("ical_uid"),
+  providerAccessRevision: integer("provider_access_revision").notNull(),
+  retiredGeneration: integer("retired_generation").notNull().default(0),
+  action: text("action").$type<"create" | "update" | "delete">().notNull(),
+  payload: jsonb("payload").$type<{
+    task: Task;
+    projectionBaseline?: Record<string, unknown> | null;
+    providerProjection?: { version: 1; projection: Record<string, unknown>; patch: Record<string, unknown>; baseline: Record<string, unknown> | null; errorCode?: string };
+    dispatchProjection?: { version: 1; projection: Record<string, unknown>; patch: Record<string, unknown>; baseline: Record<string, unknown> | null; errorCode?: string };
+  }>().notNull(),
+  status: text("status").$type<"pending" | "attempting" | "completed" | "not-needed" | "conflict" | "not-written" | "unconfirmed" | "retry" | "blocked" | "cancelled">().notNull().default("pending"),
+  attempts: integer("attempts").notNull().default(0),
+  attemptedAt: timestamp("attempted_at"),
+  leaseToken: uuid("lease_token"),
+  leaseUntil: timestamp("lease_until", { withTimezone: true }),
+  nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).notNull().defaultNow(),
+  uncertain: boolean("uncertain").notNull().default(false),
+  resultRef: jsonb("result_ref").$type<{ externalTaskId: string; etag?: string | null; icalUid?: string | null }>(),
+  remoteSnapshot: jsonb("remote_snapshot").$type<Record<string, unknown>>(),
+  errorCode: text("error_code"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => [
+  unique("task_outbox_mutation_position_unique").on(t.actorID, t.mutationID, t.position),
+  index("task_outbox_task_revision_idx").on(t.taskID, t.revision),
+  index("task_outbox_source_order_idx").on(t.taskID, t.externalCalendarLinkID, t.createdAt),
+  index("task_outbox_pending_idx").on(t.nextAttemptAt, t.id).where(sql`${t.status} in ('pending', 'retry', 'attempting', 'unconfirmed')`),
+  check("task_outbox_revision_check", sql`${t.revision} > 0`),
+  check("task_outbox_attempts_check", sql`${t.attempts} >= 0 and ${t.position} >= 0`),
+  check("task_outbox_action_check", sql`${t.action} in ('create', 'update', 'delete')`),
+  check("task_outbox_status_check", sql`${t.status} in ('pending', 'attempting', 'completed', 'not-needed', 'conflict', 'not-written', 'unconfirmed', 'retry', 'blocked', 'cancelled')`),
+]);
+
 export const externalTasks = pgTable(
   "external_tasks",
   {
@@ -1011,6 +1106,11 @@ export const externalTasks = pgTable(
       .notNull(),
     externalCalendarID: text("external_calendar_id").notNull(),
     externalTaskID: text("external_task_id").notNull(),
+    externalCalendarLinkID: uuid("external_calendar_link_id"),
+    accountID: text("account_id"),
+    providerAccessRevision: integer("provider_access_revision").notNull().default(0),
+    projectionBaseline: jsonb("projection_baseline").$type<Record<string, unknown>>(),
+    acceptedRevision: integer("accepted_revision").notNull().default(1),
     etag: text("etag"),
     icalUid: text("ical_uid"),
   },
@@ -1020,6 +1120,7 @@ export const externalTasks = pgTable(
       t.calendarID,
       t.externalTaskID,
     ),
+    index("external_tasks_task_source_idx").on(t.taskID, t.calendarID, t.externalCalendarLinkID),
   ],
 );
 

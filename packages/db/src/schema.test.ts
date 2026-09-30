@@ -3,6 +3,7 @@ import { getTableConfig } from "drizzle-orm/pg-core";
 import {
   calendarEvents,
   calendarMembers,
+  calendarTasks,
   eventReminders,
   eventUsers,
   events,
@@ -13,6 +14,7 @@ import {
   schedulingPolls,
   schedulingVotes,
   tasks,
+  taskOutbox,
   user,
   userSettings,
 } from "./schema";
@@ -51,6 +53,21 @@ assert.equal(events.revision.notNull, true);
 assert.equal(tasks.status.default, "needs-action");
 assert.equal(tasks.percentComplete.default, 0);
 assert.equal(tasks.priority.default, 0);
+assert.equal(tasks.revision.default, 1);
+assert.equal(tasks.revision.notNull, true);
+assert.equal(tasks.calendarID.notNull, false, "transitional home alias survives calendar removal");
+assert.equal(tasks.originCalendarID.notNull, false);
+for (const key of getTableConfig(tasks).foreignKeys) {
+  const columns = key.reference().columns.map((column) => column.name);
+  if (columns.includes("calendar_id") || columns.includes("origin_calendar_id"))
+    assert.equal(key.onDelete, "set null", "home deletion must not hard-delete shared identity");
+}
+assert.deepEqual(getTableConfig(calendarTasks).primaryKeys[0].columns.map((column) => column.name),
+  ["task_id", "calendar_id"], "one membership per task/calendar");
+assert.ok(getTableConfig(calendarTasks).indexes.some((i) => i.config.name === "calendar_tasks_calendar_task_idx"));
+assert.deepEqual(getTableConfig(taskOutbox).foreignKeys.flatMap((key) => key.reference().columns.map((c) => c.name)),
+  ["user_id"], "delivery addresses must outlive source/task/calendar deletion");
+assert.ok(getTableConfig(taskOutbox).uniqueConstraints.some((c) => c.name === "task_outbox_mutation_position_unique"));
 assert.equal(externalCalendars.supportsEvents.default, true);
 assert.equal(externalCalendars.supportsTasks.default, false);
 

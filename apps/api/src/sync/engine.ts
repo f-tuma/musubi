@@ -1,10 +1,13 @@
 import { beginAvailabilityDiscovery, reconcileAvailabilitySources } from "@musubi/db";
 import { deliverEventOutbox } from "./event_delivery";
+import { deliverTaskOutbox as executeTaskOutbox } from "./task_delivery";
+import { diffTaskProjection, jsonTaskProjection, ProviderTaskWriteError } from "./task_write";
 import { randomUUID } from "node:crypto";
 import { hasKnownEventTime, EventWriteError, type Event, type Task } from "@musubi/types";
 import { config, logger } from "@musubi/config";
 import {
   getDueEventOutboxIDs, getEventOutboxBacklog,
+  getDueTaskOutboxIDs, getTaskMirrorReadCalendars,
   listGraphFamilyContexts, replaceGraphFamily, removeGraphFamily, type GraphFamilyContext, type GraphFamilyObservation,
   type EventOutboxIntent,
   deleteExternalEvent,
@@ -46,6 +49,7 @@ import type {
   NormalizedEvent,
   NormalizedChange,
   NormalizedTask,
+  TaskPreparedWrite,
 } from "./adapter";
 import { googleAdapter } from "./adapters/google";
 import { caldavAdapter } from "./adapters/caldav";
@@ -69,6 +73,56 @@ const adapters: Record<string, CalendarAdapter> = {
 
 export function getAdapter(provider: string): CalendarAdapter | null {
   return adapters[provider] ?? null;
+}
+
+export async function prepareTaskWrites(task: Task, actions: readonly { calendarID: string; action: "create" | "update" | "delete" }[]): Promise<TaskPreparedWrite[]> {
+  const prepared: TaskPreparedWrite[] = [];
+  for (const { calendarID, action } of actions) {
+    const source = await getExternalLinkForCalendar(calendarID);
+    if (!source) continue;
+    const captured = { calendarID, action, externalCalendarLinkID: source.id, provider: source.provider, userID: source.userID, accountID: source.accountID, externalCalendarID: source.externalCalendarID, providerAccessRevision: source.providerAccessRevision };
+    const adapter = getAdapter(source.provider);
+    let projection = {};
+    let baseline = null;
+    let patch = {};
+    let errorCode: string | undefined;
+    try {
+      if (source.disabled || !source.supportsTasks || !adapter?.projectTask || !adapter.assertTaskWrite) throw new ProviderTaskWriteError("task-source-read-only");
+      const secondary = calendarID !== (task.originCalendarID ?? task.calendarID);
+      if (secondary && action !== "delete" && task.recurrence) throw new ProviderTaskWriteError("task-recurrence-projection-unsupported");
+      projection = jsonTaskProjection(adapter.projectTask(task));
+      const external = await getExternalTask(source.provider, task.id, source.externalCalendarID, calendarID, { sourceID: source.id, accountID: source.accountID, providerAccessRevision: source.providerAccessRevision });
+      baseline = external?.projectionBaseline ?? null;
+      patch = baseline ? diffTaskProjection(baseline, projection) : projection;
+      // A pending CREATE may not yet have an address. The immutable predecessor
+      // resolves it in the executor; preflight never sends a speculative POST.
+      if (action !== "delete" || external) await adapter.assertTaskWrite(source.userID, source.accountID, source.externalCalendarID, { task, action: action === "update" && !external ? "create" : action, external: external ?? undefined, projection, secondary });
+    } catch (error) { errorCode = error instanceof ProviderTaskWriteError ? error.code : "task-write-failed"; }
+    prepared.push({ ...captured, providerProjection: { version: 1, projection, baseline, patch, ...(errorCode ? { errorCode } : {}) } });
+  }
+  return prepared;
+}
+
+export async function deliverTaskOutbox(id: string, adapterFor: (provider: string) => CalendarAdapter | null = getAdapter) {
+  const result = await executeTaskOutbox(id, adapterFor);
+  if (result) {
+    if (!["completed", "not-needed", "cancelled"].includes(result.status)) recordExternalSyncFailure("push", result.provider);
+    const members = await getCalendarMembers(result.calendarID);
+    notifyCalendarMembers([...new Set([result.userID, ...members.map(member => member.userID)])], "external_sync", { calendars: [result.calendarID] });
+  }
+  return result;
+}
+
+export async function drainTaskOutbox() {
+  const candidates = await getDueTaskOutboxIDs(40);
+  let next = 0;
+  await Promise.all(Array.from({ length: 4 }, async () => {
+    while (next < candidates.length) {
+      const { id } = candidates[next++];
+      try { await deliverTaskOutbox(id); }
+      catch { logger.error("sync.task_outbox.persistence_failed", { code: "delivery-state-unavailable" }); }
+    }
+  }));
 }
 
 export async function deliverEventOutboxAndNotify(id: string) {
@@ -337,6 +391,7 @@ async function syncProviderImpl(
     const taskOnly = link.supportsTasks && !link.supportsEvents;
     if (taskOnly && !remoteIDs.has(link.externalCalendarID)) continue;
     const calendarStartedAt = performance.now();
+    const taskReadStartedAt = new Date();
     let fetched;
     const families: { context: GraphFamilyContext; observation: GraphFamilyObservation | null }[] = [];
     const excludedEventIDs = new Set<string>(), excludedSeriesIDs = new Set<string>();
@@ -404,6 +459,7 @@ async function syncProviderImpl(
       return result;
     };
     const retainedGraphIDs = new Set<string>();
+    const taskScope = { sourceID: link.sourceID, accountID: accountId, providerAccessRevision: link.providerAccessRevision, readStartedAt: taskReadStartedAt };
     try {
       for (const family of families) {
         const result = family.observation ? await replaceGraphFamily(family.context, family.observation) : await removeGraphFamily(family.context);
@@ -418,7 +474,7 @@ async function syncProviderImpl(
         deleteEvent: (externalID) =>
           trackGoogleRead(deleteExternalEvent(provider, link.calendarID, externalID, onUnlink, accessContext)),
         deleteTask: (externalID) =>
-          deleteExternalTask(provider, link.calendarID, externalID, accessContext),
+          link.supportsTasks ? trackGoogleRead(deleteExternalTask(provider, link.calendarID, externalID, accessContext, taskScope)) : Promise.resolve(false),
         upsertEvent: (event) =>
           trackGoogleRead(upsertExternalEvent(
             provider,
@@ -438,7 +494,7 @@ async function syncProviderImpl(
             accessContext,
           )),
         upsertTask: (task) =>
-          upsertExternalTask(
+          link.supportsTasks ? trackGoogleRead(upsertExternalTask(
             provider,
             userID,
             link.calendarID,
@@ -448,7 +504,9 @@ async function syncProviderImpl(
             task.etag ?? null,
             task.icalUid ?? null,
             accessContext,
-          ),
+            taskScope,
+            adapter.projectTask?.({ ...toTaskValues(task), id: task.externalId, creatorID: userID, calendarID: link.calendarID }),
+          )) : Promise.resolve(false),
         sweepEvents: (seenExternalIDs) =>
           trackGoogleRead(sweepExternalEvents(
             provider,
@@ -458,13 +516,13 @@ async function syncProviderImpl(
             accessContext,
           )),
         sweepTasks: (seenExternalIDs) =>
-          sweepExternalTasks(provider, link.calendarID, seenExternalIDs, accessContext),
+          link.supportsTasks ? trackGoogleRead(sweepExternalTasks(provider, link.calendarID, seenExternalIDs, accessContext, taskScope)) : Promise.resolve(0),
       });
     } finally {
       // Earlier unlinks have committed even if a later resource fails.
       await notifyExternalEventUnlinks(link.calendarID, unlinkedEventIDs);
       if (googleReadChanged) {
-        const calendars = await getGoogleMirrorReadCalendars(link.calendarID);
+        const calendars = [...new Set([...await getGoogleMirrorReadCalendars(link.calendarID), ...await getTaskMirrorReadCalendars(link.calendarID)])];
         const members = await Promise.all(calendars.map(id => getCalendarMembers(id)));
         // Include committed partial reads if a later item fails. A linked-only
         // reader must hear about restoration as well as the earlier redaction.
@@ -873,6 +931,7 @@ export async function pushTaskToCalendar(
     return;
 
   const accessContext = link.provider === "caldav" ? { provider: "caldav" as const, linkID: link.id, revision: link.providerAccessRevision, userID: link.userID, accountID: link.accountID, externalCalendarID: link.externalCalendarID } : undefined;
+  const scope = { sourceID: link.id, accountID: link.accountID, providerAccessRevision: link.providerAccessRevision };
   const beforeMutation = async () => { if (accessContext) await assertExternalTaskPush(task, accessContext); };
   try {
     await beforeMutation();
@@ -880,6 +939,8 @@ export async function pushTaskToCalendar(
       link.provider,
       task.id,
       link.externalCalendarID,
+      task.calendarID,
+      scope,
     );
     if (action === "delete") {
       if (!external) return;
@@ -934,6 +995,8 @@ export async function pushTaskToCalendar(
           icalUid: result.icalUid ?? external.icalUid ?? null,
         },
         accessContext ? { task, context: accessContext } : undefined,
+        task.calendarID,
+        scope,
       );
     }
   } catch (error) {

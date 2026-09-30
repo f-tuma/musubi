@@ -1,174 +1,145 @@
 # Shared tasks
 
-Status: design proposal based on the task, event and provider audit. No task
-schema, API or runtime changes are implemented by this document.
+Tasks use the event ownership model: one canonical identity, one home calendar,
+and multiple calendar memberships. The implementation lives on
+`codex/shared-tasks`, based on the Tailwind/shadcn UI migration.
 
-Working branch: `codex/shared-tasks`, based on `ui/shadcn-tailwind` at
-`c8747c689e51eccbb9ea31488684fb1b3bfc0d1e`. The UI migration is still a separate
-open PR; feature work needs its shared component system.
+## Ownership and reads
 
-## Product contract
+- `tasks` owns content, status, completion, a nullable `originCalendarID`, and a
+  positive server `revision`. `sequence` remains independent provider metadata.
+- `calendar_tasks` contains memberships. Reading requires a currently readable
+  membership; only `editTasks` at home permits content edits and global deletion.
+- Destination `editTasks` permits linking, unlinking that secondary membership,
+  or making an independent copy. It does not grant completion authority.
+- A home cannot be unlinked or silently promoted to a secondary destination.
+  Removing home tombstones the logical task and queues deletes for surviving
+  provider copies. Removing a secondary calendar keeps home and identity.
+- Removing an account follows the existing event creator-purge policy, capturing
+  deletes for surviving foreign provider destinations before FK cleanup.
+- Known revoked source reads do not authorize secondary task reads. Home-source
+  retirement redacts canonical private text, advances revision and the existing
+  privacy generation, and invalidates other readable views. Secondary retirement
+  leaves canonical content on other authorized memberships intact.
+- Restored home access unlocks content edits, links and copies only after an
+  authorized pull has rehydrated its canonical data and current provider
+  validator. Home deletion remains separate from that content guard, using
+  retained delivery addresses.
 
-The owner selected the event ownership model:
+Read DTOs expose `originCalendarID`, readable `calendarIDs`, `revision` and action
+`capabilities`. The compatibility `calendarID` field is a home alias, never a
+secondary permission grant. The home name and unreadable memberships are not
+included. A reader with only a secondary membership can still open the task.
+Web/native filters, search and calendar projections deduplicate by logical task ID.
 
-- One logical task has one ID, content, status, completion time and progress.
-- It has one home calendar and can be linked into several calendars or provider
-  task collections. Those links represent the same task, not independent copies.
-- Reading requires membership in at least one linked calendar. Changing content
-  or completing the task requires `editTasks` on its home calendar.
-- Editing a destination calendar permits linking, removing its link or making an
-  independent copy; it does not grant shared-content editing.
-- A fork creates a new identity and home. Removing a secondary link does not
-  delete the shared task. Global deletion is controlled by the home.
-- Linking does not automatically change a provider's native sharing or ACLs.
+## Mutation boundary
 
-Home unlink, calendar deletion and origin-access retirement need explicit
-server policies. Do not silently promote an arbitrary secondary provider to home
-or grant it content authority.
+| Route | Request | Result |
+| --- | --- | --- |
+| `POST /api/v1/tasks` | Creation fields, ID and home `calendarID` | Mutation receipt |
+| `PATCH /api/v1/tasks/:taskId` | `{patch, expectedRevision}` | Mutation receipt |
+| `PUT /api/v1/tasks/:taskId` | Full draft plus `expectedRevision` | Same revision fence; cannot move home |
+| `POST /api/v1/tasks/:taskId/link` | `{calendarID, expectedRevision}` | Same task with another membership |
+| `POST /api/v1/tasks/:taskId/fork` | `{calendarID, expectedRevision}` | New identity and home, revision 1 |
+| `DELETE /api/v1/tasks/:taskId` | `{expectedRevision, unlinkCalendarID?}` | Global tombstone or secondary unlink |
 
-## Existing support and gaps
+Requests also carry `expectedProviderReadRetiredGeneration` after source
+retirement. A stale revision/privacy fence returns 409 with `localCommitted:false`.
+PATCH fields are strict and omitted fields do not acquire creation defaults.
+Completing sets progress to 100; reopening clears completion time and progress.
+Legacy writes without an authoritative revision are refused. Legacy cached task
+DTOs remain readable but clients require refresh before offering mutations.
 
-Tasks already share through membership of one calendar, with viewer reads and
-owner/editor writes. The current model has a mandatory `tasks.calendarID` with a
-cascading FK. The update handler rejects moving to another calendar. See
-[schema](../../packages/db/src/schema.ts),
-[task queries](../../packages/db/src/queries/tasks.ts),
-[task handlers](../../apps/api/src/handlers/tasks.ts) and
-[role permissions](../../packages/types/src/permissions.ts).
+`Idempotency-Key` accepts a mutation UUID. Creation defaults to the task UUID;
+other mutations receive a fresh identity when the header is omitted. The
+`task_mutations` ledger prevents duplicate commits, including native-only copies.
+A duplicate is a 409, not permission to perform another copy.
 
-`external_tasks` already stores provider IDs, ETags and UIDs per collection.
-However, outbound lookup and acknowledgement omit the local calendar/source
-scope, so different accounts exposing the same external list can be confused.
-Task delivery writes one destination after the local mutation and logs failures
-without a receipt. Import overwrites the normalized task snapshot; provider
-delete/reset sweep tombstones the entire task. These paths must change before
-multiple destinations are enabled. See
-[external queries](../../packages/db/src/queries/external.ts) and
-[sync engine](../../apps/api/src/sync/engine.ts).
+Preflight captures provider projection and source scope. The DB rechecks rights,
+privacy generation and source admission under locks, performs CAS, changes links
+or tombstone, and inserts immutable `task_outbox` intents in the same transaction.
+No provider call is made while the canonical transaction is open.
 
-`sequence` is provider/iCalendar metadata, not a concurrency revision.
-`providerReadRetiredGeneration` is a privacy fence, not revision CAS; preserve its
-protection while making source retirement aware of individual projections. See
-[CalDAV read-access contract](caldav-read-access.md).
+Successful mutation responses contain `{task, localCommitted:true, delivery?}`.
+`task` can be null if permission disappears or authorized reconciliation cannot
+be read after commit; clients still close the saved draft and refresh. Deletion
+also returns `id`, `revision` and `removed`. A local commit does not claim that all
+provider copies have acknowledged it.
 
-## Model and migration
+## Delivery and provider projections
 
-Add `originCalendarID`, a server-owned positive `revision`, and
-`calendar_tasks(taskID, calendarID)` with a unique pair and indexes in both
-directions. Keep canonical content on `tasks`. Scope each provider mapping by
-local calendar and captured source/connection identity, in addition to its remote
-address. Store that projection's accepted validator, projected-field baseline
-and delivery state separately from the canonical task.
+Request wakeup and background scheduling share the task outbox executor.
+Captured source/account IDs, accepted remote validators, immutable projections,
+predecessor order, renewable leases, uncertainty and guarded mapping
+acknowledgements prevent a late response from changing the task authority.
+Delivery evidence survives task/calendar/source removal. Deleting the provider
+account owner clears that owner's private outbox; evidence for surviving foreign
+destinations remains. Leases commit before HTTP; an expired attempt must reconcile
+rather than blindly repeat CREATE.
 
-Backfill preserves every task UUID, provider ID, ETag, UID and tombstone. Set
-home to the old `calendarID`, insert its first membership and start revision at
-1 independently of `sequence`. Never merge existing tasks by title, due date or
-UID. Check existing mapping cardinality before adding new constraints.
+Only a home pull can change canonical content. Other pulls acknowledge their own
+projection. Comparison of provider-supported fields against its accepted baseline
+preserves richer canonical fields through lossy serialization. Home changes fan
+out to secondary providers; a secondary deletion never globally deletes the task.
+Retained delete addresses prevent late source reads from importing deleted copies
+as new logical tasks.
 
-Use an expand/backfill/cutover migration. Update all writers, imports and calendar
-lifecycle operations before enabling extra links. The old cascading home FK must
-not hard-delete shared identity or pending delivery evidence. Removing the home
-calendar needs an explicit global-tombstone or home-transfer policy before
-activation; never implicitly reassign home. A temporary wire
-`calendarID` alias can preserve old reads; it is not the authority for new
-permissions, membership or fanout. Old clients must not write without the new
-revision precondition or reset memberships through a full DTO update.
-
-## Writes, delivery and inbound changes
-
-Content/status PATCH, link, unlink, delete and fork require `expectedRevision`.
-Authorize source visibility and destination rights freshly. Perform canonical
-CAS, membership/tombstone changes and immutable delivery-intent insertion in one
-DB transaction with a consistent task/link/source lock order. Call providers
-after commit. Return a truthful distinction between local commit and delivery.
-
-Use the proven event invariants without inserting task operations into an
-event-only table or pretending tasks are events: operation/mutation identity,
-captured destination and version, predecessor ordering, leases, conflict
-snapshots, retained deletion addresses and guarded acknowledgements. See
-[event write boundary](event-write-boundary.md),
-[outbox worker](event-outbox-worker.md) and
-[delivery recovery](event-delivery-status.md).
-
-Only the home source can authoritatively change canonical content. Accepted
-home changes enqueue fanout to other destinations and exclude the source.
-Secondary echoes acknowledge their own projection; secondary edits never
-silently overwrite the shared task. Compare supported fields against the
-projection baseline so lossy serialization cannot erase richer canonical data.
-Provider-side removal of a secondary copy must not globally delete the task.
-
-An uncertain CREATE remains `unconfirmed` until provider-specific recovery can
-prove its identity. Do not retry blindly and create another remote task. Check
-provider conditional-write capabilities explicitly rather than assuming every
-task endpoint supports the event contract.
-
-Source privacy remains authoritative: loss of a secondary source must not
-redact all other task views; home-source read retirement must protect shared
-views, cached details and notification titles. Stale clients and late responses
-must not resurrect retired or deleted content.
-
-## Provider destinations
-
-| Provider | Destination and limits |
+| Provider | Destination and current boundary |
 | --- | --- |
-| Musubi | Native task-capable calendar with existing member roles. |
-| Google | Google Tasks list, not Google Calendar. Only two task statuses and a date-only scheduled day; no public recurrence field. Preserve richer Musubi fields. |
-| Microsoft | To Do list, not an Outlook event calendar. API supports timezone-aware dates, recurrence and five statuses; our current mapper does not preserve them all. Keep unproven shared/non-owner writes disabled. |
-| CalDAV | Collection with discovered VTODO support and verified access. Preserve resource URL, UID, ETag, alarms and unrelated properties. Identical UIDs across foreign accounts are not proof of shared identity. |
+| Musubi | Native calendar with existing member roles; one identity across calendars. |
+| Google | Google Tasks list. Conditional writes and two-state/date-only projections preserve richer Musubi data through baselines. An uncertain CREATE without an address cannot be retried. |
+| Microsoft | To Do list owned by the connected user. Existing home writes keep the prior ETag strategy. Secondary update/delete is blocked until To Do conditional-write behavior is verified; its receipt reports unsupported writing. An uncertain CREATE without an address cannot be retried. |
+| CalDAV | Discovered VTODO collection with verified access. Resource URL, UID and ETag retain scope; deterministic creation permits read-only reconciliation. Existing alarms and unrelated properties remain preserved. |
 
-Google's `due` is documented as a scheduled day, not a deadline, and discards
-time. Do not silently translate it into a claim of exact Musubi deadline
-fidelity. Microsoft provider IDs can change when a task moves to another list.
-Use explicit projection capabilities and account scope for both providers.
+Provider-native ACLs are not changed by a Musubi link. Google `due` is a scheduled
+calendar day and discards time; it is not exact deadline fidelity. CalDAV
+timestamps use wire-format second precision without truncating canonical times.
+Multiple provider projections for a recurring task are refused until a single occurrence
+generator is defined; native membership and existing home recurrence remain.
+Microsoft To Do has no documented conditional-write guarantee in its v1.0
+update/delete route contract. A preflight read alone is not atomic CAS, and weak
+ETag syntax alone is not evidence that a provider supports or rejects CAS.
 
 Primary references: [Google Task resource](https://developers.google.com/workspace/tasks/reference/rest/v1/tasks),
-[Google task creation](https://developers.google.com/workspace/tasks/reference/rest/v1/tasks/insert),
+[Google conditional PATCH](https://developers.google.com/workspace/tasks/performance),
 [Microsoft todoTask](https://learn.microsoft.com/en-us/graph/api/resources/todotask?view=graph-rest-1.0),
-[Microsoft todoTaskList](https://learn.microsoft.com/en-us/graph/api/resources/todotasklist?view=graph-rest-1.0),
-[CalDAV RFC 4791](https://www.rfc-editor.org/rfc/rfc4791) and
-[iCalendar RFC 5545](https://www.rfc-editor.org/rfc/rfc5545).
+[Microsoft update](https://learn.microsoft.com/en-us/graph/api/todotask-update?view=graph-rest-1.0),
+[Microsoft delete](https://learn.microsoft.com/en-us/graph/api/todotask-delete?view=graph-rest-1.0),
+[CalDAV RFC 4791](https://www.rfc-editor.org/rfc/rfc4791).
 
-## Clients and notifications
+## Receipts, notifications and clients
 
-Expose one task ID, home, readable memberships, revision and action
-capabilities. Never leak names of unreadable calendars. Update web/native
-filters, search, dated-task projection, detail and kanban to use readable
-memberships and render a logical task once. A readable secondary link must work
-even when home is absent from the reader's calendar list.
+- `GET /api/v1/task-deliveries` discovers unresolved owned receipts with UUID
+  keyset pagination, including retained deletes. Titles come from current
+  authorized task reads; unavailable subjects use a generic title.
+- `GET /api/v1/tasks/:taskId/delivery` returns sanitized per-destination status.
+  Shared readers see only their readable targets; owners may inspect retained
+  evidence. Payloads, remote addresses, ETags and raw provider errors stay private.
+- `POST /api/v1/tasks/:taskId/delivery/:operationId/retry` re-admits the exact saved
+  known-not-written operation, checking current source scope and destination
+  editing rights. Conflicts, unsupported writes and uncertain CREATE are refused.
+- Authenticated `task_created`, `task_updated` and `task_removed` SSE frames carry
+  only task ID, revision and the actual mutation actor. Native and web task stores
+  refresh; the notification center resolves current authorized titles. Provider
+  pulls refresh data without inventing another human actor.
 
-Content editing and completion use home rights; membership/copy actions use
-destination rights. Keep home selection in creation and sharing actions in the
-detail menu, following the existing event anatomy and shared shadcn components.
-Use `editTasks` consistently; do not infer it from `editEvents`.
+Sharing actions reuse event detail/menu anatomy and the shared shadcn components.
+Readonly mirrors keep link, copy and authorized unlink actions. Native and web
+both offer delivery status with the same server-validated retry boundary.
+Activity notices remain session-only; durable delivery receipts survive restart.
+Cross-instance task linking is not enabled: a local membership cannot reference
+another Musubi instance's calendar.
 
-Add member-scoped task SSE with trustworthy actor ID, task ID and revision;
-invalidate both web and native task stores. Add a typed task source/action to the
-[notification contract](../ui/notifications.md). Retain IDs/revisions rather
-than private content, and resolve titles through current authorized reads.
-Task delivery recovery needs its own truthful domain contract. The existing
-session-only activity boundary remains until a durable activity journal exists.
+## Migration and verification
 
-Client identities remain server-origin scoped. Audit federation task routes and
-peer capability negotiation before enabling cross-instance writes: a local
-junction cannot reference a calendar stored in another instance.
+Migration 0080 expands and backfills home, membership, revision, source-scoped
+mapping metadata, mutation ledger and outbox. Existing UUIDs, UIDs, provider IDs,
+ETags, tombstones and SEQUENCE are preserved; identical UIDs never merge tasks.
+0081 adds the scoped mapping lookup index. All task writers and calendar/account
+lifecycle paths use the new model; deploy API and current clients together.
 
-## Implementation order and activation checks
-
-1. Canonical membership/home model, backfill, privacy-safe reads and revision
-   contracts; update every writer under an activation gate.
-2. Scoped provider mappings, task outbox/recovery, origin-authoritative pull,
-   source retirement and projection-preserving fanout.
-3. Web/native sharing actions, permissions, deduplication, task SSE and
-   notification/recovery adapters; then enable multiple destinations.
-4. Extend recurring-task behavior only after defining one authoritative
-   occurrence generator. Independent provider repeaters can otherwise create
-   different next tasks; existing CalDAV recurrence patches also need review.
-
-Verify before activation: home vs secondary rights; two concurrent writers;
-duplicate link; unlink racing delete; inaccessible home with a readable link;
-different accounts exposing the same remote list; echo before ACK; loss of a
-CREATE response; worker restart; source read loss/restoration; late responses
-after deletion; preservation of rich fields after Google projection; shared
-completion with two provider copies; keyboard/focus and both themes. Extend
-existing task API, provider integration, task-calendar projection, web/native
-task, notification and Radicale round-trip tests for these cases.
+`pnpm test:db:tasks` runs migration preservation, DB ownership/CAS/lifecycle,
+receipt authorization/retry and authenticated API scenarios. Provider integration
+checks cover home/secondary pulls, scoped addresses, uncertain delivery,
+projection preservation and privacy retirement. Colocated Storybook and browser
+scenarios cover sharing actions, readonly mirrors, themes, focus and notifications.
