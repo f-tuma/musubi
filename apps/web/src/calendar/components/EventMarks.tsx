@@ -2,7 +2,9 @@ import { TaskStatusIcon } from "./TaskStatusIcon";
 import { isCalendarTask } from "@musubi/calendar";
 import type { Event } from "@musubi/types";
 import { Lock, Repeat, Users } from "lucide-react";
-import styles from "./workspace.module.css";
+
+/** Inline after a title, in the ink of whatever it sits on. */
+const MARKS = "ml-1 inline-flex items-center gap-0.5 align-middle opacity-85";
 
 /**
  * The non-colour half of an event's identity (R9).
@@ -18,13 +20,19 @@ export function EventMarks({
   event: Event;
   readOnly?: boolean;
 }) {
-  if (isCalendarTask(event)) return <span aria-hidden="true" className={styles.eventMarks}><TaskStatusIcon status={event.calendarTask.status} size={12} /></span>;
+  if (isCalendarTask(event)) {
+    return (
+      <span aria-hidden="true" className={MARKS} data-event-marks="">
+        <TaskStatusIcon status={event.calendarTask.status} size={12} />
+      </span>
+    );
+  }
   if (!event.recurrence && !event.hasAttendees && !readOnly) {
     return null;
   }
 
   return (
-    <span aria-hidden="true" className={styles.eventMarks}>
+    <span aria-hidden="true" className={MARKS} data-event-marks="">
       {event.recurrence ? <Repeat size={11} strokeWidth={2} /> : null}
       {event.hasAttendees ? <Users size={11} strokeWidth={2} /> : null}
       {readOnly ? <Lock size={11} strokeWidth={2} /> : null}
