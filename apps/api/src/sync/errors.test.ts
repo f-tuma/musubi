@@ -25,6 +25,10 @@ assert.equal(isTransientSyncError(new Error("Could not resolve p145-caldav.iclou
 assert.equal(isTransientSyncError(new ProviderAuthError("google", "invalid_grant", undefined, true)), false);
 // Anything else from the token endpoint is retryable and keeps the account on.
 assert.equal(isTransientSyncError(new ProviderAuthError("google", "token_endpoint_unreachable", undefined, false)), true);
+const rejectedFreshToken = new ProviderAuthError("google", "resource_401", undefined, false);
+assert.equal(isTransientSyncError(rejectedFreshToken), true);
+assert.equal(isOptionalTaskError(rejectedFreshToken), false);
+assert.match(rejectedFreshToken.message, /API authentication failed/);
 
 // Our own bugs and the provider's 4xx verdicts must stay visible.
 assert.equal(isTransientSyncError(new TypeError("x is not a function")), false);

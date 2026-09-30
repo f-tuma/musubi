@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { account, db } from "../index";
 import type { GoogleCheck } from "@musubi/types";
 
@@ -64,7 +64,7 @@ export async function getOAuthAccountIDs(userID: string, provider: string, accou
   // `calendarConnected`. Permanently revoked accounts stay excluded, while an
   // insufficient-scope status self-heals when the stored grant is actually full.
   const accountIDs: string[] = [];
-  const statusUpdates: Promise<void>[] = [];
+  const statusUpdates: Promise<unknown>[] = [];
   for (const row of rows) {
     if (!row.refreshToken) continue;
     const hasScopes = hasProviderSyncScopes(provider, row.scope ?? "");
@@ -95,6 +95,7 @@ export async function getOAuthAccountIDs(userID: string, provider: string, accou
 
 export async function getOAuthCredentials(userID: string, provider: string, accountID: string) {
   const [row] = await db.select({
+    id: account.id,
     scope: account.scope,
     accessToken: account.accessToken,
     refreshToken: account.refreshToken,
@@ -113,13 +114,30 @@ export async function getOAuthCredentials(userID: string, provider: string, acco
   return row;
 }
 
+type OAuthCredentialSnapshot = NonNullable<Awaited<ReturnType<typeof getOAuthCredentials>>>;
+
+// Refresh HTTP runs without a row lock. Compare the exact grant it used before
+// saving its result: a disconnect, relink or another process's refresh wins.
+function unchangedOAuthCredentials(expected?: OAuthCredentialSnapshot) {
+  if (!expected) return undefined;
+  return and(
+    eq(account.id, expected.id),
+    expected.accessToken === null ? isNull(account.accessToken) : eq(account.accessToken, expected.accessToken),
+    expected.refreshToken === null ? isNull(account.refreshToken) : eq(account.refreshToken, expected.refreshToken),
+    expected.accessTokenExpiresAt === null ? isNull(account.accessTokenExpiresAt) : eq(account.accessTokenExpiresAt, expected.accessTokenExpiresAt),
+    expected.scope === null ? isNull(account.scope) : eq(account.scope, expected.scope),
+    eq(account.syncStatus, expected.syncStatus),
+  );
+}
+
 export async function updateOAuthTokens(
   userID: string,
   provider: string,
   accountID: string,
   tokens: { accessToken: string; accessTokenExpiresAt: Date; refreshToken?: string; scope?: string },
+  expected?: OAuthCredentialSnapshot,
 ) {
-  await db.update(account)
+  const rows = await db.update(account)
     .set({
       accessToken: tokens.accessToken,
       accessTokenExpiresAt: tokens.accessTokenExpiresAt,
@@ -130,7 +148,11 @@ export async function updateOAuthTokens(
       eq(account.userId, userID),
       eq(account.providerId, provider),
       eq(account.accountId, accountID),
-    ));
+      unchangedOAuthCredentials(expected),
+    ))
+    .returning({ id: account.id })
+    .catch(() => { throw new Error("OAuth credential update failed"); });
+  return rows.length > 0;
 }
 
 export async function markOAuthAccountReconnectRequired(
@@ -139,8 +161,9 @@ export async function markOAuthAccountReconnectRequired(
   accountID: string,
   errorCode: string,
   errorSubtype?: string,
+  expected?: OAuthCredentialSnapshot,
 ) {
-  await db.update(account)
+  const rows = await db.update(account)
     .set({
       accessToken: null,
       refreshToken: null,
@@ -155,7 +178,11 @@ export async function markOAuthAccountReconnectRequired(
       eq(account.userId, userID),
       eq(account.providerId, provider),
       eq(account.accountId, accountID),
-    ));
+      unchangedOAuthCredentials(expected),
+    ))
+    .returning({ id: account.id })
+    .catch(() => { throw new Error("OAuth account status update failed"); });
+  return rows.length > 0;
 }
 
 // Better Auth calls this after a successful OAuth relink updates the account.
