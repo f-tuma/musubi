@@ -8,7 +8,7 @@ const meta = {
   title: "Calendar/Time grid clock changes",
   component: TimeGridView,
   parameters: { layout: "fullscreen", chromatic: { modes: DESKTOP_MODES } },
-  decorators: [Story => <div style={{ height: "100vh", overflow: "auto" }}><Story /></div>],
+  decorators: [Story => <div className="h-dvh overflow-auto"><Story /></div>],
   args: {
     anchor: new Date(2026, 9, 25), view: "week", calendars: fixtureCalendars, geometry: createTimeGeometry(), timeFormat: "24h", weekStartsOn: "monday",
     events: [{ ...fixtureEvents[0]!, title: "Clock-change handoff", start: new Date(2026, 9, 24, 2, 30), end: new Date(2026, 9, 24, 3, 30), isAllDay: false }],

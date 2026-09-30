@@ -7,21 +7,21 @@ and follow `.agents/skills/musubi-ui/SKILL.md` before editing.
 
 Hard rules:
 
-- Preserve Musubi's existing visual identity. Do not imitate generic SaaS UI or
-  another calendar product.
-- Reuse `apps/web/src/ui` primitives and existing feature patterns before
-  writing markup or CSS.
-- Feature code may own domain composition, never a second generic button, field,
-  dialog, popover, menu, row, picker, or toast shell.
-- Use shared semantic and foundation tokens. Hardcoded values are limited to
-  domain geometry, 1 px rules, and documented optical exceptions.
-- Keep Radix imports inside shared primitives in `apps/web/src/ui`.
-- Do not add a UI or styling dependency without explicit human approval.
-  Existing dependencies are not permission to introduce a parallel component
-  system.
-- For substantial restyles or new visual patterns, propose a Storybook variant
-  and get approval before changing production UI. Explicitly approved designs
-  and routine composition from existing patterns may proceed directly.
+- The UI guides by design, not by text. Titles name, rows are one line, help
+  goes behind a "?", one primary action per surface.
+- Style with Tailwind utilities from Musubi's theme. The theme is generated
+  from `packages/design-system`; add a missing value there, never inline it.
+- Build from `apps/web/src/components/ui` (shadcn components restyled to
+  Musubi). Feature code composes them; it never creates a second generic
+  button, field, dialog, popover, menu, row, picker, or toast.
+- A caller's `className` on a component is layout only. Variants own height,
+  padding, colour, type, radius and shadow.
+- Radix is imported only inside `apps/web/src/components/ui`.
+- `pnpm --filter @musubi/web lint` (`@shadcn/lint`, every rule at error) must
+  pass. Fix the cause; do not disable a rule or grow the legacy list.
+- Do not add a UI or styling dependency beyond Tailwind, shadcn/Radix, `cn`,
+  `class-variance-authority`, `tw-animate-css` and `lucide-react` without
+  explicit human approval.
 - Preserve keyboard behavior, focus return, accessible names, contrast, reduced
   motion, light/dark themes, and narrow layouts.
 - Do not edit generated files in `packages/design-system`; edit their TypeScript
@@ -29,10 +29,10 @@ Hard rules:
 
 Current sources of truth:
 
-- Active consolidation plan: `docs/ui/ui-consolidation-plan.md`
+- `.agents/skills/musubi-ui/SKILL.md`
 - `docs/ui/design-system.md`
 - `docs/ui/calendar-ui.md`
 - `packages/design-system`
 - `apps/web/src/design`
-- `apps/web/src/ui`
+- `apps/web/src/components/ui`
 - `ui-catalog`

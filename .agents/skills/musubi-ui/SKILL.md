@@ -1,150 +1,182 @@
 ---
 name: musubi-ui
 description: >-
-  Build, change, or review Musubi web UI while preserving its design language,
-  reusing existing components and tokens, and avoiding duplicate CSS or
-  dependencies. Use for React UI, CSS, responsive behavior, accessibility,
-  Storybook, dialogs, forms, calendar views, and visual polish under apps/web.
+  Build, change, or review Musubi web UI with Tailwind v4, the shadcn-based
+  components in apps/web/src/components/ui, and the tokens generated from
+  packages/design-system, enforced by @shadcn/lint. Use for React UI, styling,
+  responsive behavior, accessibility, Storybook, dialogs, forms, settings,
+  calendar views, and visual polish under apps/web.
 ---
 
 # Musubi web UI
 
-Maintain Musubi's own system. Do not replace it with an external component
-library.
+Musubi is styled with **Tailwind v4 utilities from Musubi's own theme** and
+built from **shadcn/ui components restyled to Musubi** in
+`apps/web/src/components/ui`. `@shadcn/lint` enforces the system: when it
+reports something, the fix is in the component or the theme, never a
+workaround.
 
-## Read before editing
+## The one rule behind the others
 
-1. Read relevant sections of `docs/ui/design-system.md`.
-2. For calendar behavior, layers, time geometry, gestures, or responsive shell
-   work, read relevant sections of `docs/ui/calendar-ui.md`.
-3. Inspect current implementation, callers, colocated stories, and matching
-   screenshots in `ui-catalog/`.
+**The UI guides by design, not by text.** Layout, grouping, alignment, state
+and one clear primary action tell people what to do. Copy names things; it
+does not explain them.
 
-Docs describe intent; production components and Storybook are implemented truth.
+- A dialog has a title. A description only when the title cannot say it, and
+  then one line.
+- A settings group has a heading and rows. No paragraph under the heading.
+  Background explanation goes behind a `help` "?" (`HelpTooltip`).
+- A row is one label and at most one short detail line.
+- An empty state is a title, at most one sentence, and the one action.
+- One primary button per surface, trailing. Everything else is secondary,
+  ghost or link.
+- No eyebrows ("STEP 1 OF 3", "WELCOME BACK"). Progress is `StepDots`.
 
-## Existing system
+## Where things live
 
-| Need                           | Source                                                         |
-| ------------------------------ | -------------------------------------------------------------- |
-| Shared renderer-free tokens    | `packages/design-system`                                       |
-| Web tokens and global behavior | `apps/web/src/design`                                          |
-| Generic web primitives         | `apps/web/src/ui`                                              |
-| Feature compositions           | `apps/web/src/calendar/components` and route/component folders |
-| Implemented component catalog  | colocated `*.stories.tsx` files                                |
-| Screen and layer baselines     | `ui-catalog/light` and `ui-catalog/dark`                       |
+| Need | Source |
+| --- | --- |
+| Tokens (colour, type, spacing, radii, heights, motion) | `packages/design-system/src/*.ts` → `pnpm --filter @musubi/design-system generate` |
+| Tailwind theme (generated) | `packages/design-system/src/tailwind.css` from `src/tailwind.ts` |
+| Stylesheet entry, base and layer mechanics | `apps/web/src/design/app.css`, `global.css`, `layers.css` |
+| Design-system components (the only place with `cva` variants and Radix) | `apps/web/src/components/ui/*.tsx` |
+| App-level compositions (auth card, route states) | `apps/web/src/components/*.tsx` |
+| Feature compositions | `apps/web/src/calendar/components`, `routes`, `onboarding` |
+| Class merging | `cn` from `~/lib/utils` (shadcn `cn`, taught Musubi's theme) |
+| Component catalog | colocated `*.stories.tsx` |
+| Screen baselines | `ui-catalog/light`, `ui-catalog/dark` |
 
-Keep renderers platform-specific. Do not move web components into a new package
-until extraction removes proven duplication.
+Never edit generated files in `packages/design-system`; edit the TypeScript
+and regenerate.
 
-## Workflow
+## The theme
 
-### 1. Reuse first
+Tailwind's defaults are cleared. Only Musubi's values exist, so a wrong class
+is an unknown class, not quiet drift.
 
-Search `apps/web/src/ui`, existing feature components, and stories before adding
-code. Extend an existing named variant when role is general. Do not add
-screen-specific appearance props to generic primitives.
+- **Colour:** surfaces `bg-canvas`, `bg-panel`, `bg-raised`, `bg-sunken`,
+  `bg-overlay`; ink `text-foreground`, `text-foreground-secondary`,
+  `text-muted-foreground`, `text-faint` (never for words); rules `border-border`,
+  `border-border-subtle`, `border-border-strong`; action `bg-primary`
+  (sumi) / `text-primary-foreground`; accent `shu` (vermilion) for emphasis,
+  destructive and focus only; `success`, `warning` (+ `-fill`); a calendar
+  colour is `bg-pigment` / `text-pigment` with `style={{ "--pigment": color }}`.
+  The shadcn names (`background`, `card`, `popover`, `muted`, `accent`,
+  `destructive`, `ring`, `input`) map onto the same values.
+- **Type:** `text-10`…`text-32` (pixel names), `text-display` for the auth and
+  route-state title, `font-sans` (Inter Tight, working UI), `font-serif`
+  (Noto Serif, titles and orientation), `font-medium` / `font-normal` only,
+  `tracking-label` for small caps.
+- **Spacing:** `1`…`8` = 4…32 px; half steps `0.5 1.5 2.5 3.5 4.5 5.5` for
+  component anatomy; layout steps `9 10 12 14 16 20 24 32 40 48 64 80 96`.
+  Named sizes: `h-control`, `h-control-compact`, `min-h-row`, `w-sidebar`,
+  `max-w-inspector`, `w-popover`, `h-dialog`, `pb-safe-bottom`.
+- **Radii:** `rounded-sm md lg chip control card sheet full`.
+- **Widths:** `max-w-compact` 440, `max-w-form` 560, `max-w-default` 720,
+  `max-w-wide` 960.
+- **Breakpoints:** `sm:` ≥ 600, `md:` ≥ 1024, `lg:` ≥ 1440 (mobile first;
+  `max-sm:` is ≤ 599).
+- **Motion / layers:** `duration-panel fast standard slow`,
+  `z-dialog z-popover` (+ `-overlay`, `-elevated`), `focus-inset` for rows in
+  scrolling surfaces.
 
-Use:
+Missing a value? Add it to `packages/design-system` by role, regenerate, and
+teach `cn` in `~/lib/utils.ts` if it is a new name in an existing group.
 
-- `Button` / `IconButton` for actions; `buttonClassName` for links styled as
-  actions.
-- `Dialog` / `ConfirmationDialog` for modal decisions.
-- `PopoverContent` for anchored lightweight layers.
-- `Menu` for short command lists, never one action or persistent choices.
-- `Field`, `Row`, `SettingsSection`, `Segmented`, `Select`, `Switch`,
-  `Checkbox`, and existing pickers for their named roles.
-- `Toast` for non-blocking feedback with at most one Undo action.
+## Components
 
-Only shared primitives may import Radix directly.
+Reuse before writing markup. Import from `~/components/ui/<name>`.
 
-### 2. Put code at correct layer
+- Actions: `Button` (`variant` primary | secondary | ghost | destructive |
+  link; `size` default | compact | icon | icon-compact; `loading`; `asChild`
+  for links). Icon-only buttons need `aria-label`.
+- Layers: `Dialog` + `DialogContent` (`size` compact | form | default | wide,
+  `tall` for standing windows, `side="right"` for the inspector, `elevated`
+  above popovers, `returnFocus`, `initialFocus`) with `DialogHeader`,
+  `DialogTitle`, `DialogDescription`, `DialogBody`, `DialogFooter`;
+  `ConfirmationDialog`; `Popover`; `DropdownMenu` (short command lists only);
+  `Tooltip` (names icons); `HelpTooltip` (background help); `Toast` (one
+  action at most, usually Undo).
+- Forms: `Field` (wires label, help, description, error to its one control),
+  `FieldGroup`, `FieldSet`, `Input`, `Textarea`, `InputGroup`, `Select`,
+  `Segmented` (2–4 visible choices), `Switch`, `Checkbox`, pickers.
+- Lists and settings: `SettingsSection` (heading + `ItemGroup` panel),
+  `Row`, `RowAction`, `RowToggle`, `RowOptions`, `Disclosure`, and the `Item*`
+  anatomy for anything custom.
+- Feedback: `InlineError`, `Empty`, `Badge`, `Spinner`, banners.
+- Pages: `AuthShell` (every pre-calendar screen), `RouteState` (full-page
+  states), `StepDots`.
 
-- Generic, stable, repeated UI: `apps/web/src/ui`, with colocated stories.
-- Domain-specific content and layout: owning feature folder.
-- Shared colors, spacing, type, radii, control sizes, or motion:
-  `packages/design-system` TypeScript source, then regenerate.
-- Calendar geometry and measured interaction values: owning calendar logic, not
-  global design tokens.
+A component's `className` from a caller is for **layout only**: margin,
+position, flex/grid placement, width. Height, padding, colour, type, radius
+and shadow belong to the component's variants. If the variant you need does
+not exist, add it to the component (with a story) when the role is general;
+otherwise compose a feature component from plain elements and utilities.
 
-No speculative abstraction or parallel component package.
+Only files in `src/components/ui` import Radix. Only they define `cva`
+variants for shared roles.
 
-### 3. Preserve visual language
+## Screens hold still
 
-- Warm washi surfaces, sumi text, restrained vermilion, muted calendar pigments.
-- Inter Tight for working UI; Noto Serif for orientation and meaningful titles.
+- Every pre-calendar screen is `AuthShell`: one card, `max-w-compact`, same
+  position, same title style, actions at the foot.
+- Standing dialogs (settings and its sections) are `tall` at a shared size so
+  switching sections never resizes the window.
+- Multi-step flows reserve the height of their tallest step (`min-h-*`) and
+  pin actions to the bottom: Back (ghost) leading, primary trailing.
+- Align to the same inset: `px-6` in dialogs and cards, `px-4` inside rows.
+
+## Lint is the contract
+
+`pnpm --filter @musubi/web lint` runs `@shadcn/lint` with every rule at
+`error`: `no-restyle`, `no-raw-colors`, `no-arbitrary-values`,
+`no-inline-styles`, `no-unknown-classes`, `require-static-classes`, plus bans
+on `*.module.css` and Radix imports outside `src/components/ui`.
+
+- Arbitrary values (`p-[13px]`, `grid-cols-[…]`) are not allowed. CSS
+  variable shorthand for runtime values from Radix or the calendar
+  (`max-h-(--radix-popover-content-available-height)`) is.
+- Inline `style` is for dynamic custom properties only
+  (`style={{ "--pigment": color, "--event-top": `${top}px` }}`), read by a
+  utility.
+- Files still on CSS modules are listed in the `legacy` block of
+  `apps/web/eslint.config.js`. Migrating a file removes it from that list; never
+  add to it.
+
+## Visual language
+
+- Warm washi surfaces, sumi ink, restrained shu, muted calendar pigments.
 - Quiet geometry, low-contrast grid, dominant event content.
-- No gratuitous gradients, glassmorphism, floating card mosaics, oversized app
-  headings, or generic blue SaaS chrome.
-- Use spacing, type, radius, control, and motion tokens by semantic
-  relationship.
-- Raw CSS values are acceptable only for 1 px rules, domain geometry, responsive
-  boundaries, measured/dynamic values, or documented optical exceptions.
-- Prefer CSS modules. Inline styles should pass dynamic values through CSS
-  custom properties, not recreate static styling.
+- No gradients, glassmorphism, floating card mosaics, oversized headings or
+  generic blue SaaS chrome.
 
-### 4. Respect approval gate
+## Interaction contracts
 
-Routine bug fixes and composition from approved patterns may go directly to
-production.
-
-For a substantial restyle or new visual pattern:
-
-1. Reproduce current state from `ui-catalog`.
-2. Prepare a Storybook variant using realistic Musubi content.
-3. Explain only meaningful trade-offs.
-4. Get human approval before changing production UI.
-
-A user-provided approved design or explicit instruction to implement one counts
-as approval.
-
-### 5. Keep interaction contracts
-
-- Correctness, accessibility, context continuity, and reversibility outrank
+- Correctness, accessibility, context continuity and reversibility outrank
   polish.
-- Preserve date, view, scroll, focus, draft, and active object unless task
-  explicitly changes them.
-- Support light/dark and `<=599`, `600–1023`, `1024–1439`, `>=1440` behavior
-  where affected.
-- Every interaction needs accessible name, keyboard path, focus-visible
-  behavior, and correct focus return.
-- Color cannot be sole signal.
-- Shared layer owns shell geometry; feature content must not compensate with
-  negative margins or rebuild insets.
+- Preserve date, view, scroll, focus, draft and active object unless the task
+  changes them.
+- Every interaction needs an accessible name, a keyboard path, visible focus
+  (the global keyboard focus ring; do not add `outline-none` without a
+  replacement) and correct focus return.
+- Colour is never the only signal.
+- Support light/dark and ≤ 599, 600–1023, 1024–1439, ≥ 1440.
 
-## Dependency policy
+## Approval and dependencies
 
-Do not add UI, styling, icon, animation, picker, form, or component-library
-dependencies without explicit human approval. First use native platform
-behavior, existing Musubi primitives, existing Radix packages, and
-`lucide-react`.
-
-If approval is requested, state exact missing capability, current alternatives,
-bundle/maintenance cost, and how Musubi styling remains authoritative. Do not
-install before approval.
+The Tailwind + shadcn system was approved on 2026-09-30. Composition from it
+goes straight to production. A new visual pattern gets a Storybook story
+first. Adding any other UI, styling, icon, animation or form dependency still
+needs explicit human approval.
 
 ## Verification
-
-Run smallest relevant checks:
 
 ```bash
 pnpm --filter @musubi/web typecheck
 pnpm --filter @musubi/web lint
 pnpm --filter @musubi/web test
+pnpm storybook:web:test   # when a component or story changed
 ```
 
-When changing a public primitive or story, also run:
-
-```bash
-pnpm storybook:web:test
-```
-
-Run relevant Playwright scenario for changed user flow. Update `ui-catalog` only
-when baseline change is approved.
-
-## Done when
-
-- Existing primitive was reused or missing general contract was added once.
-- No parallel palette, spacing scale, shell, or dependency appeared.
-- Production behavior matches approved design and current interaction rules.
-- Relevant story shows realistic overview, variants, states, and narrow anatomy.
-- Keyboard, accessibility, themes, responsive behavior, and checks pass.
+Run the relevant Playwright scenario for a changed flow. Update `ui-catalog`
+only when the baseline change is approved.

@@ -16,7 +16,7 @@ function ThemeFrame({ children, theme }: ThemeFrameProps) {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  return <div className="sb-page">{children}</div>;
+  return <div className="grid min-h-dvh place-items-center p-8">{children}</div>;
 }
 
 const withMusubiTheme: Decorator = (Story, context) => {
