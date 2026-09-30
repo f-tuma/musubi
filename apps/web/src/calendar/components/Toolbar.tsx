@@ -177,7 +177,7 @@ export function Toolbar({
                 }}
               >
                 <div className="grid gap-3 p-4">
-                  <SettingsSection title="Availability" help="Shown only on this page, for this session.">
+                  <SettingsSection title="Availability">
                     <RowToggle
                       checked={availability.shown}
                       label="Show selected availability"

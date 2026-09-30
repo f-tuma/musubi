@@ -63,9 +63,12 @@ export function HelpTooltip({ children, label }: { children: ReactNode; label: s
           }}
           onPointerDown={() => { pointerActivation.current = true; clearTimer(); }}
           onPointerCancel={() => { pointerActivation.current = false; }}
-          onFocus={() => {
+          onFocus={(event) => {
             focused.current = true;
             if (pointerActivation.current) return;
+            // Only a keyboard arrival opens it. Focus a layer moves here on its
+            // own (a popover opening onto this button) must not pop help up.
+            if (event.currentTarget.ownerDocument.documentElement.dataset.focusMode !== "keyboard") return;
             dismissed.current = false;
             clearTimer();
             setOpen(true);

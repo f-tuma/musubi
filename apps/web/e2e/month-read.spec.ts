@@ -9553,7 +9553,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     const editor = page.getByRole("dialog", { name: "Respond in calendar", exact: true });
     await expect(editor.getByRole("button", { name: "Send response to organizer" })).toBeDisabled();
     await chooseSelectOption(page, "Your response", "Tentative");
-    await editor.getByRole("button", { name: "About responses" }).focus(); await expect(page.getByRole("tooltip")).toContainText("Organizer delivery cannot be verified");
+    await editor.getByRole("button", { name: "About responses" }).hover(); await expect(page.getByRole("tooltip")).toContainText("Organizer delivery cannot be verified");
     await expectNoAccessibilityViolations(page);
     expect(await editor.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
     await editor.screenshot({ path: `/tmp/musubi-k12-live/caldav-rsvp-browser-${theme}.png` });
@@ -9752,7 +9752,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     if (mode === "initial-series") await expect(editor.getByText("Response applies to: Entire series")).toBeVisible();
     if (series) await expect(editor.getByText(/Existing exceptions keep their own response/)).toBeVisible();
     await chooseSelectOption(page, "Your response", "Tentative");
-    await editor.getByRole("button", { name: "About responses" }).focus(); await expect(page.getByRole("tooltip")).toContainText("Organizer delivery cannot be verified");
+    await editor.getByRole("button", { name: "About responses" }).hover(); await expect(page.getByRole("tooltip")).toContainText("Organizer delivery cannot be verified");
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
     await expectNoAccessibilityViolations(page);
     expect(await editor.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
