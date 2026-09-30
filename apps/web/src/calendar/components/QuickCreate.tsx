@@ -6,9 +6,9 @@ import {
 } from "@musubi/types";
 import { X } from "lucide-react";
 import { useRef, useState } from "react";
-import { IconButton } from "~/ui/Button";
+import { Button } from "~/components/ui/button";
+import { ConfirmationDialog } from "~/components/ui/confirmation-dialog";
 import { Inspector, InspectorContent, InspectorHeaderActions } from "~/ui/Inspector";
-import { ConfirmationDialog } from "~/ui/ConfirmationDialog";
 import {
   createEventFromForm,
   defaultEventFormValues,
@@ -18,8 +18,7 @@ import {
 import { toDateKey } from "../date-key";
 import { getEventMutationError } from "../event-permissions";
 import { type EventWhen, EventEditorForm } from "./EventEditorForm";
-import styles from "./styles/event-details.module.css";
-import editorStyles from "./styles/event-editor.module.css";
+import { PanelHeader, PanelTitle } from "./EventPanel";
 
 export type QuickCreateAnchor = {
   returnFocus?: HTMLElement | null;
@@ -146,7 +145,6 @@ export function QuickCreate({
         <InspectorContent
           accessibleTitle="Create event"
           persistent
-          className={styles.detailPopover}
 
           onOpenAutoFocus={event => { event.preventDefault(); titleRef.current?.focus(); }}
           // The existing draft can still be dragged; background presses close
@@ -161,16 +159,16 @@ export function QuickCreate({
             if (anchor.returnFocus?.isConnected) anchor.returnFocus.focus();
           }}
         >
-          <header data-inspector-header="" className={styles.editorHeader}>
-            <h2>New event</h2>
+          <PanelHeader accent={calendars.find(calendar => calendar.id === (draft ?? initialValues).calendarId)?.color}>
+            <PanelTitle>New event</PanelTitle>
             <InspectorHeaderActions>
               <div ref={setExpandActionContainer} />
-              <IconButton label="Close new event" size="compact" onClick={() => requestClose(() => {})}>
-                <X aria-hidden="true" size={17} strokeWidth={1.6} />
-              </IconButton>
+              <Button aria-label="Close new event" title="Close new event" size="icon-compact" variant="ghost" onClick={() => requestClose(() => {})}>
+                <X aria-hidden="true" strokeWidth={1.6} />
+              </Button>
             </InspectorHeaderActions>
-          </header>
-          <div className={editorStyles.inspectorFit}>
+          </PanelHeader>
+          <div className="flex min-h-0 flex-1 flex-col">
             <EventEditorForm
               calendars={calendars}
               localAccountName={userName?.trim() || email}
@@ -202,7 +200,7 @@ export function QuickCreate({
         onOpenChange={next => { if (!next) setDiscardAction(undefined); }}
         returnFocus={confirmationReturnFocus}
         title="Discard new event?"
-        description="This event has not been created."
+        description="Your draft will be lost."
         closeLabel="Keep editing"
         cancelLabel="Keep editing"
         confirmLabel="Discard event"
@@ -212,9 +210,7 @@ export function QuickCreate({
           setDiscardAction(undefined);
           finish?.();
         }}
-      >
-        <p>Your draft will be lost.</p>
-      </ConfirmationDialog>
+      />
     </>
   );
 }

@@ -1,13 +1,14 @@
-import styles from "./styles/event-delivery.module.css";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { getEventDeliveryInbox } from "~/api/resources";
 import { getServerOrigin, queryKeys } from "~/api/query-keys";
-import { Button } from "~/ui/Button";
-import { Dialog, DialogInfo } from "~/ui/Dialog";
-import { InlineError } from "~/ui/InlineError";
-import { Row, RowAction } from "~/ui/Row";
-import { SettingsSection } from "~/ui/SettingsSection";
+import { Button } from "~/components/ui/button";
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { HelpTooltip } from "~/components/ui/help-tooltip";
+import { InlineError } from "~/components/ui/inline-error";
+import { Row, RowAction } from "~/components/ui/row";
+import { SettingsSection } from "~/components/ui/settings-section";
+import { focusDialogBody } from "./dialog-focus";
 import { EventDeliveryDialog } from "./EventDeliveryDialog";
 
 type Props = {
@@ -48,7 +49,7 @@ export function EventDeliveryInboxDialog({
   ];
   return (
     <div
-      className={styles.layerBoundary}
+      className="contents"
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}
@@ -58,65 +59,70 @@ export function EventDeliveryInboxDialog({
         onOpenChange={(open) => {
           if (!open) onClose();
         }}
-        title="Unfinished deliveries"
-        headerActions={<DialogInfo label="About unfinished deliveries" title="Unfinished deliveries">Your saved changes that still need delivery or attention, including deleted events.</DialogInfo>}
-        closeLabel="Close unfinished deliveries"
-        bodyLayout="flush"
-        returnFocus={returnFocus}
-        footer={
-          <Button
-            variant="secondary"
-            disabled={query.isFetching}
-            onClick={() => void query.refetch()}
-          >
-            Refresh list
-          </Button>
-        }
       >
-        <SettingsSection title="Saved changes">
-          {query.isPending ? <Row label="Loading saved deliveries…" /> : null}
-          {query.isError ? (
-            <InlineError>
-              Could not load unfinished deliveries. This server may be
-              unavailable or may need an update.
-            </InlineError>
-          ) : null}
-          {!query.isError && query.data && items.length === 0 ? (
-            <Row
-              label="No unfinished deliveries found"
-              detail="This list contains your own saved operations only. It does not certify every connected calendar."
-            />
-          ) : null}
-          {!query.isError
-            ? items.map((item) => (
-                <RowAction
-                  key={item.eventId}
-                  label={item.savedTitle || "Untitled event"}
-                  detail="Open delivery records · saved title"
-                  onClick={(event) =>
-                    setSelected({
-                      id: item.eventId,
-                      trigger: event.currentTarget,
-                    })
+        <DialogContent onOpenAutoFocus={focusDialogBody} size="form" closeLabel="Close unfinished deliveries" returnFocus={returnFocus} aria-describedby={undefined}>
+          <DialogHeader>
+            <div className="flex items-center gap-1">
+              <DialogTitle>Unfinished deliveries</DialogTitle>
+              <HelpTooltip label="About unfinished deliveries">
+                Your saved changes that still need delivery or attention, including deleted events. Only your own saved changes are listed.
+              </HelpTooltip>
+            </div>
+          </DialogHeader>
+          <DialogBody>
+            {query.isError ? (
+              <InlineError>
+                Could not load unfinished deliveries. This server may be
+                unavailable or may need an update.
+              </InlineError>
+            ) : null}
+            <SettingsSection title="Saved changes">
+              {query.isPending ? <Row label="Loading saved deliveries…" /> : null}
+              {!query.isError && query.data && items.length === 0 ? (
+                <Row label="No unfinished deliveries found" />
+              ) : null}
+              {!query.isError
+                ? items.map((item) => (
+                    <RowAction
+                      key={item.eventId}
+                      label={item.savedTitle || "Untitled event"}
+                      detail="Open delivery records · saved title"
+                      onClick={(event) =>
+                        setSelected({
+                          id: item.eventId,
+                          trigger: event.currentTarget,
+                        })
+                      }
+                    />
+                  ))
+                : null}
+              {query.hasNextPage ? (
+                <Row
+                  label="More saved deliveries"
+                  trailing={
+                    <Button
+                      disabled={query.isFetching}
+                      size="compact"
+                      variant="secondary"
+                      onClick={() => void query.fetchNextPage()}
+                    >
+                      Load more
+                    </Button>
                   }
                 />
-              ))
-            : null}
-          {query.hasNextPage ? (
-            <Row
-              label="More saved deliveries"
-              trailing={
-                <Button
-                  disabled={query.isFetching}
-                  variant="secondary"
-                  onClick={() => void query.fetchNextPage()}
-                >
-                  Load more
-                </Button>
-              }
-            />
-          ) : null}
-        </SettingsSection>
+              ) : null}
+            </SettingsSection>
+          </DialogBody>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              disabled={query.isFetching}
+              onClick={() => void query.refetch()}
+            >
+              Refresh list
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
       {selected ? (
         <EventDeliveryDialog

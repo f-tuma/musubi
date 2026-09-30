@@ -3,7 +3,7 @@ import type { Calendar } from "@musubi/types";
 import { useState } from "react";
 import { expect, userEvent, within } from "storybook/test";
 import { DESKTOP_MODES, MOBILE_MODES } from "../../../.storybook/modes";
-import { Button } from "~/ui/Button";
+import { Button } from "~/components/ui/button";
 import { fixtureCalendars } from "../fixtures";
 import { QuickCreate } from "./QuickCreate";
 

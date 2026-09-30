@@ -34,7 +34,8 @@ it("sends CalDAV's explicit server reply policy and keeps an offline retry immut
   const caldav = { ...observation, rsvpEdit: { provider: "caldav" as const, expectedRevision: 7 }, state: { ...observation.state!, provider: "caldav" as const, reminders: { provider: "caldav" as const, alarms: [] } } };
   save.mockRejectedValueOnce(new Error("offline")).mockResolvedValue({ status: "completed" });
   render(<ProviderRsvpEditor eventId="event" observation={caldav} returnFocus={document.body} onClose={vi.fn()} />);
-  expect(screen.getByText(/Organizer delivery cannot be verified/)).toBeTruthy();
+  fireEvent.focus(screen.getByRole("button", { name: "About responses" }));
+  expect((await screen.findByRole("tooltip")).textContent).toMatch(/Organizer delivery cannot be verified/);
   fireEvent.click(screen.getByRole("combobox", { name: "Your response" }));
   fireEvent.click(await screen.findByRole("option", { name: "Accept" }));
   fireEvent.click(screen.getByRole("button", { name: "Send response to organizer" }));
@@ -51,7 +52,8 @@ it.each([undefined, "occurrence"] as const)("sends an Outlook %s response with i
   save.mockRejectedValueOnce(new Error("offline")).mockResolvedValue({ status: "completed" });
   render(<ProviderRsvpEditor eventId="event" observation={graph} returnFocus={document.body} onClose={vi.fn()} />);
   if (scope) expect(screen.getByRole("dialog", { name: "Respond to this occurrence" })).toBeTruthy();
-  expect(screen.getByText(/Organizer delivery cannot be verified/)).toBeTruthy();
+  fireEvent.focus(screen.getByRole("button", { name: "About responses" }));
+  expect((await screen.findByRole("tooltip")).textContent).toMatch(/Organizer delivery cannot be verified/);
   fireEvent.click(screen.getByRole("combobox", { name: "Your response" }));
   fireEvent.click(await screen.findByRole("option", { name: "Accept" }));
   fireEvent.click(screen.getByRole("button", { name: "Send response to organizer" }));
