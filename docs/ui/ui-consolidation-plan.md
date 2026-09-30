@@ -1,3 +1,5 @@
+> **Superseded (2026-09-30):** the web UI moved to Tailwind v4 + shadcn components enforced by `@shadcn/lint`. See `design-system.md` and `.agents/skills/musubi-ui/SKILL.md`. This plan describes the CSS-module era and is kept for history.
+
 # Web UI consolidation plan
 
 - Status: **worked through. Two items stay open on their own conditions:
