@@ -935,7 +935,8 @@ describe("Workspace", () => {
     );
 
     // Successful save returns to the detail; deletion still requires confirmation.
-    await user.click(screen.getByRole("button", { name: "Delete" }));
+    await user.click(screen.getByRole("button", { name: "More event actions" }));
+    await user.click(screen.getByRole("menuitem", { name: "Delete" }));
     expect(onRemoveEvent).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Delete" }));
 
@@ -968,7 +969,8 @@ describe("Workspace", () => {
     );
 
     await user.click(screen.getByRole("button", { name: /Board game pub/ }));
-    await user.click(screen.getByRole("button", { name: "Delete" }));
+    await user.click(screen.getByRole("button", { name: "More event actions" }));
+    await user.click(screen.getByRole("menuitem", { name: "Delete" }));
     expect(onRemoveEvent).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole("button", { name: "Delete" }));

@@ -1,7 +1,6 @@
 import { isCalendarTask } from "@musubi/calendar";
 import { CalendarTaskDetails } from "./CalendarTaskDetails";
 import { isGoogleEditorPrivacyRefresh, refreshPrivateEditorBaseline, refreshPrivateEditorValues, rememberPrivateEditorChanges, type PrivateEditorField } from "../event-editor-privacy";
-import { Empty } from "~/ui/Empty";
 import { ProviderRsvpEditor } from "./ProviderRsvpEditor";
 import { ProviderReminderEditor } from "./ProviderReminderEditor";
 import { getServerOrigin } from "~/api/query-keys";
@@ -27,14 +26,13 @@ import {
 import type { Calendar, Event, Settings } from "@musubi/types";
 import { providerDisplayName, providerFlavor, sameRule } from "@musubi/types";
 import {
-	AlertTriangle,
 	ArrowLeft,
 	BellRing,
-	CalendarDays,
 	ChevronDown,
 	Check,
 	Clock3,
 	CopyPlus,
+	Ellipsis,
 	FileText,
 	Link2,
 	MapPin,
@@ -45,7 +43,7 @@ import {
 	UsersRound,
 	X,
 } from "lucide-react";
-import type { CSSProperties, ReactElement, ReactNode } from "react";
+import type { ReactElement } from "react";
 import { useEffect, useId, useRef, useState } from "react";
 import type { Attendee, RemoveEventResponse } from "~/api/contracts";
 import {
@@ -56,14 +54,16 @@ import {
 } from "../attendance";
 import { EventDeliveryDialog } from "./EventDeliveryDialog";
 import { getEventAttendees } from "~/api/resources";
-import { Avatar } from "~/ui/Avatar";
-import { Disclosure } from "~/ui/Disclosure";
-import { AvatarStackPreview } from "~/ui/AvatarStack";
-import { Button, IconButton } from "~/ui/Button";
-import {
-	ConfirmationDialog,
-	ConfirmationNotice,
-} from "~/ui/ConfirmationDialog";
+import { cn } from "~/lib/utils";
+import { Avatar, AvatarStackPreview } from "~/components/ui/avatar";
+import { Button } from "~/components/ui/button";
+import { ConfirmationDialog } from "~/components/ui/confirmation-dialog";
+import { Disclosure } from "~/components/ui/disclosure";
+import { Empty } from "~/components/ui/empty";
+import { HelpTooltip } from "~/components/ui/help-tooltip";
+import { InlineError } from "~/components/ui/inline-error";
+import { ItemGroup } from "~/components/ui/item";
+import { RowAction } from "~/components/ui/row";
 import {
 	Menu,
 	MenuContent,
@@ -72,10 +72,6 @@ import {
 	MenuTrigger,
 } from "~/ui/Menu";
 import { InspectorHeaderActions, Inspector as Popover, InspectorTrigger as PopoverTrigger, InspectorClose as PopoverClose, InspectorContent as PopoverContent } from "~/ui/Inspector";
-
-import { InlineError } from "~/ui/InlineError";
-import { Row, RowAction } from "~/ui/Row";
-import { SectionLabel } from "~/ui/SectionLabel";
 import { getEventDateLabel, getEventRangeLabel } from "../calendar-math";
 import {
 	eventFormValues,
@@ -107,8 +103,8 @@ import {
 } from "@musubi/types";
 import { CalendarDot } from "./CalendarDot";
 import { EventEditorForm } from "./EventEditorForm";
+import { DetailList, DetailRow, detailLinkClassName, PanelBody, PanelFooter, PanelHeader, PanelTitle } from "./EventPanel";
 import { RecurrenceScopeDialog } from "./RecurrenceScopeDialog";
-import styles from "./styles/event-details.module.css";
 
 type TargetMutation = {
 	expectedRevision?: number;
@@ -224,7 +220,9 @@ function CalendarEventDetailsPopover({
 	const [expandActionContainer, setExpandActionContainer] = useState<HTMLDivElement | null>(null);
 	const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [deleteButtonElement, setDeleteButtonElement] = useState<HTMLButtonElement | null>(null);
+  // The overflow menu holds Delete, so its trigger is where a closed prompt returns focus.
+  const [moreTriggerElement, setMoreTriggerElement] = useState<HTMLButtonElement | null>(null);
+  const [notesExpanded, setNotesExpanded] = useState(false);
   const editButtonRef = useRef<HTMLButtonElement>(null);
   const wasEditing = useRef(false);
   useEffect(() => { if (wasEditing.current && !editing && open) editButtonRef.current?.focus(); wasEditing.current = editing; }, [editing, open]);
@@ -251,10 +249,8 @@ function CalendarEventDetailsPopover({
 	const [busyAction, setBusyAction] = useState<string>();
 	const [targetAction, setTargetAction] = useState<TargetAction>();
 	const [pendingTargetId, setPendingTargetId] = useState<string>();
-	const linkActionRef = useRef<HTMLButtonElement>(null);
 	const [editSubmitElement, setEditSubmitElement] =
 		useState<HTMLButtonElement | null>(null);
-	const forkActionRef = useRef<HTMLButtonElement>(null);
 	const targetListRef = useRef<HTMLDivElement>(null);
 	const [actionError, setActionError] = useState<{
 		message: string;
@@ -555,15 +551,10 @@ function CalendarEventDetailsPopover({
 	}
 
 	function hideTargetCalendars() {
-		const previousAction = targetAction;
 		setActionError(undefined);
 		setTargetAction(undefined);
-		requestAnimationFrame(() => {
-			(previousAction === "link"
-				? linkActionRef.current
-				: forkActionRef.current
-			)?.focus();
-		});
+		// Link and Copy live in the overflow menu, so its trigger takes focus back.
+		requestAnimationFrame(() => moreTriggerElement?.focus());
 	}
 
 	const reminder = reminders ? eventReminder(reminders, master) : undefined;
@@ -618,9 +609,30 @@ function CalendarEventDetailsPopover({
 		}
 	}
 
-	const surfaceStyle = {
-		"--event-accent": accentColor,
-	} as CSSProperties;
+	const orderedCalendars = [...eventCalendars].sort(
+		(left, right) => Number(right.id === homeCalendarId) - Number(left.id === homeCalendarId),
+	);
+	const answerText = answerLabel(mine) ?? "Answer";
+	const showAnswer = Boolean(master.hasAttendees && attendees);
+	const noteText = (text: string) =>
+		noteParts(text).map((part, index) =>
+			part.href ? (
+				<a
+					aria-label={`Open ${part.href}`}
+					className={detailLinkClassName}
+					href={part.href}
+					key={`${part.href}-${index}`}
+					rel="noreferrer"
+					target="_blank"
+					title={part.href}
+				>
+					{part.text}
+				</a>
+			) : (
+				part.text
+			),
+		);
+	const longNotes = (event.description?.length ?? 0) > 240;
 
 	return (
 		<>
@@ -629,59 +641,59 @@ function CalendarEventDetailsPopover({
 					asChild
 					onClick={(clickEvent) => {
 						setTriggerElement(clickEvent.currentTarget);
-
 					}}
 				>
 					{children}
 				</PopoverTrigger>
 				<PopoverContent
 					aria-labelledby={titleId}
-					className={styles.detailPopover}
-
-          accessibleTitle={editing ? "Edit event" : event.title}
-          persistent={editing}
-          onFocusOutside={focusEvent => focusEvent.preventDefault()}
+					accessibleTitle={editing ? "Edit event" : event.title}
+					persistent={editing}
+					onFocusOutside={focusEvent => focusEvent.preventDefault()}
 					onEscapeKeyDown={(escapeEvent) => {
 						if (!targetAction) return;
 						escapeEvent.preventDefault();
 						hideTargetCalendars();
 					}}
-					style={surfaceStyle}
 				>
 					{editing && !editable ? (
-            <>
-              <header data-inspector-header="" className={styles.editorHeader}>
-                <h2 id={titleId}>This event is read-only</h2>
-                <InspectorHeaderActions><IconButton label="Close event editor" size="compact" onClick={() => requestExit(() => {})}>
-                  <X size={17} strokeWidth={1.6} />
-                </IconButton></InspectorHeaderActions>
-              </header>
-              <Empty title="Your draft is kept" description="Your own changes are kept while this editor is open." />
-            </>
-          ) : editing ? (
 						<>
-							<header data-inspector-header="" className={styles.editorHeader}>
-								<h2 id={titleId}>{master.recurrence ? "Edit series" : "Edit event"}</h2>
-                <InspectorHeaderActions>
-                  <div ref={setExpandActionContainer} />
-								<IconButton
-									label="Close event editor"
-									size="compact"
-									onClick={() => requestExit(() => {}, false)}
-								>
-									<X size={17} strokeWidth={1.6} />
-								</IconButton>
-                </InspectorHeaderActions>
-							</header>
+							<PanelHeader accent={accentColor}>
+								<PanelTitle id={titleId}>This event is read-only</PanelTitle>
+								<InspectorHeaderActions>
+									<Button aria-label="Close event editor" title="Close event editor" size="icon-compact" variant="ghost" onClick={() => requestExit(() => {})}>
+										<X aria-hidden="true" strokeWidth={1.6} />
+									</Button>
+								</InspectorHeaderActions>
+							</PanelHeader>
+							<Empty title="Your draft is kept" description="It stays here while this editor is open." />
+						</>
+					) : editing ? (
+						<>
+							<PanelHeader accent={accentColor}>
+								<PanelTitle id={titleId}>{master.recurrence ? "Edit series" : "Edit event"}</PanelTitle>
+								<InspectorHeaderActions>
+									<div ref={setExpandActionContainer} />
+									<Button
+										aria-label="Close event editor"
+										title="Close event editor"
+										size="icon-compact"
+										variant="ghost"
+										onClick={() => requestExit(() => {}, false)}
+									>
+										<X aria-hidden="true" strokeWidth={1.6} />
+									</Button>
+								</InspectorHeaderActions>
+							</PanelHeader>
 							<EventEditorForm
-                rdateMaster={homeCalendar?.provider === "caldav" && !liveMaster.seriesID ? liveMaster : undefined}
-                key={draft?.privacyRevision ?? "initial"}
-                onValuesChange={(values) => setDraft(current => current ? { ...current, values, ownedFields: rememberPrivateEditorChanges(current.values ?? eventFormValues(master.recurrence && onRestoreEvent ? occurrence : master), values, current.ownedFields) } : current)}
+								rdateMaster={homeCalendar?.provider === "caldav" && !liveMaster.seriesID ? liveMaster : undefined}
+								key={draft?.privacyRevision ?? "initial"}
+								onValuesChange={(values) => setDraft(current => current ? { ...current, values, ownedFields: rememberPrivateEditorChanges(current.values ?? eventFormValues(master.recurrence && onRestoreEvent ? occurrence : master), values, current.ownedFields) } : current)}
 								calendarLocked
 								calendars={calendars}
-                localAccountName={user.name}
-                layout="panel"
-                expandActionContainer={expandActionContainer}
+								localAccountName={user.name}
+								layout="panel"
+								expandActionContainer={expandActionContainer}
 								initialValues={draft?.values ?? eventFormValues(
 									master.recurrence && onRestoreEvent ? occurrence : master,
 								)}
@@ -719,358 +731,333 @@ function CalendarEventDetailsPopover({
 						</>
 					) : (
 						<>
-							<header data-inspector-header="" className={styles.detailsHeader}>
-								<div className={styles.titleBlock}>
-									<h2 id={titleId}>{event.title}</h2>
-<ul aria-label="Calendars" className={styles.calendarPills}>
-									{eventCalendars.length > 0 ? (
-										eventCalendars.map((item) => (
-											<li
-												className={styles.calendarPill}
-												data-home={item.id === homeCalendarId ? "" : undefined}
-												aria-label={item.id === homeCalendarId ? `${item.name} · Home calendar` : undefined}
-												title={item.id === homeCalendarId ? "Home calendar" : undefined}
-												key={item.id}
-											>
-												{item.provider ? (
-													<AccountMark flavor={providerFlavor(item)} size="compact" color={item.color} />
-												) : <CalendarDot color={item.color} />}
-												{item.name}
-											</li>
-										))
-									) : (
-										<li className={styles.calendarPill}>
-											<CalendarDot color={accentColor} />
-											Calendar
-										</li>
-									)}
-								</ul>
-									{event.recurrence ? (
-										<span className={styles.recurrenceMark}>
-											<Repeat2 aria-hidden="true" size={13} />
-											Recurring
+							<PanelHeader accent={accentColor}>
+								<PanelTitle id={titleId}>{event.title}</PanelTitle>
+								<InspectorHeaderActions>
+									<PopoverClose asChild>
+										<Button aria-label="Close event details" title="Close event details" size="icon-compact" variant="ghost">
+											<X aria-hidden="true" strokeWidth={1.6} />
+										</Button>
+									</PopoverClose>
+								</InspectorHeaderActions>
+							</PanelHeader>
+
+							<PanelBody>
+								<DetailList>
+									<DetailRow icon={<Clock3 strokeWidth={1.5} />} label="When">
+										<span className="flex flex-wrap items-center gap-x-2">
+											<span>{getEventDateLabel(event)}</span>
+											<span aria-hidden="true" className="text-muted-foreground">·</span>
+											<span>{getEventRangeLabel(event, timeFormat)}</span>
+											{!event.isAllDay ? <span className="text-muted-foreground">{getDurationLabel(event)}</span> : null}
+											{event.recurrence ? (
+												<span className="inline-flex items-center gap-1 text-foreground-secondary">
+													<Repeat2 aria-hidden="true" className="size-3.5" strokeWidth={1.6} />
+													Recurring
+												</span>
+											) : null}
 										</span>
+									</DetailRow>
+									<DetailRow
+										icon={homeCalendar?.provider
+											? <AccountMark flavor={providerFlavor(homeCalendar)} size="compact" color={accentColor} />
+											: <CalendarDot color={accentColor} />}
+										label="Calendars"
+									>
+										<ul aria-label="Calendars" className="flex flex-wrap gap-x-3 gap-y-1">
+											{orderedCalendars.length > 0 ? (
+												orderedCalendars.map((item) => {
+													const home = item.id === homeCalendarId;
+													return (
+														<li
+															aria-label={home ? `${item.name} · Home calendar` : undefined}
+															className={cn("inline-flex min-w-0 items-center gap-1.5", home ? "font-medium text-foreground" : "text-foreground-secondary")}
+															key={item.id}
+															title={home ? "Home calendar" : undefined}
+														>
+															{home ? null : <CalendarDot color={item.color} />}
+															{item.name}
+														</li>
+													);
+												})
+											) : (
+												<li>Calendar</li>
+											)}
+										</ul>
+									</DetailRow>
+									{event.location ? (
+										<DetailRow icon={<MapPin strokeWidth={1.5} />} label="Location">
+											{event.location}
+										</DetailRow>
 									) : null}
-								</div>
-								<InspectorHeaderActions><PopoverClose asChild>
-									<IconButton label="Close event details" size="compact">
-										<X size={17} strokeWidth={1.6} />
-									</IconButton>
-								</PopoverClose></InspectorHeaderActions>
-							</header>
+									{event.url ? (
+										<DetailRow icon={<Link2 strokeWidth={1.5} />} label="Link">
+											<ExternalEventLink url={event.url} />
+										</DetailRow>
+									) : null}
+								</DetailList>
 
-							<div className={styles.detailsBody}>
-
-								<dl className={styles.whenList}>
-									<DetailRow
-										icon={<CalendarDays size={18} strokeWidth={1.5} />}
-										label="Date"
-										value={getEventDateLabel(event)}
-									/>
-									<DetailRow
-										icon={<Clock3 size={18} strokeWidth={1.5} />}
-										label="Time"
-										value={
-											<span className={styles.timeValue}>
-												<span>{getEventRangeLabel(event, timeFormat)}</span>
-												{!event.isAllDay ? (
-													<>
-														<span aria-hidden="true">·</span>
-														<span>{getDurationLabel(event)}</span>
-													</>
-												) : null}
-											</span>
-										}
-									/>
-								</dl>
-
-
-
-								{event.location || event.url ? (
-									<dl className={styles.infoList}>
-										{event.location ? (
-											<DetailRow
-												icon={<MapPin size={18} strokeWidth={1.5} />}
-												label="Location"
-												value={event.location}
-											/>
-										) : null}
-										{event.url ? (
-											<DetailRow
-												icon={<Link2 size={18} strokeWidth={1.5} />}
-												label="Link"
-												value={<ExternalEventLink url={event.url} />}
-											/>
-										) : null}
-									</dl>
+								{master.hasAttendees ? (
+									<section aria-busy={!attendees} aria-labelledby={guestsTitleId}>
+										{attendees ? (
+											<Disclosure
+												density="compact"
+												icon={<UsersRound aria-hidden="true" strokeWidth={1.5} />}
+												label={<span id={guestsTitleId}>{`${homeCalendar?.provider ? "Musubi attendees" : "Attendees"} · ${going.length}`}</span>}
+												value={going.length ? <AvatarStackPreview limit={2} people={going} /> : undefined}
+												open={attendeesOpen}
+												onOpenChange={setAttendeesOpen}
+											>
+												{attendees.length ? (
+													<ul className="grid gap-3 pl-7">
+														{groupAttendees(attendees).map((group) => (
+															<li className="grid gap-2" key={group.status}>
+																<p className="text-11 font-medium tracking-label text-muted-foreground uppercase">{group.title}</p>
+																<ul className="grid max-h-48 gap-2 overflow-y-auto overscroll-contain">
+																	{group.items.map((item) => (
+																		<li className="flex min-w-0 items-center gap-3" key={item.id}>
+																			<Avatar image={item.image} name={item.name} size="compact" />
+																			<span className="truncate text-13 text-foreground">{item.name}</span>
+																		</li>
+																	))}
+																</ul>
+															</li>
+														))}
+													</ul>
+												) : <p className="pl-7 text-13 text-muted-foreground">Be the first to answer.</p>}
+											</Disclosure>
+										) : (
+											<DetailList>
+												<DetailRow icon={<UsersRound strokeWidth={1.5} />} label="Attendees">
+													<h3 className="sr-only" id={guestsTitleId}>Attendees</h3>
+													<span className="text-muted-foreground" role="status">Loading guests…</span>
+												</DetailRow>
+											</DetailList>
+										)}
+									</section>
 								) : null}
 
-								                {master.hasAttendees ? (
-                  <section aria-busy={!attendees} aria-labelledby={guestsTitleId} className={styles.attendeeSection}>
-                    {attendees ? <>
-                      <Disclosure
-                        density="compact"
-                        icon={<UsersRound aria-hidden="true" size={18} strokeWidth={1.5} />}
-                        label={<span id={guestsTitleId}>{`${homeCalendar?.provider ? "Musubi attendees" : "Attendees"} · ${going.length}`}</span>}
-                        value={going.length ? <AvatarStackPreview limit={2} people={going} /> : undefined}
-                        open={attendeesOpen}
-                        onOpenChange={setAttendeesOpen}
-                      >
-                        {attendees.length ? <ul className={styles.attendeeGroups}>
-												{groupAttendees(attendees).map((group) => (
-													<li key={group.status}>
-														<p className={styles.attendeeGroupTitle}>{group.title}</p>
-														<ul className={styles.attendeeList}>
-															{group.items.map((item) => (
-																<li key={item.id}>
-																	<Avatar image={item.image} name={item.name} size="default" />
-																	<span>{item.name}</span>
-																</li>
-															))}
-														</ul>
-													</li>
-												))}
-											</ul> : <p>Be the first to answer.</p>}
-                      </Disclosure>
-                      <Row className={styles.attendeeAnswer} size="compact" label={homeCalendar?.provider ? "Your Musubi answer" : "Your answer"} trailing={<Menu>
-													<MenuTrigger asChild>
-														<Button
-															className={styles.answerTrigger}
-															loading={busyAction === "attendance"}
-															size="compact"
-															variant={mine ? "primary" : "secondary"}
-														>
-															{answerLabel(mine) ?? "Answer"}
-															<ChevronDown aria-hidden="true" size={14} />
-														</Button>
-													</MenuTrigger>
-													<MenuContent align="end" label="Your answer">
-														{ATTENDANCE_CHOICES.map((choice) => (
-															<MenuItem
-																icon={
-																	mine === choice.value ? (
-																		<Check aria-hidden="true" size={15} />
-																	) : undefined
-																}
-																key={choice.value}
-																onSelect={() => void handleAnswer(choice.value)}
-															>
-																{choice.label}
-															</MenuItem>
-														))}
-														{mine ? (
-															<>
-																<MenuSeparator />
-																<MenuItem onSelect={() => void handleAnswer("none")}>
-																	Clear answer
-																</MenuItem>
-															</>
-														) : null}
-													</MenuContent>
-												</Menu>} />
-                    </> : <>
-                      <SectionLabel id={guestsTitleId} level={3}>Attendees</SectionLabel>
-                      <p role="status">Loading guests…</p>
-                    </>}
-                  </section>
-                ) : null}
-
-{event.description ? (
-									<section aria-labelledby={notesTitleId} className={styles.notes}>
-										<div className={styles.sectionHeading}>
-											<FileText aria-hidden="true" size={17} />
-											<SectionLabel id={notesTitleId} level={3}>
-												Notes
-											</SectionLabel>
+								{event.description ? (
+									<section aria-labelledby={notesTitleId} className="flex gap-2">
+										<h3 className="sr-only" id={notesTitleId}>Notes</h3>
+										<FileText aria-hidden="true" className="mt-0.5 w-5 flex-none text-foreground-secondary" size={18} strokeWidth={1.5} />
+										<div className="grid min-w-0 flex-1 justify-items-start gap-1">
+											<p className="text-13 leading-normal whitespace-pre-wrap wrap-anywhere text-foreground-secondary">
+												{longNotes && !notesExpanded ? `${event.description.slice(0, 220)}…` : noteText(event.description)}
+											</p>
+											{longNotes ? (
+												<Button aria-expanded={notesExpanded} variant="link" onClick={() => setNotesExpanded(value => !value)}>
+													{notesExpanded ? "Show less" : "Read full notes"}
+												</Button>
+											) : null}
 										</div>
-                    {event.description.length > 240 ? <><p>{event.description.slice(0, 220)}…</p><Disclosure density="compact" label="Read full notes" icon={<FileText size={18} strokeWidth={1.5} />}>
-										<p>
-											{noteParts(event.description).map((part, index) =>
-												part.href ? (
-													<a
-														aria-label={`Open ${part.href}`}
-														href={part.href}
-														key={`${part.href}-${index}`}
-														rel="noreferrer"
-														target="_blank"
-														title={part.href}
-													>
-														{part.text}
-													</a>
-												) : (
-													part.text
-												),
-											)}
-										</p></Disclosure></> : <>
-										<p>
-											{noteParts(event.description).map((part, index) =>
-												part.href ? (
-													<a
-														aria-label={`Open ${part.href}`}
-														href={part.href}
-														key={`${part.href}-${index}`}
-														rel="noreferrer"
-														target="_blank"
-														title={part.href}
-													>
-														{part.text}
-													</a>
-												) : (
-													part.text
-												),
-											)}
-										</p></>}
 									</section>
 								) : null}
 
 								{homeCalendar?.provider ? <ProviderEventDetails presentation="panel" providerFlavor={providerFlavor(homeCalendar)} event={event} seriesMaster={!event.seriesID && liveMaster.recurrence ? liveMaster : undefined} revision={event.seriesID ? event.revision : liveMaster.revision} occurrence={!!event.seriesID} eventId={event.seriesID ? event.id : master.id} series={!event.seriesID && !!master.recurrence} userId={user.id} connectionId={homeConnectionId} onRespond={observation => { setOpen(false); setProviderRsvpEditor({ context: providerReminderContext, occurrence: !!event.seriesID, eventId: event.seriesID ? event.id : master.id, observation }); }} onEditReminders={observation => { setOpen(false); setProviderReminderEditor({ context: providerReminderContext, occurrence: !!event.seriesID, eventId: event.seriesID ? event.id : master.id, observation }); }} /> : null}
 
 								{reminder ? (
-									<section aria-labelledby={reminderTitleId} className={styles.notes}>
-										<div className={styles.sectionHeading}>
-											<BellRing aria-hidden="true" size={17} />
-											<SectionLabel className={styles.reminderLabel} id={reminderTitleId} level={3}>
-												{homeCalendar?.provider ? "Musubi reminder" : "Remind me"}
-											</SectionLabel>
-											<Menu>
-												<MenuTrigger asChild>
-													<Button
-														className={styles.answerTrigger}
-														loading={busyAction === "reminder"}
-														size="compact"
-														variant={reminder.inherited ? "secondary" : "primary"}
-													>
-														{reminderLabel(reminder, reminderKind)}
-														<ChevronDown aria-hidden="true" size={14} />
-													</Button>
-												</MenuTrigger>
-												<MenuContent align="end" label="Reminder">
-													{optionsFor(reminder.rule, reminderKind).map((option) => {
-														const current =
-															reminderKind === "timed"
-																? timedValue(reminder.rule)
-																: allDayValue(reminder.rule);
-														return (
-															<MenuItem
-																icon={
-																	!reminder.inherited && current === option.value ? (
-																		<Check aria-hidden="true" size={15} />
-																	) : undefined
-																}
-																key={option.value}
-																onSelect={() => void handleReminder(option.value)}
-															>
-																{option.label}
-															</MenuItem>
-														);
-													})}
-													{reminder.inherited ? null : (
-														<MenuItem onSelect={() => void handleReminder(INHERIT)}>
-															Use inherited setting
-														</MenuItem>
-													)}
-												</MenuContent>
-											</Menu>
-										</div>
-									</section>
-								) : null}
-
-
-
-								{targetAction && targetCalendars.length > 0 ? (
-									<section
-										aria-labelledby={targetActionTitleId}
-										className={styles.calendarActions}
-									>
-										<>
-											<div className={styles.targetActionHeader}>
-												<IconButton
-													disabled={Boolean(busyAction)}
-													label="Back to add options"
-													size="compact"
-													onClick={hideTargetCalendars}
-												>
-													<ArrowLeft size={16} strokeWidth={1.6} />
-												</IconButton>
-												<div>
-													<h3 id={targetActionTitleId}>
-														{targetAction === "link"
-															? "Link to a calendar"
-															: "Make an independent copy"}
-													</h3>
-													<p>
-														{targetAction === "link"
-															? "It stays one event, so future changes appear in every linked calendar."
-															: "The copy can be changed later without affecting this event."}
-													</p>
-												</div>
-											</div>
-											<div className={styles.targetCalendarList} ref={targetListRef}>
-												{targetCalendars.map((item) => {
-													const pending =
-														pendingTargetId === item.id && busyAction === targetAction;
-
+									<section aria-labelledby={reminderTitleId} className="flex min-h-8 items-center gap-2">
+										<BellRing aria-hidden="true" className="w-5 flex-none text-foreground-secondary" size={18} strokeWidth={1.5} />
+										<h3 className="min-w-0 flex-1 text-13 font-normal text-foreground" id={reminderTitleId}>
+											{homeCalendar?.provider ? "Musubi reminder" : "Remind me"}
+										</h3>
+										<Menu>
+											<MenuTrigger asChild>
+												<Button loading={busyAction === "reminder"} size="compact" variant="secondary">
+													{reminderLabel(reminder, reminderKind)}
+													<ChevronDown aria-hidden="true" className="size-3.5" />
+												</Button>
+											</MenuTrigger>
+											<MenuContent align="end" label="Reminder">
+												{optionsFor(reminder.rule, reminderKind).map((option) => {
+													const current =
+														reminderKind === "timed"
+															? timedValue(reminder.rule)
+															: allDayValue(reminder.rule);
 													return (
-														<RowAction
-															aria-label={
-																targetAction === "link"
-																	? `Link to ${item.name}`
-																	: `Make copy in ${item.name}`
+														<MenuItem
+															icon={
+																!reminder.inherited && current === option.value ? (
+																	<Check aria-hidden="true" size={15} />
+																) : undefined
 															}
-															aria-busy={pending || undefined}
-															className={styles.targetCalendar}
-															detail={targetCalendarDetail(item)}
-															disabled={Boolean(busyAction)}
-															icon={<CalendarDot color={item.color} />}
-															key={item.id}
-															label={item.name}
-															showChevron={false}
-															value={
-																pending
-																	? targetAction === "link"
-																		? "Linking…"
-																		: "Copying…"
-																	: undefined
-															}
-															onClick={() => void handleTargetAction(targetAction, item.id)}
-														/>
+															key={option.value}
+															onSelect={() => void handleReminder(option.value)}
+														>
+															{option.label}
+														</MenuItem>
 													);
 												})}
-											</div>
-											{actionError ? (
-												<InlineError
-													className={styles.actionError}
-													requestId={actionError.requestId}
-												>
-													{actionError.message}
-												</InlineError>
-											) : null}
-										</>
+												{reminder.inherited ? null : (
+													<MenuItem onSelect={() => void handleReminder(INHERIT)}>
+														Use inherited setting
+													</MenuItem>
+												)}
+											</MenuContent>
+										</Menu>
 									</section>
 								) : null}
 
-                <div className={styles.deliveryActions}>
-								<RowAction size="compact" icon={<RefreshCw size={18} strokeWidth={1.5} />} label={event.seriesID ? "Occurrence delivery details" : "Delivery details"} onClick={() => { setOpen(false); setDeliveryTarget({ context: providerReminderContext, eventId: event.seriesID ? event.id : liveMaster.id }); }} />
-                {event.seriesID && liveMaster.id !== event.id ? <RowAction size="compact" icon={<RefreshCw size={18} strokeWidth={1.5} />} label="Series delivery details" onClick={() => { setOpen(false); setDeliveryTarget({ context: providerReminderContext, eventId: liveMaster.id }); }} /> : null}
-                </div>
+								{targetAction && targetCalendars.length > 0 ? (
+									<section aria-labelledby={targetActionTitleId} className="grid gap-3">
+										<div className="flex items-center gap-1">
+											<Button
+												aria-label="Back to add options"
+												title="Back to add options"
+												disabled={Boolean(busyAction)}
+												size="icon-compact"
+												variant="ghost"
+												onClick={hideTargetCalendars}
+											>
+												<ArrowLeft aria-hidden="true" strokeWidth={1.6} />
+											</Button>
+											<h3 className="font-serif text-15 font-normal text-foreground" id={targetActionTitleId}>
+												{targetAction === "link" ? "Link to a calendar" : "Make an independent copy"}
+											</h3>
+											<HelpTooltip label={targetAction === "link" ? "About linking" : "About copies"}>
+												{targetAction === "link"
+													? "It stays one event, so future changes appear in every linked calendar."
+													: "The copy can be changed later without affecting this event."}
+											</HelpTooltip>
+										</div>
+										<ItemGroup ref={targetListRef}>
+											{targetCalendars.map((item) => {
+												const pending =
+													pendingTargetId === item.id && busyAction === targetAction;
+
+												return (
+													<RowAction
+														aria-label={
+															targetAction === "link"
+																? `Link to ${item.name}`
+																: `Make copy in ${item.name}`
+														}
+														aria-busy={pending || undefined}
+														detail={targetCalendarDetail(item)}
+														disabled={Boolean(busyAction)}
+														icon={<CalendarDot color={item.color} />}
+														key={item.id}
+														label={item.name}
+														showChevron={false}
+														value={
+															pending
+																? targetAction === "link"
+																	? "Linking…"
+																	: "Copying…"
+																: undefined
+														}
+														onClick={() => void handleTargetAction(targetAction, item.id)}
+													/>
+												);
+											})}
+										</ItemGroup>
+										{actionError ? (
+											<InlineError requestId={actionError.requestId}>
+												{actionError.message}
+											</InlineError>
+										) : null}
+									</section>
+								) : null}
+
 								{actionError && !targetAction ? (
-									<InlineError
-										className={styles.actionError}
-										requestId={actionError.requestId}
-									>
+									<InlineError requestId={actionError.requestId}>
 										{actionError.message}
 									</InlineError>
 								) : null}
-							</div>
+							</PanelBody>
 
-							{!targetAction && (editable || removable || canAddToCalendar) ? (
-								<footer aria-label="Event actions" className={styles.detailActions}>
+							{!targetAction ? (
+								<PanelFooter aria-label="Event actions">
+									<Menu>
+										<MenuTrigger asChild>
+											<Button
+												aria-label="More event actions"
+												title="More actions"
+												ref={setMoreTriggerElement}
+												size="icon"
+												variant="ghost"
+											>
+												<Ellipsis aria-hidden="true" strokeWidth={1.6} />
+											</Button>
+										</MenuTrigger>
+										<MenuContent align="start" label="Event actions">
+											{canAddToCalendar ? (
+												<>
+													<MenuItem icon={<Link2 size={16} strokeWidth={1.6} />} onSelect={() => showTargetCalendars("link")}>
+														Link to another calendar
+													</MenuItem>
+													<MenuItem icon={<CopyPlus size={16} strokeWidth={1.6} />} onSelect={() => showTargetCalendars("fork")}>
+														Make a copy
+													</MenuItem>
+													<MenuSeparator />
+												</>
+											) : null}
+											<MenuItem icon={<RefreshCw size={16} strokeWidth={1.6} />} onSelect={() => { setOpen(false); setDeliveryTarget({ context: providerReminderContext, eventId: event.seriesID ? event.id : liveMaster.id }); }}>
+												{event.seriesID ? "Occurrence delivery details" : "Delivery details"}
+											</MenuItem>
+											{event.seriesID && liveMaster.id !== event.id ? (
+												<MenuItem icon={<RefreshCw size={16} strokeWidth={1.6} />} onSelect={() => { setOpen(false); setDeliveryTarget({ context: providerReminderContext, eventId: liveMaster.id }); }}>
+													Series delivery details
+												</MenuItem>
+											) : null}
+											{removable ? (
+												<>
+													<MenuSeparator />
+													<MenuItem icon={<Trash2 size={16} strokeWidth={1.6} />} tone="destructive" onSelect={beginDelete}>
+														Delete
+													</MenuItem>
+												</>
+											) : null}
+										</MenuContent>
+									</Menu>
+									{!editable && !removable && !canAddToCalendar ? (
+										<p className="min-w-0 flex-1 text-12 leading-snug text-muted-foreground">
+											{homeCalendar?.provider === "microsoft"
+												? `${providerDisplayName(homeCalendar)} reports this calendar as read-only.`
+												: "View only"}
+										</p>
+									) : <span className="flex-1" />}
+									{showAnswer ? (
+										<Menu>
+											<MenuTrigger asChild>
+												<Button
+													title={homeCalendar?.provider ? "Your Musubi answer" : "Your answer"}
+													loading={busyAction === "attendance"}
+													variant={editable ? "secondary" : "primary"}
+												>
+													{answerText}
+													<ChevronDown aria-hidden="true" className="size-3.5" />
+												</Button>
+											</MenuTrigger>
+											<MenuContent align="end" label="Your answer">
+												{ATTENDANCE_CHOICES.map((choice) => (
+													<MenuItem
+														icon={
+															mine === choice.value ? (
+																<Check aria-hidden="true" size={15} />
+															) : undefined
+														}
+														key={choice.value}
+														onSelect={() => void handleAnswer(choice.value)}
+													>
+														{choice.label}
+													</MenuItem>
+												))}
+												{mine ? (
+													<>
+														<MenuSeparator />
+														<MenuItem onSelect={() => void handleAnswer("none")}>
+															Clear answer
+														</MenuItem>
+													</>
+												) : null}
+											</MenuContent>
+										</Menu>
+									) : null}
 									{editable ? (
 										<Button
 											ref={editButtonRef}
-                      icon={<Pencil size={16} strokeWidth={1.6} />}
-											size="compact"
-											variant="primary"
 											onClick={() => {
 												setDraft({
 													event: structuredClone(event),
@@ -1079,81 +1066,28 @@ function CalendarEventDetailsPopover({
 												setEditing(true);
 											}}
 										>
-											{/* Just "Edit": the header already badges this as a
-                            series, four labels have to fit one row, and the
-                            scope dialog asks which occurrences anyway. */}
+											<Pencil aria-hidden="true" strokeWidth={1.6} />
 											Edit
 										</Button>
 									) : null}
-									{/* Adding this event to another calendar is a second step —
-                        which calendar — so these open the picker rather than
-                        writing. Compact buttons, because the preview's job is to
-                        show the event, not to explain both options up front. */}
-									{canAddToCalendar ? (
-										<>
-											<Button
-												icon={<Link2 size={15} strokeWidth={1.6} />}
-												ref={linkActionRef}
-												size="compact"
-												title="Keep one event shared across calendars"
-												variant="secondary"
-												onClick={() => showTargetCalendars("link")}
-											>
-												Link
-											</Button>
-											<Button
-												icon={<CopyPlus size={15} strokeWidth={1.6} />}
-												ref={forkActionRef}
-												size="compact"
-												title="Create a copy you can change separately"
-												variant="secondary"
-												onClick={() => showTargetCalendars("fork")}
-											>
-												{/* "Copy", not "Fork": the picker this opens already
-                              says "Make an independent copy", and forking is
-                              something people do to repositories. */}
-												Copy
-											</Button>
-										</>
-									) : null}
-									{removable ? (
-										<Button
-											className={styles.deleteAction}
-											ref={setDeleteButtonElement} icon={<Trash2 size={16} strokeWidth={1.6} />}
-											loading={busyAction === "delete"}
-											size="compact"
-											// Same shape as its three neighbours; the colour is what
-											// marks it destructive, not a different silhouette.
-											variant="secondary"
-											onClick={beginDelete}
-										>
-											Delete
-										</Button>
-									) : null}
-								</footer>
-							) : !targetAction ? (
-								<p className={styles.viewOnly}>
-									{homeCalendar?.provider === "microsoft"
-										? `${providerDisplayName(homeCalendar)} reports this calendar as read-only, so its events can't be changed in Musubi.`
-										: "You have view-only access to this event."}
-								</p>
+								</PanelFooter>
 							) : null}
 						</>
 					)}
 				</PopoverContent>
 			</Popover>
-      <ConfirmationDialog elevated open={!!discardAction} onOpenChange={value => { if (!value) setDiscardAction(undefined); }} returnFocus={editSubmitElement} title="Discard unsaved changes?" description="Your changes have not been saved." closeLabel="Keep editing" cancelLabel="Keep editing" confirmLabel="Discard changes" onConfirm={() => { const finish = discardAction; setDiscardAction(undefined); finish?.(); }}><p>The original event will stay unchanged.</p></ConfirmationDialog>
+			<ConfirmationDialog elevated open={!!discardAction} onOpenChange={value => { if (!value) setDiscardAction(undefined); }} returnFocus={editSubmitElement} title="Discard unsaved changes?" description="The original event stays unchanged." closeLabel="Keep editing" cancelLabel="Keep editing" confirmLabel="Discard changes" onConfirm={() => { const finish = discardAction; setDiscardAction(undefined); finish?.(); }} />
 
-            {providerRsvpEditor?.context === providerReminderContext ? <ProviderRsvpEditor
-              occurrence={providerRsvpEditor.occurrence} eventId={providerRsvpEditor.eventId} connectionId={homeConnectionId}
-              observation={providerRsvpEditor.observation} returnFocus={open ? deleteButtonElement : triggerElement} onClose={() => setProviderRsvpEditor(undefined)} /> : null}
-            {providerReminderEditor?.context === providerReminderContext ? <ProviderReminderEditor
-              key={providerReminderEditor.context} occurrence={providerReminderEditor.occurrence} eventId={providerReminderEditor.eventId} connectionId={homeConnectionId}
-              observation={providerReminderEditor.observation} returnFocus={open ? deleteButtonElement : triggerElement} onClose={() => setProviderReminderEditor(undefined)} /> : null}
+			{providerRsvpEditor?.context === providerReminderContext ? <ProviderRsvpEditor
+				occurrence={providerRsvpEditor.occurrence} eventId={providerRsvpEditor.eventId} connectionId={homeConnectionId}
+				observation={providerRsvpEditor.observation} returnFocus={open ? moreTriggerElement : triggerElement} onClose={() => setProviderRsvpEditor(undefined)} /> : null}
+			{providerReminderEditor?.context === providerReminderContext ? <ProviderReminderEditor
+				key={providerReminderEditor.context} occurrence={providerReminderEditor.occurrence} eventId={providerReminderEditor.eventId} connectionId={homeConnectionId}
+				observation={providerReminderEditor.observation} returnFocus={open ? moreTriggerElement : triggerElement} onClose={() => setProviderReminderEditor(undefined)} /> : null}
 
-            {deliveryTarget?.context === providerReminderContext ? <EventDeliveryDialog key={`${user.id}:${homeConnectionId ?? "home"}:${deliveryTarget.eventId}`}
-              eventId={deliveryTarget.eventId} userId={user.id} connectionId={homeConnectionId}
-              returnFocus={open ? deleteButtonElement : triggerElement} onClose={() => setDeliveryTarget(undefined)} /> : null}
+			{deliveryTarget?.context === providerReminderContext ? <EventDeliveryDialog key={`${user.id}:${homeConnectionId ?? "home"}:${deliveryTarget.eventId}`}
+				eventId={deliveryTarget.eventId} userId={user.id} connectionId={homeConnectionId}
+				returnFocus={open ? moreTriggerElement : triggerElement} onClose={() => setDeliveryTarget(undefined)} /> : null}
 
 			{pendingEdit ? (
 				<RecurrenceScopeDialog
@@ -1168,7 +1102,7 @@ function CalendarEventDetailsPopover({
 					}}
 					returnFocus={editSubmitElement}
 					/* Only when the edit actually moved it: otherwise the dialog would
-             announce a time change that never happened. */
+					   announce a time change that never happened. */
 					timeLabel={
 						pendingEdit.start.getTime() === event.start.getTime() &&
 						pendingEdit.end.getTime() === event.end.getTime()
@@ -1182,7 +1116,7 @@ function CalendarEventDetailsPopover({
 			{deletePrompt === "scope" ? (
 				<RecurrenceScopeDialog
 					action="delete"
-                    allowedScopes={removeCalendar?.provider === "microsoft" ? ["occurrence", "series"] : undefined}
+					allowedScopes={removeCalendar?.provider === "microsoft" ? ["occurrence", "series"] : undefined}
 					busyScope={pendingDeleteScope}
 					consequence={deleteConsequence}
 					error={actionError}
@@ -1193,7 +1127,7 @@ function CalendarEventDetailsPopover({
 							setDeletePrompt(undefined);
 						}
 					}}
-					returnFocus={open ? deleteButtonElement : triggerElement}
+					returnFocus={open ? moreTriggerElement : triggerElement}
 					title={event.title}
 				/>
 			) : null}
@@ -1201,17 +1135,14 @@ function CalendarEventDetailsPopover({
 			<ConfirmationDialog
 				closeLabel="Close delete event dialog"
 				confirmLabel="Delete"
-				description={`“${event.title}” will be removed from your calendar.`}
+				description={`“${event.title}” will be removed. ${deleteConsequence}`}
 				loading={busyAction === "delete"}
 				onConfirm={() => void handleDelete()}
 				onOpenChange={(nextOpen) => nextOpen || setDeletePrompt(undefined)}
 				open={deletePrompt === "confirm"}
-				returnFocus={open ? deleteButtonElement : triggerElement}
-				title="Delete event?"
+				returnFocus={open ? moreTriggerElement : triggerElement}
+				title="Delete event"
 			>
-				<ConfirmationNotice icon={<AlertTriangle size={19} strokeWidth={1.5} />}>
-					<p>{deleteConsequence}</p>
-				</ConfirmationNotice>
 				{actionError ? (
 					<InlineError requestId={actionError.requestId}>
 						{actionError.message}
@@ -1226,32 +1157,13 @@ function ExternalEventLink({ url }: { url: string }) {
 	return (
 		<a
 			aria-label={`Open event link, ${shortUrlLabel(url)}`}
+			className={detailLinkClassName}
 			href={url}
 			rel="noreferrer"
 			target="_blank"
 		>
 			{shortUrlLabel(url)}
 		</a>
-	);
-}
-
-function DetailRow({
-	icon,
-	label,
-	value,
-}: {
-	icon: ReactElement;
-	label: string;
-	value: ReactNode;
-}) {
-	return (
-		<div className={styles.detailRow}>
-			<span aria-hidden="true" className={styles.detailIcon}>
-				{icon}
-			</span>
-			<dt>{label}</dt>
-			<dd>{value}</dd>
-		</div>
 	);
 }
 

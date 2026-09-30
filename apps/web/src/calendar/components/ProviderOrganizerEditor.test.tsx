@@ -53,9 +53,9 @@ it("keeps meeting information behind the header control and cancellation consequ
   render(<ProviderOrganizerEditor event={event} observation={observation} calendarID={calendarID} color="red" onClose={vi.fn()} />);
   expect(screen.queryByText(/Google will be asked to notify all guests/)).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Meeting invitation information" }));
-  const information = await screen.findByRole("dialog", { name: "Invitations" });
+  const information = await screen.findByRole("region", { name: "Meeting invitation information" });
   expect(within(information).getByText(/Google will be asked to notify all guests/)).toBeTruthy();
-  fireEvent.click(within(information).getByRole("button", { name: "Close meeting invitation information" }));
+  fireEvent.click(screen.getByRole("button", { name: "Meeting invitation information" }));
   fireEvent.click(screen.getByRole("button", { name: "Cancel meeting and notify guests" }));
   const confirmation = await screen.findByRole("dialog", { name: "Cancel Google meeting" });
   expect(within(confirmation).getByText(/Google will be asked to cancel this meeting and notify every guest/)).toBeTruthy();

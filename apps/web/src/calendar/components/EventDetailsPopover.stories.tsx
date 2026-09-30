@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/tanstack-react";
 import type { Calendar, Event } from "@musubi/types";
 import { expect, userEvent, within } from "storybook/test";
 import { DESKTOP_MODES, MOBILE_MODES } from "../../../.storybook/modes";
-import { Button } from "~/ui/Button";
+import { Button } from "~/components/ui/button";
 import { fixtureCalendars, fixtureEvents } from "../fixtures";
 import { EventDetailsPopover } from "./EventDetailsPopover";
 

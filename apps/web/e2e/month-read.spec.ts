@@ -1443,32 +1443,30 @@ test("handles attendance, linking, forking and recurring delete scopes", async (
 	await page.getByRole("menuitem", { name: "Going" }).click();
 	await expect(page.getByRole("button", { name: "Going" })).toBeVisible();
 
-	await page.getByRole("button", { exact: true, name: "Link" }).click();
+	await page.getByRole("button", { name: "More event actions" }).click();
+	await page.getByRole("menuitem", { name: "Link to another calendar" }).click();
 	await expect(
 		page.getByRole("heading", { name: "Link to a calendar" }),
 	).toBeVisible();
 	await expect(
 		page.getByRole("button", { name: "Link to Personal" }),
 	).toBeFocused();
-	await expect(
-		page.getByText(
-			"It stays one event, so future changes appear in every linked calendar.",
-		),
-	).toBeVisible();
 	await expectNoAccessibilityViolations(page);
 	// Escape goes back one decision, not out of the event.
 	await page.keyboard.press("Escape");
 	await expect(
-		page.getByRole("button", { exact: true, name: "Link" }),
+		page.getByRole("button", { name: "More event actions" }),
 	).toBeFocused();
-	await page.getByRole("button", { exact: true, name: "Link" }).click();
+	await page.getByRole("button", { name: "More event actions" }).click();
+	await page.getByRole("menuitem", { name: "Link to another calendar" }).click();
 	await page.getByRole("button", { name: "Link to Personal" }).click();
 	await expect(page.locator('[class*="toastRegion"]')).toContainText(
 		"Event linked to calendar.",
 	);
 
 	await page.getByRole("button", { name: /Design review/ }).click();
-	await page.getByRole("button", { exact: true, name: "Copy" }).click();
+	await page.getByRole("button", { name: "More event actions" }).click();
+	await page.getByRole("menuitem", { name: "Make a copy" }).click();
 	await expect(
 		page.getByRole("heading", { name: "Make an independent copy" }),
 	).toBeVisible();
@@ -1485,8 +1483,9 @@ test("handles attendance, linking, forking and recurring delete scopes", async (
 		.getByRole("button", { name: /Weekly review/ })
 		.first();
 	await recurringEvent.click();
-	const deleteButton = page.getByRole("button", { name: "Delete" });
+	const deleteButton = page.getByRole("button", { name: "More event actions" });
 	await deleteButton.click();
+	await page.getByRole("menuitem", { name: "Delete" }).click();
 	const deleteDialog = page.getByRole("dialog", {
 		name: "Delete recurring event",
 	});
@@ -1510,7 +1509,7 @@ test("handles attendance, linking, forking and recurring delete scopes", async (
 		.analyze();
 	expect(deleteAccessibility.violations).toEqual([]);
 
-	// The inspector stays mounted behind the modal. Escape resumes at Delete.
+	// The inspector stays mounted behind the modal. Escape resumes at the menu that held Delete.
 	await page.keyboard.press("Escape");
 	await expect(deleteDialog).toHaveCount(0);
 	await expect(deleteButton).toBeFocused();
@@ -1518,7 +1517,8 @@ test("handles attendance, linking, forking and recurring delete scopes", async (
 		(request) =>
 			request.url().endsWith("/api/v1/events") && request.method() === "PATCH",
 	);
-	await page.getByRole("button", { name: "Delete" }).click();
+	await deleteButton.click();
+	await page.getByRole("menuitem", { name: "Delete" }).click();
 	await page
 		.getByRole("dialog", { name: "Delete recurring event" })
 		.getByRole("button", { name: "This event", exact: true })
@@ -4697,13 +4697,14 @@ test("opens an event's details as a full-height panel on a narrow viewport", asy
 		.analyze();
 	expect(accessibility.violations).toEqual([]);
 
-	await page.getByRole("button", { exact: true, name: "Link" }).click();
+	await page.getByRole("button", { name: "More event actions" }).click();
+	await page.getByRole("menuitem", { name: "Link to another calendar" }).click();
 	await expect(
 		page.getByRole("button", { name: "Link to Personal" }),
 	).toBeFocused();
 	await page.keyboard.press("Escape");
 	await expect(
-		page.getByRole("button", { exact: true, name: "Link" }),
+		page.getByRole("button", { name: "More event actions" }),
 	).toBeFocused();
 
 	await page.keyboard.press("Escape");
@@ -5082,7 +5083,7 @@ test("makes the scope of a recurring event edit explicit", async ({ page }) => {
 	await expect(page).toHaveURL(/\/event\/weekly-review\?/);
 	await expect(page.getByRole("heading", { name: "Edit series" })).toBeVisible();
 	await expect(
-		page.getByText("Changes here apply to the recurring series."),
+		page.getByText("Changes apply to the whole series."),
 	).toBeVisible();
 	await expectNoAccessibilityViolations(page);
 });
@@ -5291,7 +5292,7 @@ test("keeps the full event editor usable on a narrow viewport", async ({
 	await expect(page.getByRole("button", { name: /^Date:/ })).toBeVisible();
 	await expect(page.getByRole("textbox", { name: "Location", exact: true })).toBeVisible();
 	await expect(
-		page.getByRole("heading", { name: "Event calendars" }),
+		page.getByRole("heading", { name: "Calendars" }),
 	).toBeVisible();
 	expect(
 		await page.evaluate(
@@ -5960,7 +5961,7 @@ for (const shift of [false, true]) {
 		}
 		await page.getByRole("button", { name: "Expand event editor" }).click();
 		await expect(
-			page.getByText("Changes here apply to the recurring series."),
+			page.getByText("Changes apply to the whole series."),
 		).toBeVisible();
 		await expect(page.getByRole("button", { name: /^Date:/ })).toContainText(
 			"July 6",
@@ -7486,7 +7487,10 @@ test("ui catalogue", async ({ browser, page }) => {
 			.first()
 			.click({ timeout: 5_000 });
 		await page
-			.getByRole("button", { exact: true, name: "Delete" })
+			.getByRole("button", { name: "More event actions" })
+			.click({ timeout: 5_000 });
+		await page
+			.getByRole("menuitem", { name: "Delete" })
 			.click({ timeout: 5_000 });
 		await page
 			.getByRole("dialog", { name: "Delete event" })
@@ -7514,7 +7518,10 @@ test("ui catalogue", async ({ browser, page }) => {
 			.click({ timeout: 5_000 });
 		const popover = page.getByRole("dialog").first();
 		await page
-			.getByRole("button", { exact: true, name: "Delete" })
+			.getByRole("button", { name: "More event actions" })
+			.click({ timeout: 5_000 });
+		await page
+			.getByRole("menuitem", { name: "Delete" })
 			.click({ timeout: 5_000 });
 		await page
 			.getByRole("dialog", { name: "Delete event" })
@@ -8241,7 +8248,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     await page.goto("/app/p/my-calendar/month?date=2026-07-26");
     const eventTrigger = page.getByRole("button", { name: /Delivery appointment/ }).first();
     await eventTrigger.click();
-    await page.getByRole("button", { name: "Delivery details", exact: true }).click();
+    await page.getByRole("button", { name: "More event actions" }).click(); await page.getByRole("menuitem", { name: "Delivery details", exact: true }).click();
     const delivery = page.getByRole("dialog", { name: "Delivery", exact: true });
     await expect(delivery.getByText(/Remote changes need review/)).toBeVisible();
     await delivery.getByRole("button", { name: "Review changes" }).click();
@@ -8625,7 +8632,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     await expect(page).toHaveURL(/month\?date=2026-07-26/);
     await expect(page).toHaveTitle(/Musubi/);
     await page.getByRole("button", { name: /Reminder appointment/ }).first().click();
-    await page.getByRole("button", { name: "Delivery details", exact: true }).click();
+    await page.getByRole("button", { name: "More event actions" }).click(); await page.getByRole("menuitem", { name: "Delivery details", exact: true }).click();
     const delivery = page.getByRole("dialog", { name: "Delivery", exact: true });
     await delivery.getByRole("button", { name: "Review changes" }).click();
     const comparison = page.getByRole("dialog", { name: "Review remote changes" });
@@ -8780,7 +8787,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     await expect(page).toHaveURL(/month\?date=2026-07-26/);
     await expect(page).toHaveTitle(/Musubi/);
     await page.getByRole("button", { name: /RSVP appointment/ }).first().click();
-    await page.getByRole("button", { name: "Delivery details", exact: true }).click();
+    await page.getByRole("button", { name: "More event actions" }).click(); await page.getByRole("menuitem", { name: "Delivery details", exact: true }).click();
     const delivery = page.getByRole("dialog", { name: "Delivery", exact: true });
     await delivery.getByRole("button", { name: "Review changes" }).click();
     const comparison = page.getByRole("dialog", { name: "Review remote changes" });
@@ -8888,7 +8895,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     await expect(page).toHaveURL(/\/app\/p\/my-calendar\/month\?date=2026-07-26/);
     await expect(page).toHaveTitle(/Musubi/i);
     const trigger = page.getByRole("button", { name: /Following deletion/ }).first();
-    await trigger.click(); await page.getByRole("button", { name: "Delivery details", exact: true }).click();
+    await trigger.click(); await page.getByRole("button", { name: "More event actions" }).click(); await page.getByRole("menuitem", { name: "Delivery details", exact: true }).click();
     const delivery = page.getByRole("dialog", { name: "Delivery", exact: true });
     await delivery.getByRole("button", { name: "Review changes" }).click();
     const comparison = page.getByRole("dialog", { name: "Review remote changes" });
@@ -9002,7 +9009,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     await expect(page).toHaveURL(/\/app\/p\/my-calendar\/month\?date=2026-07-26/);
     await expect(page).toHaveTitle(/Musubi/i);
     const trigger = page.getByRole("button", { name: /Following split/ }).first();
-    await trigger.click(); await page.getByRole("button", { name: "Delivery details", exact: true }).click();
+    await trigger.click(); await page.getByRole("button", { name: "More event actions" }).click(); await page.getByRole("menuitem", { name: "Delivery details", exact: true }).click();
     const delivery = page.getByRole("dialog", { name: "Delivery", exact: true });
     await delivery.getByRole("button", { name: "Review changes" }).click();
     const comparison = page.getByRole("dialog", { name: "Review remote changes" });
@@ -9061,7 +9068,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     await expect(page).toHaveURL(/\/app\/p\/my-calendar\/month\?date=2026-07-26/);
     await expect(page).toHaveTitle(/Musubi/i);
     const trigger = page.getByRole("button", { name: /Future recovery/ }).first();
-    await trigger.click(); await page.getByRole("button", { name: "Delivery details", exact: true }).click();
+    await trigger.click(); await page.getByRole("button", { name: "More event actions" }).click(); await page.getByRole("menuitem", { name: "Delivery details", exact: true }).click();
     const delivery = page.getByRole("dialog", { name: "Delivery", exact: true });
     await delivery.getByRole("button", { name: "Review changes" }).click();
     const comparison = page.getByRole("dialog", { name: "Review remote changes" });
@@ -9226,13 +9233,13 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     const deliveryReads: string[] = [];
     for (const id of [imported.id, master.id]) await page.route(`**/api/v1/events/${id}/delivery`, route => { deliveryReads.push(id); return respond(route, { eventId: id, localRevision: 7, targets: [] }); });
     await eventTrigger.click();
-    await page.getByRole("button", { name: "Occurrence delivery details", exact: true }).click();
+    await page.getByRole("button", { name: "More event actions" }).click(); await page.getByRole("menuitem", { name: "Occurrence delivery details", exact: true }).click();
     const delivery = page.getByRole("dialog", { name: "Delivery", exact: true });
     await expect(delivery).toBeVisible();
     await expect.poll(() => deliveryReads.at(-1)).toBe(imported.id);
     await delivery.getByRole("button", { name: "Close delivery", exact: true }).click();
     await eventTrigger.click();
-    await page.getByRole("button", { name: "Series delivery details", exact: true }).click();
+    await page.getByRole("button", { name: "More event actions" }).click(); await page.getByRole("menuitem", { name: "Series delivery details", exact: true }).click();
     await expect(delivery).toBeVisible();
     await expect.poll(() => deliveryReads.at(-1)).toBe(master.id);
     await delivery.getByRole("button", { name: "Close delivery", exact: true }).click();
@@ -9448,7 +9455,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     });
     await page.goto("/app/p/my-calendar/month?date=2026-07-26");
     await page.getByRole("button", { name: /Alarm appointment/ }).first().click();
-    await page.getByRole("button", { name: "Delivery details", exact: true }).click();
+    await page.getByRole("button", { name: "More event actions" }).click(); await page.getByRole("menuitem", { name: "Delivery details", exact: true }).click();
     await page.getByRole("button", { name: "Discard saved alarm change", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Discard saved alarm change", exact: true });
     await expect(dialog.getByText(/does not undo a change/)).toBeVisible();
@@ -9481,7 +9488,7 @@ test("K14 CalDAV lost alarm discard retains a usable focus target on Escape", as
   await page.route(`**/api/v1/events/${id}/delivery/${operation}/discard-alarm`, route => { discarded = true; return route.abort("connectionreset"); });
   await page.goto("/app/p/my-calendar/month?date=2026-07-26");
   await page.getByRole("button", { name: /Alarm appointment/ }).first().click();
-  await page.getByRole("button", { name: "Delivery details", exact: true }).click();
+  await page.getByRole("button", { name: "More event actions" }).click(); await page.getByRole("menuitem", { name: "Delivery details", exact: true }).click();
   await page.getByRole("button", { name: "Discard saved alarm change", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Discard saved alarm change", exact: true });
   await dialog.getByRole("button", { name: "Discard saved alarm change", exact: true }).press("Enter");
@@ -9643,7 +9650,7 @@ for (const [width, theme, outcome] of [[1280, "light", "success"], [390, "dark",
     });
     await page.goto("/app/p/my-calendar/month?date=2026-07-26");
     await page.getByRole("button", { name: /Original Graph draft/ }).first().click();
-    await page.getByRole("button", { name: "Delivery details", exact: true }).click();
+    await page.getByRole("button", { name: "More event actions" }).click(); await page.getByRole("menuitem", { name: "Delivery details", exact: true }).click();
     const trigger = page.getByRole("button", { name: "Review changes", exact: true }); await trigger.click();
     const dialog = page.getByRole("dialog", { name: "Review remote changes", exact: true });
     await expect(dialog.getByRole("button", { name: "Recreate remote copy" })).toHaveCount(0);
@@ -9817,7 +9824,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     await editor.getByRole("button", { name: "Close", exact: true }).press("Space");
     await expect(eventTrigger).toBeFocused();
     await eventTrigger.click();
-    await page.getByRole("button", { name: "Delivery details", exact: true }).click();
+    await page.getByRole("button", { name: "More event actions" }).click(); await page.getByRole("menuitem", { name: "Delivery details", exact: true }).click();
     const receiptDialog = page.getByRole("dialog", { name: "Delivery", exact: true });
     await expect(receiptDialog.getByRole("button", { name: "Review changes", exact: true })).toHaveCount(0);
     await receiptDialog.getByRole("button", { name: "Check response", exact: true }).press("Enter");
@@ -10312,7 +10319,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
       const info = editor.getByRole("button", { name: "Meeting invitation information" });
       await expect(editor).not.toContainText("Guest notification delivery cannot be verified");
       await info.click();
-      const help = page.getByRole("dialog", { name: "Invitations", exact: true });
+      const help = page.getByRole("region", { name: "Meeting invitation information" });
       await expect(help).toContainText("Guest notification delivery cannot be verified");
       await expectNoAccessibilityViolations(page);
       expect(await help.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);

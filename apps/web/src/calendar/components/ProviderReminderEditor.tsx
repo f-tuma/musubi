@@ -1,13 +1,16 @@
-import styles from "./styles/event-delivery.module.css";
 import { useRef, useState } from "react";
+import { Plus, X } from "lucide-react";
 import type { ProviderEventStateResponse, AnyProviderReminderEdit } from "@musubi/types";
 import { providerReminderDraft, providerReminderRequest, providerReminderReceiptMessage } from "@musubi/calendar";
 import { editProviderReminders } from "~/api/resources";
-import { Button } from "~/ui/Button";
-import { Dialog } from "~/ui/Dialog";
-import { Field } from "~/ui/Field";
-import { Select } from "~/ui/Select";
-import { InlineError } from "~/ui/InlineError";
+import { Button } from "~/components/ui/button";
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { Field, FieldGroup } from "~/components/ui/field";
+import { HelpTooltip } from "~/components/ui/help-tooltip";
+import { InlineError } from "~/components/ui/inline-error";
+import { Input } from "~/components/ui/input";
+import { Select } from "~/components/ui/select";
+import { focusDialogBody } from "./dialog-focus";
 
 export function ProviderReminderEditor({ eventId, connectionId, observation, onClose, returnFocus, occurrence = false }: {
   eventId: string; connectionId?: string; occurrence?: boolean; observation: ProviderEventStateResponse; onClose: () => void; returnFocus?: HTMLElement | null;
@@ -34,22 +37,45 @@ export function ProviderReminderEditor({ eventId, connectionId, observation, onC
     } catch (cause) { setError(cause instanceof Error ? cause.message : `Could not save ${label}. Your draft is still here.`); }
     finally { pending.current = false; setBusy(false); }
   }
-  return <div className={styles.layerBoundary} onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()}><Dialog open title={caldav ? label : occurrence ? "Google reminders for this occurrence" : "Google reminders"} description={caldav ? `${series ? "This alarm applies to every occurrence in this series. " : ""}This alarm is stored on the CalDAV event and may be shared with other calendar users. Calendar apps deliver it. Musubi reminders are separate; both may notify you.` : `${occurrence ? "These Google reminders apply only to this occurrence. " : ""}Personal notifications from Google Calendar. Musubi reminders are separate; both apps may notify you.`} closeLabel={`Close ${label}`} returnFocus={returnFocus} onOpenChange={open => { if (!open && !pending.current) onClose(); }} size="compact" footer={<>
-    <Button variant="secondary" disabled={busy} onClick={onClose}>{notice ? "Close" : "Cancel"}</Button>
-    {!notice ? <Button loading={busy} disabled={instanceDefaults} onClick={() => void save()}>Save {label}</Button> : null}
-  </>}>
-    {notice ? <p role="status">{notice}</p> : <div className={styles.reminderForm}>
-      <Select label="Reminder mode" value={draft.mode} disabled={busy} options={[...(!caldav && (!occurrence || instanceDefaults) ? [{ value: "defaults", label: "Calendar defaults", disabled: occurrence }] : []), { value: "off", label: "Off" }, { value: "custom", label: "Custom" }]} onChange={value => setDraft(current => ({ mode: value as typeof current.mode, overrides: value === "custom" && !current.overrides.length ? [{ method: "popup", minutes: "15" }] : current.overrides }))} />
-      {!caldav && occurrence ? <p>Calendar defaults cannot be saved for a Google occurrence. Choose Custom or Off to change its reminders.</p> : null}
-      {draft.mode === "custom" ? <>
-        {draft.overrides.map((item, index) => <div key={index} className={styles.reminderFields}>
-          {!caldav ? <Select label={`Reminder ${index + 1} method`} value={item.method} disabled={busy} options={[{ value: "popup", label: "Notification" }, { value: "email", label: "Email" }]} onChange={value => setDraft(current => ({ ...current, overrides: current.overrides.map((entry, position) => position === index ? { ...entry, method: value as "popup" | "email" } : entry) }))} /> : null}
-          <Field label={`Reminder ${index + 1} minutes before start`} description="Whole minutes, from 0 to 40320."><input inputMode="numeric" value={item.minutes} disabled={busy} onChange={event => setDraft(current => ({ ...current, overrides: current.overrides.map((entry, position) => position === index ? { ...entry, minutes: event.target.value } : entry) }))} /></Field>
-          <Button variant="secondary" disabled={busy} onClick={() => setDraft(current => ({ ...current, overrides: current.overrides.filter((_, position) => position !== index) }))}>Remove reminder {index + 1}</Button>
-        </div>)}
-        <Button variant="secondary" disabled={busy || draft.overrides.length >= (caldav ? 1 : 5)} onClick={() => setDraft(current => ({ ...current, overrides: [...current.overrides, { method: "popup", minutes: "15" }] }))}>Add reminder</Button>
-      </> : null}
-      {error ? <InlineError>{error}</InlineError> : null}
-    </div>}
-  </Dialog></div>;
+  // What the person must know to act safely stays visible; the rest is help.
+  const scopeLine = caldav
+    ? `${series ? "Applies to every occurrence in this series. " : ""}Stored on the event and may be shared with other calendar users.`
+    : occurrence ? "These Google reminders apply only to this occurrence." : "";
+  const help = caldav
+    ? "Calendar apps deliver this alarm. Musubi reminders are separate; both may notify you."
+    : "Personal notifications from Google Calendar. Musubi reminders are separate; both apps may notify you.";
+  const updateOverride = (index: number, patch: Partial<(typeof draft.overrides)[number]>) =>
+    setDraft(current => ({ ...current, overrides: current.overrides.map((entry, position) => position === index ? { ...entry, ...patch } : entry) }));
+  return <div className="contents" onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()}>
+    <Dialog open onOpenChange={open => { if (!open && !pending.current) onClose(); }}>
+      <DialogContent onOpenAutoFocus={focusDialogBody} size="compact" closeLabel={`Close ${label}`} returnFocus={returnFocus} {...(scopeLine ? {} : { "aria-describedby": undefined })}>
+        <DialogHeader>
+          <div className="flex items-center gap-1">
+            <DialogTitle>{caldav ? label : occurrence ? "Google reminders for this occurrence" : "Google reminders"}</DialogTitle>
+            <HelpTooltip label={`About ${label}`}>{help}</HelpTooltip>
+          </div>
+          {scopeLine ? <DialogDescription>{scopeLine}</DialogDescription> : null}
+        </DialogHeader>
+        <DialogBody>
+          {notice ? <p role="status" className="text-14 text-foreground-secondary">{notice}</p> : <FieldGroup>
+            <Field label="Reminder mode"><Select label="Reminder mode" value={draft.mode} disabled={busy} options={[...(!caldav && (!occurrence || instanceDefaults) ? [{ value: "defaults", label: "Calendar defaults", disabled: occurrence }] : []), { value: "off", label: "Off" }, { value: "custom", label: "Custom" }]} onChange={value => setDraft(current => ({ mode: value as typeof current.mode, overrides: value === "custom" && !current.overrides.length ? [{ method: "popup", minutes: "15" }] : current.overrides }))} /></Field>
+            {!caldav && occurrence ? <p className="text-13 text-muted-foreground">Choose Custom or Off to change this occurrence.</p> : null}
+            {draft.mode === "custom" ? <>
+              {draft.overrides.map((item, index) => <div key={index} className="flex items-end gap-2">
+                {!caldav ? <Select className="w-auto flex-none" label={`Reminder ${index + 1} method`} value={item.method} disabled={busy} options={[{ value: "popup", label: "Notification" }, { value: "email", label: "Email" }]} onChange={value => updateOverride(index, { method: value as "popup" | "email" })} /> : null}
+                <Field className="flex-1" label={`Reminder ${index + 1} minutes before start`} help="Whole minutes, from 0 to 40320."><Input inputMode="numeric" value={item.minutes} disabled={busy} onChange={event => updateOverride(index, { minutes: event.target.value })} /></Field>
+                <Button variant="ghost" size="icon" aria-label={`Remove reminder ${index + 1}`} title={`Remove reminder ${index + 1}`} disabled={busy} onClick={() => setDraft(current => ({ ...current, overrides: current.overrides.filter((_, position) => position !== index) }))}><X aria-hidden="true" /></Button>
+              </div>)}
+              <Button className="self-start" variant="secondary" disabled={busy || draft.overrides.length >= (caldav ? 1 : 5)} onClick={() => setDraft(current => ({ ...current, overrides: [...current.overrides, { method: "popup", minutes: "15" }] }))}><Plus aria-hidden="true" />Add reminder</Button>
+            </> : null}
+            {error ? <InlineError>{error}</InlineError> : null}
+          </FieldGroup>}
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="secondary" disabled={busy} onClick={onClose}>{notice ? "Close" : "Cancel"}</Button>
+          {!notice ? <Button loading={busy} disabled={instanceDefaults} onClick={() => void save()}>Save {label}</Button> : null}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </div>;
 }

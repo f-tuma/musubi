@@ -1,9 +1,0 @@
-.layerBoundary { composes: layerBoundary from "./event-delivery.module.css"; }
-.form { composes: reminderForm from "./event-delivery.module.css"; }
-.form > p { margin: 0; }
-.fields { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
-.note { color: var(--text-secondary); font-size: var(--text-13); }
-.selection { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2); }
-.occurrences { display: grid; gap: var(--space-4); }
-.results { display: grid; }
-@media (max-width: 599px) { .fields { grid-template-columns: 1fr; } }

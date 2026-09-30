@@ -4,8 +4,6 @@ import { type RefObject, useRef } from "react";
 import { DEFAULT_CALENDAR_COLOR } from "@musubi/types";
 import { useSessionUser } from "~/auth/use-session-user";
 import { EventEditorForm } from "~/calendar/components/EventEditorForm";
-// The class that fits the page layout into a dialog body lives with the form.
-import editorStyles from "~/calendar/components/styles/event-editor.module.css";
 import { toDateKey } from "~/calendar/date-key";
 import {
   applyEventEditorSearch,
@@ -22,8 +20,8 @@ import {
   getEventMutationError,
 } from "~/calendar/event-permissions";
 import { useWorkspaceQueries } from "~/calendar/workspace-queries";
-import { Dialog } from "~/ui/Dialog";
-import { Empty } from "~/ui/Empty";
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { Empty } from "~/components/ui/empty";
 
 export const Route = createFileRoute("/app/p/$pageId/$view/event/new")({
   validateSearch: eventEditorSearchSchema,
@@ -66,27 +64,22 @@ function NewEventRoute() {
 
   return (
     <Dialog
-      bodyClassName={editorStyles.dialogFit}
-      bodyLayout="flush"
-      closeLabel="Close event editor"
-      initialFocus={titleRef}
       onOpenChange={(open) => {
         if (!open) back();
       }}
       open
-      size="workspace"
-      title="New event"
     >
+     <DialogContent aria-describedby={undefined} closeLabel="Close event editor" initialFocus={titleRef} size="wide" tall>
+      <DialogHeader>
+        <DialogTitle>New event</DialogTitle>
+      </DialogHeader>
       {loading ? (
-        <Empty
-          description="Loading your calendars."
-          title="Preparing the editor…"
-        />
+        <DialogBody><Empty title="Preparing the editor…" /></DialogBody>
       ) : calendars.length === 0 ? (
-        <Empty
-          description="You need edit access to a calendar before you can create events."
-          title="No calendar you can write to."
-        />
+        <DialogBody><Empty
+          description="You need edit access to a calendar to create events."
+          title="No calendar you can write to"
+        /></DialogBody>
       ) : (
         <NewEventForm
           back={back}
@@ -99,6 +92,7 @@ function NewEventRoute() {
           user={user}
         />
       )}
+     </DialogContent>
     </Dialog>
   );
 }

@@ -1,8 +1,9 @@
 import type { EditScope } from "@musubi/calendar";
-import { Button } from "~/ui/Button";
-import { Dialog } from "~/ui/Dialog";
-import { InlineError } from "~/ui/InlineError";
-import styles from "./styles/recurrence-scope.module.css";
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { InlineError } from "~/components/ui/inline-error";
+import { ItemGroup } from "~/components/ui/item";
+import { RowAction } from "~/components/ui/row";
+import { Spinner } from "~/components/ui/spinner";
 
 const OPTION_LABELS: Record<
   "change" | "delete" | "cancel",
@@ -31,6 +32,7 @@ const OPTION_LABELS: Record<
  * different edits, not one edit to take back, and the choice cannot be guessed
  * from the gesture. The new time is spelled out because the calendar behind the
  * dialog still shows the old one — nothing is written until an answer comes.
+ * Each scope is one row, and choosing a row is the commitment.
  */
 export function RecurrenceScopeDialog({
   action = "change",
@@ -60,54 +62,58 @@ export function RecurrenceScopeDialog({
 }) {
   const deleting = action !== "change";
   const cancelling = action === "cancel";
+  const description = cancelling
+    ? `Which meetings in “${title}” should Outlook cancel?`
+    : deleting
+      ? `Choose which events to remove from “${title}”.`
+      : timeLabel
+        ? // The calendar behind the dialog still shows the old time, so the
+          // new one is spelled out rather than pointed at.
+          `“${title}” moves to ${timeLabel}. Which events should change?`
+        : `Which events should take the changes to “${title}”?`;
 
   return (
     <Dialog
-      closeLabel={`Close ${cancelling ? "cancel" : deleting ? "delete" : "change"} recurring event dialog`}
-      /* Always raised from an event's own layer — the preview popover or a drag
-         over the grid — so it has to clear the surface that asked. */
-      elevated
-      description={
-        cancelling ? `Which meetings in “${title}” should Outlook cancel?` : deleting
-          ? `Choose which events to remove from “${title}”.`
-          : timeLabel
-            ? // The calendar behind the dialog still shows the old time, so the
-              // new one is spelled out rather than pointed at.
-              `“${title}” moves to ${timeLabel}. Which events should change?`
-            : `Which events should take the changes to “${title}”?`
-      }
-      /* No Cancel row: the header's close button and Escape both resolve this the
-         same way, and a footer for one of them made backing out look like a
+      /* No Cancel button: the header's close button and Escape both resolve this
+         the same way, and a footer for one of them made backing out look like a
          choice on par with the scopes. */
       onOpenChange={(open) => {
         if (!open && !busyScope) onResolve(undefined);
       }}
       open
-      returnFocus={returnFocus}
-      size="compact"
-      title={cancelling ? "Cancel recurring meeting" : deleting ? "Delete recurring event" : "Change recurring event"}
     >
-      {consequence ? (
-        <p className={styles.consequence}>{consequence}</p>
-      ) : null}
-      {error ? (
-        <InlineError requestId={error.requestId}>{error.message}</InlineError>
-      ) : null}
-      <div className={styles.scopeOptions}>
-        {OPTION_LABELS[action].filter(option => !allowedScopes || allowedScopes.includes(option.scope)).map((option) => (
-          <Button
-            className={styles.scopeOption}
-            data-destructive={deleting ? "" : undefined}
-            disabled={Boolean(busyScope)}
-            key={option.scope}
-            loading={busyScope === option.scope}
-            variant="secondary"
-            onClick={() => onResolve(option.scope)}
-          >
-            {option.label}
-          </Button>
-        ))}
-      </div>
+      <DialogContent
+        size="compact"
+        closeLabel={`Close ${cancelling ? "cancel" : deleting ? "delete" : "change"} recurring event dialog`}
+        /* Always raised from an event's own layer — the preview popover or a drag
+           over the grid — so it has to clear the surface that asked. */
+        elevated
+        returnFocus={returnFocus}
+      >
+        <DialogHeader>
+          <DialogTitle>{cancelling ? "Cancel recurring meeting" : deleting ? "Delete recurring event" : "Change recurring event"}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <DialogBody>
+          {consequence ? <p className="text-13 leading-normal text-foreground-secondary">{consequence}</p> : null}
+          {error ? <InlineError requestId={error.requestId}>{error.message}</InlineError> : null}
+          <ItemGroup>
+            {OPTION_LABELS[action]
+              .filter((option) => !allowedScopes || allowedScopes.includes(option.scope))
+              .map((option) => (
+                <RowAction
+                  aria-busy={busyScope === option.scope || undefined}
+                  disabled={Boolean(busyScope)}
+                  key={option.scope}
+                  label={option.label}
+                  tone={deleting ? "destructive" : "default"}
+                  trailing={busyScope === option.scope ? <Spinner /> : undefined}
+                  onClick={() => onResolve(option.scope)}
+                />
+              ))}
+          </ItemGroup>
+        </DialogBody>
+      </DialogContent>
     </Dialog>
   );
 }

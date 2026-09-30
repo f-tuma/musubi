@@ -12,8 +12,6 @@ import { useEffect, useRef, useState } from "react";
 import { isGoogleEditorPrivacyRefresh, isGoogleEditorRestricted, privateEditorFields, refreshPrivateEditorBaseline, refreshPrivateEditorValues, rememberPrivateEditorChanges, type PrivateEditorField } from "~/calendar/event-editor-privacy";
 import { useSessionUser } from "~/auth/use-session-user";
 import { EventEditorForm } from "~/calendar/components/EventEditorForm";
-// The class that fits the page layout into a dialog body lives with the form.
-import editorStyles from "~/calendar/components/styles/event-editor.module.css";
 import { toDateKey } from "~/calendar/date-key";
 import {
     applyEventEditorSearch,
@@ -32,9 +30,9 @@ import {
     getEventMutationError,
 } from "~/calendar/event-permissions";
 import { useWorkspaceQueries } from "~/calendar/workspace-queries";
-import { ConfirmationDialog } from "~/ui/ConfirmationDialog";
-import { Dialog } from "~/ui/Dialog";
-import { Empty } from "~/ui/Empty";
+import { ConfirmationDialog } from "~/components/ui/confirmation-dialog";
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { Empty } from "~/components/ui/empty";
 
 export const Route = createFileRoute("/app/p/$pageId/$view/event/$eventId")({
     validateSearch: eventEditorSearchSchema,
@@ -176,37 +174,33 @@ function EditEventRoute() {
 
     return (<>
         <Dialog
-            bodyClassName={editorStyles.dialogFit}
-            bodyLayout="flush"
-            closeLabel="Close event editor"
-            initialFocus={titleRef}
-            description={
-                event?.recurrence && editable
-                    ? "Changes here apply to the recurring series."
-                    : undefined
-            }
             onOpenChange={(open) => {
                 if (!open) requestBack();
             }}
             open
-            placement="right"
-            title={title}
         >
+          <DialogContent
+            closeLabel="Close event editor"
+            initialFocus={titleRef}
+            side="right"
+            {...(event?.recurrence && editable ? {} : { "aria-describedby": undefined })}
+          >
+            <DialogHeader>
+                <DialogTitle>{title}</DialogTitle>
+                {event?.recurrence && editable ? <DialogDescription>Changes apply to the whole series.</DialogDescription> : null}
+            </DialogHeader>
             {loading && !event ? (
-                <Empty
-                    description="Loading the event and its calendars."
-                    title="Preparing the editor…"
-                />
+                <DialogBody><Empty title="Preparing the editor…" /></DialogBody>
             ) : !event || eventMissing ? (
-                <Empty
-                    description="The event may have been deleted or moved out of this calendar."
+                <DialogBody><Empty
+                    description="It may have been deleted or moved to another calendar."
                     title="Event not found"
-                />
+                /></DialogBody>
             ) : !editable ? (
-                <Empty
-                    description="Your access changed, so Musubi cannot save edits to this event."
+                <DialogBody><Empty
+                    description="Your access changed, so edits cannot be saved."
                     title="This event is read-only"
-                />
+                /></DialogBody>
             ) : (
                 <DateFormatContext.Provider value={workspace.settings.data?.dateFormat ?? "dmy"}><EventEditorForm
                     rdateMaster={currentHomeCalendar?.provider === "caldav" && currentEvent && currentEvent.revision === event.revision && !currentEvent.seriesID && !currentEvent.originalStart ? currentEvent : undefined}
@@ -249,7 +243,8 @@ function EditEventRoute() {
                     }
                 /></DateFormatContext.Provider>
             )}
+          </DialogContent>
         </Dialog>
-        <ConfirmationDialog elevated open={discardOpen} onOpenChange={setDiscardOpen} returnFocus={titleRef} title="Discard unsaved changes?" description="Your changes have not been saved." closeLabel="Keep editing" cancelLabel="Keep editing" confirmLabel="Discard changes" onConfirm={back}><p>The original event will stay unchanged.</p></ConfirmationDialog>
+        <ConfirmationDialog elevated open={discardOpen} onOpenChange={setDiscardOpen} returnFocus={titleRef} title="Discard unsaved changes?" description="The original event stays unchanged." closeLabel="Keep editing" cancelLabel="Keep editing" confirmLabel="Discard changes" onConfirm={back} />
     </>);
 }
