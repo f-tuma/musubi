@@ -78,8 +78,7 @@ error:
 | `require-static-classes` | class strings the linter cannot read |
 
 ESLint also forbids `*.module.css` imports and Radix imports outside
-`src/components/ui`. Files not yet migrated are listed in the legacy block of
-`apps/web/eslint.config.js`; the list only shrinks.
+`src/components/ui`. The whole app is covered; there are no exceptions.
 
 ## 3. Tokens
 

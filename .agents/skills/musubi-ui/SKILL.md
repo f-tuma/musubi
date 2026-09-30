@@ -139,9 +139,8 @@ on `*.module.css` and Radix imports outside `src/components/ui`.
 - Inline `style` is for dynamic custom properties only
   (`style={{ "--pigment": color, "--event-top": `${top}px` }}`), read by a
   utility.
-- Files still on CSS modules are listed in the `legacy` block of
-  `apps/web/eslint.config.js`. Migrating a file removes it from that list; never
-  add to it.
+- There are no CSS modules and no lint exceptions. Keep it that way: no
+  `eslint-disable`, no per-file overrides.
 
 ## Visual language
 

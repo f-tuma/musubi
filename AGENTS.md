@@ -18,7 +18,7 @@ Hard rules:
   padding, colour, type, radius and shadow.
 - Radix is imported only inside `apps/web/src/components/ui`.
 - `pnpm --filter @musubi/web lint` (`@shadcn/lint`, every rule at error) must
-  pass. Fix the cause; do not disable a rule or grow the legacy list.
+  pass. Fix the cause; do not disable a rule or add an exception.
 - Do not add a UI or styling dependency beyond Tailwind, shadcn/Radix, `cn`,
   `class-variance-authority`, `tw-animate-css` and `lucide-react` without
   explicit human approval.
