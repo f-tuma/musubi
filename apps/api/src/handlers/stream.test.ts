@@ -68,7 +68,7 @@ async function main() {
     notifyCalendarMembers(["another-user"], "event_updated", { id: "private", actorID: "actor" });
     assert.equal(res.writes.length, before);
     notifyCalendarMembers([req.user.id], "event_updated", { id: "event-1", revision: 2, actorID: "actor" });
-    assert.equal(res.writes.at(-1), 'data: {"type":"event_updated","payload":{"id":"event-1","revision":2,"actorID":"actor"}}\n\n');
+    assert.equal(res.writes[res.writes.length - 1], 'data: {"type":"event_updated","payload":{"id":"event-1","revision":2,"actorID":"actor"}}\n\n');
 
     req.emit("aborted");
     assert.equal(cleared, true);
