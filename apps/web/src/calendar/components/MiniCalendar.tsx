@@ -1,13 +1,17 @@
-import { Popover, PopoverContent, PopoverTrigger } from "~/ui/Popover";
 import type { Settings } from "@musubi/types";
 import { getMonthGrid } from "@musubi/calendar/layout";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Button, IconButton } from "~/ui/Button";
-import { SectionLabel } from "~/ui/SectionLabel";
+import { Button } from "~/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
+import { SectionLabel } from "~/components/ui/section-label";
 import { getLongDateLabel, getWeekdayLabels } from "../calendar-math";
+import { cn } from "~/lib/utils";
 import { toDateKey } from "../date-key";
-import styles from "./workspace.module.css";
+
+/** A month or year in the period pickers: a calendar cell, not a command. */
+const pickerTile =
+  "flex min-h-16 min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-control p-1 text-foreground-secondary tabular-nums transition-colors duration-fast hover:enabled:bg-raised hover:enabled:text-foreground disabled:cursor-not-allowed disabled:opacity-40 aria-pressed:bg-raised aria-pressed:text-foreground";
 
 const monthKey = (date: Date) => `${date.getFullYear()}-${date.getMonth()}`;
 
@@ -142,9 +146,10 @@ export function MiniCalendar({
   }
 
   return (
-    <section className={styles.miniCalendar} aria-label={label}>
-      <header className={styles.miniHeader}>
-        <IconButton
+    <section className="px-3.5 pt-2 pb-1" aria-label={label}>
+      <header className={cn("flex items-center justify-between gap-1", monthYearSelectors ? "mb-2" : "mb-1.5")}>
+        <Button
+          aria-label="Previous month in date picker"
           disabled={
             min
               ? toDateKey(
@@ -152,33 +157,34 @@ export function MiniCalendar({
                 ) < min
               : false
           }
-          label="Previous month in date picker"
-          size="compact"
+          size="icon-compact"
+          title="Previous month in date picker"
+          variant="ghost"
           onClick={() =>
             showMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))
           }
         >
-          <ChevronLeft aria-hidden="true" size={15} strokeWidth={1.7} />
-        </IconButton>
-        <div className={styles.miniMonthActions}>
-        {monthYearSelectors ? <div className={styles.miniPeriodSelectors}>
+          <ChevronLeft aria-hidden="true" strokeWidth={1.7} />
+        </Button>
+        <div className="flex min-w-0 items-center justify-center gap-2">
+        {monthYearSelectors ? <div className="flex items-center">
           <Popover open={monthPickerOpen} onOpenChange={setMonthPickerOpen}>
             <PopoverTrigger asChild>
-              <Button className={styles.miniMonthTrigger} size="compact" variant="ghost" aria-label={`Month: ${month.toLocaleDateString("en", { month: "long" })}`}>
+              <Button size="compact" variant="ghost" aria-label={`Month: ${month.toLocaleDateString("en", { month: "long" })}`}>
                 {month.toLocaleDateString("en", { month: "long" })}
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="center" aria-label="Choose month" className={styles.monthPickerPopover}>
-              <div className={styles.monthPickerGrid}>
+            <PopoverContent align="center" aria-label="Choose month" className="w-80">
+              <div className="grid grid-cols-4 gap-1 p-2">
                 {Array.from({ length: 12 }, (_, index) => {
                   const name = new Date(2026, index, 1).toLocaleDateString("en", { month: "long" });
-                  return <Button key={index} variant="ghost"
+                  return <button key={index} type="button" className={pickerTile}
                     aria-label={name} aria-pressed={index === month.getMonth()}
                     disabled={Boolean((min && toDateKey(new Date(month.getFullYear(), index + 1, 0)) < min) || (max && toDateKey(new Date(month.getFullYear(), index, 1)) > max))}
                     onClick={() => { showMonth(new Date(month.getFullYear(), index, 1)); setMonthPickerOpen(false); }}>
-                    <span className={styles.monthPickerContents}><span className={styles.monthPickerNumber}>{String(index + 1).padStart(2, "0")}</span>
-                    <span className={styles.monthPickerName}>{name}</span></span>
-                  </Button>;
+                    <span className="text-18 tabular-nums">{String(index + 1).padStart(2, "0")}</span>
+                    <span className="text-10">{name}</span>
+                  </button>;
                 })}
               </div>
             </PopoverContent>
@@ -188,47 +194,48 @@ export function MiniCalendar({
             setYearPickerOpen(open);
           }}>
             <PopoverTrigger asChild>
-              <Button className={styles.miniMonthTrigger} size="compact" variant="ghost"
+              <Button size="compact" variant="ghost"
                 aria-label={`Year: ${month.getFullYear()}`}>
                 {month.getFullYear()}
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="center" aria-label="Choose year" className={styles.yearPickerPopover}>
-              <div className={styles.yearPickerRow} ref={yearWheelRef}>
-                <IconButton label="Previous year" size="compact"
+            <PopoverContent align="center" aria-label="Choose year" className="w-80">
+              <div className="flex items-center gap-1 p-2" ref={yearWheelRef}>
+                <Button aria-label="Previous year" size="icon-compact" title="Previous year" variant="ghost"
                   disabled={browsedYear <= minYear}
                   onClick={() => setBrowsedYear(year => Math.max(minYear, year - 1))}>
-                  <ChevronLeft aria-hidden="true" size={16} />
-                </IconButton>
+                  <ChevronLeft aria-hidden="true" />
+                </Button>
                 {[browsedYear - 1, browsedYear, browsedYear + 1].map((year, position) => (
-                  <Button key={position} variant="ghost"
-                    className={year === browsedYear ? styles.yearPickerCenter : styles.yearPickerNeighbor}
+                  <button key={position} type="button"
+                    className={cn(pickerTile, "flex-1", year === browsedYear ? "text-24 text-foreground" : "text-13")}
                     aria-label={`Choose ${year}`}
                     aria-pressed={year === month.getFullYear()}
                     disabled={year < minYear || year > maxYear}
                     onClick={() => changeYear(year)}>
                     {year}
-                  </Button>
+                  </button>
                 ))}
-                <IconButton label="Next year" size="compact"
+                <Button aria-label="Next year" size="icon-compact" title="Next year" variant="ghost"
                   disabled={browsedYear >= maxYear}
                   onClick={() => setBrowsedYear(year => Math.min(maxYear, year + 1))}>
-                  <ChevronRight aria-hidden="true" size={16} />
-                </IconButton>
+                  <ChevronRight aria-hidden="true" />
+                </Button>
               </div>
             </PopoverContent>
           </Popover>
-        </div> : <SectionLabel className={styles.miniTitle}>
+        </div> : <SectionLabel>
           {/* Short month: the toolbar already spells the period out in full,
               and this one has seven columns to fit. */}
           {month.toLocaleDateString("en", { month: "short", year: "numeric" })}
         </SectionLabel>}
-      {showToday ? <Button className={styles.miniCalendarToday} size="compact" variant="ghost" disabled={unavailable(todayKey)} onClick={() => {
+      {showToday ? <Button size="compact" variant="ghost" disabled={unavailable(todayKey)} onClick={() => {
         showMonth(startOfMonth(new Date()));
         onDateChange(todayKey);
       }}>Today</Button> : null}
         </div>
-        <IconButton
+        <Button
+          aria-label="Next month in date picker"
           disabled={
             max
               ? toDateKey(
@@ -236,27 +243,28 @@ export function MiniCalendar({
                 ) > max
               : false
           }
-          label="Next month in date picker"
-          size="compact"
+          size="icon-compact"
+          title="Next month in date picker"
+          variant="ghost"
           onClick={() =>
             showMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))
           }
         >
-          <ChevronRight aria-hidden="true" size={15} strokeWidth={1.7} />
-        </IconButton>
+          <ChevronRight aria-hidden="true" strokeWidth={1.7} />
+        </Button>
       </header>
 
-      <div className={styles.miniGrid} role="grid">
-        <div className={styles.miniWeekdays} role="row">
+      <div className="flex flex-col gap-px" role="grid">
+        <div className="grid grid-cols-7 gap-px" role="row">
           {weekdayLabels.map((weekday) => (
-            <abbr key={weekday} role="columnheader" title={weekday}>
+            <abbr key={weekday} className="pb-0.5 text-center text-10 text-muted-foreground no-underline" role="columnheader" title={weekday}>
               {weekday.slice(0, 1)}
             </abbr>
           ))}
         </div>
         {Array.from({ length: 6 }, (_, week) => (
           <div
-            className={styles.miniWeek}
+            className="grid grid-cols-7 gap-px"
             key={toDateKey(days[week * 7]!)}
             role="row"
           >
@@ -270,7 +278,7 @@ export function MiniCalendar({
                   aria-current={dateKey === todayKey ? "date" : undefined}
                   aria-label={getLongDateLabel(day)}
                   aria-selected={dateKey === anchorKey}
-                  className={styles.miniDay}
+                  className="grid aspect-square cursor-pointer place-items-center rounded-full text-11 text-foreground transition-colors duration-fast hover:enabled:bg-raised disabled:cursor-not-allowed disabled:opacity-40 data-[outside]:text-muted-foreground data-[today]:font-medium data-[today]:text-shu data-[selected]:bg-primary data-[selected]:font-medium data-[selected]:text-primary-foreground data-[selected]:hover:enabled:bg-primary/90"
                   data-outside={
                     day.getMonth() === month.getMonth() ? undefined : ""
                   }

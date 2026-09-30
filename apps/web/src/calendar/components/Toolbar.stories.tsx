@@ -4,13 +4,12 @@ import { calendarCoverageNotice } from "@musubi/calendar";
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test";
 import { DESKTOP_MODES, MOBILE_MODES } from "../../../.storybook/modes";
 import { Toolbar } from "./Toolbar";
-import styles from "./ToolbarStories.module.css";
 
 const meta = {
   title: "Calendar/Toolbar",
   component: Toolbar,
   parameters: { layout: "fullscreen", chromatic: { modes: DESKTOP_MODES } },
-  decorators: [(Story) => <div className={styles.frame}><Story /></div>],
+  decorators: [(Story) => <div className="w-full self-start"><Story /></div>],
   args: {
     activeView: "month",
     availability: { shown: false, onToggle: fn(), onOpenList: fn() },
@@ -76,14 +75,14 @@ const checkConstrainedControls: NonNullable<Story["play"]> = async ({ canvasElem
 
 // Actual calendar widths after the 244px sidebar and 480px inspector reserve.
 export const DockedAt1024: Story = {
-  decorators: [(Story) => <div className={styles.constrained} style={{ "--toolbar-demo-width": "300px" } as CSSProperties}><Story /></div>],
+  decorators: [(Story) => <div className="w-(--toolbar-demo-width) max-w-full" style={{ "--toolbar-demo-width": "300px" } as CSSProperties}><Story /></div>],
   play: checkConstrainedControls,
 };
 export const DockedAt1280: Story = {
-  decorators: [(Story) => <div className={styles.constrained} style={{ "--toolbar-demo-width": "556px" } as CSSProperties}><Story /></div>],
+  decorators: [(Story) => <div className="w-(--toolbar-demo-width) max-w-full" style={{ "--toolbar-demo-width": "556px" } as CSSProperties}><Story /></div>],
   play: checkConstrainedControls,
 };
 export const DockedAt1555: Story = {
-  decorators: [(Story) => <div className={styles.constrained} style={{ "--toolbar-demo-width": "831px" } as CSSProperties}><Story /></div>],
+  decorators: [(Story) => <div className="w-(--toolbar-demo-width) max-w-full" style={{ "--toolbar-demo-width": "831px" } as CSSProperties}><Story /></div>],
   play: checkConstrainedControls,
 };

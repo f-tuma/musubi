@@ -11,8 +11,7 @@ import { getAnnouncements } from "~/api/resources";
 import { getServerOrigin, queryKeys } from "~/api/query-keys";
 import { useSessionUser } from "~/auth/use-session-user";
 import { useSettingsMutations } from "~/calendar/settings-mutations";
-import { Dialog } from "~/ui/Dialog";
-import styles from "./AnnouncementDialog.module.css";
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
 
 /** Co tenhle build je. Vite ho vloží; žádný fetch. Stejný zdroj jako use-newer-server. */
 const BUILD_VERSION = musubiPackage.version;
@@ -52,10 +51,12 @@ export function AnnouncementBody({ body }: { body: string }) {
   return (
     <>
       {announcementParagraphs(body).map((segments, index) => (
-        <p className={styles.paragraph} key={index}>
+        // Prostý text: zlom řádku uvnitř odstavce autor napsal schválně.
+        <p className="text-14 leading-relaxed whitespace-pre-wrap text-foreground-secondary [&+&]:mt-3" key={index}>
           {segments.map((segment, segmentIndex) =>
             segment.type === "link" ? (
               <a
+                className="text-foreground underline decoration-border-strong underline-offset-4 hover:decoration-current"
                 href={segment.url}
                 key={segmentIndex}
                 // Odkaz ven nesmí dostat window.opener na Musubi.
@@ -90,33 +91,31 @@ export function AnnouncementDialogView({
   const single = announcements.length === 1;
 
   return (
+    // Radix uvnitř Dialogu drží focus trap, Escape i vrácení focusu — obojí
+    // směřuje sem, takže zavření jakoukoli cestou posune značku.
     <Dialog
-      // Radix uvnitř Dialogu drží focus trap, Escape i vrácení focusu — obojí
-      // směřuje sem, takže zavření jakoukoli cestou posune značku.
-      closeLabel="Close"
-      description={
-        single
-          ? undefined
-          : `${announcements.length} updates since you were last here.`
-      }
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
       open
-      title={single ? announcements[0].title : "What's new"}
     >
-      <div className={styles.list}>
-        {announcements.map((announcement) => (
-          <section className={styles.entry} key={announcement.id}>
-            {/* U jediné zprávy je titulek už v hlavičce dialogu; opakovat ho
-                uvnitř by byly dva nadpisy pro totéž. */}
-            {single ? null : (
-              <h3 className={styles.title}>{announcement.title}</h3>
-            )}
-            <AnnouncementBody body={announcement.body} />
-          </section>
-        ))}
-      </div>
+      <DialogContent size="form" aria-describedby={undefined} closeLabel="Close">
+        <DialogHeader>
+          <DialogTitle>{single ? announcements[0].title : "What's new"}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          {announcements.map((announcement) => (
+            <section className="flex flex-col gap-2" key={announcement.id}>
+              {/* U jediné zprávy je titulek už v hlavičce dialogu; opakovat ho
+                  uvnitř by byly dva nadpisy pro totéž. */}
+              {single ? null : (
+                <h3 className="font-serif text-16 font-normal text-foreground">{announcement.title}</h3>
+              )}
+              <AnnouncementBody body={announcement.body} />
+            </section>
+          ))}
+        </DialogBody>
+      </DialogContent>
     </Dialog>
   );
 }

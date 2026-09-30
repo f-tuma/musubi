@@ -157,7 +157,7 @@ it("offers no empty-state creation while offline or without an editable calendar
   expect(screen.queryByRole("button", { name: "Create task" })).toBeNull();
   view.rerender(<TaskList {...props} editableCalendarIds={new Set()} />);
   expect(screen.queryByRole("button", { name: "Create task" })).toBeNull();
-  expect(screen.getByText("Tasks from the calendars on this Page will appear here.")).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "No tasks yet" })).toBeTruthy();
   expect(props.onCreate).not.toHaveBeenCalled();
 });
 

@@ -44,11 +44,12 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { Dialog } from "~/ui/Dialog";
-import { Button } from "~/ui/Button";
-import { ConfirmationDialog } from "~/ui/ConfirmationDialog";
-import { describeAge, StaleBanner, UpdateBanner, CoverageBanner } from "~/ui/StaleBanner";
-import { Toast, type ToastTone } from "~/ui/Toast";
+import { describeAge, StaleBanner, UpdateBanner, CoverageBanner } from "~/components/ui/banner";
+import { Button } from "~/components/ui/button";
+import { ConfirmationDialog } from "~/components/ui/confirmation-dialog";
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { Toast, type ToastTone } from "~/components/ui/toast";
+import { cn } from "~/lib/utils";
 import {
   DEFAULT_MULTI_WEEK_WEEKS,
   multiWeekDays,
@@ -98,7 +99,6 @@ import { SettingsDialog } from "./SettingsDialog";
 import { TimeGridView } from "./TimeGridView";
 import { TaskList } from "./TaskList";
 import { Toolbar } from "./Toolbar";
-import styles from "./workspace.module.css";
 
 const TOAST_ACKNOWLEDGEMENT_MS = 3_500;
 const TOAST_UNDO_MS = 9_000;
@@ -958,7 +958,7 @@ export function Workspace({
   return (
     <DateFormatContext.Provider value={settings.dateFormat}>
     <CalendarTaskContext.Provider value={{ tasks: searchAccount?.data?.tasks ?? tasks, calendars: searchAccount?.data?.calendars ?? calendars, settings, offline, update: onUpdateTask, remove: onRemoveTask }}>
-    <div className={styles.workspace}>
+    <div className="flex min-h-dvh cursor-default overflow-hidden bg-canvas select-none max-md:block" data-workspace="">
       <Sidebar
         activePageId={pageId}
         anchor={anchor}
@@ -1034,7 +1034,7 @@ export function Workspace({
       />
 
       <main
-        className={styles.main}
+        className="relative flex h-dvh min-w-0 flex-1 flex-col overflow-hidden"
         id="main-content"
         tabIndex={-1}
         inert={sidebarModal ? true : undefined}
@@ -1080,15 +1080,15 @@ export function Workspace({
         {activeDraft ? (
           <section
             aria-label="Unsaved Page changes"
-            className={styles.pageDraftBar}
+            className="z-10 flex min-h-12 flex-none items-center justify-between gap-3 border-b border-border-subtle bg-panel px-3.5 py-2 data-[conflict]:bg-shu/10 max-sm:items-start md:px-7"
             data-conflict={activeDraftConflict ? "" : undefined}
           >
-            <p>
+            <p className="text-12 text-foreground-secondary max-sm:pt-2">
               {activeDraftConflict
                 ? "This Page changed elsewhere. Save your draft as a copy or discard it."
                 : "Unsaved Page changes"}
             </p>
-            <div className={styles.pageDraftActions}>
+            <div className="flex flex-none gap-2">
               <Button
                 disabled={savingPageId === activePage.id}
                 ref={discardPageDraftButtonRef}
@@ -1122,9 +1122,10 @@ export function Workspace({
 
         {gridAvailability.notice ? <CoverageBanner message={gridAvailability.notice} /> : null}
         <div
-          className={`${styles.calendarArea} ${
-            activeView === "month" ? styles.calendarAreaMonth : ""
-          }`}
+          className={cn(
+            "relative min-h-0 min-w-0 flex-1 overflow-auto bg-canvas select-none max-sm:pb-20",
+            activeView === "month" && "overflow-hidden overscroll-none",
+          )}
           ref={wheelPeriodRef}
           data-calendar-area=""
           // Flick sideways to move a period, like the native client's pager.
@@ -1351,13 +1352,26 @@ export function Workspace({
 
         {searchTaskId ? <TaskDetails key={searchTaskId} taskId={searchTaskId} returnFocus={taskReturnFocus} open onOpenChange={open => { if (!open) setSearchTaskId(undefined); }} /> : null}
 
-        <Dialog closeLabel="Close event" open={Boolean(searchDetailId)} onOpenChange={open => { if (!open) setSearchDetailId(undefined); }} title={searchDetail?.title ?? "Event"} returnFocus={searchTriggerRef}>
-          {searchDetail ? <>
-            <p>{getEventDateLabel(searchDetail)} · {getEventRangeLabel(searchDetail, settings.timeFormat)}</p>
-            {searchDetail.location ? <p>{searchDetail.location}</p> : null}
-            {searchDetail.description ? <p>{searchDetail.description}</p> : null}
-            {onOpenFullEditor && canEditEvent(searchDetail, calendars) ? <Button onClick={() => { setSearchDetailId(undefined); onOpenFullEditor(eventFormValues(searchDetail), searchDetail); }}>Edit</Button> : null}
-          </> : <p>This event is no longer available.</p>}
+        <Dialog open={Boolean(searchDetailId)} onOpenChange={open => { if (!open) setSearchDetailId(undefined); }}>
+          <DialogContent aria-describedby={undefined} closeLabel="Close event" returnFocus={searchTriggerRef} size="form">
+            <DialogHeader>
+              <DialogTitle>{searchDetail?.title ?? "Event"}</DialogTitle>
+            </DialogHeader>
+            <DialogBody>
+              <div className="grid gap-2 text-14 text-foreground-secondary">
+              {searchDetail ? <>
+                <p>{getEventDateLabel(searchDetail)} · {getEventRangeLabel(searchDetail, settings.timeFormat)}</p>
+                {searchDetail.location ? <p>{searchDetail.location}</p> : null}
+                {searchDetail.description ? <p className="whitespace-pre-wrap">{searchDetail.description}</p> : null}
+              </> : <p>This event is no longer available.</p>}
+              </div>
+            </DialogBody>
+            {searchDetail && onOpenFullEditor && canEditEvent(searchDetail, calendars) ? (
+              <DialogFooter>
+                <Button onClick={() => { setSearchDetailId(undefined); onOpenFullEditor(eventFormValues(searchDetail), searchDetail); }}>Edit</Button>
+              </DialogFooter>
+            ) : null}
+          </DialogContent>
         </Dialog>
 
         <ShortcutsDialog onOpenChange={setShortcutsOpen} open={shortcutsOpen} />
@@ -1381,8 +1395,8 @@ export function Workspace({
                   }
                 : undefined
             }
-            className={styles.workspaceToast}
             message={notice.message}
+            placement="workspace"
             tone={notice.tone}
           />
         ) : null}
@@ -1491,15 +1505,13 @@ export function Workspace({
       <ConfirmationDialog
         closeLabel="Close discard Page changes confirmation"
         confirmLabel="Discard changes"
-        description="The unsaved view and calendar visibility changes will be lost."
+        description="View and calendar visibility changes will be lost."
         onConfirm={discardActivePageDraft}
         onOpenChange={setDiscardPageDraftOpen}
         open={discardPageDraftOpen}
         returnFocus={discardPageDraftButtonRef}
-        title="Discard Page changes?"
-      >
-        <p>This cannot be undone.</p>
-      </ConfirmationDialog>
+        title="Discard Page changes"
+      />
       {settingsPage ? (
         <PageSettingsDialog
           calendars={calendars}

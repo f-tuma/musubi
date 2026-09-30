@@ -5,19 +5,26 @@ import type {
   PageDocument,
   PageIcon,
 } from "@musubi/types";
-import { AlertTriangle, Check, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Button } from "~/ui/Button";
+import { Check, Trash2 } from "lucide-react";
+import { type FormEvent, type RefObject, useEffect, useRef, useState } from "react";
+import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
+import { ConfirmationDialog } from "~/components/ui/confirmation-dialog";
 import {
-  ConfirmationDialog,
-  ConfirmationNotice,
-} from "~/ui/ConfirmationDialog";
-import { Dialog, DialogInfo } from "~/ui/Dialog";
-import { Field } from "~/ui/Field";
-import { InlineError } from "~/ui/InlineError";
-import { Row, RowToggle } from "~/ui/Row";
-import { SettingsSection } from "~/ui/SettingsSection";
-import { Select } from "~/ui/Select";
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import { Field, FieldGroup } from "~/components/ui/field";
+import { HelpTooltip } from "~/components/ui/help-tooltip";
+import { InlineError } from "~/components/ui/inline-error";
+import { Input } from "~/components/ui/input";
+import { Row, RowToggle } from "~/components/ui/row";
+import { Select } from "~/components/ui/select";
+import { SettingsSection } from "~/components/ui/settings-section";
 import type { Notify } from "../notice";
 import {
   calendarIdsForVisibility,
@@ -33,7 +40,6 @@ import {
 import type { Density } from "../time-geometry";
 import { CalendarVisibilityPill } from "./CalendarVisibilityPill";
 import { PAGE_ITEM_TYPES, pageItemTypes } from "../page-item-filters";
-import styles from "./styles/page-settings.module.css";
 
 // Steps rather than a free number: every value between 12 and 16 weeks looks
 // the same, and a spinner invites fiddling with a setting nobody tunes twice.
@@ -254,255 +260,242 @@ export function PageSettingsDialog({
 
   return (
     <>
-      <Dialog
-        bodyLayout="flush"
-        closeLabel="Close page settings"
-        headerActions={<DialogInfo label="About page settings" title="Page settings">Applies to this page only, on every device.</DialogInfo>}
-        footer={
-          conflict ? (
-            <>
-              <Button
-                disabled={busy}
-                variant="secondary"
-                onClick={() => {
-                  onResolveConflictDraft?.();
-                  onOpenChange(false);
-                }}
-              >
-                Discard my changes
-              </Button>
-              <Button loading={busy} onClick={() => void saveAsCopy()}>
-                Save as a copy
-              </Button>
-            </>
-          ) : (
-            <>
-              {canDelete ? (
-                <Button
-                  className={styles.footerDelete}
-                  disabled={busy}
-                  icon={
-                    <Trash2 aria-hidden="true" size={16} strokeWidth={1.7} />
-                  }
-                  ref={deleteButtonRef}
-                  variant="destructive"
-                  onClick={() => {
-                    setDeleteError("");
-                    setConfirmation("delete");
-                  }}
-                >
-                  Delete page
-                </Button>
-              ) : null}
-              <Button
-                disabled={busy}
-                onClick={() => requestClose(false)}
-                variant="secondary"
-              >
-                Cancel
-              </Button>
-              <Button
-                disabled={!canSave}
-                form="page-settings-form"
-                loading={busy}
-                type="submit"
-              >
-                Save
-              </Button>
-            </>
-          )
-        }
-        initialFocus={nameRef}
-        onOpenChange={requestClose}
-        open
-        size="wide"
-        title="Page settings"
-      >
-        <form
-          className={styles.form}
-          id="page-settings-form"
-          onSubmit={handleSubmit}
+      <Dialog open onOpenChange={requestClose}>
+        <DialogContent
+          aria-describedby={undefined}
+          closeLabel="Close page settings"
+          initialFocus={nameRef}
+          size="default"
+          tall
         >
-          {conflict ? (
-            <div className={styles.conflict} role="alert">
-              <AlertTriangle aria-hidden="true" size={18} strokeWidth={1.6} />
-              <div>
-                <strong>This page changed on another device</strong>
-                <p>
-                  Your edits weren’t saved. Keep them as a new page, or discard
-                  them and use the latest version.
-                </p>
-              </div>
+          <DialogHeader>
+            <div className="flex items-center gap-1">
+              <DialogTitle>Page settings</DialogTitle>
+              <HelpTooltip label="About page settings">
+                Applies to this page only, on every device.
+              </HelpTooltip>
             </div>
-          ) : null}
-
-          <div className={styles.identityFields}>
-            <Field label="Page name">
-              <input
-                disabled={busy}
-                maxLength={80}
-                ref={nameRef}
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </Field>
-
-            <IconField
-              disabled={busy}
-              name="page-settings-icon"
-              value={icon}
-              onChange={setIcon}
-            />
-          </div>
-
-          <SettingsSection title="General" help="The default page opens when Musubi starts.">
-            <Row
-              label="Default page"
-              layout="responsive-actions"
-              trailing={
-                isDefault ? (
-                  <span className={styles.defaultStatus}>
-                    <Check aria-hidden="true" size={14} strokeWidth={1.8} />
-                    Default
-                  </span>
-                ) : (
-                  <Button
-                    disabled={busy}
-                    loading={settingDefault}
-                    size="compact"
-                    variant="secondary"
-                    onClick={() => void setAsDefault()}
-                  >
-                    Set as default
-                  </Button>
-                )
-              }
-            />
-          </SettingsSection>
-
-          <SettingsSection title="Presentation" help="Row height sets hour spacing in the calendar grid. Weekend shows Saturday and Sunday. Nearby months shows days from the previous and next months.">
-            {"density" in view ? (
-              <Row
-                label="Row height"
-                layout="responsive-actions"
-                trailing={
-                  <Select
-                    disabled={busy}
-                    label="Row height"
-                    options={DENSITY_OPTIONS}
-                    size="compact"
-                    value={view.density}
-                    onChange={(value) =>
-                      setView((current) =>
-                        "density" in current
-                          ? { ...current, density: value as Density }
-                          : current,
-                      )
-                    }
-                  />
-                }
-              />
-            ) : null}
-            {"weeks" in view ? (
-              <Row
-                label="Weeks shown"
-                layout="responsive-actions"
-                trailing={
-                  <Select
-                    disabled={busy}
-                    label="Weeks shown"
-                    options={WEEKS_OPTIONS}
-                    size="compact"
-                    value={String(view.weeks)}
-                    onChange={(value) =>
-                      setView((current) =>
-                        "weeks" in current
-                          ? { ...current, weeks: Number(value) }
-                          : current,
-                      )
-                    }
-                  />
-                }
-              />
-            ) : null}
-            {"weekend" in view ? (
-              <RowToggle
-                checked={view.weekend}
-                disabled={busy}
-                label="Weekend"
-                onCheckedChange={(weekend) =>
-                  setView((current) =>
-                    "weekend" in current ? { ...current, weekend } : current,
-                  )
-                }
-              />
-            ) : null}
-            {"showAdjacentDays" in view ? (
-              <RowToggle
-                checked={view.showAdjacentDays}
-                disabled={busy}
-                label="Nearby months"
-                onCheckedChange={(showAdjacentDays) =>
-                  setView((current) =>
-                    "showAdjacentDays" in current
-                      ? { ...current, showAdjacentDays }
-                      : current,
-                  )
-                }
-              />
-            ) : null}
-          </SettingsSection>
-
-          <SettingsSection
-            title="Filters"
-          >
-            {PAGE_ITEM_TYPES.map(type => (
-              <RowToggle key={type} label={{ events: "Events", tasks: "Tasks", meetings: "Meetings" }[type]}
-                checked={pageItemTypes(filters).includes(type)} disabled={busy}
-                onCheckedChange={checked => setFilters(current => {
-                  const selected = pageItemTypes(current);
-                  const value = PAGE_ITEM_TYPES.filter(item => item === type ? checked : selected.includes(item));
-                  const others = current.filter(filter => filter.type !== "item-types");
-                  return value.length === PAGE_ITEM_TYPES.length ? others : [...others, { type: "item-types", value }];
-                })} />
-            ))}
-            {/* Calendar visibility belongs to the Page, so it is configured here
-              with its other saved presentation choices instead of in the
-              calendar toolbar. */}
-            <fieldset
-              aria-label="Calendars shown on this page"
-              className={styles.pillGrid}
-              disabled={busy}
+          </DialogHeader>
+          <DialogBody>
+            <form
+              className="flex flex-col gap-6"
+              id="page-settings-form"
+              onSubmit={handleSubmit}
             >
-              {calendars.map((calendar) => (
-                <CalendarVisibilityPill
-                  calendar={calendar}
-                  key={calendar.id}
-                  visible={visibleCalendarIds.includes(calendar.id)}
-                  onVisibleChange={() =>
-                    setVisibility((current) =>
-                      toggleCalendarVisibility(current, calendar.id, calendars),
+              {conflict ? (
+                <InlineError>
+                  <span className="block font-medium">This page changed on another device</span>
+                  Your edits weren’t saved. Keep them as a new page, or discard them.
+                </InlineError>
+              ) : null}
+
+              <PageIdentityFields
+                busy={busy}
+                icon={icon}
+                iconName="page-settings-icon"
+                name={name}
+                nameRef={nameRef}
+                onIconChange={setIcon}
+                onNameChange={setName}
+              />
+
+              <SettingsSection title="General" help="The default page opens when Musubi starts.">
+                <Row
+                  label="Default page"
+                  layout="responsive-actions"
+                  trailing={
+                    isDefault ? (
+                      <Badge variant="muted">
+                        <Check aria-hidden="true" strokeWidth={1.8} />
+                        Default
+                      </Badge>
+                    ) : (
+                      <Button
+                        disabled={busy}
+                        loading={settingDefault}
+                        size="compact"
+                        variant="secondary"
+                        onClick={() => void setAsDefault()}
+                      >
+                        Set as default
+                      </Button>
                     )
                   }
                 />
-              ))}
-              {calendars.length === 0 ? (
-                <p className={styles.emptyCalendars}>
-                  No calendars available yet.
-                </p>
-              ) : null}
-            </fieldset>
-          </SettingsSection>
+              </SettingsSection>
 
-          {error ? (
-            <InlineError className={styles.error}>{error}</InlineError>
-          ) : null}
-        </form>
+              <SettingsSection title="Presentation" help="Row height sets hour spacing in the calendar grid. Weekend shows Saturday and Sunday. Nearby months shows days from the previous and next months.">
+                  {"density" in view ? (
+                    <Row
+                      label="Row height"
+                      trailing={
+                        <Select
+                          disabled={busy}
+                          label="Row height"
+                          options={DENSITY_OPTIONS}
+                          size="compact"
+                          value={view.density}
+                          onChange={(value) =>
+                            setView((current) =>
+                              "density" in current
+                                ? { ...current, density: value as Density }
+                                : current,
+                            )
+                          }
+                        />
+                      }
+                    />
+                  ) : null}
+                  {"weeks" in view ? (
+                    <Row
+                      label="Weeks shown"
+                      trailing={
+                        <Select
+                          disabled={busy}
+                          label="Weeks shown"
+                          options={WEEKS_OPTIONS}
+                          size="compact"
+                          value={String(view.weeks)}
+                          onChange={(value) =>
+                            setView((current) =>
+                              "weeks" in current
+                                ? { ...current, weeks: Number(value) }
+                                : current,
+                            )
+                          }
+                        />
+                      }
+                    />
+                  ) : null}
+                  {"weekend" in view ? (
+                    <RowToggle
+                      checked={view.weekend}
+                      disabled={busy}
+                      label="Weekend"
+                      onCheckedChange={(weekend) =>
+                        setView((current) =>
+                          "weekend" in current ? { ...current, weekend } : current,
+                        )
+                      }
+                    />
+                  ) : null}
+                  {"showAdjacentDays" in view ? (
+                    <RowToggle
+                      checked={view.showAdjacentDays}
+                      disabled={busy}
+                      label="Nearby months"
+                      onCheckedChange={(showAdjacentDays) =>
+                        setView((current) =>
+                          "showAdjacentDays" in current
+                            ? { ...current, showAdjacentDays }
+                            : current,
+                        )
+                      }
+                    />
+                  ) : null}
+                </SettingsSection>
+
+              <SettingsSection title="Filters">
+                {PAGE_ITEM_TYPES.map(type => (
+                  <RowToggle key={type} label={{ events: "Events", tasks: "Tasks", meetings: "Meetings" }[type]}
+                    checked={pageItemTypes(filters).includes(type)} disabled={busy}
+                    onCheckedChange={checked => setFilters(current => {
+                      const selected = pageItemTypes(current);
+                      const value = PAGE_ITEM_TYPES.filter(item => item === type ? checked : selected.includes(item));
+                      const others = current.filter(filter => filter.type !== "item-types");
+                      return value.length === PAGE_ITEM_TYPES.length ? others : [...others, { type: "item-types", value }];
+                    })} />
+                ))}
+              </SettingsSection>
+
+              {/* Calendar visibility belongs to the Page, so it is configured here
+                with its other saved presentation choices instead of in the
+                calendar toolbar. */}
+              <SettingsSection title="Calendars">
+                <fieldset
+                  aria-label="Calendars shown on this page"
+                  className="m-0 flex min-w-0 flex-wrap gap-2 border-0 p-4"
+                  disabled={busy}
+                >
+                  {calendars.map((calendar) => (
+                    <CalendarVisibilityPill
+                      calendar={calendar}
+                      key={calendar.id}
+                      visible={visibleCalendarIds.includes(calendar.id)}
+                      onVisibleChange={() =>
+                        setVisibility((current) =>
+                          toggleCalendarVisibility(current, calendar.id, calendars),
+                        )
+                      }
+                    />
+                  ))}
+                  {calendars.length === 0 ? (
+                    <p className="text-13 text-muted-foreground">No calendars yet</p>
+                  ) : null}
+                </fieldset>
+              </SettingsSection>
+
+              {error ? <InlineError>{error}</InlineError> : null}
+            </form>
+          </DialogBody>
+          <DialogFooter>
+            {conflict ? (
+              <>
+                <Button
+                  disabled={busy}
+                  variant="secondary"
+                  onClick={() => {
+                    onResolveConflictDraft?.();
+                    onOpenChange(false);
+                  }}
+                >
+                  Discard my changes
+                </Button>
+                <Button loading={busy} onClick={() => void saveAsCopy()}>
+                  Save as a copy
+                </Button>
+              </>
+            ) : (
+              <>
+                {canDelete ? (
+                  <Button
+                    className="sm:mr-auto"
+                    disabled={busy}
+                    ref={deleteButtonRef}
+                    variant="ghost"
+                    onClick={() => {
+                      setDeleteError("");
+                      setConfirmation("delete");
+                    }}
+                  >
+                    <Trash2 aria-hidden="true" strokeWidth={1.7} />
+                    Delete page
+                  </Button>
+                ) : null}
+                <Button
+                  disabled={busy}
+                  onClick={() => requestClose(false)}
+                  variant="secondary"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  disabled={!canSave}
+                  form="page-settings-form"
+                  loading={busy}
+                  type="submit"
+                >
+                  Save
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
       <ConfirmationDialog
         closeLabel="Close discard changes confirmation"
         confirmLabel="Discard changes"
-        description={`Your edits to “${page.name}” have not been saved.`}
+        description={`Your edits to “${page.name}” will be lost.`}
         onConfirm={() => {
           setConfirmation(undefined);
           onOpenChange(false);
@@ -513,19 +506,12 @@ export function PageSettingsDialog({
         open={confirmation === "discard"}
         returnFocus={discardReturnFocusRef}
         title="Discard page changes?"
-      >
-        <ConfirmationNotice
-          icon={<AlertTriangle size={18} strokeWidth={1.6} />}
-        >
-          <strong>Your current Page draft will be lost.</strong>
-          <p>Name, icon, presentation, and visibility will stay unchanged.</p>
-        </ConfirmationNotice>
-      </ConfirmationDialog>
+      />
 
       <ConfirmationDialog
         closeLabel="Close delete page confirmation"
         confirmLabel="Delete page"
-        description={`“${page.name}” will disappear from every device.`}
+        description={`“${page.name}” disappears from every device. This cannot be undone.`}
         loading={busy && confirmation === "delete"}
         onConfirm={() => void remove()}
         onOpenChange={(nextOpen) => {
@@ -535,15 +521,51 @@ export function PageSettingsDialog({
         returnFocus={deleteButtonRef}
         title={`Delete “${page.name}”?`}
       >
-        <ConfirmationNotice
-          icon={<AlertTriangle size={18} strokeWidth={1.6} />}
-        >
-          <strong>This cannot be undone.</strong>
-          <p>The server has no way to restore a deleted Page.</p>
-        </ConfirmationNotice>
         {deleteError ? <InlineError>{deleteError}</InlineError> : null}
       </ConfirmationDialog>
     </>
+  );
+}
+
+/** Name and icon: what a Page is called and how it looks in the sidebar. */
+function PageIdentityFields({
+  busy,
+  icon,
+  iconName,
+  name,
+  nameRef,
+  onIconChange,
+  onNameChange,
+  placeholder,
+}: {
+  busy: boolean;
+  icon: PageIcon;
+  iconName: string;
+  name: string;
+  nameRef: RefObject<HTMLInputElement | null>;
+  onIconChange: (icon: PageIcon) => void;
+  onNameChange: (name: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <FieldGroup>
+      <Field label="Page name">
+        <Input
+          disabled={busy}
+          maxLength={80}
+          placeholder={placeholder}
+          ref={nameRef}
+          value={name}
+          onChange={(event) => onNameChange(event.target.value)}
+        />
+      </Field>
+      <IconField
+        disabled={busy}
+        name={iconName}
+        value={icon}
+        onChange={onIconChange}
+      />
+    </FieldGroup>
   );
 }
 
@@ -565,33 +587,34 @@ function IconField({
   value: PageIcon;
 }) {
   return (
-    <fieldset className={styles.icons} disabled={disabled}>
-      {/* The twelve glyphs say what this is; a 10px uppercase label over
-          them is a word the eye has to step past every time. The group keeps
-          its name for anyone who cannot see the glyphs. */}
-      <legend className={styles.visuallyHidden}>Icon</legend>
-      <div className={styles.iconGrid}>
+    <fieldset className="group/icons m-0 min-w-0 border-0 p-0" disabled={disabled}>
+      {/* The twelve glyphs say what this is; a label over them is a word the
+          eye has to step past every time. The group keeps its name for anyone
+          who cannot see the glyphs. */}
+      <legend className="sr-only">Icon</legend>
+      {/* Four columns on a phone keep every tile a comfortable target. */}
+      <div className="grid grid-cols-4 gap-x-2 gap-y-3 sm:grid-cols-6">
         {pageIconChoices.map((choice) => {
           const Icon = pageIconComponent(choice.icon);
 
           return (
             <label
-              className={styles.iconChoice}
+              className="relative grid min-h-control cursor-pointer place-items-center rounded-md border border-border-subtle text-foreground-secondary transition-colors duration-fast hover:border-border hover:text-foreground has-checked:border-shu has-checked:bg-shu/10 has-checked:text-shu group-disabled/icons:cursor-not-allowed group-disabled/icons:text-faint group-disabled/icons:hover:border-border-subtle"
               key={choice.icon}
               title={choice.label}
             >
+              {/* The radio is the whole tile, so a click anywhere lands on the
+                  control and the global keyboard ring draws around the tile. */}
               <input
+                aria-label={choice.label}
                 checked={value === choice.icon}
-                className={styles.iconInput}
+                className="absolute inset-0 m-0 cursor-pointer appearance-none rounded-md disabled:cursor-not-allowed"
                 name={name}
                 type="radio"
                 value={choice.icon}
                 onChange={() => onChange(choice.icon)}
               />
-              <span aria-hidden="true" className={styles.iconGlyph}>
-                <Icon size={19} strokeWidth={1.6} />
-              </span>
-              <span className={styles.visuallyHidden}>{choice.label}</span>
+              <Icon aria-hidden="true" className="pointer-events-none relative" size={19} strokeWidth={1.6} />
             </label>
           );
         })}
@@ -636,12 +659,41 @@ export function NewPageDialog({
   }
 
   return (
-    <Dialog
-      bodyLayout="flush"
-      closeLabel="Close new page"
-      headerActions={<DialogInfo label="About new pages" title="New page">It starts from the calendars you can see right now.</DialogInfo>}
-      footer={
-        <>
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent
+        aria-describedby={undefined}
+        closeLabel="Close new page"
+        initialFocus={nameRef}
+        size="compact"
+      >
+        <DialogHeader>
+          <div className="flex items-center gap-1">
+            <DialogTitle>New page</DialogTitle>
+            <HelpTooltip label="About new pages">
+              It starts from the calendars you can see right now.
+            </HelpTooltip>
+          </div>
+        </DialogHeader>
+        <DialogBody>
+          <form
+            className="flex flex-col gap-5"
+            id="new-page-form"
+            onSubmit={(event) => void submit(event)}
+          >
+            <PageIdentityFields
+              busy={busy}
+              icon={icon}
+              iconName="new-page-icon"
+              name={name}
+              nameRef={nameRef}
+              placeholder="Work, Family, Training…"
+              onIconChange={setIcon}
+              onNameChange={setName}
+            />
+            {error ? <InlineError>{error}</InlineError> : null}
+          </form>
+        </DialogBody>
+        <DialogFooter>
           <Button
             disabled={busy}
             onClick={() => onOpenChange(false)}
@@ -657,43 +709,8 @@ export function NewPageDialog({
           >
             Create page
           </Button>
-        </>
-      }
-      initialFocus={nameRef}
-      onOpenChange={onOpenChange}
-      open
-      size="compact"
-      title="New page"
-    >
-      <form
-        className={styles.form}
-        id="new-page-form"
-        onSubmit={(event) => void submit(event)}
-      >
-        <div className={styles.identityFields}>
-          <Field label="Page name">
-            <input
-              disabled={busy}
-              maxLength={80}
-              placeholder="Work, Family, Training…"
-              ref={nameRef}
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-            />
-          </Field>
-          <IconField
-            disabled={busy}
-            name="new-page-icon"
-            value={icon}
-            onChange={setIcon}
-          />
-        </div>
-        {error ? (
-          <p className={styles.error} role="alert">
-            {error}
-          </p>
-        ) : null}
-      </form>
+        </DialogFooter>
+      </DialogContent>
     </Dialog>
   );
 }

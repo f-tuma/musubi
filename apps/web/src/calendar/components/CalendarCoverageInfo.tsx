@@ -1,9 +1,8 @@
 import { Info, X } from "lucide-react";
 import { useId } from "react";
-import { IconButton } from "~/ui/Button";
-import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "~/ui/Popover";
+import { Button } from "~/components/ui/button";
+import { Popover, PopoverClose, PopoverContent, PopoverDescription, PopoverTitle, PopoverTrigger } from "~/components/ui/popover";
 import { focusMovedToAnotherLayer } from "../layer-focus";
-import styles from "./CalendarCoverageInfo.module.css";
 
 /** Standing provider limits stay available without taking space from events. */
 export function CalendarCoverageInfo({ message }: { message: string }) {
@@ -12,15 +11,14 @@ export function CalendarCoverageInfo({ message }: { message: string }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <IconButton label="Calendar sync coverage" size="compact">
-          <Info aria-hidden="true" size={17} strokeWidth={1.6} />
-        </IconButton>
+        <Button aria-label="Calendar sync coverage" title="Calendar sync coverage" size="icon-compact" variant="ghost">
+          <Info aria-hidden="true" strokeWidth={1.6} />
+        </Button>
       </PopoverTrigger>
       <PopoverContent
         align="end"
         aria-describedby={descriptionId}
         aria-label="Calendar sync coverage"
-        className={styles.details}
         onClick={(event) => event.stopPropagation()}
         onFocusOutside={(event) => {
           if (!focusMovedToAnotherLayer(event.target)) event.preventDefault();
@@ -28,16 +26,16 @@ export function CalendarCoverageInfo({ message }: { message: string }) {
         onPointerDown={(event) => event.stopPropagation()}
         role="dialog"
       >
-        <div className={styles.header}>
-          <h2 className={styles.title}>Sync coverage</h2>
+        <div className="flex items-center justify-between gap-2 pt-2 pr-2 pl-4">
+          <PopoverTitle>Sync coverage</PopoverTitle>
           <PopoverClose asChild>
-            <IconButton label="Close sync coverage" size="compact">
-              <X aria-hidden="true" size={17} strokeWidth={1.6} />
-            </IconButton>
+            <Button aria-label="Close sync coverage" title="Close sync coverage" size="icon-compact" variant="ghost">
+              <X aria-hidden="true" strokeWidth={1.6} />
+            </Button>
           </PopoverClose>
         </div>
-        <div className={styles.body}>
-          <p className={styles.description} id={descriptionId}>{message}</p>
+        <div className="px-4 pb-4">
+          <PopoverDescription id={descriptionId}>{message}</PopoverDescription>
         </div>
       </PopoverContent>
     </Popover>

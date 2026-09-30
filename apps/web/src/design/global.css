@@ -152,6 +152,7 @@ button {
    stay live while the old and new views crossfade. Unsupported browsers
    retain normal router navigation. */
 :root { view-transition-name: none; }
+[data-calendar-area] { view-transition-name: musubi-calendar-content; }
 ::view-transition { pointer-events: none; }
 ::view-transition-group(musubi-calendar-content),
 ::view-transition-old(musubi-calendar-content),
@@ -163,4 +164,11 @@ button {
   ::view-transition-group(musubi-calendar-content),
   ::view-transition-old(musubi-calendar-content),
   ::view-transition-new(musubi-calendar-content) { animation: none; }
+}
+
+/* The workspace is a canvas of gestures, so its chrome is not selectable text;
+   what people type still is. */
+[data-workspace] :is(input, textarea) {
+  cursor: auto;
+  user-select: text;
 }

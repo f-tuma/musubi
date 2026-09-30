@@ -3,9 +3,8 @@ import { Smartphone } from "lucide-react";
 import { SessionGate } from "~/auth/SessionGate";
 import { useNarrowViewport } from "~/design/use-narrow-viewport";
 import { SnapshotProvider } from "~/offline/SnapshotProvider";
-import { Button } from "~/ui/Button";
-import { Empty } from "~/ui/Empty";
-import styles from "./app.module.css";
+import { Button } from "~/components/ui/button";
+import { Empty } from "~/components/ui/empty";
 
 export const Route = createFileRoute("/app")({
   component: AppRoute,
@@ -26,7 +25,7 @@ function AppRoute() {
   return (
     <SnapshotProvider>
       {narrow && !testBypass ? (
-        <main className={styles.mobileBlocker}>
+        <main className="fixed inset-0 z-dialog grid min-h-dvh place-items-center overflow-auto bg-canvas p-6 pb-safe-bottom">
           <Empty
             action={
               <Button onClick={() => window.location.assign(MOBILE_APP_URL)}>
@@ -35,8 +34,8 @@ function AppRoute() {
             }
             aria-label="Musubi on mobile"
             aria-modal="true"
-            description="The web app is not fully optimized for phones yet. Download the app for the full Musubi experience."
-            icon={<Smartphone size={20} />}
+            description="The web app is not built for phones yet."
+            icon={<Smartphone />}
             role="dialog"
             title="Musubi works best in the app"
           />
