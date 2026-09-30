@@ -8,6 +8,7 @@ async function main() {
   // Construct module-scoped guarded transports only after the local fixture policy.
   const { classifyCaldavCalendars } = await import("./adapters/caldav");
   const { createCaldavClient } = await import("./caldav_client");
+  const { DavReadResponseError } = await import("./caldav_properties");
   const { caldavEventPrivileges, caldavReadAccess, caldavAllows } = await import("./caldav_privileges");
   let chain = "ok", listings = 0;
   let mode = "ok", read = true, write = true;
@@ -25,8 +26,8 @@ async function main() {
       if (mode.startsWith("resource:")) data = collision(data, mode.slice(9), "UNVALIDATED PRIVATE CONTENT");
     }
     else if (body.includes("resourcetype") && (target.pathname === "/" || target.pathname === "/.well-known/caldav")) data = row(target.href, "<d:resourcetype><d:collection/></d:resourcetype>");
-    else if (body.includes("current-user-principal")) data = row(chain === "principal-href" ? home : target.href, `<${chain === "principal-ns" ? "x" : "d"}:current-user-principal><d:href>/principal/</d:href></${chain === "principal-ns" ? "x" : "d"}:current-user-principal>`, chain === "principal-denied" ? "HTTP/1.1 403 Forbidden" : "HTTP/1.1 200 OK");
-    else if (body.includes("calendar-home-set")) data = row(chain === "home-href" ? home : target.href, `<${chain === "home-ns" ? "x" : "c"}:calendar-home-set><d:href>${chain === "home-relative" ? "home/" : "/home/"}</d:href></${chain === "home-ns" ? "x" : "c"}:calendar-home-set>`, chain === "home-denied" ? "HTTP/1.1 403 Forbidden" : "HTTP/1.1 200 OK");
+    else if (body.includes("current-user-principal")) data = row(chain === "principal-href" ? home : target.href, `<${chain === "principal-ns" ? "x" : "d"}:current-user-principal><d:href>${chain === "home-canonical-slash" ? "/principal" : "/principal/"}</d:href></${chain === "principal-ns" ? "x" : "d"}:current-user-principal>`, chain === "principal-denied" ? "HTTP/1.1 403 Forbidden" : "HTTP/1.1 200 OK");
+    else if (body.includes("calendar-home-set")) data = row(chain === "home-href" ? home : chain === "home-canonical-slash" ? target.href + "/" : target.href, `<${chain === "home-ns" ? "x" : "c"}:calendar-home-set><d:href>${chain === "home-relative" ? "home/" : "/home/"}</d:href></${chain === "home-ns" ? "x" : "c"}:calendar-home-set>`, chain === "home-denied" ? "HTTP/1.1 403 Forbidden" : "HTTP/1.1 200 OK");
     else if (body.includes("current-user-privilege-set")) {
       const privileges = mode === "privilege-ns" ? "<d:privilege><x:read/></d:privilege>" : `${read ? "<d:privilege><d:read/></d:privilege>" : "<d:privilege><c:read-free-busy/></d:privilege>"}${write ? "<d:privilege><d:write/></d:privilege>" : ""}`;
       data = row(mode === "wrong-href" ? home : target.href, `<${mode === "wrong-namespace" ? "x" : "d"}:current-user-privilege-set>${privileges}</${mode === "wrong-namespace" ? "x" : "d"}:current-user-privilege-set>`, mode === "denied" ? "HTTP/1.1 403 Forbidden" : "HTTP/1.1 200 OK");
@@ -58,19 +59,34 @@ async function main() {
       data = data.replace("</d:response>", `<d:propstat><d:prop><${property}>optional-value</${property}></d:prop><d:status>HTTP/1.1 ${code}</d:status></d:propstat></d:response>`);
     }
     if (mode === "partial-propstat") data = data.split("HTTP/1.1 200 OK").join("HTTP/1.1 206 Partial Content");
-    return new Response(document(data), { status: 207, headers: { ...(mode === "missing-type" ? {} : { "content-type": mode === "plain-type" ? "text/plain" : "application/xml" }), ...(mode === "partial" ? { "content-range": "items 0-0/2" } : {}) } });
+    return new Response(document(data), { status: 207, headers: { ...(mode === "missing-type" ? {} : { "content-type": mode === "plain-type" ? "text/plain" : "application/xml" }), ...(mode === "partial" ? { "content-range": "items 0-0/2" } : {}), ...(chain === "home-canonical-slash" && body.includes("calendar-home-set") ? { "content-location": "/principal/" } : {}) } });
   };
   try {
     for (const bad of ["principal-href", "principal-ns", "principal-denied", "home-href", "home-ns", "home-denied", "home-relative", "home:x:calendar-home-set", "home:c:calendar_home_set", "home:c:calendarHomeSet", "home:c:calendar--home-set"]) {
       chain = bad;
-      await assert.rejects(async () => { const client = await createCaldavClient(origin, "fixture", "fixture"); await client.fetchCalendars(); });
+      await assert.rejects(async () => { const client = await createCaldavClient(origin, "fixture", "fixture"); await client.fetchCalendars(); }, error => {
+        if (bad === "home-href") {
+          assert.ok(error instanceof DavReadResponseError);
+          assert.deepEqual(error.cause, { code: "caldav-read-response-invalid", reason: "discovery-response-resource", responseCount: 1, hrefRelation: "different-path", readKind: "home" });
+        }
+        return true;
+      });
       assert.equal(listings, 0, "Unproven discovery must never reach an authoritative collection listing");
     }
+    chain = "home-canonical-slash";
+    const canonicalClient = await createCaldavClient(origin, "fixture", "fixture");
+    assert.equal((await canonicalClient.fetchCalendars()).length, 1, "tsdav home discovery accepts the RFC 4918 collection slash form without falling back to an unproven root");
     chain = "ok";
     const client = await createCaldavClient(origin, "fixture", "fixture");
     assert.equal((await client.fetchCalendars()).length, 1);
     for (const bad of ["denied", "missing-status", "empty-body", "partial", "mixed-content", "missing-type", "plain-type", "wrong-component-property", "wrong-calendar-type", "missing-components", "failed-components", "nameless-components", "qualified-component-name", "scalar-resourcetype", "scalar-marker", "nested-marker", "partial-propstat", "optional-token", "optional-display"]) {
-      mode = bad; await assert.rejects(async () => classifyCaldavCalendars(await client.fetchCalendars()), "Incomplete discovery must not become authoritative empty calendars");
+      mode = bad; await assert.rejects(async () => classifyCaldavCalendars(await client.fetchCalendars()), error => {
+        if (bad === "partial" || bad === "missing-type" || bad === "plain-type") {
+          assert.ok(error instanceof DavReadResponseError);
+          assert.deepEqual(error.cause, { code: "caldav-read-response-invalid", reason: bad === "partial" ? "http-partial" : "http-content-type", readKind: "discovery", httpStatus: 207 });
+        }
+        return true;
+      }, "Incomplete discovery must not become authoritative empty calendars");
     }
     mode = "formatted";
     const formattedClient = await createCaldavClient(origin, "fixture", "fixture");
