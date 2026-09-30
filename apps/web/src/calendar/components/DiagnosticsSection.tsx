@@ -1,10 +1,11 @@
 import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "~/ui/Button";
-import { Disclosure } from "~/ui/Disclosure";
-import { InlineError } from "~/ui/InlineError";
-import { Row } from "~/ui/Row";
-import { SettingsSection } from "~/ui/SettingsSection";
+import { cn } from "~/lib/utils";
+import { Button } from "~/components/ui/button";
+import { Disclosure } from "~/components/ui/disclosure";
+import { InlineError } from "~/components/ui/inline-error";
+import { Row } from "~/components/ui/row";
+import { SettingsSection } from "~/components/ui/settings-section";
 import { useAsyncAction } from "~/ui/useAsyncAction";
 import { summarise, worstStatus, type CheckStatus } from "~/diagnostics/checks";
 import {
@@ -12,14 +13,12 @@ import {
   collectSnapshot,
   type Snapshot,
 } from "~/diagnostics/collect";
-import styles from "./styles/diagnostics.module.css";
 
 /**
  * Shape, not colour.
  *
- * The palette has one accent and no green, and inventing one would put a
- * traffic light into a system built on warm paper and sumi. The icon carries
- * the verdict; the accent is spent only on the thing that is actually wrong.
+ * The icon carries the verdict; colour only repeats it, and the accent is
+ * spent on the thing that is actually wrong.
  */
 const STATUS_ICON = {
   fail: XCircle,
@@ -30,7 +29,15 @@ const STATUS_ICON = {
 function StatusIcon({ status }: { status: CheckStatus }) {
   const Icon = STATUS_ICON[status];
   return (
-    <span className={styles.status} data-status={status}>
+    <span
+      className={cn(
+        "inline-flex",
+        status === "pass" && "text-success",
+        status === "warn" && "text-warning",
+        status === "fail" && "text-shu",
+      )}
+      data-status={status}
+    >
       <Icon size={16} strokeWidth={1.6} />
     </span>
   );
@@ -143,7 +150,7 @@ export function DiagnosticsSection({
         />
 
         <Row
-          detail="Confirm that this browser can show reminder notifications"
+          detail="Can this browser show reminders?"
           label="Test notification"
           layout="responsive-actions"
           trailing={
@@ -164,10 +171,8 @@ export function DiagnosticsSection({
             </Button>
           }
         />
-        {action.error ? (
-          <InlineError className={styles.error}>{action.error}</InlineError>
-        ) : null}
       </SettingsSection>
+      {action.error ? <InlineError>{action.error}</InlineError> : null}
 
       {checks.length > 0 ? (
         <SettingsSection title="Checks">
@@ -191,7 +196,7 @@ export function DiagnosticsSection({
             snapshot ? "Server, browser, and notification state" : "Gathering…"
           }
         >
-          <pre className={styles.report}>
+          <pre className="max-h-64 w-full overflow-auto rounded-md bg-panel p-3 font-mono text-11 leading-normal whitespace-pre text-muted-foreground">
             {snapshot ? buildReport(snapshot) : ""}
           </pre>
           <Button

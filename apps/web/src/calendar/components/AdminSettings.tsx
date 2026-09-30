@@ -1,7 +1,7 @@
 import type { Announcement } from "@musubi/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Megaphone, Trash2 } from "lucide-react";
+import { Megaphone } from "lucide-react";
 import {
   createAnnouncement,
   listAdminAnnouncements,
@@ -11,19 +11,17 @@ import {
 import { getServerOrigin, queryKeys } from "~/api/query-keys";
 import { useSessionUser } from "~/auth/use-session-user";
 import { useAnnouncementsQuery } from "~/calendar/components/AnnouncementDialog";
-import { Button } from "~/ui/Button";
-import {
-  ConfirmationDialog,
-  ConfirmationNotice,
-} from "~/ui/ConfirmationDialog";
-import { Disclosure } from "~/ui/Disclosure";
-import { Field } from "~/ui/Field";
-import { Empty } from "~/ui/Empty";
-import { InlineError } from "~/ui/InlineError";
-import { Row } from "~/ui/Row";
-import { SettingsSection } from "~/ui/SettingsSection";
-import { Toast } from "~/ui/Toast";
-import styles from "~/routes/app/admin.module.css";
+import { Button } from "~/components/ui/button";
+import { ConfirmationDialog } from "~/components/ui/confirmation-dialog";
+import { Disclosure } from "~/components/ui/disclosure";
+import { Empty } from "~/components/ui/empty";
+import { Field } from "~/components/ui/field";
+import { InlineError } from "~/components/ui/inline-error";
+import { Input } from "~/components/ui/input";
+import { Row } from "~/components/ui/row";
+import { SettingsSection } from "~/components/ui/settings-section";
+import { Textarea } from "~/components/ui/textarea";
+import { Toast } from "~/components/ui/toast";
 
 const EMPTY = { body: "", minVersion: "", title: "" };
 // Same acknowledgement window Workspace uses for its own Toast — the parent
@@ -143,7 +141,7 @@ export function AdminSettings({ headingLevel = 3 }: { headingLevel?: 2 | 3 }) {
   }
 
   return (
-    <div className={styles.content}>
+    <div className="flex flex-col gap-8">
       {/* Writing comes first: it is why an admin opens this page, and the list
           below is what they check afterwards. */}
       <SettingsSection headingLevel={headingLevel} title={editing ? "Edit announcement" : "New announcement"} help="Everyone signed in to this server sees it once.">
@@ -154,14 +152,14 @@ export function AdminSettings({ headingLevel = 3 }: { headingLevel?: 2 | 3 }) {
           open={composerOpen}
         >
           <form
-            className={styles.form}
+            className="flex w-full flex-col gap-5"
             onSubmit={(event) => {
               event.preventDefault();
               save.mutate();
             }}
           >
             <Field label="Title">
-              <input
+              <Input
                 maxLength={200}
                 onChange={(event) =>
                   setDraft((current) => ({
@@ -178,8 +176,7 @@ export function AdminSettings({ headingLevel = 3 }: { headingLevel?: 2 | 3 }) {
               help="Use blank lines for paragraphs. Web links are clickable."
               label="Message"
             >
-              <textarea
-                className={styles.body}
+              <Textarea
                 maxLength={4000}
                 onChange={(event) =>
                   setDraft((current) => ({
@@ -193,11 +190,10 @@ export function AdminSettings({ headingLevel = 3 }: { headingLevel?: 2 | 3 }) {
             </Field>
 
             <Field
-              description="Leave empty for everyone."
-              help="Otherwise, publish with that release: newer announcements can supersede this one for older clients."
+              help="Leave empty for everyone. Otherwise, publish with that release: newer announcements can supersede this one for older clients."
               label="Minimum version"
             >
-              <input
+              <Input
                 onChange={(event) =>
                   setDraft((current) => ({
                     ...current,
@@ -209,7 +205,7 @@ export function AdminSettings({ headingLevel = 3 }: { headingLevel?: 2 | 3 }) {
               />
             </Field>
 
-            <div className={styles.formActions}>
+            <div className="flex flex-wrap justify-end gap-2">
               {editing ? (
                 <Button
                   disabled={save.isPending}
@@ -239,7 +235,7 @@ export function AdminSettings({ headingLevel = 3 }: { headingLevel?: 2 | 3 }) {
             label="Loading…"
           />
         ) : listError ? (
-          <div className={styles.listError}>
+          <div className="grid justify-items-start gap-3 p-4">
             <InlineError>Published announcements could not be loaded.</InlineError>
             <Button variant="secondary" onClick={() => void retryList()}>Try again</Button>
           </div>
@@ -256,7 +252,7 @@ export function AdminSettings({ headingLevel = 3 }: { headingLevel?: 2 | 3 }) {
               label={announcement.title}
               layout="responsive-actions"
               trailing={
-                <div className={styles.actions}>
+                <div className="flex flex-wrap gap-2">
                   <Button
                     aria-label={`Edit ${announcement.title}`}
                     onClick={() => {
@@ -290,7 +286,6 @@ export function AdminSettings({ headingLevel = 3 }: { headingLevel?: 2 | 3 }) {
           ))
         ) : (
           <Row
-            detail="Write one above."
             icon={<Megaphone size={16} strokeWidth={1.6} />}
             label="Nothing published yet"
           />
@@ -303,7 +298,7 @@ export function AdminSettings({ headingLevel = 3 }: { headingLevel?: 2 | 3 }) {
           closeLabel="Cancel"
           confirmLabel="Delete"
           confirmVariant="destructive"
-          description="Deleting it does not un-show it — anyone who already saw it keeps their mark."
+          description="People who have not seen it yet never will."
           loading={remove.isPending}
           onConfirm={() => remove.mutate(confirming.id)}
           onOpenChange={(open) => {
@@ -312,11 +307,7 @@ export function AdminSettings({ headingLevel = 3 }: { headingLevel?: 2 | 3 }) {
           open
           returnFocus={deleteReturnFocusRef}
           title={`Delete "${confirming.title}"?`}
-        >
-          <ConfirmationNotice icon={<Trash2 size={18} />}>
-            People who have not seen it yet never will.
-          </ConfirmationNotice>
-        </ConfirmationDialog>
+        />
       ) : null}
 
       {error ? <Toast message={error} tone="error" /> : null}

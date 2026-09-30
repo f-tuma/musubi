@@ -1,9 +1,8 @@
 import { CalendarDays, Cloud, CloudCog, Grid2X2 } from "lucide-react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { BrandMark } from "~/components/BrandMark";
-import { classNames } from "~/ui/class-names";
 import { ProviderGlyph } from "~/components/provider-glyph";
-import styles from "./styles/provider-icon.module.css";
+import { cn } from "~/lib/utils";
 
 type ProviderIconProps = {
   flavor: string | null;
@@ -12,6 +11,25 @@ type ProviderIconProps = {
   /** One pigment for calendar identity; account marks retain their brand colours. */
   color?: string;
 };
+
+function MarkFrame({ children, color, flavor, size }: ProviderIconProps & { children: ReactNode }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "grid flex-none place-content-center text-foreground-secondary",
+        size === "compact" ? "size-5" : "size-7 rounded-md border border-border-subtle bg-raised",
+        flavor === "apple" && "text-foreground",
+        color && "text-pigment [&_path]:fill-current",
+      )}
+      data-monochrome={color ? "" : undefined}
+      data-provider={flavor ?? "musubi"}
+      style={color ? ({ "--pigment": color } as CSSProperties) : undefined}
+    >
+      {children}
+    </span>
+  );
+}
 
 /**
  * Decorative source marks. The adjacent account heading always carries the
@@ -28,25 +46,13 @@ export function ProviderIcon({ flavor, size = "default", color }: ProviderIconPr
   } else if (flavor === "caldav") {
     mark = <CloudCog size={17} strokeWidth={1.7} />;
   } else {
-    mark = (
-      <BrandMark
-        aria-hidden="true"
-        className={styles.musubiMark}
-        focusable="false"
-      />
-    );
+    mark = <BrandMark aria-hidden="true" className="size-4" focusable="false" />;
   }
 
   return (
-    <span
-      aria-hidden="true"
-      className={classNames(styles.icon, size === "compact" && styles.compact)}
-      data-provider={flavor ?? "musubi"}
-      data-monochrome={color ? "" : undefined}
-      style={color ? { "--provider-color": color } as CSSProperties : undefined}
-    >
+    <MarkFrame color={color} flavor={flavor} size={size}>
       {mark}
-    </span>
+    </MarkFrame>
   );
 }
 
@@ -58,18 +64,11 @@ export function ProviderIcon({ flavor, size = "default", color }: ProviderIconPr
  * Musubi calendar has ours, so both fall back to the line marks above.
  */
 export function AccountMark({ flavor, size = "default", color }: ProviderIconProps) {
-  const brand = <ProviderGlyph provider={flavor ?? ""} monochrome={!!color} />;
   if (flavor === "google" || flavor === "microsoft" || flavor === "apple") {
     return (
-      <span
-        aria-hidden="true"
-        className={classNames(styles.icon, size === "compact" && styles.compact)}
-        data-provider={flavor}
-        data-monochrome={color ? "" : undefined}
-        style={color ? { "--provider-color": color } as CSSProperties : undefined}
-      >
-        {brand}
-      </span>
+      <MarkFrame color={color} flavor={flavor} size={size}>
+        <ProviderGlyph provider={flavor} monochrome={!!color} />
+      </MarkFrame>
     );
   }
 

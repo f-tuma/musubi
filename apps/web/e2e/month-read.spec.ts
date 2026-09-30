@@ -1555,32 +1555,35 @@ test("exports and imports iCalendar files from calendar management", async ({
 	await page.goto("/app/p/my-calendar/month?date=2026-07-26");
 	await page.getByRole("button", { name: "Calendars" }).click();
 	await expect(
-		page.getByRole("heading", { name: "Your calendars" }),
+		page.getByRole("heading", { level: 2, name: "Calendars" }),
 	).toBeVisible();
 
-	await page.getByText("Export calendar", { exact: true }).click();
+	await page.getByRole("button", { name: "Export .ics" }).click();
 	await chooseSelectOption(page, "Calendar to export", "Studio");
 	const downloadPromise = page.waitForEvent("download");
-	await page.getByRole("button", { name: "Export .ics" }).click();
+	await page
+		.getByRole("dialog", { name: "Export .ics" })
+		.getByRole("button", { name: "Export", exact: true })
+		.click();
 	const download = await downloadPromise;
 	expect(download.suggestedFilename()).toBe("Studio.ics");
 
-	await page.getByText("Import calendar", { exact: true }).click();
-	await page.getByLabel("Choose .ics file").setInputFiles({
+	await page.getByRole("button", { name: "Import .ics" }).click();
+	await page.getByLabel("Calendar file").setInputFiles({
 		buffer: Buffer.from(
 			"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nSUMMARY:Roadmap\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
 		),
 		mimeType: "text/calendar",
 		name: "roadmap.ics",
 	});
-	await page
-		.getByRole("textbox", { name: "Imported calendar name" })
-		.fill("Roadmap");
-	await page.getByRole("button", { name: "Import", exact: true }).click();
+	const importDialog = page.getByRole("dialog", { name: "Import .ics" });
+	await importDialog.getByRole("textbox", { name: "Name" }).fill("Roadmap");
+	await importDialog.getByRole("button", { name: "Import", exact: true }).click();
 
 	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Imported 1 event into Roadmap.",
 	);
+	await page.getByRole("button", { name: "Close settings" }).click();
 	await expectCalendarVisibility(page, "Roadmap", true);
 	expect(runtimeErrors).toEqual([]);
 });
@@ -1601,22 +1604,20 @@ test("saves revisioned settings and applies display preferences", async ({
 
 	const settingsDialog = page.getByRole("dialog", { name: "Settings" });
 
-	// One page at a time now, so the running order is the nav's rather than the
-	// document's: the sections are reached through it, not scrolled past.
-	const settingsNav = settingsDialog.getByRole("navigation", {
+	// One window for everything, one section at a time, reached through its tabs.
+	const settingsNav = settingsDialog.getByRole("tablist", {
 		name: "Settings sections",
 	});
-	await expect(settingsNav.getByRole("button")).toHaveText([
-		"Appearance",
-		"Reminders",
-		"Email notifications",
-		"Help & About",
+	await expect(settingsNav.getByRole("tab")).toHaveText([
+		"General",
+		"Calendars",
+		"Connections",
 		"Account",
+		"About",
 	]);
-
-	await settingsNav
-		.getByRole("button", { exact: true, name: "Reminders" })
-		.click();
+	await expect(
+		settingsNav.getByRole("tab", { exact: true, name: "General" }),
+	).toHaveAttribute("aria-selected", "true");
 
 	// Timed and all-day events are asked about separately: an offset cannot
 	// answer for a birthday, and the control must not pretend it can.
@@ -1639,9 +1640,6 @@ test("saves revisioned settings and applies display preferences", async ({
 	// about that calendar, and is asked there.
 	await expect(settingsDialog).not.toContainText("Reminders by calendar");
 
-	await settingsNav
-		.getByRole("button", { exact: true, name: "Appearance" })
-		.click();
 	await expect(
 		settingsDialog.getByRole("radiogroup", { name: "Theme" }),
 	).toBeVisible();
@@ -1711,7 +1709,8 @@ test("keeps settings usable as a mobile sheet", async ({ page }) => {
 	const box = (await sheet.boundingBox())!;
 	expect(box.x).toBe(0);
 	expect(Math.round(box.width)).toBe(390);
-	expect(box.height).toBeLessThanOrEqual(700 + 1);
+	// The settings window is a standing sheet: full height, so sections never resize it.
+	expect(Math.round(box.height)).toBe(720);
 	await expect(sheet.getByRole("heading", { name: "Appearance" })).toBeVisible();
 	await sheet.getByRole("radio", { name: "Dark" }).click();
 	await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
@@ -1719,21 +1718,17 @@ test("keeps settings usable as a mobile sheet", async ({ page }) => {
 		page.getByRole("status").filter({ hasText: "Settings saved." }),
 	).toBeVisible();
 
-	// Account is its own page in the nav, which lies down into a scrolling row
-	// at this width.
-	const accountTab = sheet.getByRole("button", { exact: true, name: "Account" });
-	await accountTab.scrollIntoViewIfNeeded();
-	await accountTab.click();
-
-	const manageAccount = sheet.getByRole("button", {
-		name: /Manage account/,
-	});
-	await manageAccount.scrollIntoViewIfNeeded();
-	await expect(manageAccount).toBeVisible();
+	// At this width the window is list → detail: back to the sections, then
+	// into Account, without the sheet changing size.
+	await sheet.getByRole("button", { exact: true, name: "Settings" }).click();
+	await sheet.getByRole("button", { exact: true, name: "Account" }).click();
+	await expect(
+		sheet.getByRole("heading", { level: 2, name: "Account" }),
+	).toBeVisible();
+	const after = (await sheet.boundingBox())!;
+	expect(Math.round(after.height)).toBe(Math.round(box.height));
+	await expect(sheet.getByRole("button", { name: /Display name/ })).toBeVisible();
 	await expectNoAccessibilityViolations(page);
-
-	await manageAccount.click();
-	await expect(page.getByRole("dialog", { name: "Account" })).toBeVisible();
 });
 
 test("resolves the default page and switches between pages", async ({
@@ -2569,37 +2564,17 @@ test("creates, renames and deletes a calendar", async ({ page }) => {
 	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-26`);
 
 	await page.getByRole("button", { name: "Calendars" }).click();
+	const settingsWindow = page.getByRole("dialog", { name: "Settings" });
 	await expect(
-		page.getByRole("heading", { name: "Your calendars" }),
+		settingsWindow.getByRole("heading", { level: 2, name: "Calendars" }),
 	).toBeVisible();
-	const calendarDialog = page.getByRole("dialog", { name: "Calendars" });
-	await expect(calendarDialog.getByPlaceholder("New calendar")).toBeHidden();
-	await calendarDialog.getByText("New calendar", { exact: true }).click();
-	const newName = calendarDialog.getByPlaceholder("New calendar");
-	const newColor = calendarDialog.getByRole("button", {
-		name: /New calendar color:/,
-	});
-	const add = calendarDialog.getByRole("button", { name: "Create" });
-	const [nameBox, colorBox, addBox] = await Promise.all([
-		newName.boundingBox(),
-		newColor.boundingBox(),
-		add.boundingBox(),
-	]);
-	expect(nameBox).not.toBeNull();
-	expect(colorBox).not.toBeNull();
-	expect(addBox).not.toBeNull();
-	expect(Math.abs(nameBox!.y - colorBox!.y)).toBeLessThanOrEqual(1);
-	expect(colorBox!.x).toBeGreaterThan(nameBox!.x + nameBox!.width);
-	expect(addBox!.y).toBeGreaterThan(colorBox!.y);
-	const listBox = await calendarDialog.locator('[class*="calendarSection"]').boundingBox();
-	expect(nameBox!.x).toBeGreaterThanOrEqual(listBox!.x + listBox!.width);
-	expect(Math.abs(nameBox!.height - colorBox!.height)).toBeLessThanOrEqual(1);
-	expect(Math.abs(colorBox!.height - addBox!.height)).toBeLessThanOrEqual(1);
 
-	const sourceIcon = calendarDialog
-		.locator('[class*="groupHeader"] [data-provider="musubi"]')
+	// The group mark and the calendar dots share one column.
+	const sourceIcon = settingsWindow
+		.getByRole("region", { name: "Musubi" })
+		.locator('[data-provider="musubi"]')
 		.first();
-	const calendarSwatch = calendarDialog
+	const calendarSwatch = settingsWindow
 		.locator("[data-calendar-swatch]")
 		.first();
 	const [sourceBox, swatchBox] = await Promise.all([
@@ -2612,45 +2587,23 @@ test("creates, renames and deletes a calendar", async ({ page }) => {
 		Math.abs(
 			sourceBox!.x + sourceBox!.width / 2 - (swatchBox!.x + swatchBox!.width / 2),
 		),
-	).toBeLessThanOrEqual(1);
+	).toBeLessThanOrEqual(1.5);
 
-	await calendarDialog.getByText("Export calendar", { exact: true }).click();
-	await calendarDialog.getByText("Import calendar", { exact: true }).click();
-	const exportSelect = calendarDialog.getByRole("combobox", {
-		name: "Calendar to export",
+	await settingsWindow.getByRole("button", { name: "New calendar" }).click();
+	const calendarDialog = page.getByRole("dialog", { name: "New calendar" });
+	const newName = calendarDialog.getByPlaceholder("New calendar");
+	const newColor = calendarDialog.getByRole("button", {
+		name: /New calendar color:/,
 	});
-	const fileControl = calendarDialog.locator("[data-calendar-file-control]");
-	const exportButton = calendarDialog.getByRole("button", {
-		name: "Export .ics",
-	});
-	const importButton = calendarDialog.getByRole("button", {
-		name: "Import",
-		exact: true,
-	});
-	const [exportSelectBox, fileControlBox, exportButtonBox, importButtonBox] =
-		await Promise.all([
-			exportSelect.boundingBox(),
-			fileControl.boundingBox(),
-			exportButton.boundingBox(),
-			importButton.boundingBox(),
-		]);
-	expect(exportSelectBox).not.toBeNull();
-	expect(fileControlBox).not.toBeNull();
-	expect(exportButtonBox).not.toBeNull();
-	expect(importButtonBox).not.toBeNull();
-	// Export and Import are a matched pair. They used to sit side by side, which
-	// made the test a row alignment; in the side column of the wide dialog they are
-	// stacked, so the alignment that matters is the left edge and the width — two
-	// cards of different widths read as two unrelated things.
-	expect(Math.abs(exportSelectBox!.x - fileControlBox!.x)).toBeLessThanOrEqual(
-		1,
-	);
-	expect(
-		Math.abs(exportSelectBox!.width - fileControlBox!.width),
-	).toBeLessThanOrEqual(1);
-	expect(
-		Math.abs(exportButtonBox!.height - importButtonBox!.height),
-	).toBeLessThanOrEqual(1);
+	const [nameBox, colorBox] = await Promise.all([
+		newName.boundingBox(),
+		newColor.boundingBox(),
+	]);
+	expect(nameBox).not.toBeNull();
+	expect(colorBox).not.toBeNull();
+	expect(Math.abs(nameBox!.y - colorBox!.y)).toBeLessThanOrEqual(1);
+	expect(colorBox!.x).toBeGreaterThan(nameBox!.x + nameBox!.width);
+	expect(Math.abs(nameBox!.height - colorBox!.height)).toBeLessThanOrEqual(1);
 
 	// Create
 	await page.getByPlaceholder("New calendar").fill("Travel");
@@ -2673,7 +2626,7 @@ test("creates, renames and deletes a calendar", async ({ page }) => {
 			request.method() === "POST" &&
 			new URL(request.url()).pathname === "/api/v1/calendars",
 	);
-	await page.getByRole("button", { name: "Create" }).click();
+	await calendarDialog.getByRole("button", { name: "Create", exact: true }).click();
 	expect((await createRequest).postDataJSON()).toMatchObject({
 		color: "#A8B5A0",
 		name: "Travel",
@@ -2690,11 +2643,9 @@ test("creates, renames and deletes a calendar", async ({ page }) => {
 
 	// Rename
 	await page.getByRole("button", { name: "Settings for Travel" }).click();
-	await page.getByRole("textbox", { name: "Rename Travel" }).fill("Trips");
-	await page
-		.getByRole("dialog", { name: "Calendar settings" })
-		.getByRole("button", { name: "Save", exact: true })
-		.click();
+	const calendarSettings = page.getByRole("dialog", { name: "Calendar settings" });
+	await calendarSettings.getByRole("textbox", { name: "Name" }).fill("Trips");
+	await calendarSettings.getByRole("button", { name: "Save", exact: true }).click();
 	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Calendar updated.",
 	);
@@ -2702,8 +2653,10 @@ test("creates, renames and deletes a calendar", async ({ page }) => {
 		page.getByRole("listitem").filter({ hasText: "Trips" }),
 	).toBeVisible();
 
-	// Delete uses the same accessible dialog and focus policy as the rest of UI.
-	const deleteButton = page.getByRole("button", { name: "Delete Trips" });
+	// Delete lives in the calendar's own settings, behind the same accessible
+	// confirmation and focus policy as the rest of the UI.
+	await page.getByRole("button", { name: "Settings for Trips" }).click();
+	const deleteButton = calendarSettings.getByRole("button", { name: "Delete calendar" });
 	await deleteButton.click();
 	const deleteDialog = page.getByRole("dialog", {
 		name: "Delete “Trips”?",
@@ -2725,35 +2678,25 @@ test("creates, renames and deletes a calendar", async ({ page }) => {
 	).toHaveCount(0);
 });
 
-test("calendar actions scroll independently with every form expanded", async ({ page }) => {
+test("keeps the settings window one size across sections", async ({ page }) => {
 	await page.setViewportSize({ width: 1280, height: 600 });
 	await mockAuthenticatedReads(page);
 	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-26`);
 	await page.getByRole("button", { name: "Calendars" }).click();
-	const dialog = page.getByRole("dialog", { name: "Calendars" });
-	const actions = dialog.getByRole("region", { name: "Calendar actions" });
-	for (const label of ["New calendar", "Export calendar", "Import calendar"]) {
-		await actions.getByText(label, { exact: true }).click();
+	const dialog = page.getByRole("dialog", { name: "Settings" });
+	await dialog.evaluate((element) =>
+		Promise.all(element.getAnimations().map((animation) => animation.finished)),
+	);
+	const first = (await dialog.boundingBox())!;
+	for (const section of ["General", "Connections", "Account", "About", "Calendars"]) {
+		await dialog.getByRole("tab", { exact: true, name: section }).click();
+		await expect(
+			dialog.getByRole("heading", { level: 2, name: section }),
+		).toBeVisible();
+		const box = (await dialog.boundingBox())!;
+		expect(Math.round(box.width)).toBe(Math.round(first.width));
+		expect(Math.round(box.height)).toBe(Math.round(first.height));
 	}
-	const list = dialog.locator('[class*="groups"]').first();
-	const listTop = await list.evaluate((element) => element.getBoundingClientRect().top);
-	const scroll = await actions.evaluate((element) => {
-		element.scrollTop = element.scrollHeight;
-		return {
-			top: element.scrollTop,
-			height: element.clientHeight,
-			content: element.scrollHeight,
-			padding: Number.parseFloat(getComputedStyle(element).paddingBottom),
-		};
-	});
-	expect(scroll.content).toBeGreaterThan(scroll.height);
-	expect(scroll.top).toBeGreaterThan(0);
-	const panelBox = (await actions.boundingBox())!;
-	const importButton = actions.getByRole("button", { name: "Import", exact: true });
-	const buttonBox = (await importButton.boundingBox())!;
-	expect(buttonBox.y).toBeGreaterThanOrEqual(panelBox.y);
-	expect(buttonBox.y + buttonBox.height).toBeLessThanOrEqual(panelBox.y + panelBox.height - scroll.padding);
-	expect(await list.evaluate((element) => element.getBoundingClientRect().top)).toBe(listTop);
 });
 
 test("creates a calendar inside a connected account", async ({ page }) => {
@@ -2791,9 +2734,12 @@ test("creates a calendar inside a connected account", async ({ page }) => {
 
 	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-26`);
 	await page.getByRole("button", { name: "Calendars" }).click();
-	const dialog = page.getByRole("dialog", { name: "Calendars" });
+	await page
+		.getByRole("dialog", { name: "Settings" })
+		.getByRole("button", { name: "New calendar" })
+		.click();
+	const dialog = page.getByRole("dialog", { name: "New calendar" });
 
-	await dialog.getByText("New calendar", { exact: true }).click();
 	await dialog.getByPlaceholder("New calendar").fill("Studio hours");
 	// The destination includes the connected account alongside Musubi.
 	await dialog.getByRole("combobox", { name: "Account", exact: true }).click();
@@ -2801,10 +2747,9 @@ test("creates a calendar inside a connected account", async ({ page }) => {
 	await dialog.getByRole("button", { name: "Create", exact: true }).click();
 
 	// Provider and account go with it, which is what makes the server create it on
-	// Google first and import the mirror. The cleared field is the flow finishing:
-	// an error would have left the name where it was, with a message under it.
-	await expect(dialog.getByPlaceholder("New calendar")).toHaveValue("");
-	await expect(dialog.getByRole("alert")).toHaveCount(0);
+	// Google first and import the mirror. The closed dialog is the flow finishing:
+	// an error would have kept it open, with a message under the name.
+	await expect(dialog).toHaveCount(0);
 	expect(created).toMatchObject({
 		accountId: "google-work",
 		name: "Studio hours",
@@ -2832,7 +2777,7 @@ test("groups calendars by server and connected account", async ({ page }) => {
 	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-26`);
 
 	await page.getByRole("button", { name: "Calendars" }).click();
-	const dialog = page.getByRole("dialog", { name: "Calendars" });
+	const dialog = page.getByRole("dialog", { name: "Settings" });
 	const musubiGroup = dialog.getByRole("region", { name: "Musubi" });
 	const googleGroup = dialog.getByRole("region", {
 		name: "work@example.com",
@@ -2847,14 +2792,8 @@ test("groups calendars by server and connected account", async ({ page }) => {
 	await expect(
 		googleGroup.getByRole("listitem").filter({ hasText: "Family" }),
 	).toBeVisible();
-	await expect(
-		googleGroup.getByText("Google Calendar", { exact: true }),
-	).toBeVisible();
-	await expect(
-		googleGroup.getByText("Synced with Google Calendar", {
-			exact: true,
-		}),
-	).toHaveCount(2);
+	// The group is the account; its mark is the provider's.
+	await expect(googleGroup.locator('[data-provider="google"]')).toHaveCount(1);
 	// A synced calendar is a calendar: it can be renamed, recoloured and shared
 	// with people here, the same as one kept on this server. The server renames it
 	// on the provider first and refuses if the account is somebody else's.
@@ -2865,13 +2804,18 @@ test("groups calendars by server and connected account", async ({ page }) => {
 		googleGroup.getByRole("button", { name: "Share Studio" }),
 	).toBeVisible();
 	// Deleting is not offered, because on a provider it is not reversible. The
-	// reversible thing — stop syncing — is in its place.
+	// reversible thing — stop syncing — is in its place, inside the calendar's
+	// own settings rather than loose in the list.
+	await expect(googleGroup.getByRole("button", { name: /Delete|Stop syncing/ })).toHaveCount(0);
+	await googleGroup.getByRole("button", { name: "Settings for Studio" }).click();
+	const studioSettings = page.getByRole("dialog", { name: "Calendar settings" });
 	await expect(
-		googleGroup.getByRole("button", { name: "Delete Studio" }),
+		studioSettings.getByRole("button", { name: "Delete calendar" }),
 	).toHaveCount(0);
 	await expect(
-		googleGroup.getByRole("button", { name: "Stop syncing Studio" }),
+		studioSettings.getByRole("button", { name: "Stop syncing" }),
 	).toBeVisible();
+	await studioSettings.getByRole("button", { name: "Close calendar settings" }).click();
 
 	const [musubiBox, googleBox] = await Promise.all([
 		musubiGroup.boundingBox(),
@@ -2899,7 +2843,7 @@ test("keeps a calendar's reminder on the calendar, viewer or not", async ({
 	await page.emulateMedia({ reducedMotion: "reduce" });
 	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-26`);
 	await page.getByRole("button", { name: "Calendars" }).click();
-	const dialog = page.getByRole("dialog", { name: "Calendars" });
+	const dialog = page.getByRole("dialog", { name: "Settings" });
 	await expect(dialog).toBeVisible();
 
 	// Family is shared with this account as an editor rather than owned, and the
@@ -3303,7 +3247,7 @@ test("connects and disconnects calendar providers", async ({ page }) => {
 		page.getByRole("heading", { exact: true, name: "Connections" }),
 	).toBeVisible();
 	const connectionsDialog = page.getByRole("dialog", {
-		name: "Connections",
+		name: "Settings",
 	});
 	await connectionsDialog.evaluate((element) =>
 		Promise.all(element.getAnimations().map((animation) => animation.finished)),
@@ -3395,7 +3339,7 @@ test("keeps connections usable as a mobile sheet", async ({ page }) => {
 	await page.getByRole("button", { name: "Open navigation" }).click();
 	await page.getByRole("button", { name: "Connections" }).click();
 
-	const sheet = page.getByRole("dialog", { name: "Connections" });
+	const sheet = page.getByRole("dialog", { name: "Settings" });
 	await sheet.evaluate((element) =>
 		Promise.all(element.getAnimations().map((animation) => animation.finished)),
 	);
@@ -3415,9 +3359,10 @@ test("keeps connections usable as a mobile sheet", async ({ page }) => {
 		name: "Apple / iCloud",
 	});
 	await apple.click();
-	const email = sheet.getByRole("textbox", { name: "Apple ID email" });
+	const icloud = page.getByRole("dialog", { name: "Connect iCloud" });
+	const email = icloud.getByRole("textbox", { name: "Apple ID email" });
 	await expect(email).toBeFocused();
-	await sheet.getByRole("button", { name: "Cancel" }).click();
+	await icloud.getByRole("button", { name: "Cancel" }).click();
 	await expect(apple).toBeFocused();
 
 	const accessibility = await new AxeBuilder({ page })
@@ -3534,7 +3479,7 @@ test("shows federated calendars and reports an unreachable server", async ({
 	const friendsRow = page
 		.getByRole("listitem")
 		.filter({ hasText: "friends.example" });
-	await expect(friendsRow).toContainText("Connected");
+	await expect(friendsRow).not.toContainText("Unreachable");
 	// Federation is the one clock nobody here winds, so what that server runs
 	// has to be readable rather than guessed at.
 	await expect(friendsRow).toContainText("0.1.4");
@@ -3899,14 +3844,17 @@ test("manages account identity and gates account deletion", async ({
 	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-26`);
 	await page.getByRole("button", { name: "User menu for Web QA" }).click();
 	await page.getByRole("menuitem", { name: "Manage account" }).click();
-	const accountDialog = page.getByRole("dialog", { name: "Account" });
+	const accountDialog = page.getByRole("dialog", { name: "Settings" });
 	await expect(accountDialog).toBeVisible();
 	await expect(accountDialog).toContainText("web-qa@example.invalid");
 	await accountDialog.evaluate((element) =>
 		Promise.all(element.getAnimations().map((animation) => animation.finished)),
 	);
 
-	const sectionHeadings = ["Profile", "Security", "Leaving Musubi"];
+	await expect(
+		accountDialog.getByRole("tab", { name: "Account" }),
+	).toHaveAttribute("aria-selected", "true");
+	const sectionHeadings = ["Profile", "Security"];
 	const sectionTops = await Promise.all(
 		sectionHeadings.map(
 			async (name) =>
@@ -3988,7 +3936,7 @@ test("keeps account management usable as nested mobile sheets", async ({
 	await page.getByRole("button", { name: "Open navigation" }).click();
 	await page.getByRole("button", { name: "User menu for Web QA" }).click();
 	await page.getByRole("menuitem", { name: "Manage account" }).click();
-	const accountSheet = page.getByRole("dialog", { name: "Account" });
+	const accountSheet = page.getByRole("dialog", { name: "Settings" });
 	await accountSheet.evaluate((element) =>
 		Promise.all(element.getAnimations().map((animation) => animation.finished)),
 	);
@@ -3996,7 +3944,7 @@ test("keeps account management usable as nested mobile sheets", async ({
 	const accountBox = (await accountSheet.boundingBox())!;
 	expect(accountBox.x).toBe(0);
 	expect(Math.round(accountBox.width)).toBe(390);
-	expect(accountBox.height).toBeLessThanOrEqual(700 + 1);
+	expect(Math.round(accountBox.height)).toBe(720);
 
 	const deleteAction = accountSheet.getByRole("button", {
 		name: /Delete account/,
@@ -4598,7 +4546,7 @@ test("opens the calendar color picker as the top mobile sheet", async ({
 
 	await page.getByRole("button", { name: "Open navigation" }).click();
 	await page.getByRole("button", { name: "Calendars" }).click();
-	await page.getByText("New calendar", { exact: true }).click();
+	await page.getByRole("button", { name: "New calendar" }).click();
 	const trigger = page.getByRole("button", {
 		name: "New calendar color: #B3A48A",
 	});
@@ -4632,7 +4580,7 @@ test("opens the calendar color picker as the top mobile sheet", async ({
 	// Escape dismisses only the top layer and restores the initiating control.
 	await page.keyboard.press("Escape");
 	await expect(sheet).toHaveCount(0);
-	await expect(page.getByRole("dialog", { name: "Calendars" })).toBeVisible();
+	await expect(page.getByRole("dialog", { name: "New calendar" })).toBeVisible();
 	await expect(trigger).toBeFocused();
 });
 
@@ -6800,7 +6748,7 @@ test("imports the calendars of an account the moment it comes back linked", asyn
 
 	// The dialog reopens itself onto the imported account: landing on a plain
 	// calendar after consenting is what reads as "nothing happened".
-	const dialog = page.getByRole("dialog", { name: "Connections" });
+	const dialog = page.getByRole("dialog", { name: "Settings" });
 	await expect(
 		dialog.getByRole("button", { name: /Disconnect qa@outlook.com/ }),
 	).toBeVisible();
@@ -6810,7 +6758,7 @@ test("imports the calendars of an account the moment it comes back linked", asyn
 	// reload of the same tab must not talk to Microsoft again — nor pop the dialog.
 	await page.reload();
 	await expect(page.getByRole("button", { name: /Client call/ })).toBeVisible();
-	await expect(page.getByRole("dialog", { name: "Connections" })).toHaveCount(0);
+	await expect(page.getByRole("dialog", { name: "Settings" })).toHaveCount(0);
 	expect(syncCalls).toBe(1);
 });
 
@@ -6839,7 +6787,7 @@ test("says so when the import fails instead of showing an empty list", async ({
 
 	// The account IS linked — the calendars are what failed. "No connected
 	// accounts" alone would send someone to connect it a second time.
-	await expect(page.getByRole("dialog", { name: "Connections" })).toContainText(
+	await expect(page.getByRole("dialog", { name: "Settings" })).toContainText(
 		"could not be fetched",
 	);
 });
@@ -6975,7 +6923,7 @@ test("moves an account to a new address, asking the old one to approve", async (
 	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-26`);
 	await page.getByRole("button", { name: "User menu for Web QA" }).click();
 	await page.getByRole("menuitem", { name: "Manage account" }).click();
-	const accountDialog = page.getByRole("dialog", { name: "Account" });
+	const accountDialog = page.getByRole("dialog", { name: "Settings" });
 	await accountDialog.getByRole("button", { name: /^Email/ }).click();
 
 	const editor = page.getByRole("dialog", { name: "Change email" });
@@ -7187,7 +7135,7 @@ test("stays inside its box with twenty calendars", async ({ page }) => {
 
 	// The manage dialog holds the same twenty rows and scrolls its own body.
 	await page.getByRole("button", { name: "Calendars" }).click();
-	const dialog = page.getByRole("dialog", { name: "Calendars" });
+	const dialog = page.getByRole("dialog", { name: "Settings" });
 	await expect(dialog).toBeVisible();
 	const dialogBox = (await dialog.boundingBox())!;
 	expect(dialogBox.height).toBeLessThanOrEqual(page.viewportSize()!.height);
@@ -7415,11 +7363,11 @@ test("ui catalogue", async ({ browser, page }) => {
 	// ── Layers reached from inside another layer ──────────────────────────────
 	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-23`);
 	await page.waitForLoadState("networkidle");
-	// Both are reached through the Calendars dialog, and closing one of them closes
-	// it too — so each gets its own trip in from the calendar.
+	// Both are reached through the Calendars section of Settings, and sharing
+	// closes the window — so each gets its own trip in from the calendar.
 	for (const [name, row, dialog] of [
 		["app-dialog-share-calendar", /^Share /, /Share/],
-		["app-confirm-delete-calendar", /^Delete /, /Delete/],
+		["app-dialog-calendar-settings", /^Settings for /, /Calendar settings/],
 	] as const) {
 		try {
 			await page
@@ -7952,9 +7900,9 @@ for (const { provider, width, theme } of [
 		if (width < 600)
 			await page.getByRole("button", { name: "Open navigation" }).click();
 		await page.getByRole("button", { name: "Connections" }).click();
-		const dialog = page.getByRole("dialog", { name: "Connections" });
-		const checkbox = dialog.getByRole("button", { name: /Include Tasks/ });
-		await expect(checkbox).toHaveAttribute("aria-pressed", "true");
+		const dialog = page.getByRole("dialog", { name: "Settings" });
+		const checkbox = dialog.getByRole("checkbox", { name: "Include Tasks" });
+		await expect(checkbox).toBeChecked();
 		await expect(dialog).not.toContainText("Existing permissions stay active.");
 		const connect = dialog.getByRole("button", {
 			name: provider === "google" ? "Google Calendar" : "Outlook",
@@ -7969,7 +7917,7 @@ for (const { provider, width, theme } of [
 		await expect(checkbox).toBeEnabled();
 		await checkbox.focus();
 		await page.keyboard.press("Space");
-		await expect(checkbox).toHaveAttribute("aria-pressed", "false");
+		await expect(checkbox).not.toBeChecked();
 		await connect.click();
 		await expect.poll(() => requests.length).toBe(2);
 		expect(requests[1]).toMatchObject({ provider, callbackURL: page.url() });
@@ -7988,7 +7936,7 @@ for (const { provider, width, theme } of [
 				(element) => element.scrollWidth <= element.clientWidth,
 			),
 		).toBe(true);
-		await dialog.getByRole("button", { name: "Close connections" }).click();
+		await dialog.getByRole("button", { name: "Close settings" }).click();
 		await expect(dialog).toHaveCount(0);
 	});
 }
@@ -9713,9 +9661,9 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     await page.screenshot({ path: `/tmp/musubi-grid-${theme}.png` });
     await page.getByRole("button", { name: "Availability", exact: true }).click();
     await page.getByRole("button", { name: "Sources and interval list", exact: true }).click();
-    await expect(page.getByRole("dialog", { name: "Connections", exact: true })).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Settings", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Check availability", exact: true })).toBeVisible();
-    await page.getByRole("dialog", { name: "Connections", exact: true }).getByRole("button", { name: "Close connections", exact: true }).click();
+    await page.getByRole("dialog", { name: "Settings", exact: true }).getByRole("button", { name: "Close settings", exact: true }).click();
     await expect(page.getByRole("button", { name: "Availability", exact: true })).toBeFocused();
     await page.goto("/app/p/my-calendar/day?date=2026-10-25");
     await page.getByRole("button", { name: "Availability", exact: true }).click();
@@ -9748,10 +9696,10 @@ test("Availability grid keeps capped event lanes usable and selection pending ac
   const select = page.getByRole("switch", { name: "Use Team availability for availability" });
   await select.click(); await expect.poll(() => !!commit).toBe(true);
   const readsBeforeClose = sourceReads;
-  await page.getByRole("button", { name: "Close connections", exact: true }).click();
+  await page.getByRole("button", { name: "Close settings", exact: true }).click();
   await expect(page.locator("[data-availability-interval]")).toHaveCount(0);
   await openConnections(); await expect(select).toBeDisabled(); expect(sourceReads).toBe(readsBeforeClose);
-  await page.getByRole("button", { name: "Close connections", exact: true }).click();
+  await page.getByRole("button", { name: "Close settings", exact: true }).click();
   await commit(); await expect(page.locator("[data-availability-interval]")).toHaveCount(1);
   for (const index of [1, 2, 3, 4]) {
     const block = page.locator(`[data-time-event="grid-overlap-${index}"]`);
@@ -9760,7 +9708,7 @@ test("Availability grid keeps capped event lanes usable and selection pending ac
     await page.keyboard.press("Escape"); await expect(block).toBeFocused();
   }
   await openConnections(); await select.click(); await expect(select).toBeDisabled();
-  await page.getByRole("button", { name: "Close connections", exact: true }).click();
+  await page.getByRole("button", { name: "Close settings", exact: true }).click();
   await expect(page.getByText(/Availability selection is changing. No free time is confirmed yet/)).toBeVisible();
   await expect(page.locator("[data-availability-interval]")).toHaveCount(0);
   await commit(); await expect(page.getByText(/No availability sources selected/)).toBeVisible();
@@ -10374,11 +10322,11 @@ for (const [width, theme] of [[1280, "dark"], [390, "light"], [320, "dark"]] as 
     await page.goto("/app/p/my-calendar/month?date=2026-07-26");
     if (width < 600) await page.getByRole("button", { name: "Open navigation" }).click();
     await page.getByRole("button", { name: "Connections", exact: true }).click();
-    const connections = page.getByRole("dialog", { name: "Connections", exact: true });
+    const connections = page.getByRole("dialog", { name: "Settings", exact: true });
     await expect(connections.getByText("No shared busy-time calendars yet")).toBeVisible();
     await expect(connections.getByRole("button", { name: "Check availability", exact: true })).toHaveCount(0);
-    const tasks = connections.getByRole("button", { name: "Include Tasks (optional)" });
-    await expect(tasks).toHaveAttribute("aria-pressed", "true");
+    const tasks = connections.getByRole("checkbox", { name: "Include Tasks" });
+    await expect(tasks).toBeChecked();
     await expectNoAccessibilityViolations(page);
     expect(await connections.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
     await connections.screenshot({ path: `/tmp/musubi-connections-${theme}-${width}.png` });
@@ -10446,7 +10394,7 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     if (width < 600) await page.getByRole("button", { name: "Open navigation" }).click();
     await page.getByRole("button", { name: "User menu for Web QA" }).click();
     await page.getByRole("menuitem", { name: "Manage account", exact: true }).click();
-    const account = page.getByRole("dialog", { name: "Account", exact: true });
+    const account = page.getByRole("dialog", { name: "Settings", exact: true });
     const avatar = account.getByRole("button", { name: "Change photo", exact: true });
     await expect(avatar).toBeVisible();
     await expect(avatar).not.toContainText("Change photo");

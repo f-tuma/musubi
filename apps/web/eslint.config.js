@@ -93,16 +93,6 @@ export default tseslint.config(
     // nothing is ever added to it. The old src/ui primitives go with it.
     files: [
       "src/ui/**",
-      "src/calendar/components/AccountDialog.tsx",
-      "src/calendar/components/AdminSettings.tsx",
-      "src/calendar/components/AvailabilitySection.tsx",
-      "src/calendar/components/CalendarDot.tsx",
-      "src/calendar/components/CalendarTransferDialog.tsx",
-      "src/calendar/components/ConnectionsDialog.tsx",
-      "src/calendar/components/DiagnosticsSection.tsx",
-      "src/calendar/components/ProviderIcon.tsx",
-      "src/calendar/components/SettingsDialog.tsx",
-      "src/routes/app/admin.tsx",
     ],
     rules: {
       "shadcn/no-restyle": "off",

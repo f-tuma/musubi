@@ -576,19 +576,22 @@ describe("Workspace", () => {
       />,
     );
     await user.click(screen.getByRole("button", { name: "Calendars" }));
-    const calendarsDialog = within(
-      screen.getByRole("dialog", { name: "Calendars" }),
+    const settingsWindow = within(
+      screen.getByRole("dialog", { name: "Settings" }),
     );
-    const stopButton = calendarsDialog.getByRole("button", {
-      name: "Stop syncing Studio",
-    });
+    await user.click(
+      settingsWindow.getByRole("button", { name: "Settings for Studio" }),
+    );
+    const stopButton = within(
+      screen.getByRole("dialog", { name: "Calendar settings" }),
+    ).getByRole("button", { name: "Stop syncing" });
     await user.click(stopButton);
 
     const confirmation = within(
       screen.getByRole("dialog", { name: "Stop syncing “Studio”?" }),
     );
     expect(
-      confirmation.getByText("Your Google Calendar account stays connected."),
+      confirmation.getByText("It stays in Google Calendar, and the account stays connected."),
     ).not.toBeNull();
     await user.click(confirmation.getByRole("button", { name: "Cancel" }));
 
