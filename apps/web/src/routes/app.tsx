@@ -34,7 +34,6 @@ function AppRoute() {
             }
             aria-label="Musubi on mobile"
             aria-modal="true"
-            description="The web app is not built for phones yet."
             icon={<Smartphone />}
             role="dialog"
             title="Musubi works best in the app"

@@ -4367,9 +4367,7 @@ test("blocks the phone web app with a full-screen app download", async ({
 	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-26`);
 
 	const blocker = page.getByRole("dialog", { name: "Musubi on mobile" });
-	await expect(blocker).toContainText(
-		"The web app is not built for phones yet.",
-	);
+	await expect(blocker).toContainText("Musubi works best in the app");
 	await expect(
 		blocker.getByRole("button", { name: "Get the Android app" }),
 	).toBeVisible();
