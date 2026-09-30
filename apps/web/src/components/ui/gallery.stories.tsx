@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
-import { Bell, CalendarDays, Globe, Moon, Trash2 } from "lucide-react";
+import { Bell, CalendarDays, Globe, Moon, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { DESKTOP_MODES, MOBILE_MODES } from "../../../.storybook/modes";
 import { Badge } from "~/components/ui/badge";
@@ -49,6 +49,9 @@ function Actions() {
         </Button>
         <Button aria-label="Notifications" size="icon" variant="ghost">
           <Bell aria-hidden="true" />
+        </Button>
+        <Button aria-label="Create" size="fab">
+          <Plus aria-hidden="true" />
         </Button>
       </div>
       <div className="flex flex-wrap items-center gap-2">

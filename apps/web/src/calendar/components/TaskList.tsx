@@ -17,25 +17,26 @@ import type {
 } from "@musubi/types";
 import { parseDateKey } from "../calendar-math";
 import { toDateKey } from "../date-key";
-import { Button, IconButton } from "~/ui/Button";
-import { Switch } from "~/ui/Switch";
+import { cn } from "~/lib/utils";
+import { Button } from "~/components/ui/button";
+import { Switch } from "~/components/ui/switch";
 import { DatePicker } from "~/ui/DatePicker";
-import type { Dialog } from "~/ui/Dialog";
 import { Inspector, InspectorContent, InspectorHeaderActions } from "~/ui/Inspector";
-import surfaceStyles from "~/ui/primitives.module.css";
-import { Disclosure } from "~/ui/Disclosure";
-import { Empty } from "~/ui/Empty";
-import { Field } from "~/ui/Field";
-import { InlineError } from "~/ui/InlineError";
-import { Select } from "~/ui/Select";
-import { Row, RowAction } from "~/ui/Row";
+import { DialogBody, DialogFooter } from "~/components/ui/dialog";
+import { Disclosure } from "~/components/ui/disclosure";
+import { Empty } from "~/components/ui/empty";
+import { Field } from "~/components/ui/field";
+import { InlineError } from "~/components/ui/inline-error";
+import { Input } from "~/components/ui/input";
+import { Select } from "~/components/ui/select";
+import { Row, RowAction } from "~/components/ui/row";
+import { Textarea } from "~/components/ui/textarea";
 import { useKanbanDrag } from "../use-kanban-drag";
 import { TaskLayoutSwitch } from "./TaskLayoutSwitch";
-import { SectionLabel } from "~/ui/SectionLabel";
+import { SectionLabel } from "~/components/ui/section-label";
 import { TimePicker } from "~/ui/TimePicker";
 import { AccountMark } from "./ProviderIcon";
 import { RecurrenceEditor } from "./RecurrenceEditor";
-import styles from "./TaskList.module.css";
 
 type TaskListProps = {
   inspectorPresentation?: Pick<Parameters<typeof Inspector>[0], "presentation" | "onPresentationChange" | "position">;
@@ -407,21 +408,24 @@ export function TaskList({
   if (editorOnly) return editor;
 
   return (
-    <section aria-label="Tasks" className={styles.tasks} data-layout={layout} data-kanban-scroll>
-      {showLayoutControl ? <div className={styles.viewControls}>
+    <section
+      aria-label="Tasks"
+      className={cn(
+        layout === "kanban"
+          ? "flex h-full min-h-0 flex-col overflow-x-auto overflow-y-hidden px-6 pt-6 max-sm:px-5 max-sm:pt-5"
+          : "overflow-auto p-6 max-sm:p-5",
+      )}
+      data-layout={layout}
+      data-kanban-scroll
+    >
+      {showLayoutControl ? <div className="mb-5 flex flex-none justify-end">
         <TaskLayoutSwitch value={layout} onChange={next => { setLocalLayout(next); onLayoutChange?.(next); }} />
       </div> : null}
-      <div ref={boardRef} className={layout === "kanban" ? styles.board : undefined}>
+      <div ref={boardRef} className={layout === "kanban" ? "grid min-h-0 flex-1 basis-0 grid-cols-4 items-stretch gap-4 max-md:flex" : undefined}>
       {tasks.length === 0 && layout === "list" ? (
         <Empty
-          action={!offline && firstEditableCalendarID ? <Button icon={<Plus size={16} />} onClick={() => openCreate()}>Create task</Button> : undefined}
-          description={
-            offline
-              ? "Reconnect to refresh the tasks saved on this device."
-              : firstEditableCalendarID
-                ? "Add a task for one of the calendars on this Page."
-                : "Tasks from the calendars on this Page will appear here."
-          }
+          action={!offline && firstEditableCalendarID ? <Button onClick={() => openCreate()}><Plus aria-hidden="true" />Create task</Button> : undefined}
+          description={offline ? "Reconnect to load tasks." : undefined}
           headingLevel={2}
           title={offline ? "No saved tasks" : "No tasks yet"}
         />
@@ -501,28 +505,35 @@ function TaskGroup({
   const [collapsed, setCollapsed] = useState(false);
   const bodyId = useId();
   if (!tasks.length && !kanban) return null;
-  const placeholder = <li key="drop-placeholder" className={styles.dropPlaceholder} data-drop-placeholder aria-hidden="true">Move to {label.toLowerCase()}</li>;
+  const placeholder = <li key="drop-placeholder" className="grid h-(--kanban-drag-height) place-items-center rounded-card border border-dashed border-foreground-secondary p-4 text-13 text-foreground-secondary duration-standard animate-in fade-in-0 motion-reduce:animate-none" data-drop-placeholder aria-hidden="true">Move to {label.toLowerCase()}</li>;
+  const heading = <span className="flex items-center gap-2 group-data-drop-active/column:text-foreground"><span aria-hidden="true" className="inline-flex">{icon}</span>{label}{" "}<span className="inline-flex tabular-nums">{tasks.length}</span></span>;
   return (
     <section
-      className={kanban ? styles.column : styles.group}
+      className={kanban
+        ? "group/column relative flex min-h-0 min-w-0 flex-col gap-3 not-first:before:absolute not-first:before:inset-y-0 not-first:before:-left-2 not-first:before:border-l not-first:before:border-border-subtle max-md:w-80 max-md:flex-none"
+        : "mb-7 grid gap-3"}
       aria-label={label}
       data-drop-active={dropActive || undefined}
       data-saving={saving || undefined}
       data-kanban-status={kanban ? statusValue : undefined}
     >
-      <div className={kanban ? styles.columnHeading : undefined}>
-        <SectionLabel className={styles.groupHeading}>
-          {kanban ? <><span aria-hidden="true">{icon}</span>{label}{" "}<span>{tasks.length}</span></> :
-            <Button variant="ghost" className={styles.groupToggle} aria-expanded={!collapsed} aria-controls={bodyId} onClick={() => setCollapsed(value => !value)}>
-              <ChevronDown size={14} aria-hidden="true" className={styles.groupChevron} data-collapsed={collapsed || undefined} />
-              <span aria-hidden="true">{icon}</span>{label}{" "}<span>{tasks.length}</span>
-            </Button>}
+      <div className={kanban ? "flex flex-none items-center justify-between gap-2" : undefined}>
+        <SectionLabel className="flex items-center">
+          {kanban ? heading :
+            /* A heading that folds its group: the small-caps label stays the
+               label, so this is not a Button with its own type and fill. */
+            <button type="button" className="-mx-2 inline-flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1 transition-colors duration-fast hover:bg-raised hover:text-foreground" aria-expanded={!collapsed} aria-controls={bodyId} onClick={() => setCollapsed(value => !value)}>
+              <ChevronDown size={14} aria-hidden="true" className={cn("transition-transform duration-fast motion-reduce:transition-none", collapsed && "-rotate-90")} />
+              {heading}
+            </button>}
         </SectionLabel>
-        {kanban && onCreate ? <Button variant="ghost" size="compact" disabled={busy} icon={<Plus size={16} />} onClick={onCreate}>Add task</Button> : null}
+        {kanban && onCreate ? <Button variant="ghost" size="compact" disabled={busy} onClick={onCreate}><Plus aria-hidden="true" />Add task</Button> : null}
       </div>
-      <div id={bodyId} hidden={!kanban && collapsed} className={kanban ? styles.columnBody : undefined} data-kanban-column-scroll={kanban ? "" : undefined} tabIndex={kanban ? 0 : undefined} role={kanban ? "region" : undefined} aria-label={kanban ? `${label} tasks` : undefined}>
-      {kanban && !tasks.length && !dropActive ? <p className={styles.emptyColumn}>No tasks</p> : null}
-      <ul>
+      <div id={bodyId} hidden={!kanban && collapsed} className={kanban ? "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-y-contain pb-4 focus-inset" : undefined} data-kanban-column-scroll={kanban ? "" : undefined} tabIndex={kanban ? 0 : undefined} role={kanban ? "region" : undefined} aria-label={kanban ? `${label} tasks` : undefined}>
+      {kanban && !tasks.length && !dropActive ? <p className="p-5 text-center text-13 text-foreground-secondary">No tasks</p> : null}
+      <ul className={kanban
+        ? "grid flex-none grid-cols-1 gap-3"
+        : "flex flex-col divide-y divide-border-subtle overflow-hidden rounded-card border border-border bg-panel"}>
         {tasks.map((task) => {
           const calendar = calendarById.get(task.calendarID);
           const complete = task.status === "completed";
@@ -538,13 +549,49 @@ function TaskGroup({
             due ? `Due ${due}` : undefined,
             !editable ? "Read only" : undefined,
           ].filter(Boolean).join(" · ");
-          const detail = <span className={styles.listCalendarDetail}>{providerMark}<span>{detailText}</span></span>;
+          const detail = <span className="inline-flex items-center gap-1 *:first:flex-none">{providerMark}<span>{detailText}</span></span>;
           const title = (
-            <span className={complete ? styles.done : undefined}>{task.title}</span>
+            <span className={cn("wrap-anywhere", complete && "text-foreground-secondary line-through")}>{task.title}</span>
           );
-          const controlsMarkup = (
-              <div className={styles.taskControls}>
+          if (kanban) return (
+            <Fragment key={task.id}>
+            {dropActive && placeholderBeforeId === task.id ? placeholder : null}
+            <li
+              className="flex min-w-0 flex-col gap-3 rounded-card border border-border-subtle bg-panel p-4 transition-shadow duration-standard data-dragging:not-data-drag-preview:opacity-25 data-drag-preview:border-foreground-secondary data-drag-preview:shadow-overlay data-draggable:cursor-grab data-draggable:select-none data-draggable:active:cursor-grabbing data-draggable:**:touch-manipulation motion-reduce:transition-none"
+              key={task.id} data-task-id={task.id} data-editable={editable || undefined} data-dragging={draggingId === task.id || undefined}
+              data-draggable={editable && !busy || undefined}
+              onPointerDown={event => {
+                if (!editable || busy || event.pointerType === "touch" || !(event.target instanceof Element)) return;
+                if (event.target.closest('button, a, input, textarea, select, [role="combobox"], [contenteditable="true"]')) return;
+                onDragTask(task, event);
+              }}>
+              <div className="relative flex min-h-5 items-center justify-between gap-2 pr-7 text-12 text-foreground-secondary">
+                <span className="inline-flex min-w-0 items-center gap-2 *:first:flex-none"><span className="inline-flex">{providerMark}</span><span className="truncate">{calendar?.name ?? "Unknown calendar"}</span></span>
+                {editable ? <Button
+                  variant="ghost"
+                  size="icon-compact"
+                  className="absolute top-1/2 right-0 -translate-y-1/2 cursor-grab touch-none active:cursor-grabbing"
+                  aria-label={`Drag ${task.title} to another status; press Enter to open task details`}
+                  title="Drag to another status"
+                  disabled={busy}
+                  onPointerDown={event => onDragTask(task, event)}
+                  onClick={event => { if (event.detail === 0) onEdit(task); }}><GripVertical aria-hidden="true" /></Button> : <span className="truncate">Read only</span>}
+              </div>
+              {/* The card's own heading: prose that wraps, not a one-line control label. */}
+              {editable ? <button type="button" className="block min-w-0 cursor-pointer rounded-sm text-left text-15 leading-normal font-medium text-foreground wrap-anywhere hover:underline hover:decoration-border-strong hover:underline-offset-4 disabled:cursor-default" disabled={busy} onClick={() => onEdit(task)}>{title}</button> : <p className="min-w-0 text-15 leading-normal font-medium text-foreground wrap-anywhere">{title}</p>}
+              {task.description ? <p className="line-clamp-2 text-13 text-foreground-secondary wrap-anywhere">{task.description}</p> : null}
+              <div className="flex flex-wrap gap-x-3 gap-y-2 text-12 text-foreground-secondary">
+                {due ? <span className="inline-flex items-center gap-1"><CalendarDays size={14} aria-hidden="true" className="flex-none" />{due}</span> : <span>No due date</span>}
+                {task.recurrence ? <span className="inline-flex items-center gap-1" title={taskRecurrenceSummary(task.recurrence, task.start, task.isAllDay)}><Repeat2 size={14} aria-hidden="true" className="flex-none" />Repeats</span> : null}
+              </div>
+            </li>
+            </Fragment>
+          );
+          return (
+            <li className="flex min-h-row items-center" key={task.id}>
+              <div className="flex-none py-4 pl-4 max-sm:pl-3">
                 <Select
+                  className="w-9"
                   ref={node => { if (node) controls.current.set(`${task.id}:status`, node); else controls.current.delete(`${task.id}:status`); }}
                   label={`Status of ${task.title}`}
                   iconOnly
@@ -554,40 +601,10 @@ function TaskGroup({
                   disabled={!editable || busy}
                   onChange={status => void onUpdateInline(task, { status: status as Task["status"] })}
                 />
-
               </div>
-          );
-          if (kanban) return (
-            <Fragment key={task.id}>
-            {dropActive && placeholderBeforeId === task.id ? placeholder : null}
-            <li className={styles.kanbanCard} key={task.id} data-task-id={task.id} data-editable={editable || undefined} data-dragging={draggingId === task.id || undefined}
-              data-draggable={editable && !busy || undefined}
-              onPointerDown={event => {
-                if (!editable || busy || event.pointerType === "touch" || !(event.target instanceof Element)) return;
-                if (event.target.closest('button, a, input, textarea, select, [role="combobox"], [contenteditable="true"]')) return;
-                onDragTask(task, event);
-              }}>
-              <div className={styles.cardHeader}>
-                <span className={styles.cardCalendar}>{providerMark}<span>{calendar?.name ?? "Unknown calendar"}</span></span>
-                {editable ? <IconButton className={styles.dragHandle} label={`Drag ${task.title} to another status; press Enter to open task details`} size="compact" disabled={busy}
-                  onPointerDown={event => onDragTask(task, event)}
-                  onClick={event => { if (event.detail === 0) onEdit(task); }}><GripVertical size={16} /></IconButton> : <span>Read only</span>}
-              </div>
-              {editable ? <Button variant="ghost" className={styles.cardTitle} disabled={busy} onClick={() => onEdit(task)}>{title}</Button> : <p className={styles.cardTitle}>{title}</p>}
-              {task.description ? <p className={styles.cardDescription}>{task.description}</p> : null}
-              <div className={styles.cardMeta}>
-                {due ? <span><CalendarDays size={14} aria-hidden="true" />{due}</span> : <span>No due date</span>}
-                {task.recurrence ? <span title={taskRecurrenceSummary(task.recurrence, task.start, task.isAllDay)}><Repeat2 size={14} aria-hidden="true" />Repeats</span> : null}
-              </div>
-            </li>
-            </Fragment>
-          );
-          return (
-            <li className={styles.task} key={task.id}>
-              {controlsMarkup}
               {editable ? (
                 <RowAction
-                  className={styles.taskMain}
+                  className="ml-2 min-w-0 flex-1 self-stretch"
                   detail={detail}
                   label={title}
                   showChevron={false}
@@ -595,7 +612,7 @@ function TaskGroup({
                   onClick={() => onEdit(task)}
                 />
               ) : (
-                <Row className={styles.taskMain} detail={detail} label={title} />
+                <Row className="ml-2 min-w-0 flex-1 self-stretch" detail={detail} label={title} />
               )}
             </li>
           );
@@ -607,16 +624,31 @@ function TaskGroup({
   );
 }
 
-function TaskEditorSurface({ busy, inspectorPresentation, ...props }: Parameters<typeof Dialog>[0] & { busy: boolean; inspectorPresentation?: TaskListProps["inspectorPresentation"] }) {
+type TaskEditorSurfaceProps = {
+  busy: boolean;
+  children: ReactNode;
+  footer: ReactNode;
+  initialFocus: React.RefObject<HTMLInputElement | null>;
+  inspectorPresentation?: TaskListProps["inspectorPresentation"];
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  title: string;
+};
+
+function TaskEditorSurface({ busy, inspectorPresentation, ...props }: TaskEditorSurfaceProps) {
   return <Inspector {...inspectorPresentation} open={props.open} onOpenChange={props.onOpenChange} onRequestClose={() => { if (!busy) props.onOpenChange(false); }}>
-    <InspectorContent accessibleTitle={typeof props.title === "string" ? props.title : "Task editor"} onFocusOutside={event => event.preventDefault()}
+    <InspectorContent accessibleTitle={props.title} onFocusOutside={event => event.preventDefault()}
       onOpenAutoFocus={event => { event.preventDefault(); props.initialFocus?.current?.focus(); }}>
-      <header data-inspector-header="" className={surfaceStyles.dialogHeader}>
-        <h2 className={surfaceStyles.dialogTitle}>{props.title}</h2>
-        <InspectorHeaderActions><IconButton label="Close task editor" disabled={busy} onClick={() => props.onOpenChange(false)}><X size={18} /></IconButton></InspectorHeaderActions>
+      <header data-inspector-header="" className="flex flex-none items-start justify-between gap-4 px-6 pt-6 pb-5 max-sm:pt-7">
+        <h2 className="font-serif text-22 leading-tight font-normal text-foreground">{props.title}</h2>
+        <InspectorHeaderActions>
+          <Button variant="ghost" size="icon-compact" aria-label="Close task editor" title="Close task editor" disabled={busy} onClick={() => props.onOpenChange(false)}>
+            <X aria-hidden="true" strokeWidth={1.6} />
+          </Button>
+        </InspectorHeaderActions>
       </header>
-      <div className={`${surfaceStyles.dialogBody} ${surfaceStyles.dialogBody_padded} ${surfaceStyles.inspectorFormBody}`}>{props.children}</div>
-      <footer className={surfaceStyles.dialogFooter}>{props.footer}</footer>
+      <DialogBody>{props.children}</DialogBody>
+      <div className="flex-none pb-safe-bottom"><DialogFooter>{props.footer}</DialogFooter></div>
     </InspectorContent>
   </Inspector>;
 }
@@ -672,17 +704,16 @@ function TaskEditor({
     <TaskEditorSurface
       inspectorPresentation={inspectorPresentation}
       busy={busy}
-      closeLabel="Close task editor"
       footer={
         <>
           {onDelete ? (
             <Button
-              className={styles.deleteTask}
+              className="sm:mr-auto"
               disabled={busy}
-              icon={<Trash2 aria-hidden="true" size={16} />}
               variant="ghost"
               onClick={() => void onDelete()}
             >
+              <Trash2 aria-hidden="true" />
               Delete
             </Button>
           ) : null}
@@ -698,17 +729,16 @@ function TaskEditor({
       }
       initialFocus={initialFocus}
       open
-      size="wide"
       title={editing ? "Edit task" : "New task"}
       onOpenChange={onOpenChange}
     >
       <form
-        className={styles.editor}
+        className="grid content-start gap-5"
         id="task-editor"
         onSubmit={(event) => void onSubmit(event)}
       >
         <Field label="Title">
-          <input
+          <Input
             ref={initialFocus}
             value={draft.title}
             onChange={(event) =>
@@ -725,7 +755,7 @@ function TaskEditor({
               onChange={(calendarID) => onChange(withTaskAllDay({ ...draft, calendarID }, calendars.find(calendar => calendar.id === calendarID)?.provider === "google" || draft.isAllDay))}
             />
         </Field>
-        <div className={styles.fields}>
+        <div className="grid grid-cols-2 gap-4">
           <Field label="Status">
             <Select
               label="Status"
@@ -753,11 +783,11 @@ function TaskEditor({
             />
           </Field>
         </div>
-        <div className={styles.scheduleFields}>
+        <div className="grid gap-5">
           {(["start", "due"] as const).map(endpoint => {
             const label = endpoint === "start" ? "Start" : "Due";
-            return <div className={styles.dateTimeRow} data-all-day={dateOnly || undefined} key={endpoint}>
-              <Field label={`${label} date`}>
+            return <div className={cn("grid gap-4", dateOnly ? "grid-cols-1" : "grid-cols-3")} key={endpoint}>
+              <Field className={dateOnly ? undefined : "col-span-2"} label={`${label} date`}>
                 <DatePicker
                   label={`${label} date`}
                   value={taskDateKey(draft[endpoint], draft.isAllDay)}
@@ -785,7 +815,7 @@ function TaskEditor({
           onCheckedChange={isAllDay => onChange(withTaskAllDay(draft, isAllDay))}
         />} /> : null}
         <Field label="Notes">
-          <textarea
+          <Textarea
             rows={4}
             value={draft.description ?? ""}
             onChange={(event) =>
@@ -799,7 +829,7 @@ function TaskEditor({
           label="Recurrence"
           detail={taskRecurrenceSummary(draft.recurrence, draft.start, draft.isAllDay)}
         >
-          {!draft.start && !draft.due ? <p>Choose a start or due date to set repetition.</p> : null}
+          {!draft.start && !draft.due ? <p className="text-13 text-muted-foreground">Set a start or due date first.</p> : null}
           <RecurrenceEditor
             followStartDate={false}
             date={taskDateKey(draft.start, draft.isAllDay) || taskDateKey(draft.due, draft.isAllDay) || toDateKey(new Date())}
@@ -814,7 +844,7 @@ function TaskEditor({
           />
           <Disclosure density="compact" label="Advanced rule">
           <Field label="Recurrence rule" help="Uses iCalendar recurrence syntax.">
-            <textarea
+            <Textarea
               disabled={busy || unavailable}
               placeholder="RRULE:FREQ=WEEKLY"
               rows={2}

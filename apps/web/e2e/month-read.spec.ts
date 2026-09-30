@@ -1463,7 +1463,7 @@ test("handles attendance, linking, forking and recurring delete scopes", async (
 	).toBeFocused();
 	await page.getByRole("button", { exact: true, name: "Link" }).click();
 	await page.getByRole("button", { name: "Link to Personal" }).click();
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Event linked to calendar.",
 	);
 
@@ -1473,7 +1473,7 @@ test("handles attendance, linking, forking and recurring delete scopes", async (
 		page.getByRole("heading", { name: "Make an independent copy" }),
 	).toBeVisible();
 	await page.getByRole("button", { name: "Make copy in Studio" }).click();
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Independent event copy created.",
 	);
 	await expect(page.getByRole("button", { name: /Design review/ })).toHaveCount(
@@ -1523,7 +1523,7 @@ test("handles attendance, linking, forking and recurring delete scopes", async (
 		.getByRole("dialog", { name: "Delete recurring event" })
 		.getByRole("button", { name: "This event", exact: true })
 		.click();
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Occurrence removed.",
 	);
 	const { scopeEdit, ...update } = (await deletionRequest).postDataJSON();
@@ -1578,7 +1578,7 @@ test("exports and imports iCalendar files from calendar management", async ({
 		.fill("Roadmap");
 	await page.getByRole("button", { name: "Import", exact: true }).click();
 
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Imported 1 event into Roadmap.",
 	);
 	await expectCalendarVisibility(page, "Roadmap", true);
@@ -1895,7 +1895,7 @@ test("moves and resizes an event by dragging it", async ({ page }) => {
 	});
 	await page.mouse.up();
 
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Event moved.",
 	);
 	expect(writes).toHaveLength(1);
@@ -1922,7 +1922,7 @@ test("moves and resizes an event by dragging it", async ({ page }) => {
 	);
 	await page.mouse.up();
 
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Event resized.",
 	);
 	expect(writes).toHaveLength(2);
@@ -1943,7 +1943,7 @@ test("drags an empty interval to pre-fill quick create", async ({ page }) => {
 	// the viewport.
 	await page.evaluate(() => {
 		const scroller = document.querySelector<HTMLElement>(
-			'[class*="calendarArea"]',
+			'[data-calendar-area]',
 		);
 		if (scroller) scroller.scrollTop = 0;
 	});
@@ -1978,7 +1978,7 @@ test("keeps the chosen interval visible while quick create is open", async ({
 	await expect(column).toBeVisible();
 	await page.evaluate(() => {
 		const scroller = document.querySelector<HTMLElement>(
-			'[class*="calendarArea"]',
+			'[data-calendar-area]',
 		);
 		if (scroller) scroller.scrollTop = 0;
 	});
@@ -2184,10 +2184,10 @@ test("reorders pages by dragging a row, and by keyboard", async ({ page }) => {
 	});
 
 	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-26`);
-	const rows = page.locator('[class*="pageRow_"]');
+	const rows = page.locator('[data-page-row]');
 	// Retrying assertion: the order is painted optimistically and then replaced by
 	// the response, so a one-shot read can land between the two.
-	const order = page.locator('[class*="pageRowMain"]');
+	const order = page.locator('[data-page-row] > button');
 	await expect(rows).toHaveCount(2);
 	await expect(order).toHaveText(["My calendar", "Work"]);
 
@@ -2252,7 +2252,7 @@ test("moves an event to another day in the month grid", async ({ page }) => {
 	await expect(target).toHaveAttribute("data-drop-target", "");
 	await page.mouse.up();
 
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Event moved.",
 	);
 	expect(writes).toHaveLength(1);
@@ -2285,7 +2285,7 @@ test("moves an event with the keyboard", async ({ page }) => {
 
 	// Alt+Down moves by one snap interval; the change is announced.
 	await page.keyboard.press("Alt+ArrowDown");
-	await expect(page.locator('[class*="toastRegion"]')).toContainText("now ");
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText("now ");
 	expect(writes).toHaveLength(1);
 	expect(
 		new Date(writes[0]!.end).getTime() - new Date(writes[0]!.start).getTime(),
@@ -2374,7 +2374,7 @@ test("changes time grid density from the page editor", async ({ page }) => {
 		.getByRole("button", { name: "Save", exact: true })
 		.click();
 
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Page saved.",
 	);
 	expect(savedDensity).toBe("compact");
@@ -2471,7 +2471,7 @@ test("edits and saves a page's calendar visibility", async ({ page }) => {
 	await settings.getByRole("button", { name: "Studio" }).click();
 	await settings.getByRole("button", { name: "Save", exact: true }).click();
 
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Page saved.",
 	);
 	expect(saved?.config?.calendarVisibility).toEqual({
@@ -2678,7 +2678,7 @@ test("creates, renames and deletes a calendar", async ({ page }) => {
 		color: "#A8B5A0",
 		name: "Travel",
 	});
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Travel created.",
 	);
 	const travelRow = page.getByRole("listitem").filter({ hasText: "Travel" });
@@ -2695,7 +2695,7 @@ test("creates, renames and deletes a calendar", async ({ page }) => {
 		.getByRole("dialog", { name: "Calendar settings" })
 		.getByRole("button", { name: "Save", exact: true })
 		.click();
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Calendar updated.",
 	);
 	await expect(
@@ -2717,7 +2717,7 @@ test("creates, renames and deletes a calendar", async ({ page }) => {
 
 	await deleteButton.click();
 	await deleteDialog.getByRole("button", { name: "Delete calendar" }).click();
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Trips deleted.",
 	);
 	await expect(
@@ -2918,7 +2918,7 @@ test("keeps a calendar's reminder on the calendar, viewer or not", async ({
 	);
 
 	await sheet.getByRole("radio", { name: "Evening before" }).click();
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Reminder saved.",
 	);
 	expect(saved).toHaveLength(1);
@@ -3093,15 +3093,11 @@ test("manages members and invite links for a calendar", async ({ page }) => {
 		.analyze();
 	expect(accessibility.violations).toEqual([]);
 
-	// Promote Sam to editor through the visible, keyboard-friendly role group.
-	const roleGroup = page.getByRole("radiogroup", {
-		name: "Sam Rivers role",
-	});
-	await roleGroup.getByRole("radio", { name: "Editor" }).click();
-	await expect(roleGroup.getByRole("radio", { name: "Editor" })).toHaveAttribute(
-		"aria-checked",
-		"true",
-	);
+	// Promote Sam to editor through the row's role select.
+	await chooseSelectOption(page, "Sam Rivers role", "Editor");
+	await expect(
+		sharingDialog.getByRole("combobox", { name: "Sam Rivers role" }),
+	).toHaveText("Editor");
 
 	// Create then revoke an invite link. Both limits are fillable rather than a
 	// short preset list, and the header close makes a second Done footer redundant.
@@ -3175,7 +3171,7 @@ test("keeps calendar sharing usable as a mobile sheet", async ({ page }) => {
 	expect(Math.round(box.width)).toBe(390);
 	expect(Math.round(box.y + box.height)).toBeLessThanOrEqual(721);
 	await expect(
-		sheet.getByRole("radiogroup", { name: "Sam Rivers role" }),
+		sheet.getByRole("combobox", { name: "Sam Rivers role" }),
 	).toBeVisible();
 
 	const transfer = sheet.getByRole("button", { name: "Actions for Sam Rivers" });
@@ -3344,7 +3340,7 @@ test("connects and disconnects calendar providers", async ({ page }) => {
 	// Connected account shows and disconnects.
 	await expect(page.getByText("work@gmail.com")).toBeVisible();
 	await page.getByRole("button", { name: "Disconnect work@gmail.com" }).click();
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"work@gmail.com disconnected.",
 	);
 	expect(disconnectBody).toEqual({ accountId: "acc-1", provider: "google" });
@@ -3358,7 +3354,7 @@ test("connects and disconnects calendar providers", async ({ page }) => {
 		.fill("me@icloud.com");
 	await page.getByPlaceholder("Password").fill("app-specific-pw");
 	await page.getByRole("button", { name: "Connect", exact: true }).click();
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Calendar connected.",
 	);
 	expect(caldavBody).toEqual({
@@ -3547,7 +3543,7 @@ test("shows federated calendars and reports an unreachable server", async ({
 
 	// Disconnecting a federated server uses its own endpoint, not provider disconnect.
 	await page.getByRole("button", { name: "Disconnect dead.example" }).click();
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"dead.example disconnected.",
 	);
 	expect(disconnectedServer).toEqual({ server: "https://dead.example" });
@@ -3644,7 +3640,7 @@ test("routes federated event writes through the gateway", async ({ page }) => {
 		.fill("Book club — new venue");
 	await page.getByRole("button", { name: "Save" }).click();
 
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Event updated.",
 	);
 	expect(gatewayWrites).toEqual(["PATCH"]);
@@ -3834,7 +3830,7 @@ test("joins a calendar from a pasted cross-server invite link", async ({
 	expect(previewQuery).toContain(`token=${token}`);
 
 	await page.getByRole("button", { name: "Join calendar" }).click();
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Joined Book club.",
 	);
 	// The handshake runs server-side — no member token is sent by the browser.
@@ -3875,7 +3871,7 @@ test("joins a calendar from an invite link on this server", async ({
 	await expect(page.getByText("This server")).toBeVisible();
 
 	await page.getByRole("button", { name: "Join calendar" }).click();
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Joined Shared plans.",
 	);
 	expect(joinedCalendarId).toBe("shared-cal");
@@ -3942,13 +3938,13 @@ test("manages account identity and gates account deletion", async ({
 		.getByRole("textbox", { name: "Display name" })
 		.fill("Web QA Updated");
 	await nameDialog.getByRole("button", { name: "Save" }).click();
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Name updated.",
 	);
 	await expect(nameDialog).toBeHidden();
 
 	await accountDialog.getByRole("button", { name: /Reset passphrase/ }).click();
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Check your email for a link to set a new passphrase.",
 	);
 
@@ -3976,7 +3972,7 @@ test("manages account identity and gates account deletion", async ({
 	await expect(deleteButton).toBeEnabled();
 	await deleteButton.click();
 
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Check your email",
 	);
 	expect(deleteRequested).toBe(true);
@@ -4372,7 +4368,7 @@ test("blocks the phone web app with a full-screen app download", async ({
 
 	const blocker = page.getByRole("dialog", { name: "Musubi on mobile" });
 	await expect(blocker).toContainText(
-		"The web app is not fully optimized for phones yet.",
+		"The web app is not built for phones yet.",
 	);
 	await expect(
 		blocker.getByRole("button", { name: "Get the Android app" }),
@@ -4822,7 +4818,7 @@ test("leaves a draft on the grid that can be moved before saving", async ({
 	await expect(column).toBeVisible();
 	await page.evaluate(() => {
 		const scroller = document.querySelector<HTMLElement>(
-			'[class*="calendarArea"]',
+			'[data-calendar-area]',
 		);
 		if (scroller) scroller.scrollTop = 0;
 	});
@@ -5704,7 +5700,7 @@ test("moves a bar grabbed by its middle to where the preview drew it", async ({
 	await page.mouse.up();
 
 	// What was previewed is what was written: no jump on release.
-	await expect(page.locator('[class*="toastRegion"]')).toContainText(
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText(
 		"Event moved.",
 	);
 	expect(writes).toHaveLength(1);
@@ -5767,7 +5763,7 @@ test("parks a stuck agenda day below the year band, not under it", async ({
 	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/agenda?date=2026-07-26`);
 	await expect(page.locator("[data-agenda-date]").first()).toBeVisible();
 
-	const scroller = page.locator('[class*="calendarArea"]');
+	const scroller = page.locator('[data-calendar-area]');
 	await scroller.evaluate((element) => {
 		element.scrollTop = 90;
 	});
@@ -5776,7 +5772,7 @@ test("parks a stuck agenda day below the year band, not under it", async ({
 	// day label out of sight underneath it.
 	const geometry = await page.evaluate(() => {
 		const area = document
-			.querySelector('[class*="calendarArea"]')!
+			.querySelector('[data-calendar-area]')!
 			.getBoundingClientRect();
 		const year = document
 			.querySelector('[class*="agendaYear"]')!
@@ -7477,7 +7473,7 @@ test("ui catalogue", async ({ browser, page }) => {
 	// A delete and its undo offer, then the same delete refused by the server.
 	// Both are the toast, which is the only thing in the product that speaks
 	// after the fact, and neither had a shot in this catalogue before.
-	const toast = page.locator('[class*="workspaceToast"]');
+	const toast = page.locator('[data-slot="toast-region"][data-placement="workspace"]');
 	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-23`);
 	await page.waitForLoadState("networkidle");
 	try {
@@ -7729,7 +7725,7 @@ for (const width of [1280, 768]) test(`keeps the sidebar's Pages label and manag
   // Preserve the original label/list spacing contract as well as the new scroll contract.
   const gap = await sidebar.evaluate(element => {
     const heading = element.querySelector("#pages-label")!;
-    const list = element.querySelector('[class*="pageList"]')!;
+    const list = element.querySelector('[data-page-list]')!;
     return list.getBoundingClientRect().top - heading.getBoundingClientRect().bottom;
   });
   expect(gap).toBeGreaterThanOrEqual(8);
@@ -7749,7 +7745,7 @@ for (const width of [1280, 768]) test(`keeps the sidebar's Pages label and manag
   }
   await expect(last).toBeFocused();
   await expect(last).toBeInViewport({ ratio: 1 });
-  expect(await sidebar.locator('[class*="sidebarScroll"]').evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+  expect(await sidebar.locator('[data-sidebar-scroll]').evaluate(element => element.scrollTop)).toBeGreaterThan(0);
   expect(await management.boundingBox()).toEqual(before);
   for (const name of ["Calendars", "Connections", "Settings"]) {
     await expect(management.getByRole("button", { name, exact: true })).toBeInViewport({ ratio: 1 });
@@ -8318,7 +8314,7 @@ test("restores an event reminder's inherited setting from its menu", async ({ pa
   await dialog.getByRole("button", { name: "30 min", exact: true }).click();
   await page.getByRole("menuitem", { name: "Use inherited setting" }).click();
   await expect(dialog.getByRole("button", { name: "10 min", exact: true })).toBeVisible();
-  await expect(page.locator('[class*="toastRegion"]')).toContainText("Reminder follows its inherited setting again.");
+  await expect(page.locator('[data-slot="toast-region"]')).toContainText("Reminder follows its inherited setting again.");
   expect(writes).toEqual([{ method: "PUT", body: { rule: null } }]);
   await expectNoAccessibilityViolations(page);
   await page.screenshot({ path: testInfo.outputPath("inherited-reminder.png"), fullPage: true });

@@ -1,7 +1,3 @@
-import { Popover, PopoverContent, PopoverTrigger } from "~/ui/Popover";
-import { Row } from "~/ui/Row";
-import { Switch } from "~/ui/Switch";
-import { SettingsSection } from "~/ui/SettingsSection";
 import {
   CalendarPlus,
   Clock,
@@ -14,14 +10,16 @@ import {
   Search,
 } from "lucide-react";
 import { useState, useRef, type RefObject, type ReactNode } from "react";
-import { Button, IconButton } from "~/ui/Button";
+import { Button } from "~/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
+import { RowToggle } from "~/components/ui/row";
+import { Segmented } from "~/components/ui/segmented";
+import { Select } from "~/components/ui/select";
+import { SettingsSection } from "~/components/ui/settings-section";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "~/ui/Menu";
-import { Segmented } from "~/ui/Segmented";
-import { Select } from "~/ui/Select";
 import { useNarrowViewport } from "~/design/use-narrow-viewport";
 import { offeredViews, type CalendarViewId } from "../view-registry";
 import { CalendarCoverageInfo } from "./CalendarCoverageInfo";
-import styles from "./workspace.module.css";
 
 type ToolbarProps = {
   taskLayoutControl?: ReactNode;
@@ -78,156 +76,206 @@ export function Toolbar({
   const availabilityTriggerRef = useRef<HTMLButtonElement>(null);
   const availabilityListAfterClose = useRef(false);
 
+  const viewOptions = offeredViews().map((view) => ({
+    label: view.label,
+    value: view.id as CalendarViewId,
+  }));
+
   return (
-    <header className={styles.toolbar}>
+    /* The toolbar is a size container: beside an inspector the calendar can be
+       narrow on a wide window, and the controls answer to the room they have. */
+    <header className="@container relative z-20 min-w-0 border-b border-border-subtle bg-canvas">
       {/* The page name lives in the sidebar, its settings in the page dialog and
           the theme in Settings, so the toolbar carries no page strip at all. */}
-      <h1 className={styles.visuallyHidden}>{pageTitle}</h1>
+      <h1 className="sr-only">{pageTitle}</h1>
 
-      <div className={styles.toolbarControls}>
-        <div className={styles.dateControls}>
-          <IconButton
-            className={styles.sidebarMenuButton}
-            label="Open navigation"
+      <div className="flex min-h-16 items-center gap-3 px-3 py-3 md:px-6 md:py-4 @max-default:flex-wrap @max-default:gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2 @max-default:basis-full @max-default:flex-wrap">
+          <Button
+            aria-label="Open navigation"
+            className="md:hidden"
             ref={navigationTriggerRef}
-            size="compact"
+            size="icon-compact"
+            title="Open navigation"
+            variant="ghost"
             onClick={onOpenSidebar}
           >
-            <MenuIcon aria-hidden="true" size={18} strokeWidth={1.6} />
-          </IconButton>
-          {activeView !== "tasks" ? <Button
-            className={styles.todayButton}
-            size="compact"
-            variant="secondary"
-            onClick={onToday}
-          >
-            Today
-          </Button> : null}
+            <MenuIcon aria-hidden="true" strokeWidth={1.6} />
+          </Button>
+          {/* From 1024 px the mini calendar owns Today and the month arrows. */}
+          {activeView !== "tasks" ? (
+            <Button className="md:hidden" size="compact" variant="secondary" onClick={onToday}>
+              Today
+            </Button>
+          ) : null}
           {periodNavigation && !narrow ? (
-            <div className={styles.navPair}>
-              <IconButton
-                label={`Previous ${periodName}`}
-                size="compact"
+            <div className="flex flex-none gap-0.5 md:hidden">
+              <Button
+                aria-label={`Previous ${periodName}`}
+                size="icon-compact"
+                title={`Previous ${periodName}`}
+                variant="ghost"
                 onClick={() => onPeriodChange(-1)}
               >
-                <ChevronLeft aria-hidden="true" size={18} strokeWidth={1.6} />
-              </IconButton>
-              <IconButton
-                label={`Next ${periodName}`}
-                size="compact"
+                <ChevronLeft aria-hidden="true" strokeWidth={1.6} />
+              </Button>
+              <Button
+                aria-label={`Next ${periodName}`}
+                size="icon-compact"
+                title={`Next ${periodName}`}
+                variant="ghost"
                 onClick={() => onPeriodChange(1)}
               >
-                <ChevronRight aria-hidden="true" size={18} strokeWidth={1.6} />
-              </IconButton>
+                <ChevronRight aria-hidden="true" strokeWidth={1.6} />
+              </Button>
             </div>
           ) : null}
-          <p className={styles.monthTitle} data-view={activeView}>
+          <p
+            className="min-w-0 truncate font-serif text-22 leading-snug text-foreground md:text-24 md:motion-safe:transition-all md:motion-safe:duration-panel lg:text-28 md:data-[view=multi-week]:text-19 lg:data-[view=multi-week]:text-22 @max-wide:text-22 @max-default:flex-1 @max-default:overflow-visible @max-default:whitespace-normal @max-default:text-balance"
+            data-view={activeView}
+          >
             {periodLabel}
           </p>
-          {taskLayoutControl ? <div className={styles.taskLayoutControl}>{taskLayoutControl}</div> : null}
+          {taskLayoutControl ? <div className="ml-4 flex-none">{taskLayoutControl}</div> : null}
         </div>
 
-        {/* Container queries expose exactly one view choice. The calendar can
-            be compact beside an inspector even on a wide desktop window. */}
+        {/* Exactly one view choice is on screen: pills where they fit, a
+            select where they do not. From 1024 px the pills always win. */}
         <Select
-          className={styles.viewSelect}
+          className="hidden max-md:@max-wide:inline-flex"
           label="Calendar view"
-          options={offeredViews().map((view) => ({
-            label: view.label,
-            value: view.id as CalendarViewId,
-          }))}
+          options={viewOptions}
           size="compact"
           value={activeView}
           onChange={(value) => onViewChange(value as CalendarViewId)}
         />
 
-        <div className={styles.toolbarActions}>
+        <div className="ml-auto flex min-w-0 flex-none items-center justify-end gap-2 md:@max-default:ml-0 md:@max-default:flex-wrap md:@max-default:justify-start">
           {coverageNotice ? <CalendarCoverageInfo message={coverageNotice} /> : null}
-          {availability ? <Popover open={availabilityOpen} onOpenChange={setAvailabilityOpen}>
-            <PopoverTrigger asChild><IconButton label="Availability" ref={availabilityTriggerRef} size="compact"><Clock aria-hidden="true" size={17} strokeWidth={1.6} /></IconButton></PopoverTrigger>
-            <PopoverContent aria-label="Grid availability" align="end" onCloseAutoFocus={event => { if (availabilityListAfterClose.current) { event.preventDefault(); availabilityListAfterClose.current = false; availabilityTriggerRef.current?.focus(); availability.onOpenList(availabilityTriggerRef.current); } }}>
-              <SettingsSection title="Availability" help="Selected availability is shown only on this page in this session.">
-                <Row label="Show selected availability" trailing={<Switch label="Show selected availability" checked={availability.shown} onCheckedChange={availability.onToggle} />} />
-                <Button variant="secondary" onClick={() => { availabilityListAfterClose.current = true; setAvailabilityOpen(false); }}>Sources and interval list</Button>
-              </SettingsSection>
-            </PopoverContent>
-          </Popover> : null}
-          <IconButton
-            className={styles.searchButton}
-            label="Search events and actions"
+          {availability ? (
+            <Popover open={availabilityOpen} onOpenChange={setAvailabilityOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  aria-label="Availability"
+                  ref={availabilityTriggerRef}
+                  size="icon-compact"
+                  title="Availability"
+                  variant="ghost"
+                >
+                  <Clock aria-hidden="true" strokeWidth={1.6} />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                aria-label="Grid availability"
+                align="end"
+                onCloseAutoFocus={(event) => {
+                  if (!availabilityListAfterClose.current) return;
+                  event.preventDefault();
+                  availabilityListAfterClose.current = false;
+                  availabilityTriggerRef.current?.focus();
+                  availability.onOpenList(availabilityTriggerRef.current);
+                }}
+              >
+                <div className="grid gap-3 p-4">
+                  <SettingsSection title="Availability" help="Shown only on this page, for this session.">
+                    <RowToggle
+                      checked={availability.shown}
+                      label="Show selected availability"
+                      size="compact"
+                      onCheckedChange={availability.onToggle}
+                    />
+                  </SettingsSection>
+                  <Button
+                    size="compact"
+                    variant="secondary"
+                    onClick={() => {
+                      availabilityListAfterClose.current = true;
+                      setAvailabilityOpen(false);
+                    }}
+                  >
+                    Sources and intervals
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          ) : null}
+          <Button
+            aria-label="Search events and actions"
             ref={searchTriggerRef}
-            size="compact"
+            size="icon-compact"
+            title="Search events and actions"
+            variant="ghost"
             onClick={onOpenSearch}
           >
-            <Search aria-hidden="true" size={17} strokeWidth={1.6} />
-          </IconButton>
+            <Search aria-hidden="true" strokeWidth={1.6} />
+          </Button>
           <Segmented<CalendarViewId>
-            className={styles.viewSwitcher}
+            className="hidden flex-none md:inline-flex @min-wide:inline-flex md:@max-default:max-w-full"
             label="Calendar view"
-            options={offeredViews().map((view) => ({
-              label: view.label,
-              value: view.id as CalendarViewId,
-            }))}
+            options={viewOptions}
             value={activeView}
             onChange={onViewChange}
           />
           {canCreateEvents || canCreateMeetings || canCreateTasks ? (
-            <Menu>
-              <MenuTrigger asChild>
-                <IconButton
-                  className={styles.eventButton}
-                  label="Create event, meeting or task"
-                  ref={createTriggerRef}
-                  size="compact"
-                  variant="primary"
-                >
-                  <Plus aria-hidden="true" size={18} strokeWidth={1.7} />
-                </IconButton>
-              </MenuTrigger>
-              <MenuContent
-                align="end"
-                label="Create"
-                mobileSurface="anchored"
-                onCloseAutoFocus={(event) => {
-                  const action = createAfterClose.current;
-                  if (!action) return;
-                  createAfterClose.current = null;
-                  const target = createTriggerRef.current;
-                  if (!target) return;
-                  // Finish the outgoing menu's focus lifecycle before mounting
-                  // the form, so it cannot dismiss the newly opened popover.
-                  event.preventDefault();
-                  if (action === "meeting") onCreateMeeting(target);
-                  else onCreateEvent(target);
-                }}
-              >
-                <MenuItem
-                  disabled={!canCreateEvents}
-                  icon={<CalendarPlus size={16} strokeWidth={1.7} />}
-                  onSelect={() => {
-                    createAfterClose.current = "event";
+            /* On a phone the one create action floats in thumb reach, clear of
+               the home indicator; the toast rises above it. */
+            <span className="flex flex-none max-sm:fixed max-sm:right-4 max-sm:bottom-4 max-sm:z-40 max-sm:mb-safe-bottom">
+              <Menu>
+                <MenuTrigger asChild>
+                  <Button
+                    aria-label="Create event, meeting or task"
+                    ref={createTriggerRef}
+                    size={narrow ? "fab" : "icon-compact"}
+                    title="Create event, meeting or task"
+                  >
+                    <Plus aria-hidden="true" strokeWidth={1.7} />
+                  </Button>
+                </MenuTrigger>
+                <MenuContent
+                  align="end"
+                  label="Create"
+                  mobileSurface="anchored"
+                  onCloseAutoFocus={(event) => {
+                    const action = createAfterClose.current;
+                    if (!action) return;
+                    createAfterClose.current = null;
+                    const target = createTriggerRef.current;
+                    if (!target) return;
+                    // Finish the outgoing menu's focus lifecycle before mounting
+                    // the form, so it cannot dismiss the newly opened popover.
+                    event.preventDefault();
+                    if (action === "meeting") onCreateMeeting(target);
+                    else onCreateEvent(target);
                   }}
                 >
-                  Event
-                </MenuItem>
-                <MenuItem
-                  disabled={!canCreateMeetings}
-                  icon={<Users size={16} strokeWidth={1.7} />}
-                  onSelect={() => {
-                    createAfterClose.current = "meeting";
-                  }}
-                >
-                  Meeting
-                </MenuItem>
-                <MenuItem
-                  disabled={!canCreateTasks}
-                  icon={<ListTodo size={16} strokeWidth={1.7} />}
-                  onSelect={onCreateTask}
-                >
-                  Task
-                </MenuItem>
-              </MenuContent>
-            </Menu>
+                  <MenuItem
+                    disabled={!canCreateEvents}
+                    icon={<CalendarPlus size={16} strokeWidth={1.7} />}
+                    onSelect={() => {
+                      createAfterClose.current = "event";
+                    }}
+                  >
+                    Event
+                  </MenuItem>
+                  <MenuItem
+                    disabled={!canCreateMeetings}
+                    icon={<Users size={16} strokeWidth={1.7} />}
+                    onSelect={() => {
+                      createAfterClose.current = "meeting";
+                    }}
+                  >
+                    Meeting
+                  </MenuItem>
+                  <MenuItem
+                    disabled={!canCreateTasks}
+                    icon={<ListTodo size={16} strokeWidth={1.7} />}
+                    onSelect={onCreateTask}
+                  >
+                    Task
+                  </MenuItem>
+                </MenuContent>
+              </Menu>
+            </span>
           ) : null}
         </div>
       </div>

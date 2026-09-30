@@ -17,8 +17,10 @@ const buttonVariants = cva(
         primary: "bg-primary text-primary-foreground hover:enabled:bg-primary/90",
         secondary:
           "border-border bg-transparent text-foreground hover:enabled:border-border-strong hover:enabled:bg-raised aria-expanded:border-border-strong aria-expanded:bg-raised aria-pressed:border-border-strong aria-pressed:bg-raised",
+        // Inside a sumi-filled surface (`data-inverse`, e.g. the selected page
+        // row) the quiet action takes the fill's ink instead of vanishing into it.
         ghost:
-          "bg-transparent text-foreground-secondary hover:enabled:bg-raised hover:enabled:text-foreground aria-expanded:bg-raised aria-expanded:text-foreground aria-pressed:bg-raised aria-pressed:text-foreground",
+          "bg-transparent text-foreground-secondary hover:enabled:bg-raised hover:enabled:text-foreground aria-expanded:bg-raised aria-expanded:text-foreground aria-pressed:bg-raised aria-pressed:text-foreground in-data-[inverse]:text-primary-foreground/70 in-data-[inverse]:hover:enabled:bg-primary-foreground/15 in-data-[inverse]:hover:enabled:text-primary-foreground in-data-[inverse]:aria-expanded:bg-primary-foreground/15 in-data-[inverse]:aria-expanded:text-primary-foreground",
         destructive: "bg-shu text-shu-foreground hover:enabled:bg-shu/90",
         link: "rounded-sm text-foreground underline decoration-border-strong underline-offset-4 hover:enabled:decoration-current",
       },
@@ -27,6 +29,8 @@ const buttonVariants = cva(
         compact: "h-control-compact px-3",
         icon: "size-control",
         "icon-compact": "size-control-compact",
+        // The phone's floating create action: round, in thumb reach, lifted off the grid.
+        fab: "size-14 rounded-full shadow-overlay [&_svg:not([class*='size-'])]:size-5",
       },
     },
     compoundVariants: [{ variant: "link", className: "h-auto px-0" }],
