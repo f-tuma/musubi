@@ -79,11 +79,8 @@ import {
   type SavePageResult,
 } from "../page-editor";
 import type { CalendarViewId } from "../view-registry";
-import { AccountDialog } from "./AccountDialog";
 import { AgendaView } from "./AgendaView";
-import { CalendarTransferDialog } from "./CalendarTransferDialog";
 import { ProviderMeetingCreateDialog, isMeetingCalendarCandidate } from "./ProviderMeetingCreateDialog";
-import { ConnectionsDialog } from "./ConnectionsDialog";
 import { MonthCalendar } from "./MonthCalendar";
 import { MultiWeekCalendar } from "./MultiWeekCalendar";
 import { NewPageDialog, PageSettingsDialog } from "./PageSettingsDialog";
@@ -94,7 +91,7 @@ import { SearchDialog, type SearchAccountSource } from "./SearchDialog";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 import { ShareCalendarDialog } from "./ShareCalendarDialog";
 import { Sidebar } from "./Sidebar";
-import { SettingsDialog } from "./SettingsDialog";
+import { SettingsWindow, type SettingsSectionId } from "./settings/SettingsWindow";
 import { TimeGridView } from "./TimeGridView";
 import { TaskList } from "./TaskList";
 import { Toolbar } from "./Toolbar";
@@ -529,18 +526,23 @@ export function Workspace({
     timeLabel: string;
     title: string;
   }>();
-  const [calendarTransfersOpen, setCalendarTransfersOpen] = useState(false);
   const [shareCalendar, setShareCalendar] = useState<Calendar | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
-  const [connectionsOpen, setConnectionsOpen] = useState(false);
+  // One settings window; the section says which entry point opened it.
+  const [settingsSection, setSettingsSection] = useState<SettingsSectionId | null>(null);
   const [connectionsReturnFocus, setConnectionsReturnFocus] = useState<HTMLElement | null>(null);
   // Coming back from a provider's consent screen, the dialog that started the
   // link is long gone — so it reopens itself onto the freshly imported account.
   // Derived rather than set in an effect, and dismissible like any other close.
   const [linkNoticeDismissed, setLinkNoticeDismissed] = useState(false);
-  const showConnections =
-    connectionsOpen || (Boolean(providerLink?.linked) && !linkNoticeDismissed);
+  const activeSettingsSection: SettingsSectionId | null =
+    settingsSection ?? (providerLink?.linked && !linkNoticeDismissed ? "connections" : null);
+  const showConnections = activeSettingsSection === "connections";
+  // Kept after closing until the next opening replaces it: the dialog hands
+  // focus back once its exit animation ends, after this state has moved on.
+  function openSettings(section: SettingsSectionId, returnFocus: HTMLElement | null = null) {
+    setConnectionsReturnFocus(returnFocus);
+    setSettingsSection(section);
+  }
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   // The event a time write is in flight for. One gesture at a time, so one id.
   const [busyEventId, setBusyEventId] = useState<string>();
@@ -972,15 +974,15 @@ export function Workspace({
         }}
         onManageAccount={() => {
           setSidebarOpen(false);
-          setAccountOpen(true);
+          openSettings("account");
         }}
         onManageCalendars={() => {
           setSidebarOpen(false);
-          setCalendarTransfersOpen(true);
+          openSettings("calendars");
         }}
         onManageConnections={() => {
           setSidebarOpen(false);
-          setConnectionsOpen(true);
+          openSettings("connections");
         }}
         onEditPage={(page) => {
           setSidebarOpen(false);
@@ -993,7 +995,7 @@ export function Workspace({
         onModalStateChange={setSidebarModal}
         onOpenSettings={() => {
           setSidebarOpen(false);
-          setSettingsOpen(true);
+          openSettings("general");
         }}
         onPageChange={handlePageChange}
         onReorderPages={(pageIds) =>
@@ -1056,7 +1058,7 @@ export function Workspace({
         <Toolbar
           taskLayoutControl={activeView === "tasks" ? <TaskLayoutSwitch value={taskLayout ?? localTaskLayout} onChange={next => { setLocalTaskLayout(next); onTaskLayoutChange?.(next); }} /> : undefined}
           activeView={activeView}
-          availability={gridAvailability.available ? { shown: gridAvailability.shown, onToggle: gridAvailability.toggle, onOpenList: target => { setConnectionsReturnFocus(target); setConnectionsOpen(true); } } : undefined}
+          availability={gridAvailability.available ? { shown: gridAvailability.shown, onToggle: gridAvailability.toggle, onOpenList: target => openSettings("connections", target) } : undefined}
           coverageNotice={activeView === "tasks" ? null : coverageNotice}
           canCreateEvents={editableCalendars.length > 0}
           canCreateMeetings={!offline && calendars.some(isMeetingCalendarCandidate)}
@@ -1426,24 +1428,6 @@ export function Workspace({
           weekStartsOn={settings.weekStartsOn}
         />
       ) : null}
-      <CalendarTransferDialog
-        calendars={calendars}
-        onCreate={onCreateCalendar}
-        onCreateMeeting={(calendar, returnFocus) => setMeetingCreate({ initialCalendarID: calendar.id, returnFocus })}
-        onDisconnect={onDisconnectExternalCalendar}
-        onExport={onExportCalendar}
-        onImport={onImportCalendar}
-        onManageMembers={(calendar) => {
-          setCalendarTransfersOpen(false);
-          setShareCalendar(calendar);
-        }}
-        onNotice={notify}
-        onOpenChange={setCalendarTransfersOpen}
-        onRemove={onRemoveCalendar}
-        onUpdate={onUpdateCalendar}
-        open={calendarTransfersOpen}
-        reminders={reminders}
-      />
       {meetingCreate ? (
         <ProviderMeetingCreateDialog
           calendars={calendars}
@@ -1451,33 +1435,6 @@ export function Workspace({
           initialDate={date}
           returnFocus={meetingCreate.returnFocus}
           onClose={() => setMeetingCreate(undefined)}
-        />
-      ) : null}
-      {showConnections ? (
-        <ConnectionsDialog
-          returnFocus={connectionsReturnFocus}
-          calendars={calendars}
-          importFailed={providerLink?.error}
-          importing={providerLink?.importing}
-          onNotice={notify}
-          onOpenChange={(open) => {
-            if (!open) {
-              setConnectionsOpen(false);
-              setConnectionsReturnFocus(null);
-              setLinkNoticeDismissed(true);
-            }
-          }}
-          open
-          userId={user.id}
-        />
-      ) : null}
-      {accountOpen ? (
-        <AccountDialog
-          onNotice={notify}
-          onOpenChange={(open) => {
-            if (!open) setAccountOpen(false);
-          }}
-          open
         />
       ) : null}
       {newPageOpen ? (
@@ -1538,19 +1495,39 @@ export function Workspace({
           userId={user.id}
         />
       ) : null}
-      <SettingsDialog
+      <SettingsWindow
+        calendars={calendars}
         isAdmin={isAdmin}
-        reminders={reminders}
-        onAdopt={onAdoptSettings}
-        onLoad={onGetSettingsDocument}
-        onManageAccount={() => {
-          setSettingsOpen(false);
-          setAccountOpen(true);
+        onAdoptSettings={onAdoptSettings}
+        onCreateCalendar={onCreateCalendar}
+        onCreateMeeting={(calendar, returnFocus) => setMeetingCreate({ initialCalendarID: calendar.id, returnFocus })}
+        onDisconnectCalendar={onDisconnectExternalCalendar}
+        onExportCalendar={onExportCalendar}
+        onImportCalendar={onImportCalendar}
+        onLoadSettings={onGetSettingsDocument}
+        onManageMembers={(calendar) => {
+          setSettingsSection(null);
+          setLinkNoticeDismissed(true);
+          setShareCalendar(calendar);
         }}
         onNotice={notify}
-        onOpenChange={setSettingsOpen}
-        onPatch={onPatchSettings}
-        open={settingsOpen}
+        onOpenChange={(open) => {
+          if (open) return;
+          setSettingsSection(null);
+          // Coming back from a provider opened this window; closing it is the
+          // answer to that notice too.
+          setLinkNoticeDismissed(true);
+        }}
+        onPatchSettings={onPatchSettings}
+        onRemoveCalendar={onRemoveCalendar}
+        onSectionChange={setSettingsSection}
+        onUpdateCalendar={onUpdateCalendar}
+        open={activeSettingsSection !== null}
+        providerLink={providerLink}
+        reminders={reminders}
+        returnFocus={connectionsReturnFocus}
+        section={activeSettingsSection ?? "general"}
+        userId={user.id}
       />
     </div>
     </CalendarTaskContext.Provider>

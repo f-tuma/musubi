@@ -1,7 +1,10 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ReactElement } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
-import { ConnectionsDialog } from "./ConnectionsDialog";
+import { TooltipProvider } from "~/components/ui/tooltip";
 import type * as Connections from "~/calendar/connections";
+import { ConnectionsPanel } from "./ConnectionsPanel";
 
 const { linkSocial, refreshConnectedCalendars } = vi.hoisted(() => ({ linkSocial: vi.fn(), refreshConnectedCalendars: vi.fn() }));
 vi.mock("~/auth/auth-client", () => ({ authClient: { linkSocial } }));
@@ -12,10 +15,15 @@ vi.mock("~/calendar/connections", async (original) => ({
 vi.mock("~/calendar/federated-workspace", () => ({ useFederatedWorkspace: () => ({ data: { servers: [] } }) }));
 beforeEach(() => { linkSocial.mockReset().mockResolvedValue({}); refreshConnectedCalendars.mockReset().mockResolvedValue(undefined); window.sessionStorage.clear(); });
 
-it.each([["google", false], ["microsoft", false], ["google", true], ["microsoft", true]] as const)("ConnectionsDialog sends explicit optional Tasks choice to %s; reconnect=%s", async (provider, reconnect) => {
-  render(<ConnectionsDialog calendars={reconnect ? [{ id: "tasks", name: "Tasks", color: "#7A8BA3", creatorID: "owner", role: "owner", members: [], accountId: "account", provider, supportsTasks: true, supportsEvents: false, syncStatus: "reconnect_required" }] : []} open onNotice={vi.fn()} onOpenChange={vi.fn()} userId="owner" />);
-  const taskToggle = screen.getByRole("button", { name: /Include Tasks/ });
-  expect(taskToggle.getAttribute("aria-pressed")).toBe("true");
+function mount(element: ReactElement) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={client}><TooltipProvider>{element}</TooltipProvider></QueryClientProvider>);
+}
+
+it.each([["google", false], ["microsoft", false], ["google", true], ["microsoft", true]] as const)("ConnectionsPanel sends explicit optional Tasks choice to %s; reconnect=%s", async (provider, reconnect) => {
+  mount(<ConnectionsPanel calendars={reconnect ? [{ id: "tasks", name: "Tasks", color: "#7A8BA3", creatorID: "owner", role: "owner", members: [], accountId: "account", provider, supportsTasks: true, supportsEvents: false, syncStatus: "reconnect_required" }] : []} onNotice={vi.fn()} userId="owner" />);
+  const taskToggle = screen.getByRole("checkbox", { name: "Include Tasks" }) as HTMLInputElement;
+  expect(taskToggle.checked).toBe(true);
   const button = screen.getByRole("button", { name: reconnect ? "Reconnect" : provider === "google" ? "Google Calendar" : "Outlook" });
   const tasks = provider === "google" ? "https://www.googleapis.com/auth/tasks" : "Tasks.ReadWrite";
   for (const includeTasks of [true, false]) {
@@ -32,12 +40,11 @@ it.each([["google", false], ["microsoft", false], ["google", true], ["microsoft"
   }
 });
 
-
 it("refresh remains reachable without event mirrors and reports a failed discovery", async () => {
   let reject!: (error: Error) => void;
   refreshConnectedCalendars.mockImplementation(() => new Promise((_, fail) => { reject = fail; }));
   const onNotice = vi.fn();
-  render(<ConnectionsDialog calendars={[]} open onNotice={onNotice} onOpenChange={vi.fn()} userId="owner" />);
+  mount(<ConnectionsPanel calendars={[]} onNotice={onNotice} userId="owner" />);
   const refresh = screen.getByRole("button", { name: "Refresh connected calendars" });
   fireEvent.click(refresh);
   await waitFor(() => expect(refresh.hasAttribute("disabled")).toBe(true));

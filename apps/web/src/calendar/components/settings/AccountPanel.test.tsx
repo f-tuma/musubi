@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { uploadAvatar } from "~/api/resources";
-import { AccountDialog } from "./AccountDialog";
+import { AccountPanel } from "./AccountPanel";
 
 vi.mock("~/api/resources", () => ({
   deleteAccount: vi.fn(),
@@ -25,7 +25,7 @@ afterEach(() => {
 
 it("opens the photo chooser from the avatar with the keyboard and restores focus on cancel", async () => {
   const user = userEvent.setup();
-  render(<AccountDialog open onNotice={vi.fn()} onOpenChange={vi.fn()} />);
+  render(<AccountPanel onClose={vi.fn()} onNotice={vi.fn()} />);
 
   const avatar = screen.getByRole("button", { name: "Change photo" });
   const input = screen.getByLabelText("Change profile photo");
@@ -39,8 +39,19 @@ it("opens the photo chooser from the avatar with the keyboard and restores focus
   await user.keyboard(" ");
   expect(openPicker).toHaveBeenCalledTimes(2);
 
-  screen.getByRole("button", { name: "Close account" }).focus();
+  screen.getByRole("button", { name: /Display name/ }).focus();
   fireEvent(input, new Event("cancel", { bubbles: true }));
   expect(document.activeElement).toBe(avatar);
   expect(uploadAvatar).not.toHaveBeenCalled();
+});
+
+it("keeps deletion behind a typed confirmation", async () => {
+  const user = userEvent.setup();
+  render(<AccountPanel onClose={vi.fn()} onNotice={vi.fn()} />);
+
+  await user.click(screen.getByRole("button", { name: /Delete account/ }));
+  const confirm = screen.getByRole("button", { name: "Delete account" });
+  expect((confirm as HTMLButtonElement).disabled).toBe(true);
+  await user.type(screen.getByRole("textbox", { name: "Type Aki to confirm" }), "Aki");
+  expect((confirm as HTMLButtonElement).disabled).toBe(false);
 });

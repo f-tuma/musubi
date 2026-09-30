@@ -3,15 +3,16 @@ import { useId, useRef, useState } from "react";
 import { AVAILABILITY_SOURCE_LIMIT, AvailabilityRequestSchema, type AvailabilityRequest } from "@musubi/types";
 import { getServerOrigin } from "~/api/query-keys";
 import { getAvailability, getAvailabilitySources, selectAvailabilitySource } from "../availability";
-import { Button, buttonClassName } from "~/ui/Button";
-import { Dialog } from "~/ui/Dialog";
-import { Field } from "~/ui/Field";
-import { InlineError } from "~/ui/InlineError";
-import { Row } from "~/ui/Row";
-import { SettingsSection } from "~/ui/SettingsSection";
-import { Switch } from "~/ui/Switch";
+import { Button } from "~/components/ui/button";
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { Field } from "~/components/ui/field";
+import { InlineError } from "~/components/ui/inline-error";
+import { Input } from "~/components/ui/input";
+import { ItemGroup } from "~/components/ui/item";
+import { Row } from "~/components/ui/row";
+import { SettingsSection } from "~/components/ui/settings-section";
+import { Switch } from "~/components/ui/switch";
 import { useAsyncAction } from "~/ui/useAsyncAction";
-import styles from "./styles/availability.module.css";
 export function AvailabilitySection({ userId, onReconnect, onRefresh, connectionBusy = false }: {
   userId: string;
   onReconnect: () => void;
@@ -76,7 +77,7 @@ export function AvailabilitySection({ userId, onReconnect, onRefresh, connection
         } />
       ) : sources.data?.sources.map(source => (
         <Row key={source.id} label={source.label}
-          detail={`${source.accountLabel}${source.reconnectRequired ? " · Reconnect Google to grant availability access" : ""}`}
+          detail={source.reconnectRequired ? `${source.accountLabel} · Reconnect Google` : source.accountLabel}
           trailing={<Switch label={`Use ${source.label} for availability`} checked={source.enabled}
             disabled={busy || (!source.enabled && (enabled.length >= AVAILABILITY_SOURCE_LIMIT || source.reconnectRequired))}
             onCheckedChange={value => toggle(source.id, value, source.generation)} />}
@@ -95,47 +96,70 @@ export function AvailabilitySection({ userId, onReconnect, onRefresh, connection
           setRequested(undefined); setError(""); setTrigger(event.currentTarget);
         }}>Check availability</Button>
       } /> : null}
-      {enabled.length >= AVAILABILITY_SOURCE_LIMIT && !trigger ? <InlineError className={styles.error}>{limitMessage}</InlineError> : null}
-      {error && !trigger ? <InlineError className={styles.error}>{error}</InlineError> : null}
     </SettingsSection>
-    {setupTrigger ? <Dialog open title="Set up Google availability" closeLabel="Close availability setup" returnFocus={setupTrigger}
-      onOpenChange={open => { if (!open) setSetupTrigger(null); }}
-      footer={<>
-        <a className={buttonClassName({ variant: "secondary" })} href="https://support.google.com/calendar/answer/37082?hl=en" target="_blank" rel="noreferrer">Google sharing guide</a>
-        <Button disabled={busy} loading={refreshAction.busy} onClick={() => void refreshAction.run(async () => {
-          await onRefresh(); setSetupTrigger(null);
-        }, "Could not refresh connected calendars.")}>Refresh connected calendars</Button>
-      </>}
-    >
-      <SettingsSection inset={false} title="Add a calendar" help="Calendars with event details already appear in your regular calendar list.">
-        <Row label="1. Ask the owner to share" detail={<>In Google Calendar, share with the Google account you connected to Musubi. Choose <strong>See only free/busy (hide details)</strong>.</>} />
-        <Row label="2. Add it in Google Calendar" detail="Open the sharing email and follow its link using that same Google account." />
-        <Row label="3. Refresh here, then switch it on" detail="Refresh connected calendars below. Turn on the new calendar in this list, then choose Check availability. If asked, reconnect Google to allow access." />
-      </SettingsSection>
-      {refreshAction.error ? <InlineError>{refreshAction.error}</InlineError> : null}
+    {enabled.length >= AVAILABILITY_SOURCE_LIMIT && !trigger ? <InlineError>{limitMessage}</InlineError> : null}
+    {error && !trigger ? <InlineError>{error}</InlineError> : null}
+    {setupTrigger ? <Dialog open onOpenChange={open => { if (!open) setSetupTrigger(null); }}>
+      <DialogContent closeLabel="Close availability setup" returnFocus={setupTrigger} size="form">
+        <DialogHeader>
+          <DialogTitle>Set up Google availability</DialogTitle>
+          <DialogDescription>For calendars shared without event details.</DialogDescription>
+        </DialogHeader>
+        <DialogBody>
+          <SettingsSection title="Add a calendar" variant="plain">
+            <ol className="grid list-decimal gap-3 pl-5 text-13 leading-normal text-foreground-secondary">
+              <li>Ask the owner to share it with the Google account you connected, choosing <strong className="font-medium text-foreground">See only free/busy (hide details)</strong>.</li>
+              <li>Open the sharing email and follow its link with that same account.</li>
+              <li>Refresh here, switch the new calendar on, then check availability.</li>
+            </ol>
+          </SettingsSection>
+          {refreshAction.error ? <InlineError>{refreshAction.error}</InlineError> : null}
+        </DialogBody>
+        <DialogFooter>
+          <Button asChild variant="secondary">
+            <a href="https://support.google.com/calendar/answer/37082?hl=en" target="_blank" rel="noreferrer">Google sharing guide</a>
+          </Button>
+          <Button disabled={busy} loading={refreshAction.busy} onClick={() => void refreshAction.run(async () => {
+            await onRefresh(); setSetupTrigger(null);
+          }, "Could not refresh connected calendars.")}>Refresh connected calendars</Button>
+        </DialogFooter>
+      </DialogContent>
     </Dialog> : null}
-    {trigger ? <Dialog open title="Check availability" description="Busy intervals only, for the sources you selected. Times below are UTC. An unavailable source does not mean free." closeLabel="Close availability" returnFocus={trigger} onOpenChange={open => { if (!open) close(); }}
-      footer={<Button type="submit" form={formId} loading={result.isFetching} disabled={busy || sources.isFetching || sources.isError || overLimit}>Read busy intervals</Button>}>
-      <form id={formId} className={styles.rangeForm} onSubmit={event => {
-        event.preventDefault(); setError(""); setRequested(undefined);
-        if (busy || sources.isFetching || sources.isError) return;
-        if (overLimit) { setError(limitMessage); return; }
-        const parsed = AvailabilityRequestSchema.safeParse({ start: `${start}T00:00:00Z`, end: `${end}T00:00:00Z`, sourceIds: enabled.map(source => source.id) });
-        if (!parsed.success) { setError("Choose an end after the start, up to 42 days, and at least one source."); return; }
-        setRequested({ range: parsed.data, signature, attempt: ++attempt.current });
-      }}>
-        <Field label="From (UTC)"><input type="date" value={start} onChange={event => { setStart(event.target.value); setRequested(undefined); }} /></Field>
-        <Field label="Until (UTC, exclusive)"><input type="date" value={end} onChange={event => { setEnd(event.target.value); setRequested(undefined); }} /></Field>
-      </form>
-      {overLimit ? <InlineError>{limitMessage}</InlineError> : null}
-      {error ? <InlineError>{error}</InlineError> : null}
-      {result.isError || sources.isError ? <InlineError>Availability could not be verified. Try reading again; no free time is confirmed.</InlineError> : null}
-      {current ? <SettingsSection inset={false} title="Busy intervals" description={`Observed ${current.observedAt}`}>
-        {current.sources.map(source => <div key={source.sourceId}>
-          <Row label={enabled.find(item => item.id === source.sourceId)?.label ?? "Availability source"} detail={source.status === "available" ? (source.intervals.length ? "Busy during these intervals (UTC)" : "No busy intervals in the requested range") : source.status === "reconnect-required" ? "Reconnect Google — free time is unknown" : "Unavailable — free time is unknown"} />
-          {source.status === "available" ? source.intervals.map(interval => <Row key={`${interval.start}/${interval.end}`} label="Busy" detail={`${interval.start} – ${interval.end}`} />) : null}
-        </div>)}
-      </SettingsSection> : null}
+    {trigger ? <Dialog open onOpenChange={open => { if (!open) close(); }}>
+      <DialogContent closeLabel="Close availability" returnFocus={trigger} size="form">
+        <DialogHeader>
+          <DialogTitle>Check availability</DialogTitle>
+          <DialogDescription>Times are UTC. Unavailable does not mean free.</DialogDescription>
+        </DialogHeader>
+        <DialogBody>
+          <form id={formId} className="grid gap-4 sm:grid-cols-2" onSubmit={event => {
+            event.preventDefault(); setError(""); setRequested(undefined);
+            if (busy || sources.isFetching || sources.isError) return;
+            if (overLimit) { setError(limitMessage); return; }
+            const parsed = AvailabilityRequestSchema.safeParse({ start: `${start}T00:00:00Z`, end: `${end}T00:00:00Z`, sourceIds: enabled.map(source => source.id) });
+            if (!parsed.success) { setError("Choose an end after the start, up to 42 days, and at least one source."); return; }
+            setRequested({ range: parsed.data, signature, attempt: ++attempt.current });
+          }}>
+            <Field label="From (UTC)"><Input type="date" value={start} onChange={event => { setStart(event.target.value); setRequested(undefined); }} /></Field>
+            <Field label="Until (UTC, exclusive)"><Input type="date" value={end} onChange={event => { setEnd(event.target.value); setRequested(undefined); }} /></Field>
+          </form>
+          {overLimit ? <InlineError>{limitMessage}</InlineError> : null}
+          {error ? <InlineError>{error}</InlineError> : null}
+          {result.isError || sources.isError ? <InlineError>Availability could not be verified. Try reading again; no free time is confirmed.</InlineError> : null}
+          {current ? <SettingsSection title="Busy intervals" variant="plain">
+            <ItemGroup>
+              <Row label="Observed" value={current.observedAt} />
+            </ItemGroup>
+            {current.sources.map(source => <ItemGroup key={source.sourceId}>
+              <Row label={enabled.find(item => item.id === source.sourceId)?.label ?? "Availability source"} detail={source.status === "available" ? (source.intervals.length ? "Busy during these intervals (UTC)" : "No busy intervals in the requested range") : source.status === "reconnect-required" ? "Reconnect Google — free time is unknown" : "Unavailable — free time is unknown"} />
+              {source.status === "available" ? source.intervals.map(interval => <Row key={`${interval.start}/${interval.end}`} label="Busy" detail={`${interval.start} – ${interval.end}`} />) : null}
+            </ItemGroup>)}
+          </SettingsSection> : null}
+        </DialogBody>
+        <DialogFooter>
+          <Button type="submit" form={formId} loading={result.isFetching} disabled={busy || sources.isFetching || sources.isError || overLimit}>Read busy intervals</Button>
+        </DialogFooter>
+      </DialogContent>
     </Dialog> : null}
   </>;
 }
