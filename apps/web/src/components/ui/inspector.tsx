@@ -183,9 +183,19 @@ function placeWindow(node: HTMLElement, x: number, y: number, position?: RefObje
     x: Math.max(gutter, Math.min(x, window.innerWidth - bounds.width - gutter)),
     y: Math.max(gutter, Math.min(y, window.innerHeight - bounds.height - gutter)),
   };
+  // Inline placement wins over the centring the class gives an unmoved window.
+  node.style.inset = "auto";
+  node.style.margin = "0";
   node.style.left = `${next.x}px`;
   node.style.top = `${next.y}px`;
   if (position) position.current = next;
+}
+
+function clearPlacement(node: HTMLElement) {
+  node.style.inset = "";
+  node.style.margin = "";
+  node.style.left = "";
+  node.style.top = "";
 }
 
 const overlayClassName =
@@ -206,7 +216,7 @@ const presentationClassName = {
     "md:inset-y-0 md:right-0 md:left-auto md:m-0 md:h-full md:rounded-none md:rounded-l-sheet md:border-y-0 md:border-r-0 md:duration-panel md:data-[state=open]:slide-in-from-right md:data-[state=closed]:slide-out-to-right",
   // Placed by script from the first frame: centred, then wherever it is dragged.
   floating:
-    "md:inset-auto md:top-6 md:left-6 md:m-0 md:duration-fast md:[&_[data-inspector-header]]:cursor-grab md:[&_[data-inspector-header]]:touch-none md:[&_[data-inspector-move]]:cursor-grab md:[&_[data-inspector-move]]:touch-none data-[dragging]:cursor-grabbing data-[dragging]:select-none data-[dragging]:[&_[data-inspector-header]]:cursor-grabbing",
+    "md:inset-0 md:m-auto md:duration-fast md:[&_[data-inspector-header]]:cursor-grab md:[&_[data-inspector-header]]:touch-none md:[&_[data-inspector-move]]:cursor-grab md:[&_[data-inspector-move]]:touch-none data-[dragging]:cursor-grabbing data-[dragging]:select-none data-[dragging]:[&_[data-inspector-header]]:cursor-grabbing",
   // The workspace size matches Dialog's `wide` + `tall`, so expanding reads as the same window growing.
   expanded:
     "max-sm:top-0 max-sm:h-full max-sm:rounded-none max-sm:border-0 sm:inset-6 sm:mx-auto sm:my-auto sm:w-auto sm:max-w-wide data-[state=open]:animate-none",
@@ -245,17 +255,18 @@ export function InspectorContent({
     drag.current = null;
     delete node.dataset.dragging;
     if (!floating) {
-      node.style.left = "";
-      node.style.top = "";
+      clearPlacement(node);
       return;
     }
-    const rect = node.getBoundingClientRect();
-    // Keep placement when switching between a task detail and its editor.
+    // Keep placement when switching between a task detail and its editor, or
+    // back from expanded. A window nobody has moved stays centred by its class,
+    // so it is never placed from a frame of its entrance animation.
     const previous = position?.current;
-    placeWindow(node, previous?.x ?? (window.innerWidth - rect.width) / 2, previous?.y ?? (window.innerHeight - rect.height) / 2, position);
+    if (previous) placeWindow(node, previous.x, previous.y, position);
+    else clearPlacement(node);
     const constrain = () => {
-      const rect = node.getBoundingClientRect();
-      placeWindow(node, rect.x, rect.y, position);
+      if (!position?.current) return;
+      placeWindow(node, position.current.x, position.current.y, position);
     };
     let frame = 0;
     const observer = new ResizeObserver(() => {

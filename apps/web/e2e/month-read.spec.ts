@@ -278,7 +278,7 @@ async function openPageFilters(page: Page) {
 	await page.getByRole("button", { name: "Edit My calendar" }).click();
 	const dialog = page.getByRole("dialog", { name: "Page settings" });
 	await expect(dialog).toBeVisible();
-	const filters = dialog.getByRole("heading", { name: "Filters" }).locator("..");
+	const filters = dialog.getByRole("group", { name: "Calendars shown on this page" });
 	return { dialog, filters };
 }
 
@@ -1173,7 +1173,8 @@ test("creates across chosen calendars, then edits and deletes through confirmed 
 	).toBeVisible();
 
 	await expect(page.getByRole("dialog", { name: "Release readiness" })).toBeVisible();
-	await page.getByRole("button", { exact: true, name: "Delete" }).click();
+	await page.getByRole("button", { name: "More event actions" }).click();
+	await page.getByRole("menuitem", { name: "Delete" }).click();
 	await page.getByRole("button", { exact: true, name: "Delete" }).click();
 
 	await expect(page.getByRole("status")).toContainText("Event deleted.");
@@ -5094,6 +5095,8 @@ test("uses the desktop event editor as a fixed multi-column workspace", async ({
 	const when = form.locator('[data-editor-section="when"]');
 	const details = form.locator('[data-editor-section="details"]');
 	const calendarSection = form.locator('[data-editor-section="calendars"]');
+	// Measure the settled layer, not a frame of its entrance zoom.
+	await form.evaluate(async node => { await Promise.all(document.getAnimations().filter(animation => animation.effect?.getTiming().iterations !== Infinity).map(animation => animation.finished)); void node; });
 	const [whenBox, detailsBox, calendarBox] = await Promise.all([
 		when.boundingBox(),
 		details.boundingBox(),
@@ -5147,7 +5150,7 @@ test("uses the desktop event editor as a fixed multi-column workspace", async ({
 	const [compactSurfaceBox, compactActionsBox, compactWhenBox] =
 		await Promise.all([
 			surface.boundingBox(),
-			create.locator("..").boundingBox(),
+			create.boundingBox(),
 			when.boundingBox(),
 		]);
 	expect(compactSurfaceBox).not.toBeNull();
@@ -5162,14 +5165,12 @@ test("uses the desktop event editor as a fixed multi-column workspace", async ({
 				(1024 - compactSurfaceBox!.x - compactSurfaceBox!.width),
 		),
 	).toBeLessThanOrEqual(1);
-	expect(
-		Math.abs(compactActionsBox!.x - (compactSurfaceBox!.x + 20)),
-	).toBeLessThanOrEqual(1);
+	// The primary action ends on the layer's shared 24px inset.
 	expect(
 		Math.abs(
 			compactActionsBox!.x +
 				compactActionsBox!.width -
-				(compactSurfaceBox!.x + compactSurfaceBox!.width - 20),
+				(compactSurfaceBox!.x + compactSurfaceBox!.width - 24),
 		),
 	).toBeLessThanOrEqual(2);
 
@@ -5177,8 +5178,7 @@ test("uses the desktop event editor as a fixed multi-column workspace", async ({
 	// from clipping — both report an overflow — so the check is the one thing the
 	// person filling the form needs: the bottom of it is still reachable.
 	await page.setViewportSize({ height: 620, width: 1280 });
-	const shortEditorBox = (await editor.boundingBox())!;
-	expect(shortEditorBox.y + shortEditorBox.height).toBeLessThanOrEqual(621);
+	await expect.poll(async () => { const box = (await editor.boundingBox())!; return box.y + box.height; }).toBeLessThanOrEqual(621);
 	const submit = page.getByRole("button", { exact: true, name: "Create" });
 	await submit.scrollIntoViewIfNeeded();
 	await expect(submit).toBeInViewport();
@@ -7863,7 +7863,7 @@ test("scrolls the calendar list inside the editor layer, not the layer", async (
 	expect(await overflow(placement)).toBeGreaterThan(0);
 
 	// The column heading stays put while the calendar list scrolls.
-	const heading = dialog.getByText("Event calendars", { exact: true });
+	const heading = form.getByRole("heading", { name: "Calendars", exact: true });
 	await dialog.evaluate(async node => { await Promise.all(node.getAnimations({ subtree: true }).map(animation => animation.finished)); });
 	const before = (await heading.boundingBox())!;
 	await placement.evaluate(element => { element.scrollTop = element.scrollHeight; });

@@ -193,6 +193,9 @@ function renderStaticTheme(): string {
     ["--leading-snug", "1.3"],
     ["--leading-normal", "1.45"],
     ["--leading-relaxed", "1.6"],
+    ...Object.entries(gridTemplates).map(
+      ([name, value]): [string, string] => [`--grid-template-${name}`, value],
+    ),
     ["--default-transition-duration", `${motionDurations.web.fast}ms`],
     ["--animate-spin", "spin 0.8s linear infinite"],
     ["--animate-pulse", "pulse 2s ease-in-out infinite"],
@@ -209,6 +212,14 @@ function renderStaticTheme(): string {
 const displaySizes = {
   display: "clamp(1.75rem, 6vw, 2.25rem)",
   ambient: "min(54vw, 42rem)",
+} as const;
+
+/**
+ * Grid templates by role. `header-body`: a row sized to its content and a row
+ * that takes the rest of the height, so the body's columns scroll on their own.
+ */
+const gridTemplates = {
+  "rows-header-body": "auto minmax(0, 1fr)",
 } as const;
 
 function renderInlineTheme(): string {
@@ -260,7 +271,10 @@ function renderVariants(): string {
 function renderUtilities(): string {
   const motion = (Object.keys(motionDurations.web) as MotionRole[]).map(
     (role) =>
-      `@utility duration-${role} {\n  transition-duration: var(--motion-${role});\n  animation-duration: var(--motion-${role});\n}`,
+      // Only the duration variable: Tailwind's transition-* utilities and the
+      // enter/exit animations read it. Setting transition-duration itself would
+      // animate every property, because transition-property defaults to all.
+      `@utility duration-${role} {\n  --tw-duration: var(--motion-${role});\n}`,
   );
   const zLayers = Object.entries(layers).map(
     ([name, value]) => `@utility z-${name} {\n  z-index: ${value};\n}`,

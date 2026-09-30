@@ -393,7 +393,9 @@ export function EventEditorForm({
 		>
 			<div data-editor-body="" className={cn(
 				"flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto overscroll-contain px-6 pt-1 pb-5",
-				pageLayout && "md:grid md:grid-cols-3 md:content-start md:gap-x-8",
+				// Expanded: title across, then three columns that each scroll on their
+				// own, so the calendar list gives way instead of the layer.
+				pageLayout && "md:grid md:grid-cols-3 md:grid-rows-header-body md:gap-x-8 md:overflow-hidden",
 			)}>
 				<Field className={cn(pageLayout && "md:col-span-3")} label="Event title" labelHidden>
 					<Input
@@ -406,12 +408,15 @@ export function EventEditorForm({
 					/>
 				</Field>
 
-				<section aria-label="When" className="grid min-w-0 content-start gap-3" data-editor-section="when">
+				<section aria-label="When" className={cn("grid min-w-0 content-start gap-3", pageLayout && "md:min-h-0 md:overflow-y-auto")} data-editor-section="when">
 					{layout === "popover" ? timeModelFields : null}
 					<div className="flex min-w-0 items-center gap-2">
 						<CalendarDays aria-hidden="true" className="w-5 flex-none text-foreground-secondary" size={18} strokeWidth={1.5} />
 						<span aria-hidden="true" className="w-12 flex-none text-13 text-foreground-secondary">Starts</span>
-						<Field className="flex-1" label="Date" labelHidden>
+						{/* Date and time share a line while both fit; in a narrow column the
+						    time moves under the date instead of the date being cut to one letter. */}
+						<div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+						<Field className="min-w-40 flex-1" label="Date" labelHidden>
 							<DatePicker
 								disabled={saving}
 								label="Date"
@@ -439,6 +444,7 @@ export function EventEditorForm({
 								/>
 							</Field>
 						) : null}
+						</div>
 					</div>
 					{/* The panel displays an exclusive all-day end; drafts and writes keep
 					    Musubi's inclusive last date, just like grid selections. */}
@@ -448,7 +454,8 @@ export function EventEditorForm({
 							<span aria-hidden="true">Ends</span>
 							{panel && values.isAllDay ? <HelpTooltip label="Help for end date">The end date is not included. A one-day event ends on the following date.</HelpTooltip> : null}
 						</span>
-						<Field className="flex-1" label="Ends" labelHidden>
+						<div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+						<Field className="min-w-40 flex-1" label="Ends" labelHidden>
 							<DatePicker
 								disabled={saving}
 								label="Ends"
@@ -471,6 +478,7 @@ export function EventEditorForm({
 								/>
 							</Field>
 						) : null}
+						</div>
 					</div>
 
 					{allDayToggle}
@@ -480,7 +488,8 @@ export function EventEditorForm({
 					{expanded ? (
 						<div className="flex min-w-0 items-start gap-2">
 							<Repeat2 aria-hidden="true" className="mt-2.5 w-5 flex-none text-foreground-secondary" size={18} strokeWidth={1.5} />
-							<Field className="flex-1" label="Repeat" labelHidden>
+							<span aria-hidden="true" className="mt-2.5 w-12 flex-none text-13 text-foreground-secondary">Repeat</span>
+							<Field className="min-w-0 flex-1" label="Repeat" labelHidden>
 								<RecurrenceEditor
 									rdateMaster={rdateMaster}
 									weekStartsOn={weekStartsOn}
@@ -498,7 +507,7 @@ export function EventEditorForm({
 				</section>
 
 				{expanded ? (
-					<section aria-label="Details" className="flex min-w-0 flex-col gap-5" data-editor-section="details">
+					<section aria-label="Details" className={cn("flex min-w-0 flex-col gap-5", pageLayout && "md:min-h-0 md:overflow-y-auto")} data-editor-section="details">
 						{!pageLayout ? attendanceToggle : null}
 						<Field label="Location">
 							<Input
@@ -531,7 +540,7 @@ export function EventEditorForm({
 
 				<section
 					aria-labelledby={`${id}-calendar-heading`}
-					className="flex min-w-0 flex-col gap-3"
+					className={cn("flex min-w-0 flex-col gap-3", pageLayout && "md:min-h-0")}
 					data-editor-section="calendars"
 				>
 					<div className="flex min-h-5 items-center gap-1">
@@ -566,7 +575,7 @@ export function EventEditorForm({
 
 					{showCalendarList ? (
 						<fieldset
-							className={cn("m-0 grid min-w-0 gap-3 border-0 p-0", calendarDisclosure && !panel && "max-h-80 overflow-y-auto overscroll-contain")}
+							className={cn("m-0 flex min-w-0 flex-col gap-3 border-0 p-0 *:shrink-0", calendarDisclosure && !panel && "max-h-80 overflow-y-auto overscroll-contain", pageLayout && "md:min-h-0 md:flex-1 md:overflow-y-auto md:overscroll-contain")}
 							data-ui="calendar-placement"
 							id={`${id}-calendar-list`}
 						>
@@ -620,11 +629,11 @@ export function EventEditorForm({
 															<span aria-hidden="true" className="size-10 flex-none" />
 														)
 													) : (
-														<label className={cn("grid size-10 flex-none place-content-center rounded-control", homeLocked ? "cursor-not-allowed opacity-50" : "cursor-pointer")}>
+														<label className={cn("relative grid size-10 flex-none place-content-center rounded-control", homeLocked ? "cursor-not-allowed opacity-50" : "cursor-pointer")}>
 															<input
 																aria-label={`${calendar.name} as home calendar`}
 																checked={isHome}
-																className="peer sr-only"
+																className="peer absolute inset-0 m-0 size-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
 																disabled={homeLocked}
 																name={`${id}-home-calendar`}
 																type="radio"

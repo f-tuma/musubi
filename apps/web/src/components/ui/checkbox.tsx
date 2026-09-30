@@ -22,7 +22,8 @@ function Checkbox({ className, description, disabled = false, label, labelHidden
         className,
       )}
     >
-      <input {...props} className="peer sr-only" disabled={disabled} type="checkbox" />
+      {/* Transparent over the whole control, so the real input is what the pointer hits. */}
+      <input {...props} className="peer absolute inset-0 m-0 size-full cursor-pointer opacity-0 disabled:cursor-not-allowed" disabled={disabled} type="checkbox" />
       <span
         aria-hidden="true"
         className="relative block size-4.5 flex-none rounded-sm border border-border-strong transition-colors duration-fast peer-checked:border-primary peer-checked:bg-primary peer-checked:after:absolute peer-checked:after:top-0.5 peer-checked:after:left-1.5 peer-checked:after:h-2 peer-checked:after:w-1 peer-checked:after:rotate-45 peer-checked:after:border-r-2 peer-checked:after:border-b-2 peer-checked:after:border-primary-foreground peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-shu"
