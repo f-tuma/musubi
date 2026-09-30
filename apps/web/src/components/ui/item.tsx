@@ -62,6 +62,7 @@ function Item({
     <Comp
       data-slot="item"
       data-size={size ?? "default"}
+      data-tone={tone && tone !== "default" ? tone : undefined}
       className={cn(itemVariants({ size, interactive, tone }), className)}
       {...props}
     />

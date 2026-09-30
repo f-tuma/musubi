@@ -73,7 +73,7 @@ function Button({
         children
       ) : (
         <>
-          <span className={cn("inline-flex min-w-0 items-center justify-center gap-2", loading && "invisible")}>
+          <span className={cn("inline-flex min-w-0 items-center justify-center gap-2", loading && "opacity-0")}>
             {children}
           </span>
           {loading ? (

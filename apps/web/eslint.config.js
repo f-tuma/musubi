@@ -139,7 +139,6 @@ export default tseslint.config(
       "src/calendar/components/Toolbar.stories.tsx",
       "src/calendar/components/Toolbar.tsx",
       "src/calendar/components/Workspace.tsx",
-      "src/design/Foundations.stories.tsx",
       "src/routes/app/admin.tsx",
       "src/routes/app/p.$pageId.$view.event.$eventId.tsx",
       "src/routes/app/p.$pageId.$view.event.new.tsx",
