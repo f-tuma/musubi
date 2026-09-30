@@ -2,6 +2,10 @@
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+@custom-variant block-time (@container event-block (min-height: 30px));
+@custom-variant block-wrap (@container event-block (min-height: 44px));
+@custom-variant block-meta (@container event-block (min-height: 58px));
+
 @theme {
   --color-*: initial;
   --spacing: initial;
@@ -130,6 +134,7 @@
   --color-warning: var(--status-warn);
   --color-warning-fill: var(--status-warn-fill);
   --color-pigment: var(--pigment, var(--text-muted));
+  --color-pigment-ink: var(--pigment-ink, var(--text-primary));
   --color-transparent: transparent;
   --color-current: currentColor;
   --color-inherit: inherit;

@@ -2360,7 +2360,7 @@ test("changes time grid density from the page editor", async ({ page }) => {
 
 	// The grid height is derived from the same geometry as the event maths, so a
 	// density change has to move it.
-	const canvas = page.locator('[class*="timeGridCanvas"]');
+	const canvas = page.locator("[data-time-grid-canvas]");
 	await expect(canvas).toBeVisible();
 	const canvasHeight = async () => (await canvas.boundingBox())?.height ?? 0;
 
@@ -4309,7 +4309,7 @@ test("scales what an event block shows to the height it has", async ({
 
 	const block = page.locator("[data-time-event]").first();
 	await expect(block).toBeVisible({ timeout: 15_000 });
-	const time = block.locator('[class*="timelineEventTime"]');
+	const time = block.locator("[data-event-time]");
 	// An hour-long block at comfortable density has room for the time.
 	await expect(time).toBeVisible();
 
@@ -4319,7 +4319,7 @@ test("scales what an event block shows to the height it has", async ({
 		element.style.height = "18px";
 	});
 	await expect(time).toBeHidden();
-	await expect(block.locator('[class*="timelineEventTitle"]')).toBeVisible();
+	await expect(block.locator("[data-event-title]")).toBeVisible();
 
 	await block.evaluate((element: HTMLElement) => {
 		element.style.height = "120px";
@@ -4335,7 +4335,7 @@ test("marks a recurring event with more than its colour", async ({ page }) => {
 	await expect(recurring.locator("svg.lucide-repeat")).toBeVisible({ timeout: 15_000 });
 	// A one-off event carries no mark.
 	const single = page.getByRole("button", { name: /Client call/ }).first();
-	await expect(single.locator('[class*="eventMarks"]')).toHaveCount(0);
+	await expect(single.locator("[data-event-marks]")).toHaveCount(0);
 });
 
 test("says an event is unsettled while its write is in flight", async ({
@@ -5779,7 +5779,7 @@ test("parks a stuck agenda day below the year band, not under it", async ({
 			.querySelector('[class*="calendarArea"]')!
 			.getBoundingClientRect();
 		const year = document
-			.querySelector('[class*="agendaYear"]')!
+			.querySelector("[data-agenda-year]")!
 			.getBoundingClientRect();
 		const resting = [...document.querySelectorAll("[data-agenda-date] > time")]
 			.map((date) => date.getBoundingClientRect().top - area.top)
@@ -7603,7 +7603,7 @@ test("keeps the time on a chip while the cell can hold one", async ({
 		page.evaluate(() => {
 			// The first cell with something in it: an empty day has no chip to read,
 			// and the month opens on one.
-			const cell = [...document.querySelectorAll('[class*="dayEvents"]')].find(
+			const cell = [...document.querySelectorAll("[data-day-events]")].find(
 				(el) => el.querySelector('[class*="eventTime"]'),
 			)!;
 			const time = cell.querySelector('[class*="eventTime"]');

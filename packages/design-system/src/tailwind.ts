@@ -66,6 +66,9 @@ const colorRoles = {
   // The one colour a caller may set at runtime: a calendar's pigment,
   // passed as `--pigment` on the owning element.
   pigment: "var(--pigment, var(--text-muted))",
+  // Ink that stays readable on the pigment: the owner sets `--pigment-ink`
+  // from the calendar colour (getReadableEventTextColor) next to `--pigment`.
+  "pigment-ink": "var(--pigment-ink, var(--text-primary))",
   // Allows `bg-transparent`, `text-current` and friends.
   transparent: "transparent",
   current: "currentColor",
@@ -232,6 +235,28 @@ function renderInlineTheme(): string {
   return `@theme inline {\n${declarations(entries)}\n}`;
 }
 
+/**
+ * What an event block has room for, asked of the block itself rather than of
+ * its duration: the block is a size container named `event-block`
+ * (`@container-size/event-block`), and these reveal its rows as it grows. The
+ * title is always there; the time comes next, then a second title line, then
+ * the location. One scale for every density and zoom, because it reads the box.
+ */
+const eventBlockVariants = {
+  "block-time": 30,
+  "block-wrap": 44,
+  "block-meta": 58,
+} as const;
+
+function renderVariants(): string {
+  return Object.entries(eventBlockVariants)
+    .map(
+      ([name, height]) =>
+        `@custom-variant ${name} (@container event-block (min-height: ${height}px));`,
+    )
+    .join("\n");
+}
+
 function renderUtilities(): string {
   const motion = (Object.keys(motionDurations.web) as MotionRole[]).map(
     (role) =>
@@ -258,6 +283,7 @@ export function renderTailwindThemeCss(): string {
   return [
     GENERATED_FILE_HEADER,
     '@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));',
+    renderVariants(),
     renderStaticTheme(),
     renderInlineTheme(),
     renderUtilities(),

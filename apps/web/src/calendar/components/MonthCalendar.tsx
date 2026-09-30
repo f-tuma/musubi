@@ -14,7 +14,8 @@ import {
   getWeekdayLabels,
 } from "../calendar-math";
 import { calendarLaneSpans, visibleLaneLimit } from "../all-day-lanes";
-import { Popover, PopoverContent, PopoverTrigger } from "~/ui/Popover";
+import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
+import { cn } from "~/lib/utils";
 import { dayDelta, shiftDayKey, toDateKey } from "../date-key";
 import { getReadableEventTextColor } from "../event-color";
 import { canEditEvent, eventHomeCalendarId } from "../event-permissions";
@@ -23,28 +24,46 @@ import { movePreviewRange } from "../time-grid-drag";
 import { useDayRangeCreate, useMonthDrag } from "../use-time-grid-drag";
 import { EventPopover } from "./EventPopover";
 import type { EventActionHandlers } from "./EventDetailsPopover";
-import styles from "./workspace.module.css";
 
 const DEFAULT_EVENT_CAPACITY = 3;
+
+// ── Cell geometry ───────────────────────────────────────────────────────────
+// One set of numbers for the CSS and the capacity maths, so "+N more" appears
+// exactly where the chips stop fitting.
+/** One chip line: a chip, a reserved slot and the draft pill all share it. */
+const CHIP_HEIGHT_PX = 21;
+/** `gap-0.5` between chip lines. */
+const CHIP_GAP_PX = 2;
+/**
+ * A cell's space that is not chip lines: `pt-1.5` + the `size-6` day number +
+ * `pt-0.5` + `pb-1` + the 1 px rule, rounded up.
+ */
+const DAY_FIXED_SPACE_PX = 38;
+/**
+ * A cell narrower than about 95 px has no room for a chip's time next to its
+ * title. Seven of them is 665 px — measured on the grid itself, so a docked
+ * inspector gets the compact cell without losing any day columns.
+ */
+const COMPACT_GRID_WIDTH_PX = 665;
+/**
+ * A continuing bar reaches across the cell's inline padding and the 1 px rule
+ * to join its neighbour: 6 px padding + 1, or 4 + 1 in a compact grid.
+ */
+const EVENT_BLEED_PX = 7;
+const COMPACT_EVENT_BLEED_PX = 5;
+
 
 function eventCapacityForGrid(grid: HTMLElement, rows: number) {
   // SSR, jsdom and a temporarily hidden workspace do not have a measurable
   // layout. Keep the established density until a real grid size is available.
   if (grid.clientHeight <= 0) return DEFAULT_EVENT_CAPACITY;
 
-  const styles = window.getComputedStyle(grid);
-  const fixedSpace =
-    Number.parseFloat(styles.getPropertyValue("--month-day-fixed-space")) || 38;
-  const eventHeight =
-    Number.parseFloat(styles.getPropertyValue("--month-event-height")) || 21;
-  const eventGap =
-    Number.parseFloat(styles.getPropertyValue("--month-event-gap")) || 3;
   const rowHeight = grid.clientHeight / rows;
-  const availableHeight = Math.max(0, rowHeight - fixedSpace);
+  const availableHeight = Math.max(0, rowHeight - DAY_FIXED_SPACE_PX);
 
   return Math.max(
     1,
-    Math.floor((availableHeight + eventGap) / (eventHeight + eventGap)),
+    Math.floor((availableHeight + CHIP_GAP_PX) / (CHIP_HEIGHT_PX + CHIP_GAP_PX)),
   );
 }
 
@@ -250,6 +269,7 @@ export function MonthCalendar({
   );
   const [focusedIndex, setFocusedIndex] = useState(initialFocusIndex);
   const [eventCapacity, setEventCapacity] = useState(DEFAULT_EVENT_CAPACITY);
+  const [compact, setCompact] = useState(false);
   const cellRefs = useRef<Array<HTMLDivElement | null>>([]);
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -263,6 +283,9 @@ export function MonthCalendar({
       setEventCapacity((current) =>
         current === nextCapacity ? current : nextCapacity,
       );
+      if (grid.clientWidth > 0) {
+        setCompact(grid.clientWidth < COMPACT_GRID_WIDTH_PX);
+      }
     }
 
     syncEventCapacity();
@@ -329,9 +352,18 @@ export function MonthCalendar({
 
   return (
     <div
-      className={styles.monthView}
+      className="group/month flex h-full min-h-0 min-w-0 flex-col"
+      data-compact={compact ? "" : undefined}
       data-event-capacity={eventCapacity}
       role="grid"
+      style={
+        {
+          "--month-chip-height": `${CHIP_HEIGHT_PX}px`,
+          "--event-bleed": `${compact ? COMPACT_EVENT_BLEED_PX : EVENT_BLEED_PX}px`,
+          "--bleed-one": "calc(100% + var(--event-bleed))",
+          "--bleed-both": "calc(100% + 2 * var(--event-bleed))",
+        } as CSSProperties
+      }
       aria-label={
         gridLabel ??
         `${anchor.toLocaleDateString("en", {
@@ -340,21 +372,30 @@ export function MonthCalendar({
         })} calendar`
       }
     >
-      <div className={styles.weekdayRow} role="row">
+      <div
+        className="grid h-8 flex-none grid-cols-7 border-b border-border-subtle md:h-9"
+        role="row"
+      >
         {weekdayLabels.map((weekday) => (
-          <div className={styles.weekday} role="columnheader" key={weekday}>
+          <div
+            className="flex items-center justify-center text-10 tracking-label text-muted-foreground uppercase not-first:border-l not-first:border-border-subtle"
+            role="columnheader"
+            key={weekday}
+          >
             {weekday}
           </div>
         ))}
       </div>
       <div
-        className={styles.monthGrid}
+        className="grid min-h-0 flex-1 grid-rows-(--month-rows)"
         ref={gridRef}
         role="rowgroup"
         style={
           {
-            "--month-rows": rows,
-            ...(rowMinHeight ? { "--month-row-min": rowMinHeight } : {}),
+            // Six rows for a month, one to twenty for multi-week. The minimum is
+            // zero for Month, which must fit its area without scrolling;
+            // multi-week raises it so a long run stays readable and scrolls.
+            "--month-rows": `repeat(${rows}, minmax(${rowMinHeight ?? "0px"}, 1fr))`,
           } as CSSProperties
         }
       >
@@ -389,7 +430,8 @@ export function MonthCalendar({
           const visibleLaneCount = visibleLaneLimit(laneCount, Math.max(0, eventCapacity - reservedSlots));
 
           return (
-            <div className={styles.monthWeek} role="row" key={weekFrom}>
+            // Clipped, so a multi-day join never paints into another week.
+            <div className="grid min-h-0 grid-cols-7 overflow-clip" role="row" key={weekFrom}>
               {week.map((day, dayIndex) => {
                 const index = weekIndex * 7 + dayIndex;
                 const dateKey = toDateKey(day);
@@ -400,6 +442,7 @@ export function MonthCalendar({
                 const inMonth =
                   !dimOutsideMonth || day.getMonth() === anchor.getMonth();
                 const isToday = dateKey === todayKey;
+                const weekend = day.getDay() === 0 || day.getDay() === 6;
                 // A hidden adjacent day keeps its cell (so the month keeps its
                 // height) but shows nothing and takes no clicks.
                 const muted = !inMonth && !showAdjacentDays;
@@ -455,19 +498,39 @@ export function MonthCalendar({
                   ? 0
                   : dayLaneSpans.filter((span) => span.lane >= visibleLaneCount)
                       .length;
+                const dropTarget = Boolean(drag && drag.dayKey === dateKey);
+                const previewBefore = Boolean(
+                  previewRange && dateKey > previewRange.from && dayIndex > 0,
+                );
+                const previewAfter = Boolean(
+                  previewRange && dateKey < previewRange.to && dayIndex < 6,
+                );
+                const draftBefore = Boolean(
+                  draftRange && dateKey > draftRange.from && dayIndex > 0,
+                );
+                const draftAfter = Boolean(
+                  draftRange && dateKey < draftRange.to && dayIndex < 6,
+                );
 
                 return (
                   <div
-                    className={`${styles.dayCell} ${
-                      inMonth ? "" : styles.dayOutside
-                    } ${isToday ? styles.dayToday : ""}`}
+                    className={cn(
+                      "relative min-w-0 overflow-hidden border-r border-b border-border-subtle px-1.5 pt-1.5 pb-1 transition-colors duration-fast last:border-r-0 hover:bg-raised/35 focus-inset group-data-compact/month:px-1 motion-reduce:transition-none",
+                      !inMonth && "bg-raised text-foreground-secondary hover:bg-sunken",
+                      isToday && "bg-shu/4",
+                      dropTarget && "bg-shu/7",
+                      // A cell clips its contents, which cuts the bleed a draft
+                      // uses to reach across the divider; through its
+                      // translucent fill the rule would show, so the cell
+                      // holding one drops the clip.
+                      inDraft && "overflow-visible",
+                    )}
                     key={dateKey}
                     ref={(node) => {
                       cellRefs.current[index] = node;
                     }}
-                    data-drop-target={
-                      drag && drag.dayKey === dateKey ? "" : undefined
-                    }
+                    data-drop-target={dropTarget ? "" : undefined}
+                    data-today={isToday ? "" : undefined}
                     onPointerDown={(pointerEvent) => {
                       if (
                         muted ||
@@ -518,17 +581,31 @@ export function MonthCalendar({
                     onFocus={() => setFocusedIndex(index)}
                     onKeyDown={(event) => handleGridKeyDown(event, index)}
                   >
-                    <div className={styles.dayHeader}>
+                    <div className="flex min-h-6 items-center justify-between gap-1">
                       {muted ? null : (
-                        <span className={styles.dayNumber}>
+                        <span
+                          className={cn(
+                            "grid size-6 place-content-center rounded-full text-12 tabular-nums",
+                            inMonth
+                              ? weekend
+                                ? "text-muted-foreground"
+                                : "text-foreground-secondary"
+                              : "text-foreground",
+                            isToday && "bg-shu text-shu-foreground",
+                          )}
+                        >
                           {day.getDate()}
                         </span>
                       )}
+                      {/* The accent is already on the day number beside it; the
+                          word carries itself in ink. */}
                       {isToday ? (
-                        <span className={styles.todayLabel}>Today</span>
+                        <span className="text-10 tracking-label text-foreground-secondary uppercase max-sm:hidden">
+                          Today
+                        </span>
                       ) : null}
                     </div>
-                    <div className={styles.dayEvents}>
+                    <div className="grid gap-0.5 pt-0.5" data-day-events="">
                       {/* The draft, as one pill across the range it covers: a
                         month cell has no time axis, so this reads like the
                         all-day event it will become. Grabbing it moves the whole
@@ -537,30 +614,32 @@ export function MonthCalendar({
                       {inDraft && draftRange ? (
                         <div
                           aria-hidden="true"
-                          className={styles.dayDraft}
-                          data-continues-after={
-                            dateKey < draftRange.to && dayIndex < 6
-                              ? ""
-                              : undefined
-                          }
-                          data-continues-before={
-                            dateKey > draftRange.from && dayIndex > 0
-                              ? ""
-                              : undefined
-                          }
+                          className={cn(
+                            "relative z-4 flex min-h-(--month-chip-height) w-full items-center overflow-hidden rounded-sm border border-(--draft-accent) bg-(--draft-fill) px-1.5 text-11 whitespace-nowrap text-foreground",
+                            draftBefore && "-ml-(--event-bleed) w-(--bleed-one) rounded-l-none border-l-0",
+                            draftAfter && "w-(--bleed-one) rounded-r-none border-r-0",
+                            draftBefore && draftAfter && "w-(--bleed-both)",
+                            // A grabbable surface must not also be selectable
+                            // text: dragging a selection makes Chromium cancel
+                            // the pointer gesture mid-move.
+                            !draftRange.live && onMoveDraft && "cursor-grab touch-none select-none",
+                            draftDrag && "cursor-grabbing",
+                            // Still being dragged out: the cell underneath owns
+                            // the gesture.
+                            draftRange.live && "pointer-events-none",
+                          )}
+                          data-continues-after={draftAfter ? "" : undefined}
+                          data-continues-before={draftBefore ? "" : undefined}
                           data-draft={
                             !draftRange.live && onMoveDraft ? "" : undefined
                           }
                           data-dragging={draftDrag ? "" : undefined}
-                          // Nothing to grab while it is still being dragged out —
-                          // the cell under it owns that gesture.
                           data-live={draftRange.live ? "" : undefined}
                           style={
-                            pendingCreate?.color
-                              ? ({
-                                  "--draft-accent": pendingCreate.color,
-                                } as CSSProperties)
-                              : undefined
+                            {
+                              "--draft-accent":
+                                pendingCreate?.color ?? "var(--accent-primary)",
+                            } as CSSProperties
                           }
                           onPointerDown={
                             draftRange.live
@@ -588,7 +667,7 @@ export function MonthCalendar({
                             : ""}
                         </div>
                       ) : draftRow && !muted ? (
-                        <div aria-hidden="true" className={styles.daySlot} />
+                        <div aria-hidden="true" className="min-h-(--month-chip-height)" />
                       ) : null}
                       {/* The dragged event across the days it would land on, drawn
                         the way the draft draws a range — one block per cell,
@@ -599,35 +678,24 @@ export function MonthCalendar({
                       {inPreview && !muted && drag && previewRange ? (
                         <div
                           aria-hidden="true"
-                          className={`${styles.eventChip} ${
-                            drag.event.isAllDay ? styles.eventChipAllDay : ""
-                          } ${
-                            dateKey > previewRange.from && dayIndex > 0
-                              ? styles.eventChipContinuesBefore
-                              : ""
-                          } ${
-                            dateKey < previewRange.to && dayIndex < 6
-                              ? styles.eventChipContinuesAfter
-                              : ""
-                          } ${
-                            dateKey > previewRange.from &&
-                            dayIndex > 0 &&
-                            dateKey < previewRange.to &&
-                            dayIndex < 6
-                              ? styles.eventChipContinuesBoth
-                              : ""
-                          } ${styles.dragPreviewChip}`}
+                          className={cn(
+                            "pointer-events-none relative z-3 flex min-h-(--month-chip-height) w-full min-w-0 items-center gap-1 overflow-hidden rounded-sm bg-pigment px-1.5 text-left text-pigment-ink shadow-overlay group-data-compact/month:px-1",
+                            drag.event.isAllDay && "font-medium",
+                            previewBefore && "-ml-(--event-bleed) w-(--bleed-one) rounded-l-none",
+                            previewAfter && "w-(--bleed-one) rounded-r-none",
+                            previewBefore && previewAfter && "w-(--bleed-both)",
+                          )}
                           data-drag-preview=""
                           style={
                             {
-                              "--event-color": dragPreviewColor,
-                              "--event-foreground":
+                              "--pigment": dragPreviewColor,
+                              "--pigment-ink":
                                 getReadableEventTextColor(dragPreviewColor),
                             } as CSSProperties
                           }
                         >
                           {!drag.event.isAllDay ? (
-                            <span className={styles.eventTime}>
+                            <span className="flex-none font-mono text-10 group-data-compact/month:hidden" data-event-time="">
                               {
                                 getEventRangeLabel(
                                   drag.event,
@@ -636,21 +704,19 @@ export function MonthCalendar({
                               }
                             </span>
                           ) : null}
-                          <span className={styles.eventTitle}>
-                            {dateKey > previewRange.from && dayIndex > 0
-                              ? ""
-                              : drag.event.title}
+                          <span className="min-w-0 flex-1 truncate text-11" data-event-title="">
+                            {previewBefore ? "" : drag.event.title}
                           </span>
                         </div>
                       ) : dragged || muted ? null : previewRow ? (
-                        <div aria-hidden="true" className={styles.daySlot} />
+                        <div aria-hidden="true" className="min-h-(--month-chip-height)" />
                       ) : null}
                       {visibleSlots.map((span, lane) => {
                         if (!span) {
                           return (
                             <div
                               aria-hidden="true"
-                              className={styles.daySlot}
+                              className="min-h-(--month-chip-height)"
                               key={`lane:${lane}`}
                             />
                           );
@@ -719,7 +785,7 @@ export function MonthCalendar({
                         <Popover>
                           <PopoverTrigger asChild>
                             <button
-                              className={styles.moreEvents}
+                              className="min-h-5 w-fit cursor-pointer rounded-sm bg-transparent px-1 text-11 text-muted-foreground hover:text-foreground"
                               type="button"
                               onClick={(event) => event.stopPropagation()}
                             >
@@ -729,24 +795,23 @@ export function MonthCalendar({
                           <PopoverContent
                             align="center"
                             aria-label={`${getLongDateLabel(day)} events`}
-                            className={styles.monthOverflowPopover}
-                            collisionPadding={12}
                             role="dialog"
                             side="bottom"
-                            sideOffset={8}
                             onClick={(event) => event.stopPropagation()}
                             onPointerDown={(event) => event.stopPropagation()}
                           >
-                            <div className={styles.monthOverflowHeader}>
-                              <h2>{day.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</h2>
-                              <p>
-                                {itemCount}{" "}
-                                {itemCount === 1 ? "item" : "items"}
-                              </p>
-                            </div>
-                            <div className={styles.monthOverflowList}>
-                              {dayLaneSpans.flatMap((span) => {
-                                return [
+                            <div className="flex max-h-(--radix-popover-content-available-height) flex-col">
+                              <div className="flex flex-none items-baseline justify-between gap-3 border-b border-border-subtle p-4">
+                                <h2 className="m-0 font-serif text-19 font-normal">
+                                  {day.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                                </h2>
+                                <p className="m-0 text-11 whitespace-nowrap text-foreground-secondary">
+                                  {itemCount}{" "}
+                                  {itemCount === 1 ? "item" : "items"}
+                                </p>
+                              </div>
+                              <div className="grid min-h-0 gap-1 overflow-y-auto p-2">
+                                {dayLaneSpans.map((span) => (
                                   <EventPopover
                                     calendar={calendarsById.get(
                                       eventHomeCalendarId(span.event) ?? "",
@@ -765,9 +830,9 @@ export function MonthCalendar({
                                     timeFormat={timeFormat}
                                     weekStartsOn={weekStartsOn}
                                     {...eventActions}
-                                  />,
-                                ];
-                              })}
+                                  />
+                                ))}
+                              </div>
                             </div>
                           </PopoverContent>
                         </Popover>
