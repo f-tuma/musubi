@@ -30,7 +30,7 @@ import { Input } from "~/components/ui/input";
 import { ItemGroup } from "~/components/ui/item";
 import { RowAction, RowOptions } from "~/components/ui/row";
 import { Select, type SelectOption } from "~/components/ui/select";
-import { ColorPicker } from "~/ui/ColorPicker";
+import { ColorPicker } from "~/components/ui/color-picker";
 import { connectionOfCalendar } from "../../federation-routing";
 import { CalendarDot } from "../CalendarDot";
 

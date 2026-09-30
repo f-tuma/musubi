@@ -69,7 +69,7 @@ export default tseslint.config(
           patterns: [
             {
               group: ["*.module.css"],
-              message: "Style with Tailwind utilities from Musubi's theme. CSS modules are being retired.",
+              message: "Style with Tailwind utilities from Musubi's theme. Musubi has no CSS modules.",
             },
             {
               group: ["radix-ui", "@radix-ui/*"],
@@ -85,22 +85,6 @@ export default tseslint.config(
     files: ["src/components/ui/**/*.{ts,tsx}"],
     rules: {
       "shadcn/no-restyle": "off",
-      "no-restricted-imports": "off",
-    },
-  },
-  {
-    // Not yet on Tailwind. Each file leaves this list when it is migrated;
-    // nothing is ever added to it. The old src/ui primitives go with it.
-    files: [
-      "src/ui/**",
-    ],
-    rules: {
-      "shadcn/no-restyle": "off",
-      "shadcn/no-raw-colors": "off",
-      "shadcn/no-arbitrary-values": "off",
-      "shadcn/no-inline-styles": "off",
-      "shadcn/no-unknown-classes": "off",
-      "shadcn/require-static-classes": "off",
       "no-restricted-imports": "off",
     },
   },

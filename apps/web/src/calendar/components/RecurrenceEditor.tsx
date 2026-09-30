@@ -1,6 +1,6 @@
 import { HelpTooltip } from "~/components/ui/help-tooltip";
 import type { Event, Settings } from "@musubi/types";
-import { DatePicker } from "~/ui/DatePicker";
+import { DatePicker } from "~/components/ui/date-picker";
 import { allDayAdditionalDate, setAllDayAdditionalDate, allDayExclusionDates, restoreAllDayExclusion } from "@musubi/calendar";
 import { Row } from "~/components/ui/row";
 import {

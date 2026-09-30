@@ -6,7 +6,7 @@ import { Disclosure } from "~/components/ui/disclosure";
 import { InlineError } from "~/components/ui/inline-error";
 import { Row } from "~/components/ui/row";
 import { SettingsSection } from "~/components/ui/settings-section";
-import { useAsyncAction } from "~/ui/useAsyncAction";
+import { useAsyncAction } from "~/lib/use-async-action";
 import { summarise, worstStatus, type CheckStatus } from "~/diagnostics/checks";
 import {
   buildReport,

@@ -30,8 +30,8 @@ import { ItemGroup } from "~/components/ui/item";
 import { Row } from "~/components/ui/row";
 import { Select } from "~/components/ui/select";
 import { SettingsSection } from "~/components/ui/settings-section";
-import { Menu, MenuContent, MenuItem, MenuTrigger } from "~/ui/Menu";
-import { useAsyncAction } from "~/ui/useAsyncAction";
+import { Menu, MenuContent, MenuItem, MenuTrigger } from "~/components/ui/menu";
+import { useAsyncAction } from "~/lib/use-async-action";
 
 type ShareCalendarDialogProps = {
   calendar: Calendar | null;

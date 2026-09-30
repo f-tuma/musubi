@@ -16,7 +16,7 @@ import { RowToggle } from "~/components/ui/row";
 import { Segmented } from "~/components/ui/segmented";
 import { Select } from "~/components/ui/select";
 import { SettingsSection } from "~/components/ui/settings-section";
-import { Menu, MenuContent, MenuItem, MenuTrigger } from "~/ui/Menu";
+import { Menu, MenuContent, MenuItem, MenuTrigger } from "~/components/ui/menu";
 import { useNarrowViewport } from "~/design/use-narrow-viewport";
 import { offeredViews, type CalendarViewId } from "../view-registry";
 import { CalendarCoverageInfo } from "./CalendarCoverageInfo";

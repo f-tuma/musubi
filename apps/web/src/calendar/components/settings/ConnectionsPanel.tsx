@@ -17,7 +17,7 @@ import { ItemGroup } from "~/components/ui/item";
 import { Row, RowAction } from "~/components/ui/row";
 import { SectionLabel } from "~/components/ui/section-label";
 import { SettingsSection } from "~/components/ui/settings-section";
-import { useAsyncAction } from "~/ui/useAsyncAction";
+import { useAsyncAction } from "~/lib/use-async-action";
 import { AvailabilitySection } from "../AvailabilitySection";
 import { CalendarDot } from "../CalendarDot";
 import { EventDeliveryInboxDialog } from "../EventDeliveryInboxDialog";

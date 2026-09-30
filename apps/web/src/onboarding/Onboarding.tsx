@@ -16,7 +16,7 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { Field } from "~/components/ui/field";
 import { HelpTooltip } from "~/components/ui/help-tooltip";
 import { Input } from "~/components/ui/input";
-import { ColorPicker } from "~/ui/ColorPicker";
+import { ColorPicker } from "~/components/ui/color-picker";
 
 const STEPS = 3;
 

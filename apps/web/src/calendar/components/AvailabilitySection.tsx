@@ -12,7 +12,7 @@ import { ItemGroup } from "~/components/ui/item";
 import { Row } from "~/components/ui/row";
 import { SettingsSection } from "~/components/ui/settings-section";
 import { Switch } from "~/components/ui/switch";
-import { useAsyncAction } from "~/ui/useAsyncAction";
+import { useAsyncAction } from "~/lib/use-async-action";
 export function AvailabilitySection({ userId, onReconnect, onRefresh, connectionBusy = false }: {
   userId: string;
   onReconnect: () => void;

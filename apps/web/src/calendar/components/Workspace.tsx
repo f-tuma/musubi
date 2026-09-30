@@ -1,4 +1,4 @@
-import { DateFormatContext } from "~/ui/DatePicker";
+import { DateFormatContext } from "~/components/ui/date-picker";
 import { applyTheme } from "~/design/theme";
 import { pageItemTypes, eventItemType } from "../page-item-filters";
 import { calendarTasks, isCalendarTask } from "@musubi/calendar";
@@ -85,7 +85,7 @@ import { ProviderMeetingCreateDialog, isMeetingCalendarCandidate } from "./Provi
 import { MonthCalendar } from "./MonthCalendar";
 import { MultiWeekCalendar } from "./MultiWeekCalendar";
 import { NewPageDialog, PageSettingsDialog } from "./PageSettingsDialog";
-import { requestInspectorTransition } from "~/ui/Inspector";
+import { requestInspectorTransition } from "~/components/ui/inspector";
 import { QuickCreate, type QuickCreateAnchor } from "./QuickCreate";
 import { RecurrenceScopeDialog } from "./RecurrenceScopeDialog";
 import { SearchDialog, type SearchAccountSource } from "./SearchDialog";

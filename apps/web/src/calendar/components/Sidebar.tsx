@@ -34,7 +34,7 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { RowAction } from "~/components/ui/row";
 import { SectionLabel } from "~/components/ui/section-label";
-import { Menu, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "~/ui/Menu";
+import { Menu, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "~/components/ui/menu";
 import { moveItem, previewIndex } from "../list-reorder";
 import { sortPagesBy } from "../page-editor";
 import { pageIconComponent, resolvePageIcon } from "../page-icons";

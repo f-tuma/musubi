@@ -8,7 +8,7 @@ import { X } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { ConfirmationDialog } from "~/components/ui/confirmation-dialog";
-import { Inspector, InspectorContent, InspectorHeaderActions } from "~/ui/Inspector";
+import { Inspector, InspectorContent, InspectorHeaderActions } from "~/components/ui/inspector";
 import {
   createEventFromForm,
   defaultEventFormValues,

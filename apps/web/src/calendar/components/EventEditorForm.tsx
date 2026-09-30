@@ -43,8 +43,8 @@ import { SectionLabel } from "~/components/ui/section-label";
 import { Select } from "~/components/ui/select";
 import { Switch } from "~/components/ui/switch";
 import { Textarea } from "~/components/ui/textarea";
-import { DatePicker } from "~/ui/DatePicker";
-import { minutesToTime, TimePicker, timeToMinutes } from "~/ui/TimePicker";
+import { DatePicker } from "~/components/ui/date-picker";
+import { minutesToTime, TimePicker, timeToMinutes } from "~/components/ui/time-picker";
 import { groupCalendars } from "../calendar-groups";
 import { shiftDayKey } from "../date-key";
 import {

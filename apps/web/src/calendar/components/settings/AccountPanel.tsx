@@ -20,7 +20,7 @@ import { InlineError } from "~/components/ui/inline-error";
 import { Input } from "~/components/ui/input";
 import { RowAction } from "~/components/ui/row";
 import { SettingsSection } from "~/components/ui/settings-section";
-import { useAsyncAction } from "~/ui/useAsyncAction";
+import { useAsyncAction } from "~/lib/use-async-action";
 
 export type AccountPanelProps = {
   onNotice: (message: string) => void;

@@ -1,4 +1,4 @@
-import { DateFormatContext } from "~/ui/DatePicker";
+import { DateFormatContext } from "~/components/ui/date-picker";
 import { eventScopeRequest } from "@musubi/calendar";
 import { hasKnownEventTime, type Event } from "@musubi/types";
 import {

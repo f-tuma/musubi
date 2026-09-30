@@ -16,7 +16,7 @@ import { Row, RowOptions, RowToggle } from "~/components/ui/row";
 import { Select } from "~/components/ui/select";
 import { SettingsSection } from "~/components/ui/settings-section";
 import { Spinner } from "~/components/ui/spinner";
-import { useInspectorPreference } from "~/ui/inspector-preferences";
+import { useInspectorPreference } from "~/components/ui/inspector-preferences";
 import type { SettingsDocumentState } from "./use-settings-document";
 
 const THEME_OPTIONS = [

@@ -70,8 +70,8 @@ import {
 	MenuItem,
 	MenuSeparator,
 	MenuTrigger,
-} from "~/ui/Menu";
-import { InspectorHeaderActions, Inspector as Popover, InspectorTrigger as PopoverTrigger, InspectorClose as PopoverClose, InspectorContent as PopoverContent } from "~/ui/Inspector";
+} from "~/components/ui/menu";
+import { InspectorHeaderActions, Inspector as Popover, InspectorTrigger as PopoverTrigger, InspectorClose as PopoverClose, InspectorContent as PopoverContent } from "~/components/ui/inspector";
 import { getEventDateLabel, getEventRangeLabel } from "../calendar-math";
 import {
 	eventFormValues,
