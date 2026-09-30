@@ -1,6 +1,8 @@
 import type { Calendar, Event } from "@musubi/types";
 import { describe, expect, it } from "vitest";
 import { acceptEventNotice, collectNotifications, connectionNotifications, deliveryNotifications, eventNotifications, type EventChangeNotice } from "./model";
+import { TaskSchema } from "@musubi/types";
+import { acceptTaskNotice, taskNotifications, taskDeliveryNotifications } from "./model";
 
 const message = (revision = 3, actorID: string | undefined = "other") => ({ type: "event_updated", payload: { id: "meeting", revision, actorID, title: "Private SSE title" } });
 const event = { id: "meeting", revision: 3, title: "Readable title" } as Event;
@@ -42,4 +44,21 @@ describe("notification sources", () => {
     expect(items[0]).toMatchObject({ title: "Fresh title", needsAttention: true, action: { kind: "delivery", eventId: "meeting" } });
     expect(new Set(items.map(item => item.id)).size).toBe(3);
   });
+});
+
+it("deduplicates shared task activity, never infers an actor, and drops revoked content", () => {
+  const frame = { type: "task_updated", payload: { id: "shared", revision: 4, actorID: "other", title: "Private frame title" } };
+  const notices = acceptTaskNotice([], frame, "me");
+  expect(acceptTaskNotice(notices, frame, "me")).toBe(notices);
+  expect(acceptTaskNotice(notices, { ...frame, payload: { ...frame.payload, revision: 3 } }, "me")).toBe(notices);
+  expect(acceptTaskNotice([], { ...frame, payload: { ...frame.payload, actorID: "me" } }, "me")).toEqual([]);
+  expect(acceptTaskNotice([], { type: "task_updated", payload: { id: "shared", revision: 4, creatorID: "other" } }, "me")).toEqual([]);
+  expect(notices[0]).not.toHaveProperty("title");
+  const task = TaskSchema.parse({ id: "shared", calendarID: "home", creatorID: "other", revision: 4, title: "Authorized task", status: "completed" });
+  expect(taskNotifications(notices, [task]).items[0]).toMatchObject({ title: task.title, detail: "Changed by another member", action: { kind: "task", taskId: task.id } });
+  expect(taskNotifications(notices, [{ ...task, revision: 3 }]).items).toEqual([]);
+  expect(taskNotifications(notices, []).items).toEqual([]);
+  const items = collectNotifications([taskNotifications(notices, [task]), taskDeliveryNotifications([{ taskId: task.id, savedTitle: task.title }])]);
+  expect(items).toHaveLength(2);
+  expect(items[1]).toMatchObject({ needsAttention: true, action: { kind: "task-delivery" } });
 });

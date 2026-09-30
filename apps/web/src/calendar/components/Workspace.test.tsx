@@ -866,7 +866,8 @@ describe("Workspace", () => {
     ).toBeNull();
   });
 
-  it("keeps saved tasks readable but not editable offline", () => {
+  it("keeps saved tasks readable but not editable offline", async () => {
+    const user = userEvent.setup();
     render(
       <Workspace
         {...commonProps}
@@ -904,9 +905,11 @@ describe("Workspace", () => {
         })
         .hasAttribute("disabled"),
     ).toBe(true);
-    expect(
-      within(tasks).queryByRole("button", { name: /Saved offline task/ }),
-    ).toBeNull();
+    await user.click(within(tasks).getByRole("button", { name: /Saved offline task/ }));
+    const detail = screen.getByRole("dialog", { name: "Saved offline task" });
+    expect(within(detail).getByRole("combobox", { name: "Task status" }).hasAttribute("disabled")).toBe(true);
+    expect(within(detail).queryByRole("button", { name: "Edit" })).toBeNull();
+    expect(within(detail).queryByRole("button", { name: "More task actions" })).toBeNull();
   });
 
   it("edits and deletes an event when its home calendar is writable", async () => {

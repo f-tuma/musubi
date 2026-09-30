@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import { TaskForkAttempts } from "./task-fork-attempts";
 import { CalendarSchema, TaskSchema } from "@musubi/types";
 import { calendarTasks, isCalendarTask } from "./task-calendar";
+import { taskCalendarIDs, taskCapabilities, taskHomeCalendarID, uniqueTasks } from "./task-sharing";
 const calendar = CalendarSchema.parse({ id: "cal", creatorID: "owner", name: "Tasks", color: "#123456", role: "owner", members: [], isDefault: false });
 const task = TaskSchema.parse({ id: "one", creatorID: "owner", calendarID: "cal", title: "Deadline", start: "2026-09-10T09:00:00Z", due: "2026-09-15T14:00:00Z" });
 const projected = calendarTasks([task], [calendar])[0];
@@ -34,3 +36,36 @@ for (const zone of ["Europe/Prague", "America/Los_Angeles", "Pacific/Auckland"])
 if (previousZone === undefined) delete process.env.TZ;
 else process.env.TZ = previousZone;
 console.log("Task calendar projection passed");
+
+const mirror = CalendarSchema.parse({ ...calendar, id: "mirror", role: "editor", name: "Shared" });
+const shared = TaskSchema.parse({ ...task, revision: 2, calendarIDs: [calendar.id, mirror.id], originCalendarID: calendar.id });
+assert.deepEqual(taskCalendarIDs(shared), [calendar.id, mirror.id]);
+assert.equal(calendarTasks([shared, shared], [calendar, mirror]).length, 2);
+assert.deepEqual(calendarTasks([shared], [calendar, mirror])[0].calendars, [calendar.id, mirror.id]);
+assert.equal(uniqueTasks([shared, shared]).length, 1);
+assert.equal(taskCapabilities(shared, [mirror]).edit, false);
+assert.equal(taskCapabilities(shared, [calendar, mirror]).edit, true);
+assert.equal(taskCapabilities(task, [calendar]).edit, false);
+const readableMirror = TaskSchema.parse({ ...shared, calendarIDs: [mirror.id], capabilities: { edit: false, delete: false, link: false, fork: true, unlinkCalendarIDs: [mirror.id] } });
+assert.equal(calendarTasks([readableMirror], [mirror]).length, 2);
+assert.equal(calendarTasks([readableMirror], [mirror])[0].originCalendarID, calendar.id);
+assert.equal(taskHomeCalendarID({ ...readableMirror, originCalendarID: null }), undefined);
+assert.equal(taskCapabilities(readableMirror, [mirror]).edit, false);
+
+
+// A lost fork response retries the same attempt; only an acknowledgement starts a new copy.
+let attemptSequence = 0;
+const attempts = new TaskForkAttempts(() => `attempt-${++attemptSequence}`);
+const source = { ...task, revision: 4 };
+const first = attempts.get("server/actor-a", source, "destination");
+assert.equal(attempts.get("server/actor-a", source, "destination"), first);
+assert.notEqual(attempts.get("server/actor-a", source, "other"), first);
+assert.notEqual(attempts.get("server/actor-a", { ...source, revision: 5 }, "destination"), first);
+assert.notEqual(attempts.get("server/actor-a", { ...source, providerReadRetiredGeneration: 1 }, "destination"), first);
+attempts.acknowledge(first);
+assert.notEqual(attempts.get("server/actor-a", source, "destination"), first);
+const anotherActor = attempts.get("server/actor-b", source, "destination");
+assert.notEqual(attempts.get("server/actor-a", source, "destination"), anotherActor);
+
+assert.equal(uniqueTasks([{ ...task, revision: 5 }, { ...task, revision: 3 }])[0].revision, 5);
+assert.equal(uniqueTasks([{ ...task, revision: 5, providerReadRetiredGeneration: 1 }, { ...task, revision: 5 }])[0].providerReadRetiredGeneration, 1);

@@ -21,6 +21,11 @@ const statusOf = (error: unknown) => {
   return Number.isFinite(parsed) ? parsed : undefined;
 };
 
+export function isAuthorizationError(error: unknown) {
+  const status = statusOf(error) ?? Number(messageOf(error).match(/^\d+/)?.[0]);
+  return status === 401 || status === 403;
+}
+
 export function isNetworkError(error: unknown) {
   const message = messageOf(error).toLowerCase();
   const status = statusOf(error);

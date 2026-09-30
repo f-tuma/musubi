@@ -48,7 +48,7 @@ import { fixtureCalendars } from "../fixtures";
 
 it("refreshes a coalesced retired baseline and keeps an explicit clear through repeated retirement", async () => {
   const user = userEvent.setup();
-  const task = TaskSchema.parse({ id: "task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Private title", description: "Private description" });
+  const task = TaskSchema.parse({ revision: 1, id: "task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Private title", description: "Private description" });
   const onUpdate = vi.fn(async () => task);
   const props = { calendars: fixtureCalendars, tasks: [task], createRequest: 0, editableCalendarIds: new Set([task.calendarID]), offline: false, tasksResolved: true, onCreateRequestHandled: vi.fn(), onCreate: vi.fn(), onUpdate, onRemove: vi.fn(), settings: { timeFormat: "24h" as const, weekStartsOn: "monday" as const } };
   const view = render(<TaskList {...props} />);
@@ -65,7 +65,7 @@ it("refreshes a coalesced retired baseline and keeps an explicit clear through r
 
 it("retires a removed source only after confirmed task data, retaining authored title", async () => {
   const user = userEvent.setup();
-  const task = TaskSchema.parse({ id: "task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Private title", description: "Private description" });
+  const task = TaskSchema.parse({ revision: 1, id: "task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Private title", description: "Private description" });
   const props = { calendars: fixtureCalendars, tasks: [task], createRequest: 0, editableCalendarIds: new Set([task.calendarID]), offline: false, onCreateRequestHandled: vi.fn(), onCreate: vi.fn(), onUpdate: vi.fn(), onRemove: vi.fn(), settings: { timeFormat: "24h" as const, weekStartsOn: "monday" as const } };
   const view = render(<TaskList {...props} />);
   await user.click(screen.getByRole("button", { name: /Private title/ }));
@@ -82,7 +82,7 @@ it("retires a removed source only after confirmed task data, retaining authored 
 
 it("refreshes untouched task fields after separate retirement and same-generation restoration before saving", async () => {
   const user = userEvent.setup();
-  const task = TaskSchema.parse({ id: "task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Original private task", description: "Original notes", url: "https://private.example.test/old", relatedTo: "old-related" });
+  const task = TaskSchema.parse({ revision: 1, id: "task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Original private task", description: "Original notes", url: "https://private.example.test/old", relatedTo: "old-related" });
   const onUpdate = vi.fn(async () => task);
   const props = { calendars: fixtureCalendars, tasks: [task], createRequest: 0, editableCalendarIds: new Set([task.calendarID]), offline: false, tasksResolved: true, onCreateRequestHandled: vi.fn(), onCreate: vi.fn(), onUpdate, onRemove: vi.fn(), settings: { timeFormat: "24h" as const, weekStartsOn: "monday" as const } };
   const view = render(<TaskList {...props} />);
@@ -101,7 +101,7 @@ it("refreshes untouched task fields after separate retirement and same-generatio
 
 it("preserves authored title and explicit note clear through separate retirement and restoration", async () => {
   const user = userEvent.setup();
-  const task = TaskSchema.parse({ id: "task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Private draft source", description: "Private notes" });
+  const task = TaskSchema.parse({ revision: 1, id: "task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Private draft source", description: "Private notes" });
   const onUpdate = vi.fn(async () => task);
   const props = { calendars: fixtureCalendars, tasks: [task], createRequest: 0, editableCalendarIds: new Set([task.calendarID]), offline: false, tasksResolved: true, onCreateRequestHandled: vi.fn(), onCreate: vi.fn(), onUpdate, onRemove: vi.fn(), settings: { timeFormat: "24h" as const, weekStartsOn: "monday" as const } };
   const view = render(<TaskList {...props} />);
@@ -121,13 +121,13 @@ it("preserves authored title and explicit note clear through separate retirement
 afterEach(cleanup);
 
 function emptyTaskProps() {
-  return { calendars: fixtureCalendars, tasks: [], createRequest: 0, editableCalendarIds: new Set([fixtureCalendars[0]!.id]), offline: false, onCreateRequestHandled: vi.fn(), onCreate: vi.fn(async input => TaskSchema.parse({ ...input, creatorID: "owner" })), onUpdate: vi.fn(), onRemove: vi.fn(), settings: { timeFormat: "24h" as const, weekStartsOn: "monday" as const } };
+  return { calendars: fixtureCalendars, tasks: [], createRequest: 0, editableCalendarIds: new Set([fixtureCalendars[0]!.id]), offline: false, onCreateRequestHandled: vi.fn(), onCreate: vi.fn(async input => TaskSchema.parse({ revision: 1, ...input, creatorID: "owner" })), onUpdate: vi.fn(), onRemove: vi.fn(), settings: { timeFormat: "24h" as const, weekStartsOn: "monday" as const } };
 }
 
 it("keeps a folded imported recurrence unchanged when saving another field", async () => {
   const user = userEvent.setup();
   const recurrence = "RRULE:FREQ=MONTHLY;BYDAY=2MO\nEXDATE:20260914T090000Z";
-  const task = TaskSchema.parse({ id: "task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Plan workshop", recurrence });
+  const task = TaskSchema.parse({ revision: 1, id: "task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Plan workshop", recurrence });
   const props = { ...emptyTaskProps(), tasks: [task], onUpdate: vi.fn(async () => task) };
   render(<TaskList {...props} />);
   await user.click(screen.getByRole("button", { name: /Plan workshop/ }));
@@ -163,7 +163,7 @@ it("offers no empty-state creation while offline or without an editable calendar
 
 it("keeps due-only recurrence anchored without adding a start", async () => {
   const user = userEvent.setup();
-  const task = TaskSchema.parse({ id: "task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Weekly review", due: new Date(2026, 8, 14), start: null });
+  const task = TaskSchema.parse({ revision: 1, id: "task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Weekly review", due: new Date(2026, 8, 14), start: null });
   const props = { ...emptyTaskProps(), tasks: [task], onUpdate: vi.fn(async () => task) };
   render(<TaskList {...props} />);
   await user.click(screen.getByRole("button", { name: /Weekly review/ }));
@@ -176,7 +176,7 @@ it("keeps due-only recurrence anchored without adding a start", async () => {
 
 it("updates status inline without dropping recurrence", async () => {
   const user = userEvent.setup();
-  const task = TaskSchema.parse({ id: "inline", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Inline task", recurrence: "FREQ=WEEKLY" });
+  const task = TaskSchema.parse({ revision: 1, id: "inline", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Inline task", recurrence: "FREQ=WEEKLY" });
   const props = { ...emptyTaskProps(), tasks: [task], onUpdate: vi.fn(async () => task) };
   render(<TaskList {...props} />);
   await user.click(screen.getByRole("combobox", { name: "Status of Inline task" }));
@@ -188,7 +188,7 @@ it("updates status inline without dropping recurrence", async () => {
 it("exposes failed inline status writes", async () => {
   const user = userEvent.setup();
   const completedAt = new Date();
-  const task = TaskSchema.parse({ id: "inline", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Inline task", status: "completed", completedAt, percentComplete: 100 });
+  const task = TaskSchema.parse({ revision: 1, id: "inline", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Inline task", status: "completed", completedAt, percentComplete: 100 });
   const props = { ...emptyTaskProps(), tasks: [task], onUpdate: vi.fn(async () => { throw new Error("offline"); }) };
   render(<TaskList {...props} />);
   await user.click(screen.getByRole("combobox", { name: "Status of Inline task" }));
@@ -201,7 +201,7 @@ it("exposes failed inline status writes", async () => {
 
 it("returns keyboard focus to the status control after moving between groups", async () => {
   const user = userEvent.setup();
-  const task = TaskSchema.parse({ id: "focus", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Focus task" });
+  const task = TaskSchema.parse({ revision: 1, id: "focus", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Focus task" });
   function Example() {
     const [tasks, setTasks] = useState([task]);
     return <TaskList {...emptyTaskProps()} tasks={tasks} onUpdate={async (_id, update) => {
@@ -222,7 +222,7 @@ it("returns keyboard focus to the status control after moving between groups", a
 it("groups every task under its own phase", () => {
   const statuses = ["needs-action", "in-process", "completed", "cancelled"] as const;
   const labels = ["Needs action", "In progress", "Completed", "Cancelled"];
-  const tasks = statuses.map(status => TaskSchema.parse({ id: status, creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: `Task ${status}`, status }));
+  const tasks = statuses.map(status => TaskSchema.parse({ revision: 1, id: status, creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: `Task ${status}`, status }));
   render(<TaskList {...emptyTaskProps()} tasks={tasks} />);
   statuses.forEach((status, index) => {
     const group = screen.getByRole("heading", { name: `${labels[index]} 1` }).closest("section")!;
@@ -246,7 +246,7 @@ it("shows all four Kanban columns and creates tasks directly in their phase", as
 });
 
 it("offers a keyboard path from the drag handle to task details", async () => {
-  const task = TaskSchema.parse({ id: "drag", title: "Drag task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id });
+  const task = TaskSchema.parse({ revision: 1, id: "drag", title: "Drag task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id });
   const onOpenTask = vi.fn();
   render(<TaskList {...emptyTaskProps()} tasks={[task]} layout="kanban" onOpenTask={onOpenTask} />);
   expect(screen.queryByRole("combobox")).toBeNull();
@@ -255,7 +255,7 @@ it("offers a keyboard path from the drag handle to task details", async () => {
 });
 
 it("keeps read-only Kanban cards visible without drag or create actions", () => {
-  const task = TaskSchema.parse({ id: "readonly", title: "Read only task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id });
+  const task = TaskSchema.parse({ revision: 1, id: "readonly", title: "Read only task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id });
   render(<TaskList {...emptyTaskProps()} tasks={[task]} editableCalendarIds={new Set()} offline layout="kanban" />);
   expect(screen.getByText("Read only task")).toBeTruthy();
   expect(screen.queryByRole("button", { name: /Drag Read only task/ })).toBeNull();
@@ -264,7 +264,7 @@ it("keeps read-only Kanban cards visible without drag or create actions", () => 
 });
 
 it("lets touch gestures scroll the card while keeping touch drag on its handle", () => {
-  const task = TaskSchema.parse({ id: "touch", title: "Touch task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id });
+  const task = TaskSchema.parse({ revision: 1, id: "touch", title: "Touch task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id });
   render(<TaskList {...emptyTaskProps()} tasks={[task]} layout="kanban" />);
   const card = screen.getByRole("button", { name: "Touch task" }).closest("[data-task-id]")!;
   const press = () => Object.assign(new Event("pointerdown", { bubbles: true, cancelable: true }), { pointerType: "touch", pointerId: 8, button: 0, clientX: 20, clientY: 20 });
@@ -280,7 +280,7 @@ it("lets touch gestures scroll the card while keeping touch drag on its handle",
 });
 
 it("follows the active pointer even when a child stops move and release propagation", async () => {
-  const task = TaskSchema.parse({ id: "pointer", title: "Pointer task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id });
+  const task = TaskSchema.parse({ revision: 1, id: "pointer", title: "Pointer task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id });
   render(<TaskList {...emptyTaskProps()} tasks={[task]} layout="kanban" />);
   const card = screen.getByRole("button", { name: "Pointer task" }).closest("[data-task-id]")!;
   const pointer = (type: string, x: number, id = 7) => Object.assign(new Event(type, { bubbles: true, cancelable: true }), {
@@ -312,7 +312,7 @@ it("follows the active pointer even when a child stops move and release propagat
 
 it("collapses a list group without losing its count or tasks", async () => {
   const user = userEvent.setup();
-  const task = TaskSchema.parse({ id: "collapse", title: "Collapsible task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id });
+  const task = TaskSchema.parse({ revision: 1, id: "collapse", title: "Collapsible task", creatorID: "owner", calendarID: fixtureCalendars[0]!.id });
   render(<TaskList {...emptyTaskProps()} tasks={[task]} />);
   const toggle = screen.getByRole("button", { name: "Needs action 1" });
   await user.click(toggle);
@@ -387,7 +387,7 @@ describe.each(["Europe/Prague", "America/Los_Angeles"])("date-only task scheduli
   it("keeps the UTC weekday when setting recurrence on an all-day task", async () => {
     const user = userEvent.setup();
     const due = new Date("2026-09-25T00:00:00Z");
-    const task = TaskSchema.parse({ id: "all-day", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Weekly review", due, start: null, isAllDay: true });
+    const task = TaskSchema.parse({ revision: 1, id: "all-day", creatorID: "owner", calendarID: fixtureCalendars[0]!.id, title: "Weekly review", due, start: null, isAllDay: true });
     const props = { ...emptyTaskProps(), tasks: [task] };
     render(<TaskList {...props} />);
     await user.click(screen.getByRole("button", { name: /Weekly review/ }));
@@ -399,4 +399,24 @@ describe.each(["Europe/Prague", "America/Los_Angeles"])("date-only task scheduli
     expect(props.onUpdate).toHaveBeenCalledWith(task.id, expect.objectContaining({ due, recurrence: "FREQ=WEEKLY;BYDAY=FR", start: null }));
     expect(taskRecurrenceSummary("FREQ=WEEKLY", due, true)).toBe("Every week on Fri");
   });
+});
+
+
+it("retries a lost create response with the same task identity and starts a new identity after acknowledgement", async () => {
+  const user = userEvent.setup();
+  const props = emptyTaskProps();
+  props.onCreate.mockRejectedValueOnce(new Error("Lost response"));
+  render(<TaskList {...props} />);
+  await user.click(screen.getByRole("button", { name: "Create task" }));
+  await user.type(screen.getByRole("textbox", { name: "Title" }), "Prepare workshop");
+  await user.click(screen.getByRole("button", { name: "Save task" }));
+  expect(screen.getByRole("alert").textContent).toContain("could not be created");
+  await user.click(screen.getByRole("button", { name: "Save task" }));
+  const first = props.onCreate.mock.calls[0]![0].id;
+  expect(first).toMatch(/^[a-f0-9-]{36}$/);
+  expect(props.onCreate.mock.calls[1]![0].id).toBe(first);
+  await user.click(screen.getByRole("button", { name: "Create task" }));
+  await user.type(screen.getByRole("textbox", { name: "Title" }), "Separate workshop");
+  await user.click(screen.getByRole("button", { name: "Save task" }));
+  expect(props.onCreate.mock.calls[2]![0].id).not.toBe(first);
 });

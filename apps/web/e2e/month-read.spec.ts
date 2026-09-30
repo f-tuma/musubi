@@ -404,6 +404,7 @@ async function mockAuthenticatedReads(
 	);
 	await page.route("**/api/v1/tasks", (route) => respond(route, { tasks: [] }));
 	await page.route("**/api/v1/event-deliveries", route => respond(route, { items: [], nextCursor: null }));
+  await page.route("**/api/v1/task-deliveries*", route => respond(route, { items: [], nextCursor: null }));
 	await page.route("**/api/auth/sign-out", (route) => {
 		authenticated = false;
 		return respond(route, { success: true });
@@ -9675,23 +9676,23 @@ test("CalDAV task editor retires coalesced baseline and preserves explicit clear
     (window as unknown as { EventSource: unknown }).EventSource = TaskPrivacyStream;
   });
   await mockAuthenticatedReads(page, events, [{ ...calendars[0]!, provider: "caldav", supportsTasks: true, role: "owner" }]);
-  let current = { id: "11111111-1111-4111-8111-111111111111", creatorID: "alex", calendarID: "personal", title: "Private task baseline", description: "Private copied notes", status: "needs-action", isAllDay: false, sequence: 3, percentComplete: 0, priority: 0, providerReadRetiredGeneration: null as number | null };
+  let current = { revision: 4, id: "11111111-1111-4111-8111-111111111111", creatorID: "alex", calendarID: "personal", title: "Private task baseline", description: "Private copied notes", status: "needs-action", isAllDay: false, sequence: 3, percentComplete: 0, priority: 0, providerReadRetiredGeneration: null as number | null };
   await page.route("**/api/v1/tasks", route => respond(route, { tasks: [current] }));
   const writes: Record<string, unknown>[] = [];
   await page.route("**/api/v1/tasks/*", route => {
     writes.push(route.request().postDataJSON());
-    return respond(route, { ...current, ...writes.at(-1) });
+    return respond(route, { task: { ...current, ...(writes.at(-1)?.patch as object), revision: current.revision + 1 }, localCommitted: true });
   });
   await page.goto(`/app/p/${DEFAULT_PAGE_ID}/tasks?date=2026-07-26`);
   await page.getByRole("button", { name: /Private task baseline/ }).click();
   await page.getByRole("dialog", { name: "Private task baseline", exact: true }).getByRole("button", { name: "Edit", exact: true }).click();
   await page.getByRole("textbox", { name: "Notes", exact: true }).fill("");
   const emit = () => page.evaluate(() => (window as unknown as { taskPrivacyStream: { onmessage: (event: { data: string }) => void } }).taskPrivacyStream.onmessage({ data: JSON.stringify({ type: "external_sync" }) }));
-  current = { ...current, title: "Fresh permitted task", description: "Fresh copied notes", providerReadRetiredGeneration: 1 };
+  current = { ...current, revision: 5, title: "Fresh permitted task", description: "Fresh copied notes", providerReadRetiredGeneration: 1 };
   await emit();
   await expect(page.getByRole("textbox", { name: "Title", exact: true })).toHaveValue("Fresh permitted task");
   await expect(page.getByRole("textbox", { name: "Notes", exact: true })).toHaveValue("");
-  current = { ...current, title: "Second permitted task", description: "Second copied notes", providerReadRetiredGeneration: 2 };
+  current = { ...current, revision: 6, title: "Second permitted task", description: "Second copied notes", providerReadRetiredGeneration: 2 };
   await emit();
   await expect(page.getByRole("textbox", { name: "Title", exact: true })).toHaveValue("Second permitted task");
   await expect(page.getByRole("textbox", { name: "Notes", exact: true })).toHaveValue("");
@@ -9699,7 +9700,7 @@ test("CalDAV task editor retires coalesced baseline and preserves explicit clear
   await page.screenshot({ path: testInfo.outputPath("caldav-task-retirement.png") });
   await page.getByRole("button", { name: "Save task", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Edit task" })).toHaveCount(0);
-  expect(writes).toEqual([expect.objectContaining({ title: "Second permitted task", description: null, expectedProviderReadRetiredGeneration: 2 })]);
+  expect(writes).toEqual([expect.objectContaining({ patch: expect.objectContaining({ title: "Second permitted task", description: null }), expectedRevision: 6, expectedProviderReadRetiredGeneration: 2 })]);
   await expect(page.locator("vite-error-overlay")).toHaveCount(0);
   expect(errors).toEqual([]);
 });
@@ -10062,8 +10063,8 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     let saved: Record<string, unknown> | undefined;
     await page.route("**/api/v1/tasks", route => {
       if (route.request().method() === "POST") {
-        saved = { ...route.request().postDataJSON(), creatorID: session.user.id };
-        return respond(route, saved);
+        saved = { ...route.request().postDataJSON(), creatorID: session.user.id, revision: 1 };
+        return respond(route, { task: saved, localCommitted: true });
       }
       return respond(route, { tasks: saved ? [saved] : [] });
     });
@@ -10099,7 +10100,7 @@ for (const width of [1280, 390]) {
   test(`Kanban preserves layout and moves tasks between phases at ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await mockAuthenticatedReads(page);
-    let task = { id: "kanban-task", creatorID: session.user.id, calendarID: "personal", title: "Kanban review", status: "needs-action", percentComplete: 0, priority: 5, sequence: 0, isAllDay: false, recurrence: "FREQ=WEEKLY", start: null, due: null, completedAt: null };
+    let task = { revision: 1, id: "kanban-task", creatorID: session.user.id, calendarID: "personal", title: "Kanban review", status: "needs-action", percentComplete: 0, priority: 5, sequence: 0, isAllDay: false, recurrence: "FREQ=WEEKLY", start: null, due: null, completedAt: null };
     let failMove = false;
     let responseGate: Promise<void> | undefined;
     let releaseResponse: (() => void) | undefined;
@@ -10108,8 +10109,9 @@ for (const width of [1280, 390]) {
     await page.route("**/api/v1/tasks/kanban-task", async route => {
       if (failMove) { await route.fulfill({ status: 500, body: "Failed" }); return; }
       await responseGate;
-      task = { ...task, ...route.request().postDataJSON() };
-      await respond(route, task);
+      expect(route.request().method()).toBe("PATCH");
+      task = { ...task, ...route.request().postDataJSON().patch, revision: task.revision + 1 };
+      await respond(route, { task, localCommitted: true });
     });
     await page.goto(`/app/p/${DEFAULT_PAGE_ID}/tasks?date=2026-07-26`);
     await page.getByRole("radio", { name: "Kanban", exact: true }).click();
@@ -10250,7 +10252,7 @@ test("dated tasks appear in month and week and open task details", async ({ page
   page.on("pageerror", error => errors.push(error.message));
   await mockAuthenticatedReads(page);
   let datedTask = {
-    id: "calendar-task-fixture", creatorID: "user-web-qa", calendarID: "personal",
+    revision: 1, id: "calendar-task-fixture", creatorID: "user-web-qa", calendarID: "personal",
     title: "Calendar task deadline", status: "needs-action", start: "2026-07-27T08:00:00.000Z",
     due: "2026-07-28T16:00:00.000Z", isAllDay: false, priority: 5,
     percentComplete: 0, sequence: 0, description: "Task details from the calendar",
@@ -10259,9 +10261,9 @@ test("dated tasks appear in month and week and open task details", async ({ page
     { ...datedTask, id: "undated", title: "Undated task", start: null, due: null },
   ] }));
   await page.route("**/api/v1/tasks/calendar-task-fixture", async route => {
-    expect(route.request().method()).toBe("PUT");
-    datedTask = { ...datedTask, ...route.request().postDataJSON() };
-    await respond(route, datedTask);
+    expect(route.request().method()).toBe("PATCH");
+    datedTask = { ...datedTask, ...route.request().postDataJSON().patch, revision: datedTask.revision + 1 };
+    await respond(route, { task: datedTask, localCommitted: true });
   });
   await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-27`);
   const markers = page.locator('[data-event-id^="calendar-task:calendar-task-fixture:"]');
@@ -10463,7 +10465,7 @@ test("local floating default persists and falls back to a panel on smaller scree
 test("task inspector keeps compact form spacing at tall heights and retains floating mode when editing", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1256 });
   await mockAuthenticatedReads(page);
-  const task = { id: "floating-task", creatorID: session.user.id, calendarID: "personal", title: "Pack for the weekend", status: "needs-action", percentComplete: 0, priority: 5, sequence: 0, isAllDay: false, start: null, due: null, completedAt: null };
+  const task = { revision: 1, id: "floating-task", creatorID: session.user.id, calendarID: "personal", title: "Pack for the weekend", status: "needs-action", percentComplete: 0, priority: 5, sequence: 0, isAllDay: false, start: null, due: null, completedAt: null };
   await page.route("**/api/v1/tasks", route => respond(route, { tasks: [task] }));
   await page.goto(`/app/p/${DEFAULT_PAGE_ID}/tasks?date=2026-07-26`);
   await page.getByRole("button", { name: "Pack for the weekend Personal", exact: true }).click();
@@ -11017,3 +11019,118 @@ for (const theme of ["light", "dark"] as const) {
     await expectNoAccessibilityViolations(page);
   });
 }
+
+for (const theme of ["light", "dark"] as const) {
+  test(`shared tasks link, copy and unlink one canonical identity: ${theme}`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 916 });
+    await setTestTheme(page, theme);
+    await mockAuthenticatedReads(page);
+    let task = { id: "shared-task", revision: 4, creatorID: session.user.id, calendarID: "personal", originCalendarID: "personal", calendarIDs: ["personal"], title: "Shared release checklist", description: "One logical task", status: "needs-action", isAllDay: false, percentComplete: 0, priority: 0, capabilities: { edit: true, delete: true, link: true, fork: true, unlinkCalendarIDs: [] as string[] } };
+    const copies: typeof task[] = [];
+    await page.route("**/api/v1/tasks", route => respond(route, { tasks: [task, task, ...copies] }));
+    await page.route("**/api/v1/tasks/shared-task/link", route => {
+      expect(route.request().postDataJSON()).toEqual({ calendarID: "studio", expectedRevision: 4, expectedProviderReadRetiredGeneration: 0 });
+      task = { ...task, revision: 5, calendarIDs: ["personal", "studio"], capabilities: { ...task.capabilities, unlinkCalendarIDs: ["studio"] } };
+      return respond(route, { task, localCommitted: true });
+    });
+    const forkAttempts: string[] = [];
+    await page.route("**/api/v1/tasks/shared-task/fork", route => {
+      const operationId = route.request().headers()["idempotency-key"];
+      expect(operationId).toMatch(/^[a-f0-9-]{36}$/); forkAttempts.push(operationId!);
+      if (theme === "light" && forkAttempts.length === 1) return route.abort("failed");
+      const body = route.request().postDataJSON();
+      expect(body.calendarID).toBe("family"); expect(body.expectedRevision).toBe(5);
+      const copy = { ...task, id: "independent-task", title: "Independent checklist", revision: 1, calendarID: "family", originCalendarID: "family", calendarIDs: ["family"] };
+      copies.push(copy); return respond(route, { task: copy, localCommitted: true });
+    });
+    await page.route("**/api/v1/tasks/shared-task", route => {
+      expect(route.request().method()).toBe("DELETE");
+      expect(route.request().postDataJSON()).toEqual({ expectedRevision: 5, expectedProviderReadRetiredGeneration: 0, unlinkCalendarID: "studio" });
+      task = { ...task, revision: 6, calendarIDs: ["personal"], capabilities: { ...task.capabilities, unlinkCalendarIDs: [] } };
+      return respond(route, { id: task.id, revision: 6, removed: false, task, localCommitted: true });
+    });
+    await page.goto(`/app/p/${DEFAULT_PAGE_ID}/tasks?date=2026-07-26`);
+    const row = page.getByRole("region", { name: "Tasks", exact: true }).getByRole("button", { name: /^Shared release checklist/ });
+    await expect(row).toHaveCount(1); await row.click();
+    const detail = page.getByRole("dialog", { name: task.title, exact: true });
+    await detail.getByRole("button", { name: "More task actions" }).click();
+    await page.getByRole("menuitem", { name: "Link to another calendar" }).click();
+    await detail.getByRole("button", { name: "Link to Studio", exact: true }).click();
+    await expect(detail.getByRole("listitem", { name: "Studio · Linked calendar" })).toBeVisible();
+    await expect(row).toHaveCount(1); await expectNoAccessibilityViolations(page);
+    await detail.screenshot({ path: `/tmp/musubi-shared-task-${theme}.png` });
+    await detail.getByRole("button", { name: "More task actions" }).click();
+    await page.getByRole("menuitem", { name: "Make an independent copy" }).click();
+    await detail.getByRole("button", { name: "Make copy in Family", exact: true }).click();
+    if (theme === "light") {
+      await expect(detail.getByRole("alert")).toBeVisible();
+      await detail.getByRole("button", { name: "Make copy in Family", exact: true }).click();
+      expect(forkAttempts[1]).toBe(forkAttempts[0]);
+    }
+    await expect(page.getByRole("button", { name: /^Independent checklist/ })).toBeVisible();
+    expect(copies).toHaveLength(1);
+    await detail.getByRole("button", { name: "More task actions" }).click();
+    await page.getByRole("menuitem", { name: "Remove from Studio" }).click();
+    await page.getByRole("dialog", { name: "Remove task from calendar" }).getByRole("button", { name: "Remove from calendar", exact: true }).click();
+    await expect(detail).toHaveCount(0); await expect(row).toHaveCount(1);
+    expect(task.calendarIDs).toEqual(["personal"]);
+  });
+}
+
+test("shared task activity opens a readonly mirror and clears revoked details with bell focus", async ({ page }) => {
+  await page.addInitScript(() => {
+    class TaskStream {
+      onmessage: ((event: { data: string }) => void) | null = null;
+      readyState = 1;
+      constructor() { (window as unknown as { sharedTaskStream: TaskStream }).sharedTaskStream = this; }
+      close() { this.readyState = 2; }
+      addEventListener() {}
+      removeEventListener() {}
+    }
+    (window as unknown as { EventSource: unknown }).EventSource = TaskStream;
+  });
+  await mockAuthenticatedReads(page);
+  const task = { id: "mirror-news", revision: 3, creatorID: "other", calendarID: "studio", originCalendarID: "private-home", calendarIDs: ["studio"], title: "Private shared task", description: "Authorized mirror notes", status: "in-process", isAllDay: false, percentComplete: 50, priority: 5, capabilities: { edit: false, delete: false, link: false, fork: true, unlinkCalendarIDs: ["studio"] } };
+  let revoked = false;
+  await page.route("**/api/v1/tasks", route => respond(route, { tasks: revoked ? [] : [task] }));
+  await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-26`);
+  const emit = (revision: number, type = "task_updated") => page.evaluate(({ revision, type }) => (window as unknown as { sharedTaskStream: { onmessage: (event: { data: string }) => void } }).sharedTaskStream.onmessage({ data: JSON.stringify({ type, payload: { id: "mirror-news", actorID: "other", revision } }) }), { revision, type });
+  await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { sharedTaskStream?: { onmessage: unknown } }).sharedTaskStream?.onmessage))).toBe(true);
+  await emit(3);
+  const bell = page.getByRole("button", { name: /^Notifications/ }); await bell.click();
+  await page.getByRole("button", { name: /Private shared task.*Changed by another member/ }).click();
+  const detail = page.getByRole("dialog", { name: task.title, exact: true });
+  await expect(detail.getByText(task.description)).toBeVisible();
+  await expect(detail.getByRole("combobox", { name: "Task status" })).toBeDisabled();
+  await expect(detail.getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
+  await expect(detail.getByRole("listitem", { name: "Studio · Linked calendar" })).toBeVisible();
+  await expectNoAccessibilityViolations(page);
+  revoked = true; await emit(4, "task_removed");
+  await expect(page.getByText(task.description)).toHaveCount(0); await expect(detail).toHaveCount(0);
+  await page.getByRole("dialog", { name: "Task", exact: true }).getByRole("button", { name: "Close task", exact: true }).click();
+  await expect(bell).toBeFocused();
+});
+
+test("task delivery notifications recover proven failed writes without retrying uncertain creates", async ({ page }) => {
+  await mockAuthenticatedReads(page);
+  let recovered = false;
+  const operationId = "11111111-1111-4111-8111-111111111111", uncertainId = "22222222-2222-4222-8222-222222222222";
+  await page.route("**/api/v1/task-deliveries*", route => respond(route, { items: recovered ? [] : [{ taskId: "delivery-task", savedTitle: "Saved shared task" }], nextCursor: null }));
+  const delivery = () => ({ taskId: "delivery-task", localRevision: 4, targets: [
+    { operationId, calendarId: "studio", calendarName: "Studio", provider: "caldav", action: "update", status: recovered ? "completed" : "not-written", revision: 4, owned: true, issue: recovered ? null : "delivery-failed", updatedAt: "2026-07-26T12:00:00Z" },
+    { operationId: uncertainId, calendarId: "family", calendarName: "Family", provider: "google", action: "create", status: "unconfirmed", revision: 4, owned: true, issue: "unconfirmed", updatedAt: "2026-07-26T12:00:00Z" },
+  ] });
+  await page.route("**/api/v1/tasks/delivery-task/delivery", route => respond(route, delivery()));
+  await page.route(`**/api/v1/tasks/delivery-task/delivery/${operationId}/retry`, route => { expect(route.request().method()).toBe("POST"); recovered = true; return respond(route, delivery(), 202); });
+  await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-26`);
+  const bell = page.getByRole("button", { name: /^Notifications/ }); await bell.click();
+  await page.getByRole("button", { name: /Saved shared task.*Delivery needs attention/ }).click();
+  const panel = page.getByRole("dialog", { name: "Task delivery", exact: true });
+  await expect(panel.getByText("Delivery unconfirmed", { exact: true })).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Retry", exact: true })).toHaveCount(1);
+  await panel.getByRole("button", { name: "Retry", exact: true }).press("Enter");
+  await expect(panel.getByText("Delivered", { exact: true })).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Retry", exact: true })).toHaveCount(0);
+  await expectNoAccessibilityViolations(page);
+  await panel.getByRole("button", { name: "Close", exact: true }).click(); await expect(bell).toBeFocused();
+});

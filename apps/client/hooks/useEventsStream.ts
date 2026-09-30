@@ -1,3 +1,4 @@
+import { useTaskRefreshStore } from "@/store/useTaskRefreshStore";
 import { useDeliveryRefreshStore } from "@/store/useDeliveryRefreshStore";
 import { useEventsStore } from "@/store/useEventsStore";
 import { CLIENT_VERSION_HEADER, PRODUCT_VERSION } from "@musubi/types";
@@ -35,6 +36,7 @@ export function useConnectToEventStream() {
   });
   const silentRefresh = async (full = false) => {
     useDeliveryRefreshStore.getState().refresh();
+    useTaskRefreshStore.getState().refresh();
     try {
       await refreshRef.current({ providerSync: false, full });
     } catch (e) {
@@ -86,6 +88,11 @@ export function useConnectToEventStream() {
       });
 
       switch (data.type) {
+        case "task_created":
+        case "task_updated":
+        case "task_removed":
+          useTaskRefreshStore.getState().refresh();
+          break;
         case "event_created":
           applyLiveMutation(() => localAddEvent(toEvent(data.payload)));
           break;
@@ -104,11 +111,13 @@ export function useConnectToEventStream() {
             applyLiveMutation(() => localRemoveEvent(toEvent(data.payload)));
           break;
         case "calendar_updated":
+          useTaskRefreshStore.getState().refresh();
           applyLiveMutation(() => {
             localUpdateCalendar(data.payload);
           });
           break;
         case "calendar_removed":
+          useTaskRefreshStore.getState().refresh();
           applyLiveMutation(async () => {
             localRemoveCalendar(data.payload);
             await localRemoveCalendarEvents(data.payload.id);

@@ -1,3 +1,6 @@
+import { useServer } from "@/contexts/ServerContext";
+import { taskCapabilities, taskCalendarIDs, taskDisplayCalendar, uniqueTasks } from "@musubi/calendar";
+import { useTaskRefreshStore } from "@/store/useTaskRefreshStore";
 import { TaskEditorModal } from "@/components/tasks/TaskEditorModal";
 import { spacing, typeSizes } from "@musubi/design-system";
 import { uuidv7 } from "uuidv7";
@@ -18,7 +21,7 @@ import { Tap } from "@/components/ui/Tap";
 import { OptionPicker } from "@/components/ui/OptionPicker";
 import { Empty } from "@/components/ui/Empty";
 import { showToast } from "@/components/ui/Toast";
-import { userFacingError } from "@/lib/network";
+import { isAuthorizationError, userFacingError } from "@/lib/network";
 
 const phases: { value: TaskStatus; label: string; icon: "circle" | "clock" | "check-circle" | "x-circle" }[] = [
   { value: "needs-action", label: "Needs action", icon: "circle" },
@@ -28,6 +31,12 @@ const phases: { value: TaskStatus; label: string; icon: "circle" | "clock" | "ch
 ];
 
 export default function TasksTab() {
+  const { apiUrl, authClient } = useServer();
+  const scope = JSON.stringify([apiUrl, authClient.useSession().data?.user.id]);
+  return <TasksTabScreen key={scope} />;
+}
+
+function TasksTabScreen() {
   const api = useApi();
   const apiRef = useRef(api);
   useEffect(() => { apiRef.current = api; }, [api]);
@@ -44,6 +53,7 @@ export default function TasksTab() {
   const [selected, setSelected] = useState<Task>();
   const [saving, setSaving] = useState<string>();
   const request = useRef(0);
+  const focused = useRef(false);
   const refresh = useCallback(async (syncProviders = false) => {
     const id = ++request.current;
     const currentApi = apiRef.current;
@@ -56,31 +66,33 @@ export default function TasksTab() {
       const next = await currentApi.getTasks();
       if (id === request.current) { setTasks(next); setError(undefined); }
     } catch (e) {
-      if (id === request.current) setError(userFacingError(e, "Could not load tasks."));
+      if (id === request.current) { if (isAuthorizationError(e)) setTasks([]); setError(userFacingError(e, "Could not load tasks.")); }
     } finally { if (id === request.current) setRefreshing(false); }
   }, []);
-  useFocusEffect(useCallback(() => { void refresh(); return () => { request.current++; }; }, [refresh]));
+  useFocusEffect(useCallback(() => { focused.current = true; void refresh(); return () => { focused.current = false; request.current++; }; }, [refresh]));
 
   const changeTask = async (task: Task | undefined, change: { status: TaskStatus } | { priority: number }) => {
-    if (!task || saving) return;
+    if (!task || saving || !taskCapabilities(task, calendars).edit) return;
     setSaving(task.id);
     try {
       const saved = "status" in change ? await apiRef.current.setTaskStatus(task, change.status) : await apiRef.current.setTaskPriority(task, change.priority);
       request.current++;
       setRefreshing(false);
-      setTasks(current => current.map(task => task.id === saved.id ? saved : task));
+      if (!saved) { setTasks(current => current.filter(item => item.id !== task.id)); setDetailId(undefined); }
+      else setTasks(current => current.map(task => task.id === saved.id ? saved : task));
     } catch (e) {
       showToast({ message: userFacingError(e, "Could not update task.") });
       void refresh();
     } finally { setSaving(undefined); }
   };
 
+  useEffect(() => useTaskRefreshStore.subscribe(() => { if (focused.current) void refresh(); }), [refresh]);
   const detail = tasks.find(task => task.id === detailId);
-  const detailCalendar = calendars.find(calendar => calendar.id === detail?.calendarID);
-  const detailEditable = can(detailCalendar?.role, "editTasks") && (!detailCalendar?.provider || detailCalendar.supportsTasks === true);
+  const detailCalendar = detail ? taskDisplayCalendar(detail, calendars) : undefined;
+  const detailEditable = !!detail && taskCapabilities(detail, calendars).edit;
 
-  const filtered = tasks.filter(task => activeCals.has(task.calendarID));
-  const taskCalendars = calendars.filter(calendar => calendar.supportsTasks || !calendar.provider || tasks.some(task => task.calendarID === calendar.id));
+  const filtered = uniqueTasks(tasks).filter(task => taskCalendarIDs(task).some(id => activeCals.has(id)));
+  const taskCalendars = calendars.filter(calendar => calendar.supportsTasks || !calendar.provider || tasks.some(task => taskCalendarIDs(task).includes(calendar.id)));
 
   return <View style={styles.screen}>
     <View style={[styles.header, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}>
@@ -105,8 +117,8 @@ export default function TasksTab() {
         if (!items.length) return null;
         return <View key={phase.value}>
           {items.map((task, index) => {
-            const calendar = calendars.find(cal => cal.id === task.calendarID);
-            const editable = can(calendar?.role, "editTasks") && (!calendar?.provider || calendar.supportsTasks === true);
+            const calendar = taskDisplayCalendar(task, calendars);
+            const editable = taskCapabilities(task, calendars).edit;
             return <View key={task.id} style={{ flexDirection: "row", alignItems: "center", gap: spacing[2], paddingVertical: spacing[3], borderBottomWidth: index < items.length - 1 ? 1 : 0, borderBottomColor: colors.line }}>
               <Tap disabled={!editable || !!saving} accessibilityLabel={`Change status of ${task.title}, ${phase.label}`} onPress={() => setSelected(task)} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
                 {saving === task.id ? <ActivityIndicator color={colors.fg3} /> : <Feather name={phase.icon} size={21} color={colors.fg3} />}
@@ -137,11 +149,12 @@ export default function TasksTab() {
     }}><Text style={{ color: colors.onFill, fontSize: 28, lineHeight: 30 }}>+</Text></Tap> : null}
     {creating ? <TaskEditorModal calendarID={creating} calendars={calendars.filter(calendar => can(calendar.role, "editTasks") && (!calendar.provider || calendar.supportsTasks === true))} onClose={() => setCreating(undefined)} onSave={async draft => {
       const saved = await apiRef.current.createTask({ ...draft, id: newId.current });
+      if (!saved) return;
       request.current++; setTasks(current => [...current.filter(task => task.id !== saved.id), saved]);
       setPhaseFilter(saved.status);
       if (!activeCals.has(saved.calendarID)) toggleCal(saved.calendarID);
     }} /> : null}
-    {detail ? <TaskDetailModal key={detail.id} task={detail} relatedTask={tasks.find(item => item.id === detail.relatedTo)} onOpenRelated={setDetailId} calendar={detailCalendar} editable={detailEditable} busy={!!saving} onSaved={saved => { request.current++; setTasks(current => saved ? current.map(item => item.id === saved.id ? saved : item) : current.filter(item => item.id !== detail.id)); }} onClose={() => setDetailId(undefined)} onStatus={status => void changeTask(detail, { status })} onPriority={priority => void changeTask(detail, { priority })} /> : null}
+    {detail ? <TaskDetailModal key={detail.id} task={detail} relatedTask={tasks.find(item => item.id === detail.relatedTo)} onOpenRelated={setDetailId} calendar={detailCalendar} calendars={calendars} editable={detailEditable} busy={!!saving} onSaved={saved => { request.current++; setTasks(current => saved ? current.map(item => item.id === saved.id ? saved : item) : current.filter(item => item.id !== detail.id)); if (!saved) setDetailId(undefined); }} onClose={() => setDetailId(undefined)} onStatus={status => void changeTask(detail, { status })} onPriority={priority => void changeTask(detail, { priority })} /> : null}
     <OptionPicker visible={!!selected} title="Task status" options={phases} value={selected?.status} onSelect={value => void changeTask(selected, { status: value as TaskStatus })} onClose={() => setSelected(undefined)} />
   </View>;
 }

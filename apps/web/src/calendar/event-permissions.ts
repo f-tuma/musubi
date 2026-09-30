@@ -18,7 +18,7 @@ export function getEditableCalendars(calendars: Calendar[]) {
 export function getEditableTaskCalendars(calendars: Calendar[]) {
   return calendars.filter(
     (calendar) =>
-      calendar.supportsTasks !== false && can(calendar.role, "editEvents"),
+      calendar.supportsTasks !== false && can(calendar.role, "editTasks"),
   );
 }
 

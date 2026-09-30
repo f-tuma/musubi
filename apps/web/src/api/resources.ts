@@ -1,3 +1,4 @@
+import { TaskCreateSchema, TaskUpdateSchema, TaskPatchRequestSchema, TaskMutationResponseSchema, TaskDeleteResponseSchema, TaskDeliverySchema, TaskDeliveryInboxSchema, requireTaskRevision, type Task } from "@musubi/types";
 import { ProviderOrganizerCalendarSchema, ProviderRsvpReceiptSchema, type ProviderRsvpEdit, type ProviderOrganizerRequest } from "@musubi/types";
 import { ProviderEventStateResponseSchema, ProviderReminderReceiptSchema, type AnyProviderReminderEdit } from "@musubi/types";
 import {
@@ -39,7 +40,6 @@ import {
   CalendarSchema,
   EventSchema,
   InviteSchema,
-  TaskSchema,
   type AnnouncementInput,
   type Calendar,
   type CreatePageRequest,
@@ -99,27 +99,42 @@ export function getTasks(signal?: AbortSignal) {
   });
 }
 
-export function createTask(task: TaskCreate) {
-  return apiRequest("/api/v1/tasks", {
-    body: task,
-    method: "POST",
-    responseSchema: TaskSchema,
-  });
+export async function createTask(task: TaskCreate) {
+  const result = await apiRequest("/api/v1/tasks", { body: TaskCreateSchema.parse(task), method: "POST", responseSchema: TaskMutationResponseSchema });
+  return result.task;
 }
 
-export function updateTask(id: string, task: TaskUpdate) {
-  return apiRequest(`/api/v1/tasks/${id}`, {
-    body: task,
-    method: "PUT",
-    responseSchema: TaskSchema,
-  });
+export async function updateTask(id: string, task: TaskUpdate) {
+  const { expectedRevision, expectedProviderReadRetiredGeneration } = TaskUpdateSchema.parse(task);
+  const patch = TaskCreateSchema.omit({ calendarID: true, id: true }).parse(task);
+  const body = TaskPatchRequestSchema.parse({ patch, expectedRevision: requireTaskRevision({ revision: expectedRevision }), expectedProviderReadRetiredGeneration });
+  const result = await apiRequest(`/api/v1/tasks/${encodeURIComponent(id)}`, { body, method: "PATCH", responseSchema: TaskMutationResponseSchema });
+  return result.task;
 }
 
-export function removeTask(id: string) {
-  return apiRequest(`/api/v1/tasks/${id}`, {
-    method: "DELETE",
-    responseSchema: z.undefined(),
-  });
+export function removeTask(task: Task, unlinkCalendarID?: string) {
+  return apiRequest(`/api/v1/tasks/${encodeURIComponent(task.id)}`, { body: { expectedRevision: requireTaskRevision(task), expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0, unlinkCalendarID }, method: "DELETE", responseSchema: TaskDeleteResponseSchema });
+}
+
+export async function linkTask(task: Task, calendarID: string) {
+  const result = await apiRequest(`/api/v1/tasks/${encodeURIComponent(task.id)}/link`, { body: { calendarID, expectedRevision: requireTaskRevision(task), expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0 }, method: "POST", responseSchema: TaskMutationResponseSchema });
+  return result.task;
+}
+
+export async function forkTask(task: Task, calendarID: string, operationId: string) {
+  const result = await apiRequest(`/api/v1/tasks/${encodeURIComponent(task.id)}/fork`, { headers: { "Idempotency-Key": operationId }, body: { calendarID, expectedRevision: requireTaskRevision(task), expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0 }, method: "POST", responseSchema: TaskMutationResponseSchema });
+  return result.task;
+}
+
+export function getTaskDelivery(taskId: string, signal?: AbortSignal) {
+  return apiRequest(`/api/v1/tasks/${encodeURIComponent(taskId)}/delivery`, { responseSchema: TaskDeliverySchema, signal });
+}
+export function getTaskDeliveryInbox(cursor?: string, signal?: AbortSignal) {
+  const search = cursor ? `?${new URLSearchParams({ cursor })}` : "";
+  return apiRequest(`/api/v1/task-deliveries${search}`, { responseSchema: TaskDeliveryInboxSchema, signal });
+}
+export function retryTaskDelivery(taskId: string, operationId: string) {
+  return apiRequest(`/api/v1/tasks/${encodeURIComponent(taskId)}/delivery/${encodeURIComponent(operationId)}/retry`, { body: {}, method: "POST", responseSchema: TaskDeliverySchema });
 }
 
 export function getPages(signal?: AbortSignal) {

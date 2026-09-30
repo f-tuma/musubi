@@ -30,7 +30,11 @@ export * from "./caldav-alarm-scope";
 export * from "./provider-organizer-draft";
 export * from "./rdate-edit";
 export * from "./task-calendar";
+export * from "./task-sharing";
+export * from "./task-delivery";
 
 export * from "./time-zone-options";
 export * from "./outlook-cancellation";
 export * from "./outlook-time-zone";
+
+export { TaskForkAttempts } from "./task-fork-attempts";

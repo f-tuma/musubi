@@ -8,8 +8,8 @@ import { formatTaskDate } from "../task-format";
 
 afterEach(cleanup);
 const settings = SettingsSchema.parse({ notificationsOnByDefault: true, defaultCalendarView: "month", weekStartsOn: "monday", dateFormat: "dmy", timeFormat: "24h" });
-const task = TaskSchema.parse({ id: "qa", creatorID: "alex", calendarID: "personal", title: "Full task", description: "Notes with more detail", status: "in-process", percentComplete: 50, priority: 1, due: new Date("2026-09-16T12:30:00Z"), recurrence: "FREQ=WEEKLY;COUNT=3", relatedTo: "related", url: "https://example.com/task" });
-const related = TaskSchema.parse({ ...task, id: "related", title: "Related readable title", relatedTo: null });
+const task = TaskSchema.parse({ revision: 1, id: "qa", creatorID: "alex", calendarID: "personal", title: "Full task", description: "Notes with more detail", status: "in-process", percentComplete: 50, priority: 1, due: new Date("2026-09-16T12:30:00Z"), recurrence: "FREQ=WEEKLY;COUNT=3", relatedTo: "related", url: "https://example.com/task" });
+const related = TaskSchema.parse({ revision: 1, ...task, id: "related", title: "Related readable title", relatedTo: null });
 function setup(offline = false) {
   const update = vi.fn(async () => task), remove = vi.fn(async () => {}), close = vi.fn();
   render(<CalendarTaskContext.Provider value={{ tasks: [task, related], calendars: fixtureCalendars, settings, offline, update, remove }}>
@@ -72,4 +72,47 @@ it("dismisses nested selectors on an outside press without closing the task", as
   }
   expect(close).not.toHaveBeenCalled();
   expect(update).not.toHaveBeenCalled();
+});
+
+it("shows a readable mirror without its home and allows unlink without editing completion", async () => {
+  const user = userEvent.setup();
+  const member = fixtureCalendars[0]!;
+  const shared = TaskSchema.parse({ ...task, calendarID: member.id, calendarIDs: [member.id], originCalendarID: "private-home", capabilities: { edit: false, delete: false, link: false, fork: true, unlinkCalendarIDs: [member.id] } });
+  const remove = vi.fn(async () => {}), fork = vi.fn(async () => shared), update = vi.fn();
+  const view = render(<CalendarTaskContext.Provider value={{ tasks: [shared], calendars: [member], settings, offline: false, update, remove, fork }}><TaskDetails taskId={shared.id} open onOpenChange={vi.fn()} /></CalendarTaskContext.Provider>);
+  expect(screen.getByRole("listitem", { name: `${member.name} · Linked calendar` })).toBeTruthy();
+  expect(screen.getByText(shared.description!)).toBeTruthy();
+  expect((screen.getByRole("combobox", { name: "Task status" }) as HTMLButtonElement).disabled).toBe(true);
+  expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
+  await user.click(screen.getByRole("button", { name: "More task actions" }));
+  expect(screen.queryByRole("menuitem", { name: "Delete" })).toBeNull();
+  await user.click(screen.getByRole("menuitem", { name: `Remove from ${member.name}` }));
+  await user.click(screen.getByRole("button", { name: "Remove from calendar" }));
+  expect(remove).toHaveBeenCalledWith(shared, member.id);
+  expect(update).not.toHaveBeenCalled();
+  view.rerender(<CalendarTaskContext.Provider value={{ tasks: [], calendars: [member], settings, offline: false, update, remove, fork }}><TaskDetails taskId={shared.id} open onOpenChange={vi.fn()} /></CalendarTaskContext.Provider>);
+  expect(screen.queryByText(shared.description!)).toBeNull();
+  expect(screen.queryByRole("dialog", { name: shared.title })).toBeNull();
+});
+
+it("links the canonical task with its revision using the existing destination picker", async () => {
+  const user = userEvent.setup();
+  const home = fixtureCalendars[0]!, destination = { ...home, id: "destination", name: "Shared work" };
+  const shared = TaskSchema.parse({ ...task, calendarID: home.id, originCalendarID: home.id, calendarIDs: [home.id], revision: 7, capabilities: { edit: true, delete: true, link: true, fork: true, unlinkCalendarIDs: [] } });
+  const link = vi.fn(async () => shared), fork = vi.fn(async () => shared), update = vi.fn(), remove = vi.fn();
+  render(<CalendarTaskContext.Provider value={{ tasks: [shared], calendars: [home, destination], settings, offline: false, update, remove, link, fork }}><TaskDetails taskId={shared.id} open onOpenChange={vi.fn()} /></CalendarTaskContext.Provider>);
+  await user.click(screen.getByRole("button", { name: "More task actions" }));
+  await user.click(screen.getByRole("menuitem", { name: "Link to another calendar" }));
+  await user.click(screen.getByRole("button", { name: "Link to Shared work" }));
+  expect(link).toHaveBeenCalledWith(shared, destination.id);
+  expect(update).not.toHaveBeenCalled();
+  expect(screen.getByRole("dialog", { name: shared.title })).toBeTruthy();
+});
+
+it("keeps an old cached task readable but disables writes until its revision is refreshed", () => {
+  const old = { ...task, revision: undefined };
+  render(<CalendarTaskContext.Provider value={{ tasks: [old], calendars: fixtureCalendars, settings, offline: false, update: vi.fn(), remove: vi.fn() }}><TaskDetails taskId={old.id} open onOpenChange={vi.fn()} /></CalendarTaskContext.Provider>);
+  expect(screen.getByText(old.description!)).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
+  expect((screen.getByRole("combobox", { name: "Task status" }) as HTMLButtonElement).disabled).toBe(true);
 });

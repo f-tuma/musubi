@@ -37,8 +37,8 @@ vi.mock("@/store/useSettingsStore", () => ({
 }));
 vi.mock("@/lib/network", () => ({ userFacingError: (_error: unknown, fallback: string) => fallback }));
 
-const google = CalendarSchema.parse({ id: "google", creatorID: "owner", name: "Google Tasks", color: "red", provider: "google", supportsTasks: true, members: [] });
-const personal = CalendarSchema.parse({ id: "personal", creatorID: "owner", name: "Personal", color: "red", members: [] });
+const google = CalendarSchema.parse({ role: "owner", id: "google", creatorID: "owner", name: "Google Tasks", color: "red", provider: "google", supportsTasks: true, members: [] });
+const personal = CalendarSchema.parse({ role: "owner", id: "personal", creatorID: "owner", name: "Personal", color: "red", members: [] });
 type Props = {
   children?: ReactNode; header?: ReactNode; accessibilityLabel?: string; label?: string;
   value?: Date; presentation?: string; is24Hour?: boolean;
@@ -84,7 +84,7 @@ describe.each(["Europe/Prague", "America/Los_Angeles"])("native task dates in %s
   });
 
   it("preserves and clears the imported Google date", async () => {
-    const task = TaskSchema.parse({ id: "task", creatorID: "owner", calendarID: google.id, title: "Tickets", due: new Date("2026-09-25T00:00:00Z"), isAllDay: true });
+    const task = TaskSchema.parse({ revision: 1, id: "task", creatorID: "owner", calendarID: google.id, title: "Tickets", due: new Date("2026-09-25T00:00:00Z"), isAllDay: true });
     control(render(task), "due date").onPress();
     const value = picker(render(task)).value!;
     expect([value.getFullYear(), value.getMonth(), value.getDate()]).toEqual([2026, 8, 25]);
@@ -100,7 +100,7 @@ describe.each(["Europe/Prague", "America/Los_Angeles"])("native task dates in %s
   });
 
   it("normalizes an older timed Google draft even when only its title changes", async () => {
-    const task = TaskSchema.parse({ id: "task", creatorID: "owner", calendarID: google.id, title: "Tickets", due: new Date(2026, 8, 25), isAllDay: false });
+    const task = TaskSchema.parse({ revision: 1, id: "task", creatorID: "owner", calendarID: google.id, title: "Tickets", due: new Date(2026, 8, 25), isAllDay: false });
     control(render(task), "Task title").onChangeText("Updated tickets");
     control(render(task), "Save").onPress();
     await settle();
@@ -130,7 +130,7 @@ describe.each(["Europe/Prague", "America/Los_Angeles"])("native task dates in %s
     // In Prague this is still the previous UTC day; in Los Angeles it is already the next.
     const now = new Date(2026, 8, 25, timezone === "Europe/Prague" ? 0 : 23, 30);
     vi.setSystemTime(now);
-    const task = TaskSchema.parse({ id: "task", creatorID: "owner", calendarID: personal.id, title: "Undated", isAllDay: true });
+    const task = TaskSchema.parse({ revision: 1, id: "task", creatorID: "owner", calendarID: personal.id, title: "Undated", isAllDay: true });
     control(render(task), "due date").onPress();
     const value = picker(render(task)).value!;
     expect([value.getFullYear(), value.getMonth(), value.getDate()]).toEqual([2026, 8, 25]);
@@ -145,7 +145,7 @@ it.each(["android", "ios"])("keeps the native date picker presentation on %s", p
 
 it.each(["12h", "24h"])("uses the app's %s setting for native task time entry", timeFormat => {
   h.timeFormat = timeFormat;
-  const task = TaskSchema.parse({ id: "timed", creatorID: "owner", calendarID: personal.id, title: "Review", due: new Date(2026, 8, 25, 14, 30) });
+  const task = TaskSchema.parse({ revision: 1, id: "timed", creatorID: "owner", calendarID: personal.id, title: "Review", due: new Date(2026, 8, 25, 14, 30) });
   control(render(task), "due time").onPress();
   expect(picker(render(task)).is24Hour).toBe(timeFormat === "24h");
 });

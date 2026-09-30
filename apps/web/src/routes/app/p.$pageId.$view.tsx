@@ -6,12 +6,13 @@ import {
   useChildMatches,
 } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { TaskForkAttempts } from "@musubi/calendar";
 import { z } from "zod";
 import { ApiError, ApiResponseError } from "~/api/http";
 import { useNewerServer } from "~/api/use-newer-server";
 import { getServerOrigin, queryKeys } from "~/api/query-keys";
-import { createTask, getEvents, getTasks, removeTask, updateTask } from "~/api/resources";
+import { createTask, getEvents, getTasks, linkTask, forkTask, removeTask, updateTask } from "~/api/resources";
 import { refreshServerData, useServerStream } from "~/api/realtime";
 import { useReminders } from "~/calendar/use-reminders";
 import { useProviderLinkReturn } from "~/calendar/connections";
@@ -74,6 +75,7 @@ function CalendarScreen({ editorOpen }: { editorOpen: boolean }) {
   // real user would sit there unread.
   const { user } = useSessionUser();
   const userId = user?.id ?? "anonymous";
+  const forkAttempts = useRef(new TaskForkAttempts(() => crypto.randomUUID()));
   const snapshot = useSnapshot();
   // Owned above every loading/error/redirect return so a transient Workspace
   // unmount cannot discard edits belonging to another Page.
@@ -301,6 +303,7 @@ function CalendarScreen({ editorOpen }: { editorOpen: boolean }) {
         await queryClient.invalidateQueries({
           queryKey: queryKeys.tasks(getServerOrigin(), userId),
         });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.delivery(getServerOrigin(), userId) });
         return created;
       }}
       onUpdateTask={async (id, task) => {
@@ -310,13 +313,28 @@ function CalendarScreen({ editorOpen }: { editorOpen: boolean }) {
           await queryClient.invalidateQueries({
             queryKey: queryKeys.tasks(getServerOrigin(), userId),
           });
+          await queryClient.invalidateQueries({ queryKey: queryKeys.delivery(getServerOrigin(), userId) });
         }
       }}
-      onRemoveTask={async (task) => {
-        await removeTask(task.id);
+      onRemoveTask={async (task, unlinkCalendarID) => {
+        await removeTask(task, unlinkCalendarID);
         await queryClient.invalidateQueries({
           queryKey: queryKeys.tasks(getServerOrigin(), userId),
         });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.delivery(getServerOrigin(), userId) });
+      }}
+      onLinkTask={async (task, calendarID) => {
+        try { return await linkTask(task, calendarID); }
+        finally { await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(getServerOrigin(), userId) }); await queryClient.invalidateQueries({ queryKey: queryKeys.delivery(getServerOrigin(), userId) }); }
+      }}
+      onForkTask={async (task, calendarID) => {
+        const operationId = forkAttempts.current.get(JSON.stringify([getServerOrigin(), userId]), task, calendarID);
+        try {
+          const saved = await forkTask(task, calendarID, operationId);
+          forkAttempts.current.acknowledge(operationId);
+          return saved;
+        }
+        finally { await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(getServerOrigin(), userId) }); await queryClient.invalidateQueries({ queryKey: queryKeys.delivery(getServerOrigin(), userId) }); }
       }}
       onAdoptSettings={settingsMutations.adoptSettings}
       onForkEvent={eventMutations.forkEvent}

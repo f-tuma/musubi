@@ -1,8 +1,10 @@
-import type { Calendar, Event, EventDeliveryInbox } from "@musubi/types";
+import type { Calendar, Event, EventDeliveryInbox, Task, TaskDeliveryInbox } from "@musubi/types";
 
 export type NotificationAction =
   | { kind: "delivery"; eventId: string; connectionId?: string }
   | { kind: "event"; eventId: string }
+  | { kind: "task"; taskId: string }
+  | { kind: "task-delivery"; taskId: string }
   | { kind: "connections" };
 
 export const eventNoticeKey = (origin: string, userId: string) => ["notifications", origin, userId, "event-changes"] as const;
@@ -98,4 +100,28 @@ export function acceptEventNotice(
   if (previous && previous.revision >= payload.revision) return current;
   const notice: EventChangeNotice = { eventId: payload.id, revision: payload.revision, kind: type };
   return [notice, ...current.filter(item => item.eventId !== payload.id)].slice(0, 100);
+}
+
+
+export const taskNoticeKey = (origin: string, userId: string) => ["notifications", origin, userId, "task-changes"] as const;
+export type TaskChangeNotice = { taskId: string; revision: number; kind: "task_created" | "task_updated" | "task_removed" };
+export function acceptTaskNotice(current: TaskChangeNotice[], message: { type?: string; payload?: Record<string, unknown> }, userId: string): TaskChangeNotice[] {
+  const { type, payload } = message;
+  if (type !== "task_created" && type !== "task_updated" && type !== "task_removed") return current;
+  if (!payload || typeof payload.actorID !== "string" || payload.actorID === userId || typeof payload.id !== "string" || typeof payload.revision !== "number" || !Number.isSafeInteger(payload.revision) || payload.revision < 1) return current;
+  const previous = current.find(item => item.taskId === payload.id);
+  if (previous && previous.revision >= payload.revision) return current;
+  const notice: TaskChangeNotice = { taskId: payload.id, revision: payload.revision, kind: type };
+  return [notice, ...current.filter(item => item.taskId !== payload.id)].slice(0, 100);
+}
+export function taskNotifications(changes: TaskChangeNotice[], tasks: Task[]): NotificationSource {
+  const readable = new Map(tasks.map(task => [task.id, task]));
+  return { id: "tasks", items: changes.flatMap(change => {
+    const task = readable.get(change.taskId);
+    if (!task || (task.revision ?? 0) < change.revision || change.kind === "task_removed") return [];
+    return [{ id: `${task.id}:${change.revision}`, title: task.title || "Untitled task", detail: change.kind === "task_created" ? "Added by another member" : "Changed by another member", needsAttention: false, action: { kind: "task" as const, taskId: task.id } }];
+  }) };
+}
+export function taskDeliveryNotifications(items: TaskDeliveryInbox["items"]): NotificationSource {
+  return { id: "task-delivery", items: items.map(item => ({ id: item.taskId, title: item.savedTitle || "Untitled task", detail: "Delivery needs attention", needsAttention: true, action: { kind: "task-delivery", taskId: item.taskId } })) };
 }

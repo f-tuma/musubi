@@ -1,8 +1,13 @@
-import { TaskSchema, type Task, type TaskStatus, TaskUpdateSchema, TaskCreateSchema, type TaskCreate, type TaskUpdate } from "@musubi/types";
-import { ProviderOrganizerCalendarSchema, ProviderOrganizerReceiptSchema, type ProviderOrganizerRequest } from "@musubi/types";
-import { ProviderRsvpReceiptSchema, type ProviderRsvpEdit } from "@musubi/types";
-import { ProviderEventStateResponseSchema, ProviderReminderReceiptSchema, type AnyProviderReminderEdit } from "@musubi/types";
+import { TaskForkAttempts } from "@musubi/calendar";
+import { uuidv7 } from "uuidv7";
+import { useTaskRefreshStore } from "@/store/useTaskRefreshStore";
 import {
+  TaskDeliverySchema,
+  TaskMutationResponseSchema, TaskPatchRequestSchema, TaskDeleteResponseSchema, requireTaskRevision,
+  TaskSchema, type Task, type TaskStatus, TaskCreateSchema, type TaskCreate, type TaskUpdate,
+  ProviderOrganizerCalendarSchema, ProviderOrganizerReceiptSchema, type ProviderOrganizerRequest,
+  ProviderRsvpReceiptSchema, type ProviderRsvpEdit,
+  ProviderEventStateResponseSchema, ProviderReminderReceiptSchema, type AnyProviderReminderEdit,
   OutlookMoveOptionsSchema, OutlookMoveRequestSchema, OutlookMoveResultSchema, type OutlookMoveRequest,
   AvailabilitySourcesSchema, AvailabilityResponseSchema, AvailabilityRequestSchema, type AvailabilityRequest,
   AnnouncementsResponseSchema,
@@ -111,6 +116,8 @@ export class EventDeliveryRequestError extends Error {
   }
 }
 
+const taskForkAttempts = new TaskForkAttempts(uuidv7);
+
 export function useApi() {
   const { authClient: baseAuthClient, apiUrl } = useServer();
   // Better Auth's facade has no request timeout. Wrap its fetch entry point so
@@ -206,6 +213,8 @@ export function useApi() {
     async getAvailabilitySources(signal?: AbortSignal) { return AvailabilitySourcesSchema.parse(await availabilityRequest("/sources", "GET", undefined, signal)); },
     async selectAvailabilitySource(id: string, enabled: boolean, expectedGeneration: number, signal?: AbortSignal) { return AvailabilitySourcesSchema.parse(await availabilityRequest(`/sources/${encodeURIComponent(id)}`, "PUT", { enabled, expectedGeneration }, signal)); },
     async getAvailability(range: AvailabilityRequest, signal?: AbortSignal) { return AvailabilityResponseSchema.parse(await availabilityRequest("", "POST", AvailabilityRequestSchema.parse(range), signal)); },
+    async getTaskDelivery(taskId: string) { return TaskDeliverySchema.parse(await deliveryRequest(`/api/v1/tasks/${encodeURIComponent(taskId)}/delivery`)); },
+    async retryTaskDelivery(taskId: string, operationId: string) { return TaskDeliverySchema.parse(await deliveryRequest(`/api/v1/tasks/${encodeURIComponent(taskId)}/delivery/${encodeURIComponent(operationId)}/retry`, undefined, {})); },
     async getEventDelivery(eventId: string, connectionId?: string) {
       return EventDeliverySchema.parse(await deliveryRequest(`/api/v1/events/${eventId}/delivery`, connectionId));
     },
@@ -252,47 +261,73 @@ export function useApi() {
       return readWire(TaskSchema.array(), data.tasks, "GET /tasks");
     },
 
-    async createTask(task: TaskCreate): Promise<Task> {
+    async createTask(task: TaskCreate): Promise<Task | null> {
       const { error, data } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/tasks`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(TaskCreateSchema.parse(task)),
       });
       throwOnError(error);
-      return readWire(TaskSchema, data, "POST /tasks");
+      const result = readWire(TaskMutationResponseSchema, data, "POST /tasks");
+      useTaskRefreshStore.getState().refresh();
+      return result.task;
     },
 
-    async updateTask(task: Task, update: TaskUpdate): Promise<Task> {
-      const body = TaskUpdateSchema.parse({ ...update, expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0 });
+    async updateTask(task: Task, update: TaskUpdate): Promise<Task | null> {
+      const patch = TaskCreateSchema.omit({ calendarID: true, id: true }).parse(update);
+      const body = TaskPatchRequestSchema.parse({ patch, expectedRevision: requireTaskRevision({ revision: update.expectedRevision ?? task.revision }), expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0 });
       const { error, data } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/tasks/${encodeURIComponent(task.id)}`, {
-        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
       });
       throwOnError(error);
-      return readWire(TaskSchema, data, "PUT /tasks");
+      const result = readWire(TaskMutationResponseSchema, data, "PATCH /tasks");
+      useTaskRefreshStore.getState().refresh();
+      return result.task;
     },
 
-    async removeTask(task: Task): Promise<void> {
-      const { error } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/tasks/${encodeURIComponent(task.id)}`, { method: "DELETE" });
+    async removeTask(task: Task, unlinkCalendarID?: string): Promise<Task | null> {
+      const { error, data } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/tasks/${encodeURIComponent(task.id)}`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ expectedRevision: requireTaskRevision(task), expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0, unlinkCalendarID }) });
       throwOnError(error);
+      const result = readWire(TaskDeleteResponseSchema, data, "DELETE /tasks");
+      useTaskRefreshStore.getState().refresh();
+      return result.task;
     },
 
-    async setTaskPriority(task: Task, priority: number): Promise<Task> {
-      const body = TaskUpdateSchema.parse({ ...task, priority,
-        expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0 });
-      const { error, data } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/tasks/${encodeURIComponent(task.id)}`, {
-        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
-      });
+    async linkTask(task: Task, calendarID: string): Promise<Task | null> {
+      const { error, data } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/tasks/${encodeURIComponent(task.id)}/link`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ calendarID, expectedRevision: requireTaskRevision(task), expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0 }) });
       throwOnError(error);
-      return readWire(TaskSchema, data, "PUT /tasks");
+      const result = readWire(TaskMutationResponseSchema, data, "POST /tasks/link");
+      useTaskRefreshStore.getState().refresh();
+      return result.task;
     },
 
-    async setTaskStatus(task: Task, status: TaskStatus): Promise<Task> {
-      const body = TaskUpdateSchema.parse({ ...task, status, percentComplete: status === "completed" ? 100 : 0,
-        completedAt: status === "completed" ? new Date() : null,
-        expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0 });
-      const { error, data } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/tasks/${encodeURIComponent(task.id)}`, {
-        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
-      });
+    async forkTask(task: Task, calendarID: string): Promise<Task | null> {
+      const session = await baseAuthClient.getSession();
+      const actorID = session.data?.user.id;
+      if (!actorID) throw new Error("Sign in before copying a task.");
+      const operationId = taskForkAttempts.get(JSON.stringify([apiUrl, actorID]), task, calendarID);
+      const { error, data } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/tasks/${encodeURIComponent(task.id)}/fork`, { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": operationId }, body: JSON.stringify({ calendarID, expectedRevision: requireTaskRevision(task), expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0 }) });
       throwOnError(error);
-      return readWire(TaskSchema, data, "PUT /tasks");
+      const result = readWire(TaskMutationResponseSchema, data, "POST /tasks/fork");
+      taskForkAttempts.acknowledge(operationId);
+      useTaskRefreshStore.getState().refresh();
+      return result.task;
+    },
+
+    async setTaskPriority(task: Task, priority: number): Promise<Task | null> {
+      const body = TaskPatchRequestSchema.parse({ patch: { priority }, expectedRevision: requireTaskRevision(task), expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0 });
+      const { error, data } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/tasks/${encodeURIComponent(task.id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      throwOnError(error);
+      const result = readWire(TaskMutationResponseSchema, data, "PATCH /tasks priority");
+      useTaskRefreshStore.getState().refresh();
+      return result.task;
+    },
+
+    async setTaskStatus(task: Task, status: TaskStatus): Promise<Task | null> {
+      const body = TaskPatchRequestSchema.parse({ patch: { status, percentComplete: status === "completed" ? 100 : task.status === "completed" ? 0 : task.percentComplete, completedAt: status === "completed" ? task.completedAt ?? new Date() : null }, expectedRevision: requireTaskRevision(task), expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0 });
+      const { error, data } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/tasks/${encodeURIComponent(task.id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      throwOnError(error);
+      const result = readWire(TaskMutationResponseSchema, data, "PATCH /tasks status");
+      useTaskRefreshStore.getState().refresh();
+      return result.task;
     },
 
     async getCalendars() {

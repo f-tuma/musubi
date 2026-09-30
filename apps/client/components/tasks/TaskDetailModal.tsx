@@ -1,3 +1,5 @@
+import { TaskDeliveryModal } from "./TaskDeliveryModal";
+import { taskCapabilities, taskCalendarIDs, taskHomeCalendarID } from "@musubi/calendar";
 import { useApi } from "@/services/api";
 import { confirm } from "@/lib/confirm";
 import { TaskEditorModal } from "./TaskEditorModal";
@@ -34,9 +36,9 @@ function DetailRow({ icon, label, value, link = false }: { icon: React.Component
 }
 const copy = { fontFamily: fonts.sans, fontSize: 14, color: colors.fg2 };
 
-export function TaskDetailModal({ task, calendar, editable, busy: externalBusy, onClose, onStatus, onPriority, onSaved, relatedTask, onOpenRelated }: {
+export function TaskDetailModal({ task, calendar, calendars = calendar ? [calendar] : [], editable, busy: externalBusy, onClose, onStatus, onPriority, onSaved, relatedTask, onOpenRelated }: {
   relatedTask?: Task; onOpenRelated?: (id: string) => void;
-  task: Task; calendar?: Calendar; editable: boolean; busy: boolean;
+  task: Task; calendar?: Calendar; calendars?: Calendar[]; editable: boolean; busy: boolean;
   onSaved: (task: Task | null) => void; onClose: () => void; onStatus: (status: TaskStatus) => void; onPriority: (priority: number) => void;
 }) {
   const api = useApi();
@@ -44,6 +46,13 @@ export function TaskDetailModal({ task, calendar, editable, busy: externalBusy, 
   const [multilineTitle, setMultilineTitle] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const busy = externalBusy || actionBusy;
+  const [showDelivery, setShowDelivery] = useState(false);
+  const [sharingMenu, setSharingMenu] = useState(false);
+  const [sharingAction, setSharingAction] = useState<"link" | "fork">();
+  const capabilities = taskCapabilities(task, calendars);
+  const memberships = calendars.filter(member => taskCalendarIDs(task).includes(member.id));
+  const targets = calendars.filter(member => can(member.role, "editTasks") && member.supportsTasks !== false && (!task.recurrence || !member.provider) && (sharingAction === "fork" || !taskCalendarIDs(task).includes(member.id)));
+  const canShare = capabilities.link || capabilities.fork || capabilities.unlinkCalendarIDs.length > 0;
   const [picker, setPicker] = useState<"status" | "priority">();
   const { fadeStyle, slideStyle, gesture, handleClose } = useModalAnimation(true, onClose);
   const insets = useSafeAreaInsets();
@@ -54,6 +63,25 @@ export function TaskDetailModal({ task, calendar, editable, busy: externalBusy, 
   const priorities = [...new Set([0, 1, 5, 9, task.priority])].sort((a, b) => a - b).map(value => ({ value: String(value), label: taskPriorityLabel(value) }));
   const repeat = taskRepeatLabel(task);
   const status = statuses.find(item => item.value === task.status)?.label ?? task.status;
+  async function share(calendarID: string) {
+    if (busy || !sharingAction) return;
+    const operation = sharingAction;
+    if (!(operation === "link" ? capabilities.link : capabilities.fork)) return;
+    setActionBusy(true);
+    try {
+      const saved = operation === "link" ? await api.linkTask(task, calendarID) : await api.forkTask(task, calendarID);
+      if (operation === "link") { onSaved(saved); if (!saved) onClose(); } else onClose();
+    }
+    catch (error) { showToast({ message: userFacingError(error, "Could not share task.") }); }
+    finally { setActionBusy(false); }
+  }
+  function unlink(calendarID: string) {
+    if (busy || !capabilities.unlinkCalendarIDs.includes(calendarID)) return;
+    confirm({ title: "Remove from calendar?", message: calendars.find(member => member.id === calendarID)?.name ?? "", confirmLabel: "Remove" }, () => {
+      setActionBusy(true);
+      void api.removeTask(task, calendarID).then(saved => { onSaved(saved); if (!saved) onClose(); }).catch(error => showToast({ message: userFacingError(error, "Could not remove task from calendar.") })).finally(() => setActionBusy(false));
+    });
+  }
   return <ModalPortal visible onRequestClose={close}>
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Animated.View style={[styles.modalOverlay, fadeStyle]}><Pressable style={{ flex: 1 }} onPress={close} accessibilityLabel="Close task detail" /></Animated.View>
@@ -72,18 +100,13 @@ export function TaskDetailModal({ task, calendar, editable, busy: externalBusy, 
           </View>
         </GestureDetector>
         <ScrollView contentContainerStyle={{ gap: 20, paddingTop: 4, paddingBottom: 24 }}>
-          {calendar ? (
+          {memberships.length ? (
             <View style={[styles.horizontalPillView, { flexWrap: "wrap" }]}>
-              <View accessible accessibilityLabel={`${calendar.name} calendar${!can(calendar.role, "editTasks") ? ", read-only" : ""}`}
-                style={[styles.pill, styles.pillEmphasized, { borderColor: colors.line3 }]}>
-                {calendar.provider ? (
-                  <ProviderIcon provider={providerFlavor(calendar)} color={calendar.color} />
-                ) : !can(calendar.role, "editTasks") ? (
-                  <Feather name="lock" size={11} color={calendar.color} />
-                ) : <View style={[styles.colorDot, { backgroundColor: calendar.color }]} />}
-                {calendar.provider && !can(calendar.role, "editTasks") ? <Feather name="lock" size={11} color={colors.fg3} /> : null}
-                <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg2 }}>{calendar.name}</Text>
-              </View>
+              {memberships.map(member => <View key={member.id} accessible accessibilityLabel={`${member.name} · ${member.id === taskHomeCalendarID(task) ? "Home calendar" : "Linked calendar, read-only"}`} style={[styles.pill, styles.pillEmphasized, { borderColor: colors.line3 }]}>
+                {member.provider ? <ProviderIcon provider={providerFlavor(member)} color={member.color} /> : <View style={[styles.colorDot, { backgroundColor: member.color }]} />}
+                {member.id !== taskHomeCalendarID(task) ? <Feather name="lock" size={11} color={colors.fg3} /> : null}
+                <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg2 }}>{member.name}{member.id === taskHomeCalendarID(task) ? " · Home" : ""}</Text>
+              </View>)}
             </View>
           ) : null}
           <View style={{ flexDirection: "row", gap: 10 }}>
@@ -116,21 +139,29 @@ export function TaskDetailModal({ task, calendar, editable, busy: externalBusy, 
             }} accessibilityRole="link" accessibilityLabel="Open task link"><DetailRow icon="link" label="Link" value={task.url} link /></Tap> : null}
           </View>
         </ScrollView>
-        {editable ? <View style={{ flexDirection: "row", justifyContent: "space-between", marginHorizontal: -22, paddingBottom: insets.bottom, borderTopWidth: 1, borderTopColor: colors.line }}>
-          <Tap style={styles.modalActionBtn} accessibilityLabel="Edit task" disabled={busy} onPress={() => setEditing(true)}><Feather name="edit-2" size={20} color={colors.fg} /><Text style={{ color: colors.fg, fontSize: 10 }}>Edit</Text></Tap>
-          <View style={styles.modalActionDivider} />
-          <Tap style={styles.modalActionBtn} accessibilityLabel="Delete task" haptic="warn" disabled={busy} onPress={() => confirm({ title: "Delete task?", message: task.title, confirmLabel: "Delete" }, () => {
+        <View style={{ flexDirection: "row", justifyContent: "space-between", marginHorizontal: -22, paddingBottom: insets.bottom, borderTopWidth: 1, borderTopColor: colors.line }}>
+          {editable ? <Tap style={styles.modalActionBtn} accessibilityLabel="Edit task" disabled={busy} onPress={() => setEditing(true)}><Feather name="edit-2" size={20} color={colors.fg} /><Text style={{ color: colors.fg, fontSize: 10 }}>Edit</Text></Tap> : null}
+          {canShare ? <Tap style={styles.modalActionBtn} accessibilityLabel="Task sharing actions" disabled={busy} onPress={() => setSharingMenu(true)}><Feather name="link" size={20} color={colors.fg} /><Text style={{ color: colors.fg, fontSize: 10 }}>Share</Text></Tap> : null}
+          {capabilities.delete ? <Tap style={styles.modalActionBtn} accessibilityLabel="Delete task" haptic="warn" disabled={busy} onPress={() => confirm({ title: "Delete task?", message: task.title, confirmLabel: "Delete" }, () => {
             if (busy) return;
             setActionBusy(true);
             void api.removeTask(task).then(() => { onSaved(null); onClose(); }).catch(error => showToast({ message: userFacingError(error, "Could not delete task.") })).finally(() => setActionBusy(false));
-          })}><Feather name="trash" size={20} color={colors.accent} /><Text style={{ color: colors.accent, fontSize: 10 }}>Delete</Text></Tap>
-        </View> : null}
+          })}><Feather name="trash" size={20} color={colors.accent} /><Text style={{ color: colors.accent, fontSize: 10 }}>Delete</Text></Tap> : null}
+          <Tap style={styles.modalActionBtn} accessibilityLabel="Task delivery" disabled={busy} onPress={() => setShowDelivery(true)}><Feather name="send" size={20} color={colors.fg} /><Text style={{ color: colors.fg, fontSize: 10 }}>Delivery</Text></Tap>
+        </View>
       </Animated.View>
 
     </GestureHandlerRootView>
     {editing && editable && calendar ? <TaskEditorModal key={task.id + ":" + (task.providerReadRetiredGeneration ?? 0)} task={task} calendarID={calendar.id} calendars={[calendar]} onClose={() => setEditing(false)} onSave={async draft => {
       const saved = await api.updateTask(task, draft); onSaved(saved);
     }} /> : null}
+    {showDelivery ? <TaskDeliveryModal taskId={task.id} onClose={() => setShowDelivery(false)} /> : null}
+    <OptionPicker visible={sharingMenu} title="Task sharing" options={[
+      ...(capabilities.link ? [{ label: "Link to another calendar", value: "link", icon: "link" as const }] : []),
+      ...(capabilities.fork ? [{ label: "Make an independent copy", value: "fork", icon: "copy" as const }] : []),
+      ...memberships.filter(member => capabilities.unlinkCalendarIDs.includes(member.id)).map(member => ({ label: `Remove from ${member.name}`, value: `unlink:${member.id}`, icon: "minus-circle" as const })),
+    ]} onSelect={value => { if (busy) return; if (value.startsWith("unlink:")) unlink(value.slice(7)); else setSharingAction(value as "link" | "fork"); }} onClose={() => setSharingMenu(false)} />
+    <OptionPicker visible={!!sharingAction} searchable title={sharingAction === "link" ? "Link to a calendar" : "Make an independent copy"} options={targets.map(member => ({ value: member.id, label: member.name }))} onSelect={calendarID => void share(calendarID)} onClose={() => setSharingAction(undefined)} />
     <OptionPicker visible={!!picker} title={picker === "priority" ? "Task priority" : "Task status"} options={picker === "priority" ? priorities : statuses}
       value={picker === "priority" ? String(task.priority) : task.status} onSelect={value => { if (picker === "priority") onPriority(Number(value)); else onStatus(value as TaskStatus); }} onClose={() => setPicker(undefined)} />
   </ModalPortal>;
