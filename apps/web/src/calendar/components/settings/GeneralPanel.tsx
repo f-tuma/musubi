@@ -127,7 +127,6 @@ export function GeneralPanel({ document, reminders }: GeneralPanelProps) {
         <RowOptions
           disabled={saving}
           label="Default view"
-          stacked
           options={VIEW_OPTIONS}
           value={settings.value.defaultCalendarView}
           onChange={(defaultCalendarView) => void save({ defaultCalendarView })}

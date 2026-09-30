@@ -230,7 +230,8 @@ function CalendarGroup({
                   <span className="truncate" title={calendar.name}>
                     {calendar.name}
                   </span>
-                  {calendar.isDefault ? <Badge variant="muted">Personal</Badge> : null}
+                  {/* Marks the account's own calendar, unless its name already says so. */}
+                  {calendar.isDefault && calendar.name.trim().toLocaleLowerCase() !== "personal" ? <Badge variant="muted">Personal</Badge> : null}
                 </>
               }
               role="listitem"
