@@ -810,7 +810,7 @@ export function MonthCalendar({
                                   {itemCount === 1 ? "item" : "items"}
                                 </p>
                               </div>
-                              <div className="grid min-h-0 gap-1 overflow-y-auto p-2">
+                              <div className="grid min-h-0 gap-1 overflow-y-auto p-2" data-event-list="overflow">
                                 {dayLaneSpans.map((span) => (
                                   <EventPopover
                                     calendar={calendarsById.get(

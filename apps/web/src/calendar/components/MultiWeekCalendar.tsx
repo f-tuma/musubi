@@ -305,7 +305,7 @@ function WeekBlock({
                     role="dialog"
                     side="bottom"
                   >
-                    <div className="grid max-h-(--radix-popover-content-available-height) gap-1 overflow-y-auto p-2">
+                    <div className="grid max-h-(--radix-popover-content-available-height) gap-1 overflow-y-auto p-2" data-event-list="overflow">
                       {hiddenLaneSpans.map((span) => (
                         <EventPopover
                           calendar={calendars.find((calendar) =>

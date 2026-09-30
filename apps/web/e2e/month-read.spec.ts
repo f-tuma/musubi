@@ -7605,9 +7605,9 @@ test("keeps the time on a chip while the cell can hold one", async ({
 			// The first cell with something in it: an empty day has no chip to read,
 			// and the month opens on one.
 			const cell = [...document.querySelectorAll("[data-day-events]")].find(
-				(el) => el.querySelector('[class*="eventTime"]'),
+				(el) => el.querySelector('[data-event-time]'),
 			)!;
-			const time = cell.querySelector('[class*="eventTime"]');
+			const time = cell.querySelector('[data-event-time]');
 
 			return {
 				cell: Math.round(cell.getBoundingClientRect().width),
@@ -7615,7 +7615,7 @@ test("keeps the time on a chip while the cell can hold one", async ({
 				// single-column chip pushes them under the title and doubles its height.
 				heights: [
 					...new Set(
-						[...cell.querySelectorAll('[class*="eventChip"]')].map((el) =>
+						[...cell.querySelectorAll('[data-day-events] > [data-event-id], [data-day-events] [data-event-id]')].map((el) =>
 							Math.round(el.getBoundingClientRect().height),
 						),
 					),

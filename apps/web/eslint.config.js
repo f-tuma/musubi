@@ -100,6 +100,7 @@ export default tseslint.config(
       "src/calendar/components/CalendarTransferDialog.tsx",
       "src/calendar/components/ConnectionsDialog.tsx",
       "src/calendar/components/DiagnosticsSection.tsx",
+      "src/calendar/components/ProviderIcon.tsx",
       "src/calendar/components/SettingsDialog.tsx",
       "src/routes/app/admin.tsx",
     ],
