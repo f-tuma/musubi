@@ -1427,7 +1427,7 @@ test("keeps provider failures actionable without assuming a write succeeded", as
 	await expectNoAccessibilityViolations(page);
 });
 
-test("handles attendance, linking, forking and recurring delete scopes", async ({
+test("handles attendance, linking and forking", async ({
 	page,
 }) => {
 	const runtimeErrors: string[] = [];
@@ -1480,7 +1480,19 @@ test("handles attendance, linking, forking and recurring delete scopes", async (
 	await expect(page.getByRole("button", { name: /Design review/ })).toHaveCount(
 		2,
 	);
+	expect(runtimeErrors).toEqual([]);
+});
 
+test("removes a recurring occurrence and restores it with Undo", async ({
+	page,
+}) => {
+	const runtimeErrors: string[] = [];
+	page.on("console", (message) => {
+		if (message.type() === "error") runtimeErrors.push(message.text());
+	});
+	page.on("pageerror", (error) => runtimeErrors.push(error.message));
+
+	await mockAuthenticatedReads(page);
 	await page.goto("/app/p/my-calendar/week?date=2026-07-26");
 	const recurringEvent = page
 		.getByRole("button", { name: /Weekly review/ })
