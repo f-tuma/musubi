@@ -2,16 +2,17 @@ import { organizerNotificationNotice, organizerRequest, type OrganizerDraft } fr
 import { providerDisplayName, providerFlavor, type Calendar, type ProviderOrganizerRequest } from "@musubi/types";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { editProviderOrganizer, getOrganizerCalendar } from "~/api/resources";
-import { Button } from "~/ui/Button";
-import { Dialog, DialogInfo } from "~/ui/Dialog";
-import { Empty } from "~/ui/Empty";
-import { Field } from "~/ui/Field";
-import { InlineError } from "~/ui/InlineError";
-import { Select } from "~/ui/Select";
+import { Button } from "~/components/ui/button";
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { Empty } from "~/components/ui/empty";
+import { Field, FieldGroup } from "~/components/ui/field";
+import { HelpTooltip } from "~/components/ui/help-tooltip";
+import { InlineError } from "~/components/ui/inline-error";
+import { Select } from "~/components/ui/select";
+import { focusDialogBody } from "./dialog-focus";
 import { AccountMark } from "./ProviderIcon";
 import { ProviderOrganizerFields } from "./ProviderOrganizerEditor";
 import { initialMeetingDraft, meetingDraftAllDay, meetingDraftForProvider, type MeetingProvider } from "./provider-meeting-draft";
-import styles from "./styles/event-delivery.module.css";
 
 type MeetingCalendar = Calendar & { provider: MeetingProvider; organizerAddresses?: string[] };
 
@@ -136,48 +137,52 @@ export function ProviderMeetingCreateDialog({ calendars, initialCalendarID, retu
   // A submitted request retains its named destination even if a refresh removes
   // that calendar from the current list; retry can only replay that same request.
   const options = submitted && selected ? [selected] : approved;
-  return <div className={styles.layerBoundary} onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()}>
-    <Dialog
-      elevated
-      open
-      closeLabel="Close meeting editor"
-      title="Create meeting"
-      headerActions={<DialogInfo label="Meeting invitation information" title="Invitations">{selected ? organizerNotificationNotice(selected.provider) : "Choose a connected calendar to invite guests."}</DialogInfo>}
-      returnFocus={returnFocus}
-      onOpenChange={open => { if (!open && !pending.current) onClose(); }}
-      footer={<>
-        <Button variant="secondary" disabled={busy} onClick={onClose}>{notice ? "Close" : "Cancel"}</Button>
-        {!notice && selected ? <Button disabled={!submitted && (loading || !currentAvailable)} loading={busy} onClick={() => void send()}>
-          {submitted ? "Retry saved meeting action" : "Create and send invitations"}
-        </Button> : null}
-      </>}
-    >
-      <Field label="Calendar">
-        <Select
-          label="Calendar"
-          value={selected?.id ?? ""}
-          placeholder={loading ? "Loading calendars…" : "Choose a calendar"}
-          disabled={locked || loading || approved.length === 0}
-          options={options.map(calendar => ({
-            value: calendar.id,
-            label: calendar.name,
-            description: [calendar.accountLabel?.trim(), providerDisplayName(calendar)].filter(Boolean).join(" · "),
-            icon: <AccountMark flavor={providerFlavor(calendar)} />,
-          }))}
-          onChange={chooseCalendar}
-        />
-      </Field>
-      {notice ? <p role="status">{notice}</p> : <>
-        {loading ? <p role="status">Checking calendars…</p> : null}
-        {!loading && approved.length === 0 ? <Empty
-          title="No calendars available for meetings"
-          description={candidates.length ? "Meeting access could not be confirmed. Try again or check your connections." : "Connect an account with an event calendar you own."}
-          action={candidates.length ? <Button variant="secondary" onClick={() => setRetry(current => current + 1)}>Retry</Button> : undefined}
-        /> : null}
-        {!loading && selected && !currentAvailable && approved.length > 0 && !submitted ? <InlineError>Choose an available calendar. Your meeting draft has been kept.</InlineError> : null}
-        {selected ? <ProviderOrganizerFields organizerAddresses={organizerAddresses} draft={draft} provider={selected.provider} locked={locked} onChange={patch} /> : null}
-      </>}
-      {error ? <InlineError>{error}</InlineError> : null}
+  return <div className="contents" onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()}>
+    <Dialog open onOpenChange={open => { if (!open && !pending.current) onClose(); }}>
+      <DialogContent onOpenAutoFocus={focusDialogBody} elevated size="form" closeLabel="Close meeting editor" returnFocus={returnFocus} aria-describedby={undefined}>
+        <DialogHeader>
+          <div className="flex items-center gap-1">
+            <DialogTitle>Create meeting</DialogTitle>
+            <HelpTooltip label="Meeting invitation information">{selected ? organizerNotificationNotice(selected.provider) : "Choose a connected calendar to invite guests."}</HelpTooltip>
+          </div>
+        </DialogHeader>
+        <DialogBody>
+          <FieldGroup>
+            <Field label="Calendar">
+              <Select
+                label="Calendar"
+                value={selected?.id ?? ""}
+                placeholder={loading ? "Loading calendars…" : "Choose a calendar"}
+                disabled={locked || loading || approved.length === 0}
+                options={options.map(calendar => ({
+                  value: calendar.id,
+                  label: calendar.name,
+                  description: [calendar.accountLabel?.trim(), providerDisplayName(calendar)].filter(Boolean).join(" · "),
+                  icon: <AccountMark flavor={providerFlavor(calendar)} />,
+                }))}
+                onChange={chooseCalendar}
+              />
+            </Field>
+            {notice ? <p role="status" className="text-14 text-foreground-secondary">{notice}</p> : <>
+              {loading ? <p role="status" className="text-13 text-muted-foreground">Checking calendars…</p> : null}
+              {!loading && approved.length === 0 ? <Empty
+                title="No calendars available for meetings"
+                description={candidates.length ? "Meeting access could not be confirmed. Try again or check your connections." : "Connect an account with an event calendar you own."}
+                action={candidates.length ? <Button variant="secondary" onClick={() => setRetry(current => current + 1)}>Retry</Button> : undefined}
+              /> : null}
+              {!loading && selected && !currentAvailable && approved.length > 0 && !submitted ? <InlineError>Choose an available calendar. Your meeting draft has been kept.</InlineError> : null}
+              {selected ? <ProviderOrganizerFields organizerAddresses={organizerAddresses} draft={draft} provider={selected.provider} locked={locked} onChange={patch} /> : null}
+            </>}
+            {error ? <InlineError>{error}</InlineError> : null}
+          </FieldGroup>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="secondary" disabled={busy} onClick={onClose}>{notice ? "Close" : "Cancel"}</Button>
+          {!notice && selected ? <Button disabled={!submitted && (loading || !currentAvailable)} loading={busy} onClick={() => void send()}>
+            {submitted ? "Retry saved meeting action" : "Create and send invitations"}
+          </Button> : null}
+        </DialogFooter>
+      </DialogContent>
     </Dialog>
   </div>;
 }

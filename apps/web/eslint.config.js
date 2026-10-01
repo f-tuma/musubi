@@ -1,4 +1,5 @@
 import eslint from "@eslint/js";
+import { plugin as shadcn } from "@shadcn/lint";
 import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
@@ -34,6 +35,57 @@ export default tseslint.config(
             'MemberExpression[object.object.type="MetaProperty"][property.name=/^VITE_/]',
         },
       ],
+    },
+  },
+  {
+    files: [".storybook/**/*.{ts,tsx}", "src/**/*.{ts,tsx}"],
+    plugins: { shadcn },
+    settings: {
+      shadcn: {
+        ui: "~/components/ui",
+        note: "Musubi's design rules: .agents/skills/musubi-ui/SKILL.md. Tokens: packages/design-system (src/tailwind.ts).",
+      },
+    },
+    rules: {
+      // A component owns its look. Callers place it; they never restyle it.
+      "shadcn/no-restyle": [
+        "error",
+        {
+          allow: ["layout"],
+          deny: ["h-*", "min-h-*", "max-h-*", "size-*", "z-*"],
+          message: {
+            spacing: "<{{component}}> owns its spacing. Use a size ({{sizes}}) or gap on the parent.",
+          },
+        },
+      ],
+      "shadcn/no-raw-colors": "error",
+      "shadcn/no-arbitrary-values": "error",
+      "shadcn/no-inline-styles": "error",
+      "shadcn/no-unknown-classes": "error",
+      "shadcn/require-static-classes": "error",
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["*.module.css"],
+              message: "Style with Tailwind utilities from Musubi's theme. Musubi has no CSS modules.",
+            },
+            {
+              group: ["radix-ui", "@radix-ui/*"],
+              message: "Radix belongs inside src/components/ui. Import the Musubi component instead.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // The design system itself: the one place that styles and wraps Radix.
+    files: ["src/components/ui/**/*.{ts,tsx}"],
+    rules: {
+      "shadcn/no-restyle": "off",
+      "no-restricted-imports": "off",
     },
   },
 );

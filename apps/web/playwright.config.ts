@@ -6,17 +6,19 @@ const origin = process.env.PLAYWRIGHT_ORIGIN ?? "http://127.0.0.1:3000";
 
 export default defineConfig({
   expect: {
-    timeout: 5_000,
+    // CI traces show successful route hydration just beyond five seconds on
+    // shared runners, even after retry. Keep the assertions, with room for the
+    // initial client module graph to load before measuring the rendered UI.
+    timeout: process.env.CI ? 10_000 : 5_000,
   },
   fullyParallel: true,
   outputDir: "test-results",
   reporter: "list",
-  // Only the first test on each worker is affected: the `/login` probe below
+  // The first test on each worker can also be interrupted: the `/login` probe below
   // answers before Vite has transformed the route graph or optimized client
   // deps, so that first navigation is slow and can be cut short by the reload
-  // Vite triggers once it discovers a new dependency. A warm server is not
-  // flaky, so a single retry is the whole fix — a genuinely broken test still
-  // fails twice.
+  // Vite triggers once it discovers a new dependency. One retry covers that
+  // interrupted navigation; an incorrect UI still fails the same assertions.
   retries: process.env.CI ? 1 : 0,
   testDir: "./e2e",
   use: {

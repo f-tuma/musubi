@@ -17,7 +17,7 @@ import type {
   Settings as UserSettings,
   User,
 } from "@musubi/types";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import {
   forwardRef,
   type PointerEvent as ReactPointerEvent,
@@ -25,19 +25,41 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { BrandMark } from "~/components/BrandMark";
-import { Avatar } from "~/ui/Avatar";
-import { IconButton } from "~/ui/Button";
-import { Menu, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "~/ui/Menu";
-import { RowAction } from "~/ui/Row";
-import { SectionLabel } from "~/ui/SectionLabel";
+import { cn } from "~/lib/utils";
+import { Avatar } from "~/components/ui/avatar";
+import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
+import { RowAction } from "~/components/ui/row";
+import { SectionLabel } from "~/components/ui/section-label";
+import { Menu, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "~/components/ui/menu";
 import { moveItem, previewIndex } from "../list-reorder";
 import { sortPagesBy } from "../page-editor";
 import { pageIconComponent, resolvePageIcon } from "../page-icons";
 import { useListReorder } from "../use-list-reorder";
 import { MiniCalendar } from "./MiniCalendar";
-import styles from "./workspace.module.css";
+
+/** Below 1024 px the sidebar is a drawer over the calendar, not a column beside it. */
+const DRAWER_QUERY = "(max-width: 1023px)";
+
+function useDrawerViewport(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const media = window.matchMedia(DRAWER_QUERY);
+      media.addEventListener("change", onChange);
+      return () => media.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(DRAWER_QUERY).matches,
+    () => false,
+  );
+}
+
+/** Sidebar rows keep the control radius, so the selected fill reads as a pill. */
+function SidebarRow({ children }: { children: ReactNode }) {
+  return <div className="flex-none overflow-hidden rounded-control">{children}</div>;
+}
 
 type SidebarProps = {
   activePageId: string;
@@ -48,15 +70,17 @@ type SidebarProps = {
   onCreatePage: () => void;
   onDateChange: (date: string) => void;
   onEditPage: (page: PageDocument) => void;
-  onManageAccount: () => void;
-  onManageCalendars: () => void;
-  onManageConnections: () => void;
+  onManageAccount: (returnFocus: HTMLElement | null) => void;
+  onManageCalendars: (returnFocus: HTMLElement) => void;
+  onManageConnections: (returnFocus: HTMLElement) => void;
   onModalStateChange?: (modal: boolean) => void;
-  onOpenSettings: () => void;
+  onOpenSettings: (returnFocus: HTMLElement) => void;
   onPageChange: (pageId: string) => void;
   /** The full page order after a move, which is what the endpoint takes. */
   onReorderPages: (pageIds: string[]) => Promise<unknown> | void;
   onSignOut: () => void;
+  onRefreshServer?: () => void;
+  refreshingServer?: boolean;
   pages: PageDocument[];
   returnFocusRef?: RefObject<HTMLButtonElement | null>;
   syncLabel: string;
@@ -82,6 +106,8 @@ export function Sidebar({
   onPageChange,
   onReorderPages,
   onSignOut,
+  onRefreshServer,
+  refreshingServer = false,
   pages,
   returnFocusRef,
   syncLabel,
@@ -89,8 +115,17 @@ export function Sidebar({
   user,
   weekStartsOn,
 }: SidebarProps) {
+  const refreshButtonRef = useRef<HTMLButtonElement>(null);
+  const restoreRefreshFocus = useRef(false);
+  useEffect(() => {
+    if (refreshingServer || !restoreRefreshFocus.current) return;
+    restoreRefreshFocus.current = false;
+    if (document.activeElement === document.body) refreshButtonRef.current?.focus();
+  }, [refreshingServer]);
+
   const [signingOut, setSigningOut] = useState(false);
   const manageAccountAfterClose = useRef(false);
+  const accountButtonRef = useRef<HTMLButtonElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const pageRowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [reorderMessage, setReorderMessage] = useState("");
@@ -176,27 +211,11 @@ export function Sidebar({
       `${page.name} moved to ${to + 1} of ${orderedPages.length}.`,
     );
   }
-  const [overlay, setOverlay] = useState(false);
+  const overlay = useDrawerViewport();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLElement>(null);
   const restoreFocusOnCloseRef = useRef(false);
-  const sidebarRef = useRef<HTMLElement>(null);
   const modal = overlay && isOpen;
-
-  useEffect(() => {
-    function syncOverlayState() {
-      const value = sidebarRef.current
-        ? window
-            .getComputedStyle(sidebarRef.current)
-            .getPropertyValue("--sidebar-overlay")
-            .trim()
-        : "0";
-      setOverlay(value === "1");
-    }
-
-    syncOverlayState();
-    window.addEventListener("resize", syncOverlayState);
-    return () => window.removeEventListener("resize", syncOverlayState);
-  }, []);
 
   useEffect(() => {
     onModalStateChange?.(modal);
@@ -207,18 +226,40 @@ export function Sidebar({
     const focusFrame = requestAnimationFrame(() =>
       closeButtonRef.current?.focus(),
     );
-    const closeOnEscape = (event: KeyboardEvent) => {
+    const handleDrawerKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
+      if (event.key === "Tab") {
+        const drawer = drawerRef.current;
+        const focused = document.activeElement;
+        if (!drawer) return;
+        // Portaled pickers and menus manage their own focus until they close.
+        if (focused instanceof Element && !drawer.contains(focused) &&
+          focused.closest('[role="dialog"], [role="menu"], [role="listbox"]')) return;
+        const controls = [...drawer.querySelectorAll<HTMLElement>(
+          'button, a[href], input, select, textarea, [tabindex]',
+        )].filter(node => node.tabIndex >= 0 && !node.matches(':disabled') &&
+          node.getClientRects().length > 0 && getComputedStyle(node).visibility !== "hidden");
+        const first = controls[0], last = controls.at(-1);
+        const target = event.shiftKey
+          ? focused === first || !drawer.contains(focused) ? last : undefined
+          : focused === last || !drawer.contains(focused) ? first : undefined;
+        if (target) {
+          event.preventDefault();
+          target.focus();
+        }
+        return;
+      }
       if (event.key !== "Escape") return;
       event.preventDefault();
       restoreFocusOnCloseRef.current = true;
       onModalStateChange?.(false);
       onClose();
     };
-    window.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("keydown", handleDrawerKeyDown);
 
     return () => {
       cancelAnimationFrame(focusFrame);
-      window.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("keydown", handleDrawerKeyDown);
     };
   }, [modal, onClose, onModalStateChange, returnFocusRef]);
 
@@ -241,53 +282,60 @@ export function Sidebar({
     <>
       {isOpen ? (
         <button
-          className={`${styles.sidebarBackdrop} ${styles.sidebarBackdropVisible}`}
+          className="fixed inset-0 z-25 cursor-default border-0 bg-foreground/35 md:hidden dark:bg-canvas/70"
           type="button"
           aria-label="Close navigation"
+          tabIndex={-1}
           onClick={closeAndRestoreFocus}
         />
       ) : null}
       <aside
-        className={`${styles.sidebar} ${isOpen ? styles.sidebarOpen : ""}`}
+        className={cn(
+          "relative z-30 flex h-dvh min-w-0 flex-col border-r border-border-subtle bg-panel md:w-sidebar md:flex-none",
+          // Visibility changes immediately so opening focus can land. Only
+          // the position animates; inert and aria-hidden own the closed state.
+          "max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:w-80 max-md:max-w-4/5 max-md:transition-transform max-md:duration-standard max-md:ease-out motion-reduce:transition-none",
+          isOpen ? "max-md:visible max-md:translate-x-0" : "max-md:pointer-events-none max-md:invisible max-md:-translate-x-full",
+        )}
         aria-label="Workspace navigation"
+        ref={drawerRef}
         aria-hidden={overlay && !isOpen}
         inert={overlay && !isOpen}
-        ref={sidebarRef}
       >
-        <div className={styles.sidebarHeader}>
-          <div className={styles.brand}>
-            <BrandMark className={styles.brandMark} />
+        <div className="flex min-h-16 flex-none items-center justify-center px-5 py-3 max-md:justify-between">
+          <div className="flex items-center gap-2 text-10 tracking-wide text-foreground">
+            <BrandMark aria-hidden="true" className="size-7" focusable="false" />
             <span>MUSUBI</span>
             {/* Said once, quietly, where the product names itself. */}
-            <span className={styles.brandStage}>Alpha</span>
+            <Badge>Alpha</Badge>
           </div>
-          <IconButton
-            className={styles.mobileClose}
-            label="Close navigation"
+          <Button
+            aria-label="Close navigation"
+            className="md:hidden"
             ref={closeButtonRef}
-            size="compact"
+            size="icon-compact"
+            title="Close navigation"
+            variant="ghost"
             onClick={closeAndRestoreFocus}
           >
-            <X aria-hidden="true" size={17} strokeWidth={1.7} />
-          </IconButton>
+            <X aria-hidden="true" strokeWidth={1.7} />
+          </Button>
         </div>
 
-        <div className={styles.sidebarScroll} ref={scrollRef}>
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto" data-sidebar-scroll="" ref={scrollRef}>
           <MiniCalendar
             showToday
             anchor={anchor}
             onDateChange={onDateChange}
             weekStartsOn={weekStartsOn}
           />
-          <nav className={styles.sidebarSection} aria-labelledby="pages-label">
-            <SectionLabel
-              className={styles.sidebarSectionLabel}
-              id="pages-label"
-            >
-              Pages
-            </SectionLabel>
+          <nav className="grid gap-2.5 px-3.5 py-4" aria-labelledby="pages-label">
+            <div className="px-3">
+              <SectionLabel id="pages-label">Pages</SectionLabel>
+            </div>
             <div
-              className={styles.pageList}
+              className="flex flex-col gap-1"
+              data-page-list=""
               data-settling={reorderSettling ? "" : undefined}
             >
               {orderedPages.map((page, index) => (
@@ -328,110 +376,114 @@ export function Sidebar({
                   }}
                 />
               ))}
-              <RowAction
-                className={styles.sidebarRow}
-                icon={<Plus size={18} strokeWidth={1.5} />}
-                label="New page"
-                showChevron={false}
-                size="compact"
-                onClick={() => {
-                  onCreatePage();
-                  onClose();
-                }}
-              />
+              <SidebarRow>
+                <RowAction
+                  icon={<Plus strokeWidth={1.5} />}
+                  label="New page"
+                  showChevron={false}
+                  size="compact"
+                  onClick={() => {
+                    onCreatePage();
+                    onClose();
+                  }}
+                />
+              </SidebarRow>
             </div>
             {/* Announces a keyboard move. A live region rather than role="status":
                 the toast already owns that role, and two of them would make
                 "the status message" ambiguous for both readers and tests. */}
-            <span aria-live="polite" className={styles.visuallyHidden}>
+            <span aria-live="polite" className="sr-only">
               {reorderMessage}
             </span>
           </nav>
-
         </div>
 
-          <nav className={styles.sidebarUtilities} aria-label="Manage Musubi">
+        <nav className="grid flex-none gap-1 px-3.5 pb-3.5" aria-label="Manage Musubi">
+          <SidebarRow>
             <RowAction
-              className={styles.sidebarRow}
-              icon={<Layers3 size={18} strokeWidth={1.6} />}
+              icon={<Layers3 strokeWidth={1.6} />}
               label="Calendars"
               showChevron={false}
               size="compact"
-              onClick={onManageCalendars}
+              onClick={event => onManageCalendars(event.currentTarget)}
             />
+          </SidebarRow>
+          <SidebarRow>
             <RowAction
-              className={styles.sidebarRow}
-              icon={<Link2 size={18} strokeWidth={1.6} />}
+              icon={<Link2 strokeWidth={1.6} />}
               label="Connections"
               showChevron={false}
               size="compact"
-              onClick={onManageConnections}
+              onClick={event => onManageConnections(event.currentTarget)}
             />
+          </SidebarRow>
+          <SidebarRow>
             <RowAction
-              className={styles.sidebarRow}
-              icon={<Settings size={18} strokeWidth={1.6} />}
+              icon={<Settings strokeWidth={1.6} />}
               label="Settings"
               showChevron={false}
               size="compact"
-              onClick={onOpenSettings}
+              onClick={event => onOpenSettings(event.currentTarget)}
             />
-          </nav>
+          </SidebarRow>
+        </nav>
 
-        <footer className={styles.sidebarFooter}>
-          {/* The one place that says how current the calendar is. It used to be a
-              full-width bar above the grid, which popped in and out on every
-              refresh for a fact that belongs next to the account.
-
-              A slot of a fixed height with one line of text: the three states are
-              different lengths, and letting the row grow moved the profile below
-              it every time a refresh started.
+        <footer className="grid flex-none gap-2 border-t border-border-subtle px-3.5 pt-2.5 pb-4 max-md:pb-safe-bottom">
+          {/* The one place that says how current the calendar is. A slot of a
+              fixed height with one line of text: the three states are different
+              lengths, and letting the row grow would move the profile below it
+              every time a refresh started.
 
               `aria-live`, not `role="status"`: this is a standing label rather
               than the app's announcement channel — the toast owns that role, and
               two of them make "the status" ambiguous for readers and tests
               alike. Changes still get announced. */}
+          <div className="ml-2.5 flex items-center gap-2">
           <p
             aria-live="polite"
-            className={styles.syncStatus}
+            className="flex min-h-5 min-w-0 flex-1 items-center gap-2 text-11 text-muted-foreground data-[tone=offline]:text-shu [&>svg]:size-3.5 [&>svg]:flex-none"
             data-tone={syncTone}
             title={syncLabel}
           >
             {syncTone === "offline" ? (
-              <CloudOff aria-hidden="true" size={15} strokeWidth={1.6} />
+              <CloudOff aria-hidden="true" strokeWidth={1.6} />
             ) : syncTone === "refreshing" ? (
-              <RefreshCw aria-hidden="true" size={15} strokeWidth={1.6} />
+              <RefreshCw aria-hidden="true" strokeWidth={1.6} />
             ) : (
-              <CircleCheck aria-hidden="true" size={15} strokeWidth={1.6} />
+              <CircleCheck aria-hidden="true" strokeWidth={1.6} />
             )}
-            <span>{syncLabel}</span>
+            <span className="min-w-0 truncate">{syncLabel}</span>
           </p>
-          <div className={styles.profile}>
+          {onRefreshServer && <Button variant="ghost" size="icon-compact" aria-label="Refresh from server" title="Refresh from server" ref={refreshButtonRef} loading={refreshingServer} onClick={() => { restoreRefreshFocus.current = document.activeElement === refreshButtonRef.current; onRefreshServer(); }}><RefreshCw aria-hidden="true" /></Button>}
+          </div>
+          <div className="min-w-0 border-t border-border-subtle pt-2">
             <Menu>
-            <MenuTrigger asChild>
-            <RowAction
-              className={styles.profileMain}
-              aria-label={`User menu for ${user.name}`}
-              detail={<span className={styles.profileEmail}>{user.email}</span>}
-              icon={
-                <Avatar image={user.image} name={user.name} size="default" />
-              }
-              label={user.name}
-              showChevron={false}
-            />
-            </MenuTrigger>
-            <MenuContent label="User account" side="top" align="start" onCloseAutoFocus={event => {
-                if (!manageAccountAfterClose.current) return;
-                manageAccountAfterClose.current = false;
-                event.preventDefault();
-                onManageAccount();
-              }}>
-              <MenuItem icon={<UserRound size={16} />} onSelect={() => { manageAccountAfterClose.current = true; }}>Manage account</MenuItem>
-              <MenuSeparator />
-              <MenuItem icon={<LogOut size={16} />} disabled={signingOut} onSelect={() => {
-                setSigningOut(true);
-                onSignOut();
-              }}>Sign out</MenuItem>
-            </MenuContent>
+              <SidebarRow>
+                <MenuTrigger asChild>
+                  <RowAction
+                    aria-label={`User menu for ${user.name}`}
+                    ref={accountButtonRef}
+                    detail={user.email}
+                    icon={<Avatar image={user.image} name={user.name} />}
+                    label={user.name}
+                    showChevron={false}
+                    size="compact"
+                  />
+                </MenuTrigger>
+              </SidebarRow>
+              <MenuContent label="User account" side="top" align="start" onCloseAutoFocus={event => {
+                  if (!manageAccountAfterClose.current) return;
+                  manageAccountAfterClose.current = false;
+                  event.preventDefault();
+                  onManageAccount(accountButtonRef.current);
+                }}>
+                <MenuItem icon={<UserRound size={16} />} onSelect={() => { manageAccountAfterClose.current = true; }}>Manage account</MenuItem>
+                <MenuSeparator />
+                <MenuItem icon={<LogOut size={16} />} disabled={signingOut} onSelect={() => {
+                  setSigningOut(true);
+                  onSignOut();
+                }}>Sign out</MenuItem>
+              </MenuContent>
             </Menu>
           </div>
         </footer>
@@ -476,19 +528,23 @@ const PageRow = forwardRef<
 ) {
   return (
     <div
-      className={styles.pageRow}
+      className="group/page-row relative flex-none translate-y-(--row-shift) overflow-hidden rounded-control transition-all duration-standard ease-out data-[held]:z-10 data-[held]:cursor-grabbing data-[held]:bg-raised data-[held]:shadow-overlay data-[held]:transition-shadow in-data-[settling]:transition-shadow motion-reduce:transition-none"
       data-held={held ? "" : undefined}
+      data-page-row=""
+      /* The edit action sits on the sumi fill of the selected row. */
+      data-inverse={active ? "" : undefined}
       ref={ref}
       style={{ "--row-shift": `${shift}px` } as CSSProperties}
     >
       <RowAction
-        className={`${styles.sidebarRow} ${styles.pageRowMain}`}
         aria-current={active ? "page" : undefined}
-        icon={<Icon size={18} strokeWidth={1.6} />}
+        icon={<Icon strokeWidth={1.6} />}
         label={name}
         selected={active}
         showChevron={false}
         size="compact"
+        // Keeps the name clear of the edit action laid over the row's end.
+        trailing={<span aria-hidden="true" className="block w-5" />}
         onClick={onSelect}
         onKeyDown={(event) => {
           // Alt+arrows move the row, the same shape as Alt+arrows on an event.
@@ -499,15 +555,17 @@ const PageRow = forwardRef<
         }}
         onPointerDown={onPress}
       />
-      <IconButton
-        className={styles.pageRowEdit}
-        label={`Edit ${name}`}
-        size="compact"
-        title="Page settings"
-        onClick={onEdit}
-      >
-        <MoreHorizontal aria-hidden="true" size={16} strokeWidth={1.8} />
-      </IconButton>
+      <span className="absolute top-1/2 right-0.5 flex -translate-y-1/2 opacity-0 transition-opacity duration-fast group-focus-within/page-row:opacity-100 group-hover/page-row:opacity-100 pointer-coarse:opacity-100 motion-reduce:transition-none">
+        <Button
+          aria-label={`Edit ${name}`}
+          size="icon-compact"
+          title="Page settings"
+          variant="ghost"
+          onClick={onEdit}
+        >
+          <MoreHorizontal aria-hidden="true" strokeWidth={1.8} />
+        </Button>
+      </span>
     </div>
   );
 });

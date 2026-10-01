@@ -1,18 +1,17 @@
 import { Link } from "@tanstack/react-router";
-import { buttonClassName } from "~/ui/Button";
-import { RouteState } from "~/ui/RouteState";
+import { RouteState } from "~/components/route-state";
+import { Button } from "~/components/ui/button";
 
 export function NotFound() {
   return (
     <RouteState
       actions={
-        <Link className={buttonClassName()} to="/">
-          Open Musubi
-        </Link>
+        <Button asChild>
+          <Link to="/">Open Musubi</Link>
+        </Button>
       }
-      description="The link may be old, or the page may have moved."
-      eyebrow="404"
-      title="This page is not part of your workspace."
+      description="The link may be old, or the page has moved."
+      title="Page not found"
     />
   );
 }

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/tanstack-react";
 import { useState } from "react";
 import { expect, screen, userEvent, waitFor, within } from "storybook/test";
 import { DESKTOP_MODES, MOBILE_MODES } from "../../../.storybook/modes";
-import { Button } from "~/ui/Button";
+import { Button } from "~/components/ui/button";
 import {
   PageSettingsDialog,
   type PageSettingsDialogProps,
@@ -130,7 +130,7 @@ const expectPageSettings: NonNullable<Story["play"]> = async () => {
   const deletePage = within(dialog).getByRole("button", {
     name: "Delete page",
   });
-  expect(deletePage.closest("footer")).not.toBeNull();
+  expect(deletePage.closest("[data-slot=dialog-footer]")).not.toBeNull();
   expect(firstIcon).not.toBeNull();
   expect(lastIcon).not.toBeNull();
   expect(

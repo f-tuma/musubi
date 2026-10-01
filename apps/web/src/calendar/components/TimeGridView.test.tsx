@@ -18,8 +18,8 @@ it.each([[150, "00"], [210, "01"]])("creates exact fold from row %s and keeps th
   const exactRange = onCreateAtTime.mock.calls[0]![4];
   expect(exactRange.start.toISOString()).toBe(`2026-10-25T${hour}:30:00.000Z`);
   view.rerender(<TimeGridView {...props()} pendingCreate={{ date: "2026-10-25", startTime: "02:30", exactRange }} />);
-  const draft = view.container.querySelector('[aria-hidden="true"][class*="timeGridSelection"]') as HTMLElement;
-  expect(parseFloat(draft.style.top)).toBeCloseTo(Number(row) * geometry.pxPerMinute);
+  const draft = view.container.querySelector('[aria-hidden="true"][data-time-grid-selection]') as HTMLElement;
+  expect(parseFloat(draft.style.getPropertyValue("--event-top"))).toBeCloseTo(Number(row) * geometry.pxPerMinute);
 });
 it("refuses a spring week hole without cancelling the previous draft", () => {
   const onCreateAtTime = vi.fn(), onCancelDraft = vi.fn();
@@ -36,8 +36,8 @@ it("links cross-hole pieces with one focus identity and only the true outside re
   const button = screen.getByRole("button", { name: /Linked meeting/ });
   const pieces = button.querySelectorAll('[data-linked-segment]');
   expect(pieces).toHaveLength(2);
-  expect(button.querySelectorAll('[class*="resizeHandleTop"]:not([hidden])')).toHaveLength(1);
-  expect(button.querySelectorAll('[class*="resizeHandleBottom"]:not([hidden])')).toHaveLength(1);
+  expect(button.querySelectorAll('[data-resize-handle="start"]:not([hidden])')).toHaveLength(1);
+  expect(button.querySelectorAll('[data-resize-handle="end"]:not([hidden])')).toHaveLength(1);
   expect(view.container.querySelectorAll('[data-time-event="linked"]')).toHaveLength(1);
 });
 it("keyboard movement selects the second repeated occurrence exactly", async () => {
@@ -63,8 +63,8 @@ it("does not expand a short event into a reserved week hole", () => {
   const event = { ...fixtureEvents[0]!, title: "Short meeting", start: new Date("2026-10-24T00:59:00Z"), end: new Date("2026-10-24T01:00:00Z"), isAllDay: false };
   render(<TimeGridView {...props()} view="week" events={[event]} />);
   const piece = screen.getByRole("button", { name: /Short meeting/ }).firstElementChild as HTMLElement;
-  expect(piece.style.height).toBe("100%");
-  expect(parseFloat((piece.parentElement as HTMLElement).style.height)).toBeCloseTo(geometry.pxPerMinute);
+  expect(piece.style.getPropertyValue("--piece-height")).toBe("100%");
+  expect(parseFloat((piece.parentElement as HTMLElement).style.getPropertyValue("--event-height"))).toBeCloseTo(geometry.pxPerMinute);
 });
 it("keeps zero-duration imported events visible", () => {
   const event = { ...fixtureEvents[0]!, title: "Instant event", start: new Date("2026-10-25T01:30:00Z"), end: new Date("2026-10-25T01:30:00Z"), isAllDay: false };
@@ -76,9 +76,9 @@ it("resizes cross-midnight events only at their real outside edges", () => {
   const onMoveEvent = vi.fn();
   render(<TimeGridView {...props()} view="week" events={[event]} onMoveEvent={onMoveEvent} />);
   const [first, second] = screen.getAllByRole("button", { name: /Overnight/ });
-  expect(first!.querySelector('[class*="resizeHandleBottom"]:not([hidden])')).toBeNull();
-  expect(second!.querySelector('[class*="resizeHandleTop"]:not([hidden])')).toBeNull();
-  expect(second!.querySelector('[class*="resizeHandleBottom"]:not([hidden])')).toBeTruthy();
+  expect(first!.querySelector('[data-resize-handle="end"]:not([hidden])')).toBeNull();
+  expect(second!.querySelector('[data-resize-handle="start"]:not([hidden])')).toBeNull();
+  expect(second!.querySelector('[data-resize-handle="end"]:not([hidden])')).toBeTruthy();
   fireEvent.keyDown(first!, { key: "ArrowDown", altKey: true, shiftKey: true });
   expect(onMoveEvent).not.toHaveBeenCalled();
 });

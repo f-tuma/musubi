@@ -45,7 +45,7 @@ it("keeps provider invitation information behind Info while retaining the explic
   expect(screen.getByRole("button", { name: "Create and send invitations" })).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Meeting invitation information" }));
   expect(await screen.findByText(/Google will be asked to notify all guests/)).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Close meeting invitation information" }));
+  fireEvent.click(screen.getByRole("button", { name: "Meeting invitation information" }));
   await choose("Outlook team");
   fireEvent.click(screen.getByRole("button", { name: "Meeting invitation information" }));
   expect(await screen.findByText(/Outlook will be asked to notify all guests/)).toBeTruthy();

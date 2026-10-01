@@ -9,6 +9,7 @@ import {
   spacing,
   typeSizes,
 } from "./foundation-tokens";
+import { renderTailwindThemeCss } from "./tailwind";
 import { themeTokens } from "./theme-tokens";
 
 const generatedCssPath = fileURLToPath(
@@ -28,6 +29,12 @@ assert.equal(
   readFileSync(generatedFoundationsCssPath, "utf8"),
   renderFoundationTokensCss(),
   "The committed web representation must match the canonical foundation tokens",
+);
+
+assert.equal(
+  readFileSync(fileURLToPath(new URL("./tailwind.css", import.meta.url)), "utf8"),
+  renderTailwindThemeCss(),
+  "The committed Tailwind theme must match the canonical tokens",
 );
 
 assert.deepEqual(

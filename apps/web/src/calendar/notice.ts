@@ -1,4 +1,4 @@
-import type { ToastTone } from "~/ui/Toast";
+import type { ToastTone } from "~/components/ui/toast";
 
 export type NoticeOptions = {
   tone?: ToastTone;

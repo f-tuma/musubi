@@ -24,7 +24,9 @@ import {
 } from "react";
 import { calendarLaneSpans, visibleLaneLimit } from "../all-day-lanes";
 import { getEventDateLabel, getEventRangeLabel } from "../calendar-math";
-import { Popover, PopoverContent, PopoverTrigger } from "~/ui/Popover";
+import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
+import { useNarrowViewport } from "~/design/use-narrow-viewport";
+import { cn } from "~/lib/utils";
 import { useLayerDismissGuard } from "../layer-focus";
 import { getReadableEventTextColor } from "../event-color";
 import {
@@ -57,9 +59,18 @@ import {
 	type EventActionHandlers,
 } from "./EventDetailsPopover";
 import { EventPopover } from "./EventPopover";
-import styles from "./workspace.module.css";
 
 const ALL_DAY_LANES = 3;
+/** One all-day lane: a 20 px bar (`h-5`) and its gap. */
+const ALL_DAY_LANE_PX = 24;
+/**
+ * The hour axis beside the day columns. The CSS grid and the pointer maths
+ * read the same number, so a press lands in the column it is drawn over.
+ */
+const GUTTER_PX = 64;
+const NARROW_GUTTER_PX = 52;
+/** Narrowest a week grid gets before it scrolls sideways (above 599 px). */
+const TIME_GRID_MIN_WIDTH_PX = 760;
 const longWeekdayFormatter = new Intl.DateTimeFormat("en", {
 	weekday: "long",
 });
@@ -337,9 +348,18 @@ const TimelineEvent = memo(function TimelineEvent({
 			weekStartsOn={weekStartsOn}
 			{...eventActions}
 		>
+			{/* One action owns every linked piece around reserved civil rows; it
+			    is transparent to the pointer so only the pieces take it. */}
 			<button
-				className={styles.timelineEventAction}
-        style={{ left, width, top: minutesToY(pieces[0]?.start ?? startMin, geometry), height: actionHeight }}
+				className="group/action pointer-events-none absolute top-(--event-top) left-(--event-left) h-(--event-height) w-(--event-width) border-0 bg-transparent p-0"
+				style={
+					{
+						"--event-top": `${minutesToY(pieces[0]?.start ?? startMin, geometry)}px`,
+						"--event-left": left,
+						"--event-width": width,
+						"--event-height": `${actionHeight}px`,
+					} as CSSProperties
+				}
 				type="button"
 				aria-label={`${isCalendarTask(event) ? "Task, " : ""}${event.title}, ${getEventDateLabel(
 					event,
@@ -356,53 +376,68 @@ const TimelineEvent = memo(function TimelineEvent({
 				onPointerDown={(pointerEvent) => startDrag(pointerEvent, "move")}
 			>
 			{pieces.map((piece, pieceIndex) => (
-			<span className={styles.timelineEvent} data-linked-segment={pieces.length > 1 ? "" : undefined} data-draggable={draggable ? "" : undefined} data-pending={pending ? "" : undefined} data-overlapping={col > 0 ? "" : undefined} key={piece.start}
+			<span
+				className={cn(
+					// The block is its own size container: its height is set from
+					// geometry, so what fits inside is answered by the box
+					// (`block-*` variants) rather than by a duration threshold.
+					"group/block pointer-events-auto absolute top-(--piece-top) left-0 z-(--lane-z) grid h-(--piece-height) w-full min-w-0 content-start gap-0.5 overflow-hidden rounded-sm bg-pigment px-1.5 py-1 text-left text-pigment-ink transition-transform duration-fast @container-size/event-block hover:-translate-y-px group-aria-expanded/action:hover:translate-y-0 max-sm:px-1 motion-reduce:transition-none",
+					realRunHeight(axis, dayIndex, piece.start, geometry) < 12 && "p-0 max-sm:px-0",
+					// A block laid over another needs an edge against it: the ring
+					// is the canvas, so it reads as space.
+					col > 0 && "ring-2 ring-canvas",
+					draggable && "cursor-grab",
+					pieces.length > 1 && "border-l border-dashed border-l-current",
+					pending && "animate-pulse cursor-progress motion-reduce:animate-none motion-reduce:opacity-70",
+					// Held: lifted and slightly translucent, so the grid underneath
+					// stays readable and it is obvious the block is in hand.
+					dragTimes && "z-40 cursor-grabbing opacity-90 shadow-overlay motion-reduce:opacity-100",
+					// What a moved event leaves behind: its outline with ink in it,
+					// not a faded copy whose text would lose contrast.
+					ghost && "pointer-events-none border border-dashed border-pigment/60 bg-pigment/18",
+				)}
+				data-linked-segment={pieces.length > 1 ? "" : undefined}
+				data-draggable={draggable ? "" : undefined}
+				data-pending={pending ? "" : undefined}
+				data-overlapping={col > 0 ? "" : undefined}
+				key={piece.start}
 				style={
 					{
-						"--event-color": eventColor,
-            padding: realRunHeight(axis, dayIndex, piece.start, geometry) < 12 ? 0 : undefined,
-						// A ghost is drawn as an outline over the page, not as a filled
-						// block, so the event's own foreground would be white on a 18%
-						// tint. Ink is what stays readable there.
-						"--event-foreground": ghost
+						"--pigment": eventColor,
+						"--pigment-ink": ghost
 							? "var(--text-secondary)"
 							: getReadableEventTextColor(eventColor),
-						// A single piece fills the action box so CSS containment follows
-            // its actual rendered height, including density and layout changes.
-            height: pieces.length === 1 ? "100%" : `${pieceHeight(piece)}px`,
-						left: 0,
-						top: `${((piece.start - (pieces[0]?.start ?? startMin)) * geometry.pxPerMinute)}px`,
-						width: "100%",
-						zIndex: col + 1,
+						// A single piece fills the action box, so the container
+						// follows its actual rendered height.
+						"--piece-height": pieces.length === 1 ? "100%" : `${pieceHeight(piece)}px`,
+						"--piece-top": `${(piece.start - (pieces[0]?.start ?? startMin)) * geometry.pxPerMinute}px`,
+						"--lane-z": col + 1,
 					} as CSSProperties
 				}
 			>
-				{/* What fits is the block's own business: the rows below are all
-            rendered and the container queries in CSS drop them as the box gets
-            shorter. A JS threshold on duration would disagree with the box the
-            moment density or zoom changed it. */}
-				<span className={styles.timelineEventTime}>
+				<span className="hidden truncate font-mono text-10 block-time:block" data-event-time="">
 					{/* While dragging, show the time the drop would produce — the
               answer the user is actually looking for. */}
 					{dragTimes
 						? `${axisTimeLabel(axis, dayIndex, startMin, timeFormat)}–${axisTimeLabel(axis, dayIndex, endMin, timeFormat, "end")}`
 						: getEventRangeLabel(event, timeFormat).replace(" – ", "–")}
 				</span>
-				<span className={styles.timelineEventTitle}>
+				<span className="truncate text-11 leading-tight block-wrap:line-clamp-2 block-wrap:whitespace-normal" data-event-title="">
           {isCalendarTask(event) ? <EventMarks event={event} /> : null}
 					{isCalendarTask(event) && event.calendarTask.status === "completed" ? <s>{event.title}</s> : event.title}
           {!isCalendarTask(event) ? <EventMarks event={event} readOnly={!editable} /> : null}
 				</span>
 				{event.location ? (
-					<span className={styles.timelineEventMeta}>{event.location}</span>
+					<span className="hidden truncate text-10 opacity-80 block-meta:block">{event.location}</span>
 				) : null}
 				{draggable ? (
 					<>
 						{/* Resize has its own handles and its own state, so a move can
-                never be mistaken for a length change. */}
+                never be mistaken for a length change. Hinted on hover only. */}
 						<span
 							aria-hidden="true"
-							className={styles.resizeHandleTop}
+							className="absolute top-0 left-0 h-2 w-full cursor-ns-resize group-hover/block:bg-pigment-ink/28"
+							data-resize-handle="start"
 							hidden={pieceIndex !== 0 || (dragTimes?.exactRange?.start ?? event.start).getTime() < axis.days[dayIndex]!.start}
 							onPointerDown={(pointerEvent) => {
 								pointerEvent.stopPropagation();
@@ -411,7 +446,8 @@ const TimelineEvent = memo(function TimelineEvent({
 						/>
 						<span
 							aria-hidden="true"
-							className={styles.resizeHandleBottom}
+							className="absolute bottom-0 left-0 h-2 w-full cursor-ns-resize group-hover/block:bg-pigment-ink/28"
+							data-resize-handle="end"
 							hidden={pieceIndex !== pieces.length - 1 || (dragTimes?.exactRange?.end ?? event.end).getTime() > axis.days[dayIndex]!.end}
 							onPointerDown={(pointerEvent) => {
 								pointerEvent.stopPropagation();
@@ -497,6 +533,8 @@ export function TimeGridView({
 	const [now, setNow] = useState(() => new Date());
 	const hasToday = days.some((day) => isSameDay(day, now));
 	const dayMode = view === "day";
+	const narrow = useNarrowViewport();
+	const gutter = narrow ? NARROW_GUTTER_PX : GUTTER_PX;
 	const [detailBoundary, setDetailBoundary] = useState<HTMLElement | null>(null);
 	const dismissGuard = useLayerDismissGuard();
 	const rootRef = useRef<HTMLElement>(null);
@@ -514,14 +552,14 @@ export function TimeGridView({
 	const readColumns = useCallback(() => {
 		const bounds = canvasRef.current?.getBoundingClientRect();
 		// The time gutter is part of the canvas but is not a day column.
-		const gutter = bounds ? Math.min(64, bounds.width) : 0;
-		const width = bounds ? (bounds.width - gutter) / days.length : 0;
+		const gutterWidth = bounds ? Math.min(gutter, bounds.width) : 0;
+		const width = bounds ? (bounds.width - gutterWidth) / days.length : 0;
 		return {
 			count: days.length,
-			left: (bounds?.left ?? 0) + gutter,
+			left: (bounds?.left ?? 0) + gutterWidth,
 			width,
 		};
-	}, [days.length]);
+	}, [days.length, gutter]);
 
 	const { begin: beginDrag, drag } = useTimeGridDrag({
 		axis,
@@ -684,13 +722,6 @@ export function TimeGridView({
 		});
 	}
 
-	const layoutStyle = {
-		"--day-count": days.length,
-		"--axis-height": `${axis.rows.length * geometry.pxPerMinute}px`,
-		"--all-day-height": `${allDayLaneCount * 24 + 8}px`,
-		// The CSS grid derives its height from the same number as the event maths.
-		"--hour-height": `${geometry.hourHeight}px`,
-	} as CSSProperties;
 
 	// One effect owns where the grid is scrolled.
 	//
@@ -761,48 +792,87 @@ export function TimeGridView({
 
 	return (
 		<section
-			className={`${styles.timeGridView} ${dayMode ? styles.timeGridViewDay : ""}`}
+			className={
+				// A week has to look like a week: wider viewports keep a minimum
+				// column and scroll sideways; a phone fits all of them.
+				dayMode || narrow
+					? "min-h-(--grid-min-height) min-w-full focus-inset"
+					: "min-h-(--grid-min-height) min-w-(--time-grid-min-width) focus-inset"
+			}
 			aria-label={`${view === "day" ? "Day" : "Week"} time grid`}
 			onKeyDown={handleKeyDown}
 			ref={setRoot}
-			style={layoutStyle}
+			style={
+				{
+					"--timeline-gutter": `${gutter}px`,
+					"--tick-label-width": `${gutter - 12}px`,
+					"--day-count": days.length,
+					"--day-columns": `repeat(${days.length}, minmax(0, 1fr))`,
+					"--time-grid-columns": `${gutter}px repeat(${days.length}, minmax(0, 1fr))`,
+					"--time-grid-min-width": `${TIME_GRID_MIN_WIDTH_PX}px`,
+					"--axis-height": `${axis.rows.length * geometry.pxPerMinute}px`,
+					"--all-day-height": `${allDayLaneCount * ALL_DAY_LANE_PX + 8}px`,
+					// The CSS grid derives its height from the same number as the event maths.
+					"--hour-height": `${geometry.hourHeight}px`,
+					"--grid-min-height": "calc(24 * var(--hour-height) + 92px)",
+					"--column-inset-width": "calc(100% - 4px)",
+					"--preview-width": "calc(100% - 6px)",
+				} as CSSProperties
+			}
 			tabIndex={0}
 		>
-			<div className={styles.timeGridSticky}>
-				<div className={styles.timeGridDayHeader}>
+			{/* Above the events, so a draft or block scrolled up passes under the
+			    date it belongs to rather than over it. */}
+			<div className="sticky top-0 z-8 bg-canvas">
+				<div className="grid min-h-12 grid-cols-(--time-grid-columns) border-b border-border-subtle">
 					{/* The corner above the hour axis: this names the zone every hour on
-              the axis is written in, so it belongs at the top of that axis. It
-              used to be dropped 490px down the scrolling canvas, where it read
-              as a label for whatever hour it happened to land between. */}
-					<span className={styles.timeGridZone}>{timeZoneLabel(now)}</span>
+              the axis is written in, so it belongs at the top of that axis. */}
+					<span className="flex items-end justify-end pr-2.5 pb-1 pl-1 text-10 text-muted-foreground">
+						{timeZoneLabel(now)}
+					</span>
 					{days.map((day) => {
 						const today = isSameDay(day, now);
 
 						return (
 							<time
-								className={today ? styles.timeGridDayToday : ""}
+								className={
+									today
+										? "flex min-w-0 items-center justify-center gap-1.5 border-r border-border-subtle text-shu uppercase last:border-r-0 max-sm:flex-col max-sm:gap-0 max-sm:leading-tight"
+										: "flex min-w-0 items-center justify-center gap-1.5 border-r border-border-subtle text-foreground-secondary uppercase last:border-r-0 max-sm:flex-col max-sm:gap-0 max-sm:leading-tight"
+								}
 								data-time-grid-day={dayKey(day)}
+								data-today={today ? "" : undefined}
 								dateTime={dayKey(day)}
 								key={dayKey(day)}
 							>
-								<span>
+								<span className="truncate text-10 font-medium tracking-label">
 									{(dayMode ? longWeekdayFormatter : shortWeekdayFormatter).format(day)}
 								</span>
-								<strong>{day.getDate()}</strong>
+								<strong
+									className={
+										today
+											? "grid h-6 min-w-6 place-content-center rounded-full bg-shu text-12 font-medium text-shu-foreground"
+											: "grid h-6 min-w-6 place-content-center rounded-full text-12 font-medium text-foreground-secondary"
+									}
+								>
+									{day.getDate()}
+								</strong>
 							</time>
 						);
 					})}
 				</div>
 
-				<div className={styles.timeGridAllDay}>
-					<span className={styles.timeGridAllDayLabel}>All day</span>
-					<div className={styles.timeGridAllDayTrack}>
-						{visibleAllDaySpans.flatMap((span) => {
+				<div className="grid min-h-(--all-day-height) grid-cols-(--time-grid-columns) border-b border-border-subtle">
+					<span className="flex items-start justify-end border-r border-border-subtle pt-2 pr-2.5 pl-1 text-10 text-foreground-secondary">
+						All day
+					</span>
+					<div className="relative col-span-(--day-count) min-w-0">
+						{visibleAllDaySpans.map((span) => {
 							const calendar = calendarsById.get(
 								eventHomeCalendarId(span.event) ?? "",
 							);
 							const eventColor = calendar?.color ?? span.event.color;
-							return [
+							return (
 								<EventDetailsPopover
 									anchorInsideTrigger={dayMode}
 									calendar={calendar}
@@ -816,7 +886,7 @@ export function TimeGridView({
 									{...eventActions}
 								>
 									<button
-										className={styles.timeGridAllDayEvent}
+										className="absolute top-(--event-top) left-(--event-left) block h-5 w-(--event-width) truncate rounded-sm bg-pigment px-1.5 text-left text-11 text-pigment-ink focus-inset"
 										type="button"
 										aria-label={`${isCalendarTask(span.event) ? "Task deadline" : "All-day event"}, ${span.event.title}, ${getEventDateLabel(
 											span.event,
@@ -824,20 +894,20 @@ export function TimeGridView({
 										data-all-day-event={span.event.id}
 										style={
 											{
-												"--event-color": eventColor,
-												"--event-foreground": getReadableEventTextColor(eventColor),
-												left: `${(span.startCol / days.length) * 100}%`,
-												top: `${span.lane * 24 + 4}px`,
-												width: `${
+												"--pigment": eventColor,
+												"--pigment-ink": getReadableEventTextColor(eventColor),
+												"--event-left": `${(span.startCol / days.length) * 100}%`,
+												"--event-top": `${span.lane * ALL_DAY_LANE_PX + 4}px`,
+												"--event-width": `calc(${
 													((span.endCol - span.startCol + 1) / days.length) * 100
-												}%`,
+												}% - 2px)`,
 											} as CSSProperties
 										}
 									>
 										{isCalendarTask(span.event) && span.event.calendarTask.status === "completed" ? <s>{span.event.title}</s> : span.event.title}<EventMarks event={span.event} />
 									</button>
-								</EventDetailsPopover>,
-							];
+								</EventDetailsPopover>
+							);
 						})}
 						{hiddenAllDayCount > 0 ? (
 							<Popover>
@@ -846,10 +916,12 @@ export function TimeGridView({
 										aria-label={`${hiddenAllDayCount} more all-day ${
 											hiddenAllDayCount === 1 ? "item" : "items"
 										}`}
-										className={styles.timeGridAllDayMore}
-										style={{
-											top: `${Math.max(0, allDayLaneCount - 1) * 24 + 8}px`,
-										}}
+										className="absolute top-(--event-top) right-1 rounded-sm bg-panel px-0.5 text-10 text-muted-foreground hover:text-foreground"
+										style={
+											{
+												"--event-top": `${Math.max(0, allDayLaneCount - 1) * ALL_DAY_LANE_PX + 8}px`,
+											} as CSSProperties
+										}
 										type="button"
 									>
 										+{hiddenAllDayCount}
@@ -858,27 +930,22 @@ export function TimeGridView({
 								<PopoverContent
 									align="end"
 									aria-label="Hidden all-day items"
-									className={styles.monthOverflowPopover}
-									collisionPadding={12}
 									role="dialog"
 									side="bottom"
-									sideOffset={8}
 								>
-									<div className={styles.monthOverflowList}>
-										{hiddenAllDaySpans.flatMap((span) => {
-											return [
-												<EventPopover
-													calendar={calendarsById.get(eventHomeCalendarId(span.event) ?? "")}
-													calendars={calendars}
-													event={span.event}
-													key={span.id}
-													showLabel
-													timeFormat={timeFormat}
-													weekStartsOn={weekStartsOn}
-													{...eventActions}
-												/>,
-											];
-										})}
+									<div className="grid max-h-(--radix-popover-content-available-height) gap-1 overflow-y-auto p-2" data-event-list="overflow">
+										{hiddenAllDaySpans.map((span) => (
+											<EventPopover
+												calendar={calendarsById.get(eventHomeCalendarId(span.event) ?? "")}
+												calendars={calendars}
+												event={span.event}
+												key={span.id}
+												showLabel
+												timeFormat={timeFormat}
+												weekStartsOn={weekStartsOn}
+												{...eventActions}
+											/>
+										))}
 									</div>
 								</PopoverContent>
 							</Popover>
@@ -887,29 +954,36 @@ export function TimeGridView({
 				</div>
 			</div>
 
-			<div className={styles.timeGridCanvas} ref={canvasRef}>
+			<div className="relative h-(--axis-height)" data-time-grid-canvas="" ref={canvasRef}>
 				{ticks.map(({ row, coordinate }) => (
 					<div
-						className={styles.timeGridHour}
+						className="absolute top-(--tick-top) right-0 left-(--timeline-gutter) h-px border-t border-border-subtle"
 						key={row.key}
-						style={{ top: `${minutesToY(coordinate, geometry)}px` }}
+						style={{ "--tick-top": `${minutesToY(coordinate, geometry)}px` } as CSSProperties}
 					>
-						{coordinate > 0 ? <span>{tickLabel(axis, coordinate, timeFormat)}</span> : null}
+						{coordinate > 0 ? (
+							<span className="absolute -top-2 right-full mr-2.5 w-(--tick-label-width) text-right font-mono text-10 leading-tight text-muted-foreground">
+								{tickLabel(axis, coordinate, timeFormat)}
+							</span>
+						) : null}
 					</div>
 				))}
-				<div className={styles.timeGridColumns}>
+				<div className="absolute inset-y-0 right-0 left-(--timeline-gutter) grid grid-cols-(--day-columns)">
 					{days.map((day, dayIndex) => {
 						const today = isSameDay(day, now);
 						const nowMinutes = instantToCoordinate(axis, dayIndex, now.getTime());
+						const dropTarget = Boolean(
+							drag && drag.mode === "move" && drag.dayIndex === dayIndex,
+						);
 
 						return (
 							<div
-								className={styles.timeGridColumn}
-								data-drop-target={
-									drag && drag.mode === "move" && drag.dayIndex === dayIndex
-										? ""
-										: undefined
+								className={
+									dropTarget
+										? "group/column relative min-w-0 border-r border-border-subtle bg-shu/7 first:border-l last:border-r-0 focus-inset"
+										: "group/column relative min-w-0 border-r border-border-subtle first:border-l last:border-r-0 focus-inset"
 								}
+								data-drop-target={dropTarget ? "" : undefined}
 								data-time-grid-column={dayKey(day)}
 								key={dayKey(day)}
 								tabIndex={onCreateAtTime ? 0 : -1}
@@ -998,52 +1072,84 @@ export function TimeGridView({
 									);
 								}}
 							>
-                {keyboardSlot?.dayIndex === dayIndex ? <div aria-hidden="true" className={styles.timeGridKeyboardSlot} style={{ top: minutesToY(keyboardSlot.coordinate, geometry), height: geometry.snapMinutes * geometry.pxPerMinute }} /> : null}
-                {holeSegments(axis, dayIndex).map(hole => <div key={hole.start} className={styles.timeGridHole} data-time-axis-hole="" style={{ top: minutesToY(hole.start, geometry), height: (hole.end - hole.start) * geometry.pxPerMinute }}>No local time</div>)}
+                {/* Drawn only while the column itself has keyboard focus. */}
+                {keyboardSlot?.dayIndex === dayIndex ? (
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-x-0 top-(--slot-top) hidden h-(--slot-height) border border-shu group-focus-visible/column:block"
+                    style={{ "--slot-top": `${minutesToY(keyboardSlot.coordinate, geometry)}px`, "--slot-height": `${geometry.snapMinutes * geometry.pxPerMinute}px` } as CSSProperties}
+                  />
+                ) : null}
+                {holeSegments(axis, dayIndex).map(hole => (
+                  <div
+                    key={hole.start}
+                    className="pointer-events-none absolute inset-x-0 top-(--slot-top) flex h-(--slot-height) items-center justify-center border-y border-dashed border-border-subtle bg-panel text-10 text-muted-foreground"
+                    data-time-axis-hole=""
+                    style={{ "--slot-top": `${minutesToY(hole.start, geometry)}px`, "--slot-height": `${(hole.end - hole.start) * geometry.pxPerMinute}px` } as CSSProperties}
+                  >
+                    No local time
+                  </div>
+                ))}
 								{/* The draft: visible from the first pixel of the create
                     gesture, and once laid down it can be moved and resized like
                     a real block. It stays aria-hidden — the popover's own date
                     and time fields are the keyboard path to the same change. */}
-								{selection?.dayIndex === dayIndex ? previewPieces(axis, dayIndex, selection).map((piece, pieceIndex, pieces) => (
+								{selection?.dayIndex === dayIndex ? previewPieces(axis, dayIndex, selection).map((piece, pieceIndex, pieces) => {
+                  const run = realRunHeight(axis, dayIndex, piece.start, geometry);
+                  const laidDown = Boolean(draftSlot && onMoveDraft);
+                  return (
 									<div
 										aria-hidden="true"
-										className={styles.timeGridSelection}
+										className={cn(
+											// Translucent, over the events it is drawn among and under
+											// the sticky header. During the create gesture it stays
+											// transparent to the pointer; laid down it takes it back.
+											"pointer-events-none absolute top-(--event-top) left-0.5 z-5 flex h-(--event-height) w-(--column-inset-width) flex-col items-stretch overflow-hidden rounded-sm border border-(--draft-accent) bg-(--draft-fill) px-1 py-0.5 @container-size/event-block",
+											run < 12 && "p-0",
+											run < 2 && "border-0",
+											laidDown && "pointer-events-auto cursor-grab touch-none select-none",
+											draftDrag && "cursor-grabbing",
+										)}
                     key={piece.start}
-										data-draft={draftSlot && onMoveDraft ? "" : undefined}
+										data-draft={laidDown ? "" : undefined}
 										data-dragging={draftDrag ? "" : undefined}
+										data-time-grid-selection=""
 										style={
 											{
-												"--draft-accent": pendingCreate?.color,
-                        padding: realRunHeight(axis, dayIndex, piece.start, geometry) < 12 ? 0 : undefined,
-                        borderWidth: realRunHeight(axis, dayIndex, piece.start, geometry) < 2 ? 0 : undefined,
-                        overflow: "hidden",
-												height: `${Math.min(realRunHeight(axis, dayIndex, piece.start, geometry), durationToHeight(piece.end - piece.start, geometry))}px`,
-												top: `${minutesToY(piece.start, geometry)}px`,
+												"--draft-accent": pendingCreate?.color ?? "var(--accent-primary)",
+												"--event-height": `${Math.min(run, durationToHeight(piece.end - piece.start, geometry))}px`,
+												"--event-top": `${minutesToY(piece.start, geometry)}px`,
 											} as CSSProperties
 										}
 										onPointerDown={(pointerEvent) => startDraftDrag(pointerEvent, "move")}
 									>
-										<span className={styles.timeGridSelectionTime}>
+										{/* Time then name, left aligned — the same reading order
+                        as a real block. */}
+										<span className="font-mono text-10 text-foreground">
 											{axisTimeLabel(axis, dayIndex, selection.startMinutes, timeFormat)}–
 											{axisTimeLabel(axis, dayIndex, selection.endMinutes, timeFormat, "end")}
 										</span>
 										{/* Named once it is laid down, so it reads as the event it
                         is about to become rather than as a selection. */}
 										{draftSlot && !liveSelection ? (
-											<span className={styles.timeGridSelectionTitle}>New event</span>
+											<span className="hidden truncate text-11 text-foreground block-time:block">New event</span>
 										) : null}
-										{draftSlot && onMoveDraft ? (
+										{laidDown ? (
 											<>
+												{/* A draft is made to be adjusted, so its grips are
+                            always drawn. */}
 												<span
 													hidden={pieceIndex !== 0 || (selection.exactRange !== undefined && selection.exactRange.start.getTime() < axis.days[dayIndex]!.start)}
-                          className={styles.resizeHandleTop}
+													className="absolute top-0 left-0 h-2 w-full cursor-ns-resize after:absolute after:top-px after:left-1/2 after:h-0.5 after:w-6 after:-translate-x-1/2 after:rounded-full after:bg-(--draft-accent)"
+													data-resize-handle="start"
 													onPointerDown={(pointerEvent) =>
 														startDraftDrag(pointerEvent, "resize-start")
 													}
 												/>
 												<span
 													hidden={pieceIndex !== pieces.length - 1 || (selection.exactRange !== undefined && selection.exactRange.end.getTime() > axis.days[dayIndex]!.end)}
-                          className={styles.resizeHandleBottom}
+													className="absolute bottom-0 left-0 h-2 w-full cursor-ns-resize after:absolute after:bottom-px after:left-1/2 after:h-0.5 after:w-6 after:-translate-x-1/2 after:rounded-full after:bg-(--draft-accent)"
+													data-resize-handle="end"
 													onPointerDown={(pointerEvent) =>
 														startDraftDrag(pointerEvent, "resize-end")
 													}
@@ -1051,39 +1157,42 @@ export function TimeGridView({
 											</>
 										) : null}
 									</div>
-								)) : null}
+                  );
+                }) : null}
 								{/* The event where it is being dragged to — the answer to
                     "where will this land", including across days. */}
-								{drag && drag.mode === "move" && drag.dayIndex === dayIndex ? previewPieces(axis, dayIndex, drag.times).map(piece => (
+								{drag && drag.mode === "move" && drag.dayIndex === dayIndex ? previewPieces(axis, dayIndex, drag.times).map(piece => {
+                  const run = realRunHeight(axis, dayIndex, piece.start, geometry);
+                  return (
 									<div
 										aria-hidden="true"
-										className={styles.dragPreview}
+										className={
+											run < 12
+												? "pointer-events-none absolute top-(--event-top) left-0.5 z-41 flex h-(--event-height) w-(--preview-width) flex-col overflow-hidden rounded-sm bg-pigment p-0 text-pigment-ink shadow-overlay"
+												: "pointer-events-none absolute top-(--event-top) left-0.5 z-41 flex h-(--event-height) w-(--preview-width) flex-col overflow-hidden rounded-sm bg-pigment px-1.5 py-1 text-pigment-ink shadow-overlay"
+										}
                     key={piece.start}
 										data-drag-preview=""
 										style={
 											{
-												"--event-color": dragPreviewColor,
-                        padding: realRunHeight(axis, dayIndex, piece.start, geometry) < 12 ? 0 : undefined,
-												"--event-foreground": getReadableEventTextColor(dragPreviewColor),
-												height: `${Math.min(realRunHeight(axis, dayIndex, piece.start, geometry), durationToHeight(piece.end - piece.start, geometry))}px`,
-												top: `${minutesToY(piece.start, geometry)}px`,
+												"--pigment": dragPreviewColor,
+												"--pigment-ink": getReadableEventTextColor(dragPreviewColor),
+												"--event-height": `${Math.min(run, durationToHeight(piece.end - piece.start, geometry))}px`,
+												"--event-top": `${minutesToY(piece.start, geometry)}px`,
 											} as CSSProperties
 										}
 									>
-										<span className={styles.dragPreviewTime}>
+										<span className="font-mono text-10">
 											{axisTimeLabel(axis, dayIndex, drag.times.startMinutes, timeFormat)}–
 											{axisTimeLabel(axis, dayIndex, drag.times.endMinutes, timeFormat, "end")}
 										</span>
-										<span className={styles.dragPreviewTitle}>{drag.event.title}</span>
+										<span className="truncate text-11 leading-tight">{drag.event.title}</span>
 									</div>
-								)) : null}
-								{segmentsByDay[dayIndex]?.map((segment) => segment.kind === "availability" ? (
-                  <div key={`${segment.interval.sourceId}:${segment.interval.start}:${segment.interval.end}:${segment.startMin}`} className={styles.timelineAvailability} data-availability-interval="" role="note" aria-label={`Busy, ${segment.interval.label}, ${dayKey(day)}, ${axisTimeLabel(axis, dayIndex, segment.startMin, timeFormat)}–${axisTimeLabel(axis, dayIndex, segment.endMin, timeFormat, "end")}`} style={{ "--event-color": DEFAULT_CALENDAR_COLOR, "--event-foreground": getReadableEventTextColor(DEFAULT_CALENDAR_COLOR), top: `${minutesToY(segment.startMin, geometry)}px`, height: `${Math.min(realRunHeight(axis, dayIndex, segment.startMin, geometry), durationToHeight(segment.endMin - segment.startMin, geometry))}px`, padding: Math.min(realRunHeight(axis, dayIndex, segment.startMin, geometry), durationToHeight(segment.endMin - segment.startMin, geometry)) < 12 ? 0 : undefined, ...overlapPlacement(segment.col, segment.cols), zIndex: 0 } as CSSProperties}>
-                    <span className={styles.timelineEventTime}>{axisTimeLabel(axis, dayIndex, segment.startMin, timeFormat)}–{axisTimeLabel(axis, dayIndex, segment.endMin, timeFormat, "end")}</span>
-                    <span className={styles.timelineEventTitle}>Busy</span>
-                    <span className={styles.timelineEventMeta}>{segment.interval.label}</span>
-                  </div>
-                ) : (
+                  );
+                }) : null}
+								{segmentsByDay[dayIndex]?.map((segment) => {
+                  if (segment.kind !== "availability") {
+                    return (
 									<TimelineEvent
 										axis={axis}
 										detailBoundary={detailBoundary}
@@ -1118,16 +1227,45 @@ export function TimeGridView({
 										weekStartsOn={weekStartsOn}
 										{...eventActions}
 									/>
-								))}
+                    );
+                  }
+                  const placement = overlapPlacement(segment.col, segment.cols);
+                  const height = Math.min(realRunHeight(axis, dayIndex, segment.startMin, geometry), durationToHeight(segment.endMin - segment.startMin, geometry));
+                  return (
+                  <div
+                    key={`${segment.interval.sourceId}:${segment.interval.start}:${segment.interval.end}:${segment.startMin}`}
+                    className={
+                      height < 12
+                        ? "absolute top-(--event-top) left-(--event-left) z-0 grid h-(--event-height) w-(--event-width) min-w-0 content-start gap-0.5 overflow-hidden rounded-sm bg-pigment p-0 text-left text-pigment-ink @container-size/event-block"
+                        : "absolute top-(--event-top) left-(--event-left) z-0 grid h-(--event-height) w-(--event-width) min-w-0 content-start gap-0.5 overflow-hidden rounded-sm bg-pigment px-1.5 py-1 text-left text-pigment-ink @container-size/event-block"
+                    }
+                    data-availability-interval=""
+                    role="note"
+                    aria-label={`Busy, ${segment.interval.label}, ${dayKey(day)}, ${axisTimeLabel(axis, dayIndex, segment.startMin, timeFormat)}–${axisTimeLabel(axis, dayIndex, segment.endMin, timeFormat, "end")}`}
+                    style={
+                      {
+                        "--pigment": DEFAULT_CALENDAR_COLOR,
+                        "--pigment-ink": getReadableEventTextColor(DEFAULT_CALENDAR_COLOR),
+                        "--event-top": `${minutesToY(segment.startMin, geometry)}px`,
+                        "--event-height": `${height}px`,
+                        "--event-left": placement.left,
+                        "--event-width": placement.width,
+                      } as CSSProperties
+                    }
+                  >
+                    <span className="hidden truncate font-mono text-10 block-time:block">{axisTimeLabel(axis, dayIndex, segment.startMin, timeFormat)}–{axisTimeLabel(axis, dayIndex, segment.endMin, timeFormat, "end")}</span>
+                    <span className="truncate text-11 leading-tight">Busy</span>
+                    <span className="hidden truncate text-10 opacity-80 block-meta:block">{segment.interval.label}</span>
+                  </div>
+                  );
+                })}
 								{today && nowMinutes !== null ? (
 									<div
-										className={styles.timeGridNow}
+										className="pointer-events-none absolute inset-x-0 top-(--event-top) z-6 h-0.5 bg-shu"
 										data-current-time
-										style={{
-											top: `${minutesToY(nowMinutes, geometry)}px`,
-										}}
+										style={{ "--event-top": `${minutesToY(nowMinutes, geometry)}px` } as CSSProperties}
 									>
-										<span />
+										<span className="absolute -top-0.5 -left-0.5 size-1.5 rounded-full bg-shu" />
 									</div>
 								) : null}
 							</div>

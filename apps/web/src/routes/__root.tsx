@@ -14,13 +14,12 @@ import { type ReactNode, useSyncExternalStore } from "react";
 import { AppErrorBoundary } from "~/components/AppErrorBoundary";
 import { NotFound } from "~/components/NotFound";
 import { useFocusMode } from "~/design/focus-mode";
-import globalCss from "~/design/global.css?url";
+import appCss from "~/design/app.css?url";
 import {
   getAppliedTheme,
   subscribeToTheme,
   THEME_BOOTSTRAP_SCRIPT,
 } from "~/design/theme";
-import tokensCss from "~/design/tokens.css?url";
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
@@ -33,8 +32,7 @@ export const Route = createRootRouteWithContext<{
         type: "image/svg+xml",
       },
       { href: `${BRAND_ASSETS}/apple-touch-icon.png`, rel: "apple-touch-icon" },
-      { rel: "stylesheet", href: tokensCss },
-      { rel: "stylesheet", href: globalCss },
+      { rel: "stylesheet", href: appCss },
     ],
     meta: [
       { title: "Musubi" },

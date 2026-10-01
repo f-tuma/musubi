@@ -14,14 +14,17 @@ import {
   type OrganizerDraft,
 } from "@musubi/calendar";
 import { editProviderOrganizer, getOrganizerCalendar } from "~/api/resources";
-import { Button, IconButton } from "~/ui/Button";
-import { Dialog, DialogInfo } from "~/ui/Dialog";
-import { ConfirmationDialog } from "~/ui/ConfirmationDialog";
-import { Field } from "~/ui/Field";
-import { Select } from "~/ui/Select";
-import { Checkbox } from "~/ui/Checkbox";
-import { InlineError } from "~/ui/InlineError";
-import styles from "./styles/event-delivery.module.css";
+import { Button } from "~/components/ui/button";
+import { Checkbox } from "~/components/ui/checkbox";
+import { ConfirmationDialog } from "~/components/ui/confirmation-dialog";
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { Field, FieldGroup } from "~/components/ui/field";
+import { HelpTooltip } from "~/components/ui/help-tooltip";
+import { InlineError } from "~/components/ui/inline-error";
+import { Input } from "~/components/ui/input";
+import { Select } from "~/components/ui/select";
+import { Textarea } from "~/components/ui/textarea";
+import { focusDialogBody } from "./dialog-focus";
 export function ProviderOrganizerCreateAction(props: {
   calendarID: string;
   color: string;
@@ -67,16 +70,18 @@ function OrganizerCreateActionBody({
   }, [calendarID, connectionId]);
   return available ? (
     <>
-      <IconButton
-        label={`Create ${available === "caldav" ? "CalDAV" : available === "microsoft" ? "Outlook" : "Google"} meeting`}
-        size="compact"
+      <Button
+        aria-label={`Create ${available === "caldav" ? "CalDAV" : available === "microsoft" ? "Outlook" : "Google"} meeting`}
+        title={`Create ${available === "caldav" ? "CalDAV" : available === "microsoft" ? "Outlook" : "Google"} meeting`}
+        size="icon-compact"
+        variant="ghost"
         onClick={(event) => {
           if (onCreate) onCreate(event.currentTarget);
           else setTrigger(event.currentTarget);
         }}
       >
-        <CalendarPlus size={16} strokeWidth={1.7} />
-      </IconButton>
+        <CalendarPlus aria-hidden="true" size={16} strokeWidth={1.7} />
+      </Button>
       {trigger ? (
         <ProviderOrganizerEditor
           organizerAddresses={organizerAddresses}
@@ -203,25 +208,57 @@ export function ProviderOrganizerEditor({
   const occurrence = observation?.organizerEdit?.scope === "occurrence";
   const personalOccurrence = provider === "microsoft" && (occurrence || wholeSeries) && observation?.state?.attendeesComplete && observation.state.attendees.length === 0;
   const locked = busy || submitted || !canUpdate;
+  const providerName = provider === "caldav" ? "CalDAV" : provider === "microsoft" ? "Outlook" : "Google";
   return (
     <div
-      className={styles.layerBoundary}
+      className="contents"
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}
     >
       <Dialog
-        elevated
         open
-        closeLabel="Close meeting editor"
-        title={wholeSeries ? "Edit series" : occurrence ? "Manage this occurrence" : `${event ? "Manage" : "Create"} ${provider === "caldav" ? "CalDAV" : provider === "microsoft" ? "Outlook" : "Google"} meeting`}
-        headerActions={personalOccurrence ? undefined : <DialogInfo label="Meeting invitation information" title="Invitations">{organizerNotificationNotice(provider, observation?.organizerEdit?.timeEdit)}</DialogInfo>}
-        returnFocus={returnFocus}
         onOpenChange={(open) => {
           if (!open && !pending.current) onClose();
         }}
-        footer={
-          <>
+      >
+        <DialogContent onOpenAutoFocus={focusDialogBody} elevated size="form" closeLabel="Close meeting editor" returnFocus={returnFocus} aria-describedby={undefined}>
+          <DialogHeader>
+            <div className="flex items-center gap-1">
+              <DialogTitle>{wholeSeries ? "Edit series" : occurrence ? "Manage this occurrence" : `${event ? "Manage" : "Create"} ${providerName} meeting`}</DialogTitle>
+              {personalOccurrence ? null : (
+                <HelpTooltip label="Meeting invitation information">
+                  {organizerNotificationNotice(provider, observation?.organizerEdit?.timeEdit)}
+                </HelpTooltip>
+              )}
+            </div>
+          </DialogHeader>
+          <DialogBody>
+            {notice ? (
+              <p role="status" className="text-14 text-foreground-secondary">{notice}</p>
+            ) : (
+              <FieldGroup>
+                <ProviderOrganizerFields
+                  organizerAddresses={organizerAddresses}
+                  draft={draft}
+                  event={event}
+                  provider={provider}
+                  locked={locked}
+                  canEditTime={canEditTime}
+                  occurrence={occurrence}
+                  wholeSeries={wholeSeries}
+                  onChange={patch}
+                />
+                {canDelete && !submitted && (
+                  <Button className="self-start" variant="secondary" onClick={() => setConfirm(true)}>
+                    {occurrence ? "Cancel this occurrence and notify guests" : "Cancel meeting and notify guests"}
+                  </Button>
+                )}
+              </FieldGroup>
+            )}
+            {error && !confirm && <InlineError>{error}</InlineError>}
+          </DialogBody>
+          <DialogFooter>
             <Button
               ref={closeButton}
               variant="secondary"
@@ -246,32 +283,8 @@ export function ProviderOrganizerEditor({
                     : "Create and send invitations"}
               </Button>
             )}
-          </>
-        }
-      >
-        {notice ? (
-          <p role="status">{notice}</p>
-        ) : (
-          <>
-            <ProviderOrganizerFields
-              organizerAddresses={organizerAddresses}
-              draft={draft}
-              event={event}
-              provider={provider}
-              locked={locked}
-              canEditTime={canEditTime}
-              occurrence={occurrence}
-              wholeSeries={wholeSeries}
-              onChange={patch}
-            />
-            {canDelete && !submitted && (
-              <Button variant="secondary" onClick={() => setConfirm(true)}>
-                {occurrence ? "Cancel this occurrence and notify guests" : "Cancel meeting and notify guests"}
-              </Button>
-            )}
-          </>
-        )}
-        {error && !confirm && <InlineError>{error}</InlineError>}
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
       {confirm && (
         <ConfirmationDialog
@@ -279,7 +292,7 @@ export function ProviderOrganizerEditor({
           open
           returnFocus={closeButton}
           children={error ? <InlineError>{error}</InlineError> : null}
-          title={occurrence ? "Cancel this occurrence" : `Cancel ${provider === "caldav" ? "CalDAV" : provider === "microsoft" ? "Outlook" : "Google"} meeting`}
+          title={occurrence ? "Cancel this occurrence" : `Cancel ${providerName} meeting`}
           description={`${provider === "caldav" ? "The CalDAV server" : provider === "microsoft" ? "Outlook" : "Google"} will be asked to cancel ${occurrence ? "only this occurrence" : "this meeting"} and notify every guest. Guest notification delivery cannot be verified.`}
           confirmLabel={occurrence ? "Cancel this occurrence and notify guests" : "Cancel meeting and notify guests"}
           closeLabel="Keep meeting"
@@ -291,6 +304,8 @@ export function ProviderOrganizerEditor({
     </div>
   );
 }
+
+const organizerNote = "text-13 leading-normal text-muted-foreground";
 
 /** The provider management and shared creation flows keep one field contract. */
 export function ProviderOrganizerFields({
@@ -314,80 +329,76 @@ export function ProviderOrganizerFields({
   wholeSeries?: boolean;
   onChange: <Key extends keyof OrganizerDraft>(key: Key, value: OrganizerDraft[Key]) => void;
 }) {
+  const timeType = wholeSeries ? "time" : draft.allDay ? "date" : "datetime-local";
   return <>
     {!event && provider === "caldav" && organizerAddresses?.length ? <Field label="Organizer address"><Select label="Organizer address" placeholder="Choose an address" value={draft.organizerAddress ?? ""} disabled={locked} options={organizerAddresses.map(value => ({value, label: value.slice(7)}))} onChange={value => onChange("organizerAddress", value)} /></Field> : null}
-            {(
-              [
-                ["title", "Title"],
-                ["description", "Notes"],
-                ["location", "Location"],
-              ] as const
-            ).map(([key, label]) => (
-              <Field key={key} label={label}>
-                <input
-                  value={draft[key]}
-                  disabled={locked}
-                  onChange={(event) => onChange(key, event.target.value)}
-                />
-              </Field>
-            ))}
-            {!event && (
-              <Field
-                label="Guest email addresses"
-                description="Separate required guests with commas."
-                help="Guest-list changes after creation are not supported here."
-              >
-                <textarea
-                  value={draft.guests}
-                  disabled={locked}
-                  onChange={(event) => onChange("guests", event.target.value)}
-                />
-              </Field>
-            )}
-            {(provider !== "google" && event && !canEditTime) || (occurrence && (provider !== "microsoft" || !canEditTime)) ? (
-              <p>{wholeSeries ? "Changes apply to the series. Individual occurrence changes are preserved." : occurrence ? "Only this occurrence will change." : "Meeting time and guests are preserved."}</p>
-            ) : (
-              <>
-                {provider === "microsoft" && (occurrence || wholeSeries) ? <p>{wholeSeries ? "Changes apply to every occurrence. Dates stay the same." : "Only this occurrence will change."}</p> : null}
-                {provider === "caldav" && event ? (
-                  <p>
-                    Changing time asks guests to respond again. Their existing
-                    responses will reset.
-                  </p>
-                ) : null}
-                {provider !== "google" && !event && !draft.allDay ? (
-                  <p>New timed meetings use UTC.</p>
-                ) : null}
-                <Checkbox
-                  label="All day"
-                  checked={draft.allDay}
-                  disabled={locked || (provider !== "google" && !!event)}
-                  onChange={(event) => onChange("allDay", event.target.checked)}
-                />
-                <Field label="Start">
-                  <input
-                    type={wholeSeries ? "time" : draft.allDay ? "date" : "datetime-local"}
-                    value={
-                      wholeSeries ? draft.start.slice(11) : draft.allDay ? draft.start.slice(0, 10) : draft.start
-                    }
-                    disabled={locked}
-                    onChange={(event) => onChange("start", wholeSeries ? `${draft.start.slice(0, 10)}T${event.target.value}` : event.target.value)}
-                  />
-                </Field>
-                <Field label="End">
-                  <input
-                    type={wholeSeries ? "time" : draft.allDay ? "date" : "datetime-local"}
-                    value={wholeSeries ? draft.end.slice(11) : draft.allDay ? draft.end.slice(0, 10) : draft.end}
-                    disabled={locked}
-                    onChange={(event) => onChange("end", wholeSeries ? `${draft.end.slice(0, 10)}T${event.target.value}` : event.target.value)}
-                  />
-                </Field>
-                {!draft.allDay && (
-                  <Field label="Event time zone">
-                    <TimeZonePicker value={draft.timeZone} disabled={locked || (!!event && provider !== "google")} onChange={value => onChange("timeZone", value)} />
-                  </Field>
-                )}
-              </>
-            )}
+    {(
+      [
+        ["title", "Title"],
+        ["description", "Notes"],
+        ["location", "Location"],
+      ] as const
+    ).map(([key, label]) => (
+      <Field key={key} label={label}>
+        <Input
+          value={draft[key]}
+          disabled={locked}
+          onChange={(event) => onChange(key, event.target.value)}
+        />
+      </Field>
+    ))}
+    {!event && (
+      <Field
+        label="Guest email addresses"
+        help="Separate required guests with commas. Guest-list changes after creation are not supported here."
+      >
+        <Textarea
+          value={draft.guests}
+          disabled={locked}
+          onChange={(event) => onChange("guests", event.target.value)}
+        />
+      </Field>
+    )}
+    {(provider !== "google" && event && !canEditTime) || (occurrence && (provider !== "microsoft" || !canEditTime)) ? (
+      <p className={organizerNote}>{wholeSeries ? "Changes apply to the series. Individual occurrence changes are preserved." : occurrence ? "Only this occurrence will change." : "Meeting time and guests are preserved."}</p>
+    ) : (
+      <>
+        {provider === "microsoft" && (occurrence || wholeSeries) ? <p className={organizerNote}>{wholeSeries ? "Changes apply to every occurrence. Dates stay the same." : "Only this occurrence will change."}</p> : null}
+        {provider === "caldav" && event ? (
+          <p className={organizerNote}>Their existing responses will reset if the time changes.</p>
+        ) : null}
+        <Checkbox
+          label="All day"
+          checked={draft.allDay}
+          disabled={locked || (provider !== "google" && !!event)}
+          onChange={(event) => onChange("allDay", event.target.checked)}
+        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Start">
+            <Input
+              type={timeType}
+              value={
+                wholeSeries ? draft.start.slice(11) : draft.allDay ? draft.start.slice(0, 10) : draft.start
+              }
+              disabled={locked}
+              onChange={(event) => onChange("start", wholeSeries ? `${draft.start.slice(0, 10)}T${event.target.value}` : event.target.value)}
+            />
+          </Field>
+          <Field label="End">
+            <Input
+              type={timeType}
+              value={wholeSeries ? draft.end.slice(11) : draft.allDay ? draft.end.slice(0, 10) : draft.end}
+              disabled={locked}
+              onChange={(event) => onChange("end", wholeSeries ? `${draft.end.slice(0, 10)}T${event.target.value}` : event.target.value)}
+            />
+          </Field>
+        </div>
+        {!draft.allDay && (
+          <Field label="Event time zone" description={provider !== "google" && !event ? "New timed meetings use UTC." : undefined}>
+            <TimeZonePicker value={draft.timeZone} disabled={locked || (!!event && provider !== "google")} onChange={value => onChange("timeZone", value)} />
+          </Field>
+        )}
+      </>
+    )}
   </>;
 }

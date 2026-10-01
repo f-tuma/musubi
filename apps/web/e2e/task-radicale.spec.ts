@@ -95,22 +95,23 @@ test("round-trips a Task Page edit through API, Postgres and Radicale", async ({
     await page.getByRole("button", { exact: true, name: "Continue" }).click();
     await page.getByLabel("Calendar name").fill("Personal");
     await page.getByRole("button", { exact: true, name: "Continue" }).click();
-    await page.getByRole("button", { name: "Not now" }).click();
+    await page.getByRole("button", { name: "Skip for now" }).click();
 
     await page.getByRole("button", { name: "Connections" }).click();
-    const connections = page.getByRole("dialog", { name: "Connections" });
+    const connections = page.getByRole("dialog", { name: "Settings" });
     await connections
       .getByRole("button", { name: "CalDAV", exact: true })
       .click();
-    await connections.getByLabel("Server address").fill(radicaleUrl);
-    await connections.getByLabel("Username").fill(radicaleUsername);
-    await connections.getByLabel("Password").fill(radicalePassword);
-    await connections
+    const caldav = page.getByRole("dialog", { name: "Connect CalDAV" });
+    await caldav.getByLabel("Server address").fill(radicaleUrl);
+    await caldav.getByLabel("Username").fill(radicaleUsername);
+    await caldav.getByLabel("Password").fill(radicalePassword);
+    await caldav
       .getByRole("button", { name: "Connect", exact: true })
       .click();
     await expect(page.getByText("Calendar connected.")).toBeVisible();
     await connections
-      .getByRole("button", { name: "Close connections" })
+      .getByRole("button", { name: "Close settings" })
       .click();
 
     await page.getByRole("radio", { name: "Tasks" }).click();

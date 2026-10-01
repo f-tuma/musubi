@@ -11,21 +11,27 @@ import {
 import { type RefObject, useRef, useState } from "react";
 import type { CalendarMember } from "~/api/contracts";
 import { useCalendarSharing } from "~/calendar/calendar-sharing";
-import { Avatar } from "~/ui/Avatar";
-import { Button, IconButton } from "~/ui/Button";
+import { Avatar } from "~/components/ui/avatar";
+import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
+import { ConfirmationDialog } from "~/components/ui/confirmation-dialog";
 import {
-  ConfirmationDialog,
-  ConfirmationNotice,
-} from "~/ui/ConfirmationDialog";
-import { Dialog, DialogInfo } from "~/ui/Dialog";
-import { Field } from "~/ui/Field";
-import { InlineError } from "~/ui/InlineError";
-import { Menu, MenuContent, MenuItem, MenuTrigger } from "~/ui/Menu";
-import { Row } from "~/ui/Row";
-import { Segmented } from "~/ui/Segmented";
-import { SectionLabel } from "~/ui/SectionLabel";
-import { useAsyncAction } from "~/ui/useAsyncAction";
-import styles from "./styles/sharing.module.css";
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import { Field } from "~/components/ui/field";
+import { InlineError } from "~/components/ui/inline-error";
+import { Input } from "~/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "~/components/ui/input-group";
+import { ItemGroup } from "~/components/ui/item";
+import { Row } from "~/components/ui/row";
+import { Select } from "~/components/ui/select";
+import { SettingsSection } from "~/components/ui/settings-section";
+import { Menu, MenuContent, MenuItem, MenuTrigger } from "~/components/ui/menu";
+import { useAsyncAction } from "~/lib/use-async-action";
 
 type ShareCalendarDialogProps = {
   calendar: Calendar | null;
@@ -187,60 +193,32 @@ export function ShareCalendarDialog({
 
   return (
     <>
-      <Dialog
-        bodyClassName={styles.body}
-        bodyLayout="flush"
-        closeLabel="Close sharing"
-        headerActions={<DialogInfo label="About calendar sharing" title="Calendar sharing">Manage access and invite people to this calendar.</DialogInfo>}
-        onOpenChange={handleOpenChange}
-        open={open}
-        title={`Share ${calendar?.name ?? "calendar"}`}
-      >
-        <div aria-busy={busy || undefined}>
-          <section
-            aria-labelledby="sharing-members-title"
-            className={styles.section}
-          >
-            <div className={styles.sectionHeading}>
-              <SectionLabel id="sharing-members-title">Members</SectionLabel>
-              {/* Nothing rather than "0 people" while the list is on its way:
-                  a count is a fact about the calendar, and zero is the one
-                  answer that changes what someone does next. */}
-              {sharing.members.isPending ? null : (
-                <span className={styles.count}>
-                  {members.length} {members.length === 1 ? "person" : "people"}
-                </span>
-              )}
-            </div>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent aria-describedby={undefined} closeLabel="Close sharing" size="form" tall>
+          <DialogHeader>
+            <DialogTitle>{`Share ${calendar?.name ?? "calendar"}`}</DialogTitle>
+          </DialogHeader>
+          <DialogBody aria-busy={busy || undefined}>
+            <SettingsSection title="Members" variant="plain">
+              {sharing.members.isPending ? (
+                <p aria-live="polite" className="text-13 text-muted-foreground">
+                  Loading members…
+                </p>
+              ) : sharing.members.isError ? (
+                <InlineError>
+                  Members could not be loaded. Close the dialog and try again.
+                </InlineError>
+              ) : (
+                <ItemGroup aria-label="Calendar members" role="list">
+                  {members.map((member) => {
+                    const memberIsOwner = member.role === "owner";
+                    const removable =
+                      canManage && !memberIsOwner && member.id !== userId;
+                    const access: MemberAccess =
+                      member.role === "editor" ? "editor" : "viewer";
 
-            {sharing.members.isPending ? (
-              <p aria-live="polite" className={styles.loading}>
-                Loading members…
-              </p>
-            ) : sharing.members.isError ? (
-              <div className={styles.sectionError} role="alert">
-                Members could not be loaded. Close the dialog and try again.
-              </div>
-            ) : (
-              <ul aria-label="Calendar members" className={styles.memberList}>
-                {members.map((member) => {
-                  const memberIsOwner = member.role === "owner";
-                  const removable =
-                    canManage && !memberIsOwner && member.id !== userId;
-                  const access: MemberAccess =
-                    member.role === "editor" ? "editor" : "viewer";
-
-                  return (
-                    <li key={member.id}>
+                    return (
                       <Row
-                        className={styles.memberRow}
-                        detail={
-                          memberIsOwner
-                            ? "Calendar owner"
-                            : access === "editor"
-                              ? "Can change events"
-                              : "Can view events"
-                        }
                         icon={
                           <Avatar
                             image={member.image}
@@ -248,34 +226,39 @@ export function ShareCalendarDialog({
                             size="default"
                           />
                         }
+                        key={member.id}
                         label={`${member.name}${
                           member.id === userId ? " (you)" : ""
                         }`}
+                        layout={canManage && !memberIsOwner ? "responsive-actions" : "default"}
+                        role="listitem"
                         trailing={
                           canManage && !memberIsOwner ? (
-                            <div className={styles.memberActions}>
-                              <Segmented
-                                className={styles.roleControl}
+                            <>
+                              <Select
                                 disabled={busy}
                                 label={`${member.name} role`}
                                 options={MEMBER_ACCESS_OPTIONS}
+                                size="compact"
                                 value={access}
-                                onChange={(role) => void changeRole(member, role)}
+                                onChange={(role) => void changeRole(member, role as MemberAccess)}
                               />
                               {canTransfer && removable ? (
                                 <Menu>
                                   <MenuTrigger asChild>
-                                    <IconButton
+                                    <Button
+                                      aria-label={`Actions for ${member.name}`}
                                       disabled={busy}
-                                      label={`Actions for ${member.name}`}
-                                      size="compact"
+                                      size="icon-compact"
+                                      title={`Actions for ${member.name}`}
+                                      variant="ghost"
                                       ref={(button) => {
                                         if (button) memberActionTriggers.current.set(member.id, button);
                                         else memberActionTriggers.current.delete(member.id);
                                       }}
                                     >
-                                      <MoreHorizontal size={18} strokeWidth={1.7} />
-                                    </IconButton>
+                                      <MoreHorizontal aria-hidden="true" strokeWidth={1.7} />
+                                    </Button>
                                   </MenuTrigger>
                                   <MenuContent
                                     align="end"
@@ -304,65 +287,53 @@ export function ShareCalendarDialog({
                                   </MenuContent>
                                 </Menu>
                               ) : removable ? (
-                                <IconButton
-                                  className={styles.removeButton}
+                                <Button
+                                  aria-label={`Remove ${member.name}`}
                                   disabled={busy}
-                                  label={`Remove ${member.name}`}
-                                  size="compact"
+                                  size="icon-compact"
+                                  title={`Remove ${member.name}`}
+                                  variant="ghost"
                                   onClick={() => void removeMember(member)}
                                 >
-                                  <UserRoundMinus size={16} strokeWidth={1.7} />
-                                </IconButton>
+                                  <UserRoundMinus aria-hidden="true" strokeWidth={1.7} />
+                                </Button>
                               ) : null}
-                            </div>
+                            </>
                           ) : (
-                            <span className={styles.roleBadge}>
-                              {memberIsOwner ? "Owner" : access}
-                            </span>
+                            <Badge variant="muted">
+                              {memberIsOwner ? "Owner" : access === "editor" ? "Editor" : "Viewer"}
+                            </Badge>
                           )
                         }
                       />
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            {!isOwner && calendar ? (
-              <div className={styles.leaveRow}>
+                    );
+                  })}
+                </ItemGroup>
+              )}
+              {!isOwner && calendar ? (
                 <Button
-                  className={styles.leaveButton}
+                  className="self-start"
                   disabled={busy}
-                  icon={<UserRoundMinus size={16} strokeWidth={1.7} />}
                   variant="secondary"
                   onClick={() => void leaveCalendar()}
                 >
+                  <UserRoundMinus aria-hidden="true" strokeWidth={1.7} />
                   Leave calendar
                 </Button>
-              </div>
-            ) : null}
-          </section>
+              ) : null}
+            </SettingsSection>
 
-          {sharing.canInvite ? (
-            <section
-              aria-labelledby="sharing-invites-title"
-              className={styles.section}
-            >
-              <div className={styles.sectionHeading}>
-                <SectionLabel id="sharing-invites-title">
-                  Invite people
-                </SectionLabel>
-              </div>
-
-              <div className={styles.inviteOptions}>
+            {sharing.canInvite ? (
+              <SettingsSection title="Invite people" variant="plain">
                 <form
-                  className={styles.emailInvite}
+                  className="flex items-end gap-2"
                   onSubmit={(event) => {
                     event.preventDefault();
                     if (validLimits && !busy) void emailInvite();
                   }}
                 >
-                  <Field label="Invite by email">
-                    <input
+                  <Field className="flex-1" label="Invite by email">
+                    <Input
                       aria-label="Email an invitation"
                       autoComplete="email"
                       disabled={busy}
@@ -375,17 +346,17 @@ export function ShareCalendarDialog({
                   </Field>
                   <Button
                     disabled={!validLimits || !inviteEmail.trim()}
-                    icon={<Send size={16} strokeWidth={1.7} />}
                     loading={busy}
                     type="submit"
                   >
+                    <Send aria-hidden="true" strokeWidth={1.7} />
                     Send
                   </Button>
                 </form>
                 {/* Empty means no limit; positive whole numbers are sent as-is. */}
-                <div className={styles.inviteLimits}>
+                <div className="grid grid-cols-2 gap-4">
                   <Field label="Expires after (days)">
-                    <input
+                    <Input
                       aria-label="Expires after days"
                       disabled={busy}
                       inputMode="numeric"
@@ -398,7 +369,7 @@ export function ShareCalendarDialog({
                     />
                   </Field>
                   <Field label="People limit">
-                    <input
+                    <Input
                       aria-label="How many people"
                       disabled={busy}
                       inputMode="numeric"
@@ -412,74 +383,70 @@ export function ShareCalendarDialog({
                   </Field>
                 </div>
                 <Button
-                  className={styles.createInviteButton}
+                  className="self-start"
                   disabled={!validLimits}
-                  icon={<Link2 size={16} strokeWidth={1.7} />}
                   loading={busy}
                   variant="secondary"
                   onClick={() => void createInvite()}
                 >
+                  <Link2 aria-hidden="true" strokeWidth={1.7} />
                   Create invite link
                 </Button>
-              </div>
 
-              {sharing.invites.isPending ? (
-                <p aria-live="polite" className={styles.loading}>
-                  Loading invite links…
-                </p>
-              ) : sharing.invites.isError ? (
-                <div className={styles.sectionError} role="alert">
-                  Invite links could not be loaded.
-                </div>
-              ) : invites.length > 0 ? (
-                <ul
-                  aria-label="Active invite links"
-                  className={styles.inviteList}
-                >
-                  {invites.map((invite) => (
-                    <li className={styles.inviteRow} key={invite.id}>
-                      <span className={styles.inviteIcon} aria-hidden="true">
-                        <Link2 size={16} strokeWidth={1.7} />
-                      </span>
-                      <input
-                        aria-label="Invite link"
-                        readOnly
-                        value={inviteLink(invite.id)}
-                        onFocus={(event) => event.currentTarget.select()}
-                      />
-                      <IconButton
-                        label="Copy invite link"
-                        size="compact"
-                        onClick={() => void copyLink(invite.id)}
-                      >
-                        <Copy size={15} strokeWidth={1.7} />
-                      </IconButton>
-                      <IconButton
-                        className={styles.revokeButton}
-                        disabled={busy}
-                        label="Revoke invite link"
-                        size="compact"
-                        onClick={() => void revokeInvite(invite.id)}
-                      >
-                        <Trash2 size={15} strokeWidth={1.7} />
-                      </IconButton>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <Row
-                  className={styles.emptyLinks}
-                  icon={<Link2 size={18} strokeWidth={1.7} />}
-                  label="No active invite links"
-                />
-              )}
-            </section>
-          ) : null}
+                {sharing.invites.isPending ? (
+                  <p aria-live="polite" className="text-13 text-muted-foreground">
+                    Loading invite links…
+                  </p>
+                ) : sharing.invites.isError ? (
+                  <InlineError>Invite links could not be loaded.</InlineError>
+                ) : invites.length > 0 ? (
+                  <ul aria-label="Active invite links" className="flex flex-col gap-2">
+                    {invites.map((invite) => (
+                      <li key={invite.id}>
+                        <InputGroup>
+                          <InputGroupAddon>
+                            <Link2 aria-hidden="true" strokeWidth={1.7} />
+                          </InputGroupAddon>
+                          <InputGroupInput
+                            aria-label="Invite link"
+                            readOnly
+                            value={inviteLink(invite.id)}
+                            onFocus={(event) => event.currentTarget.select()}
+                          />
+                          <InputGroupAddon align="inline-end">
+                            <Button
+                              aria-label="Copy invite link"
+                              size="icon-compact"
+                              title="Copy invite link"
+                              variant="ghost"
+                              onClick={() => void copyLink(invite.id)}
+                            >
+                              <Copy aria-hidden="true" strokeWidth={1.7} />
+                            </Button>
+                            <Button
+                              aria-label="Revoke invite link"
+                              disabled={busy}
+                              size="icon-compact"
+                              title="Revoke invite link"
+                              variant="ghost"
+                              onClick={() => void revokeInvite(invite.id)}
+                            >
+                              <Trash2 aria-hidden="true" strokeWidth={1.7} />
+                            </Button>
+                          </InputGroupAddon>
+                        </InputGroup>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-13 text-muted-foreground">No active invite links</p>
+                )}
+              </SettingsSection>
+            ) : null}
 
-          {error ? (
-            <InlineError className={styles.error}>{error}</InlineError>
-          ) : null}
-        </div>
+            {error ? <InlineError>{error}</InlineError> : null}
+          </DialogBody>
+        </DialogContent>
       </Dialog>
 
       {calendar && transferMember ? (
@@ -534,7 +501,7 @@ function TransferOwnershipDialog({
     <ConfirmationDialog
       closeLabel="Close ownership transfer"
       confirmLabel="Transfer ownership"
-      description={`You will become an editor and lose access to sharing controls for ${calendar.name}.`}
+      description={`${member.name} takes over members, invite links and settings of ${calendar.name}. You become an editor.`}
       loading={busy}
       onConfirm={() => void transferOwnership()}
       onOpenChange={onOpenChange}
@@ -542,12 +509,6 @@ function TransferOwnershipDialog({
       returnFocus={returnFocus}
       title={`Make ${member.name} the owner?`}
     >
-      <ConfirmationNotice icon={<ShieldCheck size={19} strokeWidth={1.7} />}>
-        <p>
-          <strong>{member.name}</strong> will control members, invite links, and
-          calendar settings. This change takes effect immediately.
-        </p>
-      </ConfirmationNotice>
       {error ? <InlineError>{error}</InlineError> : null}
     </ConfirmationDialog>
   );

@@ -1,6 +1,6 @@
 # Musubi design system
 
-- Status: living document, foundation phase
+- Status: living document; web on Tailwind v4 + shadcn since 2026-09-30
 - Date: 2026-08-01
 - Applies to: `apps/web`, `apps/client`, and new shared design packages
 - Domain source of truth: [`calendar-ui.md`](./calendar-ui.md)
@@ -19,89 +19,96 @@ orientation and meaningful emphasis, and calm geometry without extra decoration.
 The design evolves rather than resets: preserve the recognizable character and
 make hierarchy, rhythm, states, and consistency more precise. Storybook is the
 review surface for variants and the catalog of components that are actually
-implemented; `ui-catalog/` captures complete screen and layer baselines.
+implemented, including screen and layer compositions.
+
+### Guide by design, not by text
+
+Layout, grouping, alignment, state and one clear primary action tell people
+what to do; copy names things rather than explaining them. A dialog is a title
+and its controls. A settings group is a heading and one-line rows. Background
+explanation sits behind a `help` "?" (`HelpTooltip`). Only what someone must
+know to act safely — what a destructive action removes — stays visible, in one
+sentence. Screens hold still: every pre-calendar screen is the same `AuthShell`
+card, standing dialogs share one size, and multi-step flows reserve the height
+of their tallest step with actions pinned to the same place.
 
 ## 2. Architecture
 
 Share meaning, not renderers:
 
 ```text
-packages/design-system/  canonical tokens, names, and contracts without React
-packages/ui-web/         DOM/Radix implementation and web idioms
-packages/ui-native/      React Native implementation and native idioms
-apps/web/.storybook/     web catalog and integration stories
-apps/client/.storybook/  mobile catalog through React Native Web
-apps/client/.rnstorybook/ device/simulator fidelity checks
+packages/design-system/        canonical tokens, names and contracts without React
+  src/tailwind.ts → tailwind.css  the web Tailwind v4 theme, generated
+apps/web/src/design/app.css    the one stylesheet entry (Tailwind, theme, tokens, base)
+apps/web/src/components/ui/    shadcn/ui components restyled to Musubi (Radix inside)
+apps/web/src/components/       app compositions: AuthShell, RouteState
+apps/web/src/calendar/…        feature compositions
+apps/client/components/ui/     React Native implementation and native idioms
 ```
 
-These packages will be introduced incrementally. Until a component can be
-safely separated from its application, it stays in `apps/web/src/ui` or
-`apps/client/components/ui` and receives a colocated story. Do not create a
-parallel replacement solely to satisfy a new directory structure.
+Web styling is **Tailwind v4 utilities from Musubi's theme**. The components in
+`src/components/ui` started from the shadcn/ui CLI and were restyled; they are
+Musubi's own code now, and the CLI can add more (`pnpm dlx shadcn add …` from
+`apps/web`, then restyle to the theme). Variants are `class-variance-authority`;
+class merging is `cn` from `~/lib/utils`, which knows Musubi's scale.
 
 ### System layers
 
 1. **Primitive tokens** — raw pigment, dimension, and timing values.
 2. **Semantic tokens** — surface, text, border, action, feedback, and motion.
-3. **Component contracts** — roles, sizes, states, and component anatomy.
+3. **Component contracts** — roles, sizes, states, and anatomy, as `cva` variants.
 4. **Patterns** — confirmation, forms, settings lists, selection, and feedback.
 5. **Features** — calendar, agenda, Pages, sharing, and accounts.
 
 A feature may own domain content and its layout. It must not own a new generic
 button, field, menu, modal, popover, sheet, or toast.
 
-### Shared CSS reuse
+### Enforcement
 
-Web styling is CSS Modules. A rule that already exists in
-`apps/web/src/ui/primitives.module.css` is reused through `composes` rather
-than declared a second time — `composes: <name> from "…/ui/primitives.module.css";`
-from a feature module, or `composes: <name>;` within the same file.
+`@shadcn/lint` runs in `pnpm --filter @musubi/web lint` with every rule at
+error:
 
-Three constraints decide where this works:
+| Rule | Keeps out |
+| --- | --- |
+| `no-restyle` | a caller changing a component's height, padding, colour, type, radius or shadow through `className`; callers may place it (layout) |
+| `no-raw-colors` | palette colours and hex values; only theme roles exist |
+| `no-arbitrary-values` | `p-[13px]`, `grid-cols-[…]`; CSS-variable shorthand `(--x)` for runtime values is allowed |
+| `no-inline-styles` | inline styling other than dynamic custom properties |
+| `no-unknown-classes` | classes the theme cannot generate (Tailwind's default scale is cleared) |
+| `require-static-classes` | class strings the linter cannot read |
 
-- `composes` applies only to a rule whose selector is a single class. A compound
-  selector that needs a shared recipe spells it out and records why in a comment.
-- It must be the first declaration in the rule, and cannot appear inside a media
-  query.
-- A same-file `composes` cannot look forward. A rule that others compose belongs
-  above them in the file, and a media query that deliberately overrides a
-  composed rule must still come after it.
+ESLint also forbids `*.module.css` imports and Radix imports outside
+`src/components/ui`. The whole app is covered; there are no exceptions.
 
 ## 3. Tokens
 
-`packages/design-system` is the canonical renderer-free source for shared
-semantic theme values. Web consumes its generated CSS custom properties;
-native maps the same roles to its current theme aliases. The committed CSS is
-checked against the TypeScript source in the package test, so changing a theme
-value requires running `pnpm --filter @musubi/design-system generate`.
+`packages/design-system` is the canonical renderer-free source. `pnpm --filter
+@musubi/design-system generate` writes three web files from its TypeScript:
+`colors.css` (runtime theme variables for both schemes), `foundations.css`
+(type, spacing, radii, control heights, motion) and `tailwind.css` (the Tailwind
+theme over the same values). The package test fails when any of them is stale.
 
-Theme colors and stable typography, dimension, and motion foundations are the
-extracted slices today. They share renderer-free values where their units and
-optical roles are explicit. Name a new value by role before adding it; a
-hardcoded color, gap, radius, or motion duration inside a component needs an
-explicit reason.
+The Tailwind theme clears Tailwind's own palette, type ramp, spacing multiplier,
+radii, shadows and breakpoints, then declares only Musubi's:
 
-`packages/design-system` exports numeric `typeSizes`, `spacing`, `radii`,
-`controlHeights`, `componentDimensions`, and platform-tuned `motionDurations`.
-Web serializes them to rem, px, and ms in the generated `foundations.css`;
-native consumes the same numbers as density-independent values. The package
-self-check compares both generated CSS files with their TypeScript sources.
+- colours reference the runtime variables (`@theme inline`), so one utility
+  serves both schemes; shadcn role names (`background`, `primary`, `muted`,
+  `destructive`, …) map onto Musubi's surfaces and inks, and Musubi adds
+  `canvas panel raised sunken overlay`, `foreground-secondary`, `faint`,
+  `border-subtle/strong`, `shu`, `success`, `warning`, `pigment`, `pigment-ink`;
+- type sizes keep their pixel names (`text-13`), plus `text-display` and
+  `text-ambient` for orientation;
+- spacing is the 4 px scale (`1`–`8`), half steps for component anatomy and
+  larger layout steps, plus named sizes (`h-control`, `min-h-row`, `w-sidebar`,
+  `h-dialog`, `pb-safe-bottom`) that follow the touch densities;
+- breakpoints are `sm` 600, `md` 1024, `lg` 1440 (mobile first);
+- dialog widths are `max-w-compact form default wide`;
+- motion and layer roles are utilities (`duration-fast`, `z-dialog`).
 
-The shared boundary is intentional:
-
-- type sizes are shared, while loaded font resource names and fallback stacks
-  remain renderer adapters;
-- spacing and general component radii are shared, while calendar geometry and
-  one-off optical offsets remain feature-owned;
-- control and row contracts are shared by density, while sidebar, tab, and grid
-  measurements keep their platform or domain owner;
-- motion shares `fast`, `standard`, and `slow` roles, with 140/220/300 ms on web
-  and 160/260/320 ms on native. Gesture-following and press-in timings remain
-  local because they respond directly to a finger rather than staged UI state.
+A missing value is added here by role, never inlined.
 
 - A primitive token does not say where it is used (`shu-600`, `space-4`).
 - A semantic token communicates purpose (`text-secondary`, `surface-raised`).
-- A component token exists only for a stable exception (`dialog-inline-padding`).
 - Responsive values use one ladder: 599 / 1023 / 1439 px.
 - Web px and native dp may differ, but the role and optical result should match.
 
@@ -163,8 +170,11 @@ insets belong to the outermost region.
 - A regular dialog footer keeps actions right-aligned, secondary before primary,
   with an 8 px gap. Touch layouts preserve action order and stack only when the
   labels or minimum targets do not fit.
-- Compact, default, and wide dialogs target 400, 520, and 720 px respectively,
-  always constrained by the viewport gutter. Text measure remains bounded even
+- Dialog widths are roles: `compact` 440 (one question), `form` 560 (edit one
+  thing), `default` 720 (a list or short page), `wide` 960 (a workspace such as
+  Settings). Standing windows are `tall` at the shared `h-dialog` height so moving
+  between them never resizes the window. Always constrained by the viewport
+  gutter. Text measure remains bounded even
   in a wide dialog.
 
 ### Form composition
@@ -182,16 +192,14 @@ insets belong to the outermost region.
 
 `SettingsSection` is the canonical scan unit for related preferences. Its title
 and group edge follow the layer axis (24 px regular, 20 px touch), the title sits
-8 px above the group, and separate sections use the 32 px section break. The
+12 px above the group, and separate sections use the 32 px section break. The
 group uses the panel surface, a subtle border, and the 14 px shared radius with
 no gradient or shadow. Rows retain their own 16 px component inset inside that
 edge; this is nested component rhythm, not a competing layer axis.
 
-Inside an already padded parent such as the default `Dialog` body, use
-`SettingsSection inset={false}`. This removes only the section's outer padding;
-the parent supplies spacing between sections, while headings, group surfaces,
-and the rows' own insets retain their normal styling. The default remains inset
-for sections inside flush layers.
+The parent `DialogBody` supplies the outer inset; `SettingsSection` adds no
+outer padding. Structured settings fill the available body width, and the
+parent supplies spacing between sections.
 
 Only repeated rows receive dividers. The group clips its surface and dividers,
 while row focus rings draw inward so keyboard focus is never hidden by the
@@ -246,16 +254,11 @@ and a named destructive tone; `MenuSeparator` divides a genuinely different
 command group. Do not use a menu for one action, persistent choices, form
 controls, or navigation that should remain visible.
 
-`Dialog.headerActions` places secondary controls beside Close on the shared
-header axis. Use `DialogInfo` for optional background explanations, opened by
-a named Info button; keep consequential action wording visible. Its popover
-supports keyboard dismissal and returns focus to the Info button.
-
-`Dialog` defaults to `bodyLayout="padded"`; use `bodyLayout="flush"` only for
-edge-to-edge rows or sections whose own readable content follows the layer
-axis. `Field` defaults to `variant="plain"`; `variant="section"` explicitly
-adds the inset and divider needed inside a flush collection. Combining a
-padded dialog body with a section field is a double-inset contract violation.
+`Dialog` is composed: `DialogContent` (size, `tall`, `side="right"`,
+`elevated`, `initialFocus`, `returnFocus`, `closeLabel`) holds `DialogHeader`
+(title, at most a one-line description), `DialogBody` (the scrolling middle,
+`px-6`) and `DialogFooter` (actions, trailing, primary last). Optional background
+help sits in a `HelpTooltip` beside the title.
 
 `ConfirmationDialog` composes the compact `Dialog` contract for one
 consequential decision. It owns Cancel-before-confirm action order, loading and
@@ -264,8 +267,8 @@ move initial focus to its required field. `ConfirmationNotice` owns the
 consequence callout and `DialogError` owns alert semantics plus an optional
 request ID; features provide only the domain copy, icon, and operation.
 
-`SettingsSection` owns the heading, inset group surface, layer alignment, and
-spacing between settings groups. `Row` owns item content and interaction;
+`SettingsSection` owns the heading (with optional `help`) and the `ItemGroup`
+panel beneath it; it takes no description. `Row` owns item content and interaction;
 `RowAction` exposes named `selected` and `tone="destructive"` states rather than
 requiring feature-owned data attributes. Features provide only domain copy and
 callbacks.
@@ -284,7 +287,8 @@ line; action groups stack rather than wrapping a button label. Loading blocks a
 second activation, exposes `aria-busy`, and keeps the button's existing geometry
 and accessible name stable.
 
-`IconButton` uses the same variants and sizes but requires a `label`. Use it only
+An icon-only action is `Button size="icon" | "icon-compact"` with an
+`aria-label`. Use it only
 when the glyph is established in the surrounding product context; the label is
 the accessible name and supplies the native tooltip fallback unless a custom
 `title` is provided. Toggle icon buttons expose `aria-pressed`, while buttons

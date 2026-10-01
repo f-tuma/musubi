@@ -1,8 +1,8 @@
-import { HelpTooltip } from "~/ui/HelpTooltip";
+import { HelpTooltip } from "~/components/ui/help-tooltip";
 import type { Event, Settings } from "@musubi/types";
-import { DatePicker } from "~/ui/DatePicker";
+import { DatePicker } from "~/components/ui/date-picker";
 import { allDayAdditionalDate, setAllDayAdditionalDate, allDayExclusionDates, restoreAllDayExclusion } from "@musubi/calendar";
-import { Row } from "~/ui/Row";
+import { Row } from "~/components/ui/row";
 import {
 	buildRRule,
 	describeAdvanced,
@@ -17,10 +17,10 @@ import {
 	type RecurrenceOption,
 } from "@musubi/calendar/rrule-editor";
 import { useEffect, useId, useRef, useState } from "react";
-import { Button } from "~/ui/Button";
-import { Segmented } from "~/ui/Segmented";
-import { Select } from "~/ui/Select";
-import styles from "./styles/event-editor.module.css";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Segmented } from "~/components/ui/segmented";
+import { Select } from "~/components/ui/select";
 
 const WEEKDAYS = [
 	{ day: 1, label: "M", name: "Monday" },
@@ -50,6 +50,9 @@ const OPTIONS = [
 ] as const;
 
 type RecurrenceEditorProps = {
+	/** Wired by a surrounding Field to the Repeat select. */
+	id?: string;
+	"aria-describedby"?: string;
 	followStartDate?: boolean;
 	rdateMaster?: Event;
 	weekStartsOn?: Settings["weekStartsOn"];
@@ -65,6 +68,8 @@ function dateAtNoon(date: string) {
 }
 
 export function RecurrenceEditor({
+	id,
+	"aria-describedby": describedBy,
 	followStartDate = true,
 	rdateMaster,
 	weekStartsOn = "monday",
@@ -207,8 +212,10 @@ export function RecurrenceEditor({
 		option === "yearly" && startDate.getMonth() === 1 && day === 29;
 
 	return (
-		<div ref={root} className={styles.recurrenceEditor}>
+		<div ref={root} className="grid min-w-0 gap-2">
 			<Select
+				aria-describedby={describedBy}
+				id={id}
 				disabled={disabled}
 				label="Repeat"
 				options={OPTIONS}
@@ -216,19 +223,19 @@ export function RecurrenceEditor({
 				onChange={choose}
 			/>
 
-			{allDay && allDayExclusionDates(value)?.map(date => <Row key={date} className={styles.excludedDateRow} label={date} detail="Excluded from this series" size="compact" trailing={<Button type="button" disabled={disabled} size="compact" variant="ghost" aria-label={`Restore ${date}`} onClick={() => { restoreFocus.current = true; emit(restoreAllDayExclusion(value, date)); }}>Restore</Button>} />)}
+			{allDay && allDayExclusionDates(value)?.map(date => <Row key={date} size="compact" label={date} detail="Excluded from this series" trailing={<Button type="button" disabled={disabled} size="compact" variant="ghost" aria-label={`Restore ${date}`} onClick={() => { restoreFocus.current = true; emit(restoreAllDayExclusion(value, date)); }}>Restore</Button>} />)}
 
-			{additional ? <div className={styles.additionalDate}>
-				<Row label={<>Additional series date <HelpTooltip label="About additional series dates">Adds one occurrence. The regular repeat count stays unchanged.</HelpTooltip></>} size="compact" trailing={additional.date ? <Button type="button" disabled={disabled} size="compact" variant="ghost" onClick={() => changeAdditionalDate(null)}>Remove additional date</Button> : undefined} />
+			{additional ? <div className="grid min-w-0 gap-2">
+				<Row label={<>Additional series date<HelpTooltip label="About additional series dates">Adds one occurrence. The regular repeat count stays unchanged.</HelpTooltip></>} size="compact" trailing={additional.date ? <Button type="button" disabled={disabled} size="compact" variant="ghost" onClick={() => changeAdditionalDate(null)}>Remove additional date</Button> : undefined} />
 				<DatePicker label="Additional series date" value={additional.date ?? ""} disabled={disabled || !!additional.date} min={rdateMaster!.start.toISOString().slice(0,10)} max={additional.limit} weekStartsOn={weekStartsOn} onChange={changeAdditionalDate} />
-				{dateError ? <p role="alert" className={styles.recurrenceHint}>{dateError}</p> : null}
+				{dateError ? <p role="alert" className="text-12 leading-snug text-shu">{dateError}</p> : null}
 			</div> : null}
 
 			{unsupported ? (
-				<div className={styles.unsupportedRecurrence} role="note">
-					<p>
-						This imported recurrence uses options this editor cannot safely
-						change. It will be kept exactly as it is.
+				<div className="grid justify-items-start gap-3 rounded-control border border-border-subtle border-l-shu bg-raised/50 p-3" role="note">
+					<p className="text-12 leading-snug text-foreground-secondary">
+						This imported rule uses options Musubi cannot safely change, so
+						it is kept as it is.
 					</p>
 					<Button
 						disabled={disabled}
@@ -240,11 +247,12 @@ export function RecurrenceEditor({
 					</Button>
 				</div>
 			) : option === "custom" ? (
-				<div className={styles.customRecurrence}>
-					<div className={styles.recurrenceEvery}>
+				<div className="grid gap-3 rounded-control border border-border-subtle bg-raised/50 p-3">
+					<div className="flex items-center gap-2 text-12 text-foreground-secondary">
 						<label htmlFor={intervalId}>Every</label>
-						<input
+						<Input
 							aria-label="Recurrence interval"
+							className="w-16"
 							disabled={disabled}
 							id={intervalId}
 							max={99}
@@ -285,20 +293,22 @@ export function RecurrenceEditor({
 					</div>
 
 					{advanced.freq === "WEEKLY" ? (
-						<fieldset className={styles.recurrenceDays}>
-							<legend>On</legend>
-							<div>
+						<fieldset className="m-0 grid gap-2 border-0 p-0">
+							<legend className="mb-2 p-0 text-12 text-foreground-secondary">On</legend>
+							<div className="grid grid-cols-7 gap-1">
 								{WEEKDAYS.map(({ day: weekday, label, name }) => {
 									const selected = advanced.days.has(weekday);
 									return (
-										<button
+										<Button
 											aria-label={name}
+											className="w-full"
+											size="icon-compact"
+											variant={selected ? "primary" : "secondary"}
 											aria-pressed={selected}
 											disabled={
 												disabled || (selected && advanced.days.size === 1)
 											}
 											key={name}
-											type="button"
 											onClick={() => {
 												const days = new Set(advanced.days);
 												if (selected) days.delete(weekday);
@@ -307,14 +317,14 @@ export function RecurrenceEditor({
 											}}
 										>
 											{label}
-										</button>
+										</Button>
 									);
 								})}
 							</div>
 						</fieldset>
 					) : null}
 
-					<div className={styles.recurrenceEnds}>
+					<div className="flex flex-wrap items-center gap-2 text-12 text-foreground-secondary">
 						<span>Ends</span>
 						<Segmented<AdvancedEndType | "until">
 							disabled={disabled}
@@ -345,10 +355,11 @@ export function RecurrenceEditor({
 							}}
 						/>
 						{advanced.endType === "count" ? (
-							<label className={styles.recurrenceCount}>
-								<span className={styles.visuallyHidden}>Occurrence count</span>
-								<input
+							<label className="flex items-center gap-2">
+								<span className="sr-only">Occurrence count</span>
+								<Input
 									aria-label="Occurrence count"
+									className="w-16"
 									disabled={disabled}
 									max={999}
 									min={1}
@@ -388,24 +399,24 @@ export function RecurrenceEditor({
 					</div>
 
 					{advanced.until ? (
-						<p className={styles.recurrenceUntil}>
+						<p className="border-l-2 border-shu pl-2 text-12 leading-snug text-foreground-secondary">
 							This series currently ends on {advanced.until.slice(0, 4)}-
 							{advanced.until.slice(4, 6)}-{advanced.until.slice(6, 8)}. Choose
 							Never or After to replace that ending.
 						</p>
 					) : null}
-					<p className={styles.recurrenceSummary}>
+					<p className="text-12 text-muted-foreground">
 						{describeAdvanced(advanced)}
 					</p>
 				</div>
 			) : null}
 
 			{monthly && day >= 29 ? (
-				<p className={styles.recurrenceHint}>
+				<p className="text-12 text-muted-foreground">
 					Repeats on day {day}; months without it are skipped.
 				</p>
 			) : leapDay ? (
-				<p className={styles.recurrenceHint}>
+				<p className="text-12 text-muted-foreground">
 					February 29 only repeats in leap years.
 				</p>
 			) : null}

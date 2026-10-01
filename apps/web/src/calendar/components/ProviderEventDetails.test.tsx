@@ -87,7 +87,7 @@ it("opens reminders for the bound occurrence and clears the editor on scope chan
   const action = await screen.findByRole("button", { name: "Edit reminders for this occurrence" });
   await act(async () => action.click());
   expect(await screen.findByRole("dialog", { name: "Google reminders for this occurrence" })).toBeTruthy();
-  expect(screen.getByText("These Google reminders apply only to this occurrence. Personal notifications from Google Calendar. Musubi reminders are separate; both apps may notify you.")).toBeTruthy();
+  expect(screen.getByText("These Google reminders apply only to this occurrence.")).toBeTruthy();
   expect(fetchState.mock.calls[1][0]).toBe("child");
   view.rerender(<ProviderEventDetails eventId="child" userId="owner" series />);
   expect(screen.queryByRole("dialog", { name: "Google reminders for this occurrence" })).toBeNull();
@@ -123,7 +123,7 @@ it.each(["default", "panel"] as const)("opens only explicit series alarm setting
   const action = await screen.findByRole("button", { name: "Series alarm settings" });
   await act(async () => action.click());
   expect(await screen.findByRole("dialog", { name: "CalDAV series alarm" })).toBeTruthy();
-  expect(screen.getByText(/applies to every occurrence in this series/)).toBeTruthy();
+  expect(screen.getByText(/Applies to every occurrence in this series/)).toBeTruthy();
   await act(async () => screen.getByRole("button", { name: "Close CalDAV series alarm" }).click());
   fetchState.mockResolvedValue({ ...observation, reminderEdit: { ...observation.reminderEdit, expectedRevision: 8 } });
   await act(async () => action.click());
@@ -194,7 +194,7 @@ it.each([false, true])("shows provider participants with explicit completeness a
   expect(within(list).getByText("X-CUSTOM-ROLE · X-CUSTOM-RESPONSE")).toBeTruthy();
   expect(screen.queryByText("Participant list may be incomplete.") !== null).toBe(!attendeesComplete);
   expect(screen.getAllByText(/alex@example.test/)).toHaveLength(1);
-  expect(screen.getByText("Organizer:")).toBeTruthy();
+  expect(screen.getByText("Organizer")).toBeTruthy();
   let finish!: (value: { state: null }) => void;
   fetchState.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
   view.rerender(<ProviderEventDetails presentation="panel" eventId="event" userId="owner" revision={2} />);

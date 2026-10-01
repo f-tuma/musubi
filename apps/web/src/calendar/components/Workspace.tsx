@@ -1,4 +1,4 @@
-import { DateFormatContext } from "~/ui/DatePicker";
+import { DateFormatContext } from "~/components/ui/date-picker";
 import { applyTheme } from "~/design/theme";
 import { pageItemTypes, eventItemType } from "../page-item-filters";
 import { calendarTasks, isCalendarTask } from "@musubi/calendar";
@@ -44,11 +44,12 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { Dialog } from "~/ui/Dialog";
-import { Button } from "~/ui/Button";
-import { ConfirmationDialog } from "~/ui/ConfirmationDialog";
-import { describeAge, StaleBanner, UpdateBanner, CoverageBanner } from "~/ui/StaleBanner";
-import { Toast, type ToastTone } from "~/ui/Toast";
+import { describeAge, StaleBanner, UpdateBanner, CoverageBanner } from "~/components/ui/banner";
+import { Button } from "~/components/ui/button";
+import { ConfirmationDialog } from "~/components/ui/confirmation-dialog";
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { Toast, type ToastTone } from "~/components/ui/toast";
+import { cn } from "~/lib/utils";
 import {
   DEFAULT_MULTI_WEEK_WEEKS,
   multiWeekDays,
@@ -79,26 +80,23 @@ import {
   type SavePageResult,
 } from "../page-editor";
 import type { CalendarViewId } from "../view-registry";
-import { AccountDialog } from "./AccountDialog";
 import { AgendaView } from "./AgendaView";
-import { CalendarTransferDialog } from "./CalendarTransferDialog";
 import { ProviderMeetingCreateDialog, isMeetingCalendarCandidate } from "./ProviderMeetingCreateDialog";
-import { ConnectionsDialog } from "./ConnectionsDialog";
 import { MonthCalendar } from "./MonthCalendar";
 import { MultiWeekCalendar } from "./MultiWeekCalendar";
 import { NewPageDialog, PageSettingsDialog } from "./PageSettingsDialog";
-import { requestInspectorTransition } from "~/ui/Inspector";
+import { requestInspectorTransition } from "~/components/ui/inspector";
 import { QuickCreate, type QuickCreateAnchor } from "./QuickCreate";
 import { RecurrenceScopeDialog } from "./RecurrenceScopeDialog";
 import { SearchDialog, type SearchAccountSource } from "./SearchDialog";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 import { ShareCalendarDialog } from "./ShareCalendarDialog";
 import { Sidebar } from "./Sidebar";
-import { SettingsDialog } from "./SettingsDialog";
+import { SettingsWindow, type SettingsSectionId } from "./settings/SettingsWindow";
 import { TimeGridView } from "./TimeGridView";
 import { TaskList } from "./TaskList";
 import { Toolbar } from "./Toolbar";
-import styles from "./workspace.module.css";
+import { ApplicationNotifications } from "~/notifications/ApplicationNotifications";
 
 const TOAST_ACKNOWLEDGEMENT_MS = 3_500;
 const TOAST_UNDO_MS = 9_000;
@@ -114,6 +112,7 @@ type WorkspaceProps = {
   /** Whether this signed-in account may write announcements on this server. */
   isAdmin?: boolean;
   isRefreshing: boolean;
+  onRefreshServer?: () => Promise<void>;
   /**
    * The server could not be reached, so what is on screen came from the local
    * snapshot. `snapshotAt` is when that snapshot was written.
@@ -296,6 +295,7 @@ export function Workspace({
   events,
   isAdmin = false,
   isRefreshing,
+  onRefreshServer,
   newerServer,
   offline = false,
   snapshotAt,
@@ -389,6 +389,22 @@ export function Workspace({
       }),
     [],
   );
+
+  const [refreshingServer, setRefreshingServer] = useState(false);
+  const refreshInFlight = useRef(false);
+  async function handleRefreshServer() {
+    if (!onRefreshServer || refreshInFlight.current) return;
+    refreshInFlight.current = true;
+    setRefreshingServer(true);
+    try {
+      await onRefreshServer();
+    } catch {
+      notify("The server could not be refreshed.", { tone: "error" });
+    } finally {
+      refreshInFlight.current = false;
+      setRefreshingServer(false);
+    }
+  }
 
   async function runUndo(undo: NonNullable<typeof notice>["undo"]) {
     // Take the offer away first: the toast is gone either way, and a second
@@ -529,18 +545,31 @@ export function Workspace({
     timeLabel: string;
     title: string;
   }>();
-  const [calendarTransfersOpen, setCalendarTransfersOpen] = useState(false);
   const [shareCalendar, setShareCalendar] = useState<Calendar | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
-  const [connectionsOpen, setConnectionsOpen] = useState(false);
+  // One settings window; the section says which entry point opened it.
+  const [settingsSection, setSettingsSection] = useState<SettingsSectionId | null>(null);
   const [connectionsReturnFocus, setConnectionsReturnFocus] = useState<HTMLElement | null>(null);
+  const sidebarSettingsOrigin = useRef<HTMLElement | null>(null);
   // Coming back from a provider's consent screen, the dialog that started the
   // link is long gone — so it reopens itself onto the freshly imported account.
   // Derived rather than set in an effect, and dismissible like any other close.
   const [linkNoticeDismissed, setLinkNoticeDismissed] = useState(false);
-  const showConnections =
-    connectionsOpen || (Boolean(providerLink?.linked) && !linkNoticeDismissed);
+  const activeSettingsSection: SettingsSectionId | null =
+    settingsSection ?? (providerLink?.linked && !linkNoticeDismissed ? "connections" : null);
+  const showConnections = activeSettingsSection === "connections";
+  // Kept after closing until the next opening replaces it: the dialog hands
+  // focus back once its exit animation ends, after this state has moved on.
+  function openSettings(section: SettingsSectionId, returnFocus: HTMLElement | null = null) {
+    sidebarSettingsOrigin.current = null;
+    setConnectionsReturnFocus(returnFocus);
+    setSettingsSection(section);
+  }
+  function openSidebarSettings(section: SettingsSectionId, returnFocus: HTMLElement | null) {
+    setSidebarOpen(false);
+    // The drawer's origin becomes inert on close; the toolbar opens it again.
+    openSettings(section, sidebarModal ? sidebarTriggerRef.current : returnFocus);
+    sidebarSettingsOrigin.current = returnFocus;
+  }
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   // The event a time write is in flight for. One gesture at a time, so one id.
   const [busyEventId, setBusyEventId] = useState<string>();
@@ -958,7 +987,7 @@ export function Workspace({
   return (
     <DateFormatContext.Provider value={settings.dateFormat}>
     <CalendarTaskContext.Provider value={{ tasks: searchAccount?.data?.tasks ?? tasks, calendars: searchAccount?.data?.calendars ?? calendars, settings, offline, update: onUpdateTask, remove: onRemoveTask }}>
-    <div className={styles.workspace}>
+    <div className="flex min-h-dvh cursor-default overflow-hidden bg-canvas select-none max-md:block" data-workspace="">
       <Sidebar
         activePageId={pageId}
         anchor={anchor}
@@ -970,18 +999,9 @@ export function Workspace({
           onDateChange(nextDate);
           setSidebarOpen(false);
         }}
-        onManageAccount={() => {
-          setSidebarOpen(false);
-          setAccountOpen(true);
-        }}
-        onManageCalendars={() => {
-          setSidebarOpen(false);
-          setCalendarTransfersOpen(true);
-        }}
-        onManageConnections={() => {
-          setSidebarOpen(false);
-          setConnectionsOpen(true);
-        }}
+        onManageAccount={returnFocus => openSidebarSettings("account", returnFocus)}
+        onManageCalendars={returnFocus => openSidebarSettings("calendars", returnFocus)}
+        onManageConnections={returnFocus => openSidebarSettings("connections", returnFocus)}
         onEditPage={(page) => {
           setSidebarOpen(false);
           if (savingPageId === page.id) return;
@@ -991,10 +1011,7 @@ export function Workspace({
           );
         }}
         onModalStateChange={setSidebarModal}
-        onOpenSettings={() => {
-          setSidebarOpen(false);
-          setSettingsOpen(true);
-        }}
+        onOpenSettings={returnFocus => openSidebarSettings("general", returnFocus)}
         onPageChange={handlePageChange}
         onReorderPages={(pageIds) =>
           // Rethrown so the sidebar knows to stop showing the order it asked for.
@@ -1007,6 +1024,8 @@ export function Workspace({
           })
         }
         onSignOut={onSignOut}
+        onRefreshServer={onRefreshServer ? handleRefreshServer : undefined}
+        refreshingServer={refreshingServer}
         returnFocusRef={sidebarTriggerRef}
         /* Short enough to fit the sidebar's slot on one line. The snapshot's age
            only appears while offline: that is the case where how old the data is
@@ -1018,14 +1037,14 @@ export function Workspace({
               : "Offline — server unreachable"
             : stale
               ? "Refreshing saved data…"
-              : isRefreshing
+              : isRefreshing || refreshingServer
                 ? "Refreshing…"
                 : "Connected to server"
         }
         syncTone={
           offline
             ? "offline"
-            : stale || isRefreshing
+            : stale || isRefreshing || refreshingServer
               ? "refreshing"
               : "connected"
         }
@@ -1034,7 +1053,7 @@ export function Workspace({
       />
 
       <main
-        className={styles.main}
+        className="relative flex h-dvh min-w-0 flex-1 flex-col overflow-hidden"
         id="main-content"
         tabIndex={-1}
         inert={sidebarModal ? true : undefined}
@@ -1054,9 +1073,18 @@ export function Workspace({
           <UpdateBanner onReload={newerServer.reload} />
         ) : null}
         <Toolbar
+          notifications={<ApplicationNotifications
+            userId={user.id}
+            calendars={calendars}
+            events={searchAccount?.data?.events ?? baseEvents ?? events}
+            offline={offline}
+            timeFormat={settings.timeFormat}
+            onOpenConnections={returnFocus => openSettings("connections", returnFocus)}
+            onEditEvent={onOpenFullEditor ? event => onOpenFullEditor(eventFormValues(event), event) : undefined}
+          />}
           taskLayoutControl={activeView === "tasks" ? <TaskLayoutSwitch value={taskLayout ?? localTaskLayout} onChange={next => { setLocalTaskLayout(next); onTaskLayoutChange?.(next); }} /> : undefined}
           activeView={activeView}
-          availability={gridAvailability.available ? { shown: gridAvailability.shown, onToggle: gridAvailability.toggle, onOpenList: target => { setConnectionsReturnFocus(target); setConnectionsOpen(true); } } : undefined}
+          availability={gridAvailability.available ? { shown: gridAvailability.shown, onToggle: gridAvailability.toggle, onOpenList: target => openSettings("connections", target) } : undefined}
           coverageNotice={activeView === "tasks" ? null : coverageNotice}
           canCreateEvents={editableCalendars.length > 0}
           canCreateMeetings={!offline && calendars.some(isMeetingCalendarCandidate)}
@@ -1080,15 +1108,15 @@ export function Workspace({
         {activeDraft ? (
           <section
             aria-label="Unsaved Page changes"
-            className={styles.pageDraftBar}
+            className="z-10 flex min-h-12 flex-none items-center justify-between gap-3 border-b border-border-subtle bg-panel px-3.5 py-2 data-[conflict]:bg-shu/10 max-sm:items-start md:px-7"
             data-conflict={activeDraftConflict ? "" : undefined}
           >
-            <p>
+            <p className="text-12 text-foreground-secondary max-sm:pt-2">
               {activeDraftConflict
                 ? "This Page changed elsewhere. Save your draft as a copy or discard it."
                 : "Unsaved Page changes"}
             </p>
-            <div className={styles.pageDraftActions}>
+            <div className="flex flex-none gap-2">
               <Button
                 disabled={savingPageId === activePage.id}
                 ref={discardPageDraftButtonRef}
@@ -1122,9 +1150,10 @@ export function Workspace({
 
         {gridAvailability.notice ? <CoverageBanner message={gridAvailability.notice} /> : null}
         <div
-          className={`${styles.calendarArea} ${
-            activeView === "month" ? styles.calendarAreaMonth : ""
-          }`}
+          className={cn(
+            "relative min-h-0 min-w-0 flex-1 overflow-auto bg-canvas select-none max-sm:pb-20",
+            activeView === "month" && "overflow-hidden overscroll-none",
+          )}
           ref={wheelPeriodRef}
           data-calendar-area=""
           // Flick sideways to move a period, like the native client's pager.
@@ -1351,13 +1380,26 @@ export function Workspace({
 
         {searchTaskId ? <TaskDetails key={searchTaskId} taskId={searchTaskId} returnFocus={taskReturnFocus} open onOpenChange={open => { if (!open) setSearchTaskId(undefined); }} /> : null}
 
-        <Dialog closeLabel="Close event" open={Boolean(searchDetailId)} onOpenChange={open => { if (!open) setSearchDetailId(undefined); }} title={searchDetail?.title ?? "Event"} returnFocus={searchTriggerRef}>
-          {searchDetail ? <>
-            <p>{getEventDateLabel(searchDetail)} · {getEventRangeLabel(searchDetail, settings.timeFormat)}</p>
-            {searchDetail.location ? <p>{searchDetail.location}</p> : null}
-            {searchDetail.description ? <p>{searchDetail.description}</p> : null}
-            {onOpenFullEditor && canEditEvent(searchDetail, calendars) ? <Button onClick={() => { setSearchDetailId(undefined); onOpenFullEditor(eventFormValues(searchDetail), searchDetail); }}>Edit</Button> : null}
-          </> : <p>This event is no longer available.</p>}
+        <Dialog open={Boolean(searchDetailId)} onOpenChange={open => { if (!open) setSearchDetailId(undefined); }}>
+          <DialogContent aria-describedby={undefined} closeLabel="Close event" returnFocus={searchTriggerRef} size="form">
+            <DialogHeader>
+              <DialogTitle>{searchDetail?.title ?? "Event"}</DialogTitle>
+            </DialogHeader>
+            <DialogBody>
+              <div className="grid gap-2 text-14 text-foreground-secondary">
+              {searchDetail ? <>
+                <p>{getEventDateLabel(searchDetail)} · {getEventRangeLabel(searchDetail, settings.timeFormat)}</p>
+                {searchDetail.location ? <p>{searchDetail.location}</p> : null}
+                {searchDetail.description ? <p className="whitespace-pre-wrap">{searchDetail.description}</p> : null}
+              </> : <p>This event is no longer available.</p>}
+              </div>
+            </DialogBody>
+            {searchDetail && onOpenFullEditor && canEditEvent(searchDetail, calendars) ? (
+              <DialogFooter>
+                <Button onClick={() => { setSearchDetailId(undefined); onOpenFullEditor(eventFormValues(searchDetail), searchDetail); }}>Edit</Button>
+              </DialogFooter>
+            ) : null}
+          </DialogContent>
         </Dialog>
 
         <ShortcutsDialog onOpenChange={setShortcutsOpen} open={shortcutsOpen} />
@@ -1381,8 +1423,8 @@ export function Workspace({
                   }
                 : undefined
             }
-            className={styles.workspaceToast}
             message={notice.message}
+            placement="workspace"
             tone={notice.tone}
           />
         ) : null}
@@ -1426,24 +1468,6 @@ export function Workspace({
           weekStartsOn={settings.weekStartsOn}
         />
       ) : null}
-      <CalendarTransferDialog
-        calendars={calendars}
-        onCreate={onCreateCalendar}
-        onCreateMeeting={(calendar, returnFocus) => setMeetingCreate({ initialCalendarID: calendar.id, returnFocus })}
-        onDisconnect={onDisconnectExternalCalendar}
-        onExport={onExportCalendar}
-        onImport={onImportCalendar}
-        onManageMembers={(calendar) => {
-          setCalendarTransfersOpen(false);
-          setShareCalendar(calendar);
-        }}
-        onNotice={notify}
-        onOpenChange={setCalendarTransfersOpen}
-        onRemove={onRemoveCalendar}
-        onUpdate={onUpdateCalendar}
-        open={calendarTransfersOpen}
-        reminders={reminders}
-      />
       {meetingCreate ? (
         <ProviderMeetingCreateDialog
           calendars={calendars}
@@ -1451,33 +1475,6 @@ export function Workspace({
           initialDate={date}
           returnFocus={meetingCreate.returnFocus}
           onClose={() => setMeetingCreate(undefined)}
-        />
-      ) : null}
-      {showConnections ? (
-        <ConnectionsDialog
-          returnFocus={connectionsReturnFocus}
-          calendars={calendars}
-          importFailed={providerLink?.error}
-          importing={providerLink?.importing}
-          onNotice={notify}
-          onOpenChange={(open) => {
-            if (!open) {
-              setConnectionsOpen(false);
-              setConnectionsReturnFocus(null);
-              setLinkNoticeDismissed(true);
-            }
-          }}
-          open
-          userId={user.id}
-        />
-      ) : null}
-      {accountOpen ? (
-        <AccountDialog
-          onNotice={notify}
-          onOpenChange={(open) => {
-            if (!open) setAccountOpen(false);
-          }}
-          open
         />
       ) : null}
       {newPageOpen ? (
@@ -1491,15 +1488,13 @@ export function Workspace({
       <ConfirmationDialog
         closeLabel="Close discard Page changes confirmation"
         confirmLabel="Discard changes"
-        description="The unsaved view and calendar visibility changes will be lost."
+        description="View and calendar visibility changes will be lost."
         onConfirm={discardActivePageDraft}
         onOpenChange={setDiscardPageDraftOpen}
         open={discardPageDraftOpen}
         returnFocus={discardPageDraftButtonRef}
-        title="Discard Page changes?"
-      >
-        <p>This cannot be undone.</p>
-      </ConfirmationDialog>
+        title="Discard Page changes"
+      />
       {settingsPage ? (
         <PageSettingsDialog
           calendars={calendars}
@@ -1538,19 +1533,45 @@ export function Workspace({
           userId={user.id}
         />
       ) : null}
-      <SettingsDialog
+      <SettingsWindow
+        calendars={calendars}
         isAdmin={isAdmin}
-        reminders={reminders}
-        onAdopt={onAdoptSettings}
-        onLoad={onGetSettingsDocument}
-        onManageAccount={() => {
-          setSettingsOpen(false);
-          setAccountOpen(true);
+        onAdoptSettings={onAdoptSettings}
+        onCreateCalendar={onCreateCalendar}
+        onCreateMeeting={(calendar, returnFocus) => setMeetingCreate({ initialCalendarID: calendar.id, returnFocus })}
+        onDisconnectCalendar={onDisconnectExternalCalendar}
+        onExportCalendar={onExportCalendar}
+        onImportCalendar={onImportCalendar}
+        onLoadSettings={onGetSettingsDocument}
+        onManageMembers={(calendar) => {
+          setSettingsSection(null);
+          setLinkNoticeDismissed(true);
+          setShareCalendar(calendar);
         }}
         onNotice={notify}
-        onOpenChange={setSettingsOpen}
-        onPatch={onPatchSettings}
-        open={settingsOpen}
+        onOpenChange={(open) => {
+          if (open) return;
+          const origin = sidebarSettingsOrigin.current;
+          if (origin?.isConnected) {
+            // Resizing can turn the original row into an inert drawer or reveal
+            // it again. Resolve the destination before the exit restores focus.
+            setConnectionsReturnFocus(origin.closest("[inert]") ? sidebarTriggerRef.current : origin);
+          }
+          setSettingsSection(null);
+          // Coming back from a provider opened this window; closing it is the
+          // answer to that notice too.
+          setLinkNoticeDismissed(true);
+        }}
+        onPatchSettings={onPatchSettings}
+        onRemoveCalendar={onRemoveCalendar}
+        onSectionChange={setSettingsSection}
+        onUpdateCalendar={onUpdateCalendar}
+        open={activeSettingsSection !== null}
+        providerLink={providerLink}
+        reminders={reminders}
+        returnFocus={connectionsReturnFocus}
+        section={activeSettingsSection ?? "general"}
+        userId={user.id}
       />
     </div>
     </CalendarTaskContext.Provider>

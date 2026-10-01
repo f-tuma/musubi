@@ -63,35 +63,35 @@ export function ToastHost() {
 	const ty = useSharedValue(TRAVEL);
 	const op = useSharedValue(0);
 	const reveal = useAnimatedStyle(() => ({
-		transform: [{ translateY: ty.value }],
-		opacity: op.value,
+		transform: [{ translateY: ty.get() }],
+		opacity: op.get(),
 	}));
 
 	const dismiss = () => {
-		op.value = withTiming(0, {
+		op.set(withTiming(0, {
 			duration: REVEAL_MS,
 			easing: Easing.inOut(Easing.ease),
-		});
-		ty.value = withTiming(
+		}));
+		ty.set(withTiming(
 			TRAVEL,
 			{ duration: REVEAL_MS, easing: Easing.inOut(Easing.ease) },
 			(done) => {
 				if (done) runOnJS(hide)();
 			},
-		);
+		));
 	};
 
 	// Fade + small rise on each new toast, then arm the auto-dismiss timer.
 	useEffect(() => {
 		if (!toast) return;
-		op.value = withTiming(1, {
+		op.set(withTiming(1, {
 			duration: REVEAL_MS,
 			easing: Easing.inOut(Easing.ease),
-		});
-		ty.value = withTiming(0, {
+		}));
+		ty.set(withTiming(0, {
 			duration: REVEAL_MS,
 			easing: Easing.inOut(Easing.ease),
-		});
+		}));
 		const t = setTimeout(dismiss, VISIBLE_MS);
 		return () => clearTimeout(t);
 		// eslint-disable-next-line react-hooks/exhaustive-deps

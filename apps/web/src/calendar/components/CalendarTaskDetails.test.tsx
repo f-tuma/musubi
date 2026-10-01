@@ -36,7 +36,8 @@ it("opens the existing editor and saves task content without resetting hidden fi
 });
 it("requires delete confirmation and disables writes offline", async () => {
   const user = userEvent.setup(); const { remove } = setup();
-  await user.click(screen.getByRole("button", { name: "Delete" }));
+  await user.click(screen.getByRole("button", { name: "More task actions" }));
+  await user.click(screen.getByRole("menuitem", { name: "Delete" }));
   expect(remove).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Cancel" }));
   expect(remove).not.toHaveBeenCalled();

@@ -62,6 +62,13 @@ async function main() {
       ": ping\n\n",
       'data: {"type":"event_updated","payload":{"id":"event-1"}}\n\n',
     ]);
+    // Metadata does not widen the targeted audience, and legacy frames without
+    // a known actor remain valid for clients that only invalidate their cache.
+    const before = res.writes.length;
+    notifyCalendarMembers(["another-user"], "event_updated", { id: "private", actorID: "actor" });
+    assert.equal(res.writes.length, before);
+    notifyCalendarMembers([req.user.id], "event_updated", { id: "event-1", revision: 2, actorID: "actor" });
+    assert.equal(res.writes[res.writes.length - 1], 'data: {"type":"event_updated","payload":{"id":"event-1","revision":2,"actorID":"actor"}}\n\n');
 
     req.emit("aborted");
     assert.equal(cleared, true);

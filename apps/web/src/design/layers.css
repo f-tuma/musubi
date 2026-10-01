@@ -1,0 +1,41 @@
+/* Layer mechanics Radix leaves to the page. Radix positions anchored
+   surfaces through a wrapper it owns, so the rules that move that wrapper —
+   a popover becoming a bottom sheet on a phone — can only be written here.
+   Nothing visual lives in this file; the surfaces style themselves. */
+
+[data-radix-popper-content-wrapper]:has([data-slot="popover-content"]) {
+  z-index: var(--layer-popover-z) !important;
+}
+
+[data-radix-popper-content-wrapper]:has([data-slot="popover-content"][data-elevated]) {
+  z-index: var(--layer-popover-elevated-z) !important;
+}
+
+@media (max-width: 599px) {
+  [data-radix-popper-content-wrapper]:has([data-mobile-surface="sheet"]) {
+    position: fixed !important;
+    inset: auto 0 0 0 !important;
+    min-width: 100% !important;
+    transform: none !important;
+  }
+}
+
+/* Where a toast floats. On the page it is centred above the home indicator.
+   Over the calendar it centres on the grid rather than the window, and on a
+   phone it clears the create button in the bottom-right corner. */
+[data-slot="toast-region"] {
+  --toast-left: 50%;
+  --toast-bottom: calc(var(--space-5) + var(--layer-safe-bottom));
+}
+
+@media (min-width: 1024px) {
+  [data-slot="toast-region"][data-placement="workspace"] {
+    --toast-left: calc(50% + var(--sidebar-width) / 2);
+  }
+}
+
+@media (max-width: 599px) {
+  [data-slot="toast-region"][data-placement="workspace"] {
+    --toast-bottom: calc(82px + var(--layer-safe-bottom));
+  }
+}

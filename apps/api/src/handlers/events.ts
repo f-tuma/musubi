@@ -94,17 +94,23 @@ function conflict(res: Response, current: Event) {
   });
 }
 
+/** Authenticated actor metadata is additive; it never changes recipients. */
+export function eventStreamPayload(result: Record<string, unknown>, actorID: string) {
+  return { ...result, actorID };
+}
+
 async function notifyEvent(
   calendars: string[],
   type: "event_created" | "event_updated" | "event_removed",
   result: Record<string, unknown>,
+  actorID: string,
 ) {
   const members = new Set<string>();
   for (const calendarID of new Set(calendars)) {
     for (const member of await getCalendarMembers(calendarID))
       members.add(member.userID);
   }
-  notifyCalendarMembers([...members], type, result);
+  notifyCalendarMembers([...members], type, eventStreamPayload(result, actorID));
 }
 
 /** The local commit is final. Never claim a provider failure undid it, and never
@@ -272,7 +278,7 @@ export async function handlerCreateEvent(req: Request, res: Response) {
   const result = { ...created, providerReadRetiredRevision: created.providerReadRetiredRevision ?? undefined, calendars: event.calendars };
 
   return sendCommitted(res, deliver, result, result, 201, () =>
-    notifyEvent(event.calendars, "event_created", result));
+    notifyEvent(event.calendars, "event_created", result, req.user!.id));
 }
 
 export async function handlerCreateEventTime(req: Request, res: Response) {
@@ -298,7 +304,7 @@ export async function handlerCreateEventTime(req: Request, res: Response) {
     try {
       const receipt = await readGraphSeriesCreateReceipt(req.user!.id, queued.operationID);
       if (receipt.kind !== "active") return res.status(409).json({ code: "event-create-no-longer-active", error: "This creation was saved, but its event is no longer available here. Refresh before continuing.", localCommitted: true });
-      await notifyEvent(receipt.event.calendars, "event_created", receipt.event);
+      await notifyEvent(receipt.event.calendars, "event_created", receipt.event, req.user!.id);
       return res.status(202).json({ ...receipt.event, localCommitted: true });
     } catch (error) {
       const failure = committedFailure(error, [queued.event]);
@@ -315,7 +321,7 @@ export async function handlerCreateEventTime(req: Request, res: Response) {
     throw error;
   }
   return sendCommitted(res, deliver, result, result, 201, () =>
-    notifyEvent(result.calendars, "event_created", result));
+    notifyEvent(result.calendars, "event_created", result, req.user!.id));
 }
 
 export async function handlerUpdateEvent(req: Request, res: Response) {
@@ -342,6 +348,7 @@ export async function handlerUpdateEvent(req: Request, res: Response) {
       [...saved.previous.calendars, ...saved.event.calendars],
       "event_updated",
       saved.event,
+      req.user!.id,
     );
     await queueEventChange(saved.previous, saved.event, req.user!.id);
   }
@@ -361,7 +368,7 @@ export async function handlerEditEventTime(req: Request, res: Response) {
   if (saved.status === "conflict") return conflict(res, saved.current);
   return sendCommitted(res, deliver, saved.event, saved.event, 200, async () => {
     if (!saved.changed) return;
-    await notifyEvent(saved.event.calendars, "event_updated", saved.event);
+    await notifyEvent(saved.event.calendars, "event_updated", saved.event, req.user!.id);
     await queueEventChange(saved.previous, saved.event, req.user!.id);
   });
 }
@@ -419,12 +426,12 @@ export async function handlerEventScope(req: Request, res: Response) {
     const previous = new Map(result.previous.map(event => [event.id, event]));
     for (const event of result.events) {
       const before = previous.get(event.id);
-      await notifyEvent(event.calendars, before ? "event_updated" : "event_created", event);
+      await notifyEvent(event.calendars, before ? "event_updated" : "event_created", event, req.user!.id);
       if (before) await queueEventChange(before, event, req.user!.id);
     }
     for (const deletion of result.outcome.deleted) {
       const before = previous.get(deletion.id)!;
-      await notifyEvent(before.calendars, "event_removed", { ...deletion, calendars: before.calendars, removed: true });
+      await notifyEvent(before.calendars, "event_removed", { ...deletion, calendars: before.calendars, removed: true }, req.user!.id);
       await dropEventNotifications(deletion.id);
     }
   } catch {
@@ -488,6 +495,7 @@ export async function handlerRemoveEvent(req: Request, res: Response) {
     existing,
     removed ? "event_removed" : "event_updated",
     removed ? result : saved.event,
+    req.user!.id,
   );
   if (removed) await dropEventNotifications(request.id);
 
@@ -524,7 +532,7 @@ export async function handlerLinkEvent(req: Request, res: Response) {
   if (saved.status === "not_found") throw new NotFoundError("Event not found.");
   if (saved.status === "conflict") return conflict(res, saved.current);
   return sendCommitted(res, deliver, saved.event, saved.event, 200, async () => {
-    if (saved.changed) await notifyEvent(calendars, "event_updated", saved.event);
+    if (saved.changed) await notifyEvent(calendars, "event_updated", saved.event, req.user!.id);
   });
 }
 
@@ -549,7 +557,7 @@ export async function handlerForkEvent(req: Request, res: Response) {
     if (saved.status === "not_found") throw new NotFoundError("Event not found.");
     if (saved.status === "conflict") return conflict(res, saved.current);
     return sendCommitted(res, deliver, saved.event, saved.event, 201, () =>
-      notifyEvent(saved.event.calendars, "event_created", saved.event));
+      notifyEvent(saved.event.calendars, "event_created", saved.event, req.user!.id));
   }
   const newEvent: NewEvent = {
     ...eventCreateRequest(EventSchema.parse(source)),
@@ -578,7 +586,7 @@ export async function handlerForkEvent(req: Request, res: Response) {
   if (saved.status === "not_found") throw new NotFoundError("Event not found.");
   if (saved.status === "conflict") return conflict(res, saved.current);
   return sendCommitted(res, deliver, saved.event, saved.event, 201, () =>
-    notifyEvent([calendarID], "event_created", saved.event));
+    notifyEvent([calendarID], "event_created", saved.event, req.user!.id));
 }
 
 // Attendees: anyone who can view the event sees the list and can answer.
@@ -718,7 +726,7 @@ export async function handlerProviderOrganizer(req: Request, res: Response) {
   try { receipt = await queueProviderOrganizer(req.user!.id, req.body); }
   catch (error) { if (!(error instanceof OrganizerAdmissionRejectedError)) throw error; res.status(400).json({ error: error.message, organizerAdmissionRejected: true }); return; }
   res.setHeader("Cache-Control", "private, no-store"); res.status(202).json(receipt);
-  if (!receipt.replayed) { const { getEventSnapshot } = await import("@musubi/db"); const event = await getEventSnapshot(receipt.eventID); if (event) await notifyEvent(event.calendars, "event_updated", event); }
+  if (!receipt.replayed) { const { getEventSnapshot } = await import("@musubi/db"); const event = await getEventSnapshot(receipt.eventID); if (event) await notifyEvent(event.calendars, "event_updated", event, req.user!.id); }
 }
 export async function handlerOrganizerCalendar(req: Request, res: Response) {
   const id = String(req.params.calendarId);

@@ -1,30 +1,31 @@
 import type { Decorator, Preview } from "@storybook/tanstack-react";
 import { useLayoutEffect, type ReactNode } from "react";
 import { useFocusMode } from "../src/design/focus-mode";
-import "../src/design/tokens.css";
-import "../src/design/global.css";
-import "./preview.css";
+import "../src/design/app.css";
 
 type ThemeFrameProps = {
   children: ReactNode;
+  fullscreen: boolean;
   theme: "dark" | "light";
 };
 
-function ThemeFrame({ children, theme }: ThemeFrameProps) {
+function ThemeFrame({ children, fullscreen, theme }: ThemeFrameProps) {
   useFocusMode();
 
   useLayoutEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
-  return <div className="sb-page">{children}</div>;
+  // Fullscreen stories are whole pages and own their own layout.
+  if (fullscreen) return <>{children}</>;
+  return <div className="grid min-h-dvh place-items-center p-8">{children}</div>;
 }
 
 const withMusubiTheme: Decorator = (Story, context) => {
   const theme = context.globals.theme === "dark" ? "dark" : "light";
 
   return (
-    <ThemeFrame theme={theme}>
+    <ThemeFrame fullscreen={context.parameters.layout === "fullscreen"} theme={theme}>
       <Story />
     </ThemeFrame>
   );
@@ -66,7 +67,7 @@ const preview: Preview = {
     layout: "centered",
     options: {
       storySort: {
-        order: ["Foundations", "Primitives", "Patterns", "Calendar", "Screens"],
+        order: ["Design system", ["Foundations", "Gallery"], "Pages", "Calendar", "Screens"],
       },
     },
   },

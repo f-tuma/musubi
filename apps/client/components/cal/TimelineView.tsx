@@ -158,9 +158,9 @@ function TimelinePage({
   const timeFormat = useSettingsStore((s) => s.timeFormat);
 
   // minutes ⇄ pixels at the CURRENT zoom (reads the live hour height)
-  const m2y = (m: number) => (m / 60) * hourH.value;
+  const m2y = (m: number) => (m / 60) * hourH.get();
   const y2min = (y: number, snap: number) =>
-    clamp(Math.round((y / hourH.value) * 60 / snap) * snap, 0, 24 * 60 - snap);
+    clamp(Math.round((y / hourH.get()) * 60 / snap) * snap, 0, 24 * 60 - snap);
 
   // Content stays invisible until the initial scroll is applied, then reveals —
   // so the mount→scroll settle is never seen (no top → target flash on open),
@@ -172,7 +172,7 @@ function TimelinePage({
       // A drill preview already hides this settling phase. Keeping the real
       // grid fully opaque avoids multiplying its fade with the parent
       // preview→timeline cross-fade (that product caused a one-frame dim flash).
-      if (!coveredByTransition) contentOpacity.value = withTiming(1, { duration: 100 });
+      if (!coveredByTransition) contentOpacity.set(withTiming(1, { duration: 100 }));
     });
     return () => cancelAnimationFrame(frame);
   }, []);
@@ -209,9 +209,9 @@ function TimelinePage({
   // bottom pad follows the docked sheet — ease its changes so showing/hiding
   // the sheet doesn't make the scroll content jump
   const padSV = useSharedValue(bottomPad);
-  useEffect(() => { padSV.value = withTiming(bottomPad, { duration: 200 }); }, [bottomPad]);
-  const contentStyle = useAnimatedStyle(() => ({ height: 24 * hourH.value + padSV.value + 12, opacity: contentOpacity.value }));
-  const gridOverlayStyle = useAnimatedStyle(() => ({ height: 24 * hourH.value }));
+  useEffect(() => { padSV.set(withTiming(bottomPad, { duration: 200 })); }, [bottomPad]);
+  const contentStyle = useAnimatedStyle(() => ({ height: 24 * hourH.get() + padSV.get() + 12, opacity: contentOpacity.get() }));
+  const gridOverlayStyle = useAnimatedStyle(() => ({ height: 24 * hourH.get() }));
 
   const segmentsByDay = useMemo(
     () => days.map(d => daySegments(byDay.get(dayKey(d)) ?? [], d)),
@@ -264,9 +264,9 @@ function TimelinePage({
     dragAnchor.current = { day, min };
     lastSnap.current = `${day}:${min}:${min}`;
     gestureActive.current = true;
-    gDay.value = day;
-    gStartMin.value = min;
-    gDurMin.value = 60;
+    gDay.set(day);
+    gStartMin.set(min);
+    gDurMin.set(60);
     thump();
     onDraftChange({ start: atMinutes(day, min), end: atMinutes(day, min + 60) });
   };
@@ -280,14 +280,14 @@ function TimelinePage({
     lastSnap.current = key;
     const sMin = cur < min ? cur : min;
     const eMin = cur > min ? Math.max(cur, min + 15) : min + 60;
-    gStartMin.value = withTiming(sMin, { duration: SNAP_STEP_MS });
-    gDurMin.value = withTiming(eMin - sMin, { duration: SNAP_STEP_MS });
+    gStartMin.set(withTiming(sMin, { duration: SNAP_STEP_MS }));
+    gDurMin.set(withTiming(eMin - sMin, { duration: SNAP_STEP_MS }));
     onDraftChange({ start: atMinutes(day, sMin), end: atMinutes(day, eMin) });
   };
   // "lifted" scale on the ghost while a hold-drag is active — visible feedback
   // that editing kicked in after the long press
   const grabbing = useSharedValue(1);
-  const grabStyle = useAnimatedStyle(() => ({ transform: [{ scale: grabbing.value }] }));
+  const grabStyle = useAnimatedStyle(() => ({ transform: [{ scale: grabbing.get() }] }));
 
   // Ghost geometry lives in shared values and clicks between 15-min steps in
   // lock-step with the draft times — a short withTiming per step gives the
@@ -300,9 +300,9 @@ function TimelinePage({
   const gDurMin = useSharedValue(60);  // duration, minutes
   const gestureActive = useRef(false);
   const ghostStyle = useAnimatedStyle(() => ({
-    left: GUTTER + gDay.value * colW + GHOST_LEFT_INSET,
-    top: (gStartMin.value / 60) * hourH.value,
-    height: Math.max((gDurMin.value / 60) * hourH.value, 18),
+    left: GUTTER + gDay.get() * colW + GHOST_LEFT_INSET,
+    top: (gStartMin.get() / 60) * hourH.get(),
+    height: Math.max((gDurMin.get() / 60) * hourH.get(), 18),
   }));
 
   const syncGhostToDraft = (animated: boolean) => {
@@ -311,9 +311,9 @@ function TimelinePage({
     const dayIdx = Math.max(live.current.days.findIndex(x => isSameDay(x, d.start)), 0);
     const startMin = d.start.getHours() * 60 + d.start.getMinutes();
     const durMin = (d.end.getTime() - d.start.getTime()) / 60000;
-    gDay.value = animated ? withTiming(dayIdx, { duration: GHOST_SETTLE_MS }) : dayIdx;
-    gStartMin.value = animated ? withTiming(startMin, { duration: GHOST_SETTLE_MS }) : startMin;
-    gDurMin.value = animated ? withTiming(durMin, { duration: GHOST_SETTLE_MS }) : durMin;
+    gDay.set(animated ? withTiming(dayIdx, { duration: GHOST_SETTLE_MS }) : dayIdx);
+    gStartMin.set(animated ? withTiming(startMin, { duration: GHOST_SETTLE_MS }) : startMin);
+    gDurMin.set(animated ? withTiming(durMin, { duration: GHOST_SETTLE_MS }) : durMin);
   };
   // tap-created (or externally changed) drafts position the ghost from state;
   // during an active drag the gesture owns the visuals
@@ -328,12 +328,12 @@ function TimelinePage({
     Gesture.Pan()
       .activateAfterLongPress(HOLD_CREATE_MS)
       .onStart(e => {
-        grabbing.value = withSpring(GRAB_SCALE, GRAB_SPRING);
+        grabbing.set(withSpring(GRAB_SCALE, GRAB_SPRING));
         runOnJS(handleDragStart)(e.x, e.y);
       })
       .onUpdate(e => { runOnJS(handleDragMove)(e.y); })
       .onFinalize(() => {
-        grabbing.value = withSpring(1, GRAB_SPRING);
+        grabbing.set(withSpring(1, GRAB_SPRING));
         runOnJS(finishDrag)();
       }),
     Gesture.Tap()
@@ -372,27 +372,27 @@ function TimelinePage({
   const grabMove = (tx: number, ty: number) => {
     const g = grab.current;
     if (!g) return;
-    const dMin = Math.round((ty / hourH.value) * 60 / SNAP_DRAG_MIN) * SNAP_DRAG_MIN;
+    const dMin = Math.round((ty / hourH.get()) * 60 / SNAP_DRAG_MIN) * SNAP_DRAG_MIN;
     const dDay = Math.round(tx / live.current.colW);
     const key = `${g.mode}:${dMin}:${dDay}`;
     if (key === lastSnap.current) return;
     lastSnap.current = key;
     if (g.mode === "start") {
       const s = clamp(g.startMin + dMin, 0, g.endMin - 15);
-      gStartMin.value = withTiming(s, { duration: SNAP_STEP_MS });
-      gDurMin.value = withTiming(g.endMin - s, { duration: SNAP_STEP_MS });
+      gStartMin.set(withTiming(s, { duration: SNAP_STEP_MS }));
+      gDurMin.set(withTiming(g.endMin - s, { duration: SNAP_STEP_MS }));
       onDraftChange({ start: atMinutes(g.day, s), end: atMinutes(g.day, g.endMin) });
     } else if (g.mode === "end") {
       const en = clamp(g.endMin + dMin, g.startMin + 15, 24 * 60);
-      gDurMin.value = withTiming(en - g.startMin, { duration: SNAP_STEP_MS });
+      gDurMin.set(withTiming(en - g.startMin, { duration: SNAP_STEP_MS }));
       onDraftChange({ start: atMinutes(g.day, g.startMin), end: atMinutes(g.day, en) });
     } else {
       const dur = g.endMin - g.startMin;
       const day = clamp(g.day + dDay, 0, live.current.days.length - 1);
       const s = clamp(g.startMin + dMin, 0, 24 * 60 - dur);
-      gStartMin.value = withTiming(s, { duration: SNAP_STEP_MS });
-      gDurMin.value = withTiming(dur, { duration: SNAP_STEP_MS });
-      if (day !== gDay.value) gDay.value = withTiming(day, { duration: 80 });
+      gStartMin.set(withTiming(s, { duration: SNAP_STEP_MS }));
+      gDurMin.set(withTiming(dur, { duration: SNAP_STEP_MS }));
+      if (day !== gDay.get()) gDay.set(withTiming(day, { duration: 80 }));
       onDraftChange({ start: atMinutes(day, s), end: atMinutes(day, s + dur) });
     }
   };
@@ -405,12 +405,12 @@ function TimelinePage({
     .hitSlop({ top: 12, bottom: 12 })
     .activateAfterLongPress(HOLD_GRAB_MS)
     .onStart(e => {
-      grabbing.value = withSpring(GRAB_SCALE, GRAB_SPRING);
+      grabbing.set(withSpring(GRAB_SCALE, GRAB_SPRING));
       runOnJS(grabStart)(e.x, e.y);
     })
     .onUpdate(e => { runOnJS(grabMove)(e.translationX, e.translationY); })
     .onFinalize(() => {
-      grabbing.value = withSpring(1, GRAB_SPRING);
+      grabbing.set(withSpring(1, GRAB_SPRING));
       runOnJS(finishDrag)();
     }),
   []);
@@ -435,21 +435,21 @@ function TimelinePage({
   const [pinching, setPinching] = useState(false);
   const pinchGesture = useMemo(() => Gesture.Pinch()
     .onStart(e => {
-      zoomBase.value = hourH.value;
-      const vf = e.focalY - scrollTopSV.value;
-      vFocal.value = vf;
-      focalContentY.value = scrollY.value + vf;
+      zoomBase.set(hourH.get());
+      const vf = e.focalY - scrollTopSV.get();
+      vFocal.set(vf);
+      focalContentY.set(scrollY.get() + vf);
       runOnJS(setPinching)(true);
     })
     .onUpdate(e => {
-      const raw = zoomBase.value * e.scale;
+      const raw = zoomBase.get() * e.scale;
       const nh = raw < ZOOM_HOUR_MIN ? ZOOM_HOUR_MIN : raw > ZOOM_HOUR_MAX ? ZOOM_HOUR_MAX : raw;
-      hourH.value = nh;
+      hourH.set(nh);
       // anchor rides the fingers: same content point stays under the (moving) focal
-      const vf = e.focalY - scrollTopSV.value;
-      const newScroll = focalContentY.value * (nh / zoomBase.value) - vf;
+      const vf = e.focalY - scrollTopSV.get();
+      const newScroll = focalContentY.get() * (nh / zoomBase.get()) - vf;
       const clamped = newScroll < 0 ? 0 : newScroll;
-      scrollY.value = clamped; // keep the shared value honest for the next gesture
+      scrollY.set(clamped); // keep the shared value honest for the next gesture
       scrollTo(scrollRef, 0, clamped, false);
     })
     .onFinalize(() => { runOnJS(setPinching)(false); })
@@ -523,8 +523,8 @@ function TimelinePage({
         <ScrollView
           ref={scrollRef as any} // RNGH ScrollView; reanimated scrollTo resolves the native node
           scrollEnabled={!pinching} // during a pinch the gesture owns the scroll position
-          onLayout={e => { scrollTopSV.value = e.nativeEvent.layout.y; }}
-          onScroll={e => { scrollPosRef.current = e.nativeEvent.contentOffset.y; scrollY.value = e.nativeEvent.contentOffset.y; }}
+          onLayout={e => { scrollTopSV.set(e.nativeEvent.layout.y); }}
+          onScroll={e => { scrollPosRef.current = e.nativeEvent.contentOffset.y; scrollY.set(e.nativeEvent.contentOffset.y); }}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
         >
@@ -622,7 +622,7 @@ function TimelinePage({
 
 // One hour gridline + its label, positioned at the live hour height.
 function HourLine({ h, hourH }: { h: number; hourH: SharedValue<number> }) {
-  const style = useAnimatedStyle(() => ({ top: h * hourH.value }));
+  const style = useAnimatedStyle(() => ({ top: h * hourH.get() }));
   return (
     <Animated.View style={[{ position: "absolute", left: 0, right: 0 }, style]}>
       <View style={{ position: "absolute", left: GUTTER, right: 0, height: 1, backgroundColor: colors.line }} />
@@ -636,7 +636,7 @@ function HourLine({ h, hourH }: { h: number; hourH: SharedValue<number> }) {
 }
 
 function NowIndicator({ hourH, nowMin, left, colW }: { hourH: SharedValue<number>; nowMin: number; left: number; colW: number }) {
-  const style = useAnimatedStyle(() => ({ top: (nowMin / 60) * hourH.value - 1 }));
+  const style = useAnimatedStyle(() => ({ top: (nowMin / 60) * hourH.get() - 1 }));
   return (
     <Animated.View pointerEvents="none" style={[{ position: "absolute", left, width: colW }, style]}>
       <View style={{ height: 2, backgroundColor: colors.accent, borderRadius: 1 }} />
@@ -698,33 +698,33 @@ const TimelineEventBlock = memo(function TimelineEventBlock({
   const boundsSV = useSharedValue(daysCount - 1);
   const colWSV = useSharedValue(colW);
   useEffect(() => {
-    dayIdxSV.value = dayIndex;
-    boundsSV.value = daysCount - 1;
-    colWSV.value = colW;
+    dayIdxSV.set(dayIndex);
+    boundsSV.set(daysCount - 1);
+    colWSV.set(colW);
   }, [dayIndex, daysCount, colW]);
 
   // Zoom: reflow to the live hour height on the UI thread (skip while dragging —
   // the gesture owns the position then). Math is inlined; baseTop/baseH are JS
   // closures and can't be called from this worklet.
-  useAnimatedReaction(() => hourH.value, (h) => {
-    if (dragging.value) return;
-    topSV.value = (startMin / 60) * h;
-    heightSV.value = Math.max(((endMin - startMin) / 60) * h - 2, 18);
+  useAnimatedReaction(() => hourH.get(), (h) => {
+    if (dragging.get()) return;
+    topSV.set((startMin / 60) * h);
+    heightSV.set(Math.max(((endMin - startMin) / 60) * h - 2, 18));
   }, [startMin, endMin]);
 
   // layout sync: after a committed move the folded top equals the new base, so
   // this glide is the drop's settle onto the grid (horizontal/day too)
   const mounted = useRef(false);
   useEffect(() => {
-    const h = hourH.value;
+    const h = hourH.get();
     if (!mounted.current) {
       mounted.current = true;
-      leftSV.value = left; topSV.value = baseTop(h); heightSV.value = baseH(h);
+      leftSV.set(left); topSV.set(baseTop(h)); heightSV.set(baseH(h));
       return;
     }
-    leftSV.value = withTiming(left, { duration: GHOST_SETTLE_MS });
-    topSV.value = withTiming(baseTop(h), { duration: GHOST_SETTLE_MS });
-    heightSV.value = baseH(h); // duration is unchanged by a move — snap
+    leftSV.set(withTiming(left, { duration: GHOST_SETTLE_MS }));
+    topSV.set(withTiming(baseTop(h), { duration: GHOST_SETTLE_MS }));
+    heightSV.set(baseH(h)); // duration is unchanged by a move — snap
   }, [left, startMin, endMin]);
 
   // live time range preview while dragging (snapped, deduped)
@@ -735,18 +735,18 @@ const TimelineEventBlock = memo(function TimelineEventBlock({
   const commit = (rawTx: number, rawTy: number) => {
     const { event, dayIndex, daysCount, colW, onMove } = live.current;
     const dayDelta = clamp(Math.round(rawTx / colW), -dayIndex, daysCount - 1 - dayIndex);
-    const minDelta = Math.round((rawTy / hourH.value) * 60 / SNAP_DRAG_MIN) * SNAP_DRAG_MIN;
+    const minDelta = Math.round((rawTy / hourH.get()) * 60 / SNAP_DRAG_MIN) * SNAP_DRAG_MIN;
     setPreview(null);
     if (dayDelta === 0 && minDelta === 0) {
-      tx.value = withTiming(0, { duration: GHOST_SETTLE_MS });
-      ty.value = withTiming(0, { duration: GHOST_SETTLE_MS });
+      tx.set(withTiming(0, { duration: GHOST_SETTLE_MS }));
+      ty.set(withTiming(0, { duration: GHOST_SETTLE_MS }));
       return;
     }
     // fold drag into the base coords + zero transforms — one batch, same pixel
-    leftSV.value = leftSV.value + tx.value;
-    topSV.value = topSV.value + ty.value;
-    tx.value = 0;
-    ty.value = 0;
+    leftSV.set(leftSV.get() + tx.get());
+    topSV.set(topSV.get() + ty.get());
+    tx.set(0);
+    ty.set(0);
     onMove(event, dayDelta, minDelta);
   };
   const startHaptic = () => thump();
@@ -755,43 +755,43 @@ const TimelineEventBlock = memo(function TimelineEventBlock({
     .enabled(movable)
     .activateAfterLongPress(HOLD_GRAB_MS)
     .onStart(() => {
-      dragging.value = true;
-      lift.value = withSpring(GRAB_SCALE, GRAB_SPRING);
-      ndTarget.value = 0;
-      minPrev.value = 0;
+      dragging.set(true);
+      lift.set(withSpring(GRAB_SCALE, GRAB_SPRING));
+      ndTarget.set(0);
+      minPrev.set(0);
       runOnJS(startHaptic)();
     })
     .onUpdate(e => {
-      ty.value = e.translationY;
-      const nd = Math.min(Math.max(Math.round(e.translationX / colWSV.value), -dayIdxSV.value), boundsSV.value - dayIdxSV.value);
-      const m = Math.round((e.translationY / hourH.value) * 60 / SNAP_DRAG_MIN) * SNAP_DRAG_MIN;
-      if (ndTarget.value !== nd) {
-        ndTarget.value = nd;
-        tx.value = withTiming(nd * colWSV.value, { duration: 80 });
+      ty.set(e.translationY);
+      const nd = Math.min(Math.max(Math.round(e.translationX / colWSV.get()), -dayIdxSV.get()), boundsSV.get() - dayIdxSV.get());
+      const m = Math.round((e.translationY / hourH.get()) * 60 / SNAP_DRAG_MIN) * SNAP_DRAG_MIN;
+      if (ndTarget.get() !== nd) {
+        ndTarget.set(nd);
+        tx.set(withTiming(nd * colWSV.get(), { duration: 80 }));
       }
-      if (minPrev.value !== m || ndTarget.value !== nd) {
-        minPrev.value = m;
+      if (minPrev.get() !== m || ndTarget.get() !== nd) {
+        minPrev.set(m);
         runOnJS(showPreview)(nd, m);
       }
     })
     .onEnd(e => { runOnJS(commit)(e.translationX, e.translationY); })
     .onFinalize(() => {
-      dragging.value = false;
-      lift.value = withSpring(1, GRAB_SPRING);
+      dragging.set(false);
+      lift.set(withSpring(1, GRAB_SPRING));
       runOnJS(clearPreview)();
     }),
   // eslint-disable-next-line react-hooks/exhaustive-deps
   [movable]);
 
   const animStyle = useAnimatedStyle(() => ({
-    left: leftSV.value,
-    top: topSV.value,
-    height: heightSV.value,
-    transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: lift.value }],
-    zIndex: lift.value > 1 ? 10 : 0,
-    elevation: lift.value > 1 ? 6 : 0,
+    left: leftSV.get(),
+    top: topSV.get(),
+    height: heightSV.get(),
+    transform: [{ translateX: tx.get() }, { translateY: ty.get() }, { scale: lift.get() }],
+    zIndex: lift.get() > 1 ? 10 : 0,
+    elevation: lift.get() > 1 ? 6 : 0,
     shadowColor: "#000",
-    shadowOpacity: lift.value > 1 ? 0.2 : 0,
+    shadowOpacity: lift.get() > 1 ? 0.2 : 0,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 5 },
   }));

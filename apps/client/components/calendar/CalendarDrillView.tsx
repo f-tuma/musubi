@@ -151,9 +151,9 @@ export function useCalendarDrill(anchorDate: Date) {
     cancelPending();
     drillRef.current = null;
     onClosedRef.current = null;
-    zoom.value = 0;
-    monthTransition.value = 0;
-    drillOpacity.value = 1;
+    zoom.set(0);
+    monthTransition.set(0);
+    drillOpacity.set(1);
     setContentReady(false);
     setDrill(null);
     onReset?.();
@@ -165,9 +165,9 @@ export function useCalendarDrill(anchorDate: Date) {
 
     const next: CalendarDrill = { date, rect, sourceHeaderDate: anchorDateRef.current };
     drillRef.current = next;
-    zoom.value = 0;
-    monthTransition.value = 0;
-    drillOpacity.value = 1;
+    zoom.set(0);
+    monthTransition.set(0);
+    drillOpacity.set(1);
     setContentReady(false);
     setDrill(next);
 
@@ -177,8 +177,8 @@ export function useCalendarDrill(anchorDate: Date) {
     startFrameRef.current = requestAnimationFrame(() => {
       startFrameRef.current = null;
       if (drillRef.current !== next) return;
-      zoom.value = withTiming(1, { duration: ZOOM_IN_MS, easing: Easing.out(Easing.cubic) });
-      monthTransition.value = withTiming(1, { duration: ZOOM_IN_MS, easing: Easing.out(Easing.cubic) });
+      zoom.set(withTiming(1, { duration: ZOOM_IN_MS, easing: Easing.out(Easing.cubic) }));
+      monthTransition.set(withTiming(1, { duration: ZOOM_IN_MS, easing: Easing.out(Easing.cubic) }));
       contentTimerRef.current = setTimeout(() => {
         contentTimerRef.current = null;
         if (drillRef.current === next) setContentReady(true);
@@ -199,20 +199,20 @@ export function useCalendarDrill(anchorDate: Date) {
     const returnsToTappedDay = isSameDay(anchorDateRef.current, current.date);
     const duration = returnsToTappedDay ? ZOOM_OUT_MS : DRILL_FADE_OUT_MS;
     if (returnsToTappedDay) {
-      zoom.value = withTiming(0, { duration, easing: Easing.in(Easing.cubic) });
+      zoom.set(withTiming(0, { duration, easing: Easing.in(Easing.cubic) }));
     } else {
       // A paged-to day no longer belongs to the tapped cell; fade it instead of
       // collapsing it into geometrically unrelated month content.
-      drillOpacity.value = withTiming(0, { duration, easing: Easing.out(Easing.quad) });
+      drillOpacity.set(withTiming(0, { duration, easing: Easing.out(Easing.quad) }));
     }
-    monthTransition.value = withTiming(0, { duration, easing: Easing.inOut(Easing.quad) });
+    monthTransition.set(withTiming(0, { duration, easing: Easing.inOut(Easing.quad) }));
 
     closeTimerRef.current = setTimeout(() => {
       closeTimerRef.current = null;
       drillRef.current = null;
-      zoom.value = 0;
-      monthTransition.value = 0;
-      drillOpacity.value = 1;
+      zoom.set(0);
+      monthTransition.set(0);
+      drillOpacity.set(1);
       setContentReady(false);
       setDrill(null);
       const finish = onClosedRef.current;
@@ -270,29 +270,29 @@ export function CalendarDrillView({
 }: Props) {
   const contentReveal = useSharedValue(0);
   useEffect(() => {
-    if (!drillContentReady) contentReveal.value = 0;
+    if (!drillContentReady) contentReveal.set(0);
   }, [contentReveal, drillContentReady]);
 
   const handleTimelineReady = useCallback(() => {
-    contentReveal.value = withTiming(1, { duration: EVENT_REVEAL_MS, easing: Easing.out(Easing.quad) });
+    contentReveal.set(withTiming(1, { duration: EVENT_REVEAL_MS, easing: Easing.out(Easing.quad) }));
   }, [contentReveal]);
 
   // The overlay and its preview stay mounted even while closed. That makes the
   // first transition frame a shared-value update only — no native tree insert.
   const overlayStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(zoom.value, [0, 0.18, 1], [0, 0.55, 1]) * drillOpacity.value,
-    transform: [{ scale: interpolate(zoom.value, [0, 1], [0.985, 1]) }],
+    opacity: interpolate(zoom.get(), [0, 0.18, 1], [0, 0.55, 1]) * drillOpacity.get(),
+    transform: [{ scale: interpolate(zoom.get(), [0, 1], [0.985, 1]) }],
   }));
   const overlayContentStyle = useAnimatedStyle(() => ({
-    opacity: contentReveal.value,
+    opacity: contentReveal.get(),
   }));
   const previewStyle = useAnimatedStyle(() => ({
-    opacity: 1 - contentReveal.value,
+    opacity: 1 - contentReveal.get(),
   }));
   const monthUnderStyle = useAnimatedStyle(() => ({
     flex: 1,
-    opacity: 1 - monthTransition.value * 0.45,
-    transform: [{ scale: 1 + monthTransition.value * 0.012 }],
+    opacity: 1 - monthTransition.get() * 0.45,
+    transform: [{ scale: 1 + monthTransition.get() * 0.012 }],
   }));
 
   return (

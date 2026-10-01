@@ -12,22 +12,16 @@ import {
 } from "@musubi/types";
 import {
 	CalendarDays,
-	Check,
 	ChevronDown,
-	Clock3,
-	FileText,
 	Globe2,
 	Sun,
 	House,
-	Link2,
-	MapPin,
 	Maximize2,
 	Minimize2,
 	Repeat2,
 	UsersRound,
 } from "lucide-react";
 import {
-	Fragment,
 	type FormEvent,
 	type KeyboardEvent,
 	type RefCallback,
@@ -35,16 +29,22 @@ import {
 	useId,
 	useState,
 } from "react";
-import { useNarrowViewport } from "~/design/use-narrow-viewport";
-import { Button, IconButton } from "~/ui/Button";
-import { DatePicker } from "~/ui/DatePicker";
-import { Field } from "~/ui/Field";
-import { HelpTooltip } from "~/ui/HelpTooltip";
-import { Select } from "~/ui/Select";
-import { Row } from "~/ui/Row";
-import { Switch } from "~/ui/Switch";
-import { SectionLabel } from "~/ui/SectionLabel";
-import { minutesToTime, TimePicker, timeToMinutes } from "~/ui/TimePicker";
+import { cn } from "~/lib/utils";
+import { Button } from "~/components/ui/button";
+import { Checkbox } from "~/components/ui/checkbox";
+import { Field, FieldGroup } from "~/components/ui/field";
+import { HelpTooltip } from "~/components/ui/help-tooltip";
+import { InlineError } from "~/components/ui/inline-error";
+import { Input } from "~/components/ui/input";
+import { ItemGroup } from "~/components/ui/item";
+import { Label } from "~/components/ui/label";
+import { RowAction } from "~/components/ui/row";
+import { SectionLabel } from "~/components/ui/section-label";
+import { Select } from "~/components/ui/select";
+import { Switch } from "~/components/ui/switch";
+import { Textarea } from "~/components/ui/textarea";
+import { DatePicker } from "~/components/ui/date-picker";
+import { minutesToTime, TimePicker, timeToMinutes } from "~/components/ui/time-picker";
 import { groupCalendars } from "../calendar-groups";
 import { shiftDayKey } from "../date-key";
 import {
@@ -62,7 +62,6 @@ import { createTimeGeometry } from "../time-geometry";
 import { CalendarDot } from "./CalendarDot";
 import { AccountMark } from "./ProviderIcon";
 import { RecurrenceEditor } from "./RecurrenceEditor";
-import styles from "./styles/event-editor.module.css";
 
 type FormError = {
 	message: string;
@@ -172,11 +171,7 @@ export function EventEditorForm({
 	when,
 }: EventEditorFormProps) {
 	const id = useId();
-	const narrow = useNarrowViewport();
 	const panel = layout === "panel";
-	const fieldVariant = panel ? "plain" : "section";
-	const Body = panel ? "div" : Fragment;
-	const FormBody = layout === "popover" ? Fragment : "div";
 	// What the app knows, not what the browser guesses: a self-hosted server that
 	// is down looks online to `navigator`.
 	const { offline } = useSnapshot();
@@ -351,432 +346,352 @@ export function EventEditorForm({
 	// Popovers grow down; narrow sheets grow up. Keep the toggle on the
 	// anchored side of the conditional time row, with matching DOM/tab order.
 	const allDayToggle = (
-		<Row
-			className={styles.toggleRow}
-			size="compact"
-			icon={<Sun size={18} strokeWidth={1.5} />}
-			label="All day"
-			trailing={<Switch label="All day" checked={values.isAllDay} disabled={saving} onCheckedChange={changeAllDay} />}
-		/>
+		<div className="flex min-h-control items-center gap-2">
+			<Sun aria-hidden="true" className="w-5 flex-none text-foreground-secondary" size={18} strokeWidth={1.5} />
+			<span aria-hidden="true" className="flex-1 text-13 text-foreground">All day</span>
+			<Switch label="All day" checked={values.isAllDay} disabled={saving} onCheckedChange={changeAllDay} />
+		</div>
 	);
 
-  const attendanceToggle = (
-					<Row
-						className={styles.toggleRow}
-						size="compact"
-						icon={<UsersRound size={18} strokeWidth={1.5} />}
-						label={<span className={styles.fieldLabel}><label htmlFor={`${id}-attendance`}>Allow attendance</label> <HelpTooltip label="Help for Allow attendance">Guests can respond to this event.</HelpTooltip></span>}
-						trailing={<Switch id={`${id}-attendance`} label="Allow attendance" checked={values.hasAttendees} disabled={saving} onCheckedChange={hasAttendees => patch({ hasAttendees })} />}
-					/>
-  );
+	const attendanceToggle = (
+		<div className="flex min-h-control items-center gap-2">
+			<UsersRound aria-hidden="true" className="w-5 flex-none text-foreground-secondary" size={18} strokeWidth={1.5} />
+			<span className="flex flex-1 items-center gap-1">
+				<Label htmlFor={`${id}-attendance`}>Allow attendance</Label>
+				<HelpTooltip label="Help for Allow attendance">Guests can respond to this event.</HelpTooltip>
+			</span>
+			<Switch id={`${id}-attendance`} label="Allow attendance" checked={values.hasAttendees} disabled={saving} onCheckedChange={hasAttendees => patch({ hasAttendees })} />
+		</div>
+	);
 
 	const timeModelFields = values.timeEditable && expanded ? (
-			<>
-				<Field label="Time model" help="The selected model interprets the event dates and times. Changing it may change when the event occurs." variant={fieldVariant}>
-					<Select label="Time model" value={values.timeKind === "legacy-unknown" ? "" : values.timeKind ?? ""} placeholder="Not specified" disabled={saving}
-						options={[{ value: "zoned", label: "Event time zone" }, { value: "floating", label: "Floating local time" }, { value: "all-day", label: "All-day dates" }]}
-						onChange={kind => changeTimeModel(chooseEventTimeKind(values, kind as "zoned" | "floating" | "all-day"))} />
-				</Field>
-				{values.timeKind === "zoned" && <Field label="Event time zone" help="Uses the dates and times shown in the editor." variant={fieldVariant}>
-					<TimeZonePicker value={values.timeZone ?? ""} disabled={saving} onChange={value => patch({ timeZone: value, timeLabel: value })} />
-				</Field>}
-			</>
+		<>
+			<Field label="Time model" help="The selected model interprets the event dates and times. Changing it may change when the event occurs.">
+				<Select label="Time model" value={values.timeKind === "legacy-unknown" ? "" : values.timeKind ?? ""} placeholder="Not specified" disabled={saving}
+					options={[{ value: "zoned", label: "Event time zone" }, { value: "floating", label: "Floating local time" }, { value: "all-day", label: "All-day dates" }]}
+					onChange={kind => changeTimeModel(chooseEventTimeKind(values, kind as "zoned" | "floating" | "all-day"))} />
+			</Field>
+			{values.timeKind === "zoned" && <Field label="Event time zone" help="Uses the dates and times shown in the editor.">
+				<TimeZonePicker value={values.timeZone ?? ""} disabled={saving} onChange={value => patch({ timeZone: value, timeLabel: value })} />
+			</Field>}
+		</>
 	) : null;
+
+	const endMin = values.endDate === values.date
+		? minutesToTime(Math.min(LAST_MINUTE, (timeToMinutes(values.startTime) ?? 0) + TIME_SNAP_MINUTES))
+		: undefined;
+	const pageLayout = layout === "page";
 
 	return (
 		<form
 			aria-busy={saving || undefined}
-			className={styles.form}
+			className="flex min-h-0 min-w-0 flex-1 flex-col"
 			data-compact={!expanded ? "" : undefined}
 			data-layout={layout}
 			onKeyDown={handleKeyDown}
 			onSubmit={handleSubmit}
 		>
-			<FormBody {...(layout !== "popover" ? { className: styles.formBody } : {})}>
-			<Field
-				className={styles.titleField}
-				label="Event title"
-				labelHidden
-				variant={fieldVariant}
-			>
-				<input
-					autoFocus
-					disabled={saving}
-					placeholder="Event title"
-					ref={titleRef}
-					value={values.title}
-					onChange={(event) => patch({ title: event.target.value })}
-				/>
-			</Field>
-
-			<section
-				aria-label="When"
-				className={`${styles.section} ${styles.whenSection}`}
-				data-editor-section="when"
-			>
-			{layout === "popover" && timeModelFields}
-			{!panel && values.timeLabel && <p className={styles.timeContext}>{values.timeLabel}</p>}
-				<div className={styles.pickerRow}>
-					<CalendarDays aria-hidden="true" size={17} strokeWidth={1.5} />
-					<span aria-hidden="true" className={styles.pickerLabel}>
-						Date
-					</span>
-					<Field label="Date" labelHidden><DatePicker
-						className={styles.pickerValue}
+			<div data-editor-body="" className={cn(
+				"flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto overscroll-contain px-6 pt-1 pb-5",
+				// Expanded: title across, then three columns that each scroll on their
+				// own, so the calendar list gives way instead of the layer.
+				pageLayout && "md:grid md:grid-cols-3 md:grid-rows-header-body md:gap-x-8 md:overflow-hidden",
+			)}>
+				<Field className={cn(pageLayout && "md:col-span-3")} label="Event title" labelHidden>
+					<Input
+						variant="title"
+						autoFocus
 						disabled={saving}
-						label="Date"
-						value={values.date}
-						weekStartsOn={weekStartsOn}
-						onChange={(date) =>
-							patch({
-								date,
-								...(!values.isAllDay && values.endDate === values.date
-									? { endDate: date }
-									: {}),
-							})
-						}
-					/></Field>
-				</div>
+						placeholder="Event title"
+						ref={titleRef}
+						value={values.title}
+						onChange={(event) => patch({ title: event.target.value })}
+					/>
+				</Field>
 
-				{!narrow && !panel ? allDayToggle : null}
-
-				{!values.isAllDay ? (
-					<div className={styles.timeRow}>
-						<Clock3 aria-hidden="true" size={17} strokeWidth={1.5} />
-						<span
-							aria-hidden="true"
-							className={`${styles.pickerLabel} ${styles.timeLabel}`}
-						>
-							Time
-						</span>
-						<Body {...(panel ? { className: styles.timeRange } : {})}>
-						<Field label="Start time" labelHidden><TimePicker
-							disabled={saving}
-							label="Start time"
-							max={LATEST_START_TIME}
-							timeFormat={timeFormat}
-							value={values.startTime}
-							onChange={changeStartTime}
-						/></Field>
-						<span className={styles.timeSeparator}>to</span>
-						<Field label="End time" labelHidden><TimePicker
-							disabled={saving}
-							label="End time"
-							max={LATEST_END_TIME}
-							min={
-								values.endDate === values.date
-									? minutesToTime(
-											Math.min(
-												LAST_MINUTE,
-												(timeToMinutes(values.startTime) ?? 0) + TIME_SNAP_MINUTES,
-											),
-										)
-									: undefined
-							}
-							timeFormat={timeFormat}
-							value={values.endTime}
-							onChange={(endTime) => patch({ endTime })}
-						/></Field>
-						</Body>
+				<section aria-label="When" className={cn("grid min-w-0 content-start gap-3", pageLayout && "md:min-h-0 md:overflow-y-auto")} data-editor-section="when">
+					{layout === "popover" ? timeModelFields : null}
+					<div className="flex min-w-0 items-center gap-2">
+						<CalendarDays aria-hidden="true" className="w-5 flex-none text-foreground-secondary" size={18} strokeWidth={1.5} />
+						<span aria-hidden="true" className="w-12 flex-none text-13 text-foreground-secondary">Starts</span>
+						{/* Date and time share a line while both fit; in a narrow column the
+						    time moves under the date instead of the date being cut to one letter. */}
+						<div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+						<Field className="min-w-40 flex-1" label="Date" labelHidden>
+							<DatePicker
+								disabled={saving}
+								label="Date"
+								value={values.date}
+								weekStartsOn={weekStartsOn}
+								onChange={(date) =>
+									patch({
+										date,
+										...(!values.isAllDay && values.endDate === values.date
+											? { endDate: date }
+											: {}),
+									})
+								}
+							/>
+						</Field>
+						{!values.isAllDay ? (
+							<Field className="w-32 flex-none" label="Start time" labelHidden>
+								<TimePicker
+									disabled={saving}
+									label="Start time"
+									max={LATEST_START_TIME}
+									timeFormat={timeFormat}
+									value={values.startTime}
+									onChange={changeStartTime}
+								/>
+							</Field>
+						) : null}
+						</div>
 					</div>
-				) : null}
-				{/* The panel displays an exclusive all-day end; drafts and writes keep
-				    Musubi's inclusive last date, just like grid selections. */}
-				<div className={styles.pickerRow}>
-					<CalendarDays aria-hidden="true" size={17} strokeWidth={1.5} />
-					<span className={`${styles.pickerLabel} ${styles.endDateLabel}`}>
-                        Ends
-                        {panel && values.isAllDay ? <HelpTooltip label="Help for end date">The end date is not included. A one-day event ends on the following date.</HelpTooltip> : null}
-                    </span>
-					<Field label="Ends" labelHidden><DatePicker
-						className={styles.pickerValue}
-						disabled={saving}
-						label="Ends"
-						min={panel && values.isAllDay ? shiftDayKey(values.date, 1) : values.date}
-						value={panel && values.isAllDay ? shiftDayKey(values.endDate, 1) : values.endDate}
-						weekStartsOn={weekStartsOn}
-						onChange={(endDate) => patch({ endDate: panel && values.isAllDay ? shiftDayKey(endDate, -1) : endDate })}
-					/></Field>
-				</div>
+					{/* The panel displays an exclusive all-day end; drafts and writes keep
+					    Musubi's inclusive last date, just like grid selections. */}
+					<div className="flex min-w-0 items-center gap-2">
+						<span aria-hidden="true" className="w-5 flex-none" />
+						<span className="flex w-12 flex-none items-center text-13 text-foreground-secondary">
+							<span aria-hidden="true">Ends</span>
+							{panel && values.isAllDay ? <HelpTooltip label="Help for end date">The end date is not included. A one-day event ends on the following date.</HelpTooltip> : null}
+						</span>
+						<div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+						<Field className="min-w-40 flex-1" label="Ends" labelHidden>
+							<DatePicker
+								disabled={saving}
+								label="Ends"
+								min={panel && values.isAllDay ? shiftDayKey(values.date, 1) : values.date}
+								value={panel && values.isAllDay ? shiftDayKey(values.endDate, 1) : values.endDate}
+								weekStartsOn={weekStartsOn}
+								onChange={(endDate) => patch({ endDate: panel && values.isAllDay ? shiftDayKey(endDate, -1) : endDate })}
+							/>
+						</Field>
+						{!values.isAllDay ? (
+							<Field className="w-32 flex-none" label="End time" labelHidden>
+								<TimePicker
+									disabled={saving}
+									label="End time"
+									max={LATEST_END_TIME}
+									min={endMin}
+									timeFormat={timeFormat}
+									value={values.endTime}
+									onChange={(endTime) => patch({ endTime })}
+								/>
+							</Field>
+						) : null}
+						</div>
+					</div>
 
+					{allDayToggle}
 
+					{values.timeLabel ? <p className="pl-7 text-12 text-muted-foreground">{values.timeLabel}</p> : null}
 
-				{narrow || panel ? allDayToggle : null}
-
-				{panel && values.timeLabel ? <p className={styles.timeContext}>{values.timeLabel}</p> : null}
+					{expanded ? (
+						<div className="flex min-w-0 items-start gap-2">
+							<Repeat2 aria-hidden="true" className="mt-2.5 w-5 flex-none text-foreground-secondary" size={18} strokeWidth={1.5} />
+							<span aria-hidden="true" className="mt-2.5 w-12 flex-none text-13 text-foreground-secondary">Repeat</span>
+							<Field className="min-w-0 flex-1" label="Repeat" labelHidden>
+								<RecurrenceEditor
+									rdateMaster={rdateMaster}
+									weekStartsOn={weekStartsOn}
+									allDay={values.timeKind === "all-day"}
+									date={values.date}
+									disabled={saving}
+									value={values.recurrence}
+									onChange={(recurrence) => patch({ recurrence })}
+								/>
+							</Field>
+						</div>
+					) : null}
+					{expanded && pageLayout ? attendanceToggle : null}
+					{pageLayout && timeModelFields ? <FieldGroup>{timeModelFields}</FieldGroup> : null}
+				</section>
 
 				{expanded ? (
-					<Field
-						className={`${styles.inlineField} ${styles.recurrenceField}`}
-						label={
-							<span className={styles.fieldLabel}>
-								<Repeat2 aria-hidden="true" size={16} strokeWidth={1.5} />
-								Repeat
-							</span>
-						}
-						layout="inline"
-						variant={fieldVariant}
-					>
-						<RecurrenceEditor
-                            rdateMaster={rdateMaster}
-                            weekStartsOn={weekStartsOn}
-							allDay={values.timeKind === "all-day"}
-							date={values.date}
-							disabled={saving}
-							value={values.recurrence}
-							onChange={(recurrence) => patch({ recurrence })}
-						/>
-					</Field>
-				) : null}
-				{expanded && layout === "page" ? attendanceToggle : null}
-                {layout === "page" && timeModelFields ? <div className={styles.pageTimeSettings}>
-					{timeModelFields}
-				</div> : null}
-			</section>
-
-			{expanded ? (
-				<section
-					aria-label="Details"
-					className={`${styles.section} ${styles.detailsSection}`}
-					data-editor-section="details"
-				>
-                    {layout !== "page" ? attendanceToggle : null}
-					<Field
-						className={panel ? styles.detailField : undefined}
-						label={
-							<span className={styles.fieldLabel}>
-								<MapPin aria-hidden="true" size={16} strokeWidth={1.5} />
-								Location
-							</span>
-						}
-						variant={fieldVariant}
-					>
-						<input
-							disabled={saving}
-							placeholder="Add location"
-							value={values.location}
-							onChange={(event) => patch({ location: event.target.value })}
-						/>
-					</Field>
-					<Field
-						className={panel ? styles.detailField : undefined}
-						label={
-							<span className={styles.fieldLabel}>
-								<Link2 aria-hidden="true" size={16} strokeWidth={1.5} />
-								Link
-							</span>
-						}
-						variant={fieldVariant}
-					>
-						<input
-							disabled={saving}
-							placeholder="Add link"
-							type="url"
-							value={values.url}
-							onChange={(event) => patch({ url: event.target.value })}
-						/>
-					</Field>
-					<Field
-						className={`${styles.descriptionField} ${panel ? styles.detailField : ""}`}
-						label={panel ? <span className={styles.fieldLabel}><FileText size={18} strokeWidth={1.5} aria-hidden="true" />Description</span> : "Description"}
-						variant={fieldVariant}
-					>
-						<textarea
-							disabled={saving}
-							placeholder="Add notes"
-							rows={panel ? 8 : 3}
-							value={values.description}
-							onChange={(event) => patch({ description: event.target.value })}
-						/>
-					</Field>
-				</section>
-			) : null}
-
-			<section
-				aria-labelledby={`${id}-calendar-heading`}
-				className={`${styles.section} ${styles.calendarSection}`}
-				data-editor-section="calendars"
-			>
-				<SectionLabel className={styles.sectionLabel} id={`${id}-calendar-heading`}>
-					<span className={styles.fieldLabel}>Event calendars <HelpTooltip label="Help for Event calendars">Choose where the event appears. Its home calendar owns updates, invitations, and the event color.</HelpTooltip></span>
-				</SectionLabel>
-
-				{calendarDisclosure ? (
-					<button
-						aria-controls={`${id}-calendar-list`}
-						aria-expanded={calendarPickerOpen}
-						aria-label={`Choose calendars. ${
-							selectedCalendar?.name ?? "No calendar"
-						} is home. Event appears in ${calendarCount} ${
-							calendarCount === 1 ? "calendar" : "calendars"
-						}.`}
-						className={styles.calendarSummary}
-						disabled={saving}
-						type="button"
-						onClick={() => setCalendarPickerOpen((current) => !current)}
-					>
-						<AccountMark size="compact" flavor={selectedCalendar ? providerFlavor(selectedCalendar) : null} color={selectedCalendar?.color ?? DEFAULT_CALENDAR_COLOR} />
-						<span className={styles.calendarSummaryCopy}>
-							<strong><span className={styles.calendarName}>{selectedCalendar?.name ?? "Choose a calendar"}</span></strong>
-							{/* The "home" idea only means something once an event is in more
-                  than one calendar. On its own it read as a place, next to
-                  "Only calendar", which read as a restriction — beside a button
-                  that says Change. */}
-							<span>
-								{calendarCount > 1
-									? `Home calendar · in ${calendarCount} calendars altogether`
-									: "Appears in this calendar only"}
-							</span>
-						</span>
-						<span className={styles.calendarSummaryAction}>
-							Change
-							<ChevronDown
-								aria-hidden="true"
-								data-open={calendarPickerOpen ? "" : undefined}
-								size={15}
-								strokeWidth={1.6}
+					<section aria-label="Details" className={cn("flex min-w-0 flex-col gap-5", pageLayout && "md:min-h-0 md:overflow-y-auto")} data-editor-section="details">
+						{!pageLayout ? attendanceToggle : null}
+						<Field label="Location">
+							<Input
+								disabled={saving}
+								placeholder="Add location"
+								value={values.location}
+								onChange={(event) => patch({ location: event.target.value })}
 							/>
-						</span>
-					</button>
+						</Field>
+						<Field label="Link">
+							<Input
+								disabled={saving}
+								placeholder="Add link"
+								type="url"
+								value={values.url}
+								onChange={(event) => patch({ url: event.target.value })}
+							/>
+						</Field>
+						<Field label="Description">
+							<Textarea
+								disabled={saving}
+								placeholder="Add notes"
+								rows={panel || pageLayout ? 8 : 3}
+								value={values.description}
+								onChange={(event) => patch({ description: event.target.value })}
+							/>
+						</Field>
+					</section>
 				) : null}
 
-				{showCalendarList ? (
-					<fieldset
-						className={styles.calendarPlacement}
-						data-ui="calendar-placement"
-						id={`${id}-calendar-list`}
-					>
-						<legend className={styles.visuallyHidden}>
-							Calendars for this event
-						</legend>
+				<section
+					aria-labelledby={`${id}-calendar-heading`}
+					className={cn("flex min-w-0 flex-col gap-3", pageLayout && "md:min-h-0")}
+					data-editor-section="calendars"
+				>
+					<div className="flex min-h-5 items-center gap-1">
+						<SectionLabel id={`${id}-calendar-heading`} level={3}>Calendars</SectionLabel>
+						<HelpTooltip label="Help for Calendars">Choose where the event appears. Its home calendar owns updates, invitations, and the event color.</HelpTooltip>
+					</div>
 
+					{calendarDisclosure ? (
+						<ItemGroup>
+							<RowAction
+								aria-controls={`${id}-calendar-list`}
+								aria-expanded={calendarPickerOpen}
+								aria-label={`Choose calendars. ${
+									selectedCalendar?.name ?? "No calendar"
+								} is home. Event appears in ${calendarCount} ${
+									calendarCount === 1 ? "calendar" : "calendars"
+								}.`}
+								detail={calendarCount > 1 ? `Home · in ${calendarCount} calendars` : "This calendar only"}
+								disabled={saving}
+								icon={<AccountMark size="compact" flavor={selectedCalendar ? providerFlavor(selectedCalendar) : null} color={selectedCalendar?.color ?? DEFAULT_CALENDAR_COLOR} />}
+								label={<span className="truncate">{selectedCalendar?.name ?? "Choose a calendar"}</span>}
+								trailing={
+									<span className="inline-flex items-center gap-1 text-12 text-muted-foreground">
+										Change
+										<ChevronDown aria-hidden="true" className={cn("size-4 transition-transform duration-fast", calendarPickerOpen && "rotate-180")} strokeWidth={1.6} />
+									</span>
+								}
+								onClick={() => setCalendarPickerOpen((current) => !current)}
+							/>
+						</ItemGroup>
+					) : null}
 
-						{calendarGroups.map((group) => (
-							<div className={styles.calendarGroup} key={group.key}>
-								{calendarGroups.length > 1 ? (
-									<div className={styles.calendarGroupHeading}>
-										<strong>
+					{showCalendarList ? (
+						<fieldset
+							className={cn("m-0 flex min-w-0 flex-col gap-3 border-0 p-0 *:shrink-0", calendarDisclosure && !panel && "max-h-80 overflow-y-auto overscroll-contain", pageLayout && "md:min-h-0 md:flex-1 md:overflow-y-auto md:overscroll-contain")}
+							data-ui="calendar-placement"
+							id={`${id}-calendar-list`}
+						>
+							<legend className="sr-only">Calendars for this event</legend>
+
+							{calendarGroups.map((group) => (
+								<ItemGroup key={group.key}>
+									{calendarGroups.length > 1 ? (
+										<div className="flex min-w-0 items-center gap-2 px-3 py-2 text-12 font-medium text-foreground-secondary">
 											<AccountMark size="compact" flavor={group.flavor} />
-											<span className={styles.calendarGroupTitle}>{group.key === "musubi" ? localAccountName?.trim() || group.title : group.title}</span>
+											<span className="truncate">{group.key === "musubi" ? localAccountName?.trim() || group.title : group.title}</span>
 											{group.key === "musubi" && localAccountName?.trim() ? (
-												<span className={styles.visuallyHidden}> · Musubi</span>
+												<span className="sr-only"> · Musubi</span>
 											) : null}
 											{group.flavor && group.title !== group.detail ? (
-												<span className={styles.visuallyHidden}> · {group.detail}</span>
+												<span className="sr-only"> · {group.detail}</span>
 											) : null}
-										</strong>
-									</div>
-								) : null}
-								<ul>
-									{group.calendars.map((calendar) => {
-										const checked = selectedCalendarIds.has(calendar.id);
-										const isHome = values.calendarId === calendar.id;
-										const compatible = calendarServer(calendar) === homeServer;
-										const membershipLocked =
-											saving || isHome || !compatible || !can(calendar.role, "editEvents");
-										const homeLocked =
-											saving || calendarLocked || !can(calendar.role, "editEvents");
-										const detail = !compatible
-											? "Choose as home to switch Musubi server"
-											: calendarGroups.length > 1 && calendar.provider ? null : calendarSourceDetail(calendar);
+										</div>
+									) : null}
+									<ul className="divide-y divide-border-subtle">
+										{group.calendars.map((calendar) => {
+											const checked = selectedCalendarIds.has(calendar.id);
+											const isHome = values.calendarId === calendar.id;
+											const compatible = calendarServer(calendar) === homeServer;
+											const membershipLocked =
+												saving || isHome || !compatible || !can(calendar.role, "editEvents");
+											const homeLocked =
+												saving || calendarLocked || !can(calendar.role, "editEvents");
+											const detail = !compatible
+												? "Choose as home to switch Musubi server"
+												: calendarGroups.length > 1 && calendar.provider ? null : calendarSourceDetail(calendar);
 
-										return (
-											<li className={styles.calendarPlacementRow} key={calendar.id}>
-												<label
-													className={styles.calendarMembership}
-													data-disabled={membershipLocked ? "" : undefined}
-													data-home={isHome ? "" : undefined}
-												>
-													<input
+											return (
+												<li className="flex min-h-row min-w-0 items-center gap-2 px-3" key={calendar.id}>
+													<Checkbox
 														aria-label={`Show event in ${calendar.name}`}
 														checked={checked}
+														className="min-w-0 flex-1"
+														description={detail ?? undefined}
 														disabled={membershipLocked}
-														type="checkbox"
-														onChange={(event) =>
-															changeCalendarMembership(calendar, event.target.checked)
-														}
+														label={<span className="flex min-w-0 items-center gap-2 text-foreground"><CalendarDot color={calendar.color} /><span className="truncate">{calendar.name}</span></span>}
+														onChange={(event) => changeCalendarMembership(calendar, event.target.checked)}
 													/>
-													<span aria-hidden="true" className={styles.calendarMembershipBox}>
-														{checked ? <Check size={12} strokeWidth={2.2} /> : null}
-													</span>
-													<span className={styles.calendarPlacementCopy}>
-														<strong><CalendarDot color={calendar.color} /><span className={styles.calendarName}>{calendar.name}</span></strong>
-														{detail ? <span>{detail}</span> : null}
-													</span>
-												</label>
 
-												{calendarLocked ? (
-													isHome ? (
-														<span
-															aria-label="Home calendar"
-															className={styles.homeMark}
-															role="img"
-														>
-															<House aria-hidden="true" size={14} strokeWidth={1.7} />
-														</span>
+													{calendarLocked ? (
+														isHome ? (
+															<span aria-label="Home calendar" className="grid size-10 flex-none place-content-center text-foreground-secondary" role="img">
+																<House aria-hidden="true" size={14} strokeWidth={1.7} />
+															</span>
+														) : (
+															<span aria-hidden="true" className="size-10 flex-none" />
+														)
 													) : (
-														<span aria-hidden="true" />
-													)
-												) : (
-													<label
-														className={styles.homeChoice}
-														data-checked={isHome ? "" : undefined}
-														data-disabled={homeLocked ? "" : undefined}
-													>
-														<input
-															aria-label={`${calendar.name} as home calendar`}
-															checked={isHome}
-															disabled={homeLocked}
-															name={`${id}-home-calendar`}
-															type="radio"
-															value={calendar.id}
-															onChange={() => changeHomeCalendar(calendar)}
-														/>
-														<span aria-hidden="true">
-															<House size={14} strokeWidth={1.7} />
-														</span>
-														<span className={styles.visuallyHidden}>
-															{isHome ? "Home" : "Make home"}
-														</span>
-													</label>
-												)}
-											</li>
-										);
-									})}
-								</ul>
-							</div>
-						))}
-					</fieldset>
+														<label className={cn("relative grid size-10 flex-none place-content-center rounded-control", homeLocked ? "cursor-not-allowed opacity-50" : "cursor-pointer")}>
+															<input
+																aria-label={`${calendar.name} as home calendar`}
+																checked={isHome}
+																className="peer absolute inset-0 m-0 size-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+																disabled={homeLocked}
+																name={`${id}-home-calendar`}
+																type="radio"
+																value={calendar.id}
+																onChange={() => changeHomeCalendar(calendar)}
+															/>
+															<span aria-hidden="true" className="grid size-7 place-content-center rounded-full border border-border text-foreground-secondary transition-colors duration-fast peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-shu">
+																<House size={14} strokeWidth={1.7} />
+															</span>
+															<span className="sr-only">{isHome ? "Home" : "Make home"}</span>
+														</label>
+													)}
+												</li>
+											);
+										})}
+									</ul>
+								</ItemGroup>
+							))}
+						</fieldset>
+					) : null}
+
+					{placementMessage ? (
+						<span aria-live="polite" className="sr-only" role="status">
+							{placementMessage}
+						</span>
+					) : null}
+				</section>
+
+				{panel && timeModelFields ? (
+					<section aria-labelledby={`${id}-time-settings`} className="flex flex-col gap-3">
+						<div className="flex items-center gap-2">
+							<Globe2 aria-hidden="true" className="w-5 flex-none text-foreground-secondary" size={18} strokeWidth={1.5} />
+							<SectionLabel id={`${id}-time-settings`} level={3}>Time settings</SectionLabel>
+						</div>
+						<FieldGroup>{timeModelFields}</FieldGroup>
+					</section>
 				) : null}
 
-				{placementMessage ? (
-					<span aria-live="polite" className={styles.visuallyHidden} role="status">
-						{placementMessage}
-					</span>
+				{error ? (
+					<InlineError className={cn(pageLayout && "md:col-span-3")} requestId={error.requestId}>{error.message}</InlineError>
 				) : null}
-			</section>
+			</div>
 
-			{panel && timeModelFields ? <section className={`${styles.section} ${styles.timeSettings}`} aria-labelledby={`${id}-time-settings`}>
-				<div className={styles.settingsHeading}><Globe2 aria-hidden="true" size={18} strokeWidth={1.5} /><SectionLabel id={`${id}-time-settings`}>Time settings</SectionLabel></div>
-				{timeModelFields}
-			</section> : null}
-
-			{error ? (
-				<div className={styles.formError} role="alert">
-					<p>{error.message}</p>
-					{error.requestId ? <span>Request ID: {error.requestId}</span> : null}
-				</div>
-			) : null}
-
-			</FormBody>
-
-			<div className={styles.actions}>
-                {expanded && onExpand && expandActionContainer ? createPortal(
-                  <IconButton label={onCollapse ? "Collapse event editor" : "Expand event editor"} size="compact" disabled={saving} onClick={onCollapse ?? handleExpand}>
-                    {onCollapse ? <Minimize2 aria-hidden="true" size={17} strokeWidth={1.6} /> : <Maximize2 aria-hidden="true" size={17} strokeWidth={1.6} />}
-                  </IconButton>,
-                  expandActionContainer,
-                ) : null}
+			<div className="mb-safe-bottom flex flex-none flex-wrap items-center justify-end gap-2 border-t border-border-subtle px-6 py-4">
+				{expanded && onExpand && expandActionContainer ? createPortal(
+					<Button
+						aria-label={onCollapse ? "Collapse event editor" : "Expand event editor"}
+						title={onCollapse ? "Collapse event editor" : "Expand event editor"}
+						disabled={saving}
+						size="icon-compact"
+						variant="ghost"
+						onClick={onCollapse ?? handleExpand}
+					>
+						{onCollapse ? <Minimize2 aria-hidden="true" strokeWidth={1.6} /> : <Maximize2 aria-hidden="true" strokeWidth={1.6} />}
+					</Button>,
+					expandActionContainer,
+				) : null}
 				{expanded ? (
 					<Button disabled={saving} variant="secondary" onClick={onCancel}>
 						Cancel
@@ -784,17 +699,13 @@ export function EventEditorForm({
 				) : (
 					// One disclosure, in place: the draft carries over because it is the
 					// same form state, not a second editor.
-					<Button
-						disabled={saving}
-						variant="secondary"
-						onClick={handleExpand}
-					>
+					<Button className="mr-auto" disabled={saving} variant="ghost" onClick={handleExpand}>
 						More options
 					</Button>
 				)}
 				{/* The form stays open and keeps everything typed — a draft is worth
-            more than a cleared screen — but the button says why it cannot go
-            (`07-realtime-offline-federation.md:103`). */}
+				    more than a cleared screen — but the button says why it cannot go
+				    (`07-realtime-offline-federation.md:103`). */}
 				<Button
 					disabled={offline}
 					loading={saving}

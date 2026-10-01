@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
 import { DESKTOP_MODES, MOBILE_MODES } from "../../../.storybook/modes";
-import { Disclosure } from "~/ui/Disclosure";
-import { Row } from "~/ui/Row";
-import { SettingsSection } from "~/ui/SettingsSection";
+import { Disclosure } from "~/components/ui/disclosure";
+import { Row } from "~/components/ui/row";
+import { SettingsSection } from "~/components/ui/settings-section";
 import { AccountMark } from "./ProviderIcon";
 import { fixtureCalendars } from "../fixtures";
 
@@ -24,7 +24,7 @@ type Story = StoryObj<typeof meta>;
 
 export const AccountAndInspectorRows: Story = {
   parameters: { chromatic: { modes: { ...DESKTOP_MODES, ...MOBILE_MODES } } },
-  render: () => <div className="sb-settings-preview">
+  render: () => <div className="grid w-full max-w-default gap-6 rounded-sheet border border-border-subtle bg-canvas p-6">
     <SettingsSection title="Connected accounts">
       {providers.map(provider => <Row key={provider.flavor} icon={<AccountMark flavor={provider.flavor} />} label={provider.label} detail={provider.account} />)}
     </SettingsSection>
@@ -38,7 +38,7 @@ export const AccountAndInspectorRows: Story = {
 
 export const CalendarPigments: Story = {
   parameters: { chromatic: { modes: { ...DESKTOP_MODES, ...MOBILE_MODES } } },
-  render: () => <div className="sb-settings-preview">
+  render: () => <div className="grid w-full max-w-default gap-6 rounded-sheet border border-border-subtle bg-canvas p-6">
     <SettingsSection title="Calendar colours">
       {providers.map((provider, index) => <Row
         key={provider.flavor}

@@ -1,6 +1,5 @@
 import { discardEventAlarm } from "~/api/resources";
 import { caldavAlarmDescription } from "@musubi/calendar";
-import styles from "./styles/event-delivery.module.css";
 import { EventMutationError } from "@musubi/types";
 import type {
   EventDeliveryConflict,
@@ -17,7 +16,7 @@ import {
   providerRsvpResponseLabel,
 } from "@musubi/calendar";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { ApiError } from "~/api/http";
 import { getServerOrigin, queryKeys } from "~/api/query-keys";
@@ -27,15 +26,15 @@ import {
   resolveEventDelivery,
   retryEventDelivery,
 } from "~/api/resources";
-import { Button } from "~/ui/Button";
-import { Dialog, DialogInfo } from "~/ui/Dialog";
-import {
-  ConfirmationDialog,
-  ConfirmationNotice,
-} from "~/ui/ConfirmationDialog";
-import { InlineError } from "~/ui/InlineError";
-import { Row } from "~/ui/Row";
-import { SettingsSection } from "~/ui/SettingsSection";
+import { Button } from "~/components/ui/button";
+import { ConfirmationDialog } from "~/components/ui/confirmation-dialog";
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { HelpTooltip } from "~/components/ui/help-tooltip";
+import { InlineError } from "~/components/ui/inline-error";
+import { ItemGroup } from "~/components/ui/item";
+import { Row } from "~/components/ui/row";
+import { SettingsSection } from "~/components/ui/settings-section";
+import { focusDialogBody } from "./dialog-focus";
 
 type Props = {
   eventId: string;
@@ -151,7 +150,7 @@ export function EventDeliveryDialog({
 
   return (
     <div
-      className={styles.layerBoundary}
+      className="contents"
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}
@@ -161,43 +160,36 @@ export function EventDeliveryDialog({
         onOpenChange={(open) => {
           if (!open && !busyRef.current) onClose();
         }}
-        title="Delivery"
-        headerActions={<DialogInfo label="About delivery status" title="Delivery status">Status of saved changes. Unsaved edits in a form are not included.</DialogInfo>}
-        closeLabel="Close delivery"
-        bodyLayout="flush"
-        returnFocus={returnFocus}
-        footer={
-          <Button
-            ref={refreshRef}
-            variant="secondary"
-            disabled={busy || query.isFetching}
-            onClick={() => void query.refetch()}
-          >
-            Refresh status
-          </Button>
-        }
       >
+        <DialogContent onOpenAutoFocus={focusDialogBody} size="form" closeLabel="Close delivery" returnFocus={returnFocus} aria-describedby={undefined}>
+        <DialogHeader>
+          <div className="flex items-center gap-1">
+            <DialogTitle>Delivery</DialogTitle>
+            <HelpTooltip label="About delivery status">Status of saved changes. Unsaved edits in a form are not included.</HelpTooltip>
+          </div>
+        </DialogHeader>
+        <DialogBody>
+        {query.isError ? (
+          <InlineError>
+            Could not verify delivery. Refresh when the connection is
+            available.
+          </InlineError>
+        ) : null}
+        {error ? <InlineError>{error}</InlineError> : null}
+        {/* A deleted event keeps only its delivery records; the heading says which. */}
         <SettingsSection
-          title="Destinations"
-          description={
-            query.data?.localRevision != null
-              ? "Saved version in Musubi"
-              : "Retained delivery records"
+          title={
+            query.data && query.data.localRevision == null
+              ? "Retained delivery records"
+              : "Destinations"
           }
         >
           {query.isPending ? <Row label="Checking delivery…" /> : null}
-          {query.isError ? (
-            <InlineError>
-              Could not verify delivery. Refresh when the connection is
-              available.
-            </InlineError>
-          ) : null}
-          {error ? <InlineError>{error}</InlineError> : null}
           {notice ? <Row role="status" label={notice} /> : null}
           {!query.isError && query.data?.targets.length === 0 ? (
             <Row
               label="No external destinations are visible"
-              detail="This does not confirm writes to any other destination."
+              detail="This does not confirm writes to other destinations."
             />
           ) : null}
           {!query.isError
@@ -208,7 +200,7 @@ export function EventDeliveryDialog({
                     key={target.targetId}
                     label={`${target.calendarName ?? "Former calendar"} · ${target.provider}`}
                     detail={
-                      <>
+                      <span className="whitespace-normal">
                         {eventDeliveryLabel(target)}.{" "}
                         {eventDeliveryExplanation(target)}
                         {target.latestRevision !== target.revision
@@ -223,7 +215,7 @@ export function EventDeliveryDialog({
                         {!target.owned
                           ? " Only the connection owner can retry or resolve it."
                           : ""}
-                      </>
+                      </span>
                     }
                     trailing={
                       <>
@@ -273,6 +265,7 @@ export function EventDeliveryDialog({
               trailing={
                 <Button
                   disabled={busy}
+                  size="compact"
                   variant="secondary"
                   onClick={() => review(reviewTarget.id, reviewTarget.trigger)}
                 >
@@ -282,6 +275,18 @@ export function EventDeliveryDialog({
             />
           ) : null}
         </SettingsSection>
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            ref={refreshRef}
+            variant="secondary"
+            disabled={busy || query.isFetching}
+            onClick={() => void query.refetch()}
+          >
+            Refresh status
+          </Button>
+        </DialogFooter>
+        </DialogContent>
       </Dialog>
       {discard ? <ConfirmationDialog open title="Discard saved alarm change" description="Stop trying to apply this saved alarm. The current CalDAV event will be read again on the next sync. This does not undo a change the calendar server may already have accepted." confirmLabel="Discard saved alarm change" closeLabel="Close discard confirmation" returnFocus={discardReturnFocus} children={<><p>The saved request remains in delivery history. No calendar server write is sent.</p>{error ? <InlineError>{error}</InlineError> : null}</>} loading={busy} onOpenChange={open => { if (!open && !busyRef.current) setDiscard(undefined); }} onConfirm={() => { const saved = discard; void run(async () => { await discardEventAlarm(eventId, saved.id, saved.revision, connectionId); await query.refetch(); discardReturnFocus.current = refreshRef.current; setDiscard(undefined); setNotice("Saved alarm change discarded. The current CalDAV event will be read on the next sync."); return true; }); }} /> : null}
       {comparison ? (
@@ -324,23 +329,23 @@ export function EventDeliveryDialog({
             })
           }
         >
-          <ConfirmationNotice icon={<AlertTriangle size={18} />}>
+          <DeliveryNotice>
             {comparison.preview.graphCreateAdoption ? "This replaces the local draft with the observed provider family. The original request remains in history. No provider write is sent." : comparison.preview.caldavAlarmResolution ? `${comparison.preview.caldavAlarmResolution.scope === "series" ? "This applies to every occurrence in the series. " : ""}This replaces only the supported alarm on the CalDAV event. Calendar apps deliver this alarm; Musubi reminders are separate and both may notify you.` : comparison.preview.scopeResolution ? (comparison.preview.scopeResolution.kind === "following-delete" ? "This removes the selected occurrence and all later occurrences from the remote series. Earlier occurrences remain. The saved deletion in Musubi remains." : comparison.preview.scopeResolution.kind === "following-create" ? "The earlier series is already saved. This finishes only the saved future series at its original destination. If the complete future series is already present, it is confirmed without another write." : comparison.preview.scopeResolution.kind === "following-update" ? "This applies the saved following changes in two steps: shorten the earlier series, then create the saved future series. Delivery may finish one step at a time; retry keeps the same future series identity." : "This removes the entire remote series, including all occurrences and exceptions. The saved deletion in Musubi remains.") : comparison.preview.rsvpResolution ? `This applies only your saved response and preserves the other current Google fields. ${providerRsvpNotice}` : comparison.preview.reminderResolution ? "This replaces your personal Google Calendar reminders. Event time, participants and Musubi reminders stay unchanged. Google Calendar sends these notifications; other apps may notify separately." : comparison.preview.action === "delete"
               ? "This removes the remote copy. The saved deletion in Musubi remains."
               : "This applies the saved version to the remote copy. Remote differences may be replaced; unsaved form edits are not sent."}
-          </ConfirmationNotice>
-          {comparison.preview.scopeResolution?.kind === "following-create" ? <Row label="Finish future series" detail={`Original start: ${comparison.preview.scopeResolution.originalStart.value}. Earlier series already saved.`} /> : comparison.preview.scopeResolution?.kind === "following-delete" ? <Row label="Delete this and following" detail={`Original start: ${comparison.preview.scopeResolution.originalStart.value}`} /> : comparison.preview.scopeResolution?.kind === "following-update" ? <Row label="Change this and following" detail={`Original start: ${comparison.preview.scopeResolution.originalStart.value}`} /> : comparison.preview.scopeResolution?.kind === "series-delete" ? <Row label="Entire series" detail="All occurrences and exceptions" /> : null}
-          {comparison.preview.rsvpResolution ? <>
+          </DeliveryNotice>
+          {comparison.preview.scopeResolution ? <ItemGroup>{comparison.preview.scopeResolution.kind === "following-create" ? <Row label="Finish future series" detail={`Original start: ${comparison.preview.scopeResolution.originalStart.value}. Earlier series already saved.`} /> : comparison.preview.scopeResolution?.kind === "following-delete" ? <Row label="Delete this and following" detail={`Original start: ${comparison.preview.scopeResolution.originalStart.value}`} /> : comparison.preview.scopeResolution?.kind === "following-update" ? <Row label="Change this and following" detail={`Original start: ${comparison.preview.scopeResolution.originalStart.value}`} /> : comparison.preview.scopeResolution?.kind === "series-delete" ? <Row label="Entire series" detail="All occurrences and exceptions" /> : null}</ItemGroup> : null}
+          {comparison.preview.rsvpResolution ? <ItemGroup>
             <Row label="Saved Google response" detail={providerRsvpResponseLabel(comparison.preview.rsvpResolution.desired)} />
             <Row label="Current Google response" detail={providerRsvpResponseLabel(comparison.preview.rsvpResolution.remote)} />
-          </> : comparison.preview.caldavAlarmResolution ? <>
+          </ItemGroup> : comparison.preview.caldavAlarmResolution ? <ItemGroup>
             <Row label="Saved CalDAV event alarm" detail={caldavAlarmDescription(comparison.preview.caldavAlarmResolution.desired)} />
             <Row label="Current CalDAV event alarm" detail={caldavAlarmDescription(comparison.preview.caldavAlarmResolution.remote)} />
-          </> : comparison.preview.reminderResolution ? (
-            <>
+          </ItemGroup> : comparison.preview.reminderResolution ? (
+            <ItemGroup>
               <Row label="Saved Google reminders" detail={providerReminderDescription({ provider: "google", overrides: [], ...comparison.preview.reminderResolution.desired })} />
               <Row label="Current Google reminders" detail={providerReminderDescription(comparison.preview.reminderResolution.remote)} />
-            </>
+            </ItemGroup>
           ) : <>
           {comparison.preview.splitFuture ? <DeliveryContent title="Saved future series" content={comparison.preview.splitFuture} absent="Future series unavailable" /> : null}
           <DeliveryContent
@@ -379,6 +384,7 @@ function DeliveryContent({
 }) {
   return (
     <section aria-label={title} tabIndex={0}>
+      <ItemGroup>
       <Row label={title} detail={content?.title ?? absent} />
       {content ? (
         <>
@@ -420,7 +426,7 @@ function DeliveryContent({
           <Row
             size="compact"
             label="Description"
-            detail={content.description || "None"}
+            detail={<span className="whitespace-normal">{content.description || "None"}</span>}
           />
           <Row
             size="compact"
@@ -433,6 +439,17 @@ function DeliveryContent({
           />
         </>
       ) : null}
+      </ItemGroup>
     </section>
+  );
+}
+
+/** What a resolution will do, beside the comparison it resolves. */
+function DeliveryNotice({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex gap-3 rounded-control bg-warning-fill px-4 py-3 text-13 leading-normal text-foreground">
+      <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 flex-none text-warning" strokeWidth={1.8} />
+      <p className="min-w-0">{children}</p>
+    </div>
   );
 }

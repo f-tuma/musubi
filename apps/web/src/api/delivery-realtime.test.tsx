@@ -1,8 +1,8 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, QueryObserver } from "@tanstack/react-query";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, expect, it, vi } from "vitest";
-import { useServerStream } from "./realtime";
+import { refreshServerData, useServerStream } from "./realtime";
 import { getServerOrigin, queryKeys } from "./query-keys";
 
 vi.mock("~/auth/auth-client", () => ({
@@ -69,5 +69,32 @@ it("refreshes delivery after reconnect and external sync only for the current ow
   }
   unmount();
   expect(streams[0].close).toHaveBeenCalled();
+  client.clear();
+});
+
+it("manual refresh waits for every source on failure and retains other accounts and cached data", async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+  const calendars = queryKeys.calendars(getServerOrigin(), "owner");
+  const tasks = queryKeys.tasks(getServerOrigin(), "owner");
+  const other = queryKeys.tasks(getServerOrigin(), "other");
+  client.setQueryData(calendars, "saved calendars");
+  client.setQueryData(tasks, "saved tasks");
+  client.setQueryData(other, "other account");
+  let release!: () => void;
+  const failure = new Error("Server unavailable");
+  const calendarObserver = new QueryObserver(client, { queryKey: calendars, queryFn: async () => { throw failure; } });
+  const taskObserver = new QueryObserver(client, { queryKey: tasks, queryFn: () => new Promise<string>(resolve => { release = () => resolve("fresh tasks"); }) });
+  const stops = [calendarObserver.subscribe(() => {}), taskObserver.subscribe(() => {})];
+  let settled = false;
+  const refresh = refreshServerData(client, "owner").catch(error => { settled = true; return error; });
+  await waitFor(() => expect(client.getQueryState(calendars)?.error).toBe(failure));
+  expect(settled).toBe(false);
+  expect(client.getQueryData(calendars)).toBe("saved calendars");
+  expect(client.getQueryData(tasks)).toBe("saved tasks");
+  expect(client.getQueryState(other)?.isInvalidated).toBe(false);
+  release();
+  expect(await refresh).toBe(failure);
+  expect(client.getQueryData(tasks)).toBe("fresh tasks");
+  stops.forEach(stop => stop());
   client.clear();
 });

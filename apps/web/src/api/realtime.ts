@@ -1,9 +1,10 @@
 import { PageDocumentSchema, PRODUCT_VERSION, type PageDocument } from "@musubi/types";
-import { useQueryClient } from "@tanstack/react-query";
+import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { authClient, notifyAuthExpired } from "~/auth/auth-client";
 import { reconnectDelay } from "./backoff";
 import { getServerOrigin, queryKeys } from "./query-keys";
+import { acceptEventNotice, eventNoticeKey, type EventChangeNotice } from "~/notifications/model";
 
 // Merge a realtime Page into the cached list, keeping it idempotent: a strictly
 // newer revision replaces, an equal/older one is ignored. That drops the echo of
@@ -37,6 +38,25 @@ let closeActive: (() => void) | undefined;
 
 export function closeRealtimeStream() {
   closeActive?.();
+}
+
+/** Re-read account data without clearing cached data or changing the active screen. */
+export async function refreshServerData(queryClient: QueryClient, userId: string) {
+  const origin = getServerOrigin();
+  const results = await Promise.allSettled([
+    ["availability", origin, userId],
+    queryKeys.calendars(origin, userId),
+    queryKeys.tasks(origin, userId),
+    queryKeys.federated(origin, userId),
+    queryKeys.pages(origin, userId),
+    queryKeys.settings(origin, userId),
+    queryKeys.reminders(origin, userId),
+    queryKeys.announcements(origin, userId),
+    ["events", origin, userId],
+    ["delivery", origin, userId],
+  ].map(queryKey => queryClient.invalidateQueries({ queryKey }, { throwOnError: true })));
+  const failure = results.find(result => result.status === "rejected");
+  if (failure?.status === "rejected") throw failure.reason;
 }
 
 // Same-origin SSE. The browser `EventSource` can't set a bearer header, so this
@@ -87,6 +107,11 @@ export function useServerStream(userId: string) {
       } catch {
         return;
       }
+
+      const noticesKey = eventNoticeKey(origin, userId);
+      const previous = queryClient.getQueryData<EventChangeNotice[]>(noticesKey) ?? [];
+      const next = acceptEventNotice(previous, message, userId);
+      if (next !== previous) queryClient.setQueryData(noticesKey, next);
 
       switch (message.type) {
         case "page_created":
@@ -139,28 +164,6 @@ export function useServerStream(userId: string) {
       }
     }
 
-    /**
-     * Everything this stream owns, re-read from the server.
-     *
-     * Scoped to the keys the stream can change, not a blanket cache reset: a
-     * dialog's members list or an invite preview has nothing to do with a dropped
-     * connection.
-     */
-    function refresh() {
-      for (const queryKey of [
-        ["availability", origin, userId],
-        calendarsKey,
-        tasksKey,
-        federatedKey,
-        pagesKey,
-        settingsKey,
-        eventsPrefix,
-        deliveryPrefix,
-      ]) {
-        void queryClient.invalidateQueries({ queryKey });
-      }
-    }
-
     function open() {
       if (closed) return;
 
@@ -171,7 +174,7 @@ export function useServerStream(userId: string) {
         attempt = 0;
         // Also runs on the very first connect, where it costs one refetch of
         // data the queries were fetching anyway and keeps one code path.
-        refresh();
+        void refreshServerData(queryClient, userId).catch(() => undefined);
       };
 
       source.onerror = () => {

@@ -8,7 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { AnnouncementGate } from "~/calendar/components/AnnouncementDialog";
 import { signOutAndReset } from "~/offline/sign-out";
-import { RouteState } from "~/ui/RouteState";
+import { RouteState } from "~/components/route-state";
 import { AUTH_EXPIRED_EVENT, authClient } from "./auth-client";
 import { useSessionUser } from "./use-session-user";
 
@@ -79,12 +79,7 @@ export function SessionGate() {
 
   if (session.isPending) {
     return (
-      <RouteState
-        busy
-        description="Checking the session on this server."
-        eyebrow="Musubi"
-        title="Opening your calendar…"
-      />
+      <RouteState busy title="Opening your calendar…" />
     );
   }
 
@@ -96,11 +91,7 @@ export function SessionGate() {
 
   if (!session.data) {
     return (
-      <RouteState
-        busy
-        eyebrow="Session required"
-        title="Taking you to sign in…"
-      />
+      <RouteState busy title="Taking you to sign in…" />
     );
   }
 

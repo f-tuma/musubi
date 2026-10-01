@@ -1,7 +1,7 @@
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { Link, useRouter } from "@tanstack/react-router";
-import { Button, buttonClassName } from "~/ui/Button";
-import { RouteState } from "~/ui/RouteState";
+import { RouteState } from "~/components/route-state";
+import { Button } from "~/components/ui/button";
 
 export function AppErrorBoundary({ error }: ErrorComponentProps) {
   const router = useRouter();
@@ -10,22 +10,14 @@ export function AppErrorBoundary({ error }: ErrorComponentProps) {
     <RouteState
       actions={
         <>
-          <Button onClick={() => void router.invalidate()}>
-            Try again
+          <Button onClick={() => void router.invalidate()}>Try again</Button>
+          <Button asChild variant="secondary">
+            <Link to="/">Return home</Link>
           </Button>
-          <Link
-            className={buttonClassName({ variant: "secondary" })}
-            to="/"
-          >
-            Return home
-          </Link>
         </>
       }
-      description={
-        error.message || "An unexpected error interrupted the workspace."
-      }
-      eyebrow="Something came untied"
-      title="Musubi could not open this view."
+      description={error.message || "An unexpected error interrupted the workspace."}
+      title="Musubi could not open this view"
     />
   );
 }

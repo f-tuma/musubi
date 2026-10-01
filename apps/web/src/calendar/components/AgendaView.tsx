@@ -1,7 +1,7 @@
 import { isCalendarTask } from "@musubi/calendar";
 import { providerFlavor, type Calendar, type Event, type Settings } from "@musubi/types";
 import { MapPin } from "lucide-react";
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
 	AGENDA_FREE_DAYS_MIN,
 	AGENDA_GROUP_PAGE,
@@ -19,7 +19,6 @@ import {
 	type EventActionHandlers,
 } from "./EventDetailsPopover";
 import { AccountMark } from "./ProviderIcon";
-import styles from "./AgendaView.module.css";
 
 type AgendaViewProps = EventActionHandlers & {
 	anchor: Date;
@@ -109,13 +108,14 @@ export function AgendaView({
 		return () => observer.disconnect();
 	}, [groupFingerprint, groups.length, shown]);
 
+
 	return (
 		<section
-			className={styles.agendaView}
+			className="min-h-full w-full p-5"
 			aria-label={`${getAgendaLabel(anchor)} agenda`}
 			ref={rootRef}
 		>
-			<ol className={styles.agendaList}>
+			<ol className="m-0 list-none p-0">
 				{visibleGroups.map((group, groupIndex) => {
 					const previous = visibleGroups[groupIndex - 1]?.date;
 					const isNewYear =
@@ -132,7 +132,7 @@ export function AgendaView({
 						<Fragment key={group.key}>
 							{isNewYear ? (
 								<li
-									className={styles.agendaYear}
+									className="sticky top-0 z-3 flex min-h-8 items-center border-b border-border-subtle bg-canvas text-13 text-foreground-secondary"
 									aria-hidden="true"
 									data-agenda-year={group.date.getFullYear()}
 								>
@@ -140,32 +140,45 @@ export function AgendaView({
 								</li>
 							) : null}
 							{isNewMonth ? (
-								<li className={styles.agendaMonth} aria-hidden="true">
+								<li className="pt-5 pb-2 font-serif text-18" aria-hidden="true">
 									<span>{monthFormatter.format(group.date)}</span>
 								</li>
 							) : null}
 							{freeDays >= AGENDA_FREE_DAYS_MIN ? (
-								<li className={styles.agendaGap}>
+								// Indented to the events' edge: the date column plus its gap.
+								<li className="py-3 text-12 text-foreground-secondary sm:pl-32">
 									<span>{freeDays} free days</span>
 								</li>
 							) : null}
 							<li
-								className={`${styles.agendaDay} ${
-									isToday ? styles.agendaDayToday : ""
-								}`}
+								className="flex flex-col gap-3 border-b border-border-subtle py-5 sm:flex-row sm:gap-8"
 								data-agenda-date={group.key}
 							>
-								<time className={styles.agendaDate} dateTime={group.key}>
-                  <strong>{group.date.getDate()}</strong>
-                  <span>{weekdayFormatter.format(group.date)}</span>
-                  <small>{relative || shortMonthFormatter.format(group.date)}</small>
+								{/* Sticky under the year, so a long day keeps saying which day it is. */}
+								<time
+									className="sticky top-8 z-2 flex items-baseline gap-3 self-start bg-canvas pt-3 pb-2 sm:w-24 sm:flex-none sm:flex-col sm:items-start sm:gap-1 sm:pb-0"
+									dateTime={group.key}
+								>
+									<strong
+										className={
+											isToday
+												? "font-serif text-28 leading-tight font-normal text-shu"
+												: "font-serif text-28 leading-tight font-normal"
+										}
+									>
+										{group.date.getDate()}
+									</strong>
+									<span className="text-13">{weekdayFormatter.format(group.date)}</span>
+									<small className="text-12 text-foreground-secondary">
+										{relative || shortMonthFormatter.format(group.date)}
+									</small>
 								</time>
-								<div className={styles.agendaEvents}>
+								<div className="min-w-0 flex-1">
 									{group.items.map((event) => {
 										const calendar = calendarsById.get(eventHomeCalendarId(event) ?? "");
 										const eventColor = calendar?.color ?? event.color;
-                    const rangeLabel = getEventRangeLabel(event, timeFormat);
-                    const [starts, ends] = rangeLabel.split(" – ");
+										const rangeLabel = getEventRangeLabel(event, timeFormat);
+										const [starts, ends] = rangeLabel.split(" – ");
 
 										return (
 											<EventDetailsPopover
@@ -180,7 +193,8 @@ export function AgendaView({
 												{...eventActions}
 											>
 												<button
-													className={styles.agendaEvent}
+													className="flex w-full min-w-0 cursor-pointer items-start gap-4 rounded-control bg-transparent px-3 py-4 text-left text-foreground transition-colors duration-fast not-first:border-t not-first:border-border-subtle hover:bg-raised focus-inset motion-reduce:transition-none max-sm:gap-2"
+													style={{ "--pigment": eventColor } as CSSProperties}
 													type="button"
 													aria-label={`${event.title}, ${getEventDateLabel(
 														event,
@@ -190,20 +204,49 @@ export function AgendaView({
 													)}, ${calendar?.name ?? "calendar"}`}
 													data-agenda-event={event.id}
 												>
-													<span className={styles.agendaEventTime}><strong>{starts}</strong>{ends ? <span>{ends}</span> : null}</span>
-													<span
-														className={styles.agendaEventRule}
-														style={{ backgroundColor: eventColor }}
-													/>
-													<span className={styles.agendaEventCopy}>
-														<span className={styles.agendaEventTitle}>{isCalendarTask(event) && event.calendarTask.status === "completed" ? <s>{event.title}</s> : event.title}</span>
-                          <span className={styles.agendaEventMeta}>
-                            <span><AccountMark flavor={calendar ? providerFlavor(calendar) : null} color={eventColor} size="compact" />{calendar?.name ?? "Calendar"}</span>
-                            {event.location ? <><span aria-hidden="true">·</span><span><MapPin aria-hidden="true" size={13} />{event.location}</span></> : null}
-                            {isCalendarTask(event) ? <><span aria-hidden="true">·</span><span>{event.calendarTask.status === "completed" ? "Completed task" : "Task"}</span></> : null}
-                            <EventMarks event={event} />
-                          </span>
-                        </span>
+													<span className="flex w-20 flex-none flex-col gap-1 text-13 leading-normal tabular-nums max-sm:w-14">
+														<strong className="font-medium">{starts}</strong>
+														{ends ? <span className="text-12 text-foreground-secondary">{ends}</span> : null}
+													</span>
+													{/* The pigment is the rule down the copy: colour marks the
+                              item without filling it. */}
+													<span className="min-w-0 flex-1 border-l-3 border-pigment pl-4 max-sm:pl-3">
+														<span className="block text-15 leading-normal font-medium wrap-anywhere">
+															{isCalendarTask(event) && event.calendarTask.status === "completed" ? (
+																<s className="text-foreground-secondary">{event.title}</s>
+															) : (
+																event.title
+															)}
+														</span>
+														<span className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-12 leading-snug text-foreground-secondary">
+															<span className="inline-flex min-w-0 items-center gap-1 wrap-anywhere">
+																<AccountMark
+																	flavor={calendar ? providerFlavor(calendar) : null}
+																	color={eventColor}
+																	size="compact"
+																/>
+																{calendar?.name ?? "Calendar"}
+															</span>
+															{event.location ? (
+																<>
+																	<span aria-hidden="true">·</span>
+																	<span className="inline-flex min-w-0 items-center gap-1 wrap-anywhere">
+																		<MapPin aria-hidden="true" className="flex-none" size={13} />
+																		{event.location}
+																	</span>
+																</>
+															) : null}
+															{isCalendarTask(event) ? (
+																<>
+																	<span aria-hidden="true">·</span>
+																	<span>
+																		{event.calendarTask.status === "completed" ? "Completed task" : "Task"}
+																	</span>
+																</>
+															) : null}
+															<EventMarks event={event} />
+														</span>
+													</span>
 												</button>
 											</EventDetailsPopover>
 										);
@@ -216,7 +259,7 @@ export function AgendaView({
 			</ol>
 			{shown < groups.length ? (
 				<div
-					className={styles.agendaSentinel}
+					className="h-px"
 					data-agenda-sentinel
 					ref={sentinelRef}
 					role="status"

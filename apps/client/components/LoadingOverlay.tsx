@@ -17,13 +17,13 @@ export function LoadingOverlay({ ready }: Props) {
   useEffect(() => {
     if (ready) {
       // Slight delay so the calendar grid has a frame to paint before we reveal it
-      opacity.value = withTiming(0, { duration: 500 }, () => {
+      opacity.set(withTiming(0, { duration: 500 }, () => {
         runOnJS(setMounted)(false);
-      });
+      }));
     }
   }, [ready]);
 
-  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.get() }));
 
   if (!mounted) return null;
 

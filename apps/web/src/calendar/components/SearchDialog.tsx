@@ -1,17 +1,19 @@
 import { providerFlavor, type Calendar, type Event, type Task } from "@musubi/types";
 import { ArrowRight, CalendarDays, CheckSquare, Search, Users } from "lucide-react";
 import { useId, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
-import { Dialog, DialogInfo } from "~/ui/Dialog";
-import { Button } from "~/ui/Button";
-import { RowAction } from "~/ui/Row";
-import { Segmented } from "~/ui/Segmented";
-import { SectionLabel } from "~/ui/SectionLabel";
-import { InlineError } from "~/ui/InlineError";
+import { Button } from "~/components/ui/button";
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { Empty } from "~/components/ui/empty";
+import { HelpTooltip } from "~/components/ui/help-tooltip";
+import { InlineError } from "~/components/ui/inline-error";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "~/components/ui/input-group";
+import { Kbd } from "~/components/ui/kbd";
+import { RowAction } from "~/components/ui/row";
+import { SectionLabel } from "~/components/ui/section-label";
+import { Segmented } from "~/components/ui/segmented";
 import { SHORTCUT_GROUPS } from "../shortcuts";
-import shortcutStyles from "./styles/shortcuts.module.css";
 import { AccountMark } from "./ProviderIcon";
 import { offeredViews, type CalendarViewId } from "../view-registry";
-import styles from "./styles/search-dialog.module.css";
 
 export type SearchAccountData = { events: Event[]; tasks: Task[]; calendars: Calendar[] };
 export type SearchAccountSource = {
@@ -124,47 +126,65 @@ export function SearchDialog({ activeView, canCreateEvents, canCreateTasks, canC
   }
   function group(label: string, items: typeof shown) {
     if (!items.length) return null;
-    return <section aria-label={label} className={styles.resultGroup}>
-      <SectionLabel>{label} <span>{items.length}</span></SectionLabel>
+    return <section aria-label={label} className="grid gap-1">
+      <SectionLabel className="mb-2">{label}<span className="ml-2">{items.length}</span></SectionLabel>
       {items.map(record => {
         const index = shown.indexOf(record);
         const calendar = record.calendars.map(id => calendarMap.get(id)).find(calendar => calendar && visible.has(calendar.id)) ?? calendarMap.get(record.calendars[0] ?? "");
-        return <RowAction key={record.key} id={`${id}-${index}`} data-search-result data-active={selected === index || undefined} className={styles.result}
-          icon={<AccountMark size="compact" flavor={calendar ? providerFlavor(calendar) : null} color={calendar?.color} />}
-          label={record.title} showChevron={false}
-          detail={`${record.event ? "Event" : "Task"} · ${dateLabel(record.date)}${record.task ? ` · ${record.task.status.replace("in-process", "in progress").replace("needs-action", "needs action")}` : ""}`}
-          trailing={<span className={styles.calendarName}>{calendar?.name ?? "Calendar"}</span>}
-          onFocus={() => setActive(index)} onMouseEnter={() => setActive(index)} onClick={() => openRecord(record)} />;
+        return <div key={record.key} className="overflow-hidden rounded-control has-data-active:bg-raised">
+          <RowAction id={`${id}-${index}`} data-search-result data-active={selected === index || undefined}
+            icon={<AccountMark size="compact" flavor={calendar ? providerFlavor(calendar) : null} color={calendar?.color} />}
+            label={record.title} showChevron={false}
+            detail={`${record.event ? "Event" : "Task"} · ${dateLabel(record.date)}${record.task ? ` · ${record.task.status.replace("in-process", "in progress").replace("needs-action", "needs action")}` : ""}`}
+            trailing={<span className="block max-w-32 truncate text-12 text-muted-foreground max-sm:max-w-20">{calendar?.name ?? "Calendar"}</span>}
+            onFocus={() => setActive(index)} onMouseEnter={() => setActive(index)} onClick={() => openRecord(record)} />
+        </div>;
       })}
     </section>;
   }
-  return <Dialog className={styles.dialog} size="workspace" bodyClassName={styles.body} closeLabel="Close search" initialFocus={inputRef} onOpenChange={onOpenChange} open={open} returnFocus={returnFocus} title="Search Musubi"
-    headerActions={<DialogInfo label="About search" title="Search your account">Find events and tasks stored on this server, across all your accessible calendars and dates. Items in the current view come first; other dates and hidden calendars are grouped separately. Recurring events appear as their series.</DialogInfo>}
-    footer={<span className={styles.hint}>↑ ↓ Items · ← → Columns · Enter Open · Esc Close</span>}>
-    <div className={styles.searchControls}>
-      <label className={styles.searchBox}><Search aria-hidden="true" size={18} />
-        <input aria-label="Search events and actions" placeholder="Search events, tasks, calendars…" ref={inputRef} type="search" value={query}
-          aria-describedby={`${id}-status`} onChange={event => { setQuery(event.target.value); setActive(0); setLimit(40); }} onKeyDown={keyboard} />
-      </label>
-      <Segmented label="Search type" value={filter} options={filters} onChange={value => { setFilter(value); setActive(0); setLimit(40); }} />
-    </div>
-    <p className={styles.hint} role="status" id={`${id}-status`}>{loading ? "Searching your account…" : normalized ? `${matches.length} results${error || !accountSource ? " in available data" : " across your account"}` : "Search across your account, or choose an action."}</p>
-    {error ? <InlineError>Account search could not load. Showing available data. <Button size="compact" variant="ghost" onClick={accountSource?.retry}>Retry</Button></InlineError> : null}
-    <span className={styles.visuallyHidden} aria-live="polite">{shown[selected]?.title ?? actions[selected - shown.length]?.label}</span>
-    <div className={styles.columns} ref={listRef} onKeyDown={keyboard}>
-      <div className={styles.results}>
-        {group("Visible events", shown.filter(record => section(record) === 0))}
-        {group("Visible tasks", shown.filter(record => section(record) === 1))}
-        {group("Outside current range", shown.filter(record => section(record) === 2))}
-        {group("Elsewhere in your account", shown.filter(record => section(record) === 3))}
-        {!normalized ? <div className={styles.empty}><Search size={28} aria-hidden="true" /><p>Find something in Musubi</p><span>Search a title, place, note or calendar name.</span></div> : !shown.length ? <p className={styles.empty}>{loading ? "Looking for matches…" : "No matching events or tasks."}</p> : null}
-        {matches.length > limit ? <Button variant="ghost" onClick={() => setLimit(value => value + 40)}>Show more results ({matches.length - limit})</Button> : null}
-      </div>
-      <aside className={styles.actions} aria-label="Quick actions"><SectionLabel>Quick actions</SectionLabel>
-        {actions.map((action, index) => <RowAction id={`${id}-${shown.length + index}`} key={action.label} data-search-result data-active={selected === shown.length + index || undefined} className={styles.result} label={action.label} showChevron={false}
-          icon={action.label === "New meeting" ? <Users size={16} /> : action.label === "New task" ? <CheckSquare size={16} /> : action.label === "New event" ? <CalendarDays size={16} /> : <ArrowRight size={16} />}
-          trailing={<span className={`${styles.actionHint} ${shortcutStyles.shortcutList}`}>{action.shortcut ? <kbd>{action.shortcut}</kbd> : null}</span>} onFocus={() => setActive(shown.length + index)} onMouseEnter={() => setActive(shown.length + index)} onClick={() => run(action.onSelect)} />)}
-      </aside>
-    </div>
+  return <Dialog open={open} onOpenChange={onOpenChange}>
+    <DialogContent size="wide" tall aria-describedby={undefined} closeLabel="Close search" initialFocus={inputRef} returnFocus={returnFocus}>
+      <DialogHeader>
+        <div className="flex items-center gap-1">
+          <DialogTitle>Search Musubi</DialogTitle>
+          <HelpTooltip label="About search">Events and tasks on this server, across all your calendars and dates. The current view comes first; recurring events appear as their series. ↑ ↓ move, ← → switch columns, Enter opens.</HelpTooltip>
+        </div>
+      </DialogHeader>
+      <DialogBody>
+        <div className="flex items-center gap-4 max-sm:flex-col max-sm:items-stretch">
+          <InputGroup>
+            <InputGroupAddon><Search aria-hidden="true" /></InputGroupAddon>
+            <InputGroupInput aria-label="Search events and actions" placeholder="Events, tasks, calendars" ref={inputRef} type="search" value={query}
+              aria-describedby={`${id}-status`} onChange={event => { setQuery(event.target.value); setActive(0); setLimit(40); }} onKeyDown={keyboard} />
+          </InputGroup>
+          <Segmented className="flex-none sm:w-64" label="Search type" value={filter} options={filters} onChange={value => { setFilter(value); setActive(0); setLimit(40); }} />
+        </div>
+        <p className="-mt-2 min-h-4 text-12 text-muted-foreground" role="status" id={`${id}-status`}>{loading ? "Searching…" : normalized ? `${matches.length} ${matches.length === 1 ? "result" : "results"}` : ""}</p>
+        {error ? (
+          <InlineError actions={<Button size="compact" variant="ghost" onClick={accountSource?.retry}>Retry</Button>}>
+            Account search could not load. Showing loaded data.
+          </InlineError>
+        ) : null}
+        <span className="sr-only" aria-live="polite">{shown[selected]?.title ?? actions[selected - shown.length]?.label}</span>
+        <div className="grid gap-5 sm:grid-cols-3" ref={listRef} onKeyDown={keyboard}>
+          <div className="flex min-w-0 flex-col gap-5 sm:col-span-2">
+            {group("Visible events", shown.filter(record => section(record) === 0))}
+            {group("Visible tasks", shown.filter(record => section(record) === 1))}
+            {group("Outside current range", shown.filter(record => section(record) === 2))}
+            {group("Elsewhere in your account", shown.filter(record => section(record) === 3))}
+            {!normalized ? <Empty icon={<Search />} title="Find events and tasks" /> : !shown.length ? <Empty title={loading ? "Looking for matches…" : "No matches"} /> : null}
+            {matches.length > limit ? <Button className="self-start" variant="ghost" onClick={() => setLimit(value => value + 40)}>Show {matches.length - limit} more</Button> : null}
+          </div>
+          <aside className="grid min-w-0 content-start gap-1 max-sm:border-t max-sm:border-border-subtle max-sm:pt-4 sm:border-l sm:border-border-subtle sm:pl-5" aria-label="Actions">
+            <SectionLabel className="mb-2">Actions</SectionLabel>
+            {actions.map((action, index) => <div key={action.label} className="overflow-hidden rounded-control has-data-active:bg-raised">
+              <RowAction id={`${id}-${shown.length + index}`} data-search-result data-active={selected === shown.length + index || undefined} label={action.label} showChevron={false}
+                icon={action.label === "New meeting" ? <Users /> : action.label === "New task" ? <CheckSquare /> : action.label === "New event" ? <CalendarDays /> : <ArrowRight />}
+                trailing={action.shortcut ? <Kbd>{action.shortcut}</Kbd> : undefined} onFocus={() => setActive(shown.length + index)} onMouseEnter={() => setActive(shown.length + index)} onClick={() => run(action.onSelect)} />
+            </div>)}
+          </aside>
+        </div>
+      </DialogBody>
+    </DialogContent>
   </Dialog>;
 }

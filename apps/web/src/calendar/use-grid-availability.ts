@@ -42,10 +42,10 @@ export function useGridAvailability({ userId, pageId, anchor, view, weekStartsOn
     if (offline) notice = "Availability is unavailable offline. No free time is confirmed.";
     else if (refreshing) notice = "Connected calendars are refreshing. No free time is confirmed yet.";
     else if (selecting) notice = "Availability selection is changing. No free time is confirmed yet.";
-    else if (sources.isError || result.isError) notice = "Availability could not be verified. No free time is confirmed; use Sources and interval list to retry.";
+    else if (sources.isError || result.isError) notice = "Availability could not be verified. No free time is confirmed; use Sources and intervals to retry.";
     else if (sources.isPending || sources.isFetching || result.isFetching) notice = "Checking selected availability. No free time is confirmed yet.";
-    else if (!selected.length) notice = "No availability sources selected. Choose sources in Sources and interval list.";
-    else if (selected.length > AVAILABILITY_SOURCE_LIMIT) notice = `Select up to ${AVAILABILITY_SOURCE_LIMIT} availability sources in Sources and interval list.`;
+    else if (!selected.length) notice = "No availability sources selected. Choose sources in Sources and intervals.";
+    else if (selected.length > AVAILABILITY_SOURCE_LIMIT) notice = `Select up to ${AVAILABILITY_SOURCE_LIMIT} availability sources in Sources and intervals.`;
     else if (current) notice = current.sources.some(source => source.status !== "available") ? "Some availability sources are unavailable or need reconnection. Missing blocks do not confirm free time." : `Availability observed ${current.observedAt}. Busy intervals only for your selected sources.`;
   }
   return { available, shown, toggle: () => setSelectedScope(shown ? undefined : scope), intervals, notice };

@@ -18,6 +18,7 @@
   --accent-on-primary: #fff;
   --control-fill: #4a4741;
   --control-on-fill: #f4f1e8;
+  --shadow-raised: 0 1px 2px rgba(47, 41, 31, 0.12);
   --shadow-overlay: 0 24px 64px rgba(47, 41, 31, 0.16);
 }
 
@@ -39,6 +40,7 @@
   --accent-on-primary: #000;
   --control-fill: #e8e4d9;
   --control-on-fill: #0c0c0e;
+  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.32);
   --shadow-overlay: 0 28px 72px rgba(0, 0, 0, 0.48);
 }
 
