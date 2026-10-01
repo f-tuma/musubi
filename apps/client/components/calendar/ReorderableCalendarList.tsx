@@ -157,7 +157,7 @@ export function ReorderableCalendarList({ groups, eventCount, onOpen, onDisconne
     // dragged → slotted formula switch can't jump
     for (const [id, base] of grabBases.current) {
       const sv = registry.current.get(id);
-      if (sv) sv.value = base + dragY.value;
+      if (sv) sv.set(base + dragY.get());
     }
     setDragBoth(null);
     if (d.from === d.to) return;
@@ -260,17 +260,17 @@ function PositionedItem({ id, y, dragged, baseY, dragY, lift, registry, onMeasur
   }, [id]);
   useEffect(() => {
     if (dragged) return; // the gesture owns the position
-    if (!mounted.current) { mounted.current = true; topSV.value = y; return; }
-    topSV.value = withTiming(y, { duration: SHIFT_MS });
+    if (!mounted.current) { mounted.current = true; topSV.set(y); return; }
+    topSV.set(withTiming(y, { duration: SHIFT_MS }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [y, dragged]);
 
   const style = useAnimatedStyle(() => ({
     position: "absolute" as const,
     left: 0, right: 0,
-    top: dragged ? baseY + dragY.value : topSV.value,
+    top: dragged ? baseY + dragY.get() : topSV.get(),
     zIndex: dragged ? 10 : 0,
-    transform: [{ scale: dragged ? lift.value : 1 }],
+    transform: [{ scale: dragged ? lift.get() : 1 }],
     elevation: dragged ? 6 : 0,
     shadowColor: "#000",
     shadowOpacity: dragged ? 0.18 : 0,
@@ -307,13 +307,13 @@ function SectionHeader({ group, draggable, onDisconnect, onReconnect, onDragStar
     .enabled(draggable)
     .activateAfterLongPress(HOLD_MS)
     .onStart(() => {
-      dragY.value = 0;
-      lift.value = withSpring(LIFT_SCALE, LIFT_SPRING);
+      dragY.set(0);
+      lift.set(withSpring(LIFT_SCALE, LIFT_SPRING));
       runOnJS(onDragStart)();
     })
-    .onUpdate(e => { dragY.value = e.translationY; runOnJS(onDragMove)(e.translationY); })
+    .onUpdate(e => { dragY.set(e.translationY); runOnJS(onDragMove)(e.translationY); })
     .onFinalize(() => {
-      lift.value = withSpring(1, LIFT_SPRING);
+      lift.set(withSpring(1, LIFT_SPRING));
       runOnJS(onDragEnd)();
     }),
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -379,13 +379,13 @@ const RowItem = memo(function RowItem({ cal, meta, draggable, onOpen, onDragStar
     .enabled(draggable)
     .activateAfterLongPress(HOLD_MS)
     .onStart(() => {
-      dragY.value = 0;
-      lift.value = withSpring(LIFT_SCALE, LIFT_SPRING);
+      dragY.set(0);
+      lift.set(withSpring(LIFT_SCALE, LIFT_SPRING));
       runOnJS(onDragStart)();
     })
-    .onUpdate(e => { dragY.value = e.translationY; runOnJS(onDragMove)(e.translationY); })
+    .onUpdate(e => { dragY.set(e.translationY); runOnJS(onDragMove)(e.translationY); })
     .onFinalize(() => {
-      lift.value = withSpring(1, LIFT_SPRING);
+      lift.set(withSpring(1, LIFT_SPRING));
       runOnJS(onDragEnd)();
     }),
   // handlers reach current state through parent refs — safe to freeze

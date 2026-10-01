@@ -14,18 +14,18 @@ export function CalendarSkeleton() {
   const pulse = useSharedValue(0.25);
 
   useEffect(() => {
-    pulse.value = withRepeat(
+    pulse.set(withRepeat(
       withSequence(
         withTiming(0.55, { duration: 850 }),
         withTiming(0.25, { duration: 850 }),
       ),
       -1,
       false,
-    );
+    ));
     return () => cancelAnimation(pulse);
   }, []);
 
-  const animStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
+  const animStyle = useAnimatedStyle(() => ({ opacity: pulse.get() }));
 
   return (
     <View style={{ flex: 1, padding: 6, gap: 3 }}>

@@ -106,7 +106,11 @@ vi.mock("react-native-gesture-handler", () => {
 });
 vi.mock("react-native-reanimated", () => ({
   default: { View: "AnimatedView" },
-  useSharedValue: (value: unknown) => ({ value }),
+  useSharedValue: (value: unknown) => ({
+    value,
+    get() { return this.value; },
+    set(next: unknown) { this.value = typeof next === "function" ? next(this.value) : next; },
+  }),
   useAnimatedStyle: () => ({}),
   withSpring: (value: unknown) => value,
   withTiming: (value: unknown) => value,

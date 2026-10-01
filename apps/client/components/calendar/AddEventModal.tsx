@@ -289,7 +289,7 @@ export function AddEventModal({
     // focus re-raises the keyboard, pulling the docked sheet back up.
     // Dismissing here fires the hide event every close path shares.
     Keyboard.dismiss();
-    kbLift.value = 0;
+    kbLift.set(0);
     setKbPad(0);
     onClose();
 
@@ -359,14 +359,14 @@ export function AddEventModal({
       (e) => {
         const containerBottom = win.height - restingBottomInset; // sheet's resting bottom, window coords
         const overlap = Math.max(containerBottom - e.endCoordinates.screenY, 0);
-        kbLift.value = withTiming(overlap, { duration: KB_SHOW_MS });
+        kbLift.set(withTiming(overlap, { duration: KB_SHOW_MS }));
         setKbPad(overlap);
       },
     );
     const hide = Keyboard.addListener(
       Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
       () => {
-        kbLift.value = withTiming(0, { duration: KB_HIDE_MS });
+        kbLift.set(withTiming(0, { duration: KB_HIDE_MS }));
         setKbPad(0);
       },
     );
@@ -382,14 +382,14 @@ export function AddEventModal({
     if (!docked) return;
     const wasShown = dockShown.get();
     dockShown.set(peekVisible);
-    dockOff.value = withSpring(
+    dockOff.set(withSpring(
       peekVisible
         ? wasShown
-          ? Math.min(dockOff.value, dockRange)
+          ? Math.min(dockOff.get(), dockRange)
           : dockRange
         : DOCK_H + DOCK_HIDDEN_EXTRA,
       DOCK_SPRING,
-    );
+    ));
   }, [docked, peekVisible, dockRange]);
   // Swipe-down past peek: the gesture already animated the sheet off-screen —
   // just clean up (closeSequence → onClose hides it for real via peekVisible).
@@ -408,7 +408,7 @@ export function AddEventModal({
         // and the button press is eaten, so the sheet "won't close".
         .activeOffsetY([-12, 12])
         .onStart(() => {
-          dockStart.value = dockOff.value;
+          dockStart.set(dockOff.get());
         })
         .onUpdate((e) => {
           if (!dockShown.get()) return;
@@ -416,36 +416,36 @@ export function AddEventModal({
           // From EXPANDED it stops at peek (two-stage), so collapsing a tall sheet
           // can't accidentally throw the whole composer away.
           const maxY =
-            dockStart.value >= dockRange - 1
+            dockStart.get() >= dockRange - 1
               ? DOCK_H + DOCK_HIDDEN_EXTRA
               : dockRange;
-          dockOff.value = Math.min(
-            Math.max(dockStart.value + e.translationY, 0),
+          dockOff.set(Math.min(
+            Math.max(dockStart.get() + e.translationY, 0),
             maxY,
-          );
+          ));
         })
         .onEnd((e) => {
           if (!dockShown.get()) {
-            dockOff.value = withSpring(DOCK_H + DOCK_HIDDEN_EXTRA, DOCK_SPRING);
+            dockOff.set(withSpring(DOCK_H + DOCK_HIDDEN_EXTRA, DOCK_SPRING));
             return;
           }
-          const past = dockOff.value - dockRange;
+          const past = dockOff.get() - dockRange;
           if (
             past > DOCK_DISMISS_PAST ||
             (past > 0 && e.velocityY > DOCK_SNAP_VELOCITY)
           ) {
             dockShown.set(false);
-            dockOff.value = withSpring(DOCK_H + DOCK_HIDDEN_EXTRA, {
+            dockOff.set(withSpring(DOCK_H + DOCK_HIDDEN_EXTRA, {
               ...DOCK_SPRING,
               velocity: e.velocityY,
-            });
+            }));
             runOnJS(dismissByGesture)();
             return;
           }
           const expand =
             e.velocityY < -DOCK_SNAP_VELOCITY ||
-            (dockOff.value < dockRange / 2 && e.velocityY < DOCK_SNAP_VELOCITY);
-          dockOff.value = withSpring(expand ? 0 : dockRange, DOCK_SPRING);
+            (dockOff.get() < dockRange / 2 && e.velocityY < DOCK_SNAP_VELOCITY);
+          dockOff.set(withSpring(expand ? 0 : dockRange, DOCK_SPRING));
         }),
     [dockRange, DOCK_H],
   );
@@ -462,7 +462,7 @@ export function AddEventModal({
     return {
       transform: [
         {
-          translateY: Math.max(dockOff.value - kbLift.value + revealOffset, 0),
+          translateY: Math.max(dockOff.get() - kbLift.get() + revealOffset, 0),
         },
       ],
     };
@@ -472,23 +472,23 @@ export function AddEventModal({
     Keyboard.dismiss();
     // A pan finishing after this press must not pull the hidden sheet back up.
     dockShown.set(false);
-    dockOff.value = withSpring(DOCK_H + DOCK_HIDDEN_EXTRA, DOCK_SPRING);
+    dockOff.set(withSpring(DOCK_H + DOCK_HIDDEN_EXTRA, DOCK_SPRING));
     closeSequence(); // resets fields + onClose (parent clears the draft)
   };
   // typing the title pulls the sheet fully open so the rest of the form shows
   const dockExpand = () => {
-    if (dockShown.get()) dockOff.value = withSpring(0, DOCK_SPRING);
+    if (dockShown.get()) dockOff.set(withSpring(0, DOCK_SPRING));
   };
   const dockCollapse = () => {
     Keyboard.dismiss();
-    if (dockShown.get()) dockOff.value = withSpring(dockRange, DOCK_SPRING);
+    if (dockShown.get()) dockOff.set(withSpring(dockRange, DOCK_SPRING));
   };
 
   // Backdrop behind an expanded sheet — dims and swallows touches so the
   // calendar underneath can't scroll/move while the form is out of the dock.
   // At peek it's transparent and lets touches through (pointerEvents none).
   const backdropStyle = useAnimatedStyle(() => {
-    const raw = dockShown.get() ? (dockRange - dockOff.value) / dockRange : 0;
+    const raw = dockShown.get() ? (dockRange - dockOff.get()) / dockRange : 0;
     const t = raw < 0 ? 0 : raw > 1 ? 1 : raw;
     return { opacity: t, pointerEvents: t > 0.01 ? "auto" : "none" };
   });
