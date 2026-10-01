@@ -661,6 +661,13 @@ function CalendarEventDetailsPopover({
 					accessibleTitle={editing ? "Edit event" : event.title}
 					persistent={editing}
 					onFocusOutside={focusEvent => focusEvent.preventDefault()}
+					onCloseAutoFocus={focusEvent => {
+						// The destination dialog owns focus through the handoff and returns
+						// it to the event when it closes. This inspector may still be exiting.
+						if (providerRsvpEditor?.context === providerReminderContext ||
+							providerReminderEditor?.context === providerReminderContext ||
+							deliveryTarget?.context === providerReminderContext) focusEvent.preventDefault();
+					}}
 					onEscapeKeyDown={(escapeEvent) => {
 						if (!targetAction) return;
 						escapeEvent.preventDefault();

@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/tanstack-react";
-import { expect, fn, userEvent, within } from "storybook/test";
-import { DESKTOP_MODES } from "../../../.storybook/modes";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
+import { useRef, useState, type ComponentProps } from "react";
+import { Button } from "~/components/ui/button";
+import { DESKTOP_MODES, MOBILE_MODES } from "../../../.storybook/modes";
 import { Sidebar } from "./Sidebar";
 
 const meta = {
@@ -41,3 +43,39 @@ export const Refreshing: Story = {
   },
 };
 export const Offline: Story = { args: { syncLabel: "Offline — saved just now", syncTone: "offline" } };
+
+function DrawerExample(args: ComponentProps<typeof Sidebar>) {
+  const [open, setOpen] = useState(false);
+  const [modal, setModal] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  return (
+    <div className="flex">
+      <Sidebar {...args} isOpen={open} onModalStateChange={setModal} returnFocusRef={trigger}
+        onClose={() => { args.onClose(); setOpen(false); }} />
+      <main inert={modal || undefined}>
+        <Button ref={trigger} variant="secondary" onClick={() => setOpen(true)}>Open navigation</Button>
+      </main>
+    </div>
+  );
+}
+
+export const Narrow: Story = {
+  globals: { viewport: { isRotated: false, value: "mobile1" } },
+  parameters: { chromatic: { modes: MOBILE_MODES } },
+  render: args => <DrawerExample {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole("button", { name: "Open navigation" });
+    await userEvent.click(trigger);
+    const drawer = await canvas.findByRole("complementary", { name: "Workspace navigation" });
+    await waitFor(() => expect(within(drawer).getByRole("button", { name: "Close navigation" })).toHaveFocus());
+    await expect(canvas.getByRole("main")).toHaveAttribute("inert", "");
+    await userEvent.tab({ shift: true });
+    await expect(within(drawer).getByRole("button", { name: /^User menu for / })).toHaveFocus();
+    await userEvent.tab();
+    await expect(within(drawer).getByRole("button", { name: "Close navigation" })).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(trigger).toHaveFocus());
+    await expect(canvas.getByRole("main")).not.toHaveAttribute("inert");
+  },
+};

@@ -4,13 +4,68 @@ import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 import { cn } from "~/lib/utils";
 import { useElevatedLayer } from "~/components/ui/layer";
 
+const DropdownMenuContext = React.createContext<{
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+} | null>(null);
+const NARROW_QUERY = "(max-width: 599px)";
+const subscribeNarrow = (callback: () => void) => {
+  const query = matchMedia(NARROW_QUERY);
+  query.addEventListener("change", callback);
+  return () => query.removeEventListener("change", callback);
+};
+
 /** For a short list of commands. Persistent choices belong in a Select or ToggleGroup. */
-function DropdownMenu(props: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
-  return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
+function DropdownMenu({ open, defaultOpen = false, onOpenChange, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
+  const [localOpen, setLocalOpen] = React.useState(defaultOpen);
+  const controlled = open !== undefined;
+  const currentOpen = controlled ? open : localOpen;
+  const changeOpen = (next: boolean) => {
+    if (!controlled) setLocalOpen(next);
+    onOpenChange?.(next);
+  };
+  return (
+    <DropdownMenuContext.Provider value={{ open: currentOpen, onOpenChange: changeOpen }}>
+      <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} open={currentOpen} onOpenChange={changeOpen} />
+    </DropdownMenuContext.Provider>
+  );
 }
 
-function DropdownMenuTrigger(props: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
-  return <DropdownMenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />;
+function DropdownMenuTrigger({ onPointerDown, onPointerCancel, onKeyDown, onClick, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
+  const menu = React.useContext(DropdownMenuContext);
+  const narrow = React.useSyncExternalStore(subscribeNarrow, () => matchMedia(NARROW_QUERY).matches, () => false);
+  const openAtPress = React.useRef<boolean | undefined>(undefined);
+  return (
+    <DropdownMenuPrimitive.Trigger
+      data-slot="dropdown-menu-trigger"
+      {...props}
+      onPointerDown={(event) => {
+        openAtPress.current = undefined;
+        onPointerDown?.(event);
+        if (event.defaultPrevented || !narrow || event.button !== 0 || event.ctrlKey || props.disabled) return;
+        // Opening on press can move a command sheet under the same pointer.
+        // Wait for release so the opening gesture cannot also run a command.
+        openAtPress.current = menu?.open;
+        event.preventDefault();
+      }}
+      onPointerCancel={(event) => {
+        openAtPress.current = undefined;
+        onPointerCancel?.(event);
+      }}
+      onKeyDown={(event) => {
+        openAtPress.current = undefined;
+        onKeyDown?.(event);
+      }}
+      onClick={(event) => {
+        onClick?.(event);
+        if (!event.defaultPrevented && narrow && menu && !event.ctrlKey && !props.disabled) {
+          // Accessibility activation has no pointer press to capture.
+          menu.onOpenChange(!(event.detail === 0 ? menu.open : (openAtPress.current ?? menu.open)));
+        }
+        openAtPress.current = undefined;
+      }}
+    />
+  );
 }
 
 function DropdownMenuGroup(props: React.ComponentProps<typeof DropdownMenuPrimitive.Group>) {

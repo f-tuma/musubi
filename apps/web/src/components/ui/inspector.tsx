@@ -203,13 +203,13 @@ const overlayClassName =
 
 /**
  * Geometry by presentation. The surface is the Dialog's: canvas, hairline,
- * overlay shadow, sheet radius. Below 600 px every inspector is a bottom
- * sheet; up to 1024 px a centred modal window; from there a panel docked to
+ * overlay shadow, sheet radius. Below 600 px every inspector is a full-height
+ * modal; up to 1024 px a centred modal window; from there a panel docked to
  * the right edge, a window that floats over the calendar, or, expanded, the
  * same window at workspace size.
  */
 const surfaceClassName =
-  "fixed z-dialog flex flex-col overflow-hidden border border-border bg-canvas text-foreground shadow-overlay outline-none duration-standard data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 motion-reduce:animate-none max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-full max-sm:rounded-t-sheet max-sm:border-x-0 max-sm:border-b-0 max-sm:pb-safe-bottom sm:inset-0 sm:m-auto sm:h-dialog sm:w-inspector sm:max-w-full sm:rounded-sheet";
+  "fixed z-dialog flex flex-col overflow-hidden border border-border bg-canvas text-foreground shadow-overlay outline-none duration-standard data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 motion-reduce:animate-none max-sm:inset-0 max-sm:h-full max-sm:max-h-full max-sm:rounded-none max-sm:border-0 max-sm:pb-safe-bottom sm:inset-0 sm:m-auto sm:h-dialog sm:w-inspector sm:max-w-full sm:rounded-sheet";
 
 const presentationClassName = {
   panel:

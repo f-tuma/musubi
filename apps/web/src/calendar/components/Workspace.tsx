@@ -549,6 +549,7 @@ export function Workspace({
   // One settings window; the section says which entry point opened it.
   const [settingsSection, setSettingsSection] = useState<SettingsSectionId | null>(null);
   const [connectionsReturnFocus, setConnectionsReturnFocus] = useState<HTMLElement | null>(null);
+  const sidebarSettingsOrigin = useRef<HTMLElement | null>(null);
   // Coming back from a provider's consent screen, the dialog that started the
   // link is long gone — so it reopens itself onto the freshly imported account.
   // Derived rather than set in an effect, and dismissible like any other close.
@@ -559,8 +560,15 @@ export function Workspace({
   // Kept after closing until the next opening replaces it: the dialog hands
   // focus back once its exit animation ends, after this state has moved on.
   function openSettings(section: SettingsSectionId, returnFocus: HTMLElement | null = null) {
+    sidebarSettingsOrigin.current = null;
     setConnectionsReturnFocus(returnFocus);
     setSettingsSection(section);
+  }
+  function openSidebarSettings(section: SettingsSectionId, returnFocus: HTMLElement | null) {
+    setSidebarOpen(false);
+    // The drawer's origin becomes inert on close; the toolbar opens it again.
+    openSettings(section, sidebarModal ? sidebarTriggerRef.current : returnFocus);
+    sidebarSettingsOrigin.current = returnFocus;
   }
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   // The event a time write is in flight for. One gesture at a time, so one id.
@@ -991,18 +999,9 @@ export function Workspace({
           onDateChange(nextDate);
           setSidebarOpen(false);
         }}
-        onManageAccount={() => {
-          setSidebarOpen(false);
-          openSettings("account");
-        }}
-        onManageCalendars={() => {
-          setSidebarOpen(false);
-          openSettings("calendars");
-        }}
-        onManageConnections={() => {
-          setSidebarOpen(false);
-          openSettings("connections");
-        }}
+        onManageAccount={returnFocus => openSidebarSettings("account", returnFocus)}
+        onManageCalendars={returnFocus => openSidebarSettings("calendars", returnFocus)}
+        onManageConnections={returnFocus => openSidebarSettings("connections", returnFocus)}
         onEditPage={(page) => {
           setSidebarOpen(false);
           if (savingPageId === page.id) return;
@@ -1012,10 +1011,7 @@ export function Workspace({
           );
         }}
         onModalStateChange={setSidebarModal}
-        onOpenSettings={() => {
-          setSidebarOpen(false);
-          openSettings("general");
-        }}
+        onOpenSettings={returnFocus => openSidebarSettings("general", returnFocus)}
         onPageChange={handlePageChange}
         onReorderPages={(pageIds) =>
           // Rethrown so the sidebar knows to stop showing the order it asked for.
@@ -1555,6 +1551,12 @@ export function Workspace({
         onNotice={notify}
         onOpenChange={(open) => {
           if (open) return;
+          const origin = sidebarSettingsOrigin.current;
+          if (origin?.isConnected) {
+            // Resizing can turn the original row into an inert drawer or reveal
+            // it again. Resolve the destination before the exit restores focus.
+            setConnectionsReturnFocus(origin.closest("[inert]") ? sidebarTriggerRef.current : origin);
+          }
           setSettingsSection(null);
           // Coming back from a provider opened this window; closing it is the
           // answer to that notice too.

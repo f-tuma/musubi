@@ -77,6 +77,18 @@ export const Expanded: Story = { render: () => <Example expanded /> };
 export const Narrow: Story = {
   globals: { viewport: { isRotated: false, value: "mobile1" } },
   parameters: { chromatic: { modes: MOBILE_MODES } },
+  play: async () => {
+    const dialog = await screen.findByRole("dialog", { name: "Edit event" });
+    await Promise.all(dialog.getAnimations().map(animation => animation.finished));
+    const bounds = dialog.getBoundingClientRect();
+    expect(bounds.x).toBe(0);
+    expect(bounds.y).toBe(0);
+    expect(bounds.width).toBe(window.innerWidth);
+    expect(bounds.height).toBe(window.innerHeight);
+    await expect(within(dialog).getByRole("button", { name: "Save" })).toBeVisible();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Close event editor" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Design review" })).toHaveFocus());
+  },
 };
 
 export const PreserveDraft: Story = {

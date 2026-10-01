@@ -33,6 +33,45 @@ function Example({ onChoose }: { onChoose: (value: string) => void }) {
 }
 
 describe("Menu", () => {
+  it("opens narrow command sheets after the pointer is released", async () => {
+    const media = vi.spyOn(window, "matchMedia").mockReturnValue({ ...window.matchMedia(""), matches: true });
+    try {
+      const onChoose = vi.fn();
+      const user = userEvent.setup();
+      render(<Example onChoose={onChoose} />);
+      const trigger = screen.getByRole("button", { name: "Open page actions" });
+
+      await user.pointer({ keys: "[TouchA>]", target: trigger });
+      expect(screen.queryByRole("menu")).toBeNull();
+      await user.pointer({ keys: "[/TouchA]", target: trigger });
+      expect(screen.getByRole("menu", { name: "Page actions" })).not.toBeNull();
+      expect(onChoose).not.toHaveBeenCalled();
+
+      await user.click(trigger);
+      await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+      expect(onChoose).not.toHaveBeenCalled();
+    } finally {
+      media.mockRestore();
+    }
+  });
+
+  it("keeps keyboard opening immediate on narrow viewports", async () => {
+    const media = vi.spyOn(window, "matchMedia").mockReturnValue({ ...window.matchMedia(""), matches: true });
+    try {
+      const onChoose = vi.fn();
+      const user = userEvent.setup();
+      render(<Example onChoose={onChoose} />);
+      screen.getByRole("button", { name: "Open page actions" }).focus();
+      await user.keyboard("{ArrowDown}");
+      const firstItem = screen.getByRole("menuitem", { name: "Duplicate page" });
+      await waitFor(() => expect(document.activeElement).toBe(firstItem));
+      await user.keyboard("{Enter}");
+      expect(onChoose).toHaveBeenCalledWith("duplicate");
+    } finally {
+      media.mockRestore();
+    }
+  });
+
   it("manages command focus, selection and focus return", async () => {
     const onChoose = vi.fn();
     const user = userEvent.setup();

@@ -1,4 +1,4 @@
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useId, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -36,6 +36,8 @@ export function CaldavDialog({
   returnFocus?: HTMLElement | null;
 }) {
   const formId = useId();
+  const serverRef = useRef<HTMLInputElement>(null);
+  const usernameRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -61,7 +63,7 @@ export function CaldavDialog({
 
   return (
     <Dialog open onOpenChange={(next) => (busy && !next ? undefined : onOpenChange(next))}>
-      <DialogContent aria-describedby={undefined} closeLabel="Close connection form" returnFocus={returnFocus} size="compact">
+      <DialogContent aria-describedby={undefined} closeLabel="Close connection form" initialFocus={draft.apple ? usernameRef : serverRef} returnFocus={returnFocus} size="compact">
         <DialogHeader>
           <DialogTitle>{draft.apple ? "Connect iCloud" : "Connect CalDAV"}</DialogTitle>
         </DialogHeader>
@@ -71,7 +73,7 @@ export function CaldavDialog({
               {!draft.apple ? (
                 <Field label="Server address">
                   <Input
-                    autoFocus
+                    ref={serverRef}
                     disabled={busy}
                     placeholder="https://caldav.example.com"
                     type="url"
@@ -83,7 +85,7 @@ export function CaldavDialog({
               <Field label={draft.apple ? "Apple ID email" : "Username"}>
                 <Input
                   autoComplete="username"
-                  autoFocus={draft.apple}
+                  ref={usernameRef}
                   disabled={busy}
                   placeholder={draft.apple ? "name@icloud.com" : "Username"}
                   value={draft.username}

@@ -70,11 +70,11 @@ type SidebarProps = {
   onCreatePage: () => void;
   onDateChange: (date: string) => void;
   onEditPage: (page: PageDocument) => void;
-  onManageAccount: () => void;
-  onManageCalendars: () => void;
-  onManageConnections: () => void;
+  onManageAccount: (returnFocus: HTMLElement | null) => void;
+  onManageCalendars: (returnFocus: HTMLElement) => void;
+  onManageConnections: (returnFocus: HTMLElement) => void;
   onModalStateChange?: (modal: boolean) => void;
-  onOpenSettings: () => void;
+  onOpenSettings: (returnFocus: HTMLElement) => void;
   onPageChange: (pageId: string) => void;
   /** The full page order after a move, which is what the endpoint takes. */
   onReorderPages: (pageIds: string[]) => Promise<unknown> | void;
@@ -125,6 +125,7 @@ export function Sidebar({
 
   const [signingOut, setSigningOut] = useState(false);
   const manageAccountAfterClose = useRef(false);
+  const accountButtonRef = useRef<HTMLButtonElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const pageRowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [reorderMessage, setReorderMessage] = useState("");
@@ -212,6 +213,7 @@ export function Sidebar({
   }
   const overlay = useDrawerViewport();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLElement>(null);
   const restoreFocusOnCloseRef = useRef(false);
   const modal = overlay && isOpen;
 
@@ -224,18 +226,40 @@ export function Sidebar({
     const focusFrame = requestAnimationFrame(() =>
       closeButtonRef.current?.focus(),
     );
-    const closeOnEscape = (event: KeyboardEvent) => {
+    const handleDrawerKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
+      if (event.key === "Tab") {
+        const drawer = drawerRef.current;
+        const focused = document.activeElement;
+        if (!drawer) return;
+        // Portaled pickers and menus manage their own focus until they close.
+        if (focused instanceof Element && !drawer.contains(focused) &&
+          focused.closest('[role="dialog"], [role="menu"], [role="listbox"]')) return;
+        const controls = [...drawer.querySelectorAll<HTMLElement>(
+          'button, a[href], input, select, textarea, [tabindex]',
+        )].filter(node => node.tabIndex >= 0 && !node.matches(':disabled') &&
+          node.getClientRects().length > 0 && getComputedStyle(node).visibility !== "hidden");
+        const first = controls[0], last = controls.at(-1);
+        const target = event.shiftKey
+          ? focused === first || !drawer.contains(focused) ? last : undefined
+          : focused === last || !drawer.contains(focused) ? first : undefined;
+        if (target) {
+          event.preventDefault();
+          target.focus();
+        }
+        return;
+      }
       if (event.key !== "Escape") return;
       event.preventDefault();
       restoreFocusOnCloseRef.current = true;
       onModalStateChange?.(false);
       onClose();
     };
-    window.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("keydown", handleDrawerKeyDown);
 
     return () => {
       cancelAnimationFrame(focusFrame);
-      window.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("keydown", handleDrawerKeyDown);
     };
   }, [modal, onClose, onModalStateChange, returnFocusRef]);
 
@@ -261,18 +285,20 @@ export function Sidebar({
           className="fixed inset-0 z-25 cursor-default border-0 bg-foreground/35 md:hidden dark:bg-canvas/70"
           type="button"
           aria-label="Close navigation"
+          tabIndex={-1}
           onClick={closeAndRestoreFocus}
         />
       ) : null}
       <aside
         className={cn(
           "relative z-30 flex h-dvh min-w-0 flex-col border-r border-border-subtle bg-panel md:w-sidebar md:flex-none",
-          // The drawer: off-canvas until opened. `transition-all` carries the
-          // visibility too, so a closing drawer stays painted while it slides.
-          "max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:w-80 max-md:max-w-4/5 max-md:transition-all max-md:duration-standard max-md:ease-out",
+          // Visibility changes immediately so opening focus can land. Only
+          // the position animates; inert and aria-hidden own the closed state.
+          "max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:w-80 max-md:max-w-4/5 max-md:transition-transform max-md:duration-standard max-md:ease-out motion-reduce:transition-none",
           isOpen ? "max-md:visible max-md:translate-x-0" : "max-md:pointer-events-none max-md:invisible max-md:-translate-x-full",
         )}
         aria-label="Workspace navigation"
+        ref={drawerRef}
         aria-hidden={overlay && !isOpen}
         inert={overlay && !isOpen}
       >
@@ -379,7 +405,7 @@ export function Sidebar({
               label="Calendars"
               showChevron={false}
               size="compact"
-              onClick={onManageCalendars}
+              onClick={event => onManageCalendars(event.currentTarget)}
             />
           </SidebarRow>
           <SidebarRow>
@@ -388,7 +414,7 @@ export function Sidebar({
               label="Connections"
               showChevron={false}
               size="compact"
-              onClick={onManageConnections}
+              onClick={event => onManageConnections(event.currentTarget)}
             />
           </SidebarRow>
           <SidebarRow>
@@ -397,7 +423,7 @@ export function Sidebar({
               label="Settings"
               showChevron={false}
               size="compact"
-              onClick={onOpenSettings}
+              onClick={event => onOpenSettings(event.currentTarget)}
             />
           </SidebarRow>
         </nav>
@@ -436,6 +462,7 @@ export function Sidebar({
                 <MenuTrigger asChild>
                   <RowAction
                     aria-label={`User menu for ${user.name}`}
+                    ref={accountButtonRef}
                     detail={user.email}
                     icon={<Avatar image={user.image} name={user.name} />}
                     label={user.name}
@@ -448,7 +475,7 @@ export function Sidebar({
                   if (!manageAccountAfterClose.current) return;
                   manageAccountAfterClose.current = false;
                   event.preventDefault();
-                  onManageAccount();
+                  onManageAccount(accountButtonRef.current);
                 }}>
                 <MenuItem icon={<UserRound size={16} />} onSelect={() => { manageAccountAfterClose.current = true; }}>Manage account</MenuItem>
                 <MenuSeparator />

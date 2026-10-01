@@ -108,6 +108,28 @@ export const CommandMenuKeyboard: Story = {
   },
 };
 
+export const CommandMenuFromFooter: Story = {
+  globals: { viewport: { value: "mobile1", isRotated: false } },
+  parameters: { layout: "fullscreen" },
+  render: function Render() {
+    const [choice, setChoice] = useState("");
+    return (
+      <div className="flex min-h-dvh items-end gap-4 p-6">
+        <PageActions onChoose={setChoice} />
+        <span role="status">{choice || "No command selected"}</span>
+      </div>
+    );
+  },
+  play: async () => {
+    await expect(matchMedia("(max-width: 599px)").matches).toBe(true);
+    await userEvent.click(screen.getByRole("button", { name: "Page actions" }));
+    await expect(await screen.findByRole("menu", { name: "Page actions" })).toBeInTheDocument();
+    await expect(screen.getByRole("status")).toHaveTextContent("No command selected");
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.getByRole("button", { name: "Page actions" })).toHaveFocus());
+  },
+};
+
 export const DropdownChoices: Story = {
   render: function Render() {
     const [shown, setShown] = useState({ personal: true, studio: true, family: false });

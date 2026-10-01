@@ -4606,13 +4606,13 @@ test("opens an event's details as a full-height panel on a narrow viewport", asy
 	await mockAuthenticatedReads(page);
 	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-26`);
 
-	// A phone folds a busy day into "+2 more", so the event under test has to be
-	// one the compact grid still shows. Same calendar and length as before.
-	const eventButton = page
-		.getByRole("button", { name: /Client presentation/ })
-		.first();
+	// Week-wide lanes can put this appointment behind the compact grid's overflow.
+	const day = page.locator('[data-day-key="2026-07-24"]');
+	await day.getByRole("button", { name: /\+\d+ more/ }).click();
+	const dayEvents = page.getByRole("dialog", { name: "Friday, July 24, 2026 events" });
+	const eventButton = dayEvents.getByRole("button", { name: /Client presentation/ });
 	await eventButton.click();
-	const sheet = page.getByRole("dialog").first();
+	const sheet = page.getByRole("dialog", { name: "Client presentation", exact: true });
 	await sheet.evaluate((element) =>
 		Promise.all(element.getAnimations().map((animation) => animation.finished)),
 	);
@@ -4635,19 +4635,19 @@ test("opens an event's details as a full-height panel on a narrow viewport", asy
 		.getByRole("heading", { name: "Client presentation" })
 		.boundingBox())!;
 	const dateBox = (await sheet
-		.getByText("Date", { exact: true })
+		.getByText("Friday, July 24, 2026", { exact: true })
 		.boundingBox())!;
 	const timeBox = (await sheet
-		.getByText("Time", { exact: true })
+		.getByText("13:00 – 14:00", { exact: true })
 		.boundingBox())!;
 	const calendarBox = (await sheet
 		.getByRole("list", { name: "Calendars" })
 		.boundingBox())!;
-	// Calendar identity now belongs with the event title in the fixed header.
-	await expect(sheet.locator("header").getByRole("list", { name: "Calendars" })).toBeVisible();
-	expect([titleBox.y, calendarBox.y, dateBox.y, timeBox.y]).toEqual(
-		[titleBox.y, calendarBox.y, dateBox.y, timeBox.y].sort((a, b) => a - b),
-	);
+	// The fixed header holds the title; When and Calendars are rows in its body.
+	await expect(sheet.locator("header").getByRole("heading", { name: "Client presentation" })).toBeVisible();
+	expect(titleBox.y).toBeLessThan(dateBox.y);
+	expect(dateBox.y).toBeLessThanOrEqual(timeBox.y);
+	expect(Math.max(dateBox.y + dateBox.height, timeBox.y + timeBox.height)).toBeLessThanOrEqual(calendarBox.y);
 
 	const accessibility = await new AxeBuilder({ page })
 		.include('[role="dialog"]')
@@ -4744,6 +4744,11 @@ test("moves focus through the mobile navigation drawer", async ({ page }) => {
 	const close = navigation.getByRole("button", { name: "Close navigation" });
 	await expect(close).toBeFocused();
 	await expect(main).toHaveAttribute("inert", "");
+	const userMenu = navigation.getByRole("button", { name: /^User menu for / });
+	await page.keyboard.press("Shift+Tab");
+	await expect(userMenu).toBeFocused();
+	await page.keyboard.press("Tab");
+	await expect(close).toBeFocused();
 	await navigation.evaluate((element) =>
 		Promise.all(element.getAnimations().map((animation) => animation.finished)),
 	);
@@ -4756,6 +4761,15 @@ test("moves focus through the mobile navigation drawer", async ({ page }) => {
 	expect((await pageRow.boundingBox())!.height).toBeGreaterThanOrEqual(38);
 	await expectNoAccessibilityViolations(page);
 
+	// A nested menu consumes the first Escape; only a second closes navigation.
+	await userMenu.click();
+	const accountMenu = page.getByRole("menu", { name: "User account" });
+	await expect(accountMenu).toBeVisible();
+	await page.keyboard.press("Escape");
+	await expect(accountMenu).toHaveCount(0);
+	await expect(userMenu).toBeFocused();
+	await expect(main).toHaveAttribute("inert", "");
+
 	// Medium keeps the overlay drawer; 1024 is the first permanent-sidebar
 	// width. CSS owns that boundary and JS reads its flag, so the two cannot
 	// silently drift apart.
@@ -4765,11 +4779,42 @@ test("moves focus through the mobile navigation drawer", async ({ page }) => {
 	await expect(main).not.toHaveAttribute("inert", "");
 	await page.setViewportSize({ height: 720, width: 800 });
 	await expect(close).toBeFocused();
+	await page.keyboard.press("Shift+Tab");
+	await expect(userMenu).toBeFocused();
+	await page.keyboard.press("Tab");
+	await expect(close).toBeFocused();
 
 	await page.keyboard.press("Escape");
 	await expect(main).not.toHaveAttribute("inert", "");
 	await expect(trigger).toBeFocused();
+
+	await trigger.click();
+	await navigation.getByRole("button", { name: "Settings", exact: true }).click();
+	const settings = page.getByRole("dialog", { name: "Settings", exact: true });
+	await expect(settings).toBeVisible();
+	await settings.getByRole("button", { name: "Close settings" }).click();
+	await expect(settings).toHaveCount(0);
+	await expect(trigger).toBeFocused();
 });
+
+for (const [from, to] of [[390, 1024], [1024, 390]]) {
+  test(`restores settings focus after resizing navigation from ${from}px to ${to}px`, async ({ page }) => {
+    await page.setViewportSize({ width: from, height: 720 });
+    await mockAuthenticatedReads(page);
+    await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-26`);
+    const trigger = page.getByRole("button", { name: "Open navigation" });
+    if (from < 1024) await trigger.click();
+    const navigation = page.getByRole("complementary", { name: "Workspace navigation" });
+    const settingsEntry = navigation.getByRole("button", { name: "Settings", exact: true });
+    await settingsEntry.click();
+    const settings = page.getByRole("dialog", { name: "Settings", exact: true });
+    await expect(settings).toBeVisible();
+    await page.setViewportSize({ width: to, height: 720 });
+    await settings.getByRole("button", { name: "Close settings" }).click();
+    await expect(settings).toHaveCount(0);
+    await expect(to < 1024 ? trigger : settingsEntry).toBeFocused();
+  });
+}
 
 test("leaves a draft on the grid that can be moved before saving", async ({
 	page,
@@ -7960,10 +8005,13 @@ for (const [width, theme, target] of [[1280, "light", "zoned"], [390, "dark", "a
     await page.getByRole("combobox", { name: "Time model", exact: true }).click();
     await page.getByRole("option", { name: target === "zoned" ? "Event time zone" : "All-day dates", exact: true }).click();
     if (target === "all-day") {
-      await expect(page.getByRole("button", { name: /^Ends:/ })).toContainText("July 26, 2026");
-      await page.getByRole("button", { name: "Help for end date", exact: true }).click();
-      await expect(page.getByRole("tooltip")).toContainText("The end date is not included.");
-      await page.keyboard.press("Escape");
+      const expandedEditor = page.getByRole("dialog", { name: "Edit event", exact: true });
+      await expect(expandedEditor.locator('form[data-layout="page"]')).toBeVisible();
+      // The expanded form shows the inclusive last date, matching the saved
+      // time model. The compact panel alone displays the exclusive boundary.
+      await expect(expandedEditor.getByRole("button", { name: /^Date:/ })).toContainText("July 25, 2026");
+      await expect(expandedEditor.getByRole("button", { name: /^Ends:/ })).toContainText("July 25, 2026");
+      await expect(expandedEditor.getByRole("button", { name: "Help for end date", exact: true })).toHaveCount(0);
     }
     if (target === "zoned") {
       await expect(page.getByRole("combobox", { name: "Event time zone", exact: true })).toHaveAttribute("value", "");

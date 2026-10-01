@@ -403,14 +403,15 @@ The signed-in fixture uses the System account preference, so theme scenarios
 now set the OS scheme as well as localStorage. Previously the account preference
 could overwrite a seeded dark theme with the test browser's light OS scheme.
 
-Final validation: web typecheck, zero-warning lint, 808 unit tests and 132
-Storybook interaction/accessibility tests pass. Storybook build, design-system
-token generation/self-checks and targeted API event/SSE checks pass. Full
-Playwright: 338 passed, 28 failed, one skipped (the opt-in Radicale harness).
-Every failure is mobile; all desktop scenarios pass. Refresh, notifications and
-the updated desktop Google RSVP fixture also passed three repetitions. The
-Desktop tooltip scenario uses click, matching HelpTooltip's keyboard/click
-contract.
+Final validation after the mobile follow-up: web typecheck, zero-warning lint,
+810 unit tests and 134 Storybook interaction/accessibility tests pass.
+Storybook build, design-system token generation/self-checks, repository
+`pnpm check` and the migration generation check pass. Full Playwright: 369
+passed, zero failed or flaky, one skipped (the unchanged opt-in Radicale
+harness). The stable full run includes both themes and the new settings
+breakpoint focus regressions. Refresh, notifications and the desktop Google
+RSVP fixture also have repeated targeted coverage. The desktop tooltip
+scenario uses click, matching HelpTooltip's keyboard/click contract.
 
 Expanded editing now uses the shared wide, tall dialog and three-column form,
 matching event creation. The existing handoff scenario checks its actual width
@@ -431,25 +432,30 @@ and returns keyboard focus without taking it from another control. Sidebar
 stories cover connected, offline and refreshing states; the browser scenario
 checks pending state, current date/view and focus in both themes.
 
-### Known mobile debt
+### Mobile follow-up (2026-10-01)
 
-Mobile repairs were explicitly deferred. Keep these tests enabled and failing
-until the underlying sheet/menu/focus behavior is repaired; desktop results do
-not make the entire suite green.
+Narrow command menus open after pointer release. Opening a bottom sheet on
+pointerdown moved its commands under the same gesture and could immediately
+activate one. Keyboard opening, typeahead, command focus and Escape continue
+through Radix; the regression story uses an actual narrow viewport.
 
-| Flow | Remaining failures |
-| --- | --- |
-| Connections mobile sheet | Nested iCloud sheet and focus return |
-| Account nested mobile sheets | Menu detaches during nested navigation |
-| Narrow event details | Opening the full-height event panel |
-| Navigation drawer | Keyboard focus traversal and return |
-| K09 delivery review | Retained deletion after reload, dark 390 px |
-| K14 reminders | Personal reminder conflict; Google reminder retry; four Google instance reminder combinations (zoned/all-day × custom/inherited); CalDAV saved-alarm discard, dark 390 px |
-| K13 responses | Google RSVP; own conflict; Google instance; CalDAV; Graph one-off, occurrence, series and initial-series retry, dark 390 px |
-| Explicit time model | All-day selection/help, dark 390 px |
-| K12 recurrence | Following deletion, following split, future-only split and explicit UTC whole-series conversion, dark 390 px |
-| Graph adoption | Success and Escape paths, dark 390 px |
-| Account help | Avatar and contextual help, dark 390 px |
+Event inspectors fill the phone viewport with a fixed header and footer. When
+an inspector opens a response, reminder or delivery dialog, the destination
+owns focus until it closes; the exiting inspector does not restore the event
+trigger over it. CalDAV and iCloud forms explicitly select their initial field.
+
+The navigation drawer focuses its close control immediately, wraps Tab and
+Shift+Tab, and honors Escape already consumed by nested menus. Settings retain
+the sidebar origin and resolve a visible return target when closing, including
+a resize across 1024 px. Other settings entry points reset that origin.
+
+Browser specs follow the current overflow and When/Calendars anatomy through
+accessible names and data attributes. Expanded all-day editing displays the
+inclusive last date; its saved time-model payload remains explicitly checked.
+The compact editor's exclusive boundary remains a separate presentation.
+
+The native client uses Reanimated get/set accessors for compiler-compatible
+shared values. Its existing lint warning budget is unchanged.
 
 ### Calendar list in the sidebar (proposal)
 
