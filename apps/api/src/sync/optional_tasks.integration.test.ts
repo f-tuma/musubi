@@ -38,6 +38,7 @@ async function main() {
     let revoked = false;
     let returnedScope: string | undefined;
     let taskCalls = 0;
+    let recoveredResource401 = false;
     const refreshBodies: URLSearchParams[] = [];
     const graph = "https://graph.microsoft.com/v1.0";
     const fixture = createServer((req, res) => {
@@ -56,10 +57,16 @@ async function main() {
         });
         return;
       }
+      if (req.headers.authorization === "Bearer stale-fixture-access") return json({}, 401);
       assert.equal(req.headers.authorization, "Bearer fixture-access");
       if (path.includes("/todo/") || path.startsWith("/tasks/")) {
         taskCalls++;
         const items = path.includes("/lists/list/");
+        if (mode === "mutation401") return json({}, 401);
+        if (google && !recoveredResource401 && ((mode === "taskstale401" && !items) || (mode === "tasks-page401" && url.searchParams.has("pageToken")) || (mode === "itemsstale401" && items))) {
+          recoveredResource401 = true;
+          return json({}, 401);
+        }
         if (mode === "discovery403" && !items) return json({}, 403);
         if (mode === "discovery503" && !items) return json({}, 503);
         if (mode === "discovery401" && !items) return json({}, 401);
@@ -67,14 +74,14 @@ async function main() {
         if (mode === "fetch503" && items) return json({}, 503);
         if (mode === "fetch401" && items) return json({}, 401);
         const incomplete = mode === (items ? "items-page2" : "lists-page2");
-        if (url.searchParams.has("pageToken")) return json({}, 503);
+        if (url.searchParams.has("pageToken")) return mode === "tasks-page401" ? json({ items: [] }) : json({}, 503);
         const data = items
           ? (google ? { id: "task", title: "Remote task", status: "needsAction", etag: "task-v1" }
             : { id: "task", title: "Remote task", status: "notStarted", "@odata.etag": "task-v1" })
           : (google ? { id: "list", title: "Tasks" } : { id: "list", displayName: "Tasks" });
         const values = mode === "empty" ? [] : [data];
         return json(google
-          ? { items: values, ...(incomplete ? { nextPageToken: "second" } : {}) }
+          ? { items: values, ...(incomplete || mode === "tasks-page401" && !items ? { nextPageToken: "second" } : {}) }
           : { value: values, ...(incomplete ? { "@odata.nextLink": `${graph}${items ? "/me/todo/lists/list/tasks/delta" : "/me/todo/lists"}?pageToken=second` }
             : items ? { "@odata.deltaLink": `${graph}/me/todo/lists/list/tasks/delta` } : {}) });
       }
@@ -117,6 +124,43 @@ async function main() {
       assert.equal(beforeTasks.length, 1, "Full consent imports Tasks alongside events");
       const beforeMappings = await db.select().from(externalTasks).where(eq(externalTasks.calendarID, taskLink.calendarID));
       assert.equal(beforeMappings.length, 1);
+      if (google) {
+        // The stored expiry can still look valid after the provider rejects the
+        // token. Refresh the concrete Calendar GET, retaining the same sync.
+        await update({ accessToken: "stale-fixture-access", accessTokenExpiresAt: new Date(Date.now() + 3600000) });
+        const refreshCount = refreshBodies.length;
+        await run();
+        assert.equal(refreshBodies.length, refreshCount + 1);
+        for (const readFailure of ["taskstale401", "tasks-page401", "itemsstale401"]) {
+          mode = readFailure;
+          recoveredResource401 = false;
+          const refreshCount: number = refreshBodies.length;
+          await run();
+          assert.ok(recoveredResource401, `${readFailure}: exercised resource 401`);
+          assert.equal(refreshBodies.length, refreshCount + 1, `${readFailure}: one refresh`);
+          assert.deepEqual(await db.select().from(tasks).where(eq(tasks.creatorID, userID)), beforeTasks);
+          assert.deepEqual(await db.select().from(externalTasks).where(eq(externalTasks.calendarID, taskLink.calendarID)), beforeMappings);
+        }
+
+        // A force refresh may narrow Tasks consent. Check the new grant before
+        // replaying the rejected Tasks GET, while still importing Calendar data.
+        mode = "taskstale401";
+        recoveredResource401 = false;
+        returnedScope = CALENDAR_SCOPE[provider];
+        const beforeCalls = taskCalls;
+        await run();
+        assert.equal(taskCalls, beforeCalls + 1, "No retried Tasks GET after refresh narrows consent");
+        assert.deepEqual(await db.select().from(tasks).where(eq(tasks.creatorID, userID)), beforeTasks);
+        assert.deepEqual(await db.select().from(externalTasks).where(eq(externalTasks.calendarID, taskLink.calendarID)), beforeMappings);
+        returnedScope = undefined;
+        await update({ scope: `${CALENDAR_SCOPE[provider]},${TASK_SCOPE[provider]}` });
+        mode = "mutation401";
+        const mutationCalls: number = taskCalls;
+        const mutationRefreshes: number = refreshBodies.length;
+        await assert.rejects(adapter.pushTaskCreate!(userID, "account", taskLink.externalCalendarID, beforeTasks[0] as never));
+        assert.equal(taskCalls, mutationCalls + 1, "A rejected POST must never be replayed");
+        assert.equal(refreshBodies.length, mutationRefreshes, "Mutation 401 does not force a refresh or hide its outcome");
+      }
       for (const failure of ["missing", "narrowed", "discovery403", "discovery503", "lists-page2", "fetch403", "fetch503", "items-page2"]) {
         mode = failure;
         revision++;
@@ -147,7 +191,11 @@ async function main() {
       }
       for (const failure of ["discovery401", "fetch401"]) {
         mode = failure;
+        const beforeCalls = taskCalls;
         await assert.rejects(run(), /401/, "Resource authentication failure must not be swallowed as optional Tasks");
+        const rejectedCalls: number = taskCalls - beforeCalls - (failure === "fetch401" ? 1 : 0);
+        assert.equal(rejectedCalls, google ? 2 : 1, "Google retries the rejected GET only once");
+        assert.equal((await getOAuthCredentials(userID, provider, "account"))?.syncStatus, "active", "A resource 401 alone must not delete refresh credentials");
       }
       // Revocation between discovery and the task fetch must escape the
       // optional collection fault boundary. Only inject expiry timing; the

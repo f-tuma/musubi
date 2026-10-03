@@ -24,7 +24,7 @@ import type {
 } from "../adapter";
 import { getOAuthAccessToken } from "../oauth";
 import { assertCompleteEventReadResponse, assertCreatedEventEvidence, eventCreateOperationID, googleEventCreateID } from "../event_create_identity";
-import { isOptionalTaskError, TaskScopeMissingError } from "../errors";
+import { isOptionalTaskError, ProviderAuthError, TaskScopeMissingError } from "../errors";
 import {
   assertEventWriteEvidence,
   assertEventWriteResponse,
@@ -92,18 +92,42 @@ export async function getGoogleAccessToken(
   userID: string,
   accountId: string,
   requireTasks = false,
+  rejectedAccessToken?: string,
 ) {
   const accessToken = await getOAuthAccessToken("google", userID, accountId, {
     tokenEndpoint: GOOGLE_TOKEN_ENDPOINT,
     clientId: config.social.googleWebClientID,
     clientSecret: config.social.googleClientSecret,
     subtypeKey: "error_subtype",
-  });
+  }, { rejectedAccessToken });
   // Refresh may return a narrower grant. Check after minting, before any Tasks
   // endpoint, including task writes that bypass discovery.
   if (requireTasks && !(await hasOAuthTaskScope(userID, "google", accountId)))
     throw new TaskScopeMissingError();
   return accessToken;
+}
+
+// Recover the concrete rejected read once. Never wrap a mutation: a retry of
+// POST/PATCH/DELETE could duplicate an effect whose outcome was not observed.
+function googleReadFetch(userID: string, accountId: string, initialToken: string, requireTasks = false): typeof fetch {
+  let accessToken = initialToken;
+  return async (input, init) => {
+    if ((init?.method ?? "GET").toUpperCase() !== "GET") throw new Error("Google authentication recovery only supports GET");
+    const request = () => {
+      const headers = new Headers(init?.headers);
+      headers.set("Authorization", `Bearer ${accessToken}`);
+      return fetch(input, { ...init, headers });
+    };
+    const response = await request();
+    if (response.status !== 401) return response;
+    await response.body?.cancel();
+    accessToken = await getGoogleAccessToken(userID, accountId, requireTasks, accessToken);
+    const retried = await request();
+    if (retried.status !== 401) return retried;
+    await retried.body?.cancel();
+    // Invalid access alone does not prove the refresh grant is revoked.
+    throw new ProviderAuthError("google", "resource_401", undefined, false);
+  };
 }
 
 // "What UTC instant is <local wall-clock time> in <tz>?" — via Intl, no tz lib.
@@ -480,13 +504,13 @@ export function toExternalGoogleTaskList(list: any): ExternalCalendarInfo {
   };
 }
 
-async function listGoogleTaskLists(accessToken: string) {
+async function listGoogleTaskLists(accessToken: string, fetchImpl: typeof fetch = fetch) {
   const lists: any[] = [];
   let pageToken: string | undefined;
   do {
     const params = new URLSearchParams({ maxResults: "100" });
     if (pageToken) params.set("pageToken", pageToken);
-    const res = await fetch(`${GTASKS}/users/@me/lists?${params}`, {
+    const res = await fetchImpl(`${GTASKS}/users/@me/lists?${params}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!res.ok) throw await googleError(res);
@@ -657,6 +681,7 @@ export const googleAdapter: CalendarAdapter = {
     accountId: string,
   ): Promise<CalendarDiscoveryResult> {
     const accessToken = await getGoogleAccessToken(userID, accountId);
+    const readFetch = googleReadFetch(userID, accountId, accessToken);
     const calendars: ExternalCalendarInfo[] = [];
     const availabilityCalendars: { externalId: string; name: string }[] = [];
     let pageToken: string | undefined;
@@ -664,7 +689,7 @@ export const googleAdapter: CalendarAdapter = {
     do {
       const params = new URLSearchParams();
       if (pageToken) params.set("pageToken", pageToken);
-      const res = await fetch(`${GCAL}/users/me/calendarList?${params}`, {
+      const res = await readFetch(`${GCAL}/users/me/calendarList?${params}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (!res.ok) throw await googleError(res);
@@ -696,7 +721,7 @@ export const googleAdapter: CalendarAdapter = {
       return { calendars, availabilityCalendars, taskListsComplete: false };
     }
     try {
-      const taskLists = await listGoogleTaskLists(accessToken);
+      const taskLists = await listGoogleTaskLists(accessToken, googleReadFetch(userID, accountId, accessToken, true));
       return {
         availabilityCalendars,
         calendars: [...calendars, ...taskLists.map(toExternalGoogleTaskList)],
@@ -724,8 +749,8 @@ export const googleAdapter: CalendarAdapter = {
     if (taskListId && !(await hasOAuthTaskScope(userID, "google", accountId)))
       throw new TaskScopeMissingError();
     return taskListId
-      ? fetchGoogleTaskChanges(accessToken, taskListId)
-      : fetchGoogleChanges(accessToken, externalCalendarId, cursor, { timeModels: config.api.eventTimeEditsEnabled, organizerTimeEventIDs: new Set(await getGoogleOrganizerTimeEventIDs(userID, accountId, externalCalendarId)), reminderEvidence: config.api.providerReminderEditsEnabled, rsvpEvidence: config.api.providerRsvpEditsEnabled });
+      ? fetchGoogleTaskChanges(accessToken, taskListId, { fetchImpl: googleReadFetch(userID, accountId, accessToken, true) })
+      : fetchGoogleChanges(accessToken, externalCalendarId, cursor, { fetchImpl: googleReadFetch(userID, accountId, accessToken), timeModels: config.api.eventTimeEditsEnabled, organizerTimeEventIDs: new Set(await getGoogleOrganizerTimeEventIDs(userID, accountId, externalCalendarId)), reminderEvidence: config.api.providerReminderEditsEnabled, rsvpEvidence: config.api.providerRsvpEditsEnabled });
   },
 
   async assertEventWrite(userID, accountId, externalCalendarId, operation) {

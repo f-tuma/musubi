@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { assertDavReadResponse, canonicalDavReadXML, requestedDavHrefs, davMultistatus, successfulDavProperty, CALDAV } from "./caldav_properties";
+import { assertDavReadResponse, canonicalDavReadXML, requestedDavHrefs, davMultistatus, successfulDavProperty, CALDAV, DavReadResponseError } from "./caldav_properties";
 import { lookup } from "node:dns/promises";
 import type { LookupAddress } from "node:dns";
 import { config } from "@musubi/config";
@@ -176,9 +176,11 @@ export function createCaldavClient(
     }
     if (kind) {
       try {
-      if (response.status !== 207 || response.headers.has("content-range") || !/^(?:application|text)\/(?:[a-z0-9!#$&^_.+-]+\+)?xml(?:\s*;|$)/i.test(response.headers.get("content-type") ?? "")) throw new Error("CalDAV discovery/read was not complete.");
+      if (response.status !== 207) throw new DavReadResponseError("http-status", { readKind: kind, httpStatus: response.status });
+      if (response.headers.has("content-range")) throw new DavReadResponseError("http-partial", { readKind: kind, httpStatus: response.status });
+      if (!/^(?:application|text)\/(?:[a-z0-9!#$&^_.+-]+\+)?xml(?:\s*;|$)/i.test(response.headers.get("content-type") ?? "")) throw new DavReadResponseError("http-content-type", { readKind: kind, httpStatus: response.status });
       const xml = await response.text();
-      assertDavReadResponse(xml, response.url || String(input), kind, kind === "multiget" ? requestedDavHrefs(body) : undefined);
+      assertDavReadResponse(xml, response.url || String(input), kind, kind === "multiget" ? requestedDavHrefs(body) : undefined, response.headers.get("content-location") ?? undefined);
       if (kind === "multiget") {
         const resources = resourceReads.getStore();
         for (const row of davMultistatus(xml, response.url || String(input))) {

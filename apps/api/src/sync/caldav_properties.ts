@@ -4,10 +4,46 @@ export const DAV = "DAV:", CALDAV = "urn:ietf:params:xml:ns:caldav";
 export const davName = (namespace: string, local: string) => `{${namespace}}${local}`;
 export type DavNode = { name: string; text: string; children: DavNode[]; attributes: Record<string, string> };
 export type DavResponse = { href: string; status?: number; properties: Map<string, { status: number; value: DavNode }> };
+export type DavReadKind = "principal" | "home" | "discovery" | "listing" | "multiget" | "sync";
+type DavReadFailureReason = "invalid-structure" | "invalid-xml" | "response-href-authority" | "response-href-invalid" | "response-href-duplicate" | "projection-namespace" | "partial-property" | "discovery-response-count" | "discovery-response-status" | "discovery-response-resource" | "discovery-property-unavailable" | "discovery-property-shape" | "discovery-target-shape" | "discovery-target-invalid" | "http-status" | "http-partial" | "http-content-type";
+type DavHrefRelation = "exact" | "collection-slash" | "different-origin" | "different-query" | "different-path";
+export class DavReadResponseError extends Error {
+  // The logger serializes Error.cause. Keep this diagnostic to fixed enums and
+  // counts/statuses: DAV XML, resource paths and credential data must stay out.
+  cause: { code: "caldav-read-response-invalid"; reason: DavReadFailureReason; readKind?: DavReadKind; responseCount?: number; responseStatus?: number; propertyStatus?: number; httpStatus?: number; hrefRelation?: DavHrefRelation };
+  constructor(reason: DavReadFailureReason, details: Omit<DavReadResponseError["cause"], "code" | "reason"> = {}) {
+    super("CalDAV property response is incomplete or ambiguous.");
+    this.name = "DavReadResponseError";
+    this.cause = { code: "caldav-read-response-invalid", reason, ...details };
+  }
+}
 // tsdav strips namespaces and folds hyphen/underscore runs for every element.
 // Reject aliases before handing this XML to its convenience projection.
 const convenienceName = (name: string) => name.slice(name.lastIndexOf("}") + 1).replace(/[-_]+(\w?)/g, (_match, letter: string) => letter ? letter.toUpperCase() : "");
-function invalid(): never { throw new Error("CalDAV property response is incomplete or ambiguous."); }
+function invalid(reason: DavReadFailureReason = "invalid-structure", details?: Omit<DavReadResponseError["cause"], "code" | "reason">): never { throw new DavReadResponseError(reason, details); }
+function discoveryHrefRelation(href: string, requestURL: string): DavHrefRelation {
+  const target = new URL(href), request = new URL(requestURL);
+  if (target.href === request.href) return "exact";
+  if (target.origin !== request.origin) return "different-origin";
+  if (target.search !== request.search) return "different-query";
+  // RFC 4918 section 5.2 permits handling a collection request without a slash
+  // as its slash form. This does not authorize another path, query or origin;
+  // object reads and authoritative collection listings still use exact hrefs.
+  if (!request.pathname.endsWith("/") && target.pathname === request.pathname + "/") return "collection-slash";
+  return "different-path";
+}
+function provenCollectionAlias(row: DavResponse, url: string, contentLocation?: string): boolean {
+  // A principal may also be a noncollection resource, where adding '/' is not
+  // an equivalent identifier. Require the server's canonical Content-Location
+  // (recommended by RFC 4918 section 5.2) or its proven collection type.
+  if (contentLocation) {
+    try { if (new URL(contentLocation, url).href === row.href) return true; } catch { /* Invalid metadata is not identity evidence. */ }
+  }
+  const resourceType = successfulDavProperty(row, DAV, "resourcetype");
+  return !!resourceType && !resourceType.text
+    && resourceType.children.every(marker => !marker.text && !marker.children.length)
+    && resourceType.children.some(marker => marker.name === davName(DAV, "collection"));
+}
 const children = (node: DavNode, name: string) => node.children.filter(child => child.name === davName(DAV, name));
 function status(node: DavNode): number {
   if (node.children.length) return invalid();
@@ -54,7 +90,7 @@ export function davMultistatus(xml: string, expectedURL: string, allowSyncToken 
     return result;
   }
   let document: any;
-  try { document = xml2js(xml, { compact: false, alwaysChildren: true, captureSpacesBetweenElements: true }); } catch { return invalid(); }
+  try { document = xml2js(xml, { compact: false, alwaysChildren: true, captureSpacesBetweenElements: true }); } catch { return invalid("invalid-xml"); }
   const elements = (document.elements ?? []).filter((item: any) => item.type !== "comment" && !(item.type === "text" && !item.text?.trim()));
   if (elements.length !== 1) invalid();
   const root = parse(elements[0], { xml: "http://www.w3.org/XML/1998/namespace" });
@@ -68,10 +104,10 @@ export function davMultistatus(xml: string, expectedURL: string, allowSyncToken 
     let href: string;
     try {
       const target = new URL(hrefs[0]!.text, expectedURL);
-      if (target.origin !== new URL(expectedURL).origin || target.username || target.password || target.hash) return invalid();
+      if (target.origin !== new URL(expectedURL).origin || target.username || target.password || target.hash) return invalid("response-href-authority");
       href = target.href;
-    } catch { return invalid(); }
-    if (seen.has(href)) invalid(); seen.add(href);
+    } catch (error) { if (error instanceof DavReadResponseError) throw error; return invalid("response-href-invalid"); }
+    if (seen.has(href)) invalid("response-href-duplicate"); seen.add(href);
     const result: DavResponse = { href, ...(statuses.length ? { status: status(statuses[0]!) } : {}), properties: new Map() };
     const projectedProperties = new Set<string>();
     for (const propstat of propstats) {
@@ -95,7 +131,14 @@ export function successfulDavProperty(response: DavResponse, namespace: string, 
 }
 
 /** Validate authority before the convenience client filters failed responses. */
-export function assertDavReadResponse(xml: string, url: string, kind: "principal" | "home" | "discovery" | "listing" | "multiget" | "sync", requestedHrefs?: string[]) {
+export function assertDavReadResponse(xml: string, url: string, kind: DavReadKind, requestedHrefs?: string[], contentLocation?: string) {
+  try { validateDavReadResponse(xml, url, kind, requestedHrefs, contentLocation); }
+  catch (error) {
+    if (error instanceof DavReadResponseError) error.cause = { ...error.cause, readKind: kind };
+    throw error;
+  }
+}
+function validateDavReadResponse(xml: string, url: string, kind: DavReadKind, requestedHrefs?: string[], contentLocation?: string) {
   const responses = davMultistatus(xml, url, kind === "sync");
   const consumed = new Map([
     ...["resourcetype", "collection", "href", "getetag", "sync-token", "current-user-principal", "supported-report-set", "report"].map(name => [convenienceName(davName(DAV, name)), davName(DAV, name)] as const),
@@ -103,25 +146,32 @@ export function assertDavReadResponse(xml: string, url: string, kind: "principal
   ]);
   function validateProjection(node: DavNode) {
     const expected = consumed.get(convenienceName(node.name));
-    if (expected && expected !== node.name) invalid();
+    if (expected && expected !== node.name) invalid("projection-namespace");
     for (const child of node.children) validateProjection(child);
   }
   for (const row of responses) for (const property of row.properties.values()) {
     // tsdav merges every 2xx propstat, including optional tokens/metadata. Only
     // complete 200 properties may reach that projection; failed optionals stay.
-    if (property.status >= 200 && property.status < 300 && property.status !== 200) invalid();
+    if (property.status >= 200 && property.status < 300 && property.status !== 200) invalid("partial-property", { propertyStatus: property.status });
     validateProjection(property.value);
   }
   if (kind === "principal" || kind === "home") {
-    if (responses.length !== 1 || responses[0]!.href !== new URL(url).href || responses[0]!.status !== undefined) invalid();
-    const value = successfulDavProperty(responses[0]!, kind === "principal" ? DAV : CALDAV, kind === "principal" ? "current-user-principal" : "calendar-home-set");
+    if (responses.length !== 1) invalid("discovery-response-count", { responseCount: responses.length });
+    const row = responses[0]!, hrefRelation = discoveryHrefRelation(row.href, url);
+    if (hrefRelation !== "exact" && !(hrefRelation === "collection-slash" && provenCollectionAlias(row, url, contentLocation))) invalid("discovery-response-resource", { responseCount: responses.length, hrefRelation });
+    if (row.status !== undefined) invalid("discovery-response-status", { responseCount: responses.length, responseStatus: row.status });
+    const namespace = kind === "principal" ? DAV : CALDAV, name = kind === "principal" ? "current-user-principal" : "calendar-home-set";
+    const value = successfulDavProperty(row, namespace, name);
+    const property = row.properties.get(davName(namespace, name));
+    if (!value) invalid("discovery-property-unavailable", { ...(property ? { propertyStatus: property.status } : {}) });
     const href = value?.children[0];
-    if (!value || value.text || value.children.length !== 1 || href?.name !== davName(DAV, "href") || href.children.length || !href.text) invalid();
+    if (value.text || value.children.length !== 1 || href?.name !== davName(DAV, "href") || href.children.length || !href.text) invalid("discovery-property-shape");
     // tsdav resolves home hrefs against the account root. Require an absolute
     // or root-relative target so principal-relative discovery cannot diverge.
-    if (!href!.text.startsWith("/") && !/^https?:\/\//i.test(href!.text)) invalid();
-    const target = new URL(href!.text, url);
-    if (target.username || target.password || target.hash || !["http:", "https:"].includes(target.protocol)) invalid();
+    if (!href!.text.startsWith("/") && !/^https?:\/\//i.test(href!.text)) invalid("discovery-target-shape");
+    let target: URL;
+    try { target = new URL(href!.text, url); } catch { invalid("discovery-target-invalid"); }
+    if (target.username || target.password || target.hash || !["http:", "https:"].includes(target.protocol)) invalid("discovery-target-invalid");
     return;
   }
   if (requestedHrefs) {

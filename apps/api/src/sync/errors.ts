@@ -5,7 +5,9 @@ export class ProviderAuthError extends Error {
     readonly subtype: string | undefined,
     readonly reconnectRequired: boolean,
   ) {
-    super(`${provider} OAuth token refresh failed: ${subtype ?? code}`);
+    super(code === "resource_401"
+      ? `${provider} API authentication failed: ${code}`
+      : `${provider} OAuth token refresh failed: ${subtype ?? code}`);
     this.name = "ProviderAuthError";
   }
 }
