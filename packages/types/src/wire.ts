@@ -26,6 +26,12 @@ import {
 } from "./settings";
 import { UserSchema } from "./user";
 import { PRODUCT_VERSION } from "./version";
+import {
+  TaskSchema, TaskListResponseSchema, TaskCreateSchema, TaskPatchRequestSchema,
+  TaskLinkRequestSchema, TaskForkRequestSchema, TaskDeleteRequestSchema, TaskReplaceRequestSchema,
+  TaskMutationResponseSchema, TaskDeleteResponseSchema, TaskDeliverySchema,
+  TaskDeliveryInboxSchema, TaskClientUpgradeRequiredSchema,
+} from "./task";
 
 /**
  * Which way a document crosses the wire, because "breaking" is not symmetric.
@@ -74,6 +80,19 @@ export const WIRE_CONTRACT: Record<
   Settings: { direction: "read", schema: SettingsSchema },
   SettingsDocument: { direction: "read", schema: SettingsDocumentSchema },
   User: { direction: "read", schema: UserSchema },
+  Task: { direction: "read", schema: TaskSchema },
+  TaskListResponse: { direction: "read", schema: TaskListResponseSchema },
+  TaskCreateRequest: { direction: "write", schema: TaskCreateSchema },
+  TaskPatchRequest: { direction: "write", schema: TaskPatchRequestSchema },
+  TaskReplaceRequest: { direction: "write", schema: TaskReplaceRequestSchema },
+  TaskLinkRequest: { direction: "write", schema: TaskLinkRequestSchema },
+  TaskForkRequest: { direction: "write", schema: TaskForkRequestSchema },
+  TaskDeleteRequest: { direction: "write", schema: TaskDeleteRequestSchema },
+  TaskMutationResponse: { direction: "read", schema: TaskMutationResponseSchema },
+  TaskDeleteResponse: { direction: "read", schema: TaskDeleteResponseSchema },
+  TaskDelivery: { direction: "read", schema: TaskDeliverySchema },
+  TaskDeliveryInbox: { direction: "read", schema: TaskDeliveryInboxSchema },
+  TaskClientUpgradeRequired: { direction: "read", schema: TaskClientUpgradeRequiredSchema },
 };
 
 export type WireSnapshot = {

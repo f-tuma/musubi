@@ -28,6 +28,7 @@ import {
 	BadRequestError,
 	type Calendar,
 	CalendarSchema,
+	calendarSupportsTaskLinks,
 	EventSchema,
 	EventWriteError,
 	ForbiddenError,
@@ -277,6 +278,7 @@ export async function handlerGetCalendars(req: Request, res: Response) {
 			syncErrorCode: ownsExternalAccount ? (link?.syncErrorCode ?? null) : null,
 			providerDefaultCalendar: link?.providerDefaultCalendar ?? null,
 			supportsTasks: link?.supportsTasks ?? true,
+			supportsTaskLinks: calendarSupportsTaskLinks({ provider: link?.provider, supportsTasks: link?.supportsTasks }),
 			supportsEvents: link?.supportsEvents ?? true,
 		});
 	}

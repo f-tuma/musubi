@@ -47,6 +47,7 @@ async function main() {
     prefer?: string;
   }[] = [];
   let googleRetryAttempts = 0;
+  let googleTaskWritten = false;
   let graphMasterRequests = 0;
   let origin = "";
 
@@ -112,8 +113,15 @@ async function main() {
     }
     if (
       url.pathname === "/google-tasks/lists/task-list/tasks/task-created" &&
+      req.method === "GET"
+    ) {
+      return json(200, { id: "task-created", etag: googleTaskWritten ? '"task-updated-etag"' : '"task-created-etag"', title: "Provider write", notes: "Write test", due: "2026-07-26T00:00:00.000Z", status: googleTaskWritten ? "completed" : "needsAction" });
+    }
+    if (
+      url.pathname === "/google-tasks/lists/task-list/tasks/task-created" &&
       req.method === "PATCH"
     ) {
+      googleTaskWritten = true;
       return json(200, { etag: '"task-updated-etag"', id: "task-created" });
     }
     if (
@@ -465,7 +473,7 @@ async function main() {
         null,
         { baseUrl: `${origin}/google-tasks` },
       ),
-      /requires an ETag/,
+      /task-version-unavailable/,
     );
     const updatedTask = await updateGoogleTask(
       "google-access",
@@ -476,6 +484,7 @@ async function main() {
       { baseUrl: `${origin}/google-tasks` },
     );
     assert.equal(updatedTask.etag, '"task-updated-etag"');
+    await assert.rejects(updateGoogleTask("google-access", "task-list", "task-created", localTask, createdTask.etag, { baseUrl: `${origin}/google-tasks` }), /task-provider-conflict/, "A successful read cannot adopt a newer task validator");
     await deleteGoogleTask(
       "google-access",
       "task-list",
@@ -485,7 +494,7 @@ async function main() {
     );
     assert.deepEqual(
       requests
-        .filter((request) => request.url.pathname.endsWith("/task-created"))
+        .filter((request) => request.url.pathname.endsWith("/task-created") && request.method !== "GET")
         .map(({ ifMatch, method }) => ({ ifMatch, method })),
       [
         { ifMatch: '"task-created-etag"', method: "PATCH" },

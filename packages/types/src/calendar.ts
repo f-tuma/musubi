@@ -32,7 +32,15 @@ export const CalendarSchema = z.object({
   providerDefaultCalendar: z.boolean().nullish(),
   supportsEvents: z.boolean().nullish(),
   supportsTasks: z.boolean().nullish(),
+  supportsTaskLinks: z.boolean().nullish(), // safe maintenance of a canonical live task membership
 });
+
+/** Independent copies only require task creation. Live memberships additionally
+ * require verified update/delete semantics for their provider. */
+export function calendarSupportsTaskLinks(calendar: Pick<Calendar, "provider" | "supportsTasks" | "supportsTaskLinks">): boolean {
+  return calendar.supportsTasks !== false && calendar.supportsTaskLinks !== false
+    && (!calendar.provider || calendar.provider === "google" || calendar.provider === "caldav");
+}
 
 // Which icon/name to show for a calendar's sync origin ("apple" is caldav
 // pointed at iCloud — same protocol, different branding).

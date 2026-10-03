@@ -7,11 +7,12 @@ import {
 } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { taskForkAttempts } from "~/api/task-fork-attempts";
 import { z } from "zod";
 import { ApiError, ApiResponseError } from "~/api/http";
 import { useNewerServer } from "~/api/use-newer-server";
 import { getServerOrigin, queryKeys } from "~/api/query-keys";
-import { createTask, getEvents, getTasks, removeTask, updateTask } from "~/api/resources";
+import { createTask, getEvents, getTasks, linkTask, forkTask, removeTask, updateTask } from "~/api/resources";
 import { refreshServerData, useServerStream } from "~/api/realtime";
 import { useReminders } from "~/calendar/use-reminders";
 import { useProviderLinkReturn } from "~/calendar/connections";
@@ -301,6 +302,7 @@ function CalendarScreen({ editorOpen }: { editorOpen: boolean }) {
         await queryClient.invalidateQueries({
           queryKey: queryKeys.tasks(getServerOrigin(), userId),
         });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.delivery(getServerOrigin(), userId) });
         return created;
       }}
       onUpdateTask={async (id, task) => {
@@ -310,13 +312,31 @@ function CalendarScreen({ editorOpen }: { editorOpen: boolean }) {
           await queryClient.invalidateQueries({
             queryKey: queryKeys.tasks(getServerOrigin(), userId),
           });
+          await queryClient.invalidateQueries({ queryKey: queryKeys.delivery(getServerOrigin(), userId) });
         }
       }}
-      onRemoveTask={async (task) => {
-        await removeTask(task.id);
+      onRemoveTask={async (task, unlinkCalendarID) => {
+        await removeTask(task, unlinkCalendarID);
         await queryClient.invalidateQueries({
           queryKey: queryKeys.tasks(getServerOrigin(), userId),
         });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.delivery(getServerOrigin(), userId) });
+      }}
+      onLinkTask={async (task, calendarID) => {
+        try { return await linkTask(task, calendarID); }
+        finally { await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(getServerOrigin(), userId) }); await queryClient.invalidateQueries({ queryKey: queryKeys.delivery(getServerOrigin(), userId) }); }
+      }}
+      onForkTask={async (task, calendarID) => {
+        const attempt = taskForkAttempts.get(JSON.stringify([getServerOrigin(), userId]), task, calendarID);
+        try {
+          const saved = await forkTask(attempt);
+          taskForkAttempts.acknowledge(attempt.operationId);
+          return saved;
+        } catch (error) {
+          taskForkAttempts.acknowledgeRejection(attempt.operationId, error);
+          throw error;
+        }
+        finally { await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(getServerOrigin(), userId) }); await queryClient.invalidateQueries({ queryKey: queryKeys.delivery(getServerOrigin(), userId) }); }
       }}
       onAdoptSettings={settingsMutations.adoptSettings}
       onForkEvent={eventMutations.forkEvent}

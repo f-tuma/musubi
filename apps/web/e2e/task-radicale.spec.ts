@@ -50,7 +50,7 @@ async function readTasks(request: APIRequestContext) {
 }
 
 async function chooseOption(page: Page, label: string, option: string) {
-  await page.getByRole("combobox", { name: label }).click();
+  await page.getByRole("combobox", { name: label, exact: true }).click();
   await page.getByRole("option", { exact: true, name: option }).click();
 }
 
@@ -95,7 +95,7 @@ test("round-trips a Task Page edit through API, Postgres and Radicale", async ({
     await page.getByRole("button", { exact: true, name: "Continue" }).click();
     await page.getByLabel("Calendar name").fill("Personal");
     await page.getByRole("button", { exact: true, name: "Continue" }).click();
-    await page.getByRole("button", { name: "Skip for now" }).click();
+    await page.getByRole("button", { name: "Open my calendar" }).click();
 
     await page.getByRole("button", { name: "Connections" }).click();
     const connections = page.getByRole("dialog", { name: "Settings" });
@@ -127,10 +127,7 @@ test("round-trips a Task Page edit through API, Postgres and Radicale", async ({
       .fill("Created through the Task Page and stored as VTODO.");
     await createDialog.getByRole("button", { name: "Save task" }).click();
     const taskButton = (title: string) =>
-      page.getByRole("button", {
-        exact: true,
-        name: `${title} ${collectionName}`,
-      });
+      page.getByRole("region", { name: "Tasks", exact: true }).getByRole("button", { name: new RegExp(`^${title}`) });
     await expect(taskButton("E2E CalDAV task")).toBeVisible();
 
     await expect
@@ -138,11 +135,13 @@ test("round-trips a Task Page edit through API, Postgres and Radicale", async ({
       .toContain("SUMMARY:E2E CalDAV task");
 
     await taskButton("E2E CalDAV task").click();
+    await page.getByRole("dialog", { name: "E2E CalDAV task", exact: true }).getByRole("button", { name: "Edit", exact: true }).click();
     const editDialog = page.getByRole("dialog", { name: "Edit task" });
     await editDialog.getByLabel("Title").fill("E2E CalDAV task updated");
     await chooseOption(page, "Status", "In progress");
-    await chooseOption(page, "Priority", "3");
+    await chooseOption(page, "Priority", "High (3)");
     await editDialog.getByRole("button", { name: "Save task" }).click();
+    await page.getByRole("dialog", { name: "E2E CalDAV task updated", exact: true }).getByRole("button", { name: "Close task", exact: true }).click();
     await expect(taskButton("E2E CalDAV task updated")).toBeVisible();
 
     await expect
@@ -150,28 +149,19 @@ test("round-trips a Task Page edit through API, Postgres and Radicale", async ({
       .toContain("SUMMARY:E2E CalDAV task updated");
     await expect.poll(async () => readTasks(request)).toContain("PRIORITY:3");
 
-    const taskRow = page
-      .getByRole("listitem")
-      .filter({ has: taskButton("E2E CalDAV task updated") });
-    const completion = taskRow.getByRole("checkbox", {
-      name: "Mark E2E CalDAV task updated completed",
-    });
+    const completion = page.getByRole("combobox", { name: "Status of E2E CalDAV task updated", exact: true });
     await completion.focus();
-    await page.keyboard.press("Space");
-    await expect(
-      page.getByRole("checkbox", {
-        name: "Mark E2E CalDAV task updated open",
-      }),
-    ).toBeChecked();
+    await page.keyboard.press("Enter");
+    await page.getByRole("option", { name: "Completed", exact: true }).press("Enter");
+    await expect(completion).toHaveAttribute("value", "completed");
     await expect
       .poll(async () => readTasks(request))
       .toContain("STATUS:COMPLETED");
 
     await taskButton("E2E CalDAV task updated").click();
-    await page
-      .getByRole("dialog", { name: "Edit task" })
-      .getByRole("button", { name: "Delete" })
-      .click();
+    await page.getByRole("dialog", { name: "E2E CalDAV task updated", exact: true }).getByRole("button", { name: "More task actions", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Delete", exact: true }).click();
+    await page.getByRole("dialog", { name: "Delete task", exact: true }).getByRole("button", { name: "Delete task", exact: true }).click();
     await expect(taskButton("E2E CalDAV task updated")).toHaveCount(0);
     await expect
       .poll(async () => readTasks(request))

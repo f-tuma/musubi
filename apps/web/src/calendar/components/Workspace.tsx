@@ -1,3 +1,4 @@
+import { taskCalendarIDs, uniqueTasks } from "@musubi/calendar";
 import { DateFormatContext } from "~/components/ui/date-picker";
 import { applyTheme } from "~/design/theme";
 import { pageItemTypes, eventItemType } from "../page-item-filters";
@@ -124,9 +125,11 @@ type WorkspaceProps = {
   /** On screen is snapshot data while a refresh is in flight (`05:295-306`). */
   stale?: boolean;
   onCreateEvent: (event: Event) => Promise<Event>;
-  onCreateTask?: (task: TaskCreate) => Promise<Task>;
-  onUpdateTask?: (id: string, task: TaskUpdate) => Promise<Task>;
-  onRemoveTask?: (task: Task) => Promise<void>;
+  onCreateTask?: (task: TaskCreate) => Promise<Task | null>;
+  onUpdateTask?: (id: string, task: TaskUpdate) => Promise<Task | null>;
+  onRemoveTask?: (task: Task, unlinkCalendarID?: string) => Promise<void>;
+  onLinkTask?: (task: Task, calendarID: string) => Promise<Task | null>;
+  onForkTask?: (task: Task, calendarID: string) => Promise<Task | null>;
   tasks?: Task[];
   tasksResolved?: boolean;
   calendarsResolved?: boolean;
@@ -304,6 +307,7 @@ export function Workspace({
   onCreateTask = unavailableTaskWrite,
   onUpdateTask = unavailableTaskWrite,
   onRemoveTask = unavailableTaskWrite,
+  onLinkTask, onForkTask,
   tasks = [],
   tasksResolved = false,
   calendarsResolved = false,
@@ -668,7 +672,7 @@ export function Workspace({
   const pageTitle = activePage.name;
 
   const itemTypes = pageItemTypes(workingConfig.filters);
-  const visibleTasks = tasks.filter(task => itemTypes.includes("tasks") && visibleCalendarIds.includes(task.calendarID));
+  const visibleTasks = uniqueTasks(tasks).filter(task => itemTypes.includes("tasks") && taskCalendarIDs(task).some(id => visibleCalendarIds.includes(id)));
   const visibleEvents = useMemo(
     () =>
       [...events, ...calendarTasks(tasks, calendars)].filter((event) =>
@@ -986,7 +990,7 @@ export function Workspace({
 
   return (
     <DateFormatContext.Provider value={settings.dateFormat}>
-    <CalendarTaskContext.Provider value={{ tasks: searchAccount?.data?.tasks ?? tasks, calendars: searchAccount?.data?.calendars ?? calendars, settings, offline, update: onUpdateTask, remove: onRemoveTask }}>
+    <CalendarTaskContext.Provider value={{ tasks: searchAccount?.data?.tasks ?? tasks, calendars: searchAccount?.data?.calendars ?? calendars, settings, offline, update: onUpdateTask, remove: onRemoveTask, link: onLinkTask, fork: onForkTask }}>
     <div className="flex min-h-dvh cursor-default overflow-hidden bg-canvas select-none max-md:block" data-workspace="">
       <Sidebar
         activePageId={pageId}
@@ -1075,6 +1079,7 @@ export function Workspace({
         <Toolbar
           notifications={<ApplicationNotifications
             userId={user.id}
+            tasks={tasks}
             calendars={calendars}
             events={searchAccount?.data?.events ?? baseEvents ?? events}
             offline={offline}

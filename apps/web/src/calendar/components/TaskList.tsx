@@ -1,3 +1,4 @@
+import { taskCanEdit, taskDisplayCalendar, taskHomeCalendarID } from "@musubi/calendar";
 import { formatTaskDate } from "../task-format";
 import { X, ChevronDown, CalendarDays, GripVertical, Circle, CircleCheck, Clock3, CircleX, Flag, FlagOff, Plus, Repeat2, Trash2 } from "lucide-react";
 import {
@@ -52,9 +53,9 @@ type TaskListProps = {
   editableCalendarIds: ReadonlySet<string>;
   offline: boolean;
   onCreateRequestHandled: () => void;
-  onCreate: (task: TaskCreate) => Promise<Task>;
+  onCreate: (task: TaskCreate) => Promise<Task | null>;
   onRemove: (task: Task) => Promise<void>;
-  onUpdate: (id: string, task: TaskUpdate) => Promise<Task>;
+  onUpdate: (id: string, task: TaskUpdate) => Promise<Task | null>;
   settings: Pick<Settings, "timeFormat" | "weekStartsOn"> & Partial<Pick<Settings, "dateFormat">>;
   tasks: Task[];
   sourceTasks?: Task[];
@@ -75,10 +76,11 @@ export const TASK_PRIORITIES = Array.from({ length: 10 }, (_, priority) => ({
   icon: priority === 0 ? <FlagOff size={16} /> : <Flag size={16} fill={priority <= 4 ? "currentColor" : "none"} />,
 }));
 
-type Draft = TaskUpdate & { id?: string };
+type Draft = TaskUpdate & { id: string };
 
 function emptyDraft(calendarID: string): Draft {
   return {
+    id: crypto.randomUUID(),
     calendarID,
     completedAt: null,
     description: null,
@@ -98,7 +100,8 @@ function emptyDraft(calendarID: string): Draft {
 export function taskUpdate(task: Task): TaskUpdate {
   return {
     expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0,
-    calendarID: task.calendarID,
+    expectedRevision: task.revision,
+    calendarID: taskHomeCalendarID(task) ?? task.calendarID,
     completedAt: task.completedAt,
     description: task.description,
     due: task.due,
@@ -269,14 +272,14 @@ export function TaskList({
   // Restoration retains the retirement counter. Refresh copied fields from the
   // newly authorized baseline even when retirement arrived in a separate read.
   if (editing && draft && liveTask && (liveRetirement > editingRetirement || restoredContent)) {
-    const refreshed = { ...draft, expectedProviderReadRetiredGeneration: liveTask.providerReadRetiredGeneration ?? 0 };
+    const refreshed = { ...draft, expectedProviderReadRetiredGeneration: liveTask.providerReadRetiredGeneration ?? 0, expectedRevision: liveTask.revision };
     for (const field of ["title", "description", "url", "relatedTo"] as const) {
       if (!ownedFields.includes(field) && (draft[field] ?? "") === (editing[field] ?? "")) Object.assign(refreshed, { [field]: liveTask[field] });
     }
     setEditing(liveTask); setDraft(refreshed);
   }
 
-  if (editing && draft && !offline && ((tasksResolved && !liveTask) || (calendarsResolved && !sourceCalendars.some(calendar => calendar.id === editing.calendarID))) && removedTaskID !== editing.id) {
+  if (editing && draft && !offline && ((tasksResolved && !liveTask) || (calendarsResolved && !sourceCalendars.some(calendar => calendar.id === taskHomeCalendarID(editing)))) && removedTaskID !== editing.id) {
     const retired = { ...draft };
     for (const field of ["title", "description", "url", "relatedTo"] as const) {
       if (!ownedFields.includes(field) && (draft[field] ?? "") === (editing[field] ?? "")) Object.assign(retired, { [field]: field === "title" ? "" : null });
@@ -310,7 +313,7 @@ export function TaskList({
   }
 
   function openEdit(task: Task) {
-    if (!editableCalendarIds.has(task.calendarID)) return;
+    if (!taskCanEdit(task, editableCalendarIds)) return;
     setEditing(task);
     setOwnedFields([]);
     setRemovedTaskID(undefined);
@@ -320,14 +323,14 @@ export function TaskList({
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!draft || !draft.title.trim() || busy || removedTaskID === editing?.id && !!editing) return;
+    if (!draft || !draft.title.trim() || busy || editing && !taskCanEdit(liveTask ?? editing, editableCalendarIds) || removedTaskID === editing?.id && !!editing) return;
     setBusy(true);
     setError("");
     try {
       const calendar = calendars.find(calendar => calendar.id === draft.calendarID);
       const input = { ...withTaskAllDay(draft, calendar?.provider === "google" || draft.isAllDay), title: draft.title.trim() };
       if (editing) await onUpdate(editing.id, input);
-      else await onCreate({ ...input, id: crypto.randomUUID() });
+      else await onCreate({ ...input, id: draft.id });
       resetEditor();
     } catch {
       setError(
@@ -355,7 +358,7 @@ export function TaskList({
   }
 
   async function updateInline(task: Task, patch: Partial<Pick<TaskUpdate, "status" | "priority">>) {
-    if (!editableCalendarIds.has(task.calendarID) || offline || inlineLock.current || busy) return false;
+    if (!taskCanEdit(task, editableCalendarIds) || offline || inlineLock.current || busy) return false;
     restoreInlineFocus.current = `${task.id}:${patch.status ? "status" : "priority"}`;
     inlineLock.current = true;
     setInlineBusy(true);
@@ -386,7 +389,7 @@ export function TaskList({
         <TaskEditor
           inspectorPresentation={inspectorPresentation}
           busy={busy}
-          unavailable={Boolean(editing && removedTaskID === editing.id)}
+          unavailable={Boolean(editing && (removedTaskID === editing.id || !taskCanEdit(liveTask ?? editing, editableCalendarIds)))}
           calendars={calendars}
           draft={draft}
           editableCalendarIds={editableCalendarIds}
@@ -445,6 +448,7 @@ export function TaskList({
             label={label}
             icon={icon}
             onEdit={onOpenTask ?? openEdit}
+            readableDetail={Boolean(onOpenTask)}
             onUpdateInline={updateInline}
             busy={inlineBusy || busy}
             saving={inlineBusy}
@@ -475,6 +479,7 @@ function TaskGroup({
   editableCalendarIds,
   label,
   onEdit,
+  readableDetail,
   onUpdateInline,
   busy,
   controls,
@@ -496,6 +501,7 @@ function TaskGroup({
   editableCalendarIds: ReadonlySet<string>;
   label: string;
   onEdit: (task: Task) => void;
+  readableDetail: boolean;
   onUpdateInline: (task: Task, patch: Partial<Pick<TaskUpdate, "status" | "priority">>) => Promise<boolean>;
   busy: boolean;
   saving: boolean;
@@ -538,9 +544,9 @@ function TaskGroup({
         ? "grid flex-none grid-cols-1 gap-3"
         : "flex flex-col divide-y divide-border-subtle overflow-hidden rounded-card border border-border bg-panel"}>
         {tasks.map((task) => {
-          const calendar = calendarById.get(task.calendarID);
+          const calendar = taskDisplayCalendar(task, [...calendarById.values()]);
           const complete = task.status === "completed";
-          const editable = editableCalendarIds.has(task.calendarID);
+          const editable = taskCanEdit(task, editableCalendarIds);
           const due = task.due ? formatTaskDate(task.due, task.isAllDay, { timeFormat, dateFormat }) : undefined;
           const status = task.status === "in-process"
             ? "In progress"
@@ -583,7 +589,7 @@ function TaskGroup({
                   onClick={event => { if (event.detail === 0) onEdit(task); }}><GripVertical aria-hidden="true" /></Button> : <span className="truncate">Read only</span>}
               </div>
               {/* The card's own heading: prose that wraps, not a one-line control label. */}
-              {editable ? <button type="button" className="block min-w-0 cursor-pointer rounded-sm text-left text-15 leading-normal font-medium text-foreground wrap-anywhere hover:underline hover:decoration-border-strong hover:underline-offset-4 disabled:cursor-default" disabled={busy} onClick={() => onEdit(task)}>{title}</button> : <p className="min-w-0 text-15 leading-normal font-medium text-foreground wrap-anywhere">{title}</p>}
+              {editable || readableDetail ? <button type="button" className="block min-w-0 cursor-pointer rounded-sm text-left text-15 leading-normal font-medium text-foreground wrap-anywhere hover:underline hover:decoration-border-strong hover:underline-offset-4 disabled:cursor-default" disabled={busy} onClick={() => onEdit(task)}>{title}</button> : <p className="min-w-0 text-15 leading-normal font-medium text-foreground wrap-anywhere">{title}</p>}
               {task.description ? <p className="line-clamp-2 text-13 text-foreground-secondary wrap-anywhere">{task.description}</p> : null}
               <div className="flex flex-wrap gap-x-3 gap-y-2 text-12 text-foreground-secondary">
                 {due ? <span className="inline-flex items-center gap-1"><CalendarDays size={14} aria-hidden="true" className="flex-none" />{due}</span> : <span>No due date</span>}
@@ -607,7 +613,7 @@ function TaskGroup({
                   onChange={status => void onUpdateInline(task, { status: status as Task["status"] })}
                 />
               </div>
-              {editable ? (
+              {editable || readableDetail ? (
                 <RowAction
                   className="ml-2 min-w-0 flex-1 self-stretch"
                   detail={detail}

@@ -1,0 +1,18 @@
+import assert from "node:assert/strict";
+import { CalendarSchema, TaskSchema, calendarSupportsTaskLinks } from "@musubi/types";
+import { taskSharingTargets } from "./task-sharing";
+const home = CalendarSchema.parse({ id: "home", creatorID: "owner", name: "Home", color: "#B3A48A", members: [], role: "owner" });
+const ms = { ...home, id: "ms", provider: "microsoft" };
+const google = { ...home, id: "google", provider: "google" };
+const caldav = { ...home, id: "caldav", provider: "caldav" };
+const viewer = { ...home, id: "viewer", role: "viewer" };
+const unsupported = { ...google, id: "disabled-link", supportsTaskLinks: false };
+const task = TaskSchema.parse({ id: "task", creatorID: "owner", calendarID: home.id, originCalendarID: home.id, calendarIDs: [home.id], revision: 1, title: "Shared task" });
+assert.equal(calendarSupportsTaskLinks(ms), false);
+assert.equal(calendarSupportsTaskLinks({ ...ms, supportsTaskLinks: true }), false, "A stale capability cannot enable an unverified Microsoft writer");
+assert.equal(calendarSupportsTaskLinks({ ...home, provider: "unknown", supportsTaskLinks: true }), false);
+assert.equal(calendarSupportsTaskLinks({ ...home, supportsTasks: false }), false);
+assert.deepEqual(taskSharingTargets(task, [home, ms, google, caldav, viewer, unsupported], "link").map(c => c.id), [google.id, caldav.id]);
+assert.deepEqual(taskSharingTargets(task, [home, ms, google, viewer, unsupported], "fork").map(c => c.id), [home.id, ms.id, google.id, unsupported.id]);
+assert.deepEqual(taskSharingTargets({ ...task, recurrence: "FREQ=DAILY" }, [home, ms, google, caldav], "fork").map(c => c.id), [home.id]);
+console.log("Task links require maintainable destinations; independent copies and recurrence bounds stay distinct: OK");

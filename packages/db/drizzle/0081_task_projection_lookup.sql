@@ -1,0 +1,1 @@
+CREATE INDEX "external_tasks_task_source_idx" ON "external_tasks" USING btree ("task_id","calendar_id","external_calendar_link_id");

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { authClient, notifyAuthExpired } from "~/auth/auth-client";
 import { reconnectDelay } from "./backoff";
 import { getServerOrigin, queryKeys } from "./query-keys";
-import { acceptEventNotice, eventNoticeKey, type EventChangeNotice } from "~/notifications/model";
+import { acceptEventNotice, eventNoticeKey, type EventChangeNotice, taskNoticeKey, acceptTaskNotice, type TaskChangeNotice } from "~/notifications/model";
 
 // Merge a realtime Page into the cached list, keeping it idempotent: a strictly
 // newer revision replaces, an equal/older one is ignored. That drops the echo of
@@ -113,7 +113,18 @@ export function useServerStream(userId: string) {
       const next = acceptEventNotice(previous, message, userId);
       if (next !== previous) queryClient.setQueryData(noticesKey, next);
 
+      const taskNoticesKey = taskNoticeKey(origin, userId);
+      const previousTasks = queryClient.getQueryData<TaskChangeNotice[]>(taskNoticesKey) ?? [];
+      const nextTasks = acceptTaskNotice(previousTasks, message, userId);
+      if (nextTasks !== previousTasks) queryClient.setQueryData(taskNoticesKey, nextTasks);
+
       switch (message.type) {
+        case "task_created":
+        case "task_updated":
+        case "task_removed":
+          void queryClient.invalidateQueries({ queryKey: tasksKey });
+          void queryClient.invalidateQueries({ queryKey: deliveryPrefix });
+          break;
         case "page_created":
         case "page_updated":
           applyPage(message.payload?.page);

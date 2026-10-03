@@ -55,13 +55,8 @@ import {
   handlerProviderOrganizer, handlerOrganizerCalendar,
 } from "./handlers/events";
 import { handlerDiscardEventAlarm, handlerGetEventDeliveryInbox, handlerGetEventDelivery, handlerRetryEventDelivery, handlerGetEventDeliveryConflict, handlerResolveEventDelivery } from "./handlers/event_delivery";
-import {
-  handlerCreateTask,
-  handlerGetTask,
-  handlerGetTasks,
-  handlerRemoveTask,
-  handlerUpdateTask,
-} from "./handlers/tasks";
+import { registerTaskRoutes } from "./task_routes";
+import { drainTaskOutbox } from "./sync/engine";
 import { requireAuth } from "./middleware/require_auth";
 import { BadRequestError, ForbiddenError } from "@musubi/types";
 import { rateLimit } from "./middleware/rate_limit";
@@ -357,12 +352,8 @@ app.post("/api/v1/events/:eventId/provider-rsvp", requireAuth, wrap(handlerProvi
 app.put("/api/v1/events", requireAuth, wrap(handlerUpdateEvent));
 app.delete("/api/v1/events", requireAuth, wrap(handlerRemoveEvent));
 
-// Tasks
-app.get("/api/v1/tasks", requireAuth, wrap(handlerGetTasks));
-app.get("/api/v1/tasks/:taskId", requireAuth, wrap(handlerGetTask));
-app.post("/api/v1/tasks", requireAuth, wrap(handlerCreateTask));
-app.put("/api/v1/tasks/:taskId", requireAuth, wrap(handlerUpdateTask));
-app.delete("/api/v1/tasks/:taskId", requireAuth, wrap(handlerRemoveTask));
+// Tasks retain read URLs; revisioned mutations use an additive namespace.
+registerTaskRoutes(app);
 
 app.post("/api/v1/events/:eventId/link", requireAuth, wrap(handlerLinkEvent));
 app.post("/api/v1/events/:eventId/fork", requireAuth, wrap(handlerForkEvent));
@@ -678,7 +669,7 @@ const runExternalSync = nonOverlapping(syncExternalAccounts, () => {
 });
 
 const runEventOutbox = nonOverlapping(async () => {
-  try { await drainEventOutbox(); await drainOutlookMoves(); }
+  try { await drainEventOutbox(); await drainTaskOutbox(); await drainOutlookMoves(); }
   catch { logger.error("sync.event_outbox.scheduler_failed", { code: "delivery-state-unavailable" }); }
 }, () => { recordScheduledTaskSkip("event_outbox"); });
 

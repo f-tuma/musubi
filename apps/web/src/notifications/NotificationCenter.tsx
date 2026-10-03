@@ -68,7 +68,7 @@ export function NotificationCenter({ items, readIds, loading, error, eventError,
         </PopoverHeader>
         <div className="max-h-96 overflow-y-auto p-4" data-notifications-body="">
           {error ? <InlineError actions={<Button variant="secondary" size="compact" loading={loading} onClick={onRefresh}>Retry</Button>}>Could not load deliveries</InlineError> : null}
-          {eventError ? <InlineError actions={<Button variant="secondary" size="compact" loading={loading} onClick={onRefresh}>Retry</Button>}>Could not load event changes</InlineError> : null}
+          {eventError ? <InlineError actions={<Button variant="secondary" size="compact" loading={loading} onClick={onRefresh}>Retry</Button>}>Could not load changes</InlineError> : null}
           {loading && items.length === 0 ? <Row label="Loading notifications…" /> : null}
           {!loading && !error && !eventError && items.length === 0 ? <Empty title="You're up to date" icon={<Bell />} /> : null}
           {items.length ? <ItemGroup>

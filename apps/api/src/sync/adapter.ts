@@ -84,6 +84,19 @@ export type ExternalTaskRef = {
   icalUid?: string | null;
 };
 
+/** Provider-owned writable fields only, with dates encoded as JSON strings. */
+export type TaskProjection = Record<string, unknown>;
+export type TaskReadEvidence = { ref: ExternalTaskRef; projection: TaskProjection };
+export type TaskPreparedWrite = import("@musubi/db").TaskPreparedDestination & { action: "create" | "update" | "delete" };
+export type TaskWriteOperation = {
+  action: "create" | "update" | "delete";
+  task: Task;
+  external?: ExternalTaskRef;
+  projection?: TaskProjection;
+  signal?: AbortSignal;
+  secondary?: boolean;
+};
+
 export type EventWriteOperation = {
   signal?: AbortSignal;
   action: "create" | "update" | "delete";
@@ -257,6 +270,9 @@ export type CalendarAdapter = {
     task: Task,
     beforeMutation?: () => Promise<void>,
   ): Promise<ExternalTaskRef>;
+  projectTask?(task: Task): TaskProjection;
+  readTask?(userID: string, accountID: string, externalCalendarID: string, ref: ExternalTaskRef): Promise<TaskReadEvidence | null>;
+  assertTaskWrite?(userID: string, accountID: string, externalCalendarID: string, operation: TaskWriteOperation): Promise<void>;
   pushTaskUpdate?(
     userID: string,
     accountId: string,
@@ -264,6 +280,7 @@ export type CalendarAdapter = {
     externalTaskId: string,
     task: Task,
     ref?: ExternalTaskRef,
+    patch?: TaskProjection,
   ): Promise<{ etag?: string | null; icalUid?: string | null } | void>;
   pushTaskDelete?(
     userID: string,

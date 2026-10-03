@@ -8,7 +8,8 @@
 // phone build already installed, which cannot be patched.
 //
 // So: every `/api/…` URL that production code in apps/client or apps/web builds
-// must resolve to a route registered in apps/api/src/index.ts.
+// must resolve to a route registered in apps/api/src/index.ts or its explicitly
+// mounted task route registrar.
 //
 // What it deliberately does NOT check: the HTTP method. A call site's method is
 // often several lines from its URL, or passed in, and the break this exists to
@@ -21,6 +22,7 @@ import { join, relative, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const API_INDEX = resolve(root, "apps/api/src/index.ts");
+const TASK_ROUTES = resolve(root, "apps/api/src/task_routes.ts");
 
 /** Where clients are read from. Tests are excluded — they invent URLs. */
 const CALLER_DIRS = ["apps/client", "apps/web/src"];
@@ -35,7 +37,12 @@ const fail = (message) => problems.push(message);
 
 /** Registered Express routes, as their path patterns. */
 function registeredRoutes() {
-  const source = readFileSync(API_INDEX, "utf8");
+  const index = readFileSync(API_INDEX, "utf8");
+  if (!/import \{ registerTaskRoutes \} from "\.\/task_routes"/.test(index) ||
+      !/\bregisterTaskRoutes\(app\)/.test(index)) {
+    fail("the task route registrar is not mounted by apps/api/src/index.ts");
+  }
+  const source = index + "\n" + readFileSync(TASK_ROUTES, "utf8");
   const pattern = /\bapp\.(get|post|put|patch|delete|all)\(\s*"([^"]+)"/g;
   const paths = new Set();
   for (const [, , path] of source.matchAll(pattern)) paths.add(path);
