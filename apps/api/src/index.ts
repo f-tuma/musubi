@@ -55,16 +55,7 @@ import {
   handlerProviderOrganizer, handlerOrganizerCalendar,
 } from "./handlers/events";
 import { handlerDiscardEventAlarm, handlerGetEventDeliveryInbox, handlerGetEventDelivery, handlerRetryEventDelivery, handlerGetEventDeliveryConflict, handlerResolveEventDelivery } from "./handlers/event_delivery";
-import {
-  handlerCreateTask,
-  handlerGetTask,
-  handlerGetTasks,
-  handlerRemoveTask,
-  handlerUpdateTask,
-  handlerLinkTask,
-  handlerForkTask,
-} from "./handlers/tasks";
-import { handlerGetTaskDeliveryInbox, handlerGetTaskDelivery, handlerRetryTaskDelivery } from "./handlers/task_delivery";
+import { registerTaskRoutes } from "./task_routes";
 import { drainTaskOutbox } from "./sync/engine";
 import { requireAuth } from "./middleware/require_auth";
 import { BadRequestError, ForbiddenError } from "@musubi/types";
@@ -361,18 +352,8 @@ app.post("/api/v1/events/:eventId/provider-rsvp", requireAuth, wrap(handlerProvi
 app.put("/api/v1/events", requireAuth, wrap(handlerUpdateEvent));
 app.delete("/api/v1/events", requireAuth, wrap(handlerRemoveEvent));
 
-// Tasks
-app.get("/api/v1/tasks", requireAuth, wrap(handlerGetTasks));
-app.get("/api/v1/task-deliveries", requireAuth, wrap(handlerGetTaskDeliveryInbox));
-app.get("/api/v1/tasks/:taskId/delivery", requireAuth, wrap(handlerGetTaskDelivery));
-app.post("/api/v1/tasks/:taskId/delivery/:operationId/retry", requireAuth, rateLimit(30, 60_000, { byUser: true }), wrap(handlerRetryTaskDelivery));
-app.get("/api/v1/tasks/:taskId", requireAuth, wrap(handlerGetTask));
-app.post("/api/v1/tasks", requireAuth, wrap(handlerCreateTask));
-app.patch("/api/v1/tasks/:taskId", requireAuth, wrap(handlerUpdateTask));
-app.put("/api/v1/tasks/:taskId", requireAuth, wrap(handlerUpdateTask));
-app.delete("/api/v1/tasks/:taskId", requireAuth, wrap(handlerRemoveTask));
-app.post("/api/v1/tasks/:taskId/link", requireAuth, wrap(handlerLinkTask));
-app.post("/api/v1/tasks/:taskId/fork", requireAuth, wrap(handlerForkTask));
+// Tasks retain read URLs; revisioned mutations use an additive namespace.
+registerTaskRoutes(app);
 
 app.post("/api/v1/events/:eventId/link", requireAuth, wrap(handlerLinkEvent));
 app.post("/api/v1/events/:eventId/fork", requireAuth, wrap(handlerForkEvent));

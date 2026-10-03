@@ -1,3 +1,4 @@
+import type { TaskForkAttempt } from "@musubi/calendar";
 import { TaskCreateSchema, TaskUpdateSchema, TaskPatchRequestSchema, TaskMutationResponseSchema, TaskDeleteResponseSchema, TaskDeliverySchema, TaskDeliveryInboxSchema, requireTaskRevision, type Task } from "@musubi/types";
 import { ProviderOrganizerCalendarSchema, ProviderRsvpReceiptSchema, type ProviderRsvpEdit, type ProviderOrganizerRequest } from "@musubi/types";
 import { ProviderEventStateResponseSchema, ProviderReminderReceiptSchema, type AnyProviderReminderEdit } from "@musubi/types";
@@ -100,7 +101,7 @@ export function getTasks(signal?: AbortSignal) {
 }
 
 export async function createTask(task: TaskCreate) {
-  const result = await apiRequest("/api/v1/tasks", { body: TaskCreateSchema.parse(task), method: "POST", responseSchema: TaskMutationResponseSchema });
+  const result = await apiRequest("/api/v1/task-mutations", { body: TaskCreateSchema.parse(task), method: "POST", responseSchema: TaskMutationResponseSchema });
   return result.task;
 }
 
@@ -108,21 +109,21 @@ export async function updateTask(id: string, task: TaskUpdate) {
   const { expectedRevision, expectedProviderReadRetiredGeneration } = TaskUpdateSchema.parse(task);
   const patch = TaskCreateSchema.omit({ calendarID: true, id: true }).parse(task);
   const body = TaskPatchRequestSchema.parse({ patch, expectedRevision: requireTaskRevision({ revision: expectedRevision }), expectedProviderReadRetiredGeneration });
-  const result = await apiRequest(`/api/v1/tasks/${encodeURIComponent(id)}`, { body, method: "PATCH", responseSchema: TaskMutationResponseSchema });
+  const result = await apiRequest(`/api/v1/task-mutations/${encodeURIComponent(id)}`, { body, method: "PATCH", responseSchema: TaskMutationResponseSchema });
   return result.task;
 }
 
 export function removeTask(task: Task, unlinkCalendarID?: string) {
-  return apiRequest(`/api/v1/tasks/${encodeURIComponent(task.id)}`, { body: { expectedRevision: requireTaskRevision(task), expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0, unlinkCalendarID }, method: "DELETE", responseSchema: TaskDeleteResponseSchema });
+  return apiRequest(`/api/v1/task-mutations/${encodeURIComponent(task.id)}`, { body: { expectedRevision: requireTaskRevision(task), expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0, unlinkCalendarID }, method: "DELETE", responseSchema: TaskDeleteResponseSchema });
 }
 
 export async function linkTask(task: Task, calendarID: string) {
-  const result = await apiRequest(`/api/v1/tasks/${encodeURIComponent(task.id)}/link`, { body: { calendarID, expectedRevision: requireTaskRevision(task), expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0 }, method: "POST", responseSchema: TaskMutationResponseSchema });
+  const result = await apiRequest(`/api/v1/task-mutations/${encodeURIComponent(task.id)}/link`, { body: { calendarID, expectedRevision: requireTaskRevision(task), expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0 }, method: "POST", responseSchema: TaskMutationResponseSchema });
   return result.task;
 }
 
-export async function forkTask(task: Task, calendarID: string, operationId: string) {
-  const result = await apiRequest(`/api/v1/tasks/${encodeURIComponent(task.id)}/fork`, { headers: { "Idempotency-Key": operationId }, body: { calendarID, expectedRevision: requireTaskRevision(task), expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0 }, method: "POST", responseSchema: TaskMutationResponseSchema });
+export async function forkTask(attempt: TaskForkAttempt) {
+  const result = await apiRequest(`/api/v1/task-mutations/${encodeURIComponent(attempt.sourceTaskID)}/fork`, { headers: { "Idempotency-Key": attempt.operationId }, body: attempt.request, method: "POST", responseSchema: TaskMutationResponseSchema });
   return result.task;
 }
 

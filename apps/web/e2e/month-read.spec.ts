@@ -6386,9 +6386,14 @@ test("keeps a previously loaded task list readable offline", async ({
 			name: "Status of Pack the offline checklist",
 		}),
 	).toBeDisabled();
-	await expect(
-		tasks.getByRole("button", { name: /Pack the offline checklist/ }),
-	).toHaveCount(0);
+	// Cached content may open in the new shared detail, but every mutation
+	// remains unavailable until an authoritative online refresh.
+	await tasks.getByRole("button", { name: /Pack the offline checklist/ }).click();
+	const detail = page.getByRole("dialog", { name: "Pack the offline checklist", exact: true });
+	await expect(detail).toBeVisible();
+	await expect(detail.getByRole("combobox", { name: "Task status" })).toBeDisabled();
+	await expect(detail.getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
+	await expect(detail.getByRole("button", { name: "More task actions", exact: true })).toHaveCount(0);
 });
 
 test("leaves nothing of the last account on a shared computer", async ({
@@ -9679,7 +9684,7 @@ test("CalDAV task editor retires coalesced baseline and preserves explicit clear
   let current = { revision: 4, id: "11111111-1111-4111-8111-111111111111", creatorID: "alex", calendarID: "personal", title: "Private task baseline", description: "Private copied notes", status: "needs-action", isAllDay: false, sequence: 3, percentComplete: 0, priority: 0, providerReadRetiredGeneration: null as number | null };
   await page.route("**/api/v1/tasks", route => respond(route, { tasks: [current] }));
   const writes: Record<string, unknown>[] = [];
-  await page.route("**/api/v1/tasks/*", route => {
+  await page.route("**/api/v1/task-mutations/*", route => {
     writes.push(route.request().postDataJSON());
     return respond(route, { task: { ...current, ...(writes.at(-1)?.patch as object), revision: current.revision + 1 }, localCommitted: true });
   });
@@ -10061,12 +10066,11 @@ for (const [width, theme] of [[1280, "light"], [390, "dark"]] as const) {
     await setTestTheme(page, theme);
     await mockAuthenticatedReads(page);
     let saved: Record<string, unknown> | undefined;
-    await page.route("**/api/v1/tasks", route => {
-      if (route.request().method() === "POST") {
-        saved = { ...route.request().postDataJSON(), creatorID: session.user.id, revision: 1 };
-        return respond(route, { task: saved, localCommitted: true });
-      }
-      return respond(route, { tasks: saved ? [saved] : [] });
+    await page.route("**/api/v1/tasks", route => respond(route, { tasks: saved ? [saved] : [] }));
+    await page.route("**/api/v1/task-mutations", route => {
+      expect(route.request().method()).toBe("POST");
+      saved = { ...route.request().postDataJSON(), creatorID: session.user.id, revision: 1 };
+      return respond(route, { task: saved, localCommitted: true });
     });
     await page.goto("/app/p/my-calendar/tasks?date=2026-07-26");
     await page.getByRole("button", { name: "Create task", exact: true }).click();
@@ -10106,7 +10110,7 @@ for (const width of [1280, 390]) {
     let releaseResponse: (() => void) | undefined;
     const other = { ...task, id: "kanban-other", title: "Existing card", status: "in-process" };
     await page.route("**/api/v1/tasks", route => respond(route, { tasks: [task, other] }));
-    await page.route("**/api/v1/tasks/kanban-task", async route => {
+    await page.route("**/api/v1/task-mutations/kanban-task", async route => {
       if (failMove) { await route.fulfill({ status: 500, body: "Failed" }); return; }
       await responseGate;
       expect(route.request().method()).toBe("PATCH");
@@ -10260,7 +10264,7 @@ test("dated tasks appear in month and week and open task details", async ({ page
   await page.route("**/api/v1/tasks", route => respond(route, { tasks: [datedTask,
     { ...datedTask, id: "undated", title: "Undated task", start: null, due: null },
   ] }));
-  await page.route("**/api/v1/tasks/calendar-task-fixture", async route => {
+  await page.route("**/api/v1/task-mutations/calendar-task-fixture", async route => {
     expect(route.request().method()).toBe("PATCH");
     datedTask = { ...datedTask, ...route.request().postDataJSON().patch, revision: datedTask.revision + 1 };
     await respond(route, { task: datedTask, localCommitted: true });
@@ -11028,26 +11032,28 @@ for (const theme of ["light", "dark"] as const) {
     let task = { id: "shared-task", revision: 4, creatorID: session.user.id, calendarID: "personal", originCalendarID: "personal", calendarIDs: ["personal"], title: "Shared release checklist", description: "One logical task", status: "needs-action", isAllDay: false, percentComplete: 0, priority: 0, capabilities: { edit: true, delete: true, link: true, fork: true, unlinkCalendarIDs: [] as string[] } };
     const copies: typeof task[] = [];
     await page.route("**/api/v1/tasks", route => respond(route, { tasks: [task, task, ...copies] }));
-    await page.route("**/api/v1/tasks/shared-task/link", route => {
+    await page.route("**/api/v1/task-mutations/shared-task/link", route => {
       expect(route.request().postDataJSON()).toEqual({ calendarID: "studio", expectedRevision: 4, expectedProviderReadRetiredGeneration: 0 });
       task = { ...task, revision: 5, calendarIDs: ["personal", "studio"], capabilities: { ...task.capabilities, unlinkCalendarIDs: ["studio"] } };
       return respond(route, { task, localCommitted: true });
     });
     const forkAttempts: string[] = [];
-    await page.route("**/api/v1/tasks/shared-task/fork", route => {
+    await page.route("**/api/v1/task-mutations/shared-task/fork", route => {
       const operationId = route.request().headers()["idempotency-key"];
       expect(operationId).toMatch(/^[a-f0-9-]{36}$/); forkAttempts.push(operationId!);
-      if (theme === "light" && forkAttempts.length === 1) return route.abort("failed");
       const body = route.request().postDataJSON();
-      expect(body.calendarID).toBe("family"); expect(body.expectedRevision).toBe(5);
-      const copy = { ...task, id: "independent-task", title: "Independent checklist", revision: 1, calendarID: "family", originCalendarID: "family", calendarIDs: ["family"] };
-      copies.push(copy); return respond(route, { task: copy, localCommitted: true });
+      expect(body).toEqual({ calendarID: "family", expectedRevision: 5, expectedProviderReadRetiredGeneration: 0 });
+      if (!copies.length) copies.push({ ...task, id: "independent-task", title: "Independent checklist", revision: 1, calendarID: "family", originCalendarID: "family", calendarIDs: ["family"] });
+      // The server commits before its response is lost. A later source refresh
+      // must not turn reconciliation into a second independent copy.
+      if (theme === "light" && forkAttempts.length === 1) return route.abort("failed");
+      return respond(route, { task: copies[0], localCommitted: true });
     });
-    await page.route("**/api/v1/tasks/shared-task", route => {
+    await page.route("**/api/v1/task-mutations/shared-task", route => {
       expect(route.request().method()).toBe("DELETE");
-      expect(route.request().postDataJSON()).toEqual({ expectedRevision: 5, expectedProviderReadRetiredGeneration: 0, unlinkCalendarID: "studio" });
-      task = { ...task, revision: 6, calendarIDs: ["personal"], capabilities: { ...task.capabilities, unlinkCalendarIDs: [] } };
-      return respond(route, { id: task.id, revision: 6, removed: false, task, localCommitted: true });
+      expect(route.request().postDataJSON()).toEqual({ expectedRevision: task.revision, expectedProviderReadRetiredGeneration: 0, unlinkCalendarID: "studio" });
+      task = { ...task, revision: task.revision + 1, calendarIDs: ["personal"], capabilities: { ...task.capabilities, unlinkCalendarIDs: [] } };
+      return respond(route, { id: task.id, revision: task.revision, removed: false, task, localCommitted: true });
     });
     await page.goto(`/app/p/${DEFAULT_PAGE_ID}/tasks?date=2026-07-26`);
     const row = page.getByRole("region", { name: "Tasks", exact: true }).getByRole("button", { name: /^Shared release checklist/ });
@@ -11064,6 +11070,13 @@ for (const theme of ["light", "dark"] as const) {
     await detail.getByRole("button", { name: "Make copy in Family", exact: true }).click();
     if (theme === "light") {
       await expect(detail.getByRole("alert")).toBeVisible();
+      await detail.getByRole("button", { name: "Close task", exact: true }).click();
+      task = { ...task, revision: 6, description: "Updated while the copy response was lost" };
+      await page.getByRole("button", { name: "Refresh from server", exact: true }).click();
+      await row.click();
+      await expect(detail.getByText(task.description)).toBeVisible();
+      await detail.getByRole("button", { name: "More task actions" }).click();
+      await page.getByRole("menuitem", { name: "Make an independent copy" }).click();
       await detail.getByRole("button", { name: "Make copy in Family", exact: true }).click();
       expect(forkAttempts[1]).toBe(forkAttempts[0]);
     }

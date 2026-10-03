@@ -386,6 +386,15 @@ export const calendarTasksRelations = relations(calendarTasks, ({ one }) => ({
   calendar: one(calendars, { fields: [calendarTasks.calendarID], references: [calendars.id] }),
 }));
 
+/** Fork reconciliation binds a result to one source snapshot and destination.
+ * This identity contains no title, body, or source membership list. */
+export type TaskForkMutationRequest = {
+  sourceTaskID: string;
+  targetCalendarID: string;
+  expectedRevision: number;
+  expectedProviderReadRetiredGeneration: number;
+};
+
 /** Idempotency applies to native-only operations too. Identity survives a task
  * tombstone; user removal purges it. No private content is stored here. */
 export const taskMutations = pgTable("task_mutations", {
@@ -394,6 +403,8 @@ export const taskMutations = pgTable("task_mutations", {
   taskID: uuid("task_id").notNull(),
   revision: integer("revision").notNull(),
   operation: text("operation").$type<"create" | "update" | "link" | "unlink" | "fork" | "delete" | "calendar-delete">().notNull(),
+  forkRequest: jsonb("fork_request").$type<TaskForkMutationRequest>(),
+  forkOutcome: text("fork_outcome").$type<"committed" | "not-committed">(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [
   primaryKey({ columns: [t.actorID, t.mutationID] }),

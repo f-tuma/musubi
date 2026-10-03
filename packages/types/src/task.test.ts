@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {
   TaskContentPatchSchema, TaskCreateSchema, TaskDeleteRequestSchema,
-  TaskPatchRequestSchema, TaskSchema, requireTaskRevision,
+  TaskPatchRequestSchema, TaskReplaceRequestSchema, TaskMutationResponseSchema, TaskSchema, requireTaskRevision,
 } from "./task";
 
 assert.deepEqual(TaskContentPatchSchema.parse({ title: "Changed" }), { title: "Changed" });
@@ -21,4 +21,11 @@ assert.equal("calendarIDs" in created, false);
 assert.equal("capabilities" in created, false);
 const legacy = TaskSchema.parse({ ...created, creatorID: "owner" });
 assert.equal(legacy.revision, undefined);
+assert.equal(TaskReplaceRequestSchema.safeParse(created).success, false);
+assert.equal(TaskReplaceRequestSchema.safeParse({ ...created, expectedRevision: 1 }).success, true);
+assert.equal(TaskMutationResponseSchema.safeParse({ task: legacy, localCommitted: true }).success, false,
+  "a committed receipt must carry an authoritative task revision");
+assert.equal(TaskMutationResponseSchema.safeParse({ task: { ...legacy, revision: 1 }, localCommitted: true }).success, true);
+assert.equal(TaskMutationResponseSchema.safeParse({ task: null, localCommitted: true }).success, true,
+  "postcommit access loss remains success without leaking task content");
 console.log("task revision and patch contracts ok");

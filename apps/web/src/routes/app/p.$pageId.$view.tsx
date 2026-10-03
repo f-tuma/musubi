@@ -6,8 +6,8 @@ import {
   useChildMatches,
 } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
-import { TaskForkAttempts } from "@musubi/calendar";
+import { useEffect, useState } from "react";
+import { taskForkAttempts } from "~/api/task-fork-attempts";
 import { z } from "zod";
 import { ApiError, ApiResponseError } from "~/api/http";
 import { useNewerServer } from "~/api/use-newer-server";
@@ -75,7 +75,6 @@ function CalendarScreen({ editorOpen }: { editorOpen: boolean }) {
   // real user would sit there unread.
   const { user } = useSessionUser();
   const userId = user?.id ?? "anonymous";
-  const forkAttempts = useRef(new TaskForkAttempts(() => crypto.randomUUID()));
   const snapshot = useSnapshot();
   // Owned above every loading/error/redirect return so a transient Workspace
   // unmount cannot discard edits belonging to another Page.
@@ -328,11 +327,14 @@ function CalendarScreen({ editorOpen }: { editorOpen: boolean }) {
         finally { await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(getServerOrigin(), userId) }); await queryClient.invalidateQueries({ queryKey: queryKeys.delivery(getServerOrigin(), userId) }); }
       }}
       onForkTask={async (task, calendarID) => {
-        const operationId = forkAttempts.current.get(JSON.stringify([getServerOrigin(), userId]), task, calendarID);
+        const attempt = taskForkAttempts.get(JSON.stringify([getServerOrigin(), userId]), task, calendarID);
         try {
-          const saved = await forkTask(task, calendarID, operationId);
-          forkAttempts.current.acknowledge(operationId);
+          const saved = await forkTask(attempt);
+          taskForkAttempts.acknowledge(attempt.operationId);
           return saved;
+        } catch (error) {
+          taskForkAttempts.acknowledgeRejection(attempt.operationId, error);
+          throw error;
         }
         finally { await queryClient.invalidateQueries({ queryKey: queryKeys.tasks(getServerOrigin(), userId) }); await queryClient.invalidateQueries({ queryKey: queryKeys.delivery(getServerOrigin(), userId) }); }
       }}

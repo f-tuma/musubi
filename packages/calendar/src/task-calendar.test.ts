@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { TaskForkAttempts } from "./task-fork-attempts";
-import { CalendarSchema, TaskSchema } from "@musubi/types";
+import { CalendarSchema, EventMutationError, TaskSchema, TASK_FORK_NOT_COMMITTED_CODE } from "@musubi/types";
 import { calendarTasks, isCalendarTask } from "./task-calendar";
 import { taskCalendarIDs, taskCapabilities, taskHomeCalendarID, uniqueTasks } from "./task-sharing";
 const calendar = CalendarSchema.parse({ id: "cal", creatorID: "owner", name: "Tasks", color: "#123456", role: "owner", members: [], isDefault: false });
@@ -60,12 +60,32 @@ const source = { ...task, revision: 4 };
 const first = attempts.get("server/actor-a", source, "destination");
 assert.equal(attempts.get("server/actor-a", source, "destination"), first);
 assert.notEqual(attempts.get("server/actor-a", source, "other"), first);
-assert.notEqual(attempts.get("server/actor-a", { ...source, revision: 5 }, "destination"), first);
-assert.notEqual(attempts.get("server/actor-a", { ...source, providerReadRetiredGeneration: 1 }, "destination"), first);
-attempts.acknowledge(first);
-assert.notEqual(attempts.get("server/actor-a", source, "destination"), first);
+assert.equal(attempts.get("server/actor-a", { ...source, revision: 5 }, "destination"), first);
+assert.equal(attempts.get("server/actor-a", { ...source, providerReadRetiredGeneration: 1 }, "destination"), first);
+assert.deepEqual(first.request, { calendarID: "destination", expectedRevision: 4, expectedProviderReadRetiredGeneration: 0 });
+assert.ok(Object.isFrozen(first)); assert.ok(Object.isFrozen(first.request));
+assert.equal(JSON.stringify(first).includes(task.title), false, "Only intent identity and fences are retained");
+attempts.acknowledge(first.operationId);
+const freshAttempt = attempts.get("server/actor-a", { ...source, revision: 5, providerReadRetiredGeneration: 1 }, "destination");
+assert.notEqual(freshAttempt.operationId, first.operationId);
+assert.deepEqual(freshAttempt.request, { calendarID: "destination", expectedRevision: 5, expectedProviderReadRetiredGeneration: 1 });
 const anotherActor = attempts.get("server/actor-b", source, "destination");
 assert.notEqual(attempts.get("server/actor-a", source, "destination"), anotherActor);
+assert.equal(attempts.get("server/actor-a", { ...source, revision: 99 }, "destination"), freshAttempt,
+  "Returning to an actor's scope must recover its unknown pending intent");
+const anotherServer = attempts.get("other-server/actor-a", source, "destination");
+assert.notEqual(anotherServer.operationId, freshAttempt.operationId);
+assert.equal(attempts.get("server/actor-a", source, "destination"), freshAttempt,
+  "Returning to a server scope preserves the original intent and source fences");
+const rejectedAttempt = attempts.get("server/actor-a", source, "destination");
+attempts.acknowledgeRejection(rejectedAttempt.operationId, new Error("Lost response"));
+attempts.acknowledgeRejection(rejectedAttempt.operationId, new EventMutationError("Conflict", false, undefined, "task-source-changed"));
+attempts.acknowledgeRejection(rejectedAttempt.operationId, new EventMutationError("Committed", true, undefined, TASK_FORK_NOT_COMMITTED_CODE));
+assert.equal(attempts.get("server/actor-a", { ...source, revision: 5 }, "destination"), rejectedAttempt);
+attempts.acknowledgeRejection(rejectedAttempt.operationId, new EventMutationError("Not committed", false, undefined, TASK_FORK_NOT_COMMITTED_CODE));
+const afterRejection = attempts.get("server/actor-a", { ...source, revision: 5 }, "destination");
+assert.notEqual(afterRejection.operationId, rejectedAttempt.operationId);
+assert.equal(afterRejection.request.expectedRevision, 5);
 
 assert.equal(uniqueTasks([{ ...task, revision: 5 }, { ...task, revision: 3 }])[0].revision, 5);
 assert.equal(uniqueTasks([{ ...task, revision: 5, providerReadRetiredGeneration: 1 }, { ...task, revision: 5 }])[0].providerReadRetiredGeneration, 1);

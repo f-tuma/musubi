@@ -2,13 +2,13 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import express from "express";
 import { and, eq, inArray } from "drizzle-orm";
-import { db, user, calendarMembers, createCalendar, replaceMemberToken, getTaskSnapshot } from "@musubi/db";
-import { CLIENT_VERSION_HEADER, PRODUCT_VERSION, TaskSchema, TaskMutationResponseSchema, TaskDeleteResponseSchema, type Task } from "@musubi/types";
+import { db, user, calendarMembers, createCalendar, replaceMemberToken, getTaskSnapshot, tasks, taskMutations, taskOutbox } from "@musubi/db";
+import { CLIENT_VERSION_HEADER, PRODUCT_VERSION, TaskSchema, TaskMutationResponseSchema, TaskDeleteResponseSchema, TASK_FORK_NOT_COMMITTED_CODE, type Task } from "@musubi/types";
 import { issueMemberToken } from "../federation_tokens";
-import { requireAuth } from "../middleware/require_auth";
 import { middlewareErrorHandler } from "../middleware/error_handler";
-import { handlerCreateTask, handlerGetTask, handlerGetTasks, handlerUpdateTask, handlerRemoveTask, handlerLinkTask, handlerForkTask } from "./tasks";
-import { handlerGetTaskDeliveryInbox, handlerGetTaskDelivery, handlerRetryTaskDelivery } from "./task_delivery";
+import { requireAuth } from "../middleware/require_auth";
+import { handlerStream } from "./stream";
+import { registerTaskRoutes } from "../task_routes";
 
 async function main() {
   assert.equal(process.env.ENVIRONMENT, "test", "Use a disposable PostgreSQL database.");
@@ -26,28 +26,54 @@ async function main() {
     { userID: users[2], calendarID: mirror.id, role: "viewer" },
   ]);
   const app = express(); app.use(express.json());
-  app.get("/tasks", requireAuth, handlerGetTasks);
-  app.post("/tasks", requireAuth, handlerCreateTask);
-  app.get("/tasks/:taskId", requireAuth, handlerGetTask);
-  app.patch("/tasks/:taskId", requireAuth, handlerUpdateTask);
-  app.put("/tasks/:taskId", requireAuth, handlerUpdateTask);
-  app.delete("/tasks/:taskId", requireAuth, handlerRemoveTask);
-  app.post("/tasks/:taskId/link", requireAuth, handlerLinkTask);
-  app.post("/tasks/:taskId/fork", requireAuth, handlerForkTask);
-  app.get("/task-deliveries", requireAuth, handlerGetTaskDeliveryInbox);
-  app.get("/tasks/:taskId/delivery", requireAuth, handlerGetTaskDelivery);
-  app.post("/tasks/:taskId/delivery/:operationId/retry", requireAuth, handlerRetryTaskDelivery);
+  // Destroy the real HTTP connection only after the handler has committed and
+  // assembled its result, reproducing a lost response rather than a failed write.
+  let loseNextForkResponse = false;
+  app.use((req, res, next) => {
+    if (loseNextForkResponse && req.method === "POST" && req.path.endsWith("/fork")) {
+      loseNextForkResponse = false;
+      res.json = () => { res.destroy(); return res; };
+    }
+    next();
+  });
+  registerTaskRoutes(app);
+  app.get("/api/v1/stream", requireAuth, handlerStream);
   app.use(middlewareErrorHandler);
   const server = app.listen(0, "127.0.0.1");
   await new Promise<void>(resolve => server.once("listening", resolve));
   const origin = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
   const send = async (actor: number, method: string, path: string, body?: unknown, mutationID?: string) => {
-    const response = await fetch(origin + path, { method, headers: { authorization: `Bearer ${tokens[actor].raw}`,
+    const endpoint = path.startsWith("/task-deliveries") ? `/api/v1${path}`
+      : path.replace(/^\/tasks/, method === "GET" || path.includes("/delivery") ? "/api/v1/tasks" : "/api/v1/task-mutations");
+    const response = await fetch(origin + endpoint, { method, headers: { authorization: `Bearer ${tokens[actor].raw}`,
       [CLIENT_VERSION_HEADER]: PRODUCT_VERSION, "content-type": "application/json", ...(mutationID ? { "Idempotency-Key": mutationID } : {}) },
       body: body === undefined ? undefined : JSON.stringify(body) });
     return { status: response.status, body: await response.json() };
   };
+  const streamAbort = new AbortController();
+  let captureStream: Promise<void> | undefined;
+  const streamFrames: { type: string; payload: { id?: string } }[] = [];
   try {
+    const stream = await fetch(`${origin}/api/v1/stream`, { signal: streamAbort.signal,
+      headers: { authorization: `Bearer ${tokens[1].raw}`, [CLIENT_VERSION_HEADER]: PRODUCT_VERSION } });
+    assert.equal(stream.status, 200); assert.ok(stream.body);
+    const reader = stream.body.getReader(), decoder = new TextDecoder();
+    captureStream = (async () => {
+      let pending = "";
+      while (!streamAbort.signal.aborted) {
+        const { done, value } = await reader.read();
+        if (done) return;
+        pending += decoder.decode(value, { stream: true });
+        const frames = pending.split("\n\n"); pending = frames.pop()!;
+        for (const frame of frames) if (frame.startsWith("data: ")) streamFrames.push(JSON.parse(frame.slice(6)));
+      }
+    })().catch(error => { if (!streamAbort.signal.aborted) throw error; });
+    const creationCount = (id: string) => streamFrames.filter(frame => frame.type === "task_created" && frame.payload.id === id).length;
+    const waitForCreation = async (id: string) => {
+      const deadline = Date.now() + 2_000;
+      while (!creationCount(id) && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 10));
+      assert.equal(creationCount(id), 1, "Committed copy emits one creation notification");
+    };
     const id = randomUUID(), path = `/tasks/${id}`;
     const created = await send(0, "POST", "/tasks", { id, calendarID: home.id, title: "Shared work", description: "Preserve this", priority: 3 });
     assert.equal(created.status, 201, JSON.stringify(created.body));
@@ -83,17 +109,97 @@ async function main() {
     assert.equal(done.status, 200); assert.equal(done.body.task.percentComplete, 100); assert.ok(done.body.task.completedAt);
     assert.equal((await send(2, "GET", path)).body.status, "completed");
     assert.equal((await send(2, "GET", "/tasks")).body.tasks.filter((task: Task) => task.id === id).length, 1);
-    const copyMutation = randomUUID();
-    const copy = await send(1, "POST", `${path}/fork`, { expectedRevision: 4, calendarID: forkHome.id }, copyMutation);
-    assert.equal(copy.status, 201); assert.notEqual(copy.body.task.id, id); assert.equal(copy.body.task.originCalendarID, forkHome.id);
-    assert.equal(copy.body.task.capabilities.edit, true); assert.equal(copy.body.task.revision, 1);
-    assert.equal((await send(1, "POST", `${path}/fork`, { expectedRevision: 4, calendarID: forkHome.id }, copyMutation)).status, 409);
+    const copyMutation = randomUUID(), copyRequest = { expectedRevision: 4, calendarID: forkHome.id };
+    loseNextForkResponse = true;
+    await assert.rejects(() => send(1, "POST", `${path}/fork`, copyRequest, copyMutation), /fetch failed/);
+    const [savedCopyReceipt] = await db.select().from(taskMutations)
+      .where(and(eq(taskMutations.actorID, users[1]), eq(taskMutations.mutationID, copyMutation)));
+    assert.ok(savedCopyReceipt, "Fork committed before its HTTP response was lost");
+    const copy = await send(1, "POST", `${path}/fork`, copyRequest, copyMutation);
+    assert.equal(copy.status, 201, JSON.stringify(copy.body));
+    const copiedTask = TaskMutationResponseSchema.parse(copy.body).task!;
+    assert.equal(copiedTask.id, savedCopyReceipt.taskID); assert.notEqual(copiedTask.id, id);
+    assert.equal(copiedTask.originCalendarID, forkHome.id); assert.deepEqual(copiedTask.calendarIDs, [forkHome.id]);
+    assert.equal(copiedTask.capabilities?.edit, true); assert.equal(copiedTask.revision, 1);
+    await waitForCreation(copiedTask.id);
+    const copyRows = () => db.select().from(tasks).where(eq(tasks.originCalendarID, forkHome.id));
+    assert.equal((await copyRows()).length, 1, "Retry returns the same copy rather than creating another task");
+    const conflictingCopies = [
+      { ...copyRequest, calendarID: mirror.id },
+      { ...copyRequest, expectedRevision: 3 },
+      { ...copyRequest, expectedProviderReadRetiredGeneration: 1 },
+    ];
+    for (const request of conflictingCopies) {
+      const conflict = await send(1, "POST", `${path}/fork`, request, copyMutation);
+      assert.equal(conflict.status, 409); assert.equal(conflict.body.code, "task-mutation-duplicate");
+      assert.equal(JSON.stringify(conflict.body).includes(copiedTask.title), false);
+    }
+    assert.equal((await send(1, "POST", `/tasks/${copiedTask.id}/fork`, copyRequest, copyMutation)).status, 409);
+    assert.equal((await send(2, "POST", `${path}/fork`, copyRequest, copyMutation)).status, 403,
+      "A different actor cannot retrieve another actor's copy with its mutation key");
+    assert.equal((await copyRows()).length, 1);
+    const concurrentMutation = randomUUID();
+    const concurrent = await Promise.all([
+      send(1, "POST", `${path}/fork`, copyRequest, concurrentMutation),
+      send(1, "POST", `${path}/fork`, copyRequest, concurrentMutation),
+    ]);
+    assert.deepEqual(concurrent.map(result => result.status), [201, 201]);
+    assert.equal(concurrent[0].body.task.id, concurrent[1].body.task.id);
+    await waitForCreation(concurrent[0].body.task.id);
+    assert.equal((await copyRows()).length, 2, "Concurrent exact requests commit one additional independent copy");
+    assert.equal((await db.select().from(taskMutations).where(and(eq(taskMutations.actorID, users[1]),
+      eq(taskMutations.mutationID, concurrentMutation)))).length, 1);
+    assert.equal((await db.select().from(taskOutbox).where(eq(taskOutbox.mutationID, copyMutation))).length, 0);
+
     const reopened = await send(0, "PATCH", path, { expectedRevision: 4, patch: { status: "needs-action" } });
     assert.equal(reopened.body.task.completedAt, null); assert.equal(reopened.body.task.percentComplete, 0);
+    const recoveredAfterSourceChange = await send(1, "POST", `${path}/fork`, copyRequest, copyMutation);
+    assert.equal(recoveredAfterSourceChange.status, 201);
+    assert.equal(recoveredAfterSourceChange.body.task.id, copiedTask.id);
+    assert.equal(recoveredAfterSourceChange.body.task.status, "completed", "Copy remains independent of later source changes");
+    const staleTarget = await createCalendar({ creatorID: users[1], name: "Refreshed intentional copies", color: "#112233" });
+    const staleMutation = randomUUID(), staleRequest = { calendarID: staleTarget.id, expectedRevision: 4 };
+    const staleAttempts = await Promise.all([
+      send(1, "POST", `${path}/fork`, staleRequest, staleMutation),
+      send(1, "POST", `${path}/fork`, staleRequest, staleMutation),
+    ]);
+    for (const rejected of staleAttempts) {
+      assert.equal(rejected.status, 409); assert.equal(rejected.body.code, TASK_FORK_NOT_COMMITTED_CODE);
+      assert.equal(rejected.body.localCommitted, false); assert.equal(rejected.body.task, undefined);
+    }
+    assert.equal((await db.select().from(tasks).where(eq(tasks.originCalendarID, staleTarget.id))).length, 0);
+    assert.equal((await send(1, "POST", `${path}/fork`, staleRequest, staleMutation)).body.code, TASK_FORK_NOT_COMMITTED_CODE,
+      "Late original requests remain terminal noncommits");
+    assert.equal((await send(1, "POST", `${path}/fork`, { ...staleRequest, expectedRevision: 5 }, staleMutation)).status, 409,
+      "Fresh payload requires a fresh intentional key after the terminal proof");
+    const intentionalCopy = await send(1, "POST", `${path}/fork`, { ...staleRequest, expectedRevision: 5 }, randomUUID());
+    assert.equal(intentionalCopy.status, 201, JSON.stringify(intentionalCopy.body));
+    assert.equal(intentionalCopy.body.task.status, "needs-action");
+    assert.equal((await db.select().from(tasks).where(eq(tasks.originCalendarID, staleTarget.id))).length, 1);
     const unlink = await send(1, "DELETE", path, { expectedRevision: 5, unlinkCalendarID: mirror.id });
     assert.equal(unlink.status, 200); assert.equal(TaskDeleteResponseSchema.parse(unlink.body).removed, false);
     assert.equal(unlink.body.task, null, "Last readable unlink does not return private home content");
     assert.equal((await send(1, "GET", path)).status, 404); assert.equal((await getTaskSnapshot(id))?.deletedAt, null);
+    const recoveredWithoutSourceAccess = await send(1, "POST", `${path}/fork`, copyRequest, copyMutation);
+    assert.equal(recoveredWithoutSourceAccess.status, 201);
+    assert.equal(recoveredWithoutSourceAccess.body.task.id, copiedTask.id,
+      "A legitimate independent copy uses its own current read permissions");
+    const privateCopyMirror = await createCalendar({ creatorID: users[0], name: "Private copied membership", color: "#112233" });
+    await db.insert(calendarMembers).values({ userID: users[1], calendarID: privateCopyMirror.id, role: "editor" });
+    assert.equal((await send(1, "POST", `/tasks/${copiedTask.id}/link`, {
+      expectedRevision: 1, calendarID: privateCopyMirror.id,
+    })).status, 200);
+    await db.delete(calendarMembers).where(and(eq(calendarMembers.userID, users[1]), eq(calendarMembers.calendarID, privateCopyMirror.id)));
+    const filteredReplay = await send(1, "POST", `${path}/fork`, copyRequest, copyMutation);
+    assert.equal(filteredReplay.status, 201);
+    assert.deepEqual(filteredReplay.body.task.calendarIDs, [forkHome.id], "Replay filters current private membership links");
+    await db.delete(calendarMembers).where(and(eq(calendarMembers.userID, users[1]), eq(calendarMembers.calendarID, forkHome.id)));
+    const hiddenReplay = await send(1, "POST", `${path}/fork`, copyRequest, copyMutation);
+    assert.equal(hiddenReplay.status, 201); assert.equal(hiddenReplay.body.localCommitted, true); assert.equal(hiddenReplay.body.task, null);
+    const hiddenBody = JSON.stringify(hiddenReplay.body);
+    for (const secret of [copiedTask.title, "Preserve this", home.id, privateCopyMirror.id, "Private copied membership"])
+      assert.equal(hiddenBody.includes(secret), false, "Permission loss must reveal no copy content or private source memberships");
+    assert.equal((await copyRows()).length, 2, "Revoked read rights never cause another copy to be created");
     assert.equal((await send(0, "GET", `${path}/delivery`)).body.targets.length, 0);
     assert.deepEqual((await send(0, "GET", "/task-deliveries")).body, { items: [], nextCursor: null });
     assert.equal((await send(0, "GET", "/task-deliveries?cursor=invalid")).status, 400);
@@ -119,9 +225,13 @@ async function main() {
     assert.equal(deleted.status, 200); assert.equal(deleted.body.removed, true); assert.equal(deleted.body.revision, 7);
     assert.equal((await send(0, "GET", path)).status, 404);
     assert.ok((await getTaskSnapshot(id))?.deletedAt);
+    assert.equal(creationCount(copiedTask.id), 1, "Exact fork replays never emit another task_created notification");
+    assert.equal(creationCount(concurrent[0].body.task.id), 1, "Concurrent duplicate recovery does not emit another creation");
     console.log("Authenticated shared tasks: home permissions, filtered memberships, CAS race, copy idempotence, unlink privacy, completion and tombstone OK");
   } finally {
+    streamAbort.abort();
     server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve()));
+    await captureStream;
     await db.delete(user).where(inArray(user.id, users));
   }
 }

@@ -37,4 +37,4 @@ export * from "./time-zone-options";
 export * from "./outlook-cancellation";
 export * from "./outlook-time-zone";
 
-export { TaskForkAttempts } from "./task-fork-attempts";
+export { TaskForkAttempts, type TaskForkAttempt } from "./task-fork-attempts";

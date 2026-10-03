@@ -1,5 +1,5 @@
 import { TaskDeliveryModal } from "./TaskDeliveryModal";
-import { taskCapabilities, taskCalendarIDs, taskHomeCalendarID } from "@musubi/calendar";
+import { taskCapabilities, taskCalendarIDs, taskHomeCalendarID, taskSharingTargets } from "@musubi/calendar";
 import { useApi } from "@/services/api";
 import { confirm } from "@/lib/confirm";
 import { TaskEditorModal } from "./TaskEditorModal";
@@ -11,7 +11,7 @@ import { useState } from "react";
 import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Animated from "react-native-reanimated";
-import { can, providerFlavor, type Calendar, type Task, type TaskStatus } from "@musubi/types";
+import { calendarSupportsTaskLinks, providerFlavor, type Calendar, type Task, type TaskStatus } from "@musubi/types";
 import { ProviderIcon } from "@/components/calendar/ProviderIcon";
 import { colors, fonts, styles } from "@/constants/theme";
 import { ModalPortal } from "@/components/ui/ModalPortal";
@@ -51,7 +51,7 @@ export function TaskDetailModal({ task, calendar, calendars = calendar ? [calend
   const [sharingAction, setSharingAction] = useState<"link" | "fork">();
   const capabilities = taskCapabilities(task, calendars);
   const memberships = calendars.filter(member => taskCalendarIDs(task).includes(member.id));
-  const targets = calendars.filter(member => can(member.role, "editTasks") && member.supportsTasks !== false && (!task.recurrence || !member.provider) && (sharingAction === "fork" || !taskCalendarIDs(task).includes(member.id)));
+  const targets = taskSharingTargets(task, calendars, sharingAction ?? "link");
   const canShare = capabilities.link || capabilities.fork || capabilities.unlinkCalendarIDs.length > 0;
   const [picker, setPicker] = useState<"status" | "priority">();
   const { fadeStyle, slideStyle, gesture, handleClose } = useModalAnimation(true, onClose);
@@ -77,7 +77,7 @@ export function TaskDetailModal({ task, calendar, calendars = calendar ? [calend
   }
   function unlink(calendarID: string) {
     if (busy || !capabilities.unlinkCalendarIDs.includes(calendarID)) return;
-    confirm({ title: "Remove from calendar?", message: calendars.find(member => member.id === calendarID)?.name ?? "", confirmLabel: "Remove" }, () => {
+    confirm({ title: "Remove from calendar?", message: calendars.find(member => member.id === calendarID)?.provider === "microsoft" ? "Only the Musubi link is removed; the Microsoft task stays in To Do." : calendars.find(member => member.id === calendarID)?.name ?? "", confirmLabel: "Remove" }, () => {
       setActionBusy(true);
       void api.removeTask(task, calendarID).then(saved => { onSaved(saved); if (!saved) onClose(); }).catch(error => showToast({ message: userFacingError(error, "Could not remove task from calendar.") })).finally(() => setActionBusy(false));
     });
@@ -105,7 +105,7 @@ export function TaskDetailModal({ task, calendar, calendars = calendar ? [calend
               {memberships.map(member => <View key={member.id} accessible accessibilityLabel={`${member.name} · ${member.id === taskHomeCalendarID(task) ? "Home calendar" : "Linked calendar, read-only"}`} style={[styles.pill, styles.pillEmphasized, { borderColor: colors.line3 }]}>
                 {member.provider ? <ProviderIcon provider={providerFlavor(member)} color={member.color} /> : <View style={[styles.colorDot, { backgroundColor: member.color }]} />}
                 {member.id !== taskHomeCalendarID(task) ? <Feather name="lock" size={11} color={colors.fg3} /> : null}
-                <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg2 }}>{member.name}{member.id === taskHomeCalendarID(task) ? " · Home" : ""}</Text>
+                <Text style={{ fontFamily: fonts.sans, fontSize: 12, color: colors.fg2 }}>{member.name}{member.id === taskHomeCalendarID(task) ? " · Home" : !calendarSupportsTaskLinks(member) ? " · Unsupported link" : ""}</Text>
               </View>)}
             </View>
           ) : null}

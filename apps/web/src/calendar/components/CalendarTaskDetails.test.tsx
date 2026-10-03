@@ -116,3 +116,30 @@ it("keeps an old cached task readable but disables writes until its revision is 
   expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
   expect((screen.getByRole("combobox", { name: "Task status" }) as HTMLButtonElement).disabled).toBe(true);
 });
+
+
+it("offers Microsoft only for independent copies and shows legacy unsupported links", async () => {
+  const user = userEvent.setup();
+  const home = fixtureCalendars[0]!, ms = { ...home, id: "ms-tasks", name: "Microsoft Tasks", provider: "microsoft", supportsTasks: true, supportsTaskLinks: false };
+  const supported = { ...home, id: "google-tasks", name: "Google Tasks", provider: "google", supportsTasks: true };
+  const shared = TaskSchema.parse({ ...task, recurrence: null, calendarID: home.id, originCalendarID: home.id, calendarIDs: [home.id], capabilities: { edit: true, delete: true, link: true, fork: true, unlinkCalendarIDs: [ms.id] } });
+  const link = vi.fn(async () => shared), fork = vi.fn(async () => shared), remove = vi.fn(async () => {});
+  const context = { tasks: [shared], calendars: [home, ms, supported], settings, offline: false, update: vi.fn(), remove, link, fork };
+  const view = render(<CalendarTaskContext.Provider value={context}><TaskDetails taskId={shared.id} open onOpenChange={vi.fn()} /></CalendarTaskContext.Provider>);
+  await user.click(screen.getByRole("button", { name: "More task actions" }));
+  await user.click(screen.getByRole("menuitem", { name: "Link to another calendar" }));
+  expect(screen.queryByRole("button", { name: "Link to Microsoft Tasks" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Link to Google Tasks" })).toBeTruthy();
+  await user.click(screen.getByRole("button", { name: "Back to task actions" }));
+  await user.click(screen.getByRole("button", { name: "More task actions" }));
+  await user.click(screen.getByRole("menuitem", { name: "Make an independent copy" }));
+  await user.click(screen.getByRole("button", { name: "Make copy in Microsoft Tasks" }));
+  expect(fork).toHaveBeenCalledWith(shared, ms.id); expect(link).not.toHaveBeenCalled();
+  view.rerender(<CalendarTaskContext.Provider value={{ ...context, tasks: [{ ...shared, calendarIDs: [home.id, ms.id] }] }}><TaskDetails taskId={shared.id} open onOpenChange={vi.fn()} /></CalendarTaskContext.Provider>);
+  expect(screen.getByText("Unsupported link")).toBeTruthy();
+  await user.click(screen.getByRole("button", { name: "More task actions" }));
+  await user.click(screen.getByRole("menuitem", { name: "Remove from Microsoft Tasks" }));
+  expect(screen.getByText("Only the Musubi link is removed; the Microsoft task stays in To Do.")).toBeTruthy();
+  await user.click(screen.getByRole("button", { name: "Remove from calendar" }));
+  expect(remove).toHaveBeenCalledWith(expect.objectContaining({ calendarIDs: [home.id, ms.id] }), ms.id);
+});

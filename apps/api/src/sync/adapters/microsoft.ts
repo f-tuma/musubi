@@ -1056,7 +1056,7 @@ export const microsoftAdapter: CalendarAdapter = {
     // To Do exposes weak @odata.etag, but its v1.0 update/delete contract does
     // not document a conditional-write guarantee. New fanout must not mistake
     // preflight for CAS; existing legacy single-source methods stay separate.
-    if (operation.secondary && operation.action !== "create") throw new ProviderTaskWriteError("task-conditional-write-unsupported");
+    if (operation.secondary) throw new ProviderTaskWriteError("task-conditional-write-unsupported");
     if (operation.action !== "create") {
       if (!operation.external?.etag) throw new ProviderTaskWriteError("task-version-unavailable");
       const current = await microsoftAdapter.readTask!(userID, accountId, externalCalendarId, operation.external);

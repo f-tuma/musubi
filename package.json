@@ -41,7 +41,7 @@
     "db:migrate": "pnpm -F @musubi/db exec drizzle-kit migrate",
     "wire:snapshot": "tsx scripts/snapshot-wire.mjs",
     "test:query-runtime": "node scripts/test-query-string-runtime.mjs",
-    "test:db:tasks": "pnpm --filter @musubi/db exec tsx src/queries/task-migration.integration.test.ts && pnpm --filter @musubi/db exec tsx src/queries/tasks.integration.test.ts && pnpm --filter @musubi/db exec tsx src/queries/task-delivery-status.integration.test.ts && pnpm --filter @musubi/api exec tsx src/handlers/tasks.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/shared_tasks.integration.test.ts"
+    "test:db:tasks": "pnpm --filter @musubi/db exec tsx src/queries/task-migration.integration.test.ts && pnpm --filter @musubi/db exec tsx src/queries/tasks.integration.test.ts && pnpm --filter @musubi/db exec tsx src/queries/task-delivery-status.integration.test.ts && pnpm --filter @musubi/api exec tsx src/handlers/tasks.integration.test.ts && pnpm --filter @musubi/api exec tsx src/task_compatibility.integration.test.ts && pnpm --filter @musubi/api exec tsx src/handlers/task_link_capabilities.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/shared_tasks.integration.test.ts"
   },
   "keywords": [],
   "author": "frgtn.dev",

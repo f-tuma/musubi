@@ -39,6 +39,21 @@ export const TaskSchema = z.object({
   url: z.string().nullish(),
 });
 
+export const TaskListResponseSchema = z.object({ tasks: z.array(TaskSchema) });
+
+// A distinct URL is the compatibility boundary: it does not exist on an older
+// API, and must never fall back to legacy writes after a failed request.
+export const TASK_MUTATION_PATH = "/api/v1/task-mutations";
+export const TASK_FORK_NOT_COMMITTED_CODE = "task-fork-not-committed" as const;
+export const TaskClientUpgradeRequiredSchema = z.object({
+  error: z.string(),
+  code: z.literal("task-client-upgrade-required"),
+  message: z.string(),
+  localCommitted: z.literal(false),
+  taskMutationPath: z.literal(TASK_MUTATION_PATH),
+  requestId: z.string().optional(),
+});
+
 export const TaskCreateSchema = TaskSchema.omit({
   providerReadRetiredGeneration: true,
   creatorID: true,
@@ -51,6 +66,10 @@ export const TaskCreateSchema = TaskSchema.omit({
 export const TaskUpdateSchema = TaskCreateSchema.omit({ id: true }).extend({
   expectedRevision: z.number().int().positive().optional(),
   expectedProviderReadRetiredGeneration: z.number().int().nonnegative().optional(),
+});
+
+export const TaskReplaceRequestSchema = TaskUpdateSchema.extend({
+  expectedRevision: z.number().int().positive(),
 });
 
 // Explicit patch fields must not apply creation defaults to omitted values.
@@ -108,8 +127,9 @@ export const TaskDeliveryInboxSchema = z.object({
   items: z.array(z.object({ taskId: z.string(), savedTitle: z.string() })),
   nextCursor: z.string().nullable(),
 });
+const CommittedTaskSchema = TaskSchema.extend({ revision: z.number().int().positive() });
 export const TaskMutationResponseSchema = z.object({
-  task: TaskSchema.nullable(),
+  task: CommittedTaskSchema.nullable(),
   localCommitted: z.literal(true),
   delivery: TaskDeliverySchema.optional(),
 });
@@ -117,7 +137,7 @@ export const TaskDeleteResponseSchema = z.object({
   id: z.string(),
   revision: z.number().int().positive(),
   removed: z.boolean(),
-  task: TaskSchema.nullable(),
+  task: CommittedTaskSchema.nullable(),
   localCommitted: z.literal(true),
   delivery: TaskDeliverySchema.optional(),
 });

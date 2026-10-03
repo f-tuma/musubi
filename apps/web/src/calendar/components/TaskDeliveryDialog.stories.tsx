@@ -18,5 +18,5 @@ function DeliveryStory({ retryable = false }: { retryable?: boolean }) {
 const meta = { title: "Calendar/Tasks/Delivery", component: DeliveryStory, parameters: { chromatic: { modes: DESKTOP_MODES } } } satisfies Meta<typeof DeliveryStory>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const UnconfirmedCreate: Story = { play: async () => { await expect(await screen.findByText("Delivery unconfirmed")).toBeVisible(); await expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument(); } };
+export const UnconfirmedCreate: Story = { play: async () => { await waitFor(() => expect(screen.getByText("Delivery unconfirmed")).toBeVisible()); await expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument(); } };
 export const Retryable: Story = { args: { retryable: true }, play: async () => { await waitFor(() => expect(screen.getByRole("button", { name: "Retry" })).toBeVisible()); } };

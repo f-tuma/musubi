@@ -2,13 +2,13 @@ import { randomUUID } from "node:crypto";
 import type { Request, Response } from "express";
 import { logger } from "@musubi/config";
 import {
-  BadRequestError, ForbiddenError, NotFoundError, TaskCreateSchema, TaskDeleteRequestSchema,
-  TaskLinkRequestSchema, TaskPatchRequestSchema, TaskSchema, TaskUpdateSchema,
+  BadRequestError, ForbiddenError, NotFoundError, calendarSupportsTaskLinks, TaskCreateSchema, TaskDeleteRequestSchema,
+  TASK_FORK_NOT_COMMITTED_CODE, TaskLinkRequestSchema, TaskPatchRequestSchema, TaskSchema, TaskUpdateSchema,
   type Task, type TaskContentPatch, type TaskCreate, type TaskUpdate,
 } from "@musubi/types";
 import {
-  createTask, forkTask, getCalendarMembers, getExternalLinkForCalendar, getTaskDeliveryStatus,
-  getTaskMutationOutboxIDs, getTaskSnapshot, getUserTask, getUserTasks, linkTask, removeTask,
+  createTask, DuplicateTaskMutationError, forkTask, getTaskForkReplay, getCalendarMembers, getExternalLinkForCalendar, getTaskDeliveryStatus,
+  getTaskMutationOutboxIDs, getTaskSnapshot, getUserTask, getUserTasks, linkTask, rejectTaskFork, removeTask,
   taskOutboxSnapshot, unlinkTask, updateTask, type TaskMutation, type TaskSnapshot,
 } from "@musubi/db";
 import { assertCan } from "../permissions";
@@ -100,7 +100,7 @@ function afterTaskCommit(identity: ReturnType<typeof taskIdentity>, task: TaskSn
   void getTaskMutationOutboxIDs(identity.actorID, identity.mutationID).then(ids => Promise.all(ids.map(({ id }) => deliverTaskOutbox(id))))
     .catch(() => logger.warn("tasks.delivery.wakeup_failed", { taskID: task.id }));
 }
-async function mutationResponse(req: Request, task: TaskSnapshot) {
+async function mutationResponse(req: Request, task: Pick<TaskSnapshot, "id">) {
   const visible = await getUserTask(req.user!.id, task.id).catch(() => null);
   // Permissions may change after commit: never return an unfiltered snapshot.
   const response = { task: visible ? taskResponse(visible) : null, localCommitted: true as const };
@@ -152,11 +152,45 @@ async function shareTask(req: Request, res: Response, fork: boolean) {
   const parsed = TaskLinkRequestSchema.safeParse(req.body);
   if (!parsed.success) throw new BadRequestError("A destination and current expectedRevision are required.");
   const input = parsed.data, taskID = requireUUID(req.params.taskId, "taskId"), identity = taskIdentity(req);
+  const reconcileFork = async () => {
+    if (!fork) return false;
+    const previous = await getTaskForkReplay(taskID, input.calendarID, { ...identity,
+      expectedRevision: input.expectedRevision,
+      expectedProviderReadRetiredGeneration: input.expectedProviderReadRetiredGeneration });
+    if (!previous) return false;
+    if (previous.kind === "not-committed") {
+      res.status(409).json({ error: "The task or its source access changed. Refresh before copying; no copy was saved.",
+        code: TASK_FORK_NOT_COMMITTED_CODE, localCommitted: false });
+      return true;
+    }
+    // The saved identity is not a read grant. The response uses only current
+    // copy permissions, even if the source changed or access was revoked.
+    res.status(201).json(await mutationResponse(req, { id: previous.taskID }));
+    return true;
+  };
+  const rejectFork = async () => {
+    try {
+      await rejectTaskFork(taskID, input.calendarID, { ...identity, expectedRevision: input.expectedRevision,
+        expectedProviderReadRetiredGeneration: input.expectedProviderReadRetiredGeneration });
+    } catch (error) {
+      if (!(error instanceof DuplicateTaskMutationError)) throw error;
+    }
+    return reconcileFork();
+  };
+  if (await reconcileFork()) return;
   const { visible, snapshot } = await visibleSnapshot(req, taskID);
   if (!visible.canShareContent) throw new ForbiddenError("Refresh the task home before sharing its content.");
-  if (snapshot.revision !== input.expectedRevision) return changed(res);
+  if (snapshot.revision !== input.expectedRevision) {
+    if (fork && await rejectFork()) return;
+    return changed(res);
+  }
   await assertCan(identity.actorID, input.calendarID, "editTasks");
   await assertTaskCapableCalendar(input.calendarID);
+  if (!fork) {
+    const destination = await getExternalLinkForCalendar(input.calendarID);
+    if (!calendarSupportsTaskLinks({ provider: destination?.provider, supportsTasks: destination?.supportsTasks }))
+      throw new ForbiddenError("This calendar cannot maintain a live task link. Make an independent copy instead. No changes were saved.");
+  }
   const id = fork ? randomUUID() : taskID;
   const projection = fork ? TaskSchema.parse({ ...taskOutboxSnapshot(snapshot, [input.calendarID]), id, creatorID: identity.actorID,
     calendarID: input.calendarID, originCalendarID: input.calendarID, calendarIDs: [input.calendarID], revision: 1,
@@ -166,8 +200,19 @@ async function shareTask(req: Request, res: Response, fork: boolean) {
     !fork && snapshot.calendars.includes(input.calendarID) ? [] : [{ calendarID: input.calendarID, action: "create" }]);
   const options = { ...identity, expectedRevision: input.expectedRevision,
     expectedProviderReadRetiredGeneration: input.expectedProviderReadRetiredGeneration, preparedDestinations };
-  const task = fork ? await forkTask(taskID, { id, calendarID: input.calendarID }, options) : await linkTask(taskID, input.calendarID, options);
-  if (!task) return changed(res);
+  let task;
+  try {
+    task = fork ? await forkTask(taskID, { id, calendarID: input.calendarID }, options) : await linkTask(taskID, input.calendarID, options);
+  } catch (error) {
+    // Transactions serialize the mutation key. If another request committed
+    // while preflight was running, recover its result without another write.
+    if (error instanceof DuplicateTaskMutationError && await reconcileFork()) return;
+    throw error;
+  }
+  if (!task) {
+    if (fork && await rejectFork()) return;
+    return changed(res);
+  }
   afterTaskCommit(identity, task, fork ? "task_created" : "task_updated", fork ? [] : snapshot.calendars);
   res.status(fork ? 201 : 200).json(await mutationResponse(req, task));
 }

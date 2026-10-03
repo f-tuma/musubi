@@ -1,0 +1,1 @@
+ALTER TABLE "task_mutations" ADD COLUMN "fork_outcome" text;

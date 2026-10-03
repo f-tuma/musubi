@@ -8,7 +8,7 @@
     "./rrule-editor": "./src/rrule-editor.ts"
   },
   "scripts": {
-    "test": "tsx src/layout/layout.test.ts && tsx src/recurrence.test.ts && tsx src/time-zone.test.ts && tsx src/outlook-time-zone.test.ts && tsx src/time-edit.test.ts && tsx src/time-draft.test.ts && tsx src/scope-plan.test.ts && tsx src/scope-request.test.ts && tsx src/series-time-edit.test.ts && tsx src/time-expansion.test.ts && tsx src/finite-series.test.ts && tsx src/exdate-restoration.test.ts && tsx src/caldav-series-zone.test.ts && tsx src/recurrence-edit.test.ts && tsx src/rrule-editor.test.ts && tsx src/reminders.test.ts && tsx src/provider-reminder-draft.test.ts && tsx src/note-links.test.ts && tsx src/provider-organizer-draft.test.ts && tsx src/rdate-edit.test.ts && tsx src/event-delivery.test.ts && tsx src/task-calendar.test.ts && tsx src/time-zone-options.test.ts"
+    "test": "tsx src/layout/layout.test.ts && tsx src/recurrence.test.ts && tsx src/time-zone.test.ts && tsx src/outlook-time-zone.test.ts && tsx src/time-edit.test.ts && tsx src/time-draft.test.ts && tsx src/scope-plan.test.ts && tsx src/scope-request.test.ts && tsx src/series-time-edit.test.ts && tsx src/time-expansion.test.ts && tsx src/finite-series.test.ts && tsx src/exdate-restoration.test.ts && tsx src/caldav-series-zone.test.ts && tsx src/recurrence-edit.test.ts && tsx src/rrule-editor.test.ts && tsx src/reminders.test.ts && tsx src/provider-reminder-draft.test.ts && tsx src/note-links.test.ts && tsx src/provider-organizer-draft.test.ts && tsx src/rdate-edit.test.ts && tsx src/event-delivery.test.ts && tsx src/task-calendar.test.ts && tsx src/task-sharing.test.ts && tsx src/time-zone-options.test.ts"
   },
   "private": true,
   "dependencies": {

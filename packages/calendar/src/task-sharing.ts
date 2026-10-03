@@ -1,4 +1,4 @@
-import { can, type Calendar, type Task } from "@musubi/types";
+import { can, calendarSupportsTaskLinks, type Calendar, type Task } from "@musubi/types";
 
 /** Membership is distinct from ownership. A readable mirror never becomes home. */
 export function taskCalendarIDs(task: Task): string[] {
@@ -44,4 +44,12 @@ export function uniqueTasks(tasks: readonly Task[]): Task[] {
     byId.set(task.id, task);
   }
   return [...byId.values()];
+}
+
+/** A copy has its own home; a live link must be maintainable for its lifetime. */
+export function taskSharingTargets(task: Task, calendars: readonly Calendar[], action: "link" | "fork"): Calendar[] {
+  const memberships = new Set(taskCalendarIDs(task));
+  return calendars.filter(calendar => can(calendar.role, "editTasks") && calendar.supportsTasks !== false
+    && (!task.recurrence || !calendar.provider)
+    && (action === "fork" || calendarSupportsTaskLinks(calendar) && !memberships.has(calendar.id)));
 }

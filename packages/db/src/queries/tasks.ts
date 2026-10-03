@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { and, asc, DrizzleQueryError, eq, inArray, isNull, sql, type SQLWrapper } from "drizzle-orm";
-import { can, ForbiddenError, type TaskContentPatch } from "@musubi/types";
+import { calendarSupportsTaskLinks, can, ForbiddenError, type TaskContentPatch } from "@musubi/types";
 import { db } from "..";
-import { calendarMembers, calendarTasks, externalCalendars, externalTasks, taskMutations, tasks, type NewTask } from "../schema";
+import { calendarMembers, calendarTasks, externalCalendars, externalTasks, taskMutations, tasks, type NewTask, type TaskForkMutationRequest } from "../schema";
 import { lockCalendarLifecycle, lockUserLifecycle } from "./calendar-lifecycle";
 import type { DbTransaction } from "./calendars";
 import { appendTaskOutbox, prepareTaskOutboxInTransaction, taskOutboxSnapshot,
@@ -22,7 +22,7 @@ export type TaskWriteOptions = {
 export type TaskCreateOptions = Omit<TaskWriteOptions, "expectedRevision">;
 
 export class DuplicateTaskMutationError extends Error {
-  constructor() { super("This task mutation has already been committed. Reconcile before retrying."); }
+  constructor() { super("This save request has already been resolved. Refresh before trying again."); }
 }
 
 async function taskWriteTransaction<T>(write: (tx: DbTransaction) => Promise<T>): Promise<T> {
@@ -145,9 +145,54 @@ export async function reserveTaskMutation(tx: DbTransaction, actorID: string, mu
     .where(and(eq(taskMutations.actorID, actorID), eq(taskMutations.mutationID, mutationID))).limit(1);
   if (existing) throw new DuplicateTaskMutationError();
 }
+function taskForkMutationRequest(sourceTaskID: string, targetCalendarID: string,
+  options: Pick<TaskWriteOptions, "expectedRevision" | "expectedProviderReadRetiredGeneration">): TaskForkMutationRequest {
+  return { sourceTaskID: sourceTaskID.toLowerCase(), targetCalendarID: targetCalendarID.toLowerCase(),
+    expectedRevision: options.expectedRevision,
+    expectedProviderReadRetiredGeneration: options.expectedProviderReadRetiredGeneration ?? 0 };
+}
+
+/** Recover only the authenticated actor's exact fork result. No stored content
+ * is replayed: callers must fetch a fresh authorized copy before serializing it.
+ * A changed source revision cannot invalidate an already committed copy. */
+export async function getTaskForkReplay(sourceTaskID: string, targetCalendarID: string,
+  options: Pick<TaskWriteOptions, "actorID" | "mutationID" | "expectedRevision" | "expectedProviderReadRetiredGeneration">) {
+  const [previous] = await db.select().from(taskMutations)
+    .where(and(eq(taskMutations.actorID, options.actorID), eq(taskMutations.mutationID, options.mutationID))).limit(1);
+  if (!previous) return null;
+  const request = taskForkMutationRequest(sourceTaskID, targetCalendarID, options);
+  if (previous.operation !== "fork" || !previous.forkRequest ||
+    (Object.keys(request) as (keyof TaskForkMutationRequest)[]).some(key => previous.forkRequest![key] !== request[key]))
+    throw new DuplicateTaskMutationError();
+  if (previous.forkOutcome === "not-committed") return { kind: "not-committed" as const };
+  if (previous.forkOutcome !== "committed") throw new DuplicateTaskMutationError();
+  return { kind: "committed" as const, taskID: previous.taskID, revision: previous.revision };
+}
+
+async function recordTaskForkRejection(tx: DbTransaction, sourceTaskID: string, targetCalendarID: string, options: TaskWriteOptions) {
+  await tx.insert(taskMutations).values({ actorID: options.actorID, mutationID: options.mutationID,
+    taskID: sourceTaskID, revision: options.expectedRevision, operation: "fork", forkOutcome: "not-committed",
+    forkRequest: taskForkMutationRequest(sourceTaskID, targetCalendarID, options) });
+}
+
+/** Permanently close an unused original fork key before certifying noncommit.
+ * A delayed request with that key can never create a copy after this proof.
+ * A concurrent commit wins the same mutation lock and is reconciled instead. */
+export async function rejectTaskFork(sourceTaskID: string, targetCalendarID: string, options: TaskWriteOptions) {
+  validateRevision(options.expectedRevision);
+  return taskWriteTransaction(async tx => {
+    await lockUserLifecycle(tx, [options.actorID], "shared");
+    const before = await getTaskSnapshotInTransaction(tx, sourceTaskID);
+    await lockCalendarLifecycle(tx, [...(before?.calendars ?? []), targetCalendarID], "shared");
+    await reserveTaskMutation(tx, options.actorID, options.mutationID);
+    await recordTaskForkRejection(tx, sourceTaskID, targetCalendarID, options);
+  });
+}
+
 async function recordMutation(tx: DbTransaction, task: TaskSnapshot,
-  options: Pick<TaskWriteOptions, "actorID" | "mutationID">, operation: typeof taskMutations.$inferInsert["operation"]) {
-  await tx.insert(taskMutations).values({ actorID: options.actorID, mutationID: options.mutationID, taskID: task.id, revision: task.revision, operation });
+  options: Pick<TaskWriteOptions, "actorID" | "mutationID">, operation: typeof taskMutations.$inferInsert["operation"],
+  forkRequest?: TaskForkMutationRequest) {
+  await tx.insert(taskMutations).values({ actorID: options.actorID, mutationID: options.mutationID, taskID: task.id, revision: task.revision, operation, forkRequest, forkOutcome: forkRequest ? "committed" : undefined });
 }
 
 /** Permission rows remain share-locked through commit. Caller already holds
@@ -165,6 +210,7 @@ async function assertTargetWrite(tx: DbTransaction, actorID: string, calendarID:
   const [source] = await tx.select().from(externalCalendars).where(eq(externalCalendars.calendarID, calendarID)).for("share");
   if (!allowUnavailable && source && (source.disabled || !source.supportsTasks || source.providerAccessRole?.startsWith("caldav:read=no;")))
     throw new ForbiddenError("This calendar does not permit task writes.");
+  return source;
 }
 async function assertVisible(tx: DbTransaction, actorID: string, task: TaskSnapshot) {
   const roles = await memberRoles(tx, actorID, task.calendars);
@@ -196,11 +242,11 @@ async function lockedSnapshot(tx: DbTransaction, id: string): Promise<TaskSnapsh
 }
 async function saveWithDelivery(tx: DbTransaction, task: TaskSnapshot, actions: TaskDeliveryAction[],
   options: Pick<TaskWriteOptions, "actorID" | "mutationID" | "preparedDestinations">,
-  operation: typeof taskMutations.$inferInsert["operation"]) {
+  operation: typeof taskMutations.$inferInsert["operation"], forkRequest?: TaskForkMutationRequest) {
   const wire = taskOutboxSnapshot(task, task.calendars);
   const intents = await prepareTaskOutboxInTransaction(tx, wire, actions, options, options.preparedDestinations);
   await appendTaskOutbox(tx, wire, intents);
-  await recordMutation(tx, task, { actorID: options.actorID, mutationID: options.mutationID }, operation);
+  await recordMutation(tx, task, { actorID: options.actorID, mutationID: options.mutationID }, operation, forkRequest);
   return task;
 }
 
@@ -265,7 +311,10 @@ export async function linkTask(id: string, calendarID: string, options: TaskWrit
     if (!current || current.deletedAt || current.revision !== options.expectedRevision) return null;
     await assertVisible(tx, options.actorID, current);
     await assertSourceRehydrated(tx, current);
-    await assertTargetWrite(tx, options.actorID, calendarID);
+    const target = await assertTargetWrite(tx, options.actorID, calendarID);
+    if (!current.calendars.includes(calendarID) && !calendarSupportsTaskLinks({
+      provider: target?.provider, supportsTasks: target?.supportsTasks ?? true,
+    })) throw new ForbiddenError("This provider does not support live task links. Copy the task instead.");
     if ((current.providerReadRetiredGeneration ?? 0) !== (options.expectedProviderReadRetiredGeneration ?? 0)) return null;
     if (current.calendars.includes(calendarID)) {
       await recordMutation(tx, current, options, "link");
@@ -311,14 +360,21 @@ export async function forkTask(id: string, target: { id: string; calendarID: str
     await lockCalendarLifecycle(tx, [...before.calendars, target.calendarID], "shared");
     await reserveTaskMutation(tx, options.actorID, options.mutationID);
     const source = await lockedSnapshot(tx, id);
-    if (!source || source.deletedAt || source.revision !== options.expectedRevision) return null;
+    if (!source || source.deletedAt || source.revision !== options.expectedRevision) {
+      await recordTaskForkRejection(tx, id, target.calendarID, options);
+      return null;
+    }
     await assertVisible(tx, options.actorID, source);
     await assertSourceRehydrated(tx, source);
     await assertTargetWrite(tx, options.actorID, target.calendarID);
-    if ((source.providerReadRetiredGeneration ?? 0) !== (options.expectedProviderReadRetiredGeneration ?? 0)) return null;
+    if ((source.providerReadRetiredGeneration ?? 0) !== (options.expectedProviderReadRetiredGeneration ?? 0)) {
+      await recordTaskForkRejection(tx, id, target.calendarID, options);
+      return null;
+    }
     const copy = await createTaskInTransaction(tx, { ...taskContentPatch(source), title: source.title,
       id: target.id, calendarID: target.calendarID, creatorID: options.actorID });
-    return saveWithDelivery(tx, copy, [{ calendarID: target.calendarID, action: "create" }], options, "fork");
+    return saveWithDelivery(tx, copy, [{ calendarID: target.calendarID, action: "create" }], options, "fork",
+      taskForkMutationRequest(id, target.calendarID, options));
   });
 }
 

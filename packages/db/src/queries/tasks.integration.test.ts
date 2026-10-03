@@ -4,7 +4,7 @@ import { and, eq, sql } from "drizzle-orm";
 import {
   db, user, tasks, calendarTasks, calendarMembers, externalCalendars, externalTasks,
   taskOutbox, taskMutations, createCalendar, removeCalendar, createTask, updateTask,
-  getTask, getTaskSnapshot, getUserTask, getUserTasks, linkTask, unlinkTask, forkTask,
+  getTask, getTaskSnapshot, getUserTask, getUserTasks, linkTask, unlinkTask, forkTask, getTaskForkReplay, rejectTaskFork,
   removeTask, claimTaskOutbox, finishTaskOutbox, getDueTaskOutboxIDs, getTaskOutbox,
   getTaskOutboxExpectedRef, assertTaskOutboxSourceInTransaction, taskOutboxSnapshot,
   getTaskOutboxPredecessorEvidence, prepareTaskOutboxInTransaction, appendTaskOutbox, createTaskInTransaction,
@@ -58,14 +58,55 @@ async function main() {
     assert.equal((await getTask(task.id))?.revision, 4);
     assert.equal(await updateTask(task.id, { title: "Stale" }, options(3)), null);
     await assert.rejects(() => updateTask(task.id, { title: "Missing CAS" }, options(undefined as unknown as number)), /expected task revision/);
-    const copied = await forkTask(task.id, { id: randomUUID(), calendarID: share.id }, options(4, secondaryOwner));
+    const copyIdentity = options(4, secondaryOwner);
+    const copied = await forkTask(task.id, { id: randomUUID(), calendarID: share.id }, copyIdentity);
     assert.ok(copied); assert.notEqual(copied.id, task.id);
     assert.equal(copied.creatorID, secondaryOwner); assert.equal(copied.originCalendarID, share.id); assert.equal(copied.revision, 1);
     assert.equal(copied.status, "completed", "Fork starts with the source snapshot and an independent identity");
+    assert.deepEqual(await getTaskForkReplay(task.id.toUpperCase(), share.id.toUpperCase(), copyIdentity),
+      { kind: "committed", taskID: copied.id, revision: 1 }, "Exact actor-scoped fork receipt recovers its copy identity");
+    const [copyReceipt] = await db.select().from(taskMutations).where(eq(taskMutations.mutationID, copyIdentity.mutationID));
+    assert.deepEqual(copyReceipt.forkRequest, { sourceTaskID: task.id, targetCalendarID: share.id,
+      expectedRevision: 4, expectedProviderReadRetiredGeneration: 0 });
+    assert.equal(JSON.stringify(copyReceipt).includes("Rich description"), false, "Ledger retains no copied content");
+    await assert.rejects(() => getTaskForkReplay(task.id, other.id, copyIdentity), DuplicateTaskMutationError);
+    await assert.rejects(() => getTaskForkReplay(task.id, share.id, { ...copyIdentity, expectedRevision: 5 }), DuplicateTaskMutationError);
+    await assert.rejects(() => getTaskForkReplay(task.id, share.id, { ...copyIdentity, expectedProviderReadRetiredGeneration: 1 }), DuplicateTaskMutationError);
+    await assert.rejects(() => getTaskForkReplay(copied.id, share.id, copyIdentity), DuplicateTaskMutationError);
+    assert.equal(await getTaskForkReplay(task.id, share.id, { ...copyIdentity, actorID: viewer }), null,
+      "Another actor cannot recover the copy identity with the same mutation key");
+    await assert.rejects(() => getTaskForkReplay(task.id, home.id, { ...copyIdentity, actorID: owner,
+      mutationID: createIdentity.mutationID }), DuplicateTaskMutationError, "An identity from another operation cannot become a fork result");
     const detached = await unlinkTask(task.id, share.id, options(4, secondaryOwner));
     assert.ok(detached); assert.equal(detached.revision, 5); assert.equal(detached.deletedAt, null);
     assert.equal(await getUserTask(viewer, task.id), null);
     assert.ok(await getTask(task.id));
+    assert.deepEqual(await getTaskForkReplay(task.id, share.id, copyIdentity), { kind: "committed", taskID: copied.id, revision: 1 },
+      "Later source revisions and source access revocation do not invalidate an independent copy receipt");
+    const rejectedIdentity = options(4, secondaryOwner);
+    assert.equal(await forkTask(task.id, { id: randomUUID(), calendarID: share.id }, rejectedIdentity), null);
+    assert.deepEqual(await getTaskForkReplay(task.id, share.id, rejectedIdentity), { kind: "not-committed" },
+      "Stale source rejection certifies terminal noncommit under the same key lock");
+    const [rejectedReceipt] = await db.select().from(taskMutations).where(eq(taskMutations.mutationID, rejectedIdentity.mutationID));
+    assert.equal(rejectedReceipt.forkOutcome, "not-committed");
+    await assert.rejects(() => forkTask(task.id, { id: randomUUID(), calendarID: share.id }, rejectedIdentity), DuplicateTaskMutationError,
+      "A delayed original request cannot create a copy after the terminal proof");
+    assert.ok(await forkTask(task.id, { id: randomUUID(), calendarID: share.id }, options(5, secondaryOwner)),
+      "A deliberate fresh intent can copy a refreshed source after rejection");
+    const terminalRaceIdentity = options(5, secondaryOwner), terminalRaceCopyID = randomUUID();
+    const terminalRace = await Promise.allSettled([
+      forkTask(task.id, { id: terminalRaceCopyID, calendarID: share.id }, terminalRaceIdentity),
+      rejectTaskFork(task.id, share.id, terminalRaceIdentity),
+    ]);
+    assert.equal(terminalRace.filter(result => result.status === "fulfilled").length, 1,
+      "Commit and terminal rejection serialize to one authoritative outcome");
+    const rejectedRace = terminalRace.find(result => result.status === "rejected");
+    assert.ok(rejectedRace?.status === "rejected" && rejectedRace.reason instanceof DuplicateTaskMutationError);
+    const terminalRaceReceipt = await getTaskForkReplay(task.id, share.id, terminalRaceIdentity);
+    assert.ok(terminalRaceReceipt);
+    assert.equal(Boolean(await getTask(terminalRaceCopyID)), terminalRaceReceipt.kind === "committed",
+      "A certified terminal noncommit can never coexist with a committed copy");
+    await assert.rejects(() => forkTask(task.id, { id: randomUUID(), calendarID: share.id }, terminalRaceIdentity), DuplicateTaskMutationError);
 
     // Recheck authorization inside the mutation transaction, not just API preflight.
     await db.update(calendarMembers).set({ role: "viewer" }).where(and(eq(calendarMembers.calendarID, home.id), eq(calendarMembers.userID, owner)));

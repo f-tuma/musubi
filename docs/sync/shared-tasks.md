@@ -1,8 +1,8 @@
 # Shared tasks
 
 Tasks use the event ownership model: one canonical identity, one home calendar,
-and multiple calendar memberships. The implementation lives on
-`codex/shared-tasks`, based on the Tailwind/shadcn UI migration.
+and multiple calendar memberships. The release branch is `codex/shared-tasks-release`, based on current main.
+The web composes the shared Musubi/shadcn components.
 
 ## Ownership and reads
 
@@ -36,12 +36,12 @@ Web/native filters, search and calendar projections deduplicate by logical task 
 
 | Route | Request | Result |
 | --- | --- | --- |
-| `POST /api/v1/tasks` | Creation fields, ID and home `calendarID` | Mutation receipt |
-| `PATCH /api/v1/tasks/:taskId` | `{patch, expectedRevision}` | Mutation receipt |
-| `PUT /api/v1/tasks/:taskId` | Full draft plus `expectedRevision` | Same revision fence; cannot move home |
-| `POST /api/v1/tasks/:taskId/link` | `{calendarID, expectedRevision}` | Same task with another membership |
-| `POST /api/v1/tasks/:taskId/fork` | `{calendarID, expectedRevision}` | New identity and home, revision 1 |
-| `DELETE /api/v1/tasks/:taskId` | `{expectedRevision, unlinkCalendarID?}` | Global tombstone or secondary unlink |
+| `POST /api/v1/task-mutations` | Creation fields, ID and home `calendarID` | Mutation receipt |
+| `PATCH /api/v1/task-mutations/:taskId` | `{patch, expectedRevision}` | Mutation receipt |
+| `PUT /api/v1/task-mutations/:taskId` | Full draft plus `expectedRevision` | Same revision fence; cannot move home |
+| `POST /api/v1/task-mutations/:taskId/link` | `{calendarID, expectedRevision}` | Same task with another membership |
+| `POST /api/v1/task-mutations/:taskId/fork` | `{calendarID, expectedRevision}` | New identity and home, revision 1 |
+| `DELETE /api/v1/task-mutations/:taskId` | `{expectedRevision, unlinkCalendarID?}` | Global tombstone or secondary unlink |
 
 Requests also carry `expectedProviderReadRetiredGeneration` after source
 retirement. A stale revision/privacy fence returns 409 with `localCommitted:false`.
@@ -53,7 +53,24 @@ DTOs remain readable but clients require refresh before offering mutations.
 `Idempotency-Key` accepts a mutation UUID. Creation defaults to the task UUID;
 other mutations receive a fresh identity when the header is omitted. The
 `task_mutations` ledger prevents duplicate commits, including native-only copies.
-A duplicate is a 409, not permission to perform another copy.
+An exact fork retry recovers the same independent copy with HTTP 201, including
+when the original HTTP response was lost or the source later changed revision.
+The actor-scoped receipt binds source ID, destination, expected source revision
+and privacy generation without storing copied text or memberships. Reconciliation
+serializes only a current authorized read of the copy; lost copy read access
+returns `task:null, localCommitted:true`. Source access revocation does not revoke
+an already legitimate independent copy. Replay does not enqueue another provider
+write or emit another `task_created` notification. A reused key with a different
+request or operation is a 409; historical receipts without a fingerprint also
+remain 409. Other duplicate mutations remain 409. Clients keep the original
+fork key and source fences through refresh, route navigation and server/account
+round trips until acknowledgement. Only intent identifiers and fences live in
+app memory, separated by server/actor scope; browser reload/app restart is not a
+persisted-intent guarantee. A stale
+original intent is permanently closed under that key before the API returns
+`task-fork-not-committed, localCommitted:false`; only this terminal proof lets
+clients release a rejected attempt and intentionally copy a refreshed source.
+A generic conflict or transport error never releases an unknown pending attempt.
 
 Preflight captures provider projection and source scope. The DB rechecks rights,
 privacy generation and source admission under locks, performs CAS, changes links
@@ -88,7 +105,7 @@ as new logical tasks.
 | --- | --- |
 | Musubi | Native calendar with existing member roles; one identity across calendars. |
 | Google | Google Tasks list. Conditional writes and two-state/date-only projections preserve richer Musubi data through baselines. An uncertain CREATE without an address cannot be retried. |
-| Microsoft | To Do list owned by the connected user. Existing home writes keep the prior ETag strategy. Secondary update/delete is blocked until To Do conditional-write behavior is verified; its receipt reports unsupported writing. An uncertain CREATE without an address cannot be retried. |
+| Microsoft | To Do list owned by the connected user. Existing home writes keep the prior ETag strategy. Secondary create/update/delete is blocked until To Do conditional-write behavior is verified; its receipt reports unsupported writing. An uncertain CREATE without an address cannot be retried. |
 | CalDAV | Discovered VTODO collection with verified access. Resource URL, UID and ETag retain scope; deterministic creation permits read-only reconciliation. Existing alarms and unrelated properties remain preserved. |
 
 Provider-native ACLs are not changed by a Musubi link. Google `due` is a scheduled
@@ -135,11 +152,65 @@ another Musubi instance's calendar.
 Migration 0080 expands and backfills home, membership, revision, source-scoped
 mapping metadata, mutation ledger and outbox. Existing UUIDs, UIDs, provider IDs,
 ETags, tombstones and SEQUENCE are preserved; identical UIDs never merge tasks.
-0081 adds the scoped mapping lookup index. All task writers and calendar/account
-lifecycle paths use the new model; deploy API and current clients together.
+0081 adds the scoped mapping lookup index; 0082 adds a nullable fork request
+fingerprint without changing historical receipt identities. 0083 records fork
+commit/noncommit outcomes for safe client intent acknowledgement. All task writers and
+calendar/account lifecycle paths use the new model; deploy API and current
+clients together.
 
 `pnpm test:db:tasks` runs migration preservation, DB ownership/CAS/lifecycle,
 receipt authorization/retry and authenticated API scenarios. Provider integration
 checks cover home/secondary pulls, scoped addresses, uncertain delivery,
 projection preservation and privacy retirement. Colocated Storybook and browser
 scenarios cover sharing actions, readonly mirrors, themes, focus and notifications.
+
+## Client/API compatibility and rollout
+
+Task read URLs retain their released DTO contract: `GET /api/v1/tasks` and
+`GET /api/v1/tasks/:taskId`. Shared-task fields are additive. Mutation requests
+and committed receipts belong to the distinct `/api/v1/task-mutations` namespace;
+web and native clients must never fall back to a legacy write URL.
+
+| Client | API | Mutation outcome |
+| --- | --- | --- |
+| Released client using `/tasks` | Released API | Released bare-Task/204 behavior. |
+| Released client using `/tasks` | Shared-task API | HTTP 426 `code:task-client-upgrade-required`, `localCommitted:false`, before preflight or DB writes; retain draft and update client. |
+| Shared-task client using `/task-mutations` | Released API | HTTP 404 on the absent namespace, no legacy write and no fallback; retain draft and update server. |
+| Shared-task client using `/task-mutations` | Shared-task API | Revision/privacy-fenced requests and explicit committed receipts. |
+
+The route is the protocol boundary; claiming a newer product version does not
+make a legacy request safe. `MIN_CLIENT_VERSION` remains unchanged so compatible
+reads and other application features stay available. The new namespace still
+requires authentication, calendar authority, expected revision and privacy
+admission. A 426 response is never an authorization grant or a committed receipt.
+
+Apply task migrations before starting the shared-task API, then release web and
+native clients with the new namespace. During a mixed rollout task reads remain
+available, but clients and servers on opposite sides cannot write tasks. Verify
+that UI errors keep the draft open and that native store builds are available
+before switching production. Do not remove the retained legacy rejection routes
+or relabel them as successful writes. Task read/request/receipt schemas are added
+to the wire promise without altering the earlier promise or its version baseline.
+`task_compatibility.integration.test.ts` mounts the production route registrar and
+checks the client/API matrix, read parsing, rejected write retries and current
+revision/privacy/authentication fences in a disposable database.
+
+## Unsupported live task destinations
+
+`Calendar.supportsTaskLinks` advertises live-link maintenance separately from
+`supportsTasks`. Both clients use the same target policy. Microsoft To Do and
+unknown providers are excluded from new live links; independent copies keep
+their own home and remain available when ordinary task creation is supported.
+The API rejects an unsupported live link before preparation or local acceptance,
+and the database repeats admission under the destination source lock. Microsoft
+secondary CREATE/UPDATE/DELETE stay blocked by the adapter. An already uncertain
+CREATE may only be reconciled by observation, never replayed.
+
+An earlier Microsoft secondary membership is displayed as **Unsupported link**.
+Make an independent copy in a supported calendar before removing that Musubi
+membership. The confirmation says that the Microsoft item remains in To Do;
+manage or remove that separate item there. Unlink retains remote-address evidence
+and unsupported delivery receipts, and the Retry action cannot bypass the
+conditional-write requirement. Home writes and independent copies preserve
+their existing provider contract; a preflight read never proves conditional write
+support.

@@ -1,8 +1,8 @@
-import { taskCapabilities, taskCalendarIDs, taskDisplayCalendar, taskHomeCalendarID } from "@musubi/calendar";
+import { taskCapabilities, taskCalendarIDs, taskDisplayCalendar, taskHomeCalendarID, taskSharingTargets } from "@musubi/calendar";
 import { AccountMark } from "./ProviderIcon";
 import { TaskStatusIcon } from "./TaskStatusIcon";
 import { createContext, useContext, useState, type ReactElement, type RefObject } from "react";
-import { can, providerFlavor, type Calendar, type Settings, type Task, type TaskUpdate } from "@musubi/types";
+import { can, calendarSupportsTaskLinks, providerFlavor, type Calendar, type Settings, type Task, type TaskUpdate } from "@musubi/types";
 import { CalendarDays, Clock3, Ellipsis, FileText, Flag, X, Pencil, Trash2, Repeat2, Link, GitBranch, CopyPlus, Link2, ArrowLeft } from "lucide-react";
 import { Inspector, InspectorContent, InspectorHeaderActions, InspectorTrigger, useInspectorPresentation } from "~/components/ui/inspector";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "~/components/ui/menu";
@@ -14,6 +14,7 @@ import { DetailList, DetailRow, detailLinkClassName, PanelBody, PanelFooter, Pan
 import { TaskList, taskUpdate, taskRecurrenceSummary, TASK_STATUSES, TASK_PRIORITIES } from "./TaskList";
 import { ItemGroup } from "~/components/ui/item";
 import { RowAction } from "~/components/ui/row";
+import { Badge } from "~/components/ui/badge";
 import { HelpTooltip } from "~/components/ui/help-tooltip";
 import { formatTaskDate } from "../task-format";
 
@@ -48,7 +49,7 @@ export function TaskDetails({ taskId, open, onOpenChange, children, returnFocus:
   const calendar = task ? taskDisplayCalendar(task, context?.calendars ?? []) : undefined;
   const capabilities = task ? taskCapabilities(task, context?.calendars ?? []) : undefined;
   const memberships = task ? context?.calendars.filter(calendar => taskCalendarIDs(task).includes(calendar.id)) ?? [] : [];
-  const targets = context?.calendars.filter(calendar => can(calendar.role, "editTasks") && calendar.supportsTasks !== false && (!task?.recurrence || !calendar.provider) && (targetAction === "fork" || !task || !taskCalendarIDs(task).includes(calendar.id))) ?? [];
+  const targets = task ? taskSharingTargets(task, context?.calendars ?? [], targetAction ?? "link") : [];
   const related = context?.tasks.find(item => item.id === task?.relatedTo);
   const editableCalendarIds = new Set(context?.calendars.filter(item => can(item.role, "editTasks") && item.supportsTasks !== false).map(item => item.id));
   const editable = !!context?.update && !context.offline && !!capabilities?.edit;
@@ -96,7 +97,7 @@ export function TaskDetails({ taskId, open, onOpenChange, children, returnFocus:
           {!task ? <p className="text-13 text-muted-foreground">This task is no longer available.</p> : <>
             <DetailList>
               <DetailRow icon={<AccountMark flavor={calendar ? providerFlavor(calendar) : null} size="compact" color={calendar?.color} />} label="Calendar">
-                <ul aria-label="Calendars" className="grid gap-1">{memberships.map(member => <li key={member.id} aria-label={`${member.name} · ${member.id === taskHomeCalendarID(task) ? "Home calendar" : "Linked calendar"}`} className="font-medium">{member.name}{member.id === taskHomeCalendarID(task) ? " · Home" : ""}</li>)}</ul>
+                <ul aria-label="Calendars" className="grid gap-1">{memberships.map(member => <li key={member.id} aria-label={`${member.name} · ${member.id === taskHomeCalendarID(task) ? "Home calendar" : "Linked calendar"}`} className="flex items-center gap-2 font-medium"><span>{member.name}{member.id === taskHomeCalendarID(task) ? " · Home" : ""}</span>{member.id !== taskHomeCalendarID(task) && !calendarSupportsTaskLinks(member) ? <><Badge variant="warning">Unsupported link</Badge><HelpTooltip label={`About the unsupported link to ${member.name}`}>This provider cannot safely maintain shared updates or deletion. Make an independent copy in a supported calendar before removing this link; the provider task remains separate.</HelpTooltip></> : null}</li>)}</ul>
               </DetailRow>
               <DetailRow icon={<TaskStatusIcon status={task.status} size={17} />} label="Status" trailing={
                 <Select label="Task status" size="compact" value={task.status} options={TASK_STATUSES} disabled={!editable || busy}
@@ -147,6 +148,6 @@ export function TaskDetails({ taskId, open, onOpenChange, children, returnFocus:
       settings={context.settings} editableCalendarIds={editableCalendarIds} offline={context.offline} createRequest={0} onCreateRequestHandled={() => {}}
       onCreate={async () => { throw new Error("Use the new task form to create tasks."); }} onUpdate={context.update}
       onRemove={async value => { if (!context.remove) throw new Error("Task cannot be deleted."); await context.remove(value); onOpenChange(false); }} /> : null}
-    <ConfirmationDialog open={confirmDelete} onOpenChange={value => { if (!busy) setConfirmDelete(value); }} title={unlinkCalendarID ? "Remove task from calendar" : "Delete task"} description={unlinkCalendarID ? undefined : `“${task?.title ?? "This task"}” will be permanently deleted.`} closeLabel="Close delete task confirmation" confirmLabel={unlinkCalendarID ? "Remove from calendar" : "Delete task"} loading={busy} onConfirm={() => void remove()} />
+    <ConfirmationDialog open={confirmDelete} onOpenChange={value => { if (!busy) setConfirmDelete(value); }} title={unlinkCalendarID ? "Remove task from calendar" : "Delete task"} description={unlinkCalendarID ? memberships.some(member => member.id === unlinkCalendarID && member.provider === "microsoft") ? "Only the Musubi link is removed; the Microsoft task stays in To Do." : undefined : `“${task?.title ?? "This task"}” will be permanently deleted.`} closeLabel="Close delete task confirmation" confirmLabel={unlinkCalendarID ? "Remove from calendar" : "Delete task"} loading={busy} onConfirm={() => void remove()} />
   </>;
 }
