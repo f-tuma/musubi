@@ -397,9 +397,9 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
       val inlineDots = dayCellHeight < dateHeight * 2.5f
       val showCompactDots = cellWidth >= WidgetPresentation.dateWidth(context) * 2
       val layout = if (usePills) {
-        R.layout.musubi_calendar_widget_large_v5
+        R.layout.musubi_calendar_widget_large_v6
       } else {
-        R.layout.musubi_calendar_widget_v5
+        R.layout.musubi_calendar_widget_v6
       }
       val views = RemoteViews(context.packageName, layout)
       val snapshot = AgendaWidgetData.read(context)

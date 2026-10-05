@@ -31,7 +31,8 @@ RemoteViews approach. No new dependencies are proposed for these phases.
   colors, dimensions, accessible controls and state/freshness presentation. Native
   collection IDs use occurrence identity with collision handling. Calendar bars
   preserve empty lanes. Refresh opens the authenticated app; it is not native
-  background transport.
+  background transport. Its centered vector icon avoids font-baseline offsets;
+  versioned shell layouts safely replace the former text glyph in launcher trees.
 - Tasks use one account/server-scoped SQLite collection with read/mutation fences,
   canonical revision/retirement reconciliation and membership/auth eviction. Its
   root consumer works without opening Tasks. Widget rows open canonical detail;

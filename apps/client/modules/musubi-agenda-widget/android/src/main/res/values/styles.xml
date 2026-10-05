@@ -11,6 +11,9 @@
     <item name="android:textColor">@color/musubi_widget_on_control</item><item name="android:textSize">@dimen/musubi_widget_control_glyph_size</item>
     <item name="android:background">@drawable/musubi_widget_control</item><item name="android:includeFontPadding">false</item>
   </style>
+  <style name="MusubiWidgetIconControl" parent="MusubiWidgetControl">
+    <item name="android:scaleType">center</item>
+  </style>
   <style name="MusubiWidgetEventRow">
     <item name="android:layout_width">match_parent</item><item name="android:layout_height">wrap_content</item>
     <item name="android:minHeight">@dimen/musubi_widget_row_height</item>

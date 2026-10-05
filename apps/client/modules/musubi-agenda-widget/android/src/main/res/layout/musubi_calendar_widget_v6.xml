@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- v5 gives installed launchers a new hierarchy for the shared widget shell. -->
+<!-- v6 replaces the refresh text glyph with a centered image in cached launcher trees. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
   android:id="@+id/musubi_calendar_root"
   android:layout_width="match_parent"
@@ -32,7 +32,7 @@
       android:id="@+id/musubi_calendar_today"
       style="@style/MusubiCalendarTodayLabel"
       android:text="≡" android:contentDescription="@string/musubi_widget_calendars" />
-    <TextView android:id="@+id/musubi_calendar_refresh" style="@style/MusubiWidgetControl" android:text="↻" android:contentDescription="@string/musubi_widget_refresh" />
+    <ImageView android:id="@+id/musubi_calendar_refresh" style="@style/MusubiWidgetIconControl" android:src="@drawable/musubi_widget_refresh" android:contentDescription="@string/musubi_widget_refresh" />
   </LinearLayout>
   <TextView android:id="@+id/musubi_calendar_status" style="@style/MusubiWidgetMeta" android:layout_height="wrap_content" android:paddingStart="@dimen/musubi_widget_content_gap" android:paddingEnd="@dimen/musubi_widget_content_gap" />
 

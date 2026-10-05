@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- v3 replaces the refresh text glyph with a centered image in cached launcher trees. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
   android:id="@+id/musubi_widget_root" android:layout_width="match_parent" android:layout_height="match_parent"
   android:background="@drawable/musubi_widget_background" android:orientation="vertical" android:padding="@dimen/musubi_widget_inset">
@@ -8,7 +9,7 @@
       <TextView android:id="@+id/musubi_widget_date" style="@style/MusubiWidgetMeta" android:layout_width="wrap_content" android:layout_marginEnd="@dimen/musubi_widget_content_gap" android:text="@string/musubi_agenda_widget_preview_date" />
     </LinearLayout>
     <TextView android:id="@+id/musubi_widget_settings" style="@style/MusubiWidgetControl" android:text="≡" android:contentDescription="@string/musubi_widget_calendars" android:visibility="gone" />
-    <TextView android:id="@+id/musubi_widget_refresh" style="@style/MusubiWidgetControl" android:text="↻" android:contentDescription="@string/musubi_widget_refresh" />
+    <ImageView android:id="@+id/musubi_widget_refresh" style="@style/MusubiWidgetIconControl" android:src="@drawable/musubi_widget_refresh" android:contentDescription="@string/musubi_widget_refresh" />
   </LinearLayout>
   <TextView android:id="@+id/musubi_widget_status" style="@style/MusubiWidgetMeta" android:layout_height="wrap_content" android:layout_marginBottom="@dimen/musubi_widget_content_gap" android:text="@string/musubi_widget_cached" />
   <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">

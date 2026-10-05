@@ -68,7 +68,7 @@ internal object WidgetCollection {
     val keys = if (tasks) taskRows.map { it.id } else eventRows.map { it.key }
     val count = keys.size
     val empty = WidgetPresentation.empty(context, snapshot, tasks, count)
-    val views = RemoteViews(context.packageName, R.layout.musubi_agenda_widget_v2)
+    val views = RemoteViews(context.packageName, R.layout.musubi_agenda_widget_v3)
     WidgetPresentation.shell(context, views, snapshot, tasks, empty, width, count > MAX_VISIBLE_ROWS)
     views.setOnClickPendingIntent(R.id.musubi_widget_settings, WidgetPresentation.route(context,
       "musubi://tasks?tasksWidgetId=$id"))
