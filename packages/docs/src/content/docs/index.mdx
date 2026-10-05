@@ -55,6 +55,12 @@ whose role controls editing. Once this is clear, permissions, link vs fork,
 external mirrors, federation, realtime updates, and the client cache all become
 much easier to reason about.
 
+Tasks use the same home-calendar authority in 0.2.2: one canonical task can
+belong to several calendars, while only home editors can change or complete
+it. Linking keeps one identity; copying creates another. Read the
+[shared-task guide](/docs/guides/shared-tasks/) for permissions, provider
+destinations and delivery status.
+
 <CardGrid>
   <Card title="One shared contract" icon="puzzle">
     Zod schemas and permission rules live in `@musubi/types`, imported by both
@@ -83,5 +89,8 @@ much easier to reason about.
 | Understand a project term | [Glossary](/docs/architecture/glossary/) |
 | Look up a command | [Commands & checks](/docs/reference/commands/) |
 | Configure the server | [Environment variables](/docs/reference/environment/) |
+| Share a task | [Shared tasks](/docs/guides/shared-tasks/) |
+| Check supported provider operations | [Capabilities & verification](/docs/operations/capabilities/) |
+| Upgrade a release | [Releases & upgrades](/docs/operations/releases/) |
 | Add or debug an endpoint | [API server](/docs/architecture/api/) and [HTTP API reference](/docs/reference/api/) |
 | Add a sync provider | [Sync engine](/docs/architecture/sync/#how-to-add-a-provider) |

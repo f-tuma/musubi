@@ -1,6 +1,6 @@
 ---
-title: Microsoft / Outlook
-description: Configure Entra ID and work safely with Musubi's windowed Microsoft Graph calendar adapter.
+title: Microsoft / Outlook and To Do
+description: Configure Microsoft Graph calendar and To Do sync, task projections, and unsupported live links.
 ---
 
 import { Aside, Steps } from '@astrojs/starlight/components';
@@ -31,8 +31,14 @@ semantics create important differences from Google.
 3. **Grant the required scopes.**
 
    ```text
-   openid User.Read Calendars.ReadWrite offline_access
+   openid User.Read Calendars.ReadWrite Tasks.ReadWrite offline_access
    ```
+
+   Web connections always request `Tasks.ReadWrite`. The native connection
+   dialog defaults **Include tasks** to enabled and can omit that scope. An
+   existing calendar-only grant must be reauthorized for To Do; refresh does not
+   add permissions. Sign-in and connecting a calendar account remain separate
+   flows.
 
 4. **Configure and restart the API.**
 
@@ -88,10 +94,15 @@ The adapter therefore:
 
 Cost: one extra Graph request per unique series during a full sync.
 
-<Aside type="caution" title="Native Musubi recurrence cannot be pushed yet">
-Musubi stores iCalendar RRULE/EXDATE text, while Graph expects structured
-recurrence patterns and exception operations. The adapter throws when asked to
-push a Musubi-native recurring event instead of silently losing recurrence.
+<Aside type="caution" title="Recurrence uses bounded specialized paths">
+The generic event writer refuses recurrence instead of silently flattening it.
+With `EVENT_TIME_EDITS_ENABLED`, the specialized personal-create path supports
+finite COUNT and exactly representable UNTIL rules, at most 366 original slots
+within 730 days, with complete time/family proof and durable recovery. It does
+not create recurring meetings or offer arbitrary RRULE conversion. Ordinary
+calendarView imports remain expanded rows; canonical tracked families retain
+their own identity. See the [capability matrix](/docs/operations/capabilities/#outlook--microsoft-calendar)
+for the accepted create and edit scopes.
 </Aside>
 
 ## Editing organizer meetings
@@ -103,13 +114,22 @@ Personal recurring events use the same occurrence and series actions. Saving a
 meeting requests an update to guests; Musubi cannot verify delivery to their
 inboxes. Existing guest identities and roles are preserved.
 
-With `EVENT_TIME_EDITS_ENABLED` also enabled, individual occurrences can change
-their time in verified UTC or Europe/Prague series, or change their all-day dates.
-Whole-series clock times and duration can change for finite, same-day UTC series
-ending after a set number of occurrences or on a date, **without changed or
-cancelled occurrences**. Occurrence dates and the native recurrence rule stay the
-same, including the final occurrence. Musubi adjusts its local end-date cutoff to
-match the new clock time.
+With `EVENT_TIME_EDITS_ENABLED` also enabled, individual timed occurrences can
+change time in the fixed, verified series zone. Current web/native clients
+request `outlookOrganizer=10`: IANA labels or CLDR-mapped Windows labels qualify
+only when the complete family and mailbox-supported zones agree. Older clients
+keep their earlier UTC or UTC/Prague contract. Zone conversion, ambiguous DST
+times and neighbouring-day crossings are refused. All-day occurrence date edits
+require the existing UTC-authored native date proof; broader all-day zones and
+timed/all-day conversion remain excluded.
+
+Whole-series clock times and duration can change for finite, same-day timed
+series in that verified zone, ending after a set number of occurrences or on a
+date, **without changed or cancelled occurrences**. Occurrence dates and the
+native recurrence rule stay the same, including the final occurrence. Musubi
+adjusts its local end-date cutoff to the new clock time on the unchanged native
+final date. Whole-series all-day edits, overnight spans and changed occurrence
+dates remain outside this action.
 Outlook's master time update discards exceptions and restores cancellations, so
 Musubi does not offer that action for those families. Their content-only series
 editor continues to preserve individual changes. A time change can require guests
@@ -127,6 +147,35 @@ If Outlook rejects a stale version, sync and reopen the meeting before creating
 a new edit. If the response is lost, Delivery details can check the result without
 sending the same meeting update again.
 
+### Move selected occurrences
+
+The separate **Move selected occurrences** action previews up to 20 unchanged
+timed occurrences with a shift of 1–720 civil minutes. Each keeps its original
+occupied local dates; edited exceptions, cancelled dates and the master stay
+unchanged. Each selected occurrence becomes its own journaled update. The batch
+is not atomic: an uncertain child stops remaining items, and earlier successes
+are not rolled back. Reopening reads the saved result without resending work.
+
+### Attendee responses
+
+With `PROVIDER_RSVP_EDITS_ENABLED`, the connected default attendee copy supports
+explicit one-off responses and an exactly bound imported occurrence. An
+occurrence-only response requires an already accepted/tentative master; replying
+to an unanswered instance can affect inherited siblings and is refused.
+
+Current web/native clients request `outlookRsvp=2` to offer **Entire series**
+after complete finite COUNT/UNTIL proof, including an initial response to an
+unanswered invitation. A single master action preserves exception-specific
+responses. Older clients retain their prior scopes. Canonical local-series
+attendee children, delegated copies, unbounded/unverifiable families and proposed
+times remain excluded; all-day proof uses the existing UTC-midnight shape.
+
+All possible response sends have permanent dispatch markers and read-only
+recovery. A disappeared Decline copy is **unavailable/unconfirmed**, not proof
+of success or permission to repeat the response. Organizer notification delivery
+is unknown. Exact bounds and dated live evidence for edits, moves, cancellation
+and RSVP are in the [capability matrix](/docs/operations/capabilities/).
+
 ## Other mappings
 
 - Graph all-day end is exclusive; Musubi stores an inclusive end, so pull
@@ -135,6 +184,55 @@ sending the same meeting update again.
   values to the nearest supported preset.
 - Calendar create, update, event write, and delete use the account connected to
   that calendar.
+
+## Microsoft To Do
+
+To Do lists are separate Musubi sources with `supportsTasks=true` and
+`supportsEvents=false`. Outlook calendar sources contain events. Discovery and
+task operations require `Tasks.ReadWrite` on the exact connected account. If
+task-list discovery is unavailable, the engine preserves existing sources rather
+than treating the result as an empty list.
+
+To Do pulls use paginated task delta. An expired cursor resets the read. When a
+collection rejects delta, the adapter consumes a complete paginated snapshot
+before reconciliation and tries delta again on a later sync.
+
+| Field | Current To Do projection |
+| --- | --- |
+| Title and notes | Title and plain-text body |
+| Start and due | UTC date/time values |
+| Status | Completed, in progress, or not started; other Musubi phases project to not started |
+| Priority | High, normal or low; exact RFC priority is not represented |
+| Recurrence and partial progress | Not written by the task adapter |
+
+Accepted projection baselines preserve richer canonical values when a provider
+echo has not changed supported fields.
+
+### Home tasks and independent copies
+
+Existing home writes and independent copies into writable To Do lists remain
+available under the existing account, source and ETag checks. An independent copy
+has its own Musubi identity and home; it is not kept in sync with the original.
+Updates/deletes retain the adapter's existing ETag strategy. A preflight read
+cannot prove that a remote write is atomic or conditionally protected.
+
+### Live links are unsupported
+
+To Do sources expose `supportsTaskLinks=false`. Musubi refuses new live links
+and secondary CREATE/UPDATE/DELETE because the Graph v1.0
+[update](https://learn.microsoft.com/en-us/graph/api/todotask-update?view=graph-rest-1.0)
+and [delete](https://learn.microsoft.com/en-us/graph/api/todotask-delete?view=graph-rest-1.0)
+contracts do not establish a conditional-write guarantee. An ETag's presence or
+syntax is not proof of that guarantee.
+
+An older secondary To Do membership is shown as **Unsupported link**. Make an
+independent copy before removing its Musubi membership. The existing Microsoft
+item remains in To Do and must be managed there. Delivery retry cannot bypass
+this restriction. An uncertain CREATE without a returned provider ID remains
+unconfirmed and cannot be replayed blindly.
+
+See [Shared tasks](/docs/guides/shared-tasks/) for home permissions and copies, and
+the [capability matrix](/docs/operations/capabilities/) for release validation status.
 
 ## Troubleshooting
 
@@ -146,6 +244,8 @@ sending the same meeting update again.
 | Recurring items are untitled/timed | Master hydration failed or stub detection regressed. |
 | Older/far-future item is absent | It may be outside the 180/730-day window. |
 | Color differs slightly | Graph accepted the nearest provider preset. |
+| Task lists are missing | Verify `Tasks.ReadWrite` on the exact account; incomplete discovery does not remove existing sources. |
+| Task destination says unsupported | To Do supports home tasks/copies, but secondary live links are blocked. |
 
 Portal changes can take a short time to propagate. Do not repeatedly rotate
 secrets until the exact redirect and platform type have been verified.
@@ -156,6 +256,8 @@ secrets until the exact redirect and platform type have been verified.
 - retain rotated refresh tokens;
 - cover lightweight occurrence, exception, all-day series, and missing master;
 - keep the fixed-window limitation explicit in UI and docs;
+- cover To Do delta/snapshot pagination, narrowed grants, projection preservation
+  and the unsupported-secondary boundary;
 - reject unsupported recurrence without partial writes; and
 - run `pnpm check` (including fake Graph pagination/`410`/master cache reset),
   `pnpm test:provider-db` for OAuth changes, plus a sandbox-account round trip

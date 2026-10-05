@@ -11,8 +11,9 @@ HTML and platform-association routes live at the origin root.
 
 This page is an **implementation inventory**, not a promise of long-term API
 stability. Musubi is pre-1.0 and does not currently generate an OpenAPI schema.
-The route registry in `apps/api/src/index.ts`, shared Zod schemas in
-`packages/types`, and handlers in `apps/api/src/handlers/` are authoritative.
+The route registry in `apps/api/src/index.ts` (with task routes in
+`apps/api/src/task_routes.ts`), shared Zod schemas in `packages/types`, and
+handlers in `apps/api/src/handlers/` are authoritative.
 
 ## Authentication
 
@@ -29,9 +30,8 @@ Authorization: Bearer <session-token>
    federated shadow member.
 
 The second path authenticates identity only. Resource handlers must still
-authorize calendar or event access through `calendar_members` and the shared
-permission matrix. One known route currently violates that rule, called out
-under [Public routes](#public-routes) and in the audit.
+authorize calendar, event, or task access through `calendar_members` and the
+shared permission matrix. A valid bearer token alone grants no calendar access.
 
 Better Auth also supports its normal cookie-based flows under `/api/auth/*`.
 Use the generated `authClient` in the app instead of reimplementing sign-in,
@@ -68,7 +68,7 @@ validate canonical UUID shape before issuing PostgreSQL queries, and
 `GET /events?since=` rejects non-string or invalid timestamps. Malformed client
 input must not surface as a database-flavoured `500`.
 
-Error JSON always includes the request correlation id:
+The central error middleware includes the request correlation id:
 
 ```json
 {
@@ -78,13 +78,15 @@ Error JSON always includes the request correlation id:
 ```
 
 The same value is returned in `x-request-id` and attached to structured logs.
+Endpoint-specific conflicts can return their own typed JSON; use the response
+header for correlation even when the body has no `requestId`.
 
 ## Public routes
 
 | Method and path | Purpose | Rate limit |
 | --- | --- | --- |
 | `GET /api/v1/server` | API `version`, minimum client version, and configured capabilities | — |
-| `GET /api/v1/server/ok` | Liveness and deployment identity response `{ "ok": true, "version": "0.1.3" }` | — |
+| `GET /api/v1/server/ok` | Liveness and product version, for example `{ "ok": true, "version": "0.2.2" }`; not a DB/image audit | — |
 | `GET /api/v1/calendars/tokens/:token` | Invite preview; token is the capability | 30 / 15 min / IP |
 | `POST /api/v1/federation/accept` | Accept invite as a remote-server shadow user | 10 / 15 min / IP |
 | `POST /api/v1/users/delete/confirm` | Complete email-token account deletion | 10 / 15 min / IP |
@@ -109,8 +111,8 @@ regression self-check also verifies that neither protected read runs.
 
 | Method and path | Auth | Response |
 | --- | ---: | --- |
-| `GET /api/v1/server` | Public | `{ minClientVersion, socials, syncProviders, email }` |
-| `GET /api/v1/server/ok` | Public | `{ ok: true }` |
+| `GET /api/v1/server` | Public | `{ version, minClientVersion, socials, socialsWeb, syncProviders, googleAvailability, email, emailVerificationRequired, pushPublicKey }` |
+| `GET /api/v1/server/ok` | Public | `{ ok: true, version }` |
 | `GET /api/stream` | Required | Long-lived `text/event-stream` |
 
 SSE frames contain one JSON object:
@@ -126,6 +128,9 @@ Current event types:
 | `event_created` | `localAddEvent` |
 | `event_updated` | `localUpdateEvent` |
 | `event_removed` | `localRemoveEvent` |
+| `task_created` | Refresh tasks; resolve currently authorized task content |
+| `task_updated` | Refresh tasks; do not merge a private task snapshot from the frame |
+| `task_removed` | Refresh tasks and remove inaccessible/deleted items |
 | `calendar_updated` | Merge into calendar store |
 | `calendar_removed` | Drop calendar and its orphaned event links |
 | `attendance_changed` | Refresh open attendee state |
@@ -140,8 +145,15 @@ Current event types:
 Page, settings, and reminder events fan out only to the acting user's own sessions,
 including the originating one, which discards the duplicate by revision.
 
-SSE is best-effort and has no replay buffer. The durable recovery path is event
-delta sync.
+Task mutation frames contain only `payload: { id, revision, actorID }`, with the
+actual mutation actor. They reach current and previous affected calendar
+members and the actor, so unlink/deletion can invalidate old views without
+exposing text or private membership lists. Provider pulls use `external_sync`
+rather than inventing a human actor. Activity notices are session-only.
+
+SSE is best-effort and has no replay buffer. Recovery uses event delta sync and
+a full authenticated task read; provider delivery evidence is durable and
+separate from activity notices.
 
 ## Events
 
@@ -186,6 +198,142 @@ type Event = {
 Identity and authority are server-owned: create overwrites `creatorID`; update
 does not allow `creatorID` or `originCalendarID` to change. The home
 `originCalendarID` must be one of `calendars`.
+
+## Tasks
+
+For the user-facing flow, see [Shared tasks](/docs/guides/shared-tasks/).
+All routes below require authentication. The task contract is defined in
+`packages/types/src/task.ts`; authorization and commits are implemented in
+`apps/api/src/handlers/tasks.ts` and `packages/db/src/queries/tasks.ts`.
+
+### Reads and authority
+
+| Method and path | Response |
+| --- | --- |
+| `GET /api/v1/tasks` | `{ tasks: Task[] }`, the full active authorized set, deduplicated by task ID |
+| `GET /api/v1/tasks/:taskId` | One currently readable `Task`, or `404` |
+
+`Task` has `id`, `creatorID`, `calendarID`, `title`, `description`, `status`,
+`start`, `due`, `isAllDay`, `completedAt`, `percentComplete`, `priority`,
+`recurrence`, `relatedTo`, `sequence`, and `url`. Date values are ISO strings
+on the wire. Status is `needs-action`, `in-process`, `completed`, or `cancelled`;
+progress is an integer from 0 to 100 and priority an integer from 0 to 9.
+
+The v0.2.2 response adds `originCalendarID`, readable `calendarIDs`, a positive
+`revision`, optional `providerReadRetiredGeneration`, and
+`capabilities: { edit, delete, link, fork, unlinkCalendarIDs }`.
+`calendarID` is a compatibility home alias, never proof of editing rights on a
+secondary calendar. An unreadable home name and unreadable memberships are
+not disclosed. Read schemas accept older DTOs without the added fields; a
+missing revision requires refresh before mutations.
+
+Only home `editTasks` authorizes content changes, completion, or global delete.
+A current readable source plus destination `editTasks` can authorize a link or
+copy; destination `editTasks` can authorize removing a secondary membership.
+Source-access retirement and rehydration checks still apply.
+
+### Mutations
+
+All writes use **`/api/v1/task-mutations`**. Task and calendar route/body IDs,
+and a supplied `Idempotency-Key`, must be UUIDs.
+
+| Method and path | Body | Success |
+| --- | --- | --- |
+| `POST /api/v1/task-mutations` | `TaskCreate`: `id`, home `calendarID`, `title`, and optional content fields | `201`, mutation receipt |
+| `PATCH /api/v1/task-mutations/:taskId` | `{ patch, expectedRevision, expectedProviderReadRetiredGeneration? }` | `200`, mutation receipt |
+| `PUT /api/v1/task-mutations/:taskId` | `TaskReplaceRequest`: full draft with home `calendarID`, `expectedRevision`, and optional privacy generation | `200`, mutation receipt; cannot move home or replace memberships |
+| `POST /api/v1/task-mutations/:taskId/link` | `{ calendarID, expectedRevision, expectedProviderReadRetiredGeneration? }` | `200`, same logical task with another membership |
+| `POST /api/v1/task-mutations/:taskId/fork` | Same body as link | `201`, new independent task with its destination as home and revision 1 |
+| `DELETE /api/v1/task-mutations/:taskId` | `{ expectedRevision, unlinkCalendarID?, expectedProviderReadRetiredGeneration? }` | `200`, deletion receipt; secondary unlink when supplied, global delete otherwise |
+
+Create content fields use the Task content names above, excluding
+server-owned creator, memberships, revision, privacy generation, capabilities,
+and provider `sequence`. Creation defaults to `needs-action`, progress/priority
+0, and `isAllDay: false`. A PATCH is strict and accepts only editable content
+fields; omitted fields keep their values instead of acquiring create defaults.
+Completing sets progress to 100 and supplies a completion time when absent;
+reopening clears completion time and normally resets completed progress to 0.
+
+Send the current positive `expectedRevision` for every existing-task mutation.
+After provider source retirement, also send the current
+`expectedProviderReadRetiredGeneration`. Admission rechecks source scope,
+permissions, and these fences under database locks. A stale fence returns
+`409`, `code: "task-source-changed"`, `localCommitted: false`.
+
+A committed mutation returns:
+
+```ts
+type TaskMutationReceipt = {
+  task: Task | null;        // a current authorized read, with positive revision
+  localCommitted: true;
+  delivery?: TaskDelivery;
+};
+```
+
+Deletion also returns `{ id, revision, removed }`; `removed` is false for a
+secondary unlink. `task` can be null after a successful commit if access was
+lost or reconciliation could not read the task. This still acknowledges the
+saved mutation: close the saved draft and refresh. `localCommitted: true` does
+not claim successful delivery to every provider.
+
+`Idempotency-Key` is a mutation UUID scoped to the actor. Creation uses the task
+UUID by default; other operations generate a fresh key if omitted. The durable
+ledger also covers native-only mutations. Ordinary duplicate mutations return
+`409`, `code: "task-mutation-duplicate"`, `localCommitted: false`; the key is not
+a generic replay guarantee.
+
+An **exact fork retry** is the exception: keeping the original key, destination,
+source revision, and privacy generation recovers the same committed copy with
+`201`, even after a lost response or a later source change. Reconciliation reads
+the copy using current permissions and may return `task: null`; it neither
+recreates the copy nor emits another creation notification. Reusing the key for
+a different request returns `409`. `409` with
+`code: "task-fork-not-committed"`, `localCommitted: false` is terminal proof
+that this intent did not commit. Only that proof releases the pending intent
+for a deliberate new copy of a refreshed source; a transport error or generic
+conflict does not. Client intent identifiers are held in session memory,
+isolated by server/actor, rather than persisted across app/browser restarts.
+
+### Delivery receipts and retry
+
+| Method and path | Request | Response |
+| --- | --- | --- |
+| `GET /api/v1/task-deliveries?cursor=<UUID>` | Optional UUID keyset cursor; no other query keys | `{ items: [{ taskId, savedTitle }], nextCursor }`; up to 25 owned unresolved/cancelled subjects per page, including retained deletes |
+| `GET /api/v1/tasks/:taskId/delivery` | — | `TaskDelivery`: `{ taskId, localRevision, targets }` |
+| `POST /api/v1/tasks/:taskId/delivery/:operationId/retry` | No body or `{}`; cannot edit the saved operation | `202`, refreshed `TaskDelivery`; 30 requests/minute per user |
+
+Each target has `operationId`, `calendarId`, nullable `calendarName`, `provider`,
+`action` (`create`, `update`, or `delete`), `status`, `revision`, `owned`, nullable
+`issue`, and `updatedAt`. Status is one of `pending`, `attempting`, `completed`,
+`not-needed`, `conflict`, `not-written`, `unconfirmed`, `retry`, `blocked`, or
+`cancelled`. When an older operation blocks a destination, the receipt shows
+that blocker rather than hiding it behind the latest operation.
+
+Shared readers see only currently readable targets; connection owners may
+inspect their retained evidence. Titles come from current authorized reads,
+with `Task` as the fallback. Payloads, remote addresses, ETags, and raw provider
+errors never enter these DTOs. Delivery responses are `private, no-store`.
+
+Retry requires operation ownership, current destination editing rights and
+source scope, no uncertainty/remote conflict snapshot, an admissible
+`not-written`, `blocked`, or `retry` state, and a completed/not-needed
+predecessor. Conflicts, unsupported writes, and uncertain CREATE cannot be
+retried. A refused retry returns `409`,
+`code: "task-delivery-retry-unavailable"`; a missing/unowned operation is `404`.
+The `202` acknowledges re-admission, not remote success.
+
+### Client/API compatibility
+
+| Client route | API | Result |
+| --- | --- | --- |
+| Legacy writes under `/api/v1/tasks` | v0.2.2 API | `426`, `code: "task-client-upgrade-required"`, `localCommitted: false`, before preflight or DB writes |
+| New `/api/v1/task-mutations` | Older API without that namespace | `404`; retain draft and update server, with no fallback to legacy writes |
+| New `/api/v1/task-mutations` | v0.2.2 API | Revision/privacy-fenced writes and explicit committed receipts |
+
+Legacy task GET routes remain supported with additive DTO fields. A claimed
+new product version cannot bypass the route boundary. `MIN_CLIENT_VERSION`
+remains at 0.2.0 for compatible reads and other features; task mutation
+compatibility is governed by the namespace, not that global baseline.
 
 ## Calendars, members, and invites
 
@@ -232,7 +380,7 @@ intentional so older clients cannot reset newer settings when saving.
 `timezone` and `defaultReminder` were added for reminders. The server keeps
 `notificationsOnByDefault` in step with `defaultReminder` in both directions, so
 an older client that knows only the boolean still turns reminders on and off for
-real — see [Reminders](/reference/reminders/).
+real — see [Reminders](/docs/reference/reminders/).
 
 ## Reminders
 

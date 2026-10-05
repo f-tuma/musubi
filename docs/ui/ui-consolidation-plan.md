@@ -2,6 +2,12 @@
 
 # Web UI consolidation plan
 
+> Historical consolidation plan. The 2026-10-01 Tailwind v4/shadcn migration
+> supersedes its `src/ui` and CSS-module recipes. Use
+> [the current design system](./design-system.md),
+> [Musubi UI rules](../../.agents/skills/musubi-ui/SKILL.md) and colocated
+> Storybook stories. The steps below retain evidence of the earlier work.
+
 - Status: **worked through. Two items stay open on their own conditions:
   `RowGroup` still has one consumer, and the `Dialog` size rule only applies to
   whoever adds the next variant.**

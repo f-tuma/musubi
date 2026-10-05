@@ -1,5 +1,11 @@
 # Releasing
 
+Current published release: **0.2.2**. Use the
+[release status and upgrade boundary](https://musubi.pro/docs/operations/releases/)
+and [capability matrix](https://musubi.pro/docs/operations/capabilities/) for
+current publication, provider limits and unverified live/device checks. Historical
+Core activation records preserve earlier decisions and do not authorize new gates.
+
 Three things ship on their own clock — the API, the web app, and a phone build
 — and they have to keep talking to each other across the gaps. This is what
 keeps that true.
@@ -40,10 +46,11 @@ or deploy production configuration.
 
 **API → web → store build.**
 
-Each step is additive, so the step before it keeps working:
+For an additive release, the step before it keeps working. Explicit
+compatibility breaks need their own coordinated rollout, as recorded below:
 
-1. **API first.** It only ever adds — a new field, a new endpoint, a new
-   accepted value. Yesterday's web app and last month's phone are untouched.
+1. **API first.** Add fields, endpoints and accepted values while retaining
+   released clients' contracts. Document any deliberate refusal before rollout.
 2. **Web next.** It is always served fresh, so it can use whatever the API just
    grew. It never runs ahead of the API.
 3. **Phone last**, and it may sit in review for a week. By the time it lands,
@@ -68,21 +75,23 @@ an image-only rollback unsafe; keep a verified preupgrade database backup and
 follow [deployment and recovery](releases/0.2.2-deployment.md). A release tag is
 Dokploy's deployment signal, so prepare backup and maintenance before publication.
 
-## K06 coordinated compatibility break (prepared, not deployed)
+## Current compatibility contract (introduced by K06 / 0.2.0)
 
 The coordinated release is **0.2.0**. The former 0.1.8 development version was
 not published; historical QA records do not represent a released artifact.
 
 The owner approved raising **both client and federation peer floors to 0.2.0**.
-Prepare server, web and native together; do not enable this deployment until
-compatible clients and connected servers are available. This explicitly
-supersedes the normal additive API→web→phone order above. No publishing,
-production migration or deployment is authorized by this implementation.
+That coordinated break superseded the normal additive API→web→phone order.
+The published 0.2.2 server retains these floors; its observed public health
+reports minimum client 0.2.0. This describes the current contract, not a pending
+instruction to repeat the historical rollout. Connected peers and installed
+device versions still need their own compatibility evidence.
 
 All authenticated product API reads and writes require
 `x-musubi-client-version: X.Y.Z >= 0.2.0`, including member-token requests,
 uploads, ICS and streams. Browser EventSource alone uses
-`/api/stream?clientVersion=0.2.0` because it cannot set headers. Missing/malformed
+`/api/stream?clientVersion=X.Y.Z` with the actual client version because it cannot
+set headers. Missing/malformed
 or old versions receive 426, not an authentication failure or a forced reload
 that discards a draft. The header is compatibility evidence, **not authorization
 or a substitute for event expected-revision validation**.
@@ -105,8 +114,10 @@ forwarding product requests/connecting streams as well as at handshake.
 
 The additive revision column can remain through an application rollback, but
 rolling back to revision-incapable writers invalidates CAS protection; do not
-advertise safe mixed-version writes. Full K06 enforcement/draft/provider work
-must be completed and reviewed before this prepared rollout can be accepted.
+advertise safe mixed-version writes. The K06 enforcement and draft-preservation
+implementation is part of the released contract; see the
+[current capability matrix](https://musubi.pro/docs/operations/capabilities/)
+for operation limits and live/device acceptance still requiring evidence.
 
 ## What the machine checks
 

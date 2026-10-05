@@ -4,6 +4,13 @@ K08b adds recovery to the persisted K07 intents and K08a create identities. This
 is at-least-attempted delivery with provider-specific reconciliation, not a
 distributed transaction or an exactly-once claim.
 
+Current generic EVENT recovery scope reviewed for **v0.2.2 on 2026-10-05**.
+Specialized organizer, recurrence and RSVP journals have their own conditional
+write, dispatch-marker and acknowledgement rules; they do not inherit permission
+to resend from the generic recovery description below. See the
+[capability matrix](../../packages/docs/src/content/docs/operations/capabilities.mdx)
+for their supported scopes and separate acceptance status.
+
 The request path and background tick call one dispatcher. The existing API
 process runs a non-overlapping tick every 15 seconds, at most 40 candidates and
 four concurrent deliveries. Disabling external sync disables background ticks.
@@ -24,11 +31,21 @@ attempt, including after waiting for a DB lock. No HTTP runs in that transaction
   Missing Graph objects after an ambiguous attempt remain blocked; no unbounded
   `transactionId` retention is assumed. Ambiguous legacy unmarked creates block.
 - Update recovery reads current content. The captured strong ETag permits a
-  conditional retry; matching intended projected content permits acknowledging
-  the observed result. Other content is a conflict. A fresh ETag alone never
-  rebases an edit. Existing Outlook EVENT update/delete refusal remains.
-- Delete recovery accepts observed absence. A surviving resource requires the
-  accepted strong ETag; a changed resource conflicts.
+  conditional retry for Google/CalDAV; bounded Outlook personal title/notes/location
+  PATCH preserves its exact accepted native weak `@odata.etag` instead. Matching
+  intended projected content permits acknowledging the observed result. Other
+  content is a conflict. A fresh ETag alone never rebases an edit. Outlook's
+  generic writer still refuses time, meetings, recurrence and shared-calendar
+  writes; specialized journal paths remain separate.
+- Delete recovery accepts observed absence. Google/CalDAV require the accepted
+  strong ETag before retrying a surviving resource; a changed resource conflicts.
+  Outlook personal DELETE instead uses the owner's explicitly accepted
+  non-atomic fresh permission/kind/version preflight: live Graph ignored stale
+  `If-Match`. An ambiguous Outlook deletion only reads afterward, even if the
+  surviving version is unchanged. A new, explicitly confirmed current comparison
+  may create a fresh delete intent that sends once; retry/crash of that intent
+  again uses read-only recovery. This is not CAS or permission for unconditional
+  retries. [Guarded-delete evidence](../audits/outlook-guarded-delete-20260921.md).
 - Transient failures back off with jitter and respect `Retry-After`. Permission,
   reconnect and unsupported writes block. Unconfirmed operations retain their
   ambiguity even while waiting for the next reconciliation attempt.

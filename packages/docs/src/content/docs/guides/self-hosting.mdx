@@ -14,6 +14,11 @@ Musubi is designed to be self-hosted. If you want your calendar data on your own
 
 ## Which stack do you need?
 
+Before updating an existing server, read
+[Releases & upgrades](/docs/operations/releases/). The 0.2.2 task migration
+changes the database recovery boundary and needs a matching mobile client for
+task writes; pulling an image is not the whole upgrade procedure.
+
 | | `docker-compose.yml` | `docker-compose.api.yml` | `docker-compose.dokploy.yml` |
 | --- | --- | --- | --- |
 | Contains | Gateway + web client + API + PostgreSQL | API + PostgreSQL | Gateway + web client + API + PostgreSQL |
@@ -42,17 +47,17 @@ gateway config and an env template into an empty directory:
 
 ```sh
 mkdir musubi && cd musubi
-curl -O https://raw.githubusercontent.com/frgtn-dot-dev/musubi/main/docker-compose.yml
-curl -o .env https://raw.githubusercontent.com/frgtn-dot-dev/musubi/main/.env.example
+curl -O https://raw.githubusercontent.com/f-tuma/musubi/main/docker-compose.yml
+curl -o .env https://raw.githubusercontent.com/f-tuma/musubi/main/.env.example
 mkdir -p ops/gateway && curl -o ops/gateway/Caddyfile \
-  https://raw.githubusercontent.com/frgtn-dot-dev/musubi/main/ops/gateway/Caddyfile
+  https://raw.githubusercontent.com/f-tuma/musubi/main/ops/gateway/Caddyfile
 ```
 
 Running API-only? One file, no gateway config — and every `docker compose`
 command below then needs `-f docker-compose.api.yml`:
 
 ```sh
-curl -O https://raw.githubusercontent.com/frgtn-dot-dev/musubi/main/docker-compose.api.yml
+curl -O https://raw.githubusercontent.com/f-tuma/musubi/main/docker-compose.api.yml
 ```
 
 <Aside type="tip">
@@ -71,6 +76,7 @@ Edit the `.env` you just downloaded and set your production values. Key variable
 | `BETTER_AUTH_URL` | The public URL of your API, e.g. `https://musubi.yourdomain.com` |
 | `ENVIRONMENT` | Set to `prod` for production; only `dev`, `test`, and `prod` are accepted |
 | `LOG_LEVEL` | Server verbosity: `debug`, `info`, `warn`, `error`, or `silent`; defaults to `info` |
+| `EXTERNAL_SYNC_INTERVAL_MIN` | Provider polling in minutes; defaults to `5`. A positive value also runs event/task outbox recovery at boot and every 15 seconds. `0` disables both scheduled polling and scheduled recovery; request-triggered delivery remains enabled |
 | `METRICS_PORT` | Internal Prometheus listener; defaults to `9464`, set `0` to disable |
 | `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | Optional remote media storage. Leave `S3_BUCKET` blank to use the persistent local `media` volume; Compose does not launch an S3 service. `S3_ENDPOINT` supports remote S3-compatible providers |
 | `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth credentials — needed for Google sign-in (the browser redirect flow needs the secret; the phone's native flow needs only the client id) and Google Calendar sync. Add `{BETTER_AUTH_URL}/api/auth/callback/google` as an authorized Web redirect URI |
@@ -299,15 +305,18 @@ The welcome screen adapts to your server: it asks `GET /api/v1/server` which soc
 
 ## Updating
 
-Pull the newest image and restart — migrations run automatically on startup:
+Review [Releases & upgrades](/docs/operations/releases/) and complete its
+backup, compatibility and migration checks before replacing the API. Stop the
+old API first; the selected new image runs migrations automatically on startup:
 
 ```sh
 docker compose pull
+docker compose stop api
 docker compose up -d
 ```
 
 Pin a specific version instead of `latest` by setting `MUSUBI_TAG` to the
-published image tag in `.env` (for example `MUSUBI_TAG=1.2.0`). Building from a
+published image tag in `.env` (for example `MUSUBI_TAG=0.2.2`). Building from a
 clone? Review incoming changes first, then rebuild with
 `docker compose up -d --build`.
 
@@ -322,10 +331,6 @@ Image rollback is safe only while the database schema remains compatible. Pin
 production versions rather than tracking `latest`, but treat migrations as
 forward-only unless a release explicitly documents backward compatibility.
 
-```sh
-MUSUBI_TAG=1.1.0 docker compose up -d
-```
-
 <Aside type="caution" title="Rolling back across a migration">
 **Schema does not roll back with an image.** Migrations run forward on startup
 and there is no down-migration path. Contract migrations may remove data or
@@ -333,6 +338,11 @@ structures an older API needs. Before every production upgrade, take and verify
 a dump ([Backups](#backups-and-recovery-drills)). Restoring that dump together
 with the previous images is the reliable rollback path.
 </Aside>
+
+For 0.2.2, follow the [database recovery boundary](/docs/operations/releases/#database-upgrade-and-recovery)
+and restore the verified pre-upgrade database before starting the exact saved
+prior API/web images. Use the recorded digests or compatible prior tag; do not
+substitute an arbitrary older version.
 
 ---
 
@@ -391,10 +401,14 @@ does not connect to or change the production database:
 Both the gzipped custom-format dump produced by Dokploy and the uncompressed
 `.dump` produced by the local script are supported.
 
-For an actual recovery, stop the API first, restore into a clean database, run
-the current migrations, start the API, and verify login plus one calendar read
-before reopening traffic. Keep the old database untouched until that check has
-passed.
+For an actual recovery, stop the API first and restore into a clean database.
+Choose the application version before restarting: forward recovery uses a
+compatible current image and its migrations; a downgrade after the 0.2.2 task
+migration needs the exact prior images and the verified pre-upgrade restore.
+Starting the new image on that restore would apply the new migrations again.
+Follow [Releases & upgrades](/docs/operations/releases/#database-upgrade-and-recovery),
+then verify authenticated reads, writes and delivery before reopening traffic.
+Keep the old database untouched until those checks pass.
 
 <Aside type="note">
 Musubi is in active development. Breaking changes are possible before a stable 1.0 release. Check the changelog before updating.

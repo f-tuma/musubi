@@ -64,9 +64,9 @@ This avoids iCloud's `calendar-query` time-range requirement while keeping reset
 sweeps complete. Unchanged ETags remain verified no-ops.
 
 <Aside type="note">
-CalDAV sync status metrics report the connection as active because these
-credentials do not use Better Auth's per-account OAuth status model. Provider
-failures are still exported through sync-failure counters and structured logs.
+CalDAV accounts appear as `musubi_sync_accounts{provider="caldav",status="unmonitored"}`.
+Their credential table has no OAuth-style reconnect status. This inventory value
+does not prove that a connection is healthy; use sync outcomes and structured logs.
 </Aside>
 
 ## Event mapping
@@ -86,6 +86,31 @@ Updates patch the existing calendar resource rather than replacing its complete
 iCalendar payload. This keeps server-owned fields, detached recurrence
 components, timezones, and alarms intact. If the recurrence rule itself changes,
 stale detached instances are removed with the old series.
+
+## VTODO task sources
+
+Discovery reads `supported-calendar-component-set`. Only a collection advertising
+`VTODO` becomes a task source; a VEVENT-only collection cannot accept a task.
+`supportsTasks` identifies the resource kind, while current read/create/edit/delete
+privileges govern each operation. Missing or ambiguous discovery properties are
+an error, not evidence that a collection is empty or writable.
+
+A task keeps its resource URL, iCalendar UID and ETag. Its home calendar controls
+canonical content and completion; secondary collections receive provider
+projections. Updates read the current resource, verify UID/ETag and patch changed
+VTODO properties with conditional writes. `VALARM`, unrelated properties,
+`VTIMEZONE` and unrelated components remain intact. Wire timestamps have iCalendar
+second precision without truncating the canonical Musubi value.
+
+Creation uses a deterministic resource address with `If-None-Match: *`. An
+uncertain result can be reconciled by reading that address rather than issuing
+another CREATE. Multiple provider projections for a recurring task are refused
+until Musubi has a shared occurrence generator; existing home recurrence remains
+supported.
+
+See [Shared tasks](/docs/guides/shared-tasks/) for home permissions and delivery
+receipts, and the [capability matrix](/docs/operations/capabilities/) for release
+validation status.
 
 ## Calendar-level operations
 
@@ -112,6 +137,33 @@ authentication is enabled. Do not enter the normal Apple ID password.
 Check the exact collection URL and whether the server permits depth-one
 `PROPFIND`, `calendar-multiget`, or `sync-collection` on that collection.
 
+### Property response is incomplete or ambiguous
+
+`DavReadResponseError` exposes a safe `cause` with
+`code="caldav-read-response-invalid"`, a bounded `reason`, `readKind`, counts or
+HTTP/property statuses, and sometimes `hrefRelation`. Use those fields to locate
+the failure without collecting XML, credential headers or private resource paths:
+
+| Diagnostic | Meaning |
+| --- | --- |
+| `readKind="principal"` | Reading `current-user-principal` from the account resource |
+| `readKind="home"` | Reading `calendar-home-set` from the principal resource |
+| `readKind="discovery"` | Discovering collection types and supported components |
+| `readKind="listing"`, `"multiget"`, `"sync"` | Listing or reading resource changes |
+| `hrefRelation="different-path"` | The discovery response identifies a different resource path |
+| `hrefRelation="different-query"` or `"different-origin"` | Discovery identity does not match the requested query or origin |
+
+Discovery requires one authoritative resource response with complete required
+properties. A collection's trailing-slash alias is accepted only with collection
+or canonical-location evidence. Other path mismatches remain refused; do not
+disable the identity fence to work around a failing server. Reproduce against a
+disposable account and retain only sanitized diagnostics in public reports.
+
+### Tasks are missing from a discovered calendar
+
+Check that the collection explicitly advertises `VTODO` and grants current read
+access. A display name, server brand or VEVENT support alone is insufficient.
+
 ### Every sync appears to rewrite everything
 
 Inspect ETag preservation and reset-upsert behavior. A quiet, unchanged
@@ -128,6 +180,8 @@ rows.
 - test against a generic CalDAV server and iCloud when feasible;
 - preserve resource URLs, ETags, inclusive/exclusive dates, and DATE-typed
   exceptions;
+- cover VTODO capability/privilege discovery, conditional task updates,
+  deterministic-create reconciliation and preservation of unrelated properties;
 - cover `207 Multi-Status` and ignored color-property behavior;
 - never log Basic auth values, encrypted payloads, tokens, or full request
   bodies;

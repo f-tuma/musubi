@@ -1,12 +1,13 @@
 # Kalendářové UI/UX — pravidla a plán polishe
 
 - Stav: living document
-- Datum: 2026-07-29
-- Zdroj principů: `store/UI-UX/` (playbook, spec, studie Google Calendar)
+- Poslední synchronizace: 2026-10-05 (v0.2.2)
+- Aktuální systém: [Musubi UI skill](../../.agents/skills/musubi-ui/SKILL.md),
+  [design system](./design-system.md), `packages/design-system` a Storybook
 - Platí pro: `apps/web` primárně, `apps/client` kde to má smysl
-- Navazuje: [`ui-restructure-handoff.md`](./ui-restructure-handoff.md) —
-  sjednocení dialogů, primitiva v `src/ui/` a vlastní date/time/color pickery
-  (dokončeno 2026-07-29)
+- Historie: [`ui-restructure-handoff.md`](./ui-restructure-handoff.md) zachycuje
+  červencovou konsolidaci; web od 2026-09-30 používá Tailwind v4 a Musubi/shadcn
+  komponenty v `src/components/ui/`.
 
 Studie Google Calendar je **referenční úroveň disciplíny, ne vizuální předloha**.
 Kopírujeme způsob skládání vrstev a míru závaznosti akcí. Nekopírujeme paletu,
@@ -84,14 +85,12 @@ mít klávesnicovou alternativu.
 **R11 — Stav je vidět.** Každý interaktivní prvek: default, hover, focus-visible,
 pressed, selected, dragging, resizing, pending, disabled, error.
 
-**R11a — Stavy se kombinují, nepřepisují.** `:hover` na vybraném prvku **posune
-jeho vlastní barvu**, nikdy ji nenahradí neutrální hover plochou. Pozor na
-specificitu: `.x:hover:not(:disabled)` (0,3,0) přebíjí `.x[data-selected]`
-(0,2,0), takže vybraný prvek pod kurzorem zbělá, pokud pár `[selected]:hover`
-neexistuje. Nudge dělej `color-mix(in srgb, var(--control-fill) 88%,
-var(--control-on-fill))` — míchá k vlastní barvě textu, takže jedno pravidlo
-platí v light i dark. Barevný objekt (event) se na hover nepřebarvuje vůbec, jen
-`filter: saturate()`.
+**R11a — Stavy se kombinují, nepřepisují.** Hover na vybraném prvku zachová
+jeho výběr a význam barvy. Kombinace selected, hover a focus patří do variant
+sdílené komponenty a používají role Musubi tématu v obou schématech. Feature
+nepřidává vlastní paletu ani CSS override; `className` volajícího slouží jen
+pro layout. Chybějící hodnotu přidej podle role do `packages/design-system`
+a regeneruj téma. Barva eventu zůstává čitelným signálem jeho kalendáře.
 
 **R11d — Shell není dokument.** Kalendářová plocha má `user-select: none` a
 `cursor: default`: tažení po ní vyrábí eventy a Chromium **ruší pointer gesto** ve
@@ -108,13 +107,11 @@ zavření dialogu, což čte jako glitch. Modalitu proto držíme sami
 další pointer stisk ho **odpojí**; do té doby je `outline-color: transparent`.
 Klávesová cesta tím nepřijde o nic, což je ta nediskutovatelná část.
 
-**R11c — Vyplněná plocha je vlastní kontext, ne výjimka.** Když control sedí na
-`--control-fill` (vybraný řádek, filled chip), nepřepisuj mu jednu vlastnost po
-druhé — **přemapuj tokeny pro ten podstrom** (`--text-secondary`, `--text-muted`,
-`--surface-raised`, `--border-strong` odvozené z `--control-on-fill`). Sdílená
-hover pravidla si pak vezmou správnou paletu sama, funguje to v obou tématech a
-další control přidaný do toho řádku už žádný override nepotřebuje. Viz
-`.pageRow:has([data-selected])`.
+**R11c — Vyplněná plocha je vlastní kontext, ne výjimka.** Vybraný řádek nebo
+filled chip musí zachovat kontrast textu i vnořených akcí. Kontext a jeho stavy
+vlastní sdílená komponenta (například `data-inverse` pro quiet akce na sumi
+ploše), nikoli descendant selektor obrazovky. Kontrast ověř v obou tématech
+i při hoveru, focusu a disabled stavu.
 
 **R4b — Vrstva nesmí prosáknout do plochy pod sebou.** React portály bublají
 eventy do **React** rodiče, ne DOM rodiče: popover vyrenderovaný z buňky Month
@@ -141,8 +138,13 @@ event content → Create → přepnutí pohledu.
 
 ## 3. Tokeny a geometrie
 
-Zdroj pravdy je [`apps/web/src/design/tokens.css`](../../apps/web/src/design/tokens.css).
-Nové komponenty nesmí zakládat paralelní paletu ani vlastní škálu controlů.
+Zdroj pravdy pro paletu, škály a Tailwind téma je
+[`packages/design-system`](../../packages/design-system/). TypeScript zdroje
+generují CSS; generované soubory se neupravují ručně. Webové fonty, vrstvy
+a runtime geometrii doplňuje
+[`apps/web/src/design/tokens.css`](../../apps/web/src/design/tokens.css), načtený
+z [`app.css`](../../apps/web/src/design/app.css). Nové komponenty nesmí zakládat
+paralelní paletu ani vlastní škálu controlů.
 
 Aktuální systém obsahuje:
 
@@ -158,7 +160,7 @@ Aktuální systém obsahuje:
 
 Layer and form spacing, responsive density, and ownership of shared alignment
 axes are defined in [`design-system.md` section 4](./design-system.md#4-geometry-and-rhythm).
-Those rules apply to every calendar layer; feature CSS must not establish a
+Those rules apply to every calendar layer; feature styling must not establish a
 competing inset or rhythm.
 
 Web portal ordering uses `--layer-*-z` tokens. An elevated shared Dialog passes
@@ -218,14 +220,14 @@ konstantu pro tutéž časovou osu.
 ### 3.1 Sdílená UI vrstva
 
 Znovupoužitelné ovládací prvky žijí v
-[`apps/web/src/ui/`](../../apps/web/src/ui/). Feature komponenta může vlastnit
+[`apps/web/src/components/ui/`](../../apps/web/src/components/ui/). Feature komponenta může vlastnit
 obsah a jeho doménové uspořádání, ne novou skořápku dialogu nebo šestnáctý
 vzhled tlačítka.
 
 | Potřeba | Použít |
 | --- | --- |
-| akce a ikonová akce | `Button` / `IconButton`; navigace zůstává odkazem s `buttonClassName` |
-| zrušení akce | vždy `variant="secondary"` — stejná role musí mít stejnou váhu; `variant="text"` je pro terciární věci v toku („More options", „Back to calendar") |
+| akce a ikonová akce | `Button`; ikonová akce má `size="icon"` / `"icon-compact"` a přístupné jméno; navigace používá `Button asChild` s odkazem |
+| zrušení akce | `variant="secondary"`; quiet akce používá `ghost`, odkaz v textu `link` |
 | modal / confirm | `Dialog` / `DialogClose` — jedna hlavička, focus trap, návrat focusu, mobilní sheet |
 | lightweight anchored layer | `PopoverContent` + Radix-backed `Popover*` exports — shared portal, surface, collision gutter and mobile sheet; the feature owns semantics and focus policy |
 | short command list | `MenuContent` / `MenuItem` — Radix-backed roving focus, typeahead, Escape and focus return; never wrap one direct action in a menu |
@@ -233,12 +235,13 @@ vzhled tlačítka.
 | řádek nastavení či seznamu | `RowAction` / `RowToggle` / `RowOptions` |
 | malá volba | `Segmented`; boolean `Switch` / `Checkbox`; delší seznam `Select` |
 | datum, čas a barva | `DatePicker` / `TimePicker` / `ColorPicker`, ne nativní browser picker |
-| prázdno, sekce, feedback | `Empty` / `SectionLabel` / `Toast` |
+| prázdno, sekce, feedback | `Empty` / `SectionLabel` / `Toast`; perzistentní chyby `InlineError` / `DialogError` |
 | route a auth plocha | `RouteState` / `AuthShell` |
 
 Varianty patří do API primitiva (`variant`, `size`, `layout`), ne do
-descendant selektoru obrazovky. Moduly v `calendar/components/styles/` smějí
-popisovat jen doménový obsah uvnitř sdílené skořápky. `PopoverContent`
+descendant selektoru obrazovky. Feature skládá komponenty Tailwind utilitami
+z Musubi tématu; CSS moduly jsou odstraněné a jejich importy zakázané. Radix
+a `cva` varianty se importují pouze v `components/ui`. `PopoverContent`
 deliberately does not define a role, keyboard model, or focus policy: a
 select-only combobox, editable time combobox, and event preview share a physical
 layer, not one interaction model.
@@ -277,6 +280,11 @@ Bez explicitního automatu se click, drag, resize, long-press a scroll začnou
 míchat — to je zdroj náhodných popoverů a ztraceného focusu.
 
 ## 5. Kde `apps/web` stojí (audit 2026-07-27)
+
+Sekce 5–6 uchovávají datovanou implementační historii. Jejich CSS třídy,
+staré cesty a mobilní průchody popisují tehdejší stav, nikoli dnešní API
+komponent nebo aktuální otevřený backlog. Pro současné skládání webu platí
+sekce 1–4, [design system](./design-system.md) a colocated Storybook stories.
 
 **Hotové (a dobré):**
 

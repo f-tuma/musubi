@@ -1,6 +1,6 @@
 ---
 title: Glossary
-description: The codebase's own vocabulary — drill, dock, ghost, knot, shadow account, tombstone and friends — each with a definition and where it lives in the code.
+description: Musubi vocabulary, including home calendars, task memberships, mutation receipts, provider projections, delivery recovery, and client interaction terms.
 ---
 
 Musubi's code talks in a small internal vocabulary. Most of it is obvious in context, some of it isn't — this page defines every term a contributor might trip over, grouped by where you'll meet it. Each entry says where the thing lives.
@@ -8,13 +8,51 @@ Musubi's code talks in a small internal vocabulary. Most of it is obvious in con
 ## The core idea
 
 ### Knot (結び / musubi)
-The founding metaphor: **people first, events tie you together**. Concretely it means an event is not owned by a calendar but *linked into* one or more of them (see [Overview](/docs/architecture/overview/#the-one-idea-that-explains-everything)). When the code or docs say "the knot", they mean this many-to-many linking model.
+The founding metaphor: **people first, events tie you together**. An event or
+task can be linked into multiple calendars while keeping one canonical
+identity and one home authority (see [Overview](/docs/architecture/overview/#the-one-idea-that-explains-everything)).
+When the code or docs say "the knot", they mean this many-to-many linking model.
 
 ### Home calendar / origin calendar
-The one calendar that governs **who may edit** an event — stored as `events.originCalendarID`. You can *see* an event through any calendar it's linked into, but you can only *edit* it with an editor/owner role on its home. Set at creation (must be one of the event's linked calendars), immutable afterwards. Enforced by `assertCanEditEvent` (`apps/api/src/permissions.ts`).
+The one calendar that governs **who may edit** an event or task, stored as
+`events.originCalendarID` or `tasks.originCalendarID`. Read access can come
+through another membership, but content edits, task completion, and global
+deletion require home authority. The home is chosen at creation and is not
+moved by a link. Event authorization uses `assertCanEditEvent`
+(`apps/api/src/permissions.ts`); task authorization uses the current
+membership/source checks in `packages/db/src/queries/tasks.ts`.
 
 ### Link vs Fork
-The two ways an event spreads. **Link** = the *same* event row gains another `calendar_events` junction row — one truth, visible in more places, still edited via its home. **Fork** = a brand-new independent copy with a new id, creator and home — "claim your own version". `handlerLinkEvent` / `handlerForkEvent` in `apps/api/src/handlers/events.ts`.
+The two ways an event or task spreads. **Link** adds a membership to the same
+logical object (`calendar_events` or `calendar_tasks`): one truth and one home.
+**Fork**, shown as **Make an independent copy**, creates a new identity,
+creator, and home; task status/completion then changes independently. Event
+handlers live in `apps/api/src/handlers/events.ts`, task handlers in
+`apps/api/src/handlers/tasks.ts`.
+
+### Task membership
+A row in `calendar_tasks` connecting one canonical task to a calendar. A
+secondary membership grants visibility through current readable calendar
+access. Destination editing rights permit link management, not task completion.
+The compatibility task DTO's `calendarID` is a home alias, not the membership
+list; use `calendarIDs` and current `capabilities`.
+
+### Task revision / privacy generation
+`tasks.revision` is the positive server counter used for compare-and-swap
+mutations. Provider `sequence` is independent metadata. A source privacy
+generation (`providerReadRetiredGeneration`) changes when retired home content
+must no longer be reused by an old draft. Mutations submit both current fences
+when applicable; restored access needs authorized rehydration before content
+edits or sharing. See [Canonical tasks](/docs/architecture/data-model/#canonical-tasks).
+
+### Mutation receipt
+The task API's explicit acknowledgement `{ task, localCommitted: true,
+delivery? }`. It proves a canonical commit, not that all providers accepted it.
+`task` is a current authorized read and can be null after commit. The separate
+actor/mutation ledger prevents duplicate commits. An exact fork retry under
+the same intent can recover the committed independent copy; a reused key is
+not a general permission or generic replay guarantee. See
+[task mutations](/docs/reference/api/#mutations).
 
 ### Origin server
 Federation's version of "home": the one Musubi server a calendar lives on. Other servers' users read and write it *there*; nothing is duplicated (in v1). See [Federation](/docs/architecture/federation/).
@@ -74,13 +112,53 @@ A latched ref in `app/_layout.tsx`: once the app has been ready once, it stays "
 ## Sync & federation (apps/api/src/sync, federation)
 
 ### Mirror (calendar)
-A provider's calendar imported as a normal Musubi calendar with an `external_calendars` mapping. Events flow in/out through the sync engine; the provider stays authoritative. Mirrors are editable/deletable from Musubi (and creatable into an account) — the change is pushed to the provider first and aborts locally if refused.
+A provider calendar or task list imported as a Musubi calendar with an
+`external_calendars` mapping. The provider controls native access. Objects flow
+through the sync engine; shared task content follows its canonical home rather
+than treating every mirror as authority. Calendar create/update/delete is
+provider-first, while event/task changes use a local commit plus durable
+provider delivery. See [Sync Engine](/docs/architecture/sync/).
 
 ### Adapter
-An implementation of the `CalendarAdapter` contract (`sync/adapter.ts`) translating one provider's API to `NormalizedEvent`s, plus calendar-level writes (`createCalendar`/`updateCalendar`/`deleteCalendar`): `google`, `microsoft`, `caldav` today. The engine never talks to providers directly.
+An implementation of the `CalendarAdapter` contract (`sync/adapter.ts`)
+translating a provider API to normalized events and, where supported, tasks.
+It also owns projections, conditional write/read evidence, and calendar-level
+operations. Current implementations are `google`, `microsoft`, and `caldav`;
+the engine routes provider work through adapters.
+
+### Provider projection / accepted baseline
+The fields a provider can represent for an event or task, together with the
+last accepted projection and validator. For tasks, `external_tasks` stores the
+source/account scope, ETag/UID, accepted revision, and projection baseline.
+Comparing supported fields against that baseline preserves richer canonical
+content through lossy provider formats. A secondary pull acknowledges its
+projection; only the home pull changes canonical task content.
+
+### Outbox / delivery receipt
+An outbox is the durable journal of provider operations committed with local
+changes (`event_outbox` or `task_outbox`). Ordered operations capture their
+destination and payload, use renewable leases, and retain conflict/uncertainty
+evidence across restart. A **delivery receipt** is its sanitized, authorized
+public status, not the private payload or remote address. It is distinct from
+the local mutation receipt and session-only activity notice.
+
+### Unconfirmed / uncertain CREATE
+A provider creation request may have succeeded even though its response was
+lost. Repeating it can create a duplicate, so the executor must first reconcile
+by reading evidence. Google/Microsoft task creation without a known remote
+address cannot be safely replayed; CalDAV has a deterministic resource address
+for read-only reconciliation. The task **Retry** action admits only known
+not-written operations with current authority. See
+[task delivery](/docs/architecture/sync/#task-delivery-and-provider-projections).
 
 ### Cursor
-The provider's opaque "changes since" token (`external_calendars.cursor`) — Google's `syncToken`, Microsoft's `deltaLink`, CalDAV's `syncToken` (unused: it full-fetches), the delta `serverTime` on the client. Cursor expiry (`410 Gone`) → the adapter returns `reset: true` and the engine reconciles against the full set (see Sweep).
+The provider's opaque "changes since" token (`external_calendars.cursor`):
+Google Calendar's `syncToken`, Microsoft Graph's `deltaLink`, or CalDAV's
+`sync-collection` token when the collection supports it. An initial, expired or
+unsupported cursor uses a complete collection read and `reset: true`;
+reconciliation then sweeps missing objects. Google Tasks uses complete paginated
+reads rather than a collection token. The client event delta's `serverTime` is a
+separate local cursor, not a provider token.
 
 ### Sweep
 The full-set reconciliation (`sweepExternalEvents`): after a `reset: true` fetch, the mirror's events whose external id was **not** in the fetched set get tombstoned — they were deleted on the provider. Paired with etag-aware upserts, it's what lets the [scheduled sync](/docs/architecture/sync/#near-realtime-the-scheduled-sync) tell "nothing changed" from "something changed" and only then wake clients with an SSE `external_sync`.
@@ -102,7 +180,12 @@ The design stance that an invite token *is* the credential for everything invite
 ## Conventions & idioms
 
 ### RRULE / EXDATE / RDATE
-iCalendar (RFC 5545) recurrence text stored on `events.recurrence`: the `RRULE` line defines the series, `EXDATE` lines remove single occurrences ("delete just this Tuesday"), `RDATE` adds extra ones. Expanded to concrete occurrences **at read time** by `expandRecurringEvents` (`packages/calendar`), never stored as instances.
+iCalendar (RFC 5545) recurrence text stored on `events.recurrence`: the `RRULE`
+line defines the series, `EXDATE` removes dates, and `RDATE` adds them. Ordinary
+generated occurrences are expanded **at read time** by `expandRecurringEvents`
+(`packages/calendar`). Explicit exceptions and tracked provider families can
+also have stored child rows bound by `seriesID` and `originalStart`; those retain
+their own identity rather than becoming newly generated rows on every read.
 
 ### Barrel
 An `index.ts` whose only job is re-exporting a package's modules (`packages/types/src/index.ts`, `packages/db/src/index.ts`) — the reason you import `@musubi/db` instead of deep paths.
@@ -111,7 +194,9 @@ An `index.ts` whose only job is re-exporting a package's modules (`packages/type
 A Reanimated `withTiming(…, callback)` callback is **dropped** when the animation gets interrupted — so anything that *must* happen (closing a modal, clearing the drill) runs on a `setTimeout` matched to the duration instead. Documented in `useModalAnimation.ts`; the drill close and dock-peek trigger follow it. Symptom when violated: "I had to do it twice."
 
 ### `ponytail:` comments
-`// ponytail: <what was simplified, and when to upgrade>` marks a deliberate shortcut with a known ceiling (e.g. CalDAV's full-fetch sync). They're a debt ledger, not apologies — search for them before assuming something is an oversight.
+`// ponytail: <what was simplified, and when to upgrade>` marks a deliberate
+shortcut with a known ceiling. Search for the comment and inspect its current
+source before treating a historical limitation as an open implementation gap.
 
 ### wrap()
 The 3-line Express helper in `apps/api/src/index.ts` that turns a rejected handler promise into a `next(err)` call — the reason handlers can just `throw new NotFoundError(...)`.

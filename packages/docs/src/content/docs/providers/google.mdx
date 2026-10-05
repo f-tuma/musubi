@@ -1,11 +1,11 @@
 ---
-title: Google Calendar
-description: Configure, understand, debug, and extend Musubi's two-way Google Calendar adapter.
+title: Google Calendar and Tasks
+description: Configure Google Calendar and Tasks sync, OAuth grants, task projections, and delivery limits.
 ---
 
 import { Aside, Steps } from '@astrojs/starlight/components';
 
-Google Calendar is a two-way provider implemented in
+Google Calendar and Google Tasks use the adapter implemented in
 `apps/api/src/sync/adapters/google.ts`. One Musubi user can connect multiple
 Google accounts; every imported calendar retains the account that owns its
 provider credentials.
@@ -36,7 +36,24 @@ changing adapter code. This page focuses on Google-specific behavior.
    ```
 
    Better Auth requests offline access and explicit consent so Google returns a
-   refresh token. Calendar read/write scope is required.
+   refresh token. The connection flow requests these scopes:
+
+   ```text
+   https://www.googleapis.com/auth/calendar.events
+   https://www.googleapis.com/auth/calendar.calendarlist
+   https://www.googleapis.com/auth/calendar.calendars
+   https://www.googleapis.com/auth/tasks
+   ```
+
+   Web connections always include Tasks. The native connection dialog defaults
+   **Include tasks** to enabled and can still omit the Tasks scope. Sign-in is a
+   separate identity flow; it does not automatically grant calendar/task access.
+   When availability is enabled, the connection additionally requests
+   `https://www.googleapis.com/auth/calendar.events.freebusy`.
+
+   Enable the Calendar and Tasks APIs in the Google Cloud project. Existing
+   calendar-only grants do not gain Tasks access on refresh: reconnect the exact
+   account with Tasks consent. An explicitly narrowed refresh grant is respected.
 
 3. **Set the native build variables when testing the mobile flow.**
 
@@ -85,6 +102,52 @@ Google provides an unbounded `syncToken`:
 Persist the next cursor only after a successful pull. A partially consumed page
 sequence must never advance it.
 
+## Google Tasks sources
+
+Each Google task list is a separate Musubi calendar source with
+`supportsTasks=true` and `supportsEvents=false`. Google Calendar sources have
+the opposite flags. A task is stored once in Musubi; its home calendar controls
+editing and completion, and supported secondary calendars receive projections.
+A Musubi membership does not change Google's own sharing permissions.
+
+Task-list discovery requires the stored Tasks grant. Missing consent or a
+task-specific authorization failure does not turn an incomplete task-list result
+into an authoritative empty list or delete existing task sources. Account-wide
+authentication failures remain errors and may require reconnecting.
+
+Tasks have no Calendar-style collection sync token. Every task pull consumes all
+pages, including completed, hidden and deleted entries, before reconciliation.
+A partial read must not advance state or sweep missing tasks.
+
+### Projection and delivery
+
+| Field | Google Tasks projection |
+| --- | --- |
+| Title and notes | Writable task fields |
+| Status | `completed` or `needsAction`; other Musubi phases project to `needsAction` |
+| Due | Calendar day from the canonical UTC date; time is discarded |
+| Priority, start, recurrence and partial progress | No writable projection in this adapter |
+
+Google's `due` represents a scheduled calendar day, not an exact deadline.
+Musubi compares supported fields against the accepted provider baseline so an
+unchanged lossy projection does not erase richer canonical data. Assigned
+Docs/Spaces tasks are readable imports but are refused as general task write
+targets. These boundaries follow the [Google Task resource](https://developers.google.com/workspace/tasks/reference/rest/v1/tasks).
+
+Updates read the current task, require its accepted ETag, and send only changed
+supported fields using `If-Match`. A conflict is shown in delivery status;
+refresh before preparing another edit. See [Google's conditional PATCH guidance](https://developers.google.com/workspace/tasks/performance#using_patch_in_a_read-modify-write_cycle).
+
+A lost CREATE response may mean Google created the item without Musubi receiving
+its ID. That operation remains unconfirmed; automatic or manual retry cannot
+blindly create another item. Local acceptance and confirmed provider delivery
+are distinct outcomes. Multiple provider projections for a recurring task are
+currently refused.
+
+See [Shared tasks](/docs/guides/shared-tasks/) for home permissions, linking,
+independent copies and delivery receipts, and the
+[capability matrix](/docs/operations/capabilities/) for release validation status.
+
 ## Event mapping
 
 | Google shape | Musubi behavior |
@@ -107,6 +170,13 @@ DATE-typed when pushing them back.
 A revoked or unusable refresh token sets the account sync status to a reconnect
 state. Reconnect that exact account; do not delete other accounts belonging to
 the same provider.
+
+### Calendars sync but task lists are missing
+
+Check the exact account's stored OAuth grant and `sync.tasks.discovery_unavailable`
+logs. Reconnect with Tasks consent when it is absent; a token refresh cannot
+authorize a new scope. Verify that the Tasks API is enabled. Do not remove task
+lists based on an incomplete discovery result.
 
 ### A full sync repeats
 
@@ -132,6 +202,8 @@ When changing this adapter:
 - cover all-day inclusive/exclusive conversion in both directions;
 - test recurring master, EXDATE, cancelled item, and `410` reset behavior;
 - keep calendar-list colors separate from calendar resources;
+- cover complete task pagination, missing/narrowed Tasks grants, date-only and
+  two-state projection preservation, ETag conflicts and uncertain CREATE;
 - use the shared OAuth refresh/encryption path;
 - record provider failures with bounded metric labels; and
 - run `pnpm check` (including the fake Google `410`/pagination server),

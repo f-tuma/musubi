@@ -1,5 +1,13 @@
 # Handoff — web UI restructure (primitives, pickers, screens)
 
+> Historical handoff, completed in July 2026. The Tailwind v4/shadcn migration
+> superseded the component paths and CSS anatomy below on 2026-10-01. Current
+> implementation rules are in [design-system.md](./design-system.md) and
+> [the Musubi UI skill](../../.agents/skills/musubi-ui/SKILL.md); components live
+> in `apps/web/src/components/ui`, and visual examples are colocated Storybook
+> stories. Removed `src/ui`, CSS modules and old settings/toast names below
+> describe the historical audit, not files to edit now.
+
 - Stav: **dokončeno**, fáze 0–4 uzavřené 2026-07-29
 - Pro: `apps/web`
 - Čti první: tento soubor, pak `docs/ui/calendar-ui.md` (§2 pravidla R1–R12, §7

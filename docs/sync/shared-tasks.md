@@ -1,8 +1,13 @@
 # Shared tasks
 
 Tasks use the event ownership model: one canonical identity, one home calendar,
-and multiple calendar memberships. The release branch is `codex/shared-tasks-release`, based on current main.
-The web composes the shared Musubi/shadcn components.
+and multiple calendar memberships. This is the implementation contract shipped
+in **v0.2.2**; the release branch was merged through PR #331. Reader-facing
+behavior lives in the [shared-task guide](../../packages/docs/src/content/docs/guides/shared-tasks.mdx),
+with the [API contract](../../packages/docs/src/content/docs/reference/api.mdx#tasks)
+and [capability matrix](../../packages/docs/src/content/docs/operations/capabilities.mdx).
+The web composes the shared Musubi/shadcn components. Implementation does not
+establish live provider or physical-device acceptance.
 
 ## Ownership and reads
 

@@ -1,6 +1,6 @@
 ---
 title: Sync Engine
-description: apps/api/src/sync — the provider-agnostic two-way external calendar sync, the adapter contract, credential crypto, and how to add a provider.
+description: How providers mirror events and tasks, home-authoritative task projections, durable delivery and recovery, adapter contracts, and credentials.
 ---
 
 import { Aside, Steps } from '@astrojs/starlight/components';
@@ -9,6 +9,10 @@ Two-way external calendar sync is Musubi's most distinctive subsystem. It lives
 in `apps/api/src/sync/` and is **provider-agnostic**: the engine does not talk to
 a provider directly — it routes through a small adapter contract. Google,
 Microsoft Graph, and CalDAV are the current implementations.
+
+For the user-facing task flow, see [Shared tasks](/docs/guides/shared-tasks/).
+This page describes engine invariants; the [HTTP API](/docs/reference/api/#tasks)
+defines the task protocol and receipts.
 
 ## Mental model
 
@@ -20,31 +24,39 @@ flowchart LR
       C[CalDAV]
     end
     subgraph EN[engine.ts]
-      SP["syncProvider(adapter, user, account)<br/>1 · listCalendars → reconcile mirrors<br/>2 · fetchChanges(cursor) → upsert<br/>3 · push local edits (pushCreate/Update/Delete)"]
+      SP["syncProvider(adapter, user, account)<br/>listCalendars → fetchChanges → reconcile"]
+      OB["Outbox executor<br/>conditional delivery + reconciliation"]
     end
     subgraph DB[Local DB]
-      T["external_* · events · calendar_*"]
+      T["external_* · events · tasks · calendar_* · outboxes"]
     end
     P -->|"pull · fetchChanges"| EN
-    EN -->|"push · pushCreate/Update/Delete"| P
+    OB -->|"push · provider projections"| P
     EN --> DB
 ```
 
-Each connected provider account produces **mirror calendars** — ordinary Musubi calendars with an `externalCalendars` mapping. Their events flow into the unified `events` table like any other event (that's the point of "events beyond calendars"). Sync is bidirectional:
+Each connected provider account produces **mirror calendars** — ordinary
+Musubi calendars with an `externalCalendars` mapping. These can support events,
+tasks, or both. Events enter the unified `events` table; provider tasks enter
+canonical `tasks` with scoped `external_tasks` projections.
 
-- **Pull** (provider → local): `fetchChanges` returns normalized events; the engine upserts them.
-- **Push** (local → provider): editing an event in a mirror calendar calls the adapter's `pushCreate/Update/Delete`.
+- **Pull** (provider → local): `fetchChanges` returns normalized objects; the
+  engine reconciles them with current source access and pending writes.
+- **Push** (local → provider): handlers commit canonical changes and durable
+  outbox operations; executors call the adapter outside the DB transaction.
 
 ## The adapter contract
 
-`sync/adapter.ts` defines three data shapes and the interface every provider implements.
+`sync/adapter.ts` defines the complete contract. The following event subset is
+an orientation sketch; task, source-access, provider evidence, and specialized
+event operations are also part of the real interface.
 
 ```ts
 type NormalizedEvent = {
   externalId: string;
   status: "active" | "cancelled";   // cancelled ⇒ delete locally
   title: string;
-  start: Date; end: Date;           // UTC; all-day end is exclusive
+  start: Date; end: Date;           // stored instants; Musubi all-day end is inclusive
   isAllDay: boolean;
   description: string | null; location: string | null;
   organizer: string | null;
@@ -54,14 +66,23 @@ type NormalizedEvent = {
 };
 
 type ExternalCalendarInfo = { externalId; name; color; readOnly?: boolean };
-type FetchChangesResult   = { changes: NormalizedEvent[]; nextCursor: string | null; reset?: boolean };
+type CalendarDiscoveryResult = {
+  calendars: ExternalCalendarInfo[];
+  taskListsComplete: boolean;       // false: absence cannot retire task sources
+  availabilityCalendars?: { externalId: string; name: string }[];
+};
+type NormalizedChange =
+  | { kind: "event"; data: NormalizedEvent }
+  | { kind: "event-resource"; externalId: string; events: NormalizedEvent[] }
+  | { kind: "task"; data: NormalizedTask };
+type FetchChangesResult = { changes: NormalizedChange[]; nextCursor: string | null; reset?: boolean };
 
 interface CalendarAdapter {
   listAccounts(userID): Promise<{ id; label }[]>;
-  listCalendars(userID, accountId): Promise<ExternalCalendarInfo[]>;
+  listCalendars(userID, accountId): Promise<CalendarDiscoveryResult>;
   fetchChanges(userID, accountId, externalCalendarId, cursor): Promise<FetchChangesResult>;
   pushCreate(userID, accountId, externalCalendarId, event): Promise<{ externalEventId }>;
-  pushUpdate(userID, accountId, externalCalendarId, externalEventId, event): Promise<void>;
+  pushUpdate(userID, accountId, externalCalendarId, externalEventId, event, ref?, patch?, signal?): Promise<{ etag?; icalUid? } | void>;
   pushDelete(userID, accountId, externalCalendarId, externalEventId): Promise<void>;
 
   // calendar-level writes — create / rename+recolor / delete the calendar itself
@@ -71,7 +92,15 @@ interface CalendarAdapter {
 }
 ```
 
-`NormalizedEvent` is the currency of the whole system — every adapter translates its provider's format to and from it.
+Event-capable adapters translate their provider's format to and from
+`NormalizedEvent`; provider-specific evidence remains part of the full contract.
+
+Tasks use `NormalizedTask`, `ExternalTaskRef`, and a provider-supported
+`TaskProjection`. Task-capable adapters implement `projectTask`,
+`assertTaskWrite`, `readTask`, and `pushTaskCreate/Update/Delete`. Discovery's
+`supportsEvents` and `supportsTasks` flags prevent an event-only collection from
+being treated as a task destination. `supportsTaskLinks` adds the separate
+client/server policy for safely maintaining live task memberships.
 
 ### Calendar-level writes
 
@@ -102,16 +131,19 @@ The request claims each persisted operation before its first conditional deliver
 there is no second legacy inline sender. Postcommit failures return truthful
 `localCommitted`, revision and sanitized partial/unconfirmed receipts.
 
-K07 preserves pending/attempting intent across process exit, but does not yet
-retry it. Unresolved predecessors block later attempts. K08 owns restart recovery,
-provider-specific idempotence/reconciliation, pull coordination and disconnect
-cleanup. This is not a distributed transaction or a guarantee of eventual delivery.
+The current outbox executor preserves pending/attempting intent across process
+exit and supports ordered recovery. Unresolved predecessors block later
+attempts. Renewable leases fence dispatch and acknowledgements; expired
+attempts must reconcile observed provider state before another write is
+admitted. This is not a distributed transaction or a guarantee of eventual
+delivery. Unsupported writes and unresolved conflicts remain visible.
 
 | Mutation | Ordering | Current failure result |
 | --- | --- | --- |
 | Calendar create/update/delete | Provider, then local DB | Provider rejection aborts local change; later DB failure can diverge |
 | Event create/update/delete/link/unlink/fork | Preflight, local CAS + outbox transaction, claimed provider delivery | Precommit failure rolls back; postcommit conflict/unconfirmed response retains local revision and durable intent |
-| Scheduled pull | Provider fetch, then local reconciliation | Account/provider failures are isolated and retried next cycle; pending-write coordination remains K08 |
+| Task create/update/delete/link/unlink/fork | Source/projection preflight, local revision/privacy CAS + task outbox transaction, postcommit wakeup | Explicit local commit receipt; delivery may remain pending, blocked, conflicting, or unconfirmed |
+| Scheduled pull | Provider fetch, then scoped local reconciliation | Account/provider failures are isolated; admitted pending writes and privacy retirement constrain what the pull may accept |
 
 Disconnecting one provider account uses `removeExternalAccountData()` to remove
 all of its local mirrors, events, opt-out tombstones, and (for CalDAV) stored
@@ -119,6 +151,58 @@ credentials in one transaction. Google revocation and Better Auth OAuth unlink
 still sit outside PostgreSQL and therefore keep the same cross-system boundary.
 
 See the [observability runbook](/docs/operations/observability/#incident-triage).
+
+### Task delivery and provider projections
+
+`prepareTaskWrites` captures destination source/account scope, accepted
+validators, and the immutable provider projection before mutation admission.
+The task query rechecks rights, expected task revision, privacy generation, and
+source admission under locks. Canonical content/membership/tombstone changes,
+the actor's mutation ledger entry, and `task_outbox` intents commit together.
+No provider HTTP runs while that transaction is open.
+
+Only an authorized **home pull** changes canonical task content. Secondary
+pulls acknowledge their own projection; they do not acquire completion
+authority. Comparing supported provider fields with the accepted projection
+baseline prevents a lossy provider serialization from erasing richer canonical
+fields. Home changes fan out to supported secondary providers. Secondary
+deletion does not globally delete a task, and retained delete addresses prevent
+late source reads from reimporting deleted copies as new identities.
+
+The task executor captures source/account identity, predecessor order,
+renewable lease, and uncertainty before dispatch. Mapping acknowledgement is
+guarded so a late HTTP response cannot change canonical authority. Delivery
+evidence has no task/calendar/source FK: it survives unlink, deletion, or source
+removal. Removing the connection owner purges that owner's private evidence;
+surviving foreign destinations keep theirs.
+
+An expired or uncertain CREATE must reconcile by observation rather than
+blindly create again. Google Tasks and Microsoft To Do cannot safely replay an
+uncertain creation without a remote address. CalDAV can read its deterministic
+resource URL to reconcile it. A preflight GET or an ETag-shaped string alone
+does not prove conditional update/delete support: Microsoft secondary writes
+remain blocked, and new live links to To Do are refused. Independent copies
+use their destination as a new home and retain ordinary home-write behavior.
+
+Recurring tasks can retain native memberships and existing home recurrence;
+multiple external projections are refused until there is one occurrence
+generator. Clients offer only native targets when sharing recurrence. For
+field-level provider limits, see [Google](/docs/providers/google/),
+[Microsoft](/docs/providers/microsoft/), and [CalDAV](/docs/providers/caldav/).
+
+Request wakeups and `drainTaskOutbox` use the same executor. When
+`EXTERNAL_SYNC_INTERVAL_MIN > 0`, the process runs the shared event/task outbox
+drain at startup and every **15 seconds**, independently of the provider-pull
+interval. Setting that variable to **0 disables background outbox recovery as
+well as scheduled pulls**; request wakeups still operate. Each task drain takes
+up to 40 due candidates with four workers.
+
+Clients consume `localCommitted` before deciding whether to keep a draft.
+Delivery discovery/status/retry uses the [task delivery API](/docs/reference/api/#delivery-receipts-and-retry),
+which exposes only current authorized titles and sanitized destination states.
+Only proven-not-written owned operations with current destination authority
+can be retried. A local save or an empty metrics result does not establish that
+all remote destinations have acknowledged the change.
 
 ## The engine
 
@@ -128,7 +212,13 @@ See the [observability runbook](/docs/operations/observability/#incident-triage)
 
 1. **Reconcile calendars.** `listCalendars()` → delete local mirrors gone on the provider (`removeCalendar` cascades orphans), import new ones (`importExternalCalendar`), and refresh the read-only flag. `readOnly: true` maps to `calendar_members.role = "viewer"`.
 
-2. **Pull events.** For each mirror, `fetchChanges(cursor)`. If `reset: true` (e.g. Google 410 cursor-expired), `clearCalendarEvents()` soft-deletes all first, then upserts fresh. Per event: `status: "cancelled"` → `deleteExternalEvent`; else `upsertExternalEvent` (transactional — creates or revives the event row + `calendar_events` + `external_events` mapping). Persist `nextCursor`.
+2. **Pull objects.** For each mirror, `fetchChanges(cursor)`. Per event,
+   cancellation goes through `deleteExternalEvent`; active observations go
+   through the scoped upsert/resource/family reconciliation paths. Task-capable
+   mirrors also use `upsertExternalTask` and `deleteExternalTask` with captured
+   source scope. A complete `reset: true` fetch sweeps missing objects after
+   reconciliation instead of tombstoning the entire mirror first. Persist
+   `nextCursor` only for an accepted fetch.
 
 </Steps>
 
@@ -148,11 +238,20 @@ behaviour.
 Provider changes reach the app without a manual pull-to-refresh through a three-piece loop:
 
 1. **Scheduler** (`apps/api/src/index.ts`): every `EXTERNAL_SYNC_INTERVAL_MIN` minutes (default 5, `0` disables), the server runs `syncUser` for every user who has at least one provider mirror (`getExternalSyncUserIDs`).
-2. **Change detection** (the part that makes this sane): `upsertExternalEvent` returns whether it *actually wrote* — with an etag (CalDAV) an unchanged, alive event is a verified no-op: no write, no `updatedAt` bump, so neither the broadcast nor the client delta fire for nothing. Deletions are detected by a **sweep**: on a full-set fetch (`reset: true` — CalDAV always, Google after a 410), events whose external id wasn't in the fetched set get tombstoned. The sweep replaced the old tombstone-everything-then-revive reset, which churned every event on every sync.
-3. **Broadcast → silent refresh**: when a calendar really changed, `syncUser` sends an SSE `external_sync` frame to its members; the client (`useEventsStream`) responds with a *silent* delta refresh — `refresh({ providerSync: false })`, skipping the provider-sync trigger so it can't loop.
+2. **Change detection**: an unchanged accepted ETag is a verified no-op, with no
+   `updatedAt` bump or redundant broadcast. Incremental reads process explicit
+   deletion observations. A complete `reset: true` read sweeps missing objects
+   after reconciliation: for example initial/expired Google Calendar cursors or
+   CalDAV's complete-read fallback. CalDAV does not reset on every sync when
+   `sync-collection` is supported. Partial reads never authorize a sweep.
+3. **Broadcast → silent refresh**: when a calendar really changed, `syncUser` sends an SSE `external_sync` frame to its affected readers; clients refresh events and tasks without triggering provider sync again, so the refresh cannot loop. Human task mutations also emit task ID/revision/actor frames; provider pulls do not invent another human actor.
 
 <Aside type="note">
-Why polling and not push? True Google push (watch webhooks) needs a publicly reachable HTTPS endpoint plus channel management/renewal — hostile to self-hosting — and **CalDAV has no push protocol at all**. A uniform poll with real change detection gives both providers near-realtime for free. If webhook push ever lands, it slots in as an *additional* trigger for the same `syncUser` path.
+Musubi currently installs no provider webhook or push subscription. Google watch
+channels require a publicly reachable endpoint plus renewal and channel
+management. The shared poll path works across the configured providers and
+self-hosted installations; a future push trigger can call the same sync path
+without replacing its access and change-detection checks.
 </Aside>
 
 <Aside type="caution">
@@ -227,19 +326,20 @@ Most sync bugs are recurrence and all-day edge cases. The existing adapters alre
 - OAuth mirrors the Google lifecycle exactly — both adapters share `sync/oauth.ts`
   (token refresh, `invalid_grant` → `reconnect_required`) and the generic
   `queries/oauth.ts` account queries. One Microsoft quirk handled there: the
-  refresh token **rotates on every refresh** and must be re-persisted.
+  refresh token may rotate; a returned replacement must be re-persisted.
 - Incremental sync via Graph **calendarView delta**. v1.0 has no unbounded event
   delta, so the delta token is bound to a fixed date window (`WINDOW_*` constants,
   currently −180d…+730d). The cursor stores `{link, windowEnd}`; when the future
   edge gets within 90 days, the adapter forces `reset: true` with a fresh window.
   Events outside the window don't exist in the mirror — a rolling view, not full
   history.
-- **Recurring series arrive pre-expanded**: calendarView returns occurrences and
-  exceptions as individual events, so `recurrence` is always `null` on pull — no
-  RRULE conversion, and Outlook-side exceptions come for free. The flip side:
-  pushing a *Musubi-created* recurring event into an Outlook mirror is rejected
-  with a clear error (Graph models recurrence as structured patterns, not
-  RRULE/EXDATE; converting is the upgrade path).
+- Ordinary **calendarView imports arrive pre-expanded** as occurrence/exception
+  rows. They are not silently adopted as canonical Musubi series. A separate
+  bounded personal-create/tracked-family path maps exactly representable finite
+  COUNT/UNTIL rules, preserves family identity and uses durable recovery. The
+  generic writer still refuses recurrence. Specialized occurrence/series
+  content, time, selected moves, cancellation and finite attendee RSVP each have
+  their own native proof; see the [current capability matrix](/docs/operations/capabilities/).
 - `Prefer: outlook.timezone="UTC", outlook.body-content-type="text"` on every
   read — times come back UTC and bodies as plain text.
 - Graph only accepts preset color names (`hexColor` is read-only), so create and
@@ -249,11 +349,20 @@ Most sync bugs are recurrence and all-day edge cases. The existing adapters alre
 
 - Wraps `tsdav`; Basic auth; principal/home discovery is automatic (incl. iCloud hosts).
 - Events parsed via `ical.js`; `externalId` is the **resource URL**, not the UID.
-- **Always returns `reset: true`** — full fetch every sync (a deliberate simplification; upgrade path is WebDAV `sync-collection`). This cleanly handles deletions.
+- Uses incremental `sync-collection` when advertised by the collection. An
+  initial/expired/unsupported token or failed incremental read falls back to a
+  complete collection query with `reset: true`, covering events and tasks.
+  Only the accepted complete result authorizes missing-object reconciliation.
 - Passwords are trimmed (mobile clipboards add whitespace) then decrypted per request.
 
 <Aside type="caution">
-**Recurrence must round-trip on update.** When pushing an edit to a recurring event, always emit the **full** `RRULE` + all `EXDATE` lines — not a delta. Omitting them strips the recurrence off the provider's copy on every save. Both adapters do this carefully; preserve it.
+**Preserve the native recurrence family.** A complete resource replacement must
+retain the full supported RRULE, RDATE/EXDATE and detached-component evidence,
+including untouched raw fields. A minimal provider PATCH instead omits fields
+outside its explicit operation; it must not replace recurrence merely to change
+a title. Use the provider-specific scope contract and exact readback rather than
+applying one serializer rule to Google, Graph and CalDAV. Unsupported shapes are
+refused before writing.
 </Aside>
 
 ## How to add a provider
@@ -298,7 +407,7 @@ token refresh and disconnect.
 
 ### Adapter checklist
 
-- [ ] Cursor expiry → `reset: true` so the engine wipes and refetches
+- [ ] Cursor expiry → complete `reset: true` fetch so the engine reconciles and sweeps missing objects
 - [ ] Read-only calendars (holidays, subscriptions) → `readOnly: true`
 - [ ] All-day end is exclusive — adjust ±1 day on pull/push
 - [ ] Recurrence: normalise provider format to iCal RRULE; EXDATE value-type must match DTSTART
@@ -327,3 +436,7 @@ For setup and provider-specific debugging, use the dedicated guides:
 | `sync/oauth.ts` | shared OAuth access-token refresh (google + microsoft) |
 | `sync/crypto.ts` | AES-256-GCM `encryptSecret`/`decryptSecret` |
 | `packages/db/src/queries/external.ts` | `upsertExternalEvent`, `clearCalendarEvents`, `removeExternalAccountData`, cursor & link helpers |
+| `sync/task_delivery.ts` | Task outbox dispatch and read-only uncertainty reconciliation |
+| `packages/db/src/queries/tasks.ts` | Task ownership, revision/privacy admission, link/fork/unlink and mutation ledger |
+| `packages/db/src/queries/task-outbox.ts` | Immutable task intents, source fences, order, leases and guarded acknowledgement |
+| `packages/db/src/queries/task-delivery-status.ts` | Authorized receipts, keyset discovery and exact-operation retry admission |

@@ -37,22 +37,31 @@ flowchart LR
 - **Fork** = a brand-new event row with a new owner. A divergent copy.
 - **Home calendar** (`events.originCalendarID`) decides edit rights. You can *see* an event through any calendar it's linked into, but you can only *edit* it if you have editor/owner role on its home calendar.
 
+Tasks follow the same model through `tasks.originCalendarID` and
+`calendar_tasks`. Home authority controls content and completion; a secondary
+membership grants a read, never home editing rights. A fork creates an
+independent task. Task mutations also use revisions, source privacy fences and
+durable delivery receipts; see [Shared tasks](/docs/guides/shared-tasks/) and
+the [task API](/docs/reference/api/#tasks).
+
 Keep this diagram in your head; every subsystem is a consequence of it.
 
 ## Monorepo layout
 
-Musubi is a **pnpm workspace** driven by **Turborepo**. Two apps, several shared packages.
+Musubi is a **pnpm workspace** driven by **Turborepo**. Three apps, several shared packages.
 
 <FileTree>
 - apps/
   - api/          Express API server (the backend)
   - client/       Expo / React Native app (the frontend)
+  - web/          React browser client (Tailwind v4, Musubi/shadcn)
 - packages/
   - db/           Drizzle schema, query modules, PostgreSQL migrations
   - types/        Zod schemas + inferred types — **the client/server contract**
   - calendar/     Recurrence (RRULE) expansion + date helpers — logic only, no UI
   - auth/         Better Auth configuration
   - config/       Environment loading (`envOrThrow`)
+  - design-system/ Renderer-free tokens and generated web theme
   - docs/         This documentation site (Astro Starlight)
 - turbo.json      Task graph (dev/build)
 - docker-compose*.yml
@@ -63,6 +72,7 @@ The dependency direction is strict and worth memorising:
 ```mermaid
 flowchart LR
     client[apps/client]
+    web[apps/web]
     api[apps/api]
     types["packages/types<br/>(shared Zod contract)"]
     calendar["packages/calendar<br/>(recurrence)"]
@@ -71,6 +81,8 @@ flowchart LR
     config[packages/config]
     client --> types
     client --> calendar
+    web --> types
+    web --> calendar
     api --> types
     api --> calendar
     api --> db
@@ -120,6 +132,7 @@ The client and server never trust raw JSON. They communicate through **Zod schem
 | Concept | One-line meaning | Lives in |
 |---|---|---|
 | **Events beyond calendars** | One event, many calendars, via `calendar_events` | `packages/db/src/schema.ts` |
+| **Shared tasks** | One task, home authority and readable memberships via `calendar_tasks` | `packages/db/src/queries/tasks.ts`, `apps/api/src/handlers/tasks.ts` |
 | **Home calendar** | `originCalendarID` governs edit rights | `packages/db`, `apps/api/src/permissions.ts` |
 | **Link vs Fork** | Share the same row vs create a divergent copy | `apps/api/src/handlers/events.ts` |
 | **Roles** | owner / editor / viewer → `can(role, action)` | `packages/types/src/permissions.ts` |

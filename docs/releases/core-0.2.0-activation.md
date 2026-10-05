@@ -1,5 +1,16 @@
 # Core activation in 0.2.0
 
+> **Historical activation decision; annotated 2026-10-05.** This records the
+> owner's selected rollout on 2026-09-14 and the acceptance available then. It
+> is not the current capability backlog or proof of private production settings.
+> See the [maintained v0.2.2 capability matrix](../../packages/docs/src/content/docs/operations/capabilities.mdx)
+> ([published page](https://musubi.pro/docs/operations/capabilities/)) for later
+> Outlook content, occurrence/series time, all-day, global-zone, selected-move,
+> cancellation and finite-series RSVP implementations and their exact evidence.
+> Those later paths supersede the earlier broad unsupported notes below; no new
+> runtime gate activation is implied. Public production health reporting 0.2.2
+> does not establish the values in this historical selection table.
+
 Owner decision: 2026-09-14. The coordinated Core and UI release is **0.2.0**.
 The unpublished 0.1.8 candidate is superseded, without an intermediate tag.
 Historical 0.1.8 QA records retain their original identifiers; they are evidence

@@ -1,12 +1,21 @@
-# EVENT delivery boundary (K06 accepted, K07 candidate)
+# EVENT delivery boundary
 
-K06 was accepted and squash-merged in PR #119. K07 adds durable intent and the
-request's first claimed attempt; independent K07 review remains pending.
-This change leaves product and compatibility versions unchanged. Outlook mapped personal events now
-support bounded content PATCH and explicitly accepted, preflight-guarded DELETE
-as described below. Other Outlook event edits remain refused. Read/create and
-genuinely local unlink remain available. Tasks are not EVENT concurrency evidence
-and their serializers are not changed by this work.
+Current contract reviewed for **v0.2.2 on 2026-10-05**. K06 was accepted and
+squash-merged in PR #119; K07 introduced the durable intent and request's first
+claimed attempt now used with the [outbox worker](event-outbox-worker.md).
+K06/K07 sections below preserve their original implementation/review checkpoints.
+Their then-pending review, future K08 recovery and 0.2.0 product-version notes
+are historical evidence, not the present implementation or release status.
+
+The generic Outlook personal writer supports bounded title/notes/location PATCH
+and explicitly accepted, preflight-guarded DELETE as described below. It still
+refuses time, meeting, shared-calendar and series mutations. Separately proven
+Outlook organizer, occurrence/series, move and RSVP paths do not widen that
+generic writer; their current scope and dated acceptance are in the
+[capability matrix](../../packages/docs/src/content/docs/operations/capabilities.mdx).
+Read/create and genuinely local unlink remain available. Tasks have a
+[separate ownership/delivery contract](shared-tasks.md) and are not EVENT
+concurrency evidence. No production gate activation is established by this page.
 
 ## Provider contract and evidence
 

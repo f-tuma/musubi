@@ -21,6 +21,9 @@ WORKDIR /app
 COPY --from=build /prod/docs /app
 
 ENV NODE_ENV=production
+# @astrojs/node 11.0.2's startup banner uses app.pipeline, removed by Astro
+# 7.2.3. Skip only that banner; request and error logging stay enabled.
+ENV ASTRO_NODE_LOGGING=disabled
 ENV HOST=0.0.0.0
 ENV PORT=4321
 EXPOSE 4321

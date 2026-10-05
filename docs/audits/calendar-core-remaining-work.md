@@ -1,12 +1,23 @@
-# Core kalendáře: zbývající práce
+# Core kalendáře: historický checkpoint a acceptance
+
+> **Archivní přehled, označeno 2026-10-05.** Níže jsou zachované datované řezy
+> ze září 2026, nikoli aktuální seznam chybějících implementací. Současný
+> kontrakt v0.2.2, automatické/živé důkazy, neověřená runtime aktivace a odklady
+> jsou v [udržované capability matrix](../../packages/docs/src/content/docs/operations/capabilities.mdx)
+> ([publikovaná stránka](https://musubi.pro/docs/operations/capabilities/)).
+> Novější Outlook content/time/all-day/UNTIL/global-zone/move a finite-series
+> RSVP kroky překonávají příslušná starší „nepodporované“ tvrzení níže. Zachování
+> starého textu není nové otevření již implementované práce. Živé release-device
+> a produkční důkazy zůstávají oddělené; veřejný health v0.2.2 nepotvrzuje Core gate.
 
 > Rozhodnutí 2026-09-14: vlastník vybral časový model, organizer, RSVP a osobní
 > iCloud obsahové zápisy pro dosud nevydanou 0.1.8. Připomínky a dostupnost
-> zůstávají vypnuté. [Aktuální aktivační plán](../releases/core-0.1.8-activation.md)
+> zůstávají vypnuté. [Historický aktivační plán 0.2.0](../releases/core-0.2.0-activation.md)
 > nahrazuje dřívější požadavek na pozdější verzi; živé a device mezery níže tím
 > nejsou označené za splněné.
 
-Aktualizováno 2026-09-11. Tento přehled doplňuje
+Základní checkpoint aktualizován 2026-09-11; pozdější záznamy mají vlastní data.
+Tento přehled doplňuje
 [implementační plán](calendar-core-implementation-plan.md); jeho historické
 checkpointy popisují stav v okamžiku příslušného řezu, ne vždy dnešní omezení.
 Vymezená autonomní implementace K12–K14 je lokálně dokončená a společně ověřená.

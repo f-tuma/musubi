@@ -2,6 +2,7 @@
 
 - Status: living document; web on Tailwind v4 + shadcn since 2026-09-30
 - Date: 2026-08-01
+- Last synchronized: 2026-10-05 (v0.2.2)
 - Applies to: `apps/web`, `apps/client`, and new shared design packages
 - Domain source of truth: [`calendar-ui.md`](./calendar-ui.md)
 
@@ -240,8 +241,8 @@ motion, and narrow bottom-sheet geometry. Consumers retain their role, focus
 policy, keyboard model, dimensions, and content anatomy. `Select`,
 `DatePicker`, `TimePicker`, and `ColorPicker` use this contract without being
 forced into one selection behavior. Month overflow keeps the anchored shell;
-event creation and details use the shared Inspector, which reserves space beside
-the desktop calendar and becomes modal on narrow screens. Features retain their
+event creation and details use the shared Inspector, which overlays the right
+edge of the desktop calendar and becomes modal below 1024 px. Features retain their
 focus, draft, and event-bubbling policies. Menus use their own command-navigation
 contract rather than turning `Popover` into a universal interaction component.
 
@@ -273,14 +274,15 @@ panel beneath it; it takes no description. `Row` owns item content and interacti
 requiring feature-owned data attributes. Features provide only domain copy and
 callbacks.
 
-`Button` has four semantic variants. `primary` is the single strongest action
+`Button` has five semantic variants. `primary` is the single strongest action
 in a region, `secondary` supports or cancels it, `ghost` is a quiet toolbar or
 inline action, and `destructive` is reserved for an action whose consequence
-needs explicit emphasis. Do not show two primary actions in one action group or
+needs explicit emphasis. `link` renders an inline text action; navigation
+composes a real link through `asChild`. Do not show two primary actions in one action group or
 use destructive styling as a generic brand accent. Dialog footers place the
 secondary action before the primary or destructive ending.
 
-The default `control` size matches form controls; `compact` belongs to dense
+The `default` size matches form controls; `compact` belongs to dense
 toolbars, toast actions, and other bounded chrome. Both sizes grow to the shared
 minimum touch targets at 599 px and below. Labels are concise and remain on one
 line; action groups stack rather than wrapping a button label. Loading blocks a

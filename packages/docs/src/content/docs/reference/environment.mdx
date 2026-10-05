@@ -34,7 +34,7 @@ Generate the auth secret with `openssl rand -base64 32`.
 | `BETTER_AUTH_URL` | Yes | — | Better Auth base URL, emails, invites, avatar URLs |
 | `BETTER_AUTH_SECRET` | Yes | — | Session signing and OAuth-token encryption; outside `dev`, at least 32 non-placeholder characters |
 | `API_SERVER_PORT` | No | `7531` | Public API listener |
-| `EXTERNAL_SYNC_INTERVAL_MIN` | No | `5` | Provider polling interval; `0` disables scheduled sync |
+| `EXTERNAL_SYNC_INTERVAL_MIN` | No | `5` | Provider polling interval. A positive value also enables event/task outbox recovery at boot and every 15 seconds; `0` disables both schedules, while request-triggered delivery remains enabled |
 | `LOG_LEVEL` | No | `info` | `debug`, `info`, `warn`, `error`, or `silent` |
 | `METRICS_PORT` | No | `9464` | Separate Prometheus listener; `0` disables it |
 | `ADMIN_EMAILS` | No | empty (no admin) | Comma-separated, case-insensitive list of accounts allowed to write server announcements; gates the admin write endpoints and the web admin panel link. Empty means this server has no admin — the admin endpoints refuse everyone, not the other way around |
@@ -57,14 +57,16 @@ values fail at boot instead of silently weakening the SSRF boundary.
 ## Optional Core capabilities
 
 All flags below default to `false`; only the literal `true` enables them.
-The coordinated 0.2.0 release may enable supported time/organizer operations
-when product and enforced client/peer versions are compatible and both minimums
-are at least 0.2.0. Preliminary 0.1.8 development builds must be replaced with 0.2.0 builds.
+The 0.2.2 release retains the coordinated 0.2.0 client/peer compatibility
+floors. Supported time/organizer operations also require their specific gates,
+permissions and provider checks. Use the [current capability matrix](/docs/operations/capabilities/)
+for accepted slices and evidence; runtime gate values are a separate deployment
+decision.
 
 | Variable | Effect |
 | --- | --- |
 | `EVENT_TIME_EDITS_ENABLED` | Explicit event-time operations and supported provider time import/writes |
-| `PROVIDER_ORGANIZER_EDITS_ENABLED` | Supported Google organizer operations and Microsoft one-off meeting creation |
+| `PROVIDER_ORGANIZER_EDITS_ENABLED` | Supported Google and Microsoft organizer operations, subject to operation-specific capability checks |
 | `CALDAV_ORGANIZER_EDITS_ENABLED` | CalDAV organizer operations with proven scheduling permissions |
 | `ICLOUD_ORGANIZER_CREATE_ENABLED` | Read-only confirmation of accepted iCloud meeting creation; also requires CalDAV organizer operations |
 | `PROVIDER_RSVP_EDITS_ENABLED` | Supported provider attendee replies |
@@ -75,10 +77,11 @@ are at least 0.2.0. Preliminary 0.1.8 development builds must be replaced with 0
 | `GOOGLE_AVAILABILITY_ENABLED` | Google FreeBusy availability |
 
 Flags do not bypass permissions or expand supported provider operations.
-The selected 0.2.0 activation excludes iCloud attendee RSVP, reminder writes, CalDAV alarm writes and
-Google availability. See the repository's `docs/releases/core-0.2.0-activation.md`
-and `ops/release/core-0.2.0.env.example` for the activation checklist and explicit
-settings. These files are not loaded automatically.
+The historical 0.2.0 activation excluded iCloud attendee RSVP, reminder writes,
+CalDAV alarm writes and Google availability. Its repository records
+`docs/releases/core-0.2.0-activation.md` and `ops/release/core-0.2.0.env.example`
+are not loaded automatically and do not authorize enabling gates during a new
+upgrade. Preserve current settings and follow [Releases & upgrades](/docs/operations/releases/).
 
 ## Docker Compose
 
