@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- v4 adds calendar settings and day press feedback. -->
+<!-- v5 gives installed launchers a new hierarchy for the shared widget shell. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
   android:id="@+id/musubi_calendar_root"
   android:layout_width="match_parent"
@@ -7,16 +7,16 @@
   android:background="@drawable/musubi_widget_background"
   android:clipToOutline="true"
   android:orientation="vertical"
-  android:paddingTop="13dp">
+  android:paddingTop="@dimen/musubi_widget_inset">
 
   <LinearLayout
     android:id="@+id/musubi_calendar_header"
     android:layout_width="match_parent"
-    android:layout_height="30dp"
+    android:layout_height="wrap_content" android:minHeight="@dimen/musubi_widget_header_height"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingStart="13dp"
-    android:paddingEnd="13dp">
+    android:paddingStart="@dimen/musubi_widget_inset"
+    android:paddingEnd="@dimen/musubi_widget_inset">
 
     <TextView
       android:id="@+id/musubi_calendar_year"
@@ -26,24 +26,23 @@
     <TextView
       android:id="@+id/musubi_calendar_month"
       style="@style/MusubiCalendarMonthTitle"
-      android:layout_marginStart="5dp"
+      android:layout_width="0dp" android:layout_weight="1"
+      android:layout_marginStart="@dimen/musubi_widget_content_gap"
       android:text="July" />
 
-    <LinearLayout
-      android:layout_width="0dp"
-      android:layout_height="1dp"
-      android:layout_weight="1" />
 
     <TextView
       android:id="@+id/musubi_calendar_today"
       style="@style/MusubiCalendarTodayLabel"
-      android:text="@string/musubi_calendar_widget_calendars" />
+      android:text="≡" android:contentDescription="@string/musubi_widget_calendars" />
+    <TextView android:id="@+id/musubi_calendar_refresh" style="@style/MusubiWidgetControl" android:text="↻" android:contentDescription="@string/musubi_widget_refresh" />
   </LinearLayout>
+  <TextView android:id="@+id/musubi_calendar_status" style="@style/MusubiWidgetMeta" android:layout_height="wrap_content" android:paddingStart="@dimen/musubi_widget_content_gap" android:paddingEnd="@dimen/musubi_widget_content_gap" />
 
   <LinearLayout
     android:layout_width="match_parent"
-    android:layout_height="20dp"
-    android:layout_marginTop="4dp"
+    android:layout_height="wrap_content" android:minHeight="@dimen/musubi_widget_calendar_weekday_height"
+    android:layout_marginTop="@dimen/musubi_widget_row_gap"
     android:orientation="horizontal">
     <TextView android:id="@+id/musubi_calendar_weekday_1" style="@style/MusubiCalendarWeekday" android:text="M" />
     <TextView android:id="@+id/musubi_calendar_weekday_2" style="@style/MusubiCalendarWeekday" android:text="T" />
@@ -56,8 +55,9 @@
 
   <LinearLayout
     android:layout_width="match_parent"
+    android:id="@+id/musubi_calendar_grid"
     android:layout_height="0dp"
-    android:layout_marginTop="2dp"
+    android:layout_marginTop="@dimen/musubi_widget_row_gap"
     android:layout_weight="1"
     android:orientation="vertical">
 
@@ -481,4 +481,5 @@
         </LinearLayout>
     </LinearLayout>
   </LinearLayout>
+  <TextView android:id="@+id/musubi_calendar_empty" style="@style/MusubiWidgetEmpty" android:layout_height="0dp" android:layout_weight="1" android:visibility="gone" />
 </LinearLayout>

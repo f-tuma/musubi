@@ -1,97 +1,55 @@
 import { calendarTasks, isCalendarTask, taskCapabilities, taskDisplayCalendar } from "@musubi/calendar";
-import { useTaskRefreshStore } from "@/store/useTaskRefreshStore";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useFocusEffect } from "expo-router";
-import { type Task, type TaskStatus } from "@musubi/types";
-import { useApi } from "@/services/api";
-import { useServer } from "@/contexts/ServerContext";
+import type { TaskStatus } from "@musubi/types";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
-import { useEventsStore } from "@/store/useEventsStore";
+import { acceptTaskMutation, runTaskMutation } from "@/services/taskCollection";
+import { useTaskCollection } from "@/hooks/useTaskCollection";
 import { TaskDetailModal } from "@/components/tasks/TaskDetailModal";
 import { showToast } from "@/components/ui/Toast";
-import { isAuthorizationError, userFacingError } from "@/lib/network";
-
-const EMPTY_TASKS: Task[] = [];
+import { userFacingError } from "@/lib/network";
 
 export function useCalendarTasks() {
-  const api = useApi(), apiRef = useRef(api);
-  useEffect(() => { apiRef.current = api; }, [api]);
-  const { apiUrl, authClient } = useServer();
-  const actor = authClient.useSession().data?.user.id;
-  const scope = JSON.stringify([apiUrl, actor]);
+  const { tasks, scope, apiRef, refresh } = useTaskCollection();
   const calendars = useCalendarsStore(s => s.calendars);
-  const focused = useRef(false);
-  const [snapshot, setSnapshot] = useState<{ scope: string; tasks: Task[] }>({ scope, tasks: [] });
-  const tasks = snapshot.scope === scope ? snapshot.tasks : EMPTY_TASKS;
-  const [selected, select] = useState<string>();
-  const [busy, setBusy] = useState(false);
-  const saving = useRef(false);
-  const pendingRefresh = useRef(false);
-  const request = useRef(0);
-  const refresh = useCallback(async () => {
-    if (saving.current) { pendingRefresh.current = true; return; }
-    pendingRefresh.current = false;
-    const generation = ++request.current;
-    try {
-      const tasks = await apiRef.current.getTasks();
-      if (generation === request.current) setSnapshot({ scope, tasks });
-    } catch (error) {
-      if (generation === request.current) {
-        if (isAuthorizationError(error)) setSnapshot({ scope, tasks: [] });
-        showToast({ message: userFacingError(error, "Could not load calendar tasks."), actionLabel: "Retry", onAction: () => { void refresh(); } });
-      }
-    }
-  }, [scope]);
-  const refreshRef = useRef(refresh);
-  useEffect(() => { refreshRef.current = refresh; }, [refresh]);
+  const [selected, select] = useState<{ scope: string | null; id: string }>();
+  const [busyScope, setBusyScope] = useState<string | null>();
+  const saving = useRef<string | null>(null);
   useFocusEffect(useCallback(() => {
-    focused.current = true;
-    void refresh();
-    return () => { focused.current = false; request.current++; };
+    void refresh().catch(error => showToast({ message: userFacingError(error, "Could not load calendar tasks.") }));
   }, [refresh]));
-  // Provider/SSE refreshes replace the event snapshot. Refresh tasks alongside it,
-  // without subscribing the whole calendar screen to a second task store.
-  useEffect(() => useEventsStore.subscribe((state, previous) => {
-    if (focused.current && state.events !== previous.events) void refresh();
-  }), [refresh]);
-  useEffect(() => useTaskRefreshStore.subscribe(() => { if (focused.current) void refresh(); }), [refresh]);
-  const detail = tasks.find(task => task.id === selected);
+  const detail = selected?.scope === scope ? tasks.find(task => task.id === selected?.id) : undefined;
   const calendar = detail ? taskDisplayCalendar(detail, calendars) : undefined;
   const editable = !!detail && taskCapabilities(detail, calendars).edit;
+  const busy = busyScope === scope && busyScope !== undefined;
   async function change(change: { status: TaskStatus } | { priority: number }) {
-    if (!detail || !editable || saving.current) return;
-    saving.current = true;
-    setBusy(true);
-    const generation = ++request.current;
-    let failed = false;
+    if (!detail || !editable || saving.current === scope) return;
+    saving.current = scope;
+    setBusyScope(scope);
+    const api = apiRef.current;
     try {
-      const saved = "status" in change
-        ? await apiRef.current.setTaskStatus(detail, change.status)
-        : await apiRef.current.setTaskPriority(detail, change.priority);
-      if (generation === request.current) setSnapshot(previous => ({
-        scope, tasks: saved ? previous.tasks.map(task => task.id === saved.id ? saved : task) : previous.tasks.filter(task => task.id !== detail.id),
-      }));
+      await runTaskMutation(scope, api, detail.id, () => "status" in change
+        ? api.setTaskStatus(detail, change.status)
+        : api.setTaskPriority(detail, change.priority));
     } catch (error) {
-      failed = true;
       showToast({ message: userFacingError(error, "Could not update task.") });
     } finally {
-      saving.current = false; setBusy(false);
-      if ((failed || pendingRefresh.current) && focused.current) void refreshRef.current();
+      if (saving.current === scope) saving.current = null;
+      setBusyScope(current => current === scope ? undefined : current);
     }
   }
+  const openRelated = (id: string) => select({ scope, id });
   return {
     items: useMemo(() => calendarTasks(tasks, calendars), [tasks, calendars]),
     refresh,
     open: useCallback((event: import("@musubi/types").Event) => {
       if (!isCalendarTask(event)) return false;
-      select(event.calendarTask.id);
+      select({ scope, id: event.calendarTask.id });
       return true;
-    }, []),
-    detail: detail ? <TaskDetailModal key={scope + detail.id} task={detail} relatedTask={tasks.find(item => item.id === detail.relatedTo)} onOpenRelated={select} calendar={calendar} calendars={calendars}
+    }, [scope]),
+    detail: detail ? <TaskDetailModal key={scope + detail.id} task={detail} relatedTask={tasks.find(item => item.id === detail.relatedTo)} onOpenRelated={openRelated} calendar={calendar} calendars={calendars}
       editable={editable} busy={busy} onSaved={saved => {
-        request.current++;
-        setSnapshot(previous => ({ scope, tasks: saved ? previous.tasks.map(item => item.id === saved.id ? saved : item) : previous.tasks.filter(item => item.id !== detail.id) }));
-        if (!saved) select(undefined);
+        if (acceptTaskMutation(scope, detail.id, saved) && !saved) select(undefined);
       }} onClose={() => select(undefined)}
       onStatus={status => { void change({ status }); }} onPriority={priority => { void change({ priority }); }} /> : null,
   };

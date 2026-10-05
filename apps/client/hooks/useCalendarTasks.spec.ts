@@ -3,12 +3,13 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { CalendarSchema, TaskSchema, type Task } from "@musubi/types";
 import { useTaskRefreshStore } from "@/store/useTaskRefreshStore";
 import { useCalendarTasks } from "./useCalendarTasks";
+import { resetTaskCollection } from "@/services/taskCollection";
 
 const h = vi.hoisted(() => ({
   actor: "owner", url: "https://home.test", slots: [] as unknown[], index: 0,
   effects: [] as { deps?: readonly unknown[]; cleanup?: () => void }[], effectIndex: 0,
-  focus: undefined as undefined | (() => () => void),
-  api: { getTasks: vi.fn(), setTaskStatus: vi.fn(), setTaskPriority: vi.fn() },
+  focus: undefined as undefined | (() => void | (() => void)),
+  api: { getTasks: vi.fn(), setTaskStatus: vi.fn(), setTaskPriority: vi.fn(), syncProviderCalendars: vi.fn() },
 }));
 vi.mock("react", async original => ({
   ...await original<typeof import("react")>(),
@@ -21,6 +22,8 @@ vi.mock("react", async original => ({
   useRef: (initial: unknown) => { const index = h.index++; return h.slots[index] ??= { current: initial }; },
   useCallback: (callback: unknown) => callback,
   useMemo: (factory: () => unknown) => factory(),
+  useSyncExternalStore: (_subscribe: unknown, getSnapshot: () => unknown) => getSnapshot(),
+  useDebugValue: () => {},
   useEffect: (effect: () => (() => void) | void, deps?: readonly unknown[]) => {
     const index = h.effectIndex++;
     const previous = h.effects[index];
@@ -29,11 +32,16 @@ vi.mock("react", async original => ({
     h.effects[index] = { deps, cleanup: effect() || undefined };
   },
 }));
-vi.mock("expo-router", () => ({ useFocusEffect: (callback: () => () => void) => { h.focus = callback; } }));
+vi.mock("expo-router", () => ({ useFocusEffect: (callback: () => void | (() => void)) => { h.focus = callback; } }));
 vi.mock("@/services/api", () => ({ useApi: () => h.api }));
 vi.mock("@/contexts/ServerContext", () => ({ useServer: () => ({ apiUrl: h.url, authClient: { useSession: () => ({ data: { user: { id: h.actor } } }) } }) }));
-vi.mock("@/store/useCalendarsStore", () => ({ useCalendarsStore: (selector: (state: { calendars: typeof calendars }) => unknown) => selector({ calendars }) }));
-vi.mock("@/store/useEventsStore", () => ({ useEventsStore: { subscribe: () => () => {} } }));
+vi.mock("@/store/useCalendarsStore", () => ({ useCalendarsStore: Object.assign((selector: (state: { calendars: typeof calendars }) => unknown) => selector({ calendars }), { getState: () => ({ calendars }), subscribe: () => () => {} }) }));
+vi.mock("@/store/useEventsStore", () => ({ getEventLifecycle: () => 0, useEventsStore: { subscribe: () => () => {} } }));
+vi.mock("@/services/tasksCache", () => ({ cacheGetTasks: () => null, cacheSetTasks: () => {}, cacheDeleteTasks: () => {} }));
+vi.mock("@/store/useTasksStore", async original => {
+  const module = await original<typeof import("@/store/useTasksStore")>();
+  return { ...module, useTasksStore: Object.assign(() => module.useTasksStore.getState(), module.useTasksStore) };
+});
 vi.mock("@/components/tasks/TaskDetailModal", () => ({ TaskDetailModal: "TaskDetailModal" }));
 vi.mock("@/components/ui/Toast", () => ({ showToast: vi.fn() }));
 vi.mock("@/lib/network", () => ({ isAuthorizationError: (error: Error) => /^40[13]/.test(error.message), userFacingError: (error: Error) => error.message }));
@@ -60,6 +68,7 @@ async function openTask() {
 beforeEach(() => {
   for (const effect of h.effects) effect.cleanup?.();
   h.effects = []; h.effectIndex = 0; h.slots = []; h.index = 0; h.actor = "owner"; h.url = "https://home.test";
+  resetTaskCollection();
   vi.clearAllMocks(); h.api.getTasks.mockResolvedValue([task]);
 });
 
@@ -80,11 +89,11 @@ it("flushes to the current actor/server after a switch without restoring old pri
   h.api.setTaskStatus.mockReturnValue(pending.promise);
   let result = await openTask();
   details(result).onStatus("completed");
-  const leave = h.focus!(); leave();
+  h.focus!();
   h.actor = "other-actor"; h.url = "https://other.test";
+  h.api.getTasks.mockResolvedValue([other]);
   result = render(); h.focus!();
   expect(result.items).toHaveLength(0);
-  h.api.getTasks.mockResolvedValue([other]);
   pending.resolve(saved); await settle();
   result = render();
   expect(h.api.getTasks).toHaveBeenCalledTimes(2);

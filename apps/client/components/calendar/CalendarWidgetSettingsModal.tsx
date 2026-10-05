@@ -3,22 +3,28 @@ import { Btn } from "@/components/ui/Btn";
 import { ModalPortal as Modal } from "@/components/ui/ModalPortal";
 import { colors, fonts, styles } from "@/constants/theme";
 import { useModalAnimation } from "@/hooks/useModalAnimation";
-import { getCalendarWidgetSelection, setCalendarWidgetSelection } from "@/services/agendaWidget";
+import { getCalendarWidgetSelection, setCalendarWidgetSelection, getTasksWidgetSelection, setTasksWidgetSelection } from "@/services/agendaWidget";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTasksStore } from "@/store/useTasksStore";
+import { taskCalendarIDs } from "@musubi/calendar";
 
 type Props = {
   widgetId: number | null;
   onClose: () => void;
+  kind?: "calendar" | "tasks";
 };
 
-export default function CalendarWidgetSettingsModal({ widgetId, onClose }: Props) {
+export default function CalendarWidgetSettingsModal({ widgetId, onClose, kind = "calendar" }: Props) {
   const visible = widgetId !== null;
-  const calendars = useCalendarsStore(state => state.calendars);
+  const allCalendars = useCalendarsStore(state => state.calendars);
+  const tasks = useTasksStore(state => state.tasks);
+  const calendars = useMemo(() => allCalendars.filter(calendar => kind === "calendar" || calendar.supportsTasks
+    || !calendar.provider || tasks.some(task => taskCalendarIDs(task).includes(calendar.id))), [allCalendars, tasks, kind]);
   const insets = useSafeAreaInsets();
   const { slideStyle, fadeStyle, gesture, handleClose } = useModalAnimation(visible, onClose);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -29,21 +35,24 @@ export default function CalendarWidgetSettingsModal({ widgetId, onClose }: Props
     if (widgetId === null) return;
     let cancelled = false;
     setLoading(true);
-    getCalendarWidgetSelection(widgetId)
+    const getSelection = kind === "tasks" ? getTasksWidgetSelection : getCalendarWidgetSelection;
+    getSelection(widgetId)
       .then(saved => {
         if (cancelled) return;
         setSelected(new Set(saved ?? calendars.map(calendar => calendar.id)));
         setSoloId(null);
       })
+      .catch(error => { if (!cancelled) console.warn("Widget selection could not load:", error); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [widgetId, calendars]);
+  }, [widgetId, kind, calendars]);
 
   const commit = (next: Set<string>, nextSoloId: string | null) => {
     setSelected(next);
     setSoloId(nextSoloId);
     if (widgetId !== null) {
-      setCalendarWidgetSelection(widgetId, [...next])
+      const setSelection = kind === "tasks" ? setTasksWidgetSelection : setCalendarWidgetSelection;
+      setSelection(widgetId, [...next])
         .catch(error => console.warn("Calendar widget selection failed:", error));
     }
   };

@@ -119,12 +119,14 @@ function AppContent() {
     const inviteStart = pathname.startsWith('/invite') || initialUrl?.includes('/invite/');
     const agendaStart = pathname === '/agenda' || initialUrl?.startsWith('musubi://agenda');
     const calendarStart = !!initialUrl?.startsWith('musubi:///?time=')
-      || !!initialUrl?.startsWith('musubi:///?calendarWidgetId=');
+      || !!initialUrl?.startsWith('musubi:///?calendarWidgetId=')
+      || !!initialUrl?.startsWith('musubi:///?widgetRefresh=');
+    const tasksStart = pathname === '/tasks' || !!initialUrl?.startsWith('musubi://tasks');
     // Invite routes handle signed-out users themselves: they persist the token,
     // open auth, then restore the invite after a successful sign-in/sign-up.
     // Keeping the route alive here also covers expo-router resolving the deep
     // link a moment after `pathname` initially reported "/".
-    if (inviteStart || (session && (agendaStart || calendarStart))) return;
+    if (inviteStart || (session && (agendaStart || calendarStart || tasksStart))) return;
     router.replace(session ? '/(tabs)' : '/(auth)/welcome');
   }, [ready, updateRequired, initialUrl, pathname, router, session]);
 

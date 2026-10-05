@@ -1,6 +1,8 @@
 import { useServer } from "@/contexts/ServerContext";
 import { taskCapabilities, taskCalendarIDs, taskDisplayCalendar, uniqueTasks } from "@musubi/calendar";
-import { useTaskRefreshStore } from "@/store/useTaskRefreshStore";
+import { acceptTaskMutation, runTaskMutation } from "@/services/taskCollection";
+import { useTaskCollection } from "@/hooks/useTaskCollection";
+import CalendarWidgetSettingsModal from "@/components/calendar/CalendarWidgetSettingsModal";
 import { TaskEditorModal } from "@/components/tasks/TaskEditorModal";
 import { spacing, typeSizes } from "@musubi/design-system";
 import { uuidv7 } from "uuidv7";
@@ -11,17 +13,16 @@ import { ProviderIcon } from "@/components/calendar/ProviderIcon";
 import { CalendarFilterBar } from "@/components/calendar/CalendarFilterBar";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, RefreshControl, ScrollView, Text, View } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { can, providerFlavor, type Task, type TaskStatus } from "@musubi/types";
 import { colors, fonts, styles } from "@/constants/theme";
-import { useApi } from "@/services/api";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { Tap } from "@/components/ui/Tap";
 import { OptionPicker } from "@/components/ui/OptionPicker";
 import { Empty } from "@/components/ui/Empty";
 import { showToast } from "@/components/ui/Toast";
-import { isAuthorizationError, userFacingError } from "@/lib/network";
+import { userFacingError } from "@/lib/network";
 
 const phases: { value: TaskStatus; label: string; icon: "circle" | "clock" | "check-circle" | "x-circle" }[] = [
   { value: "needs-action", label: "Needs action", icon: "circle" },
@@ -37,57 +38,62 @@ export default function TasksTab() {
 }
 
 function TasksTabScreen() {
-  const api = useApi();
-  const apiRef = useRef(api);
-  useEffect(() => { apiRef.current = api; }, [api]);
+  const { tasks, ready, status, refreshing, error, scope, apiRef, refresh } = useTaskCollection();
+  const params = useLocalSearchParams<{ taskId?: string | string[]; widgetRefresh?: string | string[]; tasksWidgetId?: string | string[] }>();
+  const taskId = Array.isArray(params.taskId) ? params.taskId[0] : params.taskId;
+  const widgetRefresh = Array.isArray(params.widgetRefresh) ? params.widgetRefresh[0] : params.widgetRefresh;
+  const tasksWidgetId = Array.isArray(params.tasksWidgetId) ? params.tasksWidgetId[0] : params.tasksWidgetId;
+  const widgetSettingsNumber = tasksWidgetId && /^\d+$/.test(tasksWidgetId) ? Number(tasksWidgetId) : NaN;
+  const widgetSettingsId = Number.isSafeInteger(widgetSettingsNumber) ? widgetSettingsNumber : null;
   const dateFormat = useSettingsStore(s => s.dateFormat);
   const timeFormat = useSettingsStore(s => s.timeFormat);
   const { calendars, activeCals, soloCalId, toggleCal, soloCalendar } = useCalendarsStore();
   const [phaseFilter, setPhaseFilter] = useState<TaskStatus>("needs-action");
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string>();
   const [creating, setCreating] = useState<string>();
   const newId = useRef(uuidv7());
   const [detailId, setDetailId] = useState<string>();
   const [selected, setSelected] = useState<Task>();
   const [saving, setSaving] = useState<string>();
-  const request = useRef(0);
-  const focused = useRef(false);
-  const refresh = useCallback(async (syncProviders = false) => {
-    const id = ++request.current;
-    const currentApi = apiRef.current;
-    setRefreshing(true);
-    try {
-      // Explicit refresh pulls provider changes, just like the calendar screen.
-      // Focus and mutation recovery only reload the saved snapshot.
-      if (syncProviders) await currentApi.syncProviderCalendars();
-      if (id !== request.current) return;
-      const next = await currentApi.getTasks();
-      if (id === request.current) { setTasks(next); setError(undefined); }
-    } catch (e) {
-      if (id === request.current) { if (isAuthorizationError(e)) setTasks([]); setError(userFacingError(e, "Could not load tasks.")); }
-    } finally { if (id === request.current) setRefreshing(false); }
-  }, []);
-  useFocusEffect(useCallback(() => { focused.current = true; void refresh(); return () => { focused.current = false; request.current++; }; }, [refresh]));
+  useFocusEffect(useCallback(() => { void refresh().catch(() => {}); }, [refresh]));
+  useEffect(() => {
+    if (widgetRefresh !== "1" || !scope) return;
+    void refresh(true).catch(() => {});
+    router.setParams({ widgetRefresh: "" });
+  }, [widgetRefresh, scope, refresh]);
+  useEffect(() => {
+    if (!taskId || !scope) return;
+    const task = tasks.find(item => item.id === taskId);
+    if (!task && (status === "ready" || status === "unauthorized")) {
+      router.setParams({ taskId: "" });
+      if (status === "ready") showToast({ message: "This task is no longer available." });
+    }
+  }, [taskId, scope, tasks, status]);
+  // A widget link remains the source of the open detail until it is dismissed.
+  // Deriving it avoids copying asynchronous hydration into component state and
+  // also lets a repeated link replace whichever task is already open.
+  const closeDetail = () => {
+    setDetailId(undefined);
+    if (taskId) router.setParams({ taskId: "" });
+  };
+  const openDetail = (id: string) => {
+    setDetailId(id);
+    if (taskId) router.setParams({ taskId: "" });
+  };
 
   const changeTask = async (task: Task | undefined, change: { status: TaskStatus } | { priority: number }) => {
     if (!task || saving || !taskCapabilities(task, calendars).edit) return;
     setSaving(task.id);
+    const api = apiRef.current;
     try {
-      const saved = "status" in change ? await apiRef.current.setTaskStatus(task, change.status) : await apiRef.current.setTaskPriority(task, change.priority);
-      request.current++;
-      setRefreshing(false);
-      if (!saved) { setTasks(current => current.filter(item => item.id !== task.id)); setDetailId(undefined); }
-      else setTasks(current => current.map(task => task.id === saved.id ? saved : task));
+      const saved = await runTaskMutation(scope, api, task.id, () => "status" in change
+        ? api.setTaskStatus(task, change.status) : api.setTaskPriority(task, change.priority));
+      if (!saved) closeDetail();
     } catch (e) {
       showToast({ message: userFacingError(e, "Could not update task.") });
-      void refresh();
     } finally { setSaving(undefined); }
   };
 
-  useEffect(() => useTaskRefreshStore.subscribe(() => { if (focused.current) void refresh(); }), [refresh]);
-  const detail = tasks.find(task => task.id === detailId);
+  const detail = tasks.find(task => task.id === (taskId && ready ? taskId : detailId));
   const detailCalendar = detail ? taskDisplayCalendar(detail, calendars) : undefined;
   const detailEditable = !!detail && taskCapabilities(detail, calendars).edit;
 
@@ -97,7 +103,7 @@ function TasksTabScreen() {
   return <View style={styles.screen}>
     <View style={[styles.header, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}>
       <Text style={styles.screenTitle}>Tasks</Text>
-      <Tap accessibilityLabel="Refresh tasks" onPress={() => void refresh(true)} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
+      <Tap accessibilityLabel="Refresh tasks" onPress={() => { void refresh(true).catch(() => {}); }} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
         {refreshing ? <ActivityIndicator color={colors.fg3} /> : <Feather name="refresh-cw" size={18} color={colors.fg3} />}
       </Tap>
     </View>
@@ -109,9 +115,9 @@ function TasksTabScreen() {
         <Text style={{ fontFamily: fonts.sans, fontSize: typeSizes[11], color: phaseFilter === phase.value ? colors.fg : colors.fg3 }}>{phase.label}</Text>
       </Tap>)}
     </View>
-    <ScrollView key={phaseFilter} contentContainerStyle={{ paddingHorizontal: spacing[4], paddingTop: spacing[1], paddingBottom: 96, gap: spacing[4] }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh(true)} />}>
+    <ScrollView key={phaseFilter} contentContainerStyle={{ paddingHorizontal: spacing[4], paddingTop: spacing[1], paddingBottom: 96, gap: spacing[4] }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { void refresh(true).catch(() => {}); }} />}>
       {error ? <Text accessibilityRole="alert" style={{ color: colors.fg2 }}>{error}</Text> : null}
-      {!filtered.some(task => task.status === phaseFilter) && !refreshing && !error ? <Empty kanji="静" text="No tasks in this view" /> : null}
+      {ready && !filtered.some(task => task.status === phaseFilter) && !refreshing && !error ? <Empty kanji="静" text="No tasks in this view" /> : null}
       {phases.filter(phase => phase.value === phaseFilter).map(phase => {
         const items = filtered.filter(task => task.status === phase.value);
         if (!items.length) return null;
@@ -123,7 +129,7 @@ function TasksTabScreen() {
               <Tap disabled={!editable || !!saving} accessibilityLabel={`Change status of ${task.title}, ${phase.label}`} onPress={() => setSelected(task)} style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
                 {saving === task.id ? <ActivityIndicator color={colors.fg3} /> : <Feather name={phase.icon} size={21} color={colors.fg3} />}
               </Tap>
-              <Tap onPress={() => setDetailId(task.id)} accessibilityLabel={`Open task: ${task.title}`} scaleTo={1} style={{ flex: 1, gap: spacing[1], minHeight: 44, justifyContent: "center" }}>
+              <Tap onPress={() => openDetail(task.id)} accessibilityLabel={`Open task: ${task.title}`} scaleTo={1} style={{ flex: 1, gap: spacing[1], minHeight: 44, justifyContent: "center" }}>
                 <Text style={{ fontFamily: fonts.sans, fontSize: typeSizes[15], color: task.status === "completed" || task.status === "cancelled" ? colors.fg3 : colors.fg, textDecorationLine: task.status === "completed" ? "line-through" : "none" }}>{task.title}</Text>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                   <ProviderIcon provider={calendar ? providerFlavor(calendar) : undefined} color={calendar?.color ?? colors.fg3} />
@@ -148,13 +154,14 @@ function TasksTabScreen() {
       if (target) { newId.current = uuidv7(); setCreating(target.id); }
     }}><Text style={{ color: colors.onFill, fontSize: 28, lineHeight: 30 }}>+</Text></Tap> : null}
     {creating ? <TaskEditorModal calendarID={creating} calendars={calendars.filter(calendar => can(calendar.role, "editTasks") && (!calendar.provider || calendar.supportsTasks === true))} onClose={() => setCreating(undefined)} onSave={async draft => {
-      const saved = await apiRef.current.createTask({ ...draft, id: newId.current });
+      const api = apiRef.current;
+      const saved = await runTaskMutation(scope, api, newId.current, () => api.createTask({ ...draft, id: newId.current }));
       if (!saved) return;
-      request.current++; setRefreshing(false); setTasks(current => [...current.filter(task => task.id !== saved.id), saved]);
       setPhaseFilter(saved.status);
       if (!activeCals.has(saved.calendarID)) toggleCal(saved.calendarID);
     }} /> : null}
-    {detail ? <TaskDetailModal key={detail.id} task={detail} relatedTask={tasks.find(item => item.id === detail.relatedTo)} onOpenRelated={setDetailId} calendar={detailCalendar} calendars={calendars} editable={detailEditable} busy={!!saving} onSaved={saved => { request.current++; setRefreshing(false); setTasks(current => saved ? current.map(item => item.id === saved.id ? saved : item) : current.filter(item => item.id !== detail.id)); if (!saved) setDetailId(undefined); }} onClose={() => setDetailId(undefined)} onStatus={status => void changeTask(detail, { status })} onPriority={priority => void changeTask(detail, { priority })} /> : null}
+    {detail ? <TaskDetailModal key={detail.id} task={detail} relatedTask={tasks.find(item => item.id === detail.relatedTo)} onOpenRelated={openDetail} calendar={detailCalendar} calendars={calendars} editable={detailEditable} busy={!!saving} onSaved={saved => { if (acceptTaskMutation(scope, detail.id, saved) && !saved) closeDetail(); }} onClose={closeDetail} onStatus={status => void changeTask(detail, { status })} onPriority={priority => void changeTask(detail, { priority })} /> : null}
     <OptionPicker visible={!!selected} title="Task status" options={phases} value={selected?.status} onSelect={value => void changeTask(selected, { status: value as TaskStatus })} onClose={() => setSelected(undefined)} />
+    <CalendarWidgetSettingsModal kind="tasks" widgetId={widgetSettingsId} onClose={() => router.setParams({ tasksWidgetId: "" })} />
   </View>;
 }

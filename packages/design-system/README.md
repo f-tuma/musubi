@@ -5,22 +5,38 @@ type scales, radii, control heights and motion durations. Renderer-free — web
 turns them into CSS custom properties, native consumes the same numbers as
 density-independent points.
 
-Nothing here knows about a component. A token names a purpose (`textMuted`,
-`surfaceSunken`), never a place it is used.
+Theme and foundation tokens name purposes (`textMuted`, `surfaceSunken`) rather
+than renderers. `widget-tokens.ts` composes those values into the home-screen
+widget appearance contract, shared by Agenda, Calendar and Tasks.
 
 ## Generated files
 
-`pnpm generate` writes three files from the TypeScript sources. They are
+`pnpm generate` writes the following files from the TypeScript sources. They are
 committed, and the test suite fails if they are stale:
 
 | File | For |
 | --- | --- |
 | `src/colors.css` | The two schemes as CSS custom properties |
 | `src/foundations.css` | Spacing, type, radii, control heights, motion |
+| `src/tailwind.css` | The web utility theme over the same values |
 | `design-tokens.json` | The same values in the W3C design-tokens shape |
+| `apps/client/modules/musubi-agenda-widget/android/src/main/res/values/musubi_widget_tokens.xml` | Widget colours, dp geometry and sp type |
+| `apps/client/modules/musubi-agenda-widget/android/src/main/res/values-night/musubi_widget_tokens.xml` | Widget dark colours; shared dimensions inherit from the default set |
 
-Never edit those three by hand. Edit `theme-tokens.ts` or
-`foundation-tokens.ts` and regenerate.
+The Android paths are relative to the repository root. Never edit generated
+files by hand. Edit `theme-tokens.ts`, `foundation-tokens.ts` or `widget-tokens.ts`
+and regenerate. The Android adapter preserves alpha as `#AARRGGBB`; design tools
+receive `#RRGGBBAA`. Widget tests check generated-file staleness and contrast
+after Android's alpha rounding. User-calendar pigment text chooses between the
+generated black/white candidates independently of the current widget theme.
+
+RemoteViews can use the native system serif/sans fallback when Musubi's runtime
+font assets are unavailable. Scalable type keeps titles at 14sp, metadata at
+12sp and calendar pills at 11sp; resize changes visible content rather than
+shrinking that type. Named control glyphs use a 24dp visual size inside 44dp
+touch targets, so enlarged text cannot clip the refresh/settings symbols.
+Native device checks must verify font scale and the optical
+result of that fallback.
 
 ## Editing tokens in a design tool
 

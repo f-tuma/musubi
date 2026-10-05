@@ -13,7 +13,7 @@
   "scripts": {
     "check-tokens": "tsx scripts/check-tokens.ts",
     "generate": "tsx scripts/generate-css.ts",
-    "test": "tsx src/theme-tokens.test.ts && tsx src/penpot-tokens.test.ts",
+    "test": "tsx src/theme-tokens.test.ts && tsx src/penpot-tokens.test.ts && tsx src/android-widget.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

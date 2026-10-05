@@ -2,6 +2,7 @@ package dev.frgtn.musubi.widget
 
 import android.content.Context
 import android.graphics.Color
+import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -11,94 +12,123 @@ import java.util.TimeZone
 
 internal object AgendaWidgetData {
   private val UTC: TimeZone = TimeZone.getTimeZone("UTC")
+  private val zones = TimeZone.getAvailableIDs().toSet()
+  private val states = setOf("ready", "loading", "unavailable", "error")
 
   fun read(context: Context): WidgetSnapshot {
-    val raw = AgendaWidgetStorage.read(context)
-      ?: return WidgetSnapshot(null, "24h", emptyList())
-    return try {
-      val json = JSONObject(raw)
-      val array = json.optJSONArray("events")
-      val events = buildList {
-        if (array != null) {
-          for (index in 0 until array.length()) {
-            val item = array.optJSONObject(index) ?: continue
-            add(
-              WidgetEvent(
-                id = item.optString("id"),
-                title = item.optString("title"),
-                start = item.optLong("start"),
-                end = item.optLong("end"),
-                allDay = item.optBoolean("allDay"),
-                color = item.optString("color"),
-                calendarName = item.optString("calendarName"),
-                location = item.optString("location"),
-              ),
-            )
-          }
-        }
-      }
-      val calendarDays = buildMap {
-        val days = json.optJSONArray("calendarDays")
-        if (days != null) {
-          for (index in 0 until days.length()) {
-            val item = days.optJSONObject(index) ?: continue
-            val date = item.optString("date")
-            val colors = item.optJSONArray("colors")
-            if (date.isBlank() || colors == null) continue
-            val parsedColors = buildList {
-              for (colorIndex in 0 until colors.length()) {
-                val color = colors.optString(colorIndex)
-                if (color.isNotBlank()) add(color)
-              }
-            }
-            val parsedEvents = buildList {
-              val events = item.optJSONArray("events")
-              if (events != null) {
-                for (eventIndex in 0 until events.length()) {
-                  val event = events.optJSONObject(eventIndex) ?: continue
-                  add(
-                    CalendarWidgetChip(
-                      title = event.optString("title"),
-                      color = event.optString("color"),
-                      calendarIds = buildList {
-                        val ids = event.optJSONArray("calendarIds")
-                        if (ids != null) {
-                          for (idIndex in 0 until ids.length()) {
-                            val id = ids.optString(idIndex)
-                            if (id.isNotBlank()) add(id)
-                          }
-                        }
-                      },
-                      id = event.optString("id"),
-                      allDay = event.optBoolean("allDay"),
-                      startKey = event.optString("startKey"),
-                      endKey = event.optString("endKey"),
-                    ),
-                  )
-                }
-              }
-            }
-            put(
-              date,
-              CalendarWidgetDay(
-                colors = parsedColors,
-                events = parsedEvents,
-                count = item.optInt("count", parsedEvents.size),
-              ),
-            )
-          }
-        }
-      }
-      WidgetSnapshot(
-        signedIn = if (json.has("signedIn")) json.optBoolean("signedIn") else null,
-        timeFormat = json.optString("timeFormat", "24h"),
-        events = events,
-        weekStartsOn = json.optString("weekStartsOn", "monday"),
-        calendarDays = calendarDays,
-      )
-    } catch (_: Exception) {
-      WidgetSnapshot(null, "24h", emptyList())
+    val raw = AgendaWidgetStorage.read(context) ?: return WidgetSnapshot(problem = SnapshotProblem.NOT_LOADED)
+    val snapshot = parse(raw)
+    if (snapshot.signedIn == true && snapshot.scope != AgendaWidgetStorage.scope(context)) {
+      return WidgetSnapshot(problem = SnapshotProblem.NOT_LOADED)
     }
+    return snapshot
+  }
+
+  fun parse(raw: String): WidgetSnapshot = try {
+    require(raw.toByteArray(Charsets.UTF_8).size <= AgendaWidgetStorage.MAX_BYTES)
+    val json = JSONObject(raw)
+    if (json.optInt("version") != 2) WidgetSnapshot(problem = SnapshotProblem.UNSUPPORTED)
+    else if (json.has("signedIn") && !json.getBoolean("signedIn")) WidgetSnapshot(signedIn = false)
+    else {
+      require(json.getBoolean("signedIn"))
+      val scope = json.getString("scope").also { require(it.isNotBlank()) }
+      val lifecycle = json.getLong("lifecycle").also { require(it > 0) }
+      val generation = json.getLong("generation").also { require(it > 0) }
+      val generatedAt = json.getLong("generatedAt").also { require(it > 0) }
+      val zone = json.getString("timeZone").also { require(it in zones) }
+      val readable = strings(json.getJSONArray("readableCalendarIds")).toSet()
+      val eventsStatus = status(json.getJSONObject("eventsStatus"), zone, true)
+      val tasksStatus = status(json.getJSONObject("tasksStatus"), zone, false)
+      val array = json.getJSONArray("events").also { require(it.length() <= 4096) }
+      val events = (0 until array.length()).map { index ->
+        val item = array.getJSONObject(index)
+        WidgetEvent(
+          key = item.getString("key").also { require(it.isNotBlank()) },
+          id = item.getString("id").also { require(it.isNotBlank()) },
+          title = item.getString("title"), start = item.getLong("start"), end = item.getLong("end"),
+          allDay = item.getBoolean("allDay"), color = item.getString("color"),
+          calendarName = item.optString("calendarName"), location = item.optString("location"),
+          calendarIds = strings(item.getJSONArray("calendarIds")),
+          startKey = item.getString("startKey"), endKey = item.getString("endKey"),
+          taskId = item.optString("taskId").takeIf { it.isNotBlank() },
+        ).also { require(it.end >= it.start && it.startKey.matches(DATE_KEY) && it.endKey.matches(DATE_KEY) &&
+          it.calendarIds.any(readable::contains)) }
+      }
+      val byKey = events.associateBy { it.key }
+      require(byKey.size == events.size)
+      var references = 0
+      val days = json.getJSONArray("calendarDays").also { require(it.length() <= 450) }
+      val calendarDays = buildMap {
+        for (index in 0 until days.length()) {
+          val day = days.getJSONObject(index)
+          val key = day.getString("date").also { require(it.matches(DATE_KEY) && !containsKey(it)) }
+          val keys = strings(day.getJSONArray("eventKeys"))
+          references += keys.size
+          require(references <= 32768 && keys.size == keys.distinct().size)
+          val chips = keys.map { eventKey ->
+            val event = byKey[eventKey] ?: error("Unknown calendar event reference")
+            CalendarWidgetChip(event.title, event.color, event.calendarIds, event.key, event.allDay,
+              event.startKey, event.endKey)
+          }
+          put(key, CalendarWidgetDay(chips.map { it.color }.distinct(), chips, chips.size))
+        }
+      }
+      val taskArray = json.getJSONArray("tasks").also { require(it.length() <= 2048) }
+      val tasks = (0 until taskArray.length()).map { index ->
+        val item = taskArray.getJSONObject(index)
+        WidgetTask(item.getString("id").also { require(it.isNotBlank()) }, item.getString("title"),
+          item.getString("status"), item.optInt("priority"), item.getString("color"),
+          item.optString("calendarName"), strings(item.getJSONArray("calendarIds")),
+          if (item.isNull("due")) null else item.getLong("due"), item.optBoolean("dueDateOnly"))
+      }
+      require(tasks.map { it.id }.distinct().size == tasks.size && tasks.all { it.calendarIds.any(readable::contains) })
+      WidgetSnapshot(true, json.getString("timeFormat").also { require(it == "12h" || it == "24h") }, events,
+        json.getString("weekStartsOn").also { require(it == "monday" || it == "sunday") }, calendarDays,
+        tasks, scope, lifecycle, generation, generatedAt, zone, eventsStatus, tasksStatus, readable)
+    }
+  } catch (_: Exception) { WidgetSnapshot(problem = SnapshotProblem.INVALID) }
+
+  private val DATE_KEY = Regex("\\d{4}-\\d{2}-\\d{2}")
+  private fun strings(array: JSONArray): List<String> = (0 until array.length()).map { array.getString(it) }
+  private fun status(json: JSONObject, zone: String, covered: Boolean): WidgetSectionStatus {
+    val state = json.getString("state").also { require(it in states) }
+    val start = if (covered) json.getLong("coverageStart") else 0L
+    val end = if (covered) json.getLong("coverageEnd") else Long.MAX_VALUE
+    require(!covered || (start >= 0 && end >= start))
+    val sectionZone = json.optString("timeZone", zone).also { require(it in zones) }
+    return WidgetSectionStatus(state, if (json.isNull("lastSyncAt")) null else json.getLong("lastSyncAt"),
+      start, end, json.getBoolean("complete"), json.getBoolean("truncated"), sectionZone)
+  }
+
+  fun sameZone(zone: String): Boolean = zone.isNotBlank() &&
+    TimeZone.getTimeZone(zone).hasSameRules(TimeZone.getDefault())
+
+  fun eventsUsable(snapshot: WidgetSnapshot, now: Long = System.currentTimeMillis()): Boolean =
+    snapshot.signedIn == true && snapshot.problem == null &&
+      sameZone(snapshot.eventsStatus.timeZone) &&
+      now >= snapshot.eventsStatus.coverageStart && now < snapshot.eventsStatus.coverageEnd
+
+  fun tasks(snapshot: WidgetSnapshot, selected: Set<String>?): List<WidgetTask> = snapshot.tasks
+    .filter { it.status == "needs-action" || it.status == "in-process" }
+    .filter { selected == null || it.calendarIds.any(selected::contains) }
+    .sortedWith(compareBy<WidgetTask> { taskBucket(it) }.thenBy { it.due ?: Long.MAX_VALUE }
+      .thenBy { if (it.priority == 0) 10 else it.priority }.thenBy { it.title.lowercase(Locale.getDefault()) }.thenBy { it.id })
+
+  private fun taskBucket(task: WidgetTask): Int {
+    if (task.due == null) return 3
+    val day = dateKey(task.due, if (task.dueDateOnly) UTC else TimeZone.getDefault())
+    val today = dateKey(System.currentTimeMillis(), TimeZone.getDefault())
+    return if (day < today) 0 else if (day == today) 1 else 2
+  }
+
+  fun taskDue(task: WidgetTask, context: Context): String {
+    val due = task.due ?: return context.getString(R.string.musubi_widget_undated)
+    val bucket = taskBucket(task)
+    if (bucket == 0) return context.getString(R.string.musubi_widget_overdue)
+    if (bucket == 1) return context.getString(R.string.musubi_widget_today)
+    return SimpleDateFormat("d MMM", Locale.getDefault()).apply {
+      if (task.dueDateOnly) timeZone = UTC
+    }.format(Date(due))
   }
 
   fun upcoming(snapshot: WidgetSnapshot, now: Long = System.currentTimeMillis()): List<WidgetEvent> =
@@ -116,13 +146,13 @@ internal object AgendaWidgetData {
   fun eventTime(event: WidgetEvent, timeFormat: String, showEnd: Boolean): String {
     if (event.allDay) return "ALL"
     val pattern = if (timeFormat == "12h") "h:mm a" else "H:mm"
-    val formatter = SimpleDateFormat(pattern, Locale.UK)
+    val formatter = SimpleDateFormat(pattern, Locale.getDefault())
     val start = formatter.format(Date(event.start))
     if (!showEnd) return start
     if (timeFormat == "12h") {
-      val meridiem = SimpleDateFormat("a", Locale.UK)
+      val meridiem = SimpleDateFormat("a", Locale.getDefault())
       if (meridiem.format(Date(event.start)) == meridiem.format(Date(event.end))) {
-        val startWithoutMeridiem = SimpleDateFormat("h:mm", Locale.UK).format(Date(event.start))
+        val startWithoutMeridiem = SimpleDateFormat("h:mm", Locale.getDefault()).format(Date(event.start))
         return "$startWithoutMeridiem–${formatter.format(Date(event.end))}"
       }
     }
@@ -138,9 +168,9 @@ internal object AgendaWidgetData {
     return when (eventKey) {
       today -> "TODAY"
       tomorrow -> if (compact) "TMRW" else "TOMORROW"
-      else -> SimpleDateFormat(if (compact) "EEE d" else "EEE d MMM", Locale.UK)
+      else -> SimpleDateFormat(if (compact) "EEE d" else "EEE d MMM", Locale.getDefault())
         .format(date)
-        .uppercase(Locale.UK)
+        .uppercase(Locale.getDefault())
     }
   }
 
@@ -153,7 +183,7 @@ internal object AgendaWidgetData {
   fun parseColor(value: String): Int = try {
     Color.parseColor(value)
   } catch (_: IllegalArgumentException) {
-    Color.parseColor("#c8553d")
+    Color.BLACK
   }
 
   private fun eventDateKey(event: WidgetEvent): Int =
@@ -176,39 +206,29 @@ internal object AgendaWidgetData {
   }
 }
 
+internal enum class SnapshotProblem { NOT_LOADED, INVALID, UNSUPPORTED }
+
+internal data class WidgetSectionStatus(
+  val state: String = "unavailable", val lastSyncAt: Long? = null,
+  val coverageStart: Long = 0, val coverageEnd: Long = 0,
+  val complete: Boolean = false, val truncated: Boolean = false, val timeZone: String = "",
+)
+
 internal data class WidgetSnapshot(
-  val signedIn: Boolean?,
-  val timeFormat: String,
-  val events: List<WidgetEvent>,
-  val weekStartsOn: String = "monday",
-  val calendarDays: Map<String, CalendarWidgetDay> = emptyMap(),
+  val signedIn: Boolean? = null, val timeFormat: String = "24h", val events: List<WidgetEvent> = emptyList(),
+  val weekStartsOn: String = "monday", val calendarDays: Map<String, CalendarWidgetDay> = emptyMap(),
+  val tasks: List<WidgetTask> = emptyList(), val scope: String = "", val lifecycle: Long = 0,
+  val generation: Long = 0, val generatedAt: Long = 0, val timeZone: String = "",
+  val eventsStatus: WidgetSectionStatus = WidgetSectionStatus(),
+  val tasksStatus: WidgetSectionStatus = WidgetSectionStatus(), val readableCalendarIds: Set<String> = emptySet(),
+  val problem: SnapshotProblem? = null,
 )
 
-internal data class CalendarWidgetDay(
-  val colors: List<String>,
-  val events: List<CalendarWidgetChip>,
-  val count: Int,
-)
-
-internal data class CalendarWidgetChip(
-  val title: String,
-  val color: String,
-  val calendarIds: List<String> = emptyList(),
-  val id: String = "",
-  val allDay: Boolean = false,
-  // Full run of the event (inclusive day keys), not clamped to the grid — lets
-  // the renderer round only the true first/last day of a multi-day bar.
-  val startKey: String = "",
-  val endKey: String = "",
-)
-
-internal data class WidgetEvent(
-  val id: String,
-  val title: String,
-  val start: Long,
-  val end: Long,
-  val allDay: Boolean,
-  val color: String,
-  val calendarName: String,
-  val location: String,
-)
+internal data class CalendarWidgetDay(val colors: List<String>, val events: List<CalendarWidgetChip>, val count: Int)
+internal data class CalendarWidgetChip(val title: String, val color: String, val calendarIds: List<String>,
+  val id: String, val allDay: Boolean, val startKey: String, val endKey: String)
+internal data class WidgetEvent(val key: String, val id: String, val title: String, val start: Long,
+  val end: Long, val allDay: Boolean, val color: String, val calendarName: String, val location: String,
+  val calendarIds: List<String>, val startKey: String, val endKey: String, val taskId: String? = null)
+internal data class WidgetTask(val id: String, val title: String, val status: String, val priority: Int,
+  val color: String, val calendarName: String, val calendarIds: List<String>, val due: Long?, val dueDateOnly: Boolean)

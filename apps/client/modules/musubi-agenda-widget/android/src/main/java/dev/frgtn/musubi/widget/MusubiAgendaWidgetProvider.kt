@@ -6,113 +6,104 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
-import android.view.View
 import android.widget.RemoteViews
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class MusubiAgendaWidgetProvider : AppWidgetProvider() {
-  override fun onUpdate(
-    context: Context,
-    appWidgetManager: AppWidgetManager,
-    appWidgetIds: IntArray,
-  ) {
-    appWidgetIds.forEach { update(context, appWidgetManager, it) }
+  override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
+    ids.forEach { WidgetCollection.update(context, manager, it, false) }
   }
-
-  override fun onAppWidgetOptionsChanged(
-    context: Context,
-    appWidgetManager: AppWidgetManager,
-    appWidgetId: Int,
-    newOptions: Bundle,
-  ) {
-    update(context, appWidgetManager, appWidgetId)
+  override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, id: Int, options: Bundle) {
+    WidgetCollection.update(context, manager, id, false)
   }
-
   override fun onReceive(context: Context, intent: Intent) {
     super.onReceive(context, intent)
-    if (intent.action in TIME_CHANGE_ACTIONS) updateAll(context)
+    if (intent.action in WidgetPresentation.TIME_ACTIONS) updateAll(context)
+  }
+  companion object {
+    fun updateAll(context: Context) = WidgetCollection.updateAll(context, MusubiAgendaWidgetProvider::class.java, false)
+  }
+}
+
+class MusubiTasksWidgetProvider : AppWidgetProvider() {
+  override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
+    ids.forEach { WidgetCollection.update(context, manager, it, true) }
+  }
+  override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, id: Int, options: Bundle) {
+    WidgetCollection.update(context, manager, id, true)
+  }
+  override fun onDeleted(context: Context, ids: IntArray) {
+    ids.forEach { CalendarWidgetPreferences.remove(context, it, "tasks") }
+    super.onDeleted(context, ids)
+  }
+  override fun onReceive(context: Context, intent: Intent) {
+    super.onReceive(context, intent)
+    if (intent.action in WidgetPresentation.TIME_ACTIONS) updateAll(context)
+  }
+  companion object {
+    fun updateAll(context: Context) = WidgetCollection.updateAll(context, MusubiTasksWidgetProvider::class.java, true)
+  }
+}
+
+internal object WidgetCollection {
+  const val MAX_VISIBLE_ROWS = 128
+  fun updateAll(context: Context, provider: Class<*>, tasks: Boolean) {
+    val manager = AppWidgetManager.getInstance(context)
+    manager.getAppWidgetIds(ComponentName(context, provider)).forEach { update(context, manager, it, tasks) }
   }
 
-  companion object {
-    private val TIME_CHANGE_ACTIONS = setOf(
-      Intent.ACTION_DATE_CHANGED,
-      Intent.ACTION_CONFIGURATION_CHANGED,
-      Intent.ACTION_LOCALE_CHANGED,
-      Intent.ACTION_TIMEZONE_CHANGED,
-      Intent.ACTION_TIME_CHANGED,
-    )
+  fun width(context: Context, options: Bundle): Int = options.getInt(
+    if (context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
+      AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH else AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 220)
 
-    fun updateAll(context: Context) {
-      val manager = AppWidgetManager.getInstance(context)
-      val component = ComponentName(context, MusubiAgendaWidgetProvider::class.java)
-      manager.getAppWidgetIds(component).forEach { update(context, manager, it) }
-    }
-
-    private fun update(context: Context, manager: AppWidgetManager, widgetId: Int) {
-      val views = RemoteViews(context.packageName, R.layout.musubi_agenda_widget)
-      val openAgenda = openAgendaIntent(context)
-      val eventTemplate = eventTemplateIntent(context, widgetId)
-      val serviceIntent = Intent(context, MusubiAgendaWidgetService::class.java).apply {
-        putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+  fun update(context: Context, manager: AppWidgetManager, id: Int, tasks: Boolean) = synchronized(AgendaWidgetStorage) {
+    val snapshot = AgendaWidgetData.read(context)
+    val width = width(context, manager.getAppWidgetOptions(id))
+    val wide = width >= 320
+    val taskRows = if (tasks) AgendaWidgetData.tasks(snapshot, CalendarWidgetPreferences.read(context, id, "tasks")) else emptyList()
+    val eventRows = if (!tasks) AgendaWidgetData.upcoming(snapshot) else emptyList()
+    val keys = if (tasks) taskRows.map { it.id } else eventRows.map { it.key }
+    val count = keys.size
+    val empty = WidgetPresentation.empty(context, snapshot, tasks, count)
+    val views = RemoteViews(context.packageName, R.layout.musubi_agenda_widget_v2)
+    WidgetPresentation.shell(context, views, snapshot, tasks, empty, width, count > MAX_VISIBLE_ROWS)
+    views.setOnClickPendingIntent(R.id.musubi_widget_settings, WidgetPresentation.route(context,
+      "musubi://tasks?tasksWidgetId=$id"))
+    views.setViewVisibility(R.id.musubi_widget_settings, if (tasks) android.view.View.VISIBLE else android.view.View.GONE)
+    views.setEmptyView(R.id.musubi_widget_events, R.id.musubi_widget_empty)
+    views.setPendingIntentTemplate(R.id.musubi_widget_events, template(context, id, tasks))
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      val collection = RemoteViews.RemoteCollectionItems.Builder().setHasStableIds(true).setViewTypeCount(2)
+      if (empty == null) {
+        val ids = WidgetInvariants.stableIds(keys.take(MAX_VISIBLE_ROWS))
+        ids.forEachIndexed { index, itemId ->
+          val row = if (tasks) WidgetRows.task(context, taskRows[index], wide, false)
+            else WidgetRows.agenda(context, eventRows[index], snapshot.timeFormat, wide, false)
+          collection.addItem(itemId, row)
+        }
+      }
+      views.setRemoteAdapter(R.id.musubi_widget_events, collection.build())
+    } else {
+      val intent = Intent(context, MusubiAgendaWidgetService::class.java).apply {
+        putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
+        putExtra("tasks", tasks)
         data = Uri.parse(toUri(Intent.URI_INTENT_SCHEME))
       }
-      views.setRemoteAdapter(R.id.musubi_widget_events, serviceIntent)
-      views.setEmptyView(R.id.musubi_widget_events, R.id.musubi_widget_empty)
-      views.setPendingIntentTemplate(R.id.musubi_widget_events, eventTemplate)
-      views.setOnClickPendingIntent(R.id.musubi_widget_header, openAgenda)
-      views.setOnClickPendingIntent(R.id.musubi_widget_empty, openAgenda)
-      views.setTextViewText(
-        R.id.musubi_widget_date,
-        SimpleDateFormat("EEE, d MMM", Locale.UK).format(Date()).uppercase(Locale.UK),
-      )
-
-      val snapshot = AgendaWidgetData.read(context)
-      val events = AgendaWidgetData.upcoming(snapshot)
-      val emptyMessage = when {
-        snapshot.signedIn == false -> context.getString(R.string.musubi_agenda_widget_signed_out)
-        AgendaWidgetStorage.read(context) == null -> context.getString(R.string.musubi_agenda_widget_not_loaded)
-        events.isEmpty() -> context.getString(R.string.musubi_agenda_widget_empty)
-        else -> null
-      }
-      if (emptyMessage != null) views.setTextViewText(R.id.musubi_widget_empty, emptyMessage)
-      views.setViewVisibility(R.id.musubi_widget_events, if (emptyMessage == null) View.VISIBLE else View.GONE)
-      views.setViewVisibility(R.id.musubi_widget_empty, if (emptyMessage == null) View.GONE else View.VISIBLE)
-
-      manager.updateAppWidget(widgetId, views)
-      manager.notifyAppWidgetViewDataChanged(widgetId, R.id.musubi_widget_events)
+      views.setRemoteAdapter(R.id.musubi_widget_events, intent)
     }
+    manager.updateAppWidget(id, views)
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) manager.notifyAppWidgetViewDataChanged(id, R.id.musubi_widget_events)
+  }
 
-    private fun openAgendaIntent(context: Context): PendingIntent {
-      val intent = Intent(Intent.ACTION_VIEW, Uri.parse("musubi://agenda")).apply {
-        setPackage(context.packageName)
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-      }
-      return PendingIntent.getActivity(
-        context,
-        4102,
-        intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-      )
+  private fun template(context: Context, widgetId: Int, tasks: Boolean): PendingIntent {
+    val intent = Intent(Intent.ACTION_VIEW).apply {
+      component = context.packageManager.getLaunchIntentForPackage(context.packageName)?.component
+      flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
     }
-
-    private fun eventTemplateIntent(context: Context, widgetId: Int): PendingIntent {
-      val launchComponent = context.packageManager
-        .getLaunchIntentForPackage(context.packageName)
-        ?.component
-      val intent = Intent(Intent.ACTION_VIEW).apply {
-        component = launchComponent
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-      }
-      return PendingIntent.getActivity(
-        context,
-        4200 + widgetId,
-        intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
-      )
-    }
+    return PendingIntent.getActivity(context, (if (tasks) 6200 else 4200) + widgetId, intent,
+      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
   }
 }

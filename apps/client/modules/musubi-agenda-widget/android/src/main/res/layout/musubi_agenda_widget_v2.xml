@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/musubi_widget_root" android:layout_width="match_parent" android:layout_height="match_parent"
+  android:background="@drawable/musubi_widget_background" android:orientation="vertical" android:padding="@dimen/musubi_widget_inset">
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="@dimen/musubi_widget_header_height" android:gravity="center_vertical" android:orientation="horizontal">
+    <LinearLayout android:id="@+id/musubi_widget_header" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="@dimen/musubi_widget_header_height" android:layout_weight="1" android:gravity="center_vertical" android:orientation="horizontal">
+      <TextView android:id="@+id/musubi_widget_label" style="@style/MusubiWidgetHeaderLabel" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/musubi_widget_brand" />
+      <TextView android:id="@+id/musubi_widget_date" style="@style/MusubiWidgetMeta" android:layout_width="wrap_content" android:layout_marginEnd="@dimen/musubi_widget_content_gap" android:text="@string/musubi_agenda_widget_preview_date" />
+    </LinearLayout>
+    <TextView android:id="@+id/musubi_widget_settings" style="@style/MusubiWidgetControl" android:text="≡" android:contentDescription="@string/musubi_widget_calendars" android:visibility="gone" />
+    <TextView android:id="@+id/musubi_widget_refresh" style="@style/MusubiWidgetControl" android:text="↻" android:contentDescription="@string/musubi_widget_refresh" />
+  </LinearLayout>
+  <TextView android:id="@+id/musubi_widget_status" style="@style/MusubiWidgetMeta" android:layout_height="wrap_content" android:layout_marginBottom="@dimen/musubi_widget_content_gap" android:text="@string/musubi_widget_cached" />
+  <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+    <ListView android:id="@+id/musubi_widget_events" android:layout_width="match_parent" android:layout_height="match_parent" android:divider="@null" android:scrollbars="none" />
+    <TextView android:id="@+id/musubi_widget_empty" style="@style/MusubiWidgetEmpty" android:text="@string/musubi_widget_not_loaded" />
+  </FrameLayout>
+</LinearLayout>

@@ -1,17 +1,72 @@
 # Android widget rework
 
-Date: 2026-10-05. Status: **proposed; not implemented**.
+Date: 2026-10-05. Status: **implemented on `codex/android-widget-rework`; device acceptance pending**.
 
 Scope: refresh the Android Agenda and Calendar widgets, then add a small,
 read-only Tasks widget. Android comes first; iOS is a later platform project.
-This document records a source audit and an implementation direction. It does
-not certify a native build, device behavior, or any bug fix.
+This document records the audit, implemented design, and remaining acceptance
+work. The user guide is [Home screen widgets](../../../packages/docs/src/content/docs/guides/widgets.mdx).
+No launcher/device behavior is certified by source tests alone.
 
 Follow the shared [design system](../design-system.md) and
 [calendar behavior](../calendar-ui.md). Keep the existing Expo native module and
 RemoteViews approach. No new dependencies are proposed for these phases.
 
-## Current behavior and findings
+## Implemented scope
+
+- A version-2 shared snapshot stores each occurrence once with bounded day
+  references. It carries account/server scope, persisted lifecycle and generation,
+  readable calendar IDs, coverage, timezone, completeness and independent event/task
+  status. Native storage rejects obsolete or malformed writes. Retained sections
+  are pruned against current access; sign-out clears snapshots and widget filters.
+- Calendar readiness is independent of screen readiness. Failed cache hydration
+  cannot publish an authoritative empty widget. A valid calendar cache lets Tasks
+  recover independently of events, and foreground reads refresh both endpoints.
+  Malformed membership cache is rejected and can be rebuilt from the server.
+- One projection handles recurring events and render-only task markers. It keeps
+  cancellation/moved-exception context until expansion and ignores wholly
+  unreadable families. Explicit consumer zones cover legacy and known recurrence
+  paths. Identical foreground data and sync timestamps reuse expanded rows.
+- Agenda, Calendar and the new read-only Tasks widget share generated Musubi
+  colors, dimensions, accessible controls and state/freshness presentation. Native
+  collection IDs use occurrence identity with collision handling. Calendar bars
+  preserve empty lanes. Refresh opens the authenticated app; it is not native
+  background transport.
+- Tasks use one account/server-scoped SQLite collection with read/mutation fences,
+  canonical revision/retirement reconciliation and membership/auth eviction. Its
+  root consumer works without opening Tasks. Widget rows open canonical detail;
+  each Tasks widget has its own calendar selection.
+  Authoritative disappearance blocks delayed positive receipts. A first current
+  calendar read can prune an unsafe cached home even after failed calendar
+  hydration; its incomplete result is not persisted as a healthy empty cache.
+
+| Projection budget | Limit |
+| --- | --- |
+| Expanded recurrence candidates / occurrences | 50,000 / 10,000, shared across families |
+| Stored events / active tasks | 4,096 / 2,048 |
+| Covered civil dates / event references | 450 / 32,768 |
+| UTF-8 serialized snapshot | 1 MiB from JS; 2 MiB native ceiling for independently retained sections |
+
+Coverage runs from the previous month through the next twelve months. Full event
+endpoints are retained while date iteration is clamped to coverage. Truncation is
+explicit; it never certifies an empty future. These are defensive bounds, not a
+device performance guarantee. A desktop profile of 8,000 known daily occurrences
+took approximately 862 ms to project and 56 ms to serialize; a dense 4.7 MB payload
+was reduced to 839 kB. Five daily series anchored in 2020 fit the 50,000-candidate
+budget with approximately 2,130 covered rows; a 10,000-candidate budget rejected
+that ordinary history. One desktop run took 173 ms for legacy timed series and
+294 ms for known all-day series. Profile low-end hardware before release.
+
+Bounded widget expansion supports daily and less frequent rules on both time
+paths. Hourly/minutely/secondly legacy rules are rejected before library
+iteration: unreachable subdaily filters can loop without yielding candidates.
+Malformed numeric fields and oversized recurrence text also fail explicitly,
+retaining usable cached content instead of certifying an empty result.
+
+## Audit baseline and findings
+
+The following describes the source at `84a88f4`, before this rework. Line numbers
+refer to that baseline; the linked current files contain the implementation.
 
 The [tab layout][tabs] normally hydrates cached calendars and events before
 starting [widget sync][snapshot], then refreshes over the network. Whole-store
@@ -21,8 +76,8 @@ months. SSE/reconnect refreshes can update the stores while the app runs.
 Native widget updates repaint that persisted snapshot; they do not fetch data
 or expand new occurrences. Tasks are absent from this snapshot.
 
-The following defects are confirmed by the source. Device checks must establish
-their visual impact and verify the eventual corrections.
+The following defects were confirmed by the baseline source. Device checks must
+still establish their visual impact and verify the native corrections.
 
 | Finding | Evidence and consequence |
 | --- | --- |
@@ -193,24 +248,45 @@ meaning and tokens, not Android RemoteViews or assumptions about OS scheduling.
 
 ## Acceptance and delivery
 
-The audit baseline passed **25 tests in four files**: `agendaWidget.spec.ts`,
-`api-tasks.spec.ts`, `useCalendarTasks.spec.ts`, and `TasksTab.spec.ts`, run with
-the existing local Vitest runner from `apps/client`. These mocked logic tests
-are baseline evidence, **not proof of fixes or launcher behavior**.
+Implementation validation on 2026-10-05:
 
-Add meaningful regressions for: more than 64 early events followed by later
-events; long overlapping spans; failed hydrate; expansion errors and budget
-exhaustion; simultaneous stable IDs; unsupported/malformed snapshots; every
-signed-in/out/empty/stale state; clear followed by delayed old-scope writes;
-account-scoped selections; timezone/DST/midnight changes; and empty lane 0 with a
-continuing lane-1 bar. Task tests cover cold offline data, scoped persistence,
-canonical mirrors/forks, revisions/retirement generations, membership loss,
-nullable receipts, and refresh while the Tasks tab is unopened.
+| Check | Result |
+| --- | --- |
+| Full client Vitest suite | 591 tests in 53 files pass |
+| Client TypeScript / ESLint | Pass; no lint errors, 77 existing warnings within the 108-warning budget |
+| Shared calendar suites | All 26 test scripts pass, including combined candidate/result limits and unsafe-filter validation |
+| Design-system generation, stale-output check, tests, TypeScript | Pass |
+| Production native parser/storage/invariant tests | 11 checks pass without an emulator |
+| Native Android debug build | `:app:assembleDebug` passes for x86_64 with the widget module included |
+| Android Hermes bundle export | Pass with dotenv disabled |
+| Documentation build | 31 pages build successfully |
+| Disposable Android 17 / API 37 emulator, Pixel Launcher 17 | All three widgets render in light/dark; tested 1.0 and 2.0 font scales without widget-load errors |
 
-For each implementation phase, run relevant client tests and type checking,
-token generation/staleness checks if tokens change, and an Android native build
-with the module included. Native resource/module changes require rebuilding
-the development client; a Metro export alone is insufficient. Use the existing
+Regressions cover long spans, more than 64 early events, failed/empty/corrupt
+hydration, recurrence exclusions and bounded expansion, timezone/DST changes,
+canonical deep links, scoped task caching, stale reads and mutation receipts,
+membership/auth removal, and nullable receipts. Native tests exercise receipt
+fences, malformed snapshots, retained-section metadata, stable identities,
+timezone/coverage, lane gaps, and merged byte-budget trimming. These tests and
+builds do not establish launcher or physical-device acceptance.
+
+The emulator uses synthetic events/tasks and a separate AVD/ADB server under
+`/tmp/musubi-widget-qa-avd`; no production account or physical device is involved.
+Agenda and Tasks were shown at 4×3 cells, Calendar at 4×6. Both simultaneous
+meetings remain visible, one canonical multi-calendar task appears once while
+an independent copy remains separate, and a lane-1 bar keeps its position when
+lane 0 is empty on later dates. Theme changes repaint without resizing. Larger
+font reduces visible list rows and Calendar pill lanes; text uses ellipsis
+instead of shrinking. Existing test widgets survived replacement of the debug
+APK and restart of this disposable emulator. Temporary screenshots are outside
+the repository; they are not a maintained screenshot catalog.
+
+This is one emulator/launcher configuration with injected display fixtures,
+not an end-to-end authenticated-app, production-upgrade, or physical-device test.
+
+Native resource/module changes require rebuilding the development client; a
+Metro export alone is insufficient. The debug build above is not an Android
+release artifact. Use the existing
 [Android QA workflow](../../handoffs/windows-android-qa-2026-09-13.md).
 
 On emulator and a physical device, record launcher/version, widget size, theme,
@@ -218,10 +294,21 @@ font scale, steps, and screenshots. Verify resize boundaries, landscape,
 TalkBack, multiple widget instances/selections, add/delete/re-add, deep-link
 loading, cold offline launch, process death, reboot, force-stop/reopen recovery,
 sign-out/account/server switch, network loss/reconnect, clock/timezone/month
-changes, and Doze/standby recovery. Profile build duration, snapshot bytes, and
-native rendering cost on a dense recurrence fixture before fixing numeric
-budgets. Record untested OS/launcher/provider cases explicitly. No build,
-installation, deployment, or device acceptance is claimed by this proposal.
+changes, and Doze/standby recovery. Verify the older collection factory across
+clear and same-account re-adoption, and an APK upgrade with already-added widgets.
+Profile build duration, snapshot bytes, and native rendering cost on low-end
+hardware. Record untested OS/launcher/provider cases explicitly.
+
+At the supported compact Calendar width of 250 dp, individual date hit areas
+are approximately 31 dp wide and can be 26 dp tall; they remain below the shared
+44 dp control target. Header controls and list rows use the shared target.
+Calendar switches to an enlargement prompt when scaled text cannot fit. Check
+compact date selection with TalkBack before release; compact geometry is not
+certified as meeting a 44 dp date target.
+
+No physical-device installation, production deployment, or release acceptance
+has been performed for this rework. Closed-app authenticated fetching and iOS
+remain separate work.
 
 [tabs]: ../../../apps/client/app/(tabs)/_layout.tsx
 [snapshot]: ../../../apps/client/services/agendaWidget.ts

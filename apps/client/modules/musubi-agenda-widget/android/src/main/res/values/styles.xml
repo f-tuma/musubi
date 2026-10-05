@@ -1,172 +1,88 @@
 <resources>
   <style name="MusubiWidgetHeaderLabel">
-    <item name="android:fontFamily">sans-serif-medium</item>
-    <item name="android:textColor">@color/musubi_widget_foreground</item>
-    <item name="android:textSize">12sp</item>
-    <item name="android:letterSpacing">0.14</item>
-    <item name="android:includeFontPadding">false</item>
-    <item name="android:maxLines">1</item>
+    <item name="android:fontFamily">sans-serif-medium</item><item name="android:textColor">@color/musubi_widget_foreground</item>
+    <item name="android:textSize">@dimen/musubi_widget_header_title_size</item><item name="android:includeFontPadding">false</item>
+    <item name="android:maxLines">1</item><item name="android:ellipsize">end</item>
   </style>
-
+  <style name="MusubiWidgetControl">
+    <item name="android:layout_width">@dimen/musubi_widget_control_size</item><item name="android:layout_height">@dimen/musubi_widget_control_size</item>
+    <item name="android:layout_marginStart">@dimen/musubi_widget_row_gap</item>
+    <item name="android:gravity">center</item><item name="android:fontFamily">sans-serif</item>
+    <item name="android:textColor">@color/musubi_widget_on_control</item><item name="android:textSize">@dimen/musubi_widget_control_glyph_size</item>
+    <item name="android:background">@drawable/musubi_widget_control</item><item name="android:includeFontPadding">false</item>
+  </style>
   <style name="MusubiWidgetEventRow">
-    <item name="android:layout_width">match_parent</item>
-    <item name="android:layout_height">40dp</item>
-    <item name="android:gravity">center_vertical</item>
-    <item name="android:orientation">horizontal</item>
-    <item name="android:paddingTop">3dp</item>
-    <item name="android:paddingBottom">3dp</item>
+    <item name="android:layout_width">match_parent</item><item name="android:layout_height">wrap_content</item>
+    <item name="android:minHeight">@dimen/musubi_widget_row_height</item>
+    <item name="android:gravity">center_vertical</item><item name="android:orientation">horizontal</item>
+    <item name="android:paddingTop">@dimen/musubi_widget_row_gap</item><item name="android:paddingBottom">@dimen/musubi_widget_row_gap</item>
+    <item name="android:foreground">@drawable/musubi_calendar_day_feedback</item>
   </style>
-
   <style name="MusubiWidgetTime">
-    <item name="android:layout_width">match_parent</item>
-    <item name="android:layout_height">wrap_content</item>
-    <item name="android:fontFamily">sans-serif-medium</item>
-    <item name="android:gravity">start</item>
+    <item name="android:layout_width">match_parent</item><item name="android:layout_height">wrap_content</item>
+    <item name="android:fontFamily">sans-serif-medium</item><item name="android:gravity">start</item><item name="android:ellipsize">end</item>
+    <item name="android:textColor">@color/musubi_widget_foreground_secondary</item><item name="android:textSize">@dimen/musubi_widget_date_size</item>
+    <item name="android:includeFontPadding">false</item><item name="android:maxLines">1</item>
+  </style>
+  <style name="MusubiWidgetDate" parent="MusubiWidgetTime">
+    <item name="android:fontFamily">sans-serif</item><item name="android:textColor">@color/musubi_widget_foreground_muted</item>
+  </style>
+  <style name="MusubiWidgetTitle" parent="MusubiWidgetTime">
+    <item name="android:textColor">@color/musubi_widget_foreground</item><item name="android:textSize">@dimen/musubi_widget_title_size</item>
+  </style>
+  <style name="MusubiWidgetMeta" parent="MusubiWidgetDate">
+    <item name="android:textSize">@dimen/musubi_widget_meta_size</item>
+  </style>
+  <style name="MusubiWidgetEmpty" parent="MusubiWidgetTitle">
+    <item name="android:layout_height">match_parent</item><item name="android:fontFamily">sans-serif</item>
+    <item name="android:gravity">center_vertical</item><item name="android:maxLines">3</item>
     <item name="android:textColor">@color/musubi_widget_foreground_secondary</item>
-    <item name="android:textSize">11sp</item>
-    <item name="android:includeFontPadding">false</item>
-    <item name="android:maxLines">1</item>
   </style>
-
-  <style name="MusubiWidgetDate">
-    <item name="android:layout_width">match_parent</item>
-    <item name="android:layout_height">wrap_content</item>
-    <item name="android:ellipsize">end</item>
-    <item name="android:fontFamily">sans-serif</item>
-    <item name="android:gravity">start</item>
-    <item name="android:textColor">@color/musubi_widget_foreground_muted</item>
-    <item name="android:textSize">8sp</item>
-    <item name="android:includeFontPadding">false</item>
-    <item name="android:maxLines">1</item>
-  </style>
-
-  <style name="MusubiWidgetTitle">
-    <item name="android:layout_width">match_parent</item>
-    <item name="android:layout_height">wrap_content</item>
-    <item name="android:ellipsize">end</item>
-    <item name="android:fontFamily">sans-serif-medium</item>
-    <item name="android:textColor">@color/musubi_widget_foreground</item>
-    <item name="android:textSize">13sp</item>
-    <item name="android:includeFontPadding">false</item>
-    <item name="android:maxLines">1</item>
-  </style>
-
-  <style name="MusubiWidgetMeta">
-    <item name="android:layout_width">match_parent</item>
-    <item name="android:layout_height">wrap_content</item>
-    <item name="android:ellipsize">end</item>
-    <item name="android:fontFamily">sans-serif</item>
-    <item name="android:textColor">@color/musubi_widget_foreground_muted</item>
-    <item name="android:textSize">9sp</item>
-    <item name="android:includeFontPadding">false</item>
-    <item name="android:maxLines">1</item>
-  </style>
-
   <style name="MusubiCalendarWeekday">
-    <item name="android:layout_width">0dp</item>
-    <item name="android:layout_height">match_parent</item>
-    <item name="android:layout_weight">1</item>
-    <item name="android:fontFamily">sans-serif-medium</item>
-    <item name="android:gravity">center</item>
-    <item name="android:includeFontPadding">false</item>
-    <item name="android:textColor">@color/musubi_widget_foreground_muted</item>
-    <item name="android:textSize">9sp</item>
+    <item name="android:layout_width">0dp</item><item name="android:layout_height">wrap_content</item><item name="android:layout_weight">1</item>
+    <item name="android:minHeight">@dimen/musubi_widget_calendar_weekday_height</item>
+    <item name="android:fontFamily">sans-serif-medium</item><item name="android:gravity">center</item><item name="android:includeFontPadding">false</item>
+    <item name="android:textColor">@color/musubi_widget_foreground_muted</item><item name="android:textSize">@dimen/musubi_widget_date_size</item>
   </style>
-
   <style name="MusubiCalendarDay">
-    <item name="android:layout_width">0dp</item>
-    <item name="android:layout_height">match_parent</item>
-    <item name="android:layout_weight">1</item>
-    <item name="android:ellipsize">end</item>
-    <item name="android:fontFamily">sans-serif</item>
-    <item name="android:foreground">@drawable/musubi_calendar_day_feedback</item>
-    <item name="android:gravity">center</item>
-    <item name="android:includeFontPadding">false</item>
-    <item name="android:maxLines">2</item>
-    <item name="android:padding">1dp</item>
-    <item name="android:textColor">@color/musubi_widget_foreground</item>
-    <item name="android:textSize">12sp</item>
+    <item name="android:layout_width">0dp</item><item name="android:layout_height">match_parent</item><item name="android:layout_weight">1</item>
+    <item name="android:ellipsize">end</item><item name="android:fontFamily">sans-serif</item><item name="android:foreground">@drawable/musubi_calendar_day_feedback</item>
+    <item name="android:gravity">center</item><item name="android:includeFontPadding">false</item><item name="android:maxLines">2</item>
+    <item name="android:textColor">@color/musubi_widget_foreground</item><item name="android:textSize">@dimen/musubi_widget_calendar_day_size</item>
   </style>
-
   <style name="MusubiCalendarLargeDay">
-    <item name="android:layout_width">0dp</item>
-    <item name="android:layout_height">match_parent</item>
-    <item name="android:layout_weight">1</item>
-    <item name="android:gravity">center_horizontal</item>
-    <item name="android:foreground">@drawable/musubi_calendar_day_feedback</item>
+    <item name="android:layout_width">0dp</item><item name="android:layout_height">match_parent</item><item name="android:layout_weight">1</item>
+    <item name="android:gravity">center_horizontal</item><item name="android:foreground">@drawable/musubi_calendar_day_feedback</item>
     <item name="android:orientation">vertical</item>
-    <!-- No horizontal padding: event pills bleed to the cell edges so multi-day
-         all-day bars join seamlessly across adjacent days. -->
-    <item name="android:paddingTop">1dp</item>
   </style>
-
   <style name="MusubiCalendarYearStamp">
-    <item name="android:layout_width">28dp</item>
-    <item name="android:layout_height">22dp</item>
-    <item name="android:background">@drawable/musubi_calendar_year_stamp</item>
-    <item name="android:fontFamily">serif</item>
-    <item name="android:gravity">center</item>
-    <item name="android:includeFontPadding">false</item>
-    <item name="android:paddingTop">1dp</item>
-    <item name="android:textColor">@color/musubi_widget_foreground_muted</item>
-    <item name="android:textSize">15sp</item>
+    <item name="android:layout_width">@dimen/musubi_widget_year_width</item><item name="android:layout_height">@dimen/musubi_widget_year_height</item>
+    <item name="android:background">@drawable/musubi_calendar_year_stamp</item><item name="android:fontFamily">serif</item><item name="android:gravity">center</item>
+    <item name="android:includeFontPadding">false</item><item name="android:textColor">@color/musubi_widget_foreground_muted</item>
+    <item name="android:textSize">@dimen/musubi_widget_year_size</item>
   </style>
-
-  <style name="MusubiCalendarMonthTitle">
-    <item name="android:layout_width">wrap_content</item>
-    <item name="android:layout_height">wrap_content</item>
-    <item name="android:fontFamily">serif</item>
-    <item name="android:includeFontPadding">false</item>
-    <item name="android:maxLines">1</item>
-    <item name="android:textColor">@color/musubi_widget_foreground</item>
-    <item name="android:textSize">20sp</item>
+  <style name="MusubiCalendarMonthTitle" parent="MusubiWidgetHeaderLabel">
+    <item name="android:layout_width">wrap_content</item><item name="android:layout_height">wrap_content</item>
+    <item name="android:fontFamily">serif</item><item name="android:textSize">@dimen/musubi_widget_month_title_size</item>
   </style>
-
-  <style name="MusubiCalendarTodayLabel">
-    <item name="android:layout_width">wrap_content</item>
-    <item name="android:layout_height">wrap_content</item>
-    <item name="android:fontFamily">sans-serif</item>
-    <item name="android:includeFontPadding">false</item>
-    <item name="android:letterSpacing">0.15</item>
-    <item name="android:textColor">@color/musubi_widget_foreground_muted</item>
-    <item name="android:textSize">10sp</item>
-  </style>
-
+  <style name="MusubiCalendarTodayLabel" parent="MusubiWidgetControl" />
   <style name="MusubiCalendarLargeNumber">
-    <item name="android:layout_width">18dp</item>
-    <item name="android:layout_height">18dp</item>
-    <item name="android:fontFamily">sans-serif</item>
-    <item name="android:gravity">center</item>
-    <item name="android:includeFontPadding">false</item>
-    <item name="android:maxLines">1</item>
-    <item name="android:textColor">@color/musubi_widget_foreground</item>
-    <item name="android:textSize">11sp</item>
+    <item name="android:layout_width">wrap_content</item><item name="android:layout_height">wrap_content</item>
+    <item name="android:minWidth">@dimen/musubi_widget_calendar_today_size</item><item name="android:minHeight">@dimen/musubi_widget_calendar_number_area_height</item>
+    <item name="android:fontFamily">sans-serif</item><item name="android:gravity">center</item><item name="android:includeFontPadding">false</item><item name="android:maxLines">1</item>
+    <item name="android:textColor">@color/musubi_widget_foreground</item><item name="android:textSize">@dimen/musubi_widget_calendar_number_size</item>
   </style>
-
   <style name="MusubiCalendarEventPill">
-    <item name="android:layout_width">match_parent</item>
-    <item name="android:layout_height">12dp</item>
-    <item name="android:layout_marginBottom">1dp</item>
-    <item name="android:background">@drawable/musubi_calendar_pill</item>
-    <item name="android:ellipsize">end</item>
-    <item name="android:fontFamily">sans-serif</item>
-    <item name="android:gravity">center_vertical</item>
-    <item name="android:includeFontPadding">false</item>
-    <item name="android:maxLines">1</item>
-    <item name="android:paddingLeft">3dp</item>
-    <item name="android:paddingRight">3dp</item>
-    <item name="android:textColor">@color/musubi_widget_pill_ink</item>
-    <item name="android:textSize">7.5sp</item>
+    <item name="android:layout_width">match_parent</item><item name="android:layout_height">wrap_content</item>
+    <item name="android:minHeight">@dimen/musubi_widget_calendar_pill_height</item>
+    <item name="android:layout_marginBottom">@dimen/musubi_widget_calendar_pill_gap</item><item name="android:background">@drawable/musubi_calendar_pill</item>
+    <item name="android:ellipsize">end</item><item name="android:fontFamily">sans-serif</item><item name="android:gravity">center_vertical</item>
+    <item name="android:includeFontPadding">false</item><item name="android:maxLines">1</item>
+    <item name="android:paddingLeft">@dimen/musubi_widget_calendar_pill_inset</item><item name="android:paddingRight">@dimen/musubi_widget_calendar_pill_inset</item>
+    <item name="android:textColor">@color/musubi_widget_pill_ink</item><item name="android:textSize">@dimen/musubi_widget_calendar_pill_size</item>
   </style>
-
-  <style name="MusubiCalendarOverflow">
-    <item name="android:layout_width">match_parent</item>
-    <item name="android:layout_height">10dp</item>
-    <item name="android:fontFamily">sans-serif</item>
-    <item name="android:includeFontPadding">false</item>
-    <item name="android:maxLines">1</item>
-    <item name="android:paddingLeft">3dp</item>
-    <item name="android:textColor">@color/musubi_widget_foreground_muted</item>
-    <item name="android:textSize">8sp</item>
+  <style name="MusubiCalendarOverflow" parent="MusubiWidgetMeta">
+    <item name="android:layout_height">wrap_content</item><item name="android:minHeight">@dimen/musubi_widget_calendar_overflow_height</item><item name="android:paddingLeft">@dimen/musubi_widget_calendar_pill_inset</item>
+    <item name="android:textSize">@dimen/musubi_widget_calendar_overflow_size</item>
   </style>
 </resources>

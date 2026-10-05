@@ -20,6 +20,7 @@ import {
 } from "@/services/eventsCache";
 import { refreshSettingsDocument } from "@/services/settingsSync";
 import { mergeHomeEventSnapshot, serializeEventRefresh } from "@/lib/eventSync";
+import { widgetCalendarsLoaded, widgetEventsFailed, widgetEventsLoaded } from "@/store/useWidgetDataStore";
 
 export function useRefreshData() {
   const api = useApi();
@@ -77,14 +78,20 @@ export function refreshEventData(
     const since =
       sinceDate && !Number.isNaN(sinceDate.getTime()) ? sinceDate : undefined;
     const { events, deletedIds, serverTime } = await api.getEvents(since);
-    const cachedCalendars = await cacheGetCalendars();
+    const cachedCalendars = await cacheGetCalendars().catch(error => {
+      console.warn("Calendar cache could not hydrate; rebuilding from server:", error);
+      return useCalendarsStore.getState().calendars;
+    });
     if (!isCurrent()) return;
     // Membership is required to reconcile these rows. If its read fails, keep
     // the valid cache intact rather than persisting links we may have lost.
     const homeCalendars = await api.getCalendars();
     if (!isCurrent()) return;
     if (since === undefined) {
-      const cachedEvents = await cacheGetAllEvents();
+      const cachedEvents = await cacheGetAllEvents().catch(error => {
+        console.warn("Event cache could not hydrate; rebuilding from server:", error);
+        return useEventsStore.getState().events;
+      });
       if (!isCurrent()) return;
       await cacheReplaceAllEvents(
         mergeHomeEventSnapshot(events, cachedEvents, cachedCalendars),
@@ -132,6 +139,7 @@ export function refreshEventData(
     if (!isCurrent()) return;
     const calendars = [...homeCalendars, ...fed.calendars];
     loadCalendars(calendars);
+    widgetCalendarsLoaded(true);
     const all = await cacheGetAllEvents();
     if (!isCurrent()) return;
 
@@ -161,6 +169,7 @@ export function refreshEventData(
     if (!isCurrent()) return;
     loadEvents(kept, { reconciled: true });
     await cacheSetCalendars(calendars);
+    if (isCurrent()) widgetEventsLoaded(Date.now());
 
     // Rules first, then reschedule: they are what decides which of these events
     // ring at all, and a stale document would schedule the previous answer.
@@ -184,5 +193,8 @@ export function refreshEventData(
     // fire-and-forget: drop reminders of gone events, refresh the rest
     if (!isCurrent()) return;
     syncScheduledReminders(useEventsStore.getState().events).catch(() => {});
+  }).catch(error => {
+    if (isCurrent() && !opts?.settingsOnly) widgetEventsFailed();
+    throw error;
   });
 }

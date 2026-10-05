@@ -5,6 +5,7 @@ export {
   relativeLuminance,
 } from "./contrast";
 export { penpotTokens } from "./penpot-tokens";
+export { widgetThemeTokens, widgetTokens } from "./widget-tokens";
 export {
   themeTokenCssVariables,
   themeTokens,

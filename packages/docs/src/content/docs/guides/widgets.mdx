@@ -1,19 +1,20 @@
 ---
 title: Home screen widgets
-description: Add, configure, update, and develop Musubi's Android Agenda and Calendar widgets.
+description: Add, configure, refresh, and develop Musubi's Android Agenda, Calendar, and Tasks widgets.
 ---
 
 import { Aside, FileTree, Steps } from '@astrojs/starlight/components';
 
-Musubi currently ships two **Android home screen widgets**. Both follow the app's light/dark palette, expand recurring events into their real occurrences, and adapt the amount of information to the space you give them.
+Musubi provides three **Android home screen widgets**. They share Musubi's light/dark colours, readable headers and rows, a refresh control, and a compact data-status line. Resizing changes how much content and metadata appears.
 
 | Widget | Small size | More space |
 |---|---|---|
-| **Agenda** | Time, date, title, and calendar | A scrollable list with end time, location, and more events |
+| **Agenda** | Time and title in a scrollable list | Date, calendar, end time, and location where space permits |
 | **Calendar** | Month grid with larger event dots | Full-width month grid with coloured event pills and automatic contrast |
+| **Tasks** | Open task titles and due labels | More scrollable rows and calendar metadata |
 
 <Aside type="note">
-The Android widgets are native `AppWidgetProvider` / `RemoteViews` surfaces written in Kotlin. Expo is the bridge that sends a compact snapshot from the React Native app. `expo-widgets` is used for iOS widgets later; it does not render the current Android widgets.
+These are native `AppWidgetProvider` / `RemoteViews` surfaces written in Kotlin. An Expo module passes a versioned display snapshot from the app. Android redraws that stored data; the widget does not independently contact your server.
 </Aside>
 
 ## Add a widget
@@ -21,11 +22,11 @@ The Android widgets are native `AppWidgetProvider` / `RemoteViews` surfaces writ
 <Steps>
 1. Long-press an empty area of the Android home screen.
 2. Open **Widgets** and find **Musubi**.
-3. Drag **Musubi Agenda** or **Musubi Calendar** onto the home screen.
+3. Drag **Musubi Agenda**, **Musubi Calendar**, or **Musubi Tasks** onto the home screen.
 4. Resize it to choose the compact or detailed presentation.
 </Steps>
 
-If a newly added widget says it has no data, open Musubi once. The app writes the first native snapshot after its local calendar cache has loaded.
+If a newly added widget asks you to open Musubi, open the app and let it load your account. Calendar/events and tasks hydrate independently. A failed load does not replace useful cached data with an ordinary empty result.
 
 ## Use the Agenda widget
 
@@ -34,8 +35,9 @@ If a newly added widget says it has no data, open Musubi once. The app writes th
 - All-day events use the compact **ALL** label.
 - Wider rows add the end time and location when available.
 - Tap an event to open the Agenda tab with that exact occurrence's detail sheet already open.
+- Task start/deadline markers open the canonical task's detail instead of an event editor.
 
-The snapshot keeps at most 64 upcoming Agenda rows over a rolling window. This keeps the widget quick while still allowing the native list to work without a running React process.
+The persisted snapshot retains covered occurrences beyond the first day's rows. Expired events are removed from the native list without requiring another app projection. If projection or display limits leave more items available in the app, the status line says **More in Musubi**.
 
 ## Use and filter the Calendar widget
 
@@ -48,47 +50,96 @@ The snapshot keeps at most 64 upcoming Agenda rows over a rolling window. This k
 
 Calendar visibility is stored **per widget instance**. Filtering one Calendar widget does not change the Home/Agenda filters in Musubi or another widget on the same launcher.
 
+## Use and filter the Tasks widget
+
+- The list includes **Needs action** and **In progress** tasks; completed and cancelled tasks are excluded.
+- Tasks are grouped by due date: overdue, today, upcoming, then undated. Priority, title, and canonical ID break ties.
+- Each canonical task appears once even when it is readable through several calendars. An independent copy remains a separate task.
+- Tap a row to open its task detail. The widget is **read-only**; status marks do not complete tasks.
+- Tap the calendar-selection control to choose calendars for that Tasks widget instance. Its selection is separate from the app's filters and other widgets.
+
+The header opens Tasks. Tasks are cached for the current server/account, so previously loaded rows can appear on a cold offline launch. An authoritative removal, authorization loss, or account/server reset clears data that is no longer readable.
+
+## Read the data status
+
+The status line describes the data, rather than the last time Android repainted the widget.
+
+| State | Meaning and action |
+|---|---|
+| **Updated …** | Time of the last successful sync for that section |
+| **Cached on this device** | Local data is available without a recorded successful sync time |
+| **Could not update · cached data** | A failed update retained usable data; use refresh to retry in Musubi |
+| **More in Musubi** | A snapshot or list limit prevented the widget from showing every item |
+| **Timezone changed** / **Dates need updating** | Open Musubi to rebuild timezone-dependent data or load fresh date coverage |
+| A load or reload prompt | The snapshot is missing, invalid, unsupported, or unavailable; open Musubi |
+| **Sign in to Musubi** | Private content was cleared on sign-out |
+
+**Nothing ahead** and **No open tasks** are successful empty results. A failed expansion, expired coverage, or an incomplete snapshot uses a load/update prompt instead of claiming that nothing exists.
+
 ## When widgets refresh
 
-The widgets do not keep a React Native screen alive. They render a persisted snapshot and refresh through several paths:
+The refresh control opens Musubi and starts the app's authenticated refresh. It needs the normal server connection and session. Widgets otherwise redraw the persisted snapshot through several paths:
 
 | Trigger | What happens |
 |---|---|
-| Events, calendars, or settings change while Musubi is running | `services/agendaWidget.ts` rebuilds the snapshot after a 120 ms debounce |
+| Relevant event, calendar, task, sync-status, or display-setting data changes while Musubi is running | The app rebuilds its snapshot after a 120 ms debounce; identical projections are skipped |
+| Refresh control or load prompt is tapped | Musubi opens and refreshes that view through the app's normal sync |
 | Calendar selection changes in **Widget calendars** | That widget instance is updated immediately |
 | Widget is resized | Android calls `onAppWidgetOptionsChanged`; the adaptive layout is recalculated |
-| Date, time, timezone, locale, or system theme changes | Both native providers redraw from the stored snapshot |
-| Periodic launcher update | Android requests a refresh every 30 minutes |
-| Sign-out | The stored snapshot is marked signed out and both widgets clear private event data |
+| Date, time, timezone, or locale changes | Native providers redraw stored data; incompatible timezone data requests an app rebuild |
+| Musubi returns to the foreground, or the active app notices midnight/a changed timezone | The app rebuilds the snapshot and its civil-date buckets |
+| Periodic launcher update | Android may call the providers to redraw; the configured 30-minute interval does not guarantee an exact update time |
+| Sign-out or account/server reset | Lifecycle fences reject obsolete writes; private event/task data and account-specific widget selections are cleared |
 
-The Calendar snapshot covers the previous month through the next year, so crossing midnight or a month boundary does not require the React process. Changes arriving from a server still need Musubi's normal sync to reach the local stores before a new widget snapshot can be written.
+Calendar coverage runs from the previous month through the same calendar month in the following year. Native date changes can advance the current month within valid stored coverage. They cannot expand new floating occurrences, rebucket timed events in a new timezone, or fetch server changes. Open Musubi when the widget requests an update. Closed-app network freshness and exact midnight updates are not guaranteed.
 
 ## Where the implementation lives
 
 <FileTree>
 - apps/client/
-  - services/agendaWidget.ts — builds and debounces the shared JSON snapshot
+  - services/widgetSnapshot.ts — pure v2 projector, recurrence/day/reference/byte budgets
+  - services/agendaWidget.ts — scoped lifecycle, debounced projections, serialized bridge writes
+  - services/taskCollection.ts — session-scoped task hydrate, refresh, and reconciliation
+  - services/tasksCache.ts — local scoped task persistence
+  - store/useTasksStore.ts — shared task collection and freshness state
+  - store/useWidgetDataStore.ts — event hydrate/sync readiness
   - components/calendar/CalendarWidgetSettingsModal.tsx — per-widget calendar picker
   - modules/musubi-agenda-widget/
     - index.ts — typed Expo module bridge
     - android/src/main/AndroidManifest.xml — providers, service, and refresh broadcasts
     - android/src/main/java/dev/frgtn/musubi/widget/
-      - MusubiAgendaWidgetProvider.kt — Agenda shell and collection refresh
-      - MusubiAgendaWidgetService.kt — scrollable Agenda rows
+      - MusubiAgendaWidgetProvider.kt — Agenda and Tasks providers and inline collections
+      - MusubiAgendaWidgetService.kt — collection service fallback for older Android versions
       - MusubiCalendarWidgetProvider.kt — adaptive month grid, dots, pills, and deep links
       - AgendaWidgetData.kt — snapshot parser and date/time formatting
-      - AgendaWidgetStorage.kt — persisted shared snapshot
-      - CalendarWidgetPreferences.kt — calendar IDs selected per widget instance
-    - android/src/main/res/ — `RemoteViews` layouts, styles, colours, drawables, and widget metadata
+      - AgendaWidgetStorage.kt — validated snapshot persistence and lifecycle/generation fences
+      - WidgetPresentation.kt — shared states, freshness labels, and app-opening controls
+      - WidgetRows.kt — readable Agenda/Tasks rows and canonical routes
+      - WidgetInvariants.kt — collection ID and lifecycle checks
+      - CalendarWidgetPreferences.kt — account-scoped calendar selections per widget instance
+    - android/src/main/res/ — layouts, styles, drawables, generated tokens, and widget metadata
+- packages/design-system/
+  - src/widget-tokens.ts — shared widget appearance contract
+  - src/android-widget.ts — native colour/dimension resource adapter
+  - scripts/generate-css.ts — generates both widget themes with the web tokens
 </FileTree>
 
-The three widget deep links are intentionally routed through Expo Router:
+The v2 snapshot contains display fields and an account/server scope, lifecycle/generation, section freshness, coverage, completeness, readable calendar IDs, occurrence keys, and canonical task IDs. Credentials do not belong in widget snapshots or preferences. Event and task sections can fail independently; explicitly retained rows keep their original freshness and timezone.
+
+Storage budgets are explicit: at most 4,096 projected events, 2,048 tasks, 32,768 day references, and 1 MiB of newly projected UTF-8 JSON. Recurrence expansion shares a limit of 50,000 candidates and 10,000 results across families, including candidates before coverage and exclusion rules. Native storage allows up to 2 MiB when retaining independently valid cached sections. It prunes inaccessible memberships before trimming rows to that ceiling. The native scrollable collections expose at most 128 rows. Budget exhaustion marks coverage incomplete; it is not a successful empty result. All-day bars retain their true endpoints while reference iteration stays inside coverage.
+
+Widget projections support daily, weekly, monthly, and yearly recurrence. Unsupported subdaily rules produce an update error rather than an empty agenda.
+
+Widget deep links route through Expo Router:
 
 - Agenda event → `musubi://agenda?eventId=…&occurrenceStart=…`
 - Calendar day → `musubi:///?time=…`
 - Calendar picker → `musubi:///?calendarWidgetId=…`
+- Task detail, including Agenda task markers → `musubi://tasks?taskId=…`
+- Tasks picker → `musubi://tasks?tasksWidgetId=…`
+- Refresh → `musubi://agenda?widgetRefresh=1`, `musubi:///?widgetRefresh=1`, or `musubi://tasks?widgetRefresh=1`
 
-Cold-start handling in `app/_layout.tsx` and `app/index.tsx` preserves those parameters until the tabs have loaded.
+Cold-start routing preserves parameters until scoped data hydrates. Agenda redirects to Home's Agenda view while retaining occurrence/refresh parameters; task links use the canonical task ID.
 
 ## Install a local widget build
 
@@ -101,7 +152,14 @@ cd ../../..
 adb install -r apps/client/android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-The `-r` flag preserves app data and existing widget instances. A pure TypeScript snapshot or modal change still needs the normal app bundle/dev server, but does not require changing widget registration.
+The `-r` flag preserves app data and existing widget instances. A pure TypeScript snapshot or modal change still needs the normal app bundle/dev server, but does not require changing widget registration. Generate token resources before building after a design-token change:
+
+```sh
+pnpm --filter @musubi/design-system generate
+pnpm --filter @musubi/design-system test
+```
+
+`values/musubi_widget_tokens.xml` and `values-night/musubi_widget_tokens.xml` are generated. Edit their TypeScript sources instead. Android receives `#AARRGGBB` colours, `dp` geometry, and scalable `sp` type. RemoteViews uses system serif/sans fallbacks; device QA must verify their optical result and font scaling.
 
 <Aside type="caution">
 Android launchers may reapply a `RemoteViews` update onto a cached tree when the same layout resource ID is reused. If the widget hierarchy changes, give the layout a new resource name and update the provider metadata. This avoids a stale tree producing **Can't load widget** after an APK replacement.
@@ -109,14 +167,18 @@ Android launchers may reapply a `RemoteViews` update onto a cached tree when the
 
 ## Focused test checklist
 
-- Add both widgets, then resize each through compact and detailed sizes.
+- Add all three widgets, then resize each through compact and detailed sizes, landscape, and larger font scales.
 - Confirm recurring events appear as separate Agenda rows and Calendar occurrences.
 - Scroll the Agenda and open both a normal event and a recurring occurrence.
 - Tap a Calendar day and confirm the press feedback and selected date in Musubi.
-- Hide one calendar through **CALENDARS** and confirm only that widget changes.
+- Open a task from Tasks and an Agenda task marker; confirm canonical detail and no native completion action.
+- Hide one calendar in Calendar and Tasks; confirm only the configured widget changes.
 - Switch Android between dark and light without resizing the widget; day numbers must remain readable.
-- Sign out and confirm event content is removed from both widgets.
+- Check TalkBack names, press targets, scrolling, and focus after returning from the app.
+- Check cold offline launch, failed sync, missing/invalid data, incomplete coverage, timezone/DST changes, and expired coverage.
+- Sign out and switch account/server; confirm private content and old account selections disappear, including delayed writes.
+- Record launcher/version, sizes, theme, steps, and screenshots. Logic tests and a native build do not establish physical-device acceptance.
 
 ## iOS status
 
-The current implementation is Android-only. The intended iOS version will preserve the same Agenda/Calendar concepts, **CALENDARS** wording, and picker explanation, while using WidgetKit through Expo's iOS widget tooling rather than Android `RemoteViews`.
+The current module is Android-only. iOS is a separate later project requiring a WidgetKit extension, shared-container storage, timeline/refresh policy, signing, and device verification. No iOS widget dependency or closed-app refresh behavior is established by this Android implementation.
