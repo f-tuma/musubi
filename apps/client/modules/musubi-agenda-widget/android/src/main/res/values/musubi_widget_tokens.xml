@@ -25,6 +25,7 @@
   <dimen name="musubi_widget_header_height">48dp</dimen>
   <dimen name="musubi_widget_control_size">44dp</dimen>
   <dimen name="musubi_widget_control_glyph_size">24dp</dimen>
+  <dimen name="musubi_widget_control_icon_size">18dp</dimen>
   <dimen name="musubi_widget_row_height">48dp</dimen>
   <dimen name="musubi_widget_row_gap">4dp</dimen>
   <dimen name="musubi_widget_content_gap">8dp</dimen>

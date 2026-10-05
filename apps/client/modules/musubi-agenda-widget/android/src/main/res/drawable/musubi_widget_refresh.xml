@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-  android:width="@dimen/musubi_widget_control_glyph_size"
-  android:height="@dimen/musubi_widget_control_glyph_size"
+  android:width="@dimen/musubi_widget_control_icon_size"
+  android:height="@dimen/musubi_widget_control_icon_size"
   android:viewportWidth="24" android:viewportHeight="24">
   <path android:fillColor="@android:color/transparent"
     android:strokeColor="@color/musubi_widget_on_control"

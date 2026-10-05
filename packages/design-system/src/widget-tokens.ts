@@ -28,6 +28,8 @@ export const widgetTokens = {
     // Named control symbols are icons, so their visual size uses dp while
     // user-facing words keep scalable sp sizing in the type contract below.
     controlGlyphSize: typeSizes[24],
+    // Vectors fill their box more fully than font glyphs.
+    controlIconSize: typeSizes[18],
     rowHeight: controlHeights.touch.control,
     rowGap: spacing[1],
     contentGap: spacing[2],
