@@ -214,6 +214,7 @@ vi.mock("@/store/useCalendarsStore", async original => {
 vi.mock("@/store/useEventsStore", async (original) => {
   const actual = await original<typeof import("@/store/useEventsStore")>();
   return {
+    ...actual,
     useEventsStore: Object.assign(
       () => actual.useEventsStore.getState(),
       actual.useEventsStore,

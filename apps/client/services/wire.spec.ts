@@ -1,4 +1,4 @@
-import { EventSchema } from "@musubi/types";
+import { EventSchema, TaskMutationResponseSchema } from "@musubi/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getServerDiagnostics } from "@/lib/serverDiagnostics";
 import { z } from "zod";
@@ -63,6 +63,16 @@ describe("readWire", () => {
     // But it must not be silent, or the app is back where it started.
     expect(getServerDiagnostics()).toContain("GET /events does not match");
     expect(getServerDiagnostics()).toContain("title");
+  });
+
+  it("rejects a required mutation receipt in production while ordinary reads still degrade", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    withDev(false, () => {
+      expect(() => readWire(TaskMutationResponseSchema, { task: null, localCommitted: false },
+        "POST /task-mutations", { requireValid: true })).toThrow("The server did not confirm the change");
+      expect(readWire(TaskMutationResponseSchema, { task: null, localCommitted: true },
+        "POST /task-mutations", { requireValid: true })).toEqual({ task: null, localCommitted: true });
+    });
   });
 
   it("throws where it can still be fixed", () => {

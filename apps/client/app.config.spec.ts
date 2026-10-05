@@ -8,6 +8,7 @@ beforeEach(() => {
   vi.stubEnv("EAS_BUILD_PROFILE", undefined);
   vi.stubEnv("EAS_BUILD_PLATFORM", undefined);
   vi.stubEnv("EXPO_PUBLIC_IOS_APP_STORE_URL", undefined);
+  vi.stubEnv("EXPO_PUBLIC_IOS_TESTFLIGHT_URL", undefined);
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -26,10 +27,28 @@ describe("native release configuration", () => {
     expect((await config()).extra?.iosAppStoreUrl).toBeUndefined();
   });
 
-  it("requires the real listing for production iOS before building", async () => {
+  it("requires an actual distribution destination for production iOS before building", async () => {
     vi.stubEnv("EAS_BUILD_PROFILE", "production");
     vi.stubEnv("EAS_BUILD_PLATFORM", "ios");
     await expect(config()).rejects.toThrow("required for production iOS EAS builds");
+  });
+
+  it("allows the actual TestFlight beta channel for a production iOS build", async () => {
+    vi.stubEnv("EAS_BUILD_PROFILE", "production");
+    vi.stubEnv("EAS_BUILD_PLATFORM", "ios");
+    vi.stubEnv("EXPO_PUBLIC_IOS_TESTFLIGHT_URL", "https://testflight.apple.com/join/EqzdPVfC");
+    const result = await config();
+    expect(result.extra?.iosTestFlightUrl).toBe("https://testflight.apple.com/join/EqzdPVfC");
+    expect(result.extra?.iosAppStoreUrl).toBeUndefined();
+  });
+
+  it.each([
+    "http://testflight.apple.com/join/EqzdPVfC",
+    "https://example.test/join/EqzdPVfC",
+    "https://testflight.apple.com/join/",
+  ])("rejects an invalid supplied TestFlight channel: %s", async value => {
+    vi.stubEnv("EXPO_PUBLIC_IOS_TESTFLIGHT_URL", value);
+    await expect(config()).rejects.toThrow("direct HTTPS TestFlight join URL");
   });
 
   it("embeds a configured direct listing for the update action", async () => {

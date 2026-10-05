@@ -150,11 +150,11 @@ function TasksTabScreen() {
     {creating ? <TaskEditorModal calendarID={creating} calendars={calendars.filter(calendar => can(calendar.role, "editTasks") && (!calendar.provider || calendar.supportsTasks === true))} onClose={() => setCreating(undefined)} onSave={async draft => {
       const saved = await apiRef.current.createTask({ ...draft, id: newId.current });
       if (!saved) return;
-      request.current++; setTasks(current => [...current.filter(task => task.id !== saved.id), saved]);
+      request.current++; setRefreshing(false); setTasks(current => [...current.filter(task => task.id !== saved.id), saved]);
       setPhaseFilter(saved.status);
       if (!activeCals.has(saved.calendarID)) toggleCal(saved.calendarID);
     }} /> : null}
-    {detail ? <TaskDetailModal key={detail.id} task={detail} relatedTask={tasks.find(item => item.id === detail.relatedTo)} onOpenRelated={setDetailId} calendar={detailCalendar} calendars={calendars} editable={detailEditable} busy={!!saving} onSaved={saved => { request.current++; setTasks(current => saved ? current.map(item => item.id === saved.id ? saved : item) : current.filter(item => item.id !== detail.id)); if (!saved) setDetailId(undefined); }} onClose={() => setDetailId(undefined)} onStatus={status => void changeTask(detail, { status })} onPriority={priority => void changeTask(detail, { priority })} /> : null}
+    {detail ? <TaskDetailModal key={detail.id} task={detail} relatedTask={tasks.find(item => item.id === detail.relatedTo)} onOpenRelated={setDetailId} calendar={detailCalendar} calendars={calendars} editable={detailEditable} busy={!!saving} onSaved={saved => { request.current++; setRefreshing(false); setTasks(current => saved ? current.map(item => item.id === saved.id ? saved : item) : current.filter(item => item.id !== detail.id)); if (!saved) setDetailId(undefined); }} onClose={() => setDetailId(undefined)} onStatus={status => void changeTask(detail, { status })} onPriority={priority => void changeTask(detail, { priority })} /> : null}
     <OptionPicker visible={!!selected} title="Task status" options={phases} value={selected?.status} onSelect={value => void changeTask(selected, { status: value as TaskStatus })} onClose={() => setSelected(undefined)} />
   </View>;
 }

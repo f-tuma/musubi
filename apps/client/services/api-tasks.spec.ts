@@ -75,3 +75,30 @@ it("retains frozen intent after a generic conflict without terminal noncommit pr
   expect(h.fetch.mock.calls[1][1].headers["Idempotency-Key"]).toBe(h.fetch.mock.calls[0][1].headers["Idempotency-Key"]);
   expect(JSON.parse(h.fetch.mock.calls[1][1].body).expectedRevision).toBe(4);
 });
+
+it("does not acknowledge a malformed production fork receipt or rotate its retry key", async () => {
+  vi.stubGlobal("__DEV__", false);
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  try {
+    h.fetch.mockResolvedValueOnce({ data: { task: { ...task, revision: undefined }, localCommitted: true } })
+      .mockResolvedValue({ data: { task, localCommitted: true } });
+    await expect(useApi().forkTask(task, "malformed-receipt-destination")).rejects.toThrow("The server did not confirm the change");
+    await useApi().forkTask({ ...task, revision: 5, providerReadRetiredGeneration: 3 }, "malformed-receipt-destination");
+    expect(h.fetch.mock.calls[1][1].headers["Idempotency-Key"]).toBe(h.fetch.mock.calls[0][1].headers["Idempotency-Key"]);
+    expect(JSON.parse(h.fetch.mock.calls[1][1].body)).toEqual({
+      calendarID: "malformed-receipt-destination", expectedRevision: 4, expectedProviderReadRetiredGeneration: 2,
+    });
+  } finally { log.mockRestore(); vi.unstubAllGlobals(); }
+});
+
+it("refuses an unconfirmed production create, update or delete instead of reporting success", async () => {
+  vi.stubGlobal("__DEV__", false);
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  try {
+    h.fetch.mockResolvedValue({ data: { task, localCommitted: false } });
+    await expect(useApi().createTask(task)).rejects.toThrow("The server did not confirm the change");
+    await expect(useApi().updateTask(task, task)).rejects.toThrow("The server did not confirm the change");
+    h.fetch.mockResolvedValue({ data: { task: null, localCommitted: true } });
+    await expect(useApi().removeTask(task)).rejects.toThrow("The server did not confirm the change");
+  } finally { log.mockRestore(); vi.unstubAllGlobals(); }
+});

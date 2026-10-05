@@ -26,9 +26,11 @@ export function useCalendarTasks() {
   const [selected, select] = useState<string>();
   const [busy, setBusy] = useState(false);
   const saving = useRef(false);
+  const pendingRefresh = useRef(false);
   const request = useRef(0);
   const refresh = useCallback(async () => {
-    if (saving.current) return;
+    if (saving.current) { pendingRefresh.current = true; return; }
+    pendingRefresh.current = false;
     const generation = ++request.current;
     try {
       const tasks = await apiRef.current.getTasks();
@@ -40,6 +42,8 @@ export function useCalendarTasks() {
       }
     }
   }, [scope]);
+  const refreshRef = useRef(refresh);
+  useEffect(() => { refreshRef.current = refresh; }, [refresh]);
   useFocusEffect(useCallback(() => {
     focused.current = true;
     void refresh();
@@ -72,7 +76,7 @@ export function useCalendarTasks() {
       showToast({ message: userFacingError(error, "Could not update task.") });
     } finally {
       saving.current = false; setBusy(false);
-      if (failed && focused.current) void refresh();
+      if ((failed || pendingRefresh.current) && focused.current) void refreshRef.current();
     }
   }
   return {

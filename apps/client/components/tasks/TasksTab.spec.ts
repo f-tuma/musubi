@@ -5,7 +5,7 @@ import TasksTab from "../../app/(tabs)/tasks";
 
 const h = vi.hoisted(() => ({
   actor: "owner", key: undefined as string | undefined, slots: [] as unknown[], index: 0, focus: undefined as undefined | (() => () => void),
-  api: { getTasks: vi.fn(), syncProviderCalendars: vi.fn() },
+  api: { getTasks: vi.fn(), syncProviderCalendars: vi.fn(), createTask: vi.fn() },
 }));
 vi.mock("react", async original => ({
   ...await original<typeof import("react")>(),
@@ -35,11 +35,11 @@ vi.mock("@/contexts/ServerContext", () => ({ useServer: () => ({ apiUrl: "https:
 vi.mock("@/services/api", () => ({ useApi: () => h.api }));
 vi.mock("@/lib/network", async original => ({ ...await original<typeof import("@/lib/network")>(), userFacingError: (error: Error) => error.message }));
 vi.mock("@/store/useSettingsStore", () => ({ useSettingsStore: (selector: (state: { dateFormat: string; timeFormat: string }) => unknown) => selector({ dateFormat: "ymd", timeFormat: "24h" }) }));
-vi.mock("@/store/useCalendarsStore", () => ({ useCalendarsStore: () => ({ calendars: [calendar], activeCals: new Set([calendar.id]) }) }));
+vi.mock("@/store/useCalendarsStore", () => ({ useCalendarsStore: () => ({ calendars: [calendar], activeCals: new Set([calendar.id]), toggleCal: vi.fn() }) }));
 
-const calendar = CalendarSchema.parse({ id: "google", creatorID: "owner", name: "Google Tasks", provider: "google", supportsTasks: true, color: "red", members: [] });
+const calendar = CalendarSchema.parse({ role: "owner", id: "google", creatorID: "owner", name: "Google Tasks", provider: "google", supportsTasks: true, color: "red", members: [] });
 const task = TaskSchema.parse({ id: "task", creatorID: "owner", calendarID: calendar.id, title: "QA from Google" });
-type Props = { children?: ReactNode; refreshControl?: ReactNode; accessibilityLabel?: string; accessibilityRole?: string; disabled?: boolean; onPress?: () => void; onRefresh?: () => void; refreshing?: boolean };
+type Props = { children?: ReactNode; refreshControl?: ReactNode; accessibilityLabel?: string; accessibilityRole?: string; disabled?: boolean; onPress?: () => void; onRefresh?: () => void; refreshing?: boolean; onSave?: (draft: unknown) => Promise<void> };
 function nodes(node: ReactNode): { type: unknown; props: Props }[] {
   if (Array.isArray(node)) return node.flatMap(nodes);
   if (!isValidElement<Props>(node)) return [];
@@ -146,4 +146,23 @@ it("clears previously readable private task text when the authorized read is rej
   refresh("gesture"); await settle();
   expect(nodes(render()).some(node => node.props.children === task.title)).toBe(false);
   expect(nodes(render()).find(node => node.props.accessibilityRole === "alert")!.props.children).toBe("403: Membership removed");
+});
+
+it("ends an invalidated refresh when a create receipt arrives before its in-flight read", async () => {
+  h.api.getTasks.mockResolvedValue([]);
+  render(); h.focus!(); await settle();
+  nodes(render()).find(node => node.props.accessibilityLabel === "Create task")!.props.onPress!();
+  let resolve!: (tasks: typeof task[]) => void;
+  h.api.getTasks.mockReturnValueOnce(new Promise<typeof task[]>(done => { resolve = done; }));
+  refresh("gesture"); await settle();
+  expect(nodes(render()).find(node => node.type === "RefreshControl")!.props.refreshing).toBe(true);
+  const created = { ...task, revision: 1 };
+  h.api.createTask.mockResolvedValue(created);
+  const editor = nodes(render()).find(node => node.type === "TaskEditorModal")!;
+  await editor.props.onSave!({ ...created, calendarID: calendar.id });
+  const tree = nodes(render());
+  expect(tree.find(node => node.type === "RefreshControl")!.props.refreshing).toBe(false);
+  expect(tree.some(node => node.props.children === task.title)).toBe(true);
+  resolve([]); await settle();
+  expect(nodes(render()).some(node => node.props.children === task.title)).toBe(true);
 });

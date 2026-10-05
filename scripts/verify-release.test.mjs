@@ -14,7 +14,7 @@ const requiredFiles = [
   "apps/api/Dockerfile", "apps/web/Dockerfile", "packages/docs/Dockerfile",
 ];
 
-function verify({ storedListing, environmentListing } = {}) {
+function verify({ storedListing, environmentListing, betaListing } = {}) {
   const fixture = mkdtempSync(join(tmpdir(), "musubi-release-metadata-"));
   try {
     for (const relative of requiredFiles) {
@@ -32,9 +32,11 @@ function verify({ storedListing, environmentListing } = {}) {
     const eas = JSON.parse(readFileSync(easPath, "utf8"));
     delete eas.build.production.env.EXPO_PUBLIC_IOS_APP_STORE_URL;
     if (storedListing !== undefined) eas.build.production.env.EXPO_PUBLIC_IOS_APP_STORE_URL = storedListing;
+    if (betaListing !== undefined) eas.build.production.env.EXPO_PUBLIC_IOS_TESTFLIGHT_URL = betaListing;
     writeFileSync(easPath, JSON.stringify(eas));
     const env = { ...process.env };
     delete env.EXPO_PUBLIC_IOS_APP_STORE_URL;
+    delete env.EXPO_PUBLIC_IOS_TESTFLIGHT_URL;
     if (environmentListing !== undefined) env.EXPO_PUBLIC_IOS_APP_STORE_URL = environmentListing;
     return spawnSync(process.execPath, [join(fixture, "scripts/verify-release.mjs"), manifest.version], {
       env, encoding: "utf8",
@@ -71,4 +73,12 @@ test("real validator rejects a supplied URL outside the direct HTTPS listing", (
     assert.equal(result.status, 1);
     assert.match(result.stderr, /direct apps\.apple\.com listing/);
   }
+});
+
+test("real validator accepts the beta update channel and rejects a malformed one", () => {
+  const valid = verify({ betaListing: "https://testflight.apple.com/join/EqzdPVfC" });
+  assert.equal(valid.status, 0, valid.stderr);
+  const invalid = verify({ betaListing: "https://example.test/join/EqzdPVfC" });
+  assert.equal(invalid.status, 1);
+  assert.match(invalid.stderr, /direct HTTPS TestFlight join URL/);
 });

@@ -68,21 +68,22 @@ on the configured `nodeLinker: hoisted`. If a dependency change intentionally
 updates the lockfile, run `pnpm install`, inspect `pnpm-lock.yaml`, and commit
 the manifest and lockfile together.
 
-### Production iOS EAS rejects the App Store URL
+### Production iOS EAS rejects the update destination
 
-**Symptom:** config evaluation reports that
-`EXPO_PUBLIC_IOS_APP_STORE_URL` is required or malformed (an all-zero id is invalid).
+**Symptom:** config evaluation reports an invalid App Store or TestFlight URL,
+or that neither destination is available.
 
-Set a direct public listing URL in the production EAS environment:
+The production profile uses Musubi's public TestFlight beta channel:
 
 ```dotenv
-EXPO_PUBLIC_IOS_APP_STORE_URL=https://apps.apple.com/app/musubi/id1234567890
+EXPO_PUBLIC_IOS_TESTFLIGHT_URL=https://testflight.apple.com/join/EqzdPVfC
 ```
 
-The numeric id must be the real App Store Connect app id. Development and
-preview builds can omit the variable and use the public download page fallback;
-production iOS intentionally cannot. Android production builds do not require
-an iOS listing.
+Keep an actual HTTPS Apple join URL for beta distribution. Once publicly
+released, set a real direct `EXPO_PUBLIC_IOS_APP_STORE_URL` in EAS production;
+the app prefers that listing and rejects an all-zero ID. Do not add a fake
+listing to unblock a beta build. Android does not require an iOS destination;
+unconfigured development/preview builds keep the download page fallback.
 
 ## PostgreSQL and migrations
 

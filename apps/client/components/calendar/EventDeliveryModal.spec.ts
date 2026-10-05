@@ -14,6 +14,7 @@ const h = vi.hoisted(() => ({
   userId: "owner",
   apiUrl: "https://home.example.test",
   version: 0,
+  eventLifecycle: 0,
 }));
 vi.mock("react", async (original) => ({
   ...(await original<typeof import("react")>()),
@@ -148,6 +149,7 @@ beforeEach(() => {
   h.index = 0;
   h.effects = [];
   h.version = 0;
+  h.eventLifecycle = 0;
   h.userId = "owner";
   h.apiUrl = "https://home.example.test";
   vi.clearAllMocks();
@@ -374,6 +376,7 @@ vi.mock("@/store/useCalendarsStore", () => ({
 }));
 vi.mock("@/store/useEventsStore", () => ({
   useEventsStore: () => ({ events: [] }),
+  getEventLifecycle: () => h.eventLifecycle,
 }));
 vi.mock("@/store/useSettingsStore", () => ({
   useSettingsStore: () => ({ timeFormat: "24h", dateFormat: "dmy" }),
@@ -509,6 +512,12 @@ it("invalidates delivery from the actual native external_sync and reconnect list
   h.callbacks.message({ data: JSON.stringify({ type: "external_sync" }) });
   expect(h.version).toBe(initial + 1);
   h.callbacks.open();
+  h.callbacks.open();
+  expect(h.version).toBe(initial + 2);
+  // Delivery updates from the previous account's stream cannot invalidate the
+  // replacement account after its stores have been reset.
+  h.eventLifecycle++;
+  h.callbacks.message({ data: JSON.stringify({ type: "external_sync" }) });
   h.callbacks.open();
   expect(h.version).toBe(initial + 2);
 });

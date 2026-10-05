@@ -266,7 +266,7 @@ export function useApi() {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(TaskCreateSchema.parse(task)),
       });
       throwOnError(error);
-      const result = readWire(TaskMutationResponseSchema, data, "POST /task-mutations");
+      const result = readWire(TaskMutationResponseSchema, data, "POST /task-mutations", { requireValid: true });
       useTaskRefreshStore.getState().refresh();
       return result.task;
     },
@@ -278,7 +278,7 @@ export function useApi() {
         method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
       });
       throwOnError(error);
-      const result = readWire(TaskMutationResponseSchema, data, "PATCH /task-mutations");
+      const result = readWire(TaskMutationResponseSchema, data, "PATCH /task-mutations", { requireValid: true });
       useTaskRefreshStore.getState().refresh();
       return result.task;
     },
@@ -286,7 +286,7 @@ export function useApi() {
     async removeTask(task: Task, unlinkCalendarID?: string): Promise<Task | null> {
       const { error, data } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/task-mutations/${encodeURIComponent(task.id)}`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ expectedRevision: requireTaskRevision(task), expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0, unlinkCalendarID }) });
       throwOnError(error);
-      const result = readWire(TaskDeleteResponseSchema, data, "DELETE /task-mutations");
+      const result = readWire(TaskDeleteResponseSchema, data, "DELETE /task-mutations", { requireValid: true });
       useTaskRefreshStore.getState().refresh();
       return result.task;
     },
@@ -294,7 +294,7 @@ export function useApi() {
     async linkTask(task: Task, calendarID: string): Promise<Task | null> {
       const { error, data } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/task-mutations/${encodeURIComponent(task.id)}/link`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ calendarID, expectedRevision: requireTaskRevision(task), expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0 }) });
       throwOnError(error);
-      const result = readWire(TaskMutationResponseSchema, data, "POST /task-mutations/link");
+      const result = readWire(TaskMutationResponseSchema, data, "POST /task-mutations/link", { requireValid: true });
       useTaskRefreshStore.getState().refresh();
       return result.task;
     },
@@ -307,7 +307,7 @@ export function useApi() {
       try {
         const { error, data } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/task-mutations/${encodeURIComponent(attempt.sourceTaskID)}/fork`, { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": attempt.operationId }, body: JSON.stringify(attempt.request) });
         throwOnError(error);
-        const result = readWire(TaskMutationResponseSchema, data, "POST /task-mutations/fork");
+        const result = readWire(TaskMutationResponseSchema, data, "POST /task-mutations/fork", { requireValid: true });
         taskForkAttempts.acknowledge(attempt.operationId);
         useTaskRefreshStore.getState().refresh();
         return result.task;
@@ -321,7 +321,7 @@ export function useApi() {
       const body = TaskPatchRequestSchema.parse({ patch: { priority }, expectedRevision: requireTaskRevision(task), expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0 });
       const { error, data } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/task-mutations/${encodeURIComponent(task.id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       throwOnError(error);
-      const result = readWire(TaskMutationResponseSchema, data, "PATCH /task-mutations priority");
+      const result = readWire(TaskMutationResponseSchema, data, "PATCH /task-mutations priority", { requireValid: true });
       useTaskRefreshStore.getState().refresh();
       return result.task;
     },
@@ -330,7 +330,7 @@ export function useApi() {
       const body = TaskPatchRequestSchema.parse({ patch: { status, percentComplete: status === "completed" ? 100 : task.status === "completed" ? 0 : task.percentComplete, completedAt: status === "completed" ? task.completedAt ?? new Date() : null }, expectedRevision: requireTaskRevision(task), expectedProviderReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0 });
       const { error, data } = await authClient.$fetch(`${apiUrl}/api/${apiVersion}/task-mutations/${encodeURIComponent(task.id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       throwOnError(error);
-      const result = readWire(TaskMutationResponseSchema, data, "PATCH /task-mutations status");
+      const result = readWire(TaskMutationResponseSchema, data, "PATCH /task-mutations status", { requireValid: true });
       useTaskRefreshStore.getState().refresh();
       return result.task;
     },
