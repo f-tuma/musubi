@@ -19,6 +19,9 @@ as validation of the new fixes.
   punctuation or HTTP/HTTPS collisions. Ambiguous legacy keys are not imported;
   upgrading requires a fresh sign-in, after which normal session persistence
   applies.
+- The first startup using the new auth namespace migrates the local schema,
+  clears legacy account data, widgets and scheduled reminders, and only then
+  opens the auth client. Cleanup failures cannot mark the upgrade complete.
 - Queued realtime mutations and deferred launch-cache hydration reject retired
   session lifecycles before writing state/cache or starting old-server refreshes.
   Network listeners are renewed for the current server/auth scope.
@@ -36,8 +39,9 @@ races. Source checks and the final CI run are recorded in PR #331.
 
 - Production Android and iOS Metro/Hermes export passed again after the final
   JavaScript/config changes, with the actual TestFlight production configuration.
-  The complete native suite passed: 489 tests across 47 files, plus the standalone
-  origin-namespace assertions. Typecheck and focused lint passed.
+  The complete native suite passed: 497 tests across 48 files, plus the standalone
+  origin-namespace assertions. Typecheck and the full client lint passed
+  (zero errors; 66 existing warnings within its unchanged threshold).
 - Isolated Android/iOS `expo prebuild --no-install --platform all` passed.
 - Isolated Android `:app:assembleRelease` for arm64 completed successfully:
   945 Gradle tasks, Kotlin/Java/CMake, widget, release lint and packaging.

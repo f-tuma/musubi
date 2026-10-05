@@ -5,6 +5,7 @@ import { defaultUrl } from "@/constants/url";
 import { normalizeServerUrl } from "@/lib/serverUrl";
 import { resetLocalAccountState } from "@/lib/signOut";
 import { recordServerDiagnostic } from "@/lib/serverDiagnostics";
+import { prepareAuthStorage } from "@/lib/authStorageUpgrade";
 
 type ServerContextType = {
   apiUrl: string;
@@ -21,13 +22,19 @@ export function ServerProvider({ children }: { children: React.ReactNode }) {
   } | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const getApiUrl = async () => {
       const retrievedApiUrl = await SecureStore.getItemAsync("API_URL");
       const url = normalizeServerUrl(retrievedApiUrl ?? defaultUrl);
       recordServerDiagnostic(`selected ${url} (stored: ${retrievedApiUrl ?? "none"})`);
+      await prepareAuthStorage();
+      if (cancelled) return;
       setServer({ apiUrl: url, authClient: createClient(url) });
     };
-    getApiUrl();
+    void getApiUrl().catch(error => {
+      if (!cancelled) console.error("Could not prepare local account storage:", error);
+    });
+    return () => { cancelled = true; };
   }, []);
 
   const setNewServerUrl = async (url: string) => {
