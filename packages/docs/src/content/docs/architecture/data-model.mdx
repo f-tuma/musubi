@@ -1,6 +1,6 @@
 ---
 title: Data Model
-description: The PostgreSQL schema, the events-beyond-calendars junction design, soft deletes, and the migration workflow.
+description: The PostgreSQL schema, event and task memberships, home authority, durable provider delivery, soft deletes, and migrations.
 ---
 
 import { Aside, Steps, FileTree } from '@astrojs/starlight/components';
@@ -13,7 +13,9 @@ The backend **never** touches tables directly. All database access goes through 
 
 ## The domains
 
-The schema is grouped into six domains by comment banners. Read them in this order.
+The main domains below describe identity, calendar membership, task ownership,
+provider mappings, and federation. Schema comment banners and query modules are
+the source of truth when adding a table.
 
 ### 1. Auth (managed by Better Auth)
 
@@ -45,10 +47,14 @@ You rarely edit these — Better Auth's Drizzle adapter owns them. See [Auth in 
 | --- | --- | --- |
 | `calendars` | A calendar | `creatorID`, `color`, `isDefault` (one auto-created per user, undeletable) |
 | `events` | An event | `title`, `start`/`end`, `isAllDay`, `hasAttendees`, `recurrence`, `creatorID`, **`originCalendarID`**, `deletedAt` |
+| `tasks` | One canonical task | `title`, status/progress, start/due/completion, **`originCalendarID`**, `revision`, privacy generation, `deletedAt` |
 | `calendarInvites` | Share links | `calendarID`, `expiresAt`, `maxUses` |
 
 <Aside type="caution">
-The events column is **`title`**, not `name`. Easy to trip on. And `originCalendarID` has `onDelete: "set null"` — if the home calendar is deleted, the event survives with a null home, and only the creator can then edit it (legacy fallback).
+The event/task title column is **`title`**, not `name`. Home foreign keys use
+`onDelete: "set null"`, but deleting a home through the supported lifecycle
+query tombstones its objects before deleting the calendar. The FK action alone
+is not the application deletion policy.
 </Aside>
 
 ### 4. Link tables — the heart of the design
@@ -70,6 +76,7 @@ erDiagram
 | --- | --- | --- |
 | `calendarMembers` | who is in a calendar + their `role` | cascades from user & calendar; role defaults `"viewer"`; unique `(userID, calendarID)` — re-joins hit `onConflictDoNothing` instead of duplicating |
 | `calendarEvents` | which calendars an event is linked into (M:N) | cascades both sides; unique `(eventID, calendarID)` so retries cannot duplicate a link |
+| `calendarTasks` | which calendars a task belongs to (M:N) | cascades both sides; composite primary key `(taskID, calendarID)` |
 | `eventUsers` | attendees of an event (creator added on create; presence = attending) | cascades both sides; unique `(eventID, userID)` |
 | `calendarInvites` | invite links — the row's uuid `id` IS the token | cascades from calendar; `expiresAt` null = never expires, `maxUses` null = unlimited, `uses` counter checked (with expiry) at every token read |
 
@@ -83,12 +90,61 @@ erDiagram
 `eventUsers` is the attendee list: anyone who can *view* the event may answer going, maybe, declined, or clear their answer (`GET /events/:id/attendees`, `PUT /events/:id/attendance`). The feature is per-event opt-in via `events.hasAttendees` — a UI toggle, **non-destructive**: switching it off keeps the `event_users` rows, so re-enabling restores the same list. The payload is name + avatar only — no emails, since an event can span calendars whose members aren't mutuals. External sync inserts events directly (not via `createEvent`), so provider-imported events don't get a phantom creator-attendee.
 </Aside>
 
+### Canonical tasks
+
+Tasks use the event home-authority model, with their own revision and durable
+delivery journal. `tasks` stores content and completion once;
+`calendar_tasks` stores memberships. The old `tasks.calendarID` remains a
+compatibility home field and is not a secondary membership or permission grant.
+
+| Invariant | Implementation |
+| --- | --- |
+| Read through any currently readable membership | `taskReadableMembership` and `getUserTasks` join current membership and source-access state |
+| Edit content, complete/reopen, or delete globally only through home | `originCalendarID` plus home `editTasks`; source rehydration is also required for content edits |
+| Link/copy from a currently authorized source into an editable destination | Destination `editTasks`, task support, source privacy checks, and live-link support for links |
+| Remove only an editable secondary membership | The home cannot be unlinked or silently promoted elsewhere |
+| Detect concurrent edits | Positive server `revision` and an expected revision checked under locks; provider `sequence` remains separate |
+| Do not resurrect retired source text from an old draft | `providerReadRetiredGeneration` admission fence and current authorized rehydration |
+
+The read DTO exposes only readable `calendarIDs` and server-derived action
+capabilities. Lists, search, and calendar projections deduplicate by logical
+task ID. Membership elsewhere does not grant home editing rights or reveal
+unreadable calendar names.
+
+Removing a home calendar tombstones the logical task and captures deletes for
+surviving provider destinations. Removing a secondary calendar retains the
+task's home and identity. Account removal follows the existing creator-purge
+policy and captures surviving foreign destination deletes before FK cleanup;
+it is not an ownership-transfer operation.
+
+Known provider read revocation retires the source. Home retirement redacts
+canonical private text, advances task revision/privacy generation, and
+invalidates dependent views. Secondary retirement leaves canonical content in
+other authorized memberships intact. Restoring access enables edits, links,
+and copies only after an authorized pull restores canonical data and its
+accepted provider validator. Global home deletion uses retained addresses
+and has a separate content guard.
+
+| Table | Purpose | Identity and retention |
+| --- | --- | --- |
+| `externalTasks` (`external_tasks`) | Maps a provider projection to the canonical task | Unique `(provider, calendarID, externalTaskID)`; source/account scope, accepted revision, UID, ETag, and projection baseline |
+| `taskMutations` (`task_mutations`) | Actor-scoped mutation ledger, including exact fork outcomes | Primary key `(actorID, mutationID)`; no task FK so a tombstone cannot erase intent identity; user removal purges it |
+| `taskOutbox` (`task_outbox`) | Immutable destination operations, leases, order, uncertainty, and delivery evidence | Unique `(actorID, mutationID, position)`; no task/calendar/source FK, so accepted deletes and uncertain creation survive lifecycle cleanup |
+
+The outbox's connection-owner FK clears that owner's private evidence on user
+removal. Evidence for surviving foreign destinations is retained. HTTP receipts
+serialize current authorized reads and sanitized statuses, not the retained
+payload or remote address. See [task delivery](/docs/architecture/sync/#task-delivery-and-provider-projections)
+and the [task API](/docs/reference/api/#tasks).
+
 ### 5. External sync (provider-agnostic)
 
 | Table | Purpose | Unique constraint |
 | --- | --- | --- |
 | `externalCalendars` | maps a Musubi calendar ↔ a provider calendar | `(provider, accountID, externalCalendarID)` **and** `(calendarID)` |
 | `externalEvents` | maps a Musubi event ↔ a provider event | `(provider, calendarID, externalEventID)` |
+| `eventOutbox` | durable event provider operations and delivery evidence | actor/mutation/position identity; separate from ordinary event mappings |
+| `externalTasks` | maps a canonical task ↔ a scoped provider projection | `(provider, calendarID, externalTaskID)` |
 | `caldavAccounts` | CalDAV credentials | `(userID, serverUrl, username)` — multiple accounts per user |
 
 The `(calendarID)` scoping on `externalEvents` is deliberate: two users can mirror the *same* Google calendar (e.g. a shared team calendar) and each keeps an independent mapping. CalDAV passwords in `caldavAccounts.encryptedPassword` are **AES-GCM encrypted at the app layer** — the DB never sees plaintext. Full detail in the [Sync guide](/docs/architecture/sync/).
@@ -158,6 +214,21 @@ atomic. Use the ordering and recovery semantics in the
 ## Migration workflow
 
 Migrations are generated by drizzle-kit from the schema diff and committed as SQL.
+
+The v0.2.2 task migrations are additive: **0080** backfills home, memberships,
+revision, source-scoped mapping metadata, mutation ledger, and outbox;
+**0081** adds the task/source lookup index; **0082** adds a nullable fork request
+fingerprint; **0083** records committed/noncommitted fork outcomes. Existing
+task UUIDs, provider IDs, UIDs, ETags, tombstones, and `SEQUENCE` are preserved.
+Equal provider UIDs do not merge logical tasks. Historical receipts without a
+fork fingerprint do not gain replay permission.
+
+Use `pnpm test:db:tasks` against a disposable database to verify migration
+preservation and ownership/CAS/lifecycle behavior. See
+[Commands](/docs/reference/commands/) for test setup and the release-specific
+records under `docs/releases/` for deployment requirements. A successful startup
+migrator log is not independent proof of a production migration journal or
+preserved row counts.
 
 <Steps>
 

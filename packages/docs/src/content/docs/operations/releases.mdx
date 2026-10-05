@@ -1,0 +1,117 @@
+---
+title: Releases & Upgrades
+description: Recorded release state, mobile compatibility, and the database upgrade and recovery boundary.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Use this page to distinguish published artifacts, observed deployments and
+remaining acceptance. Provider support has its own
+[capability matrix](/docs/operations/capabilities/); an API version or a green
+build does not certify every provider operation.
+
+## v0.2.2 — recorded 5 October 2026
+
+The [v0.2.2 release](https://github.com/frgtn-dot-dev/musubi/releases/tag/v0.2.2)
+is published from commit `aea392d0f6bf343794ff7eb6c056cf7d7d645690`.
+It includes the Tailwind v4/shadcn web migration, notifications, shared tasks,
+Google/CalDAV recovery fixes and the accepted Outlook operation slices.
+
+| Evidence | Recorded state |
+| --- | --- |
+| Source and automated checks | [PR #331](https://github.com/frgtn-dot-dev/musubi/pull/331) merged; final feature Quality passed 20/20 checks and [publication](https://github.com/frgtn-dot-dev/musubi/actions/runs/37290478718) passed 28/28 jobs |
+| API/web artifacts | Both images published for linux/amd64 and linux/arm64; their OCI revision labels match the release commit |
+| Hosted API | Public health and server identity returned HTTP 200, `ok=true`, version 0.2.2 and minimum client 0.2.0 at 13:06 CEST on 5 October |
+| Deployment observation | API, web and database were healthy; API/web use `latest`. Their immutable runtime digests were not independently read |
+| Database | Startup logged a successful migrator return. The actual migration journal, data preservation and delivery queues were not inspected |
+| Android | Signed 0.2.2 / versionCode 66; operator reports manual Play upload and submission for review. Approval and general availability are not yet recorded |
+| iOS | Signed 0.2.2 / build 19; App Store Connect upload finished. Operator reports opening the app on an iPad; its installed build number and full functional acceptance are not recorded |
+| Live acceptance | Two-user shared-task tests, live Google/CalDAV task projections, physical-device workflows and alert receiver delivery remain open |
+
+Published multi-platform image index digests:
+
+| Image | Digest |
+| --- | --- |
+| `frgtndev/musubi:0.2.2` | `sha256:06967c572df8b8635b9a8cd67e8b392740145d45c34282b7d0cb8f4c88696773` |
+| `frgtndev/musubi-web:0.2.2` | `sha256:30596db6a77570c16c22a5df9153c75be63d79c888ef08286b00af2ed18a441e` |
+
+These identify published artifacts, not proof of which digest a running
+container loaded. Keep installed device versions and connected peer versions
+separate from EAS build metadata. The documentation service also deploys
+separately from API/web; a successful docs build does not establish its running
+revision.
+
+## Mobile task compatibility
+
+Every task write against the 0.2.2 API needs the 0.2.2 client, including create,
+edit, completion, priority and deletion. Older clients keep task reads and
+compatible calendar/event features. Their legacy task writes return HTTP 426
+before provider preflight or local commit.
+
+Current clients use `/api/v1/task-mutations`. On an older API this namespace is
+absent and returns 404; clients retain the draft and never retry through a
+legacy writer. Global client and federation peer minimums remain 0.2.0.
+
+Installing the mobile update requires signing in again. Credentials and local
+content are isolated by full server origin and current user; legacy ambiguous
+credentials/cache are cleared before authentication. There is no OTA update
+channel: users must install the store/TestFlight build. During a distribution
+gap, use the current web client for task changes.
+
+For device acceptance, record the installed product version and platform build
+number, then verify login after a process restart, ordinary and shared-task
+writes, offline/reconnect, provider delivery and supported OS reminders. Opening
+the app alone does not complete these checks.
+
+## Database upgrade and recovery
+
+The 0.2.1 database journal ends at 0078. The new release adds 0079–0084, including
+task home/memberships, revision admission, durable delivery and fork outcomes.
+The API acquires its singleton lock before running the migrator and listening.
+Stop the previous API before replacing it and run one replica.
+
+<Aside type="caution" title="An image-only downgrade is unsafe">
+After migration 0080, the older task writer does not maintain canonical
+memberships, revision checks or task delivery. Recovery needs a compatible
+forward fix, or the exact prior images together with a verified pre-upgrade
+database restore. Restoring the database cannot undo changes already delivered
+to a provider. Do not rewrite migration history or blindly replay uncertain
+creates.
+</Aside>
+
+Before an upgrade, retain a verified restore, prior image digests, the migration
+journal and aggregate data/queue counts. Afterward, compare the journal and
+preservation evidence and run authenticated task/event smoke tests with an
+approved test account. Keep private data and credentials out of release records.
+
+The maintained [0.2.2 deployment and recovery runbook](https://github.com/frgtn-dot-dev/musubi/blob/main/docs/releases/0.2.2-deployment.md)
+contains migration details and content-free SQL aggregates. Follow
+[self-hosting](/docs/guides/self-hosting/) for stack setup and
+[observability](/docs/operations/observability/) for queue evidence.
+
+## Keep activation separate
+
+Preserve existing Core gates during an upgrade. Historical 0.2.0 activation
+examples are not settings to copy into a new deployment. Do not newly enable
+iCloud attendee RSVP, provider reminders, CalDAV alarms or Google availability
+without their accepted live/device evidence and an operator decision.
+
+Shared-task writes have no rollout flag. Disabling scheduled external sync does
+not prevent request-triggered task delivery and is not a task-write kill switch.
+A local committed receipt proves the Musubi transaction; inspect destination
+delivery separately. See [shared tasks](/docs/guides/shared-tasks/).
+
+## Release record checklist
+
+For each release, retain:
+
+- accepted source SHA and published API/web digests;
+- actual running digests/revisions and the pre/post migration journal;
+- backup/restore evidence and content-free preservation/queue counts;
+- existing capability decisions, without secret configuration values;
+- exact Android/iOS artifacts and installed device versions;
+- authenticated smoke and independent provider readback results;
+- explicitly deferred checks and their owner-approved rollout decision.
+
+Update this record from observed results. Preserve dated audits as historical
+evidence rather than treating them as the current feature list.

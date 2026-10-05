@@ -1,0 +1,139 @@
+---
+title: Shared tasks
+description: Share one task across calendars, choose between a live link and an independent copy, and understand permissions and provider delivery.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+In Musubi v0.2.2, a task can appear in several calendars while keeping one
+title, status, and completion history. This guide is for people using tasks in
+the web or mobile app, and contributors who need to understand the supported
+sharing flow.
+
+## One task, one home
+
+The calendar chosen when a task is created is its **home**. Owners and editors
+of that calendar can edit the task, complete or reopen it, and delete it
+everywhere. Linking it elsewhere does not move its home.
+
+Someone who can read another linked calendar can see the task there. Editing
+rights on that secondary calendar allow managing its link, but do not allow
+changing the shared task's content or completion status. To let another person
+complete the same task, give them an editor role on its home calendar through
+the existing calendar sharing flow.
+
+Musubi shows the task once in a combined list, search result, or calendar view,
+even when several of its calendars are visible. Only calendars the reader can
+access are listed in the task detail.
+
+## Link, copy, or remove
+
+| Action | What happens | Permission needed |
+| --- | --- | --- |
+| **Link to another calendar** | The same task becomes visible in the destination. Future home changes apply to the shared task. | Current source read access and editing rights on a supported destination |
+| **Make an independent copy** | A new task gets its own identity, home, status, and future changes. | Current source read access and editing rights on a task-capable destination |
+| **Remove from a secondary calendar** | That membership is removed; the task remains in its home and other calendars. Supported provider destinations receive a delete operation. | Editing rights on that secondary calendar |
+| **Delete** | The logical task is removed everywhere and deletes are queued for its provider copies. | Editing rights on the home calendar |
+
+The home cannot be removed as a secondary link. Deleting its calendar deletes
+tasks homed there; deleting a secondary calendar does not transfer ownership
+or delete the task in its remaining calendars.
+
+<Steps>
+
+1. **Open a task.** Check its calendar memberships; the home is marked
+   **Home** when it is visible to you.
+
+2. **Open sharing actions.** On the web, use **More task actions**. On mobile,
+   use **Share**.
+
+3. **Choose a live link or an independent copy.** Select a destination from the
+   available calendars. Musubi offers only destinations allowed by your current
+   permissions and the provider's supported behavior.
+
+4. **Check delivery when a provider is involved.** A saved task can still have
+   an unfinished remote operation. Mobile exposes **Delivery** in the task
+   detail; the web notification center includes unresolved task deliveries.
+
+</Steps>
+
+## Supported destinations
+
+| Destination | Live link | Independent copy | Important limit |
+| --- | --- | --- | --- |
+| Native Musubi calendar | Yes | Yes | Calendar member roles control access |
+| Google Tasks list | Yes, when task writes are available | Yes | Due dates are calendar days; Google does not preserve an exact due time |
+| Microsoft To Do list | No new live links | Yes, when ordinary task creation is available | Secondary conditional update/delete behavior is not verified |
+| CalDAV VTODO collection | Yes, with verified read/write access | Yes | The collection must support tasks; an event-only calendar is insufficient |
+| Calendar on another Musubi instance | No cross-instance task linking | Not offered as a local destination | Local task memberships cannot reference another instance's calendars |
+
+Provider support and account access are separate checks. A disconnected,
+read-only, or task-disabled destination may be unavailable even when its
+provider supports tasks. Recurring tasks can be linked or copied to native
+Musubi calendars; clients do not offer external sharing targets for them.
+
+A Musubi link does not change Google, Microsoft, or CalDAV sharing permissions.
+Sharing a calendar within Musubi and changing a provider's native access list
+are separate operations.
+
+An older Microsoft secondary membership appears as **Unsupported link**.
+Make an independent copy in a supported calendar before removing that Musubi
+membership. The Microsoft item remains in To Do; manage or delete that separate
+item there. **Retry** cannot enable unsupported provider writes.
+
+## Saved locally versus delivered remotely
+
+Musubi first commits the canonical task and durable provider operations
+together. A successful save means the local change exists; it does not promise
+that every provider has acknowledged it. Delivery status survives an API restart
+and can remain available after a task or calendar is removed.
+
+| Delivery situation | What to do |
+| --- | --- |
+| Pending or attempting | Refresh delivery status; the background worker is processing the saved operation |
+| Reconnect required | Reauthorize the affected account, then check its delivery status |
+| Conflict or unsupported write | Refresh and inspect the destination; these are not safe blind retries |
+| Unconfirmed creation | Check the provider before creating another copy; a lost response may have hidden a successful creation |
+| Retry offered | Retry the exact saved operation; the server checks current rights and delivery evidence again |
+
+An uncertain Google or Microsoft creation without a remote address cannot be
+repeated safely. CalDAV can reconcile a deterministic resource address by
+reading it. Reconciliation is evidence gathering, not a guarantee that every
+failed operation can recover automatically.
+
+## Refresh, access changes, and app versions
+
+If another editor changes the task, Musubi refuses a save based on the old
+revision instead of overwriting it. Keep your draft, refresh, and review the
+current task before saving again. Revoked provider access can also invalidate
+an open task or clear private source content. Restored access needs a successful
+authorized refresh before content edits, links, or copies become available.
+
+<Aside type="caution">
+Use a current v0.2.2 web/mobile client with a v0.2.2 API for task writes. Older
+clients can still read tasks and use compatible features, but their task writes
+receive **Update Musubi to save tasks**. A new client against an older API also
+cannot save tasks. Keep the draft and update the required side; clients must
+not fall back to the old write route.
+</Aside>
+
+After an interrupted independent-copy request, the client retries the same
+copy intent to recover its result. Do not deliberately start another copy
+until its outcome is known. The server's result ledger is durable, while the
+client's pending intent is held in session memory; browser reloads and app
+restarts do not promise to retain that pending intent.
+
+## For contributors
+
+The [HTTP API](/docs/reference/api/#tasks) defines read, mutation, receipt, and
+delivery shapes. The [data model](/docs/architecture/data-model/#canonical-tasks)
+defines home authority and membership storage; the
+[sync architecture](/docs/architecture/sync/#task-delivery-and-provider-projections)
+defines projection and recovery boundaries.
+
+Sources of truth are `packages/types/src/task.ts`,
+`packages/calendar/src/task-sharing.ts`, `apps/api/src/task_routes.ts`,
+`apps/api/src/handlers/tasks.ts`, and the task query/outbox modules in
+`packages/db/src/queries/`. Release validation records live separately under
+`docs/releases/`; passing automated tests does not establish a live two-user
+or provider acceptance result.

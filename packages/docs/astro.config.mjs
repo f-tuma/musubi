@@ -59,6 +59,7 @@ export default defineConfig({
 					label: "Start Here",
 					items: [
 						{ label: "Introduction", slug: "guides/introduction" },
+						{ label: "Shared Tasks", slug: "guides/shared-tasks" },
 						{ label: "Run Locally", slug: "guides/running-locally" },
 						{ label: "Codebase Onboarding", slug: "guides/onboarding" },
 						{ label: "Troubleshooting", slug: "guides/troubleshooting" },
@@ -102,6 +103,8 @@ export default defineConfig({
 					collapsed: true,
 					items: [
 						{ label: "Self-Hosting", slug: "guides/self-hosting" },
+						{ label: "Capabilities & Verification", slug: "operations/capabilities" },
+						{ label: "Releases & Upgrades", slug: "operations/releases" },
 						{ label: "Observability", slug: "operations/observability" },
 						{ label: "Android Widgets", slug: "guides/widgets" },
 						{

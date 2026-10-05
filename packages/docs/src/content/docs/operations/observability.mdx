@@ -52,8 +52,37 @@ tokens therefore do not become high-cardinality labels.
 classes. `stage` is one of `account`, `discovery`, `push`, or `scheduler`;
 provider is a known provider name, `all`, or `unknown`.
 
+Task delivery failures also contribute to the bounded `stage="push"` counter.
+That counter does not distinguish task/event queue depth or prove delivery of an
+individual mutation.
+
+### Delivery queues
+
+| Metric | Scope |
+| --- | --- |
+| `musubi_event_outbox_operations{provider,status}` | Unresolved event operations at the last successful event-drainer refresh |
+| `musubi_event_outbox_oldest_seconds{provider,status}` | Age of the oldest unresolved event operation at that refresh |
+
+These metrics describe **events only**. v0.2.2 does not export task-outbox backlog,
+oldest age or collector-success/freshness gauges. `musubi_tasks` counts task
+inventory, not pending provider delivery.
+
+The event drainer resets its labeled gauges before applying the returned rows.
+An empty result therefore removes series rather than emitting an explicit zero.
+The same absence can occur before the first refresh or when the scheduler is not
+running. Neither missing series nor a healthy `musubi_usage_snapshot_success`
+proves an empty event/task queue: the usage collector does not read outboxes.
+Treat a flat dashboard as inconclusive until queue state and collection freshness
+have been independently verified.
+
+Use authorized delivery receipts for individual writes. A read-only database
+aggregate can verify backlog without collecting task/event content; obtain the
+deployment owner's permission before querying production. Keep addresses,
+payloads, provider validators and raw errors out of public reports.
+
 `musubi_scheduled_task_skips_total{task}` increments when `cleanup` or
-`external_sync` is still running at its next tick. One increment means overlap
+`external_sync` (also `event_outbox`, `reminders` or `notifications`) is still
+running at its next tick. One increment means overlap
 was prevented, not that two runs executed. Investigate duration, provider
 latency, and interval sizing; the shipped `MusubiScheduledTaskOverlap` alert
 fires on any increase.
@@ -178,9 +207,12 @@ sum(rate(musubi_http_requests_total[5m]))
 3. **Separate local persistence from provider delivery.**
 
    Calendar-level provider mutations are attempted before the local mirror
-   changes. Event provider push is currently best-effort after local
-   persistence; a successful API response can therefore still require
-   reconciliation. See [Sync failure semantics](/docs/architecture/sync/#write-path-and-failure-semantics).
+   changes. Accepted event and task mutations persist provider work in durable
+   outboxes; HTTP success is local acceptance, not proof of remote delivery.
+   Inspect the authorized delivery receipt. A lost CREATE response may remain
+   unconfirmed and cannot be blindly replayed. See
+   [Sync failure semantics](/docs/architecture/sync/#write-path-and-failure-semantics)
+   and [Shared tasks](/docs/guides/shared-tasks/).
 
 4. **Inspect the account and cursor.**
 
@@ -320,3 +352,26 @@ configure your Alertmanager and receivers. Validate before rollout with
 `promtool check rules /etc/prometheus/musubi-alerts.yml`. Import dashboards into a
 Grafana instance with access controls; importing a dashboard does not deploy or
 activate the collector on an existing API image.
+
+`EXTERNAL_SYNC_INTERVAL_MIN` also controls scheduled outbox recovery. A positive
+value enables the startup drain and the 15-second event/task outbox worker as
+well as provider polling. A value of `0` disables those scheduled recovery
+paths; request-triggered delivery wakeups remain, but they do not establish that
+retained work will drain after a restart. Confirm this setting through permitted
+deployment metadata; do not expose environment secrets during an audit.
+
+### Deployment and receiver verification
+
+Repository validation proves that the shipped assets are syntactically valid and
+refer to implemented metrics. It does not establish which rules, retention or
+receivers are installed in a deployment. Inspect both Prometheus rules and
+Grafana-managed rules; one engine can have no rules while the other has active
+configuration. An `inactive`/`Normal` rule is not a successful notification test.
+
+The production read-only review on 5 October 2026 observed a healthy API scrape,
+a successful usage snapshot, and two Grafana-managed rules in `Normal` state.
+Prometheus reported no alert rules. Receiver delivery was **not tested**, and
+these observations did not certify empty delivery queues or successful live
+shared-task provider round trips. Operational acceptance still requires an
+authorized QA notification received by its intended recipient. Do not trigger
+alerts or change routing merely to inspect an existing deployment.

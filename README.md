@@ -28,6 +28,7 @@
 Musubi brings shared calendars, events, and tasks into one place, with a desktop web client and a native mobile app. Connect existing calendars or host a server of your own.
 
 - **Share an event across calendars.** Link the same event to several Musubi calendars, so the people involved see one shared event. Calendar roles and event ownership determine who can edit it.
+- **Share a task with the same permissions.** Link one task into several calendars; the home calendar controls editing and completion. An independent copy has its own identity and home.
 - **Keep different parts of life together.** Create pages for work, family, or personal plans, with their own calendar and item-type filters.
 - **Choose where your data lives.** Run the web client and API yourself with Docker. The source is MIT-licensed.
 
@@ -40,7 +41,7 @@ Musubi (結び) means *a knot or connection* — the idea behind bringing people
 | **Shared calendars** | Invite links, owner/editor/viewer roles, ownership transfer, and live membership updates |
 | **Events across calendars** | Link one event into multiple Musubi calendars, or make an independent copy |
 | **Calendar views** | Day, week, month, and agenda on desktop web; date and time pickers, drag-to-create, and side-panel editing |
-| **Tasks** | Status, priority, dates, and recurrence; list and Kanban layouts on web, with tasks also shown in calendar views when dated |
+| **Tasks** | Status, priority, dates and home-controlled sharing across calendars; independent copies, delivery status, list/Kanban and dated calendar views. Recurring tasks cannot have multiple provider projections |
 | **Meetings** | Attendee and invitation details; provider-supported RSVP and organizer editing when enabled on the server |
 | **Personal pages** | Choose calendars and independently show events, tasks, and meetings |
 | **External sync** | Google Calendar, Microsoft Outlook, and CalDAV connections, including iCloud; multiple accounts, recurrence, and read-only calendars |
@@ -52,12 +53,18 @@ Musubi (結び) means *a knot or connection* — the idea behind bringing people
 
 | Provider | Events | Tasks |
 | --- | --- | --- |
-| Google | Google Calendar | Google Tasks, with separate optional authorization |
-| Microsoft | Outlook / Microsoft 365 | Microsoft To Do, with separate optional authorization |
+| Google | Google Calendar | Google Tasks; task scope requested by web connections and optional in native connection setup |
+| Microsoft | Outlook / Microsoft 365 | To Do home tasks and independent copies; new live task links are excluded. Task scope requested by web connections and optional in native connection setup |
 | Apple / iCloud | CalDAV calendars | Depends on the task collections exposed by the server |
 | Other CalDAV servers | Supported calendar collections | Collections that support VTODO |
 
-Sync capabilities depend on the provider, permissions, and item type. A meeting you attend does not have the same editing permissions as one you organize. Some provider writes and Google free/busy availability are separately enabled by the server administrator; they are not all on by default. See the [sync documentation](https://musubi.pro/docs/architecture/sync/) and [activation guide](docs/releases/core-0.2.0-activation.md).
+Sync capabilities depend on the provider, permissions, and item type. A meeting you attend does not have the same editing permissions as one you organize. Some provider writes and Google free/busy availability are separately enabled by the server administrator; they are not all on by default. See [shared tasks](https://musubi.pro/docs/guides/shared-tasks/) and the current [capability matrix](https://musubi.pro/docs/operations/capabilities/). The [Core 0.2.0 activation record](docs/releases/core-0.2.0-activation.md) preserves the earlier decision and is not a new activation instruction.
+
+The current API/web release is **0.2.2**. Every native task write needs the
+0.2.2 mobile client; older clients retain task reads and compatible calendar/event
+features. Installing the mobile update requires signing in again. See
+[release status and upgrade precautions](https://musubi.pro/docs/operations/releases/)
+for store distribution and the database recovery boundary.
 
 > **Pre-1.0 and actively developing.** This README describes the current source branch; published app and server releases may lag behind it. Google Tasks authorization is still awaiting Google verification for the hosted project. Expect rough edges and [report issues](https://feedback.musubi.pro).
 
@@ -99,7 +106,7 @@ The client uses custom native modules, so it needs a development build rather th
 | Layer | Tech |
 | --- | --- |
 | Mobile client | React Native · Expo · Expo Router · Zustand · Reanimated · custom calendar engine (`apps/client/components/cal`) · native Android `RemoteViews` widgets bridged through a local Expo module |
-| Web client | React · TanStack Router/Query · Vite · Radix primitives |
+| Web client | React · TanStack Router/Query · Vite · Tailwind v4 · Musubi-styled shadcn/Radix components |
 | Server | Express 5 · [Better Auth](https://www.better-auth.com/) · Zod · Server-Sent Events |
 | Data | Postgres · [Drizzle ORM](https://orm.drizzle.team/) · SQLite on-device cache with delta sync |
 | Sync engine | Provider-agnostic adapter interface (`CalendarAdapter`) — Google + Microsoft + CalDAV today, yours tomorrow |

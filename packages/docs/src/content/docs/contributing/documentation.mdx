@@ -6,8 +6,10 @@ description: Keep Musubi's Starlight documentation accurate, navigable, testable
 import { Aside, Steps } from '@astrojs/starlight/components';
 
 The Starlight site in `packages/docs/` is the canonical project documentation.
-Files under the repository-root `docs/` exist only as compatibility pointers or
-special-purpose release records.
+Files under the repository-root `docs/` hold implementation contracts, web UI
+rules, release records, dated audits and compatibility pointers. Reader-facing
+pages link to those details where needed; current behavior belongs in the site
+as well as in its source contract.
 
 ## Information architecture
 
@@ -79,6 +81,11 @@ slightly different copies.
   directories.
 - State prerequisites and expected output.
 - Separate verified current behavior from roadmap ideas.
+- Verify the production server as well as the build when changing deployment
+  code. The pinned Node adapter's startup banner is incompatible with Astro
+  7.2.3 and newer; the docs Dockerfile sets `ASTRO_NODE_LOGGING=disabled` to skip
+  only that banner. A direct `node dist/server/entry.mjs` smoke run needs the
+  same setting. Request/error logs remain enabled.
 - Name the source file or subsystem when a statement is code-sensitive.
 - Document failure semantics, irreversible steps, secret handling, and provider
   limits next to the happy path.
@@ -117,6 +124,18 @@ Update documentation in the same change when modifying:
 | Provider mapping/limit | Provider guide and sync architecture |
 | Timer, metric, log, dashboard | Observability runbook and self-hosting |
 | Native module or build variable | Local setup, authentication, widget/release docs |
+
+When a change adds a task route or provider projection, review the shared-task
+guide, HTTP API, data model, sync architecture and affected provider page
+together. Keep [capabilities and verification](/docs/operations/capabilities/)
+and [release status](/docs/operations/releases/) explicit about implemented,
+automatically tested, live-tested and deployed behavior. Preserve dated audits
+as evidence rather than editing their historical results into current claims.
+
+The docs build validates rendering and search generation. It does not compare
+prose with the route registrar, prove that the documentation service deployed
+the accepted revision, or certify provider/device behavior. Review those claims
+against their named sources and inspect the published site after deployment.
 
 ## Review checklist
 
