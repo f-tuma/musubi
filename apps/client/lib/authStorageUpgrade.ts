@@ -2,7 +2,7 @@ import * as SecureStore from "expo-secure-store";
 import { migrate } from "drizzle-orm/expo-sqlite/migrator";
 import migrations from "@/drizzle/migrations";
 import { db } from "@/services/db";
-import { resetLocalAccountState } from "./signOut";
+import { prepareAccountCache } from "./accountCache";
 
 const STORAGE_VERSION_KEY = "musubi_auth_storage_version";
 const STORAGE_VERSION = "2";
@@ -22,7 +22,7 @@ async function upgrade() {
   // A fresh install has no cache tables yet. Finish the normal SQLite migrations
   // before resetting either it or the older installation's reminder receipts.
   await migrate(db, migrations);
-  await resetLocalAccountState({ requireNotificationCancellation: true });
+  await prepareAccountCache(null);
   // A failed wipe must retry at the next launch, before creating any auth client
   // or allowing a different account to hydrate the previous account's data.
   await SecureStore.setItemAsync(STORAGE_VERSION_KEY, STORAGE_VERSION);

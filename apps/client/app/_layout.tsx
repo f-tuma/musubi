@@ -23,6 +23,7 @@ import * as Linking from 'expo-linking';
 import { File } from 'expo-file-system';
 import { parseICS } from '@/lib/ics';
 import { useImportStore } from '@/store/useImportStore';
+import { useAccountCacheReady } from '@/hooks/useAccountCacheReady';
 import { fetchWithTimeout } from '@/lib/network';
 
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
@@ -70,6 +71,7 @@ function AppContent() {
   });
 
   const { data: session, isPending } = authClient.useSession();
+  const accountCacheReady = useAccountCacheReady({ apiUrl, userId: session?.user.id, isPending, migrated });
 
   const [versionChecked, setVersionChecked] = useState(false);
   const [updateRequired, setUpdateRequired] = useState(false);
@@ -93,7 +95,7 @@ function AppContent() {
       .finally(() => setVersionChecked(true));
   }, [apiUrl]);
 
-  const ready = (loaded || !!error) && !isPending && versionChecked && migrated;
+  const ready = (loaded || !!error) && !isPending && versionChecked && migrated && accountCacheReady;
 
   const everReady = useRef(false);
   if (ready) everReady.current = true;
@@ -137,6 +139,7 @@ function AppContent() {
     return () => sub.remove();
   }, []);
 
+  if (!accountCacheReady) return null;
   if (!everReady.current) return null;
 
   if (updateRequired) {

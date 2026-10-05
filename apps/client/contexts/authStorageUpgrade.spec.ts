@@ -8,7 +8,7 @@ const h = vi.hoisted(() => ({
   effects: [] as (() => void | (() => void))[], server: null as unknown,
   createClient: vi.fn(), clearWidget: vi.fn(), cancelReminders: vi.fn(),
   widget: null as string | null, scheduled: new Set<string>(),
-  widgetFailure: false, notificationFailure: false, markerFailure: false,
+  widgetFailure: false, notificationFailure: false, markerFailure: false, ownerMarkerFailure: false,
   cancellationGate: null as Promise<void> | null,
 }));
 vi.mock("react", async original => ({
@@ -25,6 +25,7 @@ vi.mock("expo-secure-store", () => ({
   getItemAsync: async (key: string) => h.storage.get(key) ?? null,
   setItemAsync: async (key: string, value: string) => {
     if (h.markerFailure && key === "musubi_auth_storage_version") throw new Error("marker write failed");
+    if (h.ownerMarkerFailure && key === "musubi_account_cache_owner") throw new Error("owner marker write failed");
     h.storage.set(key, value);
   },
   deleteItemAsync: async (key: string) => { h.storage.delete(key); },
@@ -55,6 +56,7 @@ const { db, sqlite } = await import("@/services/db");
 const { notificationsTable } = await import("@/db/schema");
 const { ServerProvider } = await import("./ServerContext");
 const { prepareAuthStorage } = await import("@/lib/authStorageUpgrade");
+const { accountCacheOwner, prepareAccountCache } = await import("@/lib/accountCache");
 const { useEventsStore } = await import("@/store/useEventsStore");
 const { useCalendarsStore } = await import("@/store/useCalendarsStore");
 const { useSettingsStore } = await import("@/store/useSettingsStore");
@@ -89,7 +91,7 @@ beforeEach(() => {
   database.exec("DROP TABLE IF EXISTS events; DROP TABLE IF EXISTS sync_meta; DROP TABLE IF EXISTS notifications_table; DROP TABLE IF EXISTS __drizzle_migrations;");
   h.storage.clear(); h.effects = []; h.server = null;
   h.widget = null; h.scheduled.clear(); h.cancellationGate = null;
-  h.widgetFailure = false; h.notificationFailure = false; h.markerFailure = false;
+  h.widgetFailure = false; h.notificationFailure = false; h.markerFailure = false; h.ownerMarkerFailure = false;
   vi.clearAllMocks();
   h.createClient.mockReturnValue({ getSession: async () => ({ data: { user: { id: "account-b" } } }) });
   useEventsStore.getState().resetEvents();
@@ -191,5 +193,80 @@ it("retired and replacement bootstrap effects share a deferred wipe without open
   release(); await started();
   expect(h.clearWidget).toHaveBeenCalledOnce();
   expect(h.cancelReminders).toHaveBeenCalledOnce();
+  expect(await cacheGetAllEvents()).toEqual([]);
+});
+
+
+const ownerA = accountCacheOwner("https://home.example.test", "account-a");
+const ownerB = accountCacheOwner("https://home.example.test", "account-b");
+async function ownedAccountA() {
+  await migrate(db, migrations);
+  await prepareAccountCache(ownerA);
+  await seedAccountA();
+  h.storage.set("musubi_auth_storage_version", "2");
+  h.clearWidget.mockClear(); h.cancelReminders.mockClear();
+}
+
+it("clears cold expired A before welcome and a fresh B even after the v2 upgrade marker exists", async () => {
+  await ownedAccountA();
+  start(); await started(); // Existing v2 startup retains A until session resolves.
+  expect((await cacheGetAllEvents())[0].title).toBe(event.title);
+  await prepareAccountCache(null); // Root resolved expired cookie to signed out.
+  expect(await cacheGetAllEvents()).toEqual([]);
+  expect(h.widget).toBeNull(); expect(h.scheduled.size).toBe(0);
+  await prepareAccountCache(ownerB);
+  useCalendarsStore.getState().loadCalendars(await cacheGetCalendars());
+  useEventsStore.getState().loadEvents(await cacheGetAllEvents());
+  expect(useEventsStore.getState().events).toEqual([]);
+  expect(useCalendarsStore.getState().calendars).toEqual([]);
+  expect(h.storage.get("musubi_account_cache_owner")).toBe(ownerB);
+});
+
+it("preserves the proven same actor's offline mirror, widget and reminders across normalized-origin restarts", async () => {
+  await ownedAccountA();
+  await prepareAccountCache(accountCacheOwner(" HTTPS://HOME.EXAMPLE.TEST/path ", "account-a"));
+  expect((await cacheGetAllEvents()).map(value => value.title)).toEqual([event.title]);
+  expect((await cacheGetCalendars())[0].name).toBe(calendar.name);
+  expect(h.widget).toBe(event.title); expect(h.scheduled.has("account-a-reminder")).toBe(true);
+  expect(h.clearWidget).not.toHaveBeenCalled(); expect(h.cancelReminders).not.toHaveBeenCalled();
+});
+
+it.each(["different actor", "different origin"])("discards the old mirror for a %s instead of sharing global cache", async boundary => {
+  await ownedAccountA();
+  const replacement = boundary === "different actor" ? ownerB : accountCacheOwner("https://other.example.test", "account-a");
+  await prepareAccountCache(replacement);
+  expect(await cacheGetAllEvents()).toEqual([]);
+  expect(await cacheGetCalendars()).toEqual([]);
+  expect(h.widget).toBeNull(); expect(h.scheduled.size).toBe(0);
+  expect(h.storage.get("musubi_account_cache_owner")).toBe(replacement);
+});
+
+it.each(["widget", "notification", "owner-marker"])("does not mark the replacement owner prepared after failed %s cleanup", async failure => {
+  await ownedAccountA();
+  h.widgetFailure = failure === "widget";
+  h.notificationFailure = failure === "notification";
+  h.ownerMarkerFailure = failure === "owner-marker";
+  await expect(prepareAccountCache(ownerB)).rejects.toThrow();
+  expect(h.storage.get("musubi_account_cache_owner")).toBe(ownerA);
+  h.widgetFailure = false; h.notificationFailure = false; h.ownerMarkerFailure = false;
+  await prepareAccountCache(ownerB);
+  expect(h.storage.get("musubi_account_cache_owner")).toBe(ownerB);
+  expect(await cacheGetAllEvents()).toEqual([]);
+  expect(h.widget).toBeNull(); expect(h.scheduled.size).toBe(0);
+});
+
+it("orders overlapping owner changes and shares the current owner's deferred cleanup", async () => {
+  await ownedAccountA();
+  let release!: () => void;
+  h.cancellationGate = new Promise<void>(resolve => { release = resolve; });
+  const first = prepareAccountCache(ownerB);
+  await vi.waitFor(() => expect(h.cancelReminders).toHaveBeenCalledOnce());
+  const ownerC = accountCacheOwner("https://other.example.test", "account-c");
+  const current = prepareAccountCache(ownerC);
+  expect(prepareAccountCache(ownerC)).toBe(current);
+  expect(h.storage.get("musubi_account_cache_owner")).toBe(ownerA);
+  release(); await Promise.all([first, current]);
+  expect(h.storage.get("musubi_account_cache_owner")).toBe(ownerC);
+  expect(h.cancelReminders).toHaveBeenCalledTimes(2);
   expect(await cacheGetAllEvents()).toEqual([]);
 });

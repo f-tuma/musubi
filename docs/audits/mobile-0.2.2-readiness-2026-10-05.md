@@ -22,6 +22,10 @@ as validation of the new fixes.
 - The first startup using the new auth namespace migrates the local schema,
   clears legacy account data, widgets and scheduled reminders, and only then
   opens the auth client. Cleanup failures cannot mark the upgrade complete.
+- The global cache is assigned to a normalized server origin and user ID.
+  Root navigation waits for that owner to be prepared; changed or expired
+  sessions clear old account content before welcome or tab hydration. The same
+  account keeps its offline mirror across restarts.
 - Queued realtime mutations and deferred launch-cache hydration reject retired
   session lifecycles before writing state/cache or starting old-server refreshes.
   Network listeners are renewed for the current server/auth scope.
@@ -39,7 +43,7 @@ races. Source checks and the final CI run are recorded in PR #331.
 
 - Production Android and iOS Metro/Hermes export passed again after the final
   JavaScript/config changes, with the actual TestFlight production configuration.
-  The complete native suite passed: 497 tests across 48 files, plus the standalone
+  The complete native suite passed: 510 tests across 49 files, plus the standalone
   origin-namespace assertions. Typecheck and the full client lint passed
   (zero errors; 66 existing warnings within its unchanged threshold).
 - Isolated Android/iOS `expo prebuild --no-install --platform all` passed.
