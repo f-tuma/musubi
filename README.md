@@ -88,7 +88,7 @@ Follow the public [feedback and roadmap board](https://feedback.musubi.pro) for 
 repository selects the exact pnpm version.
 
 ```sh
-git clone https://github.com/frgtn-dot-dev/musubi.git && cd musubi
+git clone https://github.com/f-tuma/musubi.git && cd musubi
 corepack enable
 pnpm install --frozen-lockfile
 

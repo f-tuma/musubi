@@ -39,7 +39,7 @@ export default defineConfig({
 			customCss: ["./src/styles/custom.css"],
 			editLink: {
 				baseUrl:
-					"https://github.com/frgtn-dot-dev/musubi/edit/main/packages/docs/",
+					"https://github.com/f-tuma/musubi/edit/main/packages/docs/",
 			},
 			lastUpdated: true,
 			social: [
@@ -51,7 +51,7 @@ export default defineConfig({
 				{
 					icon: "github",
 					label: "GitHub",
-					href: "https://github.com/frgtn-dot-dev/musubi",
+					href: "https://github.com/f-tuma/musubi",
 				},
 			],
 			sidebar: [

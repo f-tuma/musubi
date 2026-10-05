@@ -143,7 +143,7 @@ Do not mention ACL management as an implemented feature until all relevant contr
 - [ ] The Google Play listing describes the Calendar and Tasks integration
   available in the published build.
 - [ ] A public account-deletion page explains both in-app deletion and the fallback request process.
-- [ ] Repository links use the canonical `frgtn-dot-dev/musubi` location.
+- [ ] Repository links use the canonical `f-tuma/musubi` location.
 
 ## Homepage copy draft for the current feature boundary
 

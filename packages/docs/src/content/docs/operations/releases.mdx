@@ -12,14 +12,14 @@ build does not certify every provider operation.
 
 ## v0.2.2 — recorded 5 October 2026
 
-The [v0.2.2 release](https://github.com/frgtn-dot-dev/musubi/releases/tag/v0.2.2)
+The [v0.2.2 release](https://github.com/f-tuma/musubi/releases/tag/v0.2.2)
 is published from commit `aea392d0f6bf343794ff7eb6c056cf7d7d645690`.
 It includes the Tailwind v4/shadcn web migration, notifications, shared tasks,
 Google/CalDAV recovery fixes and the accepted Outlook operation slices.
 
 | Evidence | Recorded state |
 | --- | --- |
-| Source and automated checks | [PR #331](https://github.com/frgtn-dot-dev/musubi/pull/331) merged; final feature Quality passed 20/20 checks and [publication](https://github.com/frgtn-dot-dev/musubi/actions/runs/37290478718) passed 28/28 jobs |
+| Source and automated checks | [PR #331](https://github.com/f-tuma/musubi/pull/331) merged; final feature Quality passed 20/20 checks and [publication](https://github.com/f-tuma/musubi/actions/runs/37290478718) passed 28/28 jobs |
 | API/web artifacts | Both images published for linux/amd64 and linux/arm64; their OCI revision labels match the release commit |
 | Hosted API | Public health and server identity returned HTTP 200, `ok=true`, version 0.2.2 and minimum client 0.2.0 at 13:06 CEST on 5 October |
 | Deployment observation | API, web and database were healthy; API/web use `latest`. Their immutable runtime digests were not independently read |
@@ -84,7 +84,7 @@ journal and aggregate data/queue counts. Afterward, compare the journal and
 preservation evidence and run authenticated task/event smoke tests with an
 approved test account. Keep private data and credentials out of release records.
 
-The maintained [0.2.2 deployment and recovery runbook](https://github.com/frgtn-dot-dev/musubi/blob/main/docs/releases/0.2.2-deployment.md)
+The maintained [0.2.2 deployment and recovery runbook](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.2-deployment.md)
 contains migration details and content-free SQL aggregates. Follow
 [self-hosting](/docs/guides/self-hosting/) for stack setup and
 [observability](/docs/operations/observability/) for queue evidence.

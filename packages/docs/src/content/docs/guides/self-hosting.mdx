@@ -47,17 +47,17 @@ gateway config and an env template into an empty directory:
 
 ```sh
 mkdir musubi && cd musubi
-curl -O https://raw.githubusercontent.com/frgtn-dot-dev/musubi/main/docker-compose.yml
-curl -o .env https://raw.githubusercontent.com/frgtn-dot-dev/musubi/main/.env.example
+curl -O https://raw.githubusercontent.com/f-tuma/musubi/main/docker-compose.yml
+curl -o .env https://raw.githubusercontent.com/f-tuma/musubi/main/.env.example
 mkdir -p ops/gateway && curl -o ops/gateway/Caddyfile \
-  https://raw.githubusercontent.com/frgtn-dot-dev/musubi/main/ops/gateway/Caddyfile
+  https://raw.githubusercontent.com/f-tuma/musubi/main/ops/gateway/Caddyfile
 ```
 
 Running API-only? One file, no gateway config — and every `docker compose`
 command below then needs `-f docker-compose.api.yml`:
 
 ```sh
-curl -O https://raw.githubusercontent.com/frgtn-dot-dev/musubi/main/docker-compose.api.yml
+curl -O https://raw.githubusercontent.com/f-tuma/musubi/main/docker-compose.api.yml
 ```
 
 <Aside type="tip">
