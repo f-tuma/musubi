@@ -589,6 +589,13 @@
       "when": 1791024495265,
       "tag": "0083_task_fork_outcome",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1791186094564,
+      "tag": "0084_release_0_2_2_announcement",
+      "breakpoints": true
     }
   ]
 }

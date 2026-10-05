@@ -2,7 +2,8 @@ import { z } from "zod";
 import { compareVersions } from "./version";
 
 /**
- * `YYYY-MM-DD`, s příponou `-2`, `-3` pro druhou a další zprávu téhož dne.
+ * `YYYY-MM-DD`, s číselnou příponou pro další zprávy téhož dne.
+ * Přípona je klíč pro lexikografické pořadí, ne počet zpráv.
  *
  * Datum v id není ozdoba: je to zároveň řazení, takže "novější než poslední
  * viděná" je porovnání řetězců a tabulka nepotřebuje druhý sloupec na pořadí.
@@ -63,13 +64,19 @@ export function mintAnnouncementId(
   dateKey: string,
   taken: readonly string[],
 ): string {
-  if (!taken.includes(dateKey)) return dateKey;
-  for (let suffix = 2; suffix <= taken.length + 2; suffix += 1) {
-    const candidate = `${dateKey}-${suffix}`;
-    if (!taken.includes(candidate)) return candidate;
-  }
-  // Nedosažitelné: nejvýš `taken.length + 1` kandidátů může být obsazených.
-  throw new Error(`No free announcement id for ${dateKey}`);
+  const sameDay = taken.filter(
+    (id) => ANNOUNCEMENT_ID_PATTERN.test(id) &&
+      (id === dateKey || id.startsWith(`${dateKey}-`)),
+  );
+  const newest = sameDay.sort()[sameDay.length - 1];
+  if (!newest) return dateKey;
+  if (newest === dateKey) return `${dateKey}-2`;
+
+  const suffix = newest.slice(dateKey.length + 1);
+  const incremented = (BigInt(suffix) + 1n).toString();
+  // Read markers compare strings. At digit boundaries, 10 sorts before 9;
+  // extending the highest suffix keeps the new ID strictly after every old ID.
+  return `${dateKey}-${incremented > suffix ? incremented : `${suffix}0`}`;
 }
 
 export type AnnouncementSegment =

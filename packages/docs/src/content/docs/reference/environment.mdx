@@ -186,9 +186,11 @@ Register this exact authorized **Web** redirect URI in Google Cloud:
 `EXPO_PUBLIC_*` values are compiled into the app. Changing them requires a new
 native build; restarting the API is not enough. They are identifiers, not
 secrets. `EXPO_PUBLIC_IOS_APP_STORE_URL` is optional for local/development
-builds, which fall back to the Musubi download page. A production EAS build
+builds, which fall back to the Musubi download page. A production iOS EAS build
 requires a direct `https://apps.apple.com/.../id<digits>` URL and fails during
-config evaluation if it is absent or malformed.
+config evaluation if it is absent, malformed, or contains an all-zero app ID.
+Set the real listing in the EAS production environment; the repository does not
+supply a default production listing.
 
 See [Authentication](/docs/architecture/authentication/) and the
 [Google provider guide](/docs/providers/google/).

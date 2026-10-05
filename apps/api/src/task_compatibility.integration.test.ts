@@ -51,7 +51,8 @@ async function main() {
   await new Promise<void>(resolve => legacyServer.once("listening", resolve));
   const legacyOrigin = `http://127.0.0.1:${(legacyServer.address() as { port: number }).port}`;
   try {
-    for (const version of new Set([MIN_CLIENT_VERSION, PRODUCT_VERSION])) {
+    // Keep the released 0.2.1 build in the mixed-rollout matrix after the product bump.
+    for (const version of new Set([MIN_CLIENT_VERSION, "0.2.1", PRODUCT_VERSION])) {
       const rejectedID = randomUUID();
       const draft = TaskCreateSchema.parse({ id: rejectedID, calendarID: home.id, title: "Retained old draft" });
       for (let attempt = 0; attempt < 2; attempt++) {

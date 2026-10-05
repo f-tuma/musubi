@@ -27,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.ver.outputs.version }}
+      release_notes_path: ${{ steps.ver.outputs.release_notes_path }}
     steps:
       - uses: >-
           actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
@@ -51,6 +52,10 @@ jobs:
             exit 1
           fi
           echo "version=$V" >> "$GITHUB_OUTPUT"
+          notes_path="docs/releases/$V-notes.md"
+          if [ -f "$notes_path" ]; then
+            echo "release_notes_path=$notes_path" >> "$GITHUB_OUTPUT"
+          fi
 
   build:
     name: Build ${{ matrix.image.scope }} (${{ matrix.platform.arch }})
@@ -170,9 +175,12 @@ jobs:
       contents: write
     steps:
       - uses: >-
+          actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: >-
           softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
         with:
           tag_name: v${{ needs.prepare.outputs.version }}
           target_commitish: ${{ github.sha }}
           name: Musubi v${{ needs.prepare.outputs.version }}
+          body_path: ${{ needs.prepare.outputs.release_notes_path }}
           generate_release_notes: true

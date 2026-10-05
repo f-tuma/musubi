@@ -68,10 +68,10 @@ on the configured `nodeLinker: hoisted`. If a dependency change intentionally
 updates the lockfile, run `pnpm install`, inspect `pnpm-lock.yaml`, and commit
 the manifest and lockfile together.
 
-### Production EAS rejects the App Store URL
+### Production iOS EAS rejects the App Store URL
 
 **Symptom:** config evaluation reports that
-`EXPO_PUBLIC_IOS_APP_STORE_URL` is required or malformed.
+`EXPO_PUBLIC_IOS_APP_STORE_URL` is required or malformed (an all-zero id is invalid).
 
 Set a direct public listing URL in the production EAS environment:
 
@@ -81,7 +81,8 @@ EXPO_PUBLIC_IOS_APP_STORE_URL=https://apps.apple.com/app/musubi/id1234567890
 
 The numeric id must be the real App Store Connect app id. Development and
 preview builds can omit the variable and use the public download page fallback;
-production intentionally cannot.
+production iOS intentionally cannot. Android production builds do not require
+an iOS listing.
 
 ## PostgreSQL and migrations
 

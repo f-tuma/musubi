@@ -18,6 +18,24 @@ assert.equal(
 // Cizí datum v seznamu nic neblokuje.
 assert.equal(mintAnnouncementId("2026-08-29", ["2026-08-28"]), "2026-08-29");
 
+// Fill neither gaps nor the bare date if they sort behind the read marker.
+assert.equal(mintAnnouncementId("2026-08-29", ["2026-08-29-4"]), "2026-08-29-5");
+assert.equal(
+  mintAnnouncementId("2026-08-29", ["2026-08-29", "2026-08-29-2", "2026-08-29-4"]),
+  "2026-08-29-5",
+);
+for (const suffix of ["9", "99", "99999999999999999999", "09"]) {
+  const previous = `2026-08-29-${suffix}`;
+  const next = mintAnnouncementId("2026-08-29", [previous, "2026-08-30-99"]);
+  assert.ok(next > previous, "A new same-day message must pass the existing lexical read marker");
+  assert.match(next, /^2026-08-29-\d+$/);
+}
+assert.equal(
+  mintAnnouncementId("2026-08-29", ["2026-08-29-9", "2026-08-29-10"]),
+  "2026-08-29-90",
+);
+assert.equal(mintAnnouncementId("2026-08-29", ["2026-08-29-invalid"]), "2026-08-29");
+
 // --- splitAnnouncementText ---
 assert.deepEqual(splitAnnouncementText("just words"), [
   { type: "text", value: "just words" },

@@ -1,7 +1,7 @@
 {
   "name": "musubi",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Musubi monorepo \u2014 open, self-hostable shared calendar.",
   "workspaces": [
     "apps/*",
@@ -21,7 +21,7 @@
     "check:contracts": "node scripts/check-routes.mjs && node scripts/check-realtime.mjs",
     "peers:check": "pnpm peers check",
     "typecheck": "pnpm --filter @musubi/design-system typecheck && pnpm --filter @musubi/client exec tsc --noEmit && pnpm exec tsc -p apps/api/tsconfig.json --noEmit --skipLibCheck && pnpm --filter @musubi/web typecheck",
-    "test": "node --test scripts/probe-outlook-series-exceptions.test.mjs && pnpm --filter @musubi/design-system test && pnpm --filter @musubi/config test && pnpm --filter @musubi/types test && pnpm --filter @musubi/emails test && pnpm --filter @musubi/auth test && pnpm --filter @musubi/calendar test && pnpm --filter @musubi/client exec tsx lib/eventForm.test.ts && pnpm --filter @musubi/client exec tsx lib/rrule.test.ts && pnpm --filter @musubi/client exec tsx lib/ics.test.ts && pnpm --filter @musubi/client test && pnpm --filter @musubi/api test && pnpm --filter @musubi/db test && pnpm --filter @musubi/web test",
+    "test": "node --test scripts/verify-release.test.mjs scripts/probe-outlook-series-exceptions.test.mjs && pnpm --filter @musubi/design-system test && pnpm --filter @musubi/config test && pnpm --filter @musubi/types test && pnpm --filter @musubi/emails test && pnpm --filter @musubi/auth test && pnpm --filter @musubi/calendar test && pnpm --filter @musubi/client exec tsx lib/eventForm.test.ts && pnpm --filter @musubi/client exec tsx lib/rrule.test.ts && pnpm --filter @musubi/client exec tsx lib/ics.test.ts && pnpm --filter @musubi/client test && pnpm --filter @musubi/api test && pnpm --filter @musubi/db test && pnpm --filter @musubi/web test",
     "test:db:versions": "pnpm --filter @musubi/api exec tsx src/middleware/require_client_version.integration.test.ts",
     "test:db:oauth": "pnpm --filter @musubi/api exec tsx src/handlers/connections.integration.test.ts",
     "test:db:pages": "pnpm --filter @musubi/api exec tsx src/handlers/calendar_pages.integration.test.ts",

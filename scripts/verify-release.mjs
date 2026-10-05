@@ -72,6 +72,24 @@ for (const relativePath of distributionFiles) {
   }
 }
 
+// An unset listing is valid for API/web release metadata; native production
+// iOS configuration enforces its build-time presence. Validate any supplied value
+// so a numeric placeholder cannot turn an update action into a dead link.
+const appStoreUrlPattern = /^https:\/\/apps\.apple\.com\/(?:[a-z]{2}\/)?app\/(?:[^/]+\/)?id(\d+)(?:\?.*)?$/;
+const checkAppStoreUrl = (value, source) => {
+  if (value === undefined || value === "") return;
+  const id = typeof value === "string" ? value.match(appStoreUrlPattern)?.[1] : undefined;
+  if (!id || !/[1-9]/.test(id)) {
+    fail(`${source} must name a direct apps.apple.com listing with a nonzero numeric app id`);
+  }
+};
+const eas = readJson("apps/client/eas.json");
+for (const [profile, config] of Object.entries(eas.build ?? {})) {
+  checkAppStoreUrl(config?.env?.EXPO_PUBLIC_IOS_APP_STORE_URL,
+    `apps/client/eas.json build.${profile}.env.EXPO_PUBLIC_IOS_APP_STORE_URL`);
+}
+checkAppStoreUrl(process.env.EXPO_PUBLIC_IOS_APP_STORE_URL, "EXPO_PUBLIC_IOS_APP_STORE_URL");
+
 const appConfig = readFileSync(
   new URL("apps/client/app.config.ts", root),
   "utf8",
