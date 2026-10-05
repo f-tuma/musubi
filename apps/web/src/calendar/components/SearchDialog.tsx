@@ -1,3 +1,4 @@
+import { taskCalendarIDs, uniqueTasks } from "@musubi/calendar";
 import { providerFlavor, type Calendar, type Event, type Task } from "@musubi/types";
 import { ArrowRight, CalendarDays, CheckSquare, Search, Users } from "lucide-react";
 import { useId, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
@@ -71,7 +72,7 @@ export function SearchDialog({ activeView, canCreateEvents, canCreateTasks, canC
   const visible = new Set(visibleCalendarIds ?? calendars.map(calendar => calendar.id));
   const records = useMemo(() => [
     ...(account?.events ?? events).map(event => ({ key: `event:${event.id}`, kind: "events", title: event.title, text: [event.title, event.description, event.location].filter(Boolean).join(" "), calendars: event.calendars, date: event.start, event, task: undefined as Task | undefined })),
-    ...(account?.tasks ?? tasks).map(task => ({ key: `task:${task.id}`, kind: "tasks", title: task.title, text: [task.title, task.description].filter(Boolean).join(" "), calendars: [task.calendarID], date: task.due ?? task.start, event: undefined as Event | undefined, task })),
+    ...uniqueTasks(account?.tasks ?? tasks).map(task => ({ key: `task:${task.id}`, kind: "tasks", title: task.title, text: [task.title, task.description].filter(Boolean).join(" "), calendars: taskCalendarIDs(task), date: task.due ?? task.start, event: undefined as Event | undefined, task })),
   ], [account, events, tasks]);
   const visibleEvents = new Set(visibleEventIds ?? events.map(event => event.recurrence ? event.id.replace(/_\d+$/, "") : event.id));
   function section(record: typeof records[number]) {

@@ -205,7 +205,8 @@ and pnpm:
 - EAS keeps platform build numbers remotely; those monotonically increasing
   numbers are separate from the user-visible product version.
 
-For a release, change only the root `version`, then validate it:
+For a release, update the root `version` and its `PRODUCT_VERSION` mirror in
+`packages/types/src/version.ts`, then validate both:
 
 ```sh
 pnpm release:verify
@@ -219,10 +220,13 @@ metadata and distribution placeholders. The manual **Publish Docker image**
 workflow runs the same command before logging in to Docker Hub, publishing an
 image, or creating a tag.
 
-Production iOS builds additionally require
-`EXPO_PUBLIC_IOS_APP_STORE_URL=https://apps.apple.com/.../id<digits>` in the EAS
-build environment. `app.config.ts` rejects a missing or malformed URL for the
-`production` profile so a forced-update screen cannot ship with a dead link.
+Production iOS builds require a valid App Store or TestFlight update URL.
+The production profile supplies the existing public beta channel through
+`EXPO_PUBLIC_IOS_TESTFLIGHT_URL`; the update action opens TestFlight. When iOS is
+publicly released, set `EXPO_PUBLIC_IOS_APP_STORE_URL` in the EAS production
+environment to a real direct listing with a nonzero numeric ID. The app prefers
+that listing. `app.config.ts` and the release validator reject malformed supplied
+URLs. API/web release metadata and Android do not require an iOS listing.
 
 ## Docker and self-hosting
 

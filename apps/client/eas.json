@@ -28,8 +28,9 @@
       "env": {
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "467784204934-bo55j1euapafmkjajpfv22ikkqfl94fq.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "467784204934-cpbcklt6fm4g1hmnon5hcvqe2cf374cn.apps.googleusercontent.com",
-        "EXPO_PUBLIC_IOS_APP_STORE_URL": "https://apps.apple.com/app/id0000000000"
-      }
+        "EXPO_PUBLIC_IOS_TESTFLIGHT_URL": "https://testflight.apple.com/join/EqzdPVfC"
+      },
+      "environment": "production"
     }
   },
   "submit": {

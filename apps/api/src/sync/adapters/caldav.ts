@@ -46,7 +46,9 @@ import type {
   NormalizedChange,
   NormalizedEvent,
   NormalizedTask,
+  TaskProjection,
 } from "../adapter";
+import { assertTaskEtag, assertTaskMutationResponse, canonicalTaskProjection, ProviderTaskWriteError, requireTaskEtag } from "../task_write";
 import { assertCompleteEventReadResponse, assertCreatedEventEvidence, caldavEventCreateIdentity } from "../event_create_identity";
 import { createCaldavClient, createGuardedCaldavFetch } from "../caldav_client";
 import { decryptSecret } from "../crypto";
@@ -525,7 +527,7 @@ function patchTaskCalendarData(
 
   preserveTimezones(component, replacement, ["dtstart", "dtend", "due"]);
   const recurrenceProperties = new Set(["rrule", "exdate", "rdate"]);
-  const recurrenceChanged =
+  const recurrenceChanged = propertyNames.some(name => recurrenceProperties.has(name)) &&
     canonicalRecurrence(recurrenceFrom(component)) !==
     canonicalRecurrence(recurrenceFrom(replacement));
   patchProperties(
@@ -636,8 +638,10 @@ export function patchEventIcal(
   );
 }
 
-export function patchTaskIcal(data: string, task: Task, uid: string) {
-  return patchTaskCalendarData(data, "vtodo", uid, toVtodo(task, uid), [
+export function patchTaskIcal(data: string, task: Task, uid: string, patch?: TaskProjection) {
+  const fields: Record<string, string[]> = { title: ["summary"], description: ["description"], status: ["status"], start: ["dtstart"], due: ["due"], isAllDay: ["dtstart", "due"], completedAt: ["completed"], percentComplete: ["percent-complete"], priority: ["priority"], sequence: ["sequence"], relatedTo: ["related-to"], url: ["url"], recurrence: ["rrule", "exdate", "rdate"] };
+  if (patch && Object.keys(patch).some(key => !fields[key])) throw new ProviderTaskWriteError("task-projection-unavailable");
+  return patchTaskCalendarData(data, "vtodo", uid, toVtodo(task, uid), patch ? [...new Set(Object.keys(patch).flatMap(key => fields[key]))] : [
     "summary",
     "description",
     "status",
@@ -668,8 +672,16 @@ function toTaskIcal(task: Task, uid = task.id): string {
   const vcal = new ICAL.Component("vcalendar");
   vcal.updatePropertyWithValue("version", "2.0");
   vcal.updatePropertyWithValue("prodid", "-//Musubi//EN");
-  vcal.addSubcomponent(toVtodo(task, uid));
+  const component = toVtodo(task, uid);
+  component.addPropertyWithValue("dtstamp", ICAL.Time.fromJSDate(new Date(), true));
+  vcal.addSubcomponent(component);
   return vcal.toString();
+}
+
+/** The projection describes the VTODO wire format, including its second/date
+ * precision. Canonical Musubi timestamps retain their original precision. */
+export function projectCaldavTask(task: Task): TaskProjection {
+  return canonicalTaskProjection(vtodoToFields(toVtodo(task)));
 }
 
 export function toCaldavTaskObject(
@@ -692,6 +704,7 @@ async function taskCalendarObjectForUpdate(
   externalObjectId: string,
   ref: { etag?: string | null; icalUid?: string | null } | undefined,
   value: Task,
+  patch?: TaskProjection,
 ) {
   if (!ref?.etag)
     throw new Error("CalDAV task has no ETag; refusing an unsafe update");
@@ -701,13 +714,14 @@ async function taskCalendarObjectForUpdate(
   });
   if (!object?.data)
     throw new Error("CalDAV task resource is missing; refusing an update");
+  assertTaskEtag(ref.etag, object.etag);
   const uid = ref.icalUid ?? icalToNormalizedTask(object)?.icalUid;
   if (!uid)
     throw new Error("CalDAV task has no UID; refusing an unsafe update");
   return {
     calendarObject: {
       url: externalObjectId,
-      data: patchTaskIcal(object.data, value, uid),
+      data: patchTaskIcal(object.data, value, uid, patch),
       etag: ref.etag,
     },
     uid,
@@ -1818,20 +1832,45 @@ export const caldavAdapter: CalendarAdapter = {
     if (res.status !== 404) assertProviderEventMutationResponse(res);
   },
 
+  projectTask: projectCaldavTask,
+
+  async readTask(_userID, accountId, externalCalendarId, ref) {
+    const address = caldavSeriesResourceURL(externalCalendarId, ref.externalTaskId);
+    const response = await caldavFetch(address.href, { headers: { authorization: await basicAuthForAccount(accountId), "Cache-Control": "no-cache" }, redirect: "error" });
+    if (response.status === 404 || response.status === 410) return null;
+    if (!response.ok) throw new ProviderTaskWriteError("task-write-failed", "not-written", response.status);
+    const parsed = icalToNormalizedTask({ url: address.href, etag: response.headers.get("etag") ?? undefined, data: await response.text() });
+    if (!parsed?.icalUid || ref.icalUid && parsed.icalUid !== ref.icalUid) throw new ProviderTaskWriteError("task-projection-unavailable");
+    return { ref: { externalTaskId: address.href, etag: requireTaskEtag(parsed.etag), icalUid: parsed.icalUid }, projection: canonicalTaskProjection(parsed) };
+  },
+
+  async assertTaskWrite(userID, accountId, externalCalendarId, operation) {
+    if (!(await getCaldavAccountsByUser(userID)).some(account => account.id === accountId)) throw new ProviderTaskWriteError("task-source-read-only");
+    const authorization = await basicAuthForAccount(accountId);
+    const target = operation.action === "update" && operation.external ? caldavSeriesResourceURL(externalCalendarId, operation.external.externalTaskId).href : externalCalendarId;
+    const permission = await caldavEventWritePermission(target, authorization, operation.signal, "error");
+    if (caldavAllows(permission.privileges, operation.action) !== true || caldavReadAccess(permission.privileges).read !== true) throw new ProviderTaskWriteError("task-source-read-only");
+    if (operation.action !== "create") {
+      if (!operation.external) throw new ProviderTaskWriteError("task-version-unavailable");
+      const current = await caldavAdapter.readTask!(userID, accountId, externalCalendarId, operation.external);
+      if (!current && operation.action === "delete") return;
+      if (!current) throw new ProviderTaskWriteError("task-provider-conflict");
+      assertTaskEtag(operation.external.etag, current.ref.etag);
+    }
+  },
+
   async pushTaskCreate(_userID, accountId, externalCalendarId, task: Task, beforeMutation) {
     const client = await clientForAccount(accountId);
+    const authorization = await basicAuthForAccount(accountId);
     const filename = `${task.id}.ics`;
-    await beforeMutation?.();
-    const res = await client.createCalendarObject({
-      calendar: { url: externalCalendarId } as any,
-      filename,
-      iCalString: toTaskIcal(task),
-    });
-    if (!res.ok) throw new Error(`CalDAV ${res.status} ${res.statusText}`);
     const base = externalCalendarId.endsWith("/")
       ? externalCalendarId
       : `${externalCalendarId}/`;
     const externalTaskId = `${base}${filename}`;
+    const body = toTaskIcal(task);
+    await beforeMutation?.();
+    const res = await caldavFetch(externalTaskId, { method: "PUT", headers: { authorization, "Content-Type": "text/calendar; charset=utf-8", "If-None-Match": "*" }, body, redirect: "error" });
+    assertTaskMutationResponse(res);
     return {
       externalTaskId,
       etag: await etagAfterWrite(
@@ -1851,6 +1890,7 @@ export const caldavAdapter: CalendarAdapter = {
     externalTaskId,
     task: Task,
     ref,
+    patch,
   ) {
     const client = await clientForAccount(accountId);
     const { calendarObject, uid: icalUid } = await taskCalendarObjectForUpdate(
@@ -1859,10 +1899,11 @@ export const caldavAdapter: CalendarAdapter = {
       externalTaskId,
       ref,
       task,
+      patch,
     );
     await ref?.beforeMutation?.();
     const res = await client.updateCalendarObject({ calendarObject });
-    if (!res.ok) throw new Error(`CalDAV ${res.status} ${res.statusText}`);
+    assertTaskMutationResponse(res);
     return {
       etag: await etagAfterWrite(
         client,
@@ -1888,8 +1929,7 @@ export const caldavAdapter: CalendarAdapter = {
     const res = await client.deleteCalendarObject({
       calendarObject: { url: externalTaskId, etag: ref.etag },
     });
-    if (!res.ok && res.status !== 404)
-      throw new Error(`CalDAV ${res.status} ${res.statusText}`);
+    if (res.status !== 404 && res.status !== 410) assertTaskMutationResponse(res);
   },
 
   async createCalendar(_userID, accountId, { name, color }) {

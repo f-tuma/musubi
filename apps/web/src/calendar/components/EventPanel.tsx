@@ -69,12 +69,13 @@ export function DetailRow({ icon, label, children, trailing }: {
 }) {
   return (
     <div className="flex min-h-8 items-center gap-2 text-13 leading-normal text-foreground">
-      <span aria-hidden="true" className="grid w-5 flex-none place-content-center self-start pt-1.5 text-foreground-secondary [&_svg]:size-4.5">
-        {icon}
-      </span>
-      <dt className="sr-only">{label}</dt>
-      <dd className="min-w-0 flex-1 py-1 wrap-anywhere">{children}</dd>
-      {trailing ? <div className="flex flex-none items-center">{trailing}</div> : null}
+      <dt className="grid w-5 flex-none place-content-center self-start pt-1.5 text-foreground-secondary [&_svg]:size-4.5">
+        <span className="sr-only">{label}</span><span aria-hidden="true">{icon}</span>
+      </dt>
+      <dd className="flex min-w-0 flex-1 items-center gap-2 py-1">
+        <div className="min-w-0 flex-1 wrap-anywhere">{children}</div>
+        {trailing ? <div className="flex flex-none items-center">{trailing}</div> : null}
+      </dd>
     </div>
   );
 }

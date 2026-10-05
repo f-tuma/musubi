@@ -11,7 +11,7 @@ import { getOnboardingRoute } from '@/lib/onboardingState';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useRefreshData } from '@/hooks/useRefreshData';
 import { useNotificationActions } from '@/hooks/useNotificationActions';
-import { useEventsStore } from '@/store/useEventsStore';
+import { getEventLifecycle, useEventsStore } from '@/store/useEventsStore';
 import { useCalendarsStore } from '@/store/useCalendarsStore';
 import { cacheGetAllEvents, cacheGetCalendars } from '@/services/eventsCache';
 import { select } from '@/lib/haptics';
@@ -41,23 +41,28 @@ export default function TabLayout() {
   const [dataReady, setDataReady] = useState(false);
 
   useEffect(() => {
+    const lifecycle = getEventLifecycle();
+    let cancelled = false;
+    const isCurrent = () => !cancelled && lifecycle === getEventLifecycle();
     const load = async () => {
       try {
         // instant render from the local cache (calendars too, so activeCals is
         // populated and events aren't filtered out), then sync over the network
         const [cachedCals, cachedEvents] = await Promise.all([cacheGetCalendars(), cacheGetAllEvents()]);
+        if (!isCurrent()) return;
         loadCalendars(cachedCals);
         loadEvents(cachedEvents);
         setDataReady(true);
         // ponytail: authoritative launch snapshot; add link tombstones if a full home read becomes costly.
         await refresh({ full: true });
       } catch (e: any) {
-        console.error("Could not fetch initial data:", e?.message, e?.status, e);
+        if (isCurrent()) console.error("Could not fetch initial data:", e?.message, e?.status, e);
       } finally {
-        setDataReady(true);
+        if (isCurrent()) setDataReady(true);
       }
     };
-    load();
+    void load();
+    return () => { cancelled = true; };
   }, [apiUrl]);
 
   useConnectToEventStream();

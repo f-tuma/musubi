@@ -582,13 +582,19 @@ export function cancelEventNotification(eventID: string) {
 }
 
 /** Sign-out / account deletion: invalidate queued snapshots immediately. */
-export function clearAllEventNotifications() {
+export function clearAllEventNotifications(options: { requireCancellation?: boolean } = {}) {
   reminderGeneration++;
   rules = null;
   return serializeReminders(async () => {
-    await Notifications.cancelAllScheduledNotificationsAsync().catch(
-      () => undefined,
-    );
+    if (options.requireCancellation) {
+      // Auth-storage upgrades must stay closed until the previous account's
+      // scheduled content is gone; do not mark a failed OS cancellation done.
+      await Notifications.cancelAllScheduledNotificationsAsync();
+    } else {
+      await Notifications.cancelAllScheduledNotificationsAsync().catch(
+        () => undefined,
+      );
+    }
     await db.delete(notificationsTable);
   });
 }

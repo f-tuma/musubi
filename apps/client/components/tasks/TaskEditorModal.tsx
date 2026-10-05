@@ -1,3 +1,4 @@
+import { taskCapabilities, taskHomeCalendarID } from "@musubi/calendar";
 import { useRef, useState } from "react";
 import { Platform, ScrollView, Switch, Text, TextInput, View } from "react-native";
 import { DateTimePicker } from "@/components/ui/DateTimePicker";
@@ -31,7 +32,7 @@ export function TaskEditorModal({ task, calendarID, calendars, onSave, onClose }
   task?: Task; calendarID: string; calendars: Calendar[];
   onSave: (draft: TaskUpdate) => Promise<void>; onClose: () => void;
 }) {
-  const [draft, setDraft] = useState<TaskUpdate>(() => TaskUpdateSchema.parse(task ?? {
+  const [draft, setDraft] = useState<TaskUpdate>(() => TaskUpdateSchema.parse(task ? { ...task, calendarID: taskHomeCalendarID(task) ?? task.calendarID, expectedRevision: task.revision } : {
     calendarID, title: "", status: "needs-action", isAllDay: false, priority: 0, percentComplete: 0,
   }));
   const [busy, setBusy] = useState(false), pending = useRef(false);
@@ -42,7 +43,7 @@ export function TaskEditorModal({ task, calendarID, calendars, onSave, onClose }
   const motion = useModalAnimation(true, onClose);
   const insets = useSafeAreaInsets();
   const dateFormat = useSettingsStore(s => s.dateFormat), timeFormat = useSettingsStore(s => s.timeFormat);
-  const editable = calendars.some(calendar => calendar.id === draft.calendarID);
+  const editable = calendars.some(calendar => calendar.id === draft.calendarID) && (!task || taskCapabilities(task, calendars).edit);
   const googleTasks = calendars.find(calendar => calendar.id === draft.calendarID)?.provider === "google";
   const dateOnly = googleTasks || draft.isAllDay;
   const close = () => { if (!pending.current) void motion.handleClose(); };

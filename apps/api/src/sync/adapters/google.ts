@@ -21,7 +21,10 @@ import type {
   NormalizedChange,
   NormalizedEvent,
   NormalizedTask,
+  TaskProjection,
+  TaskReadEvidence,
 } from "../adapter";
+import { assertTaskEtag, assertTaskMutationResponse, ProviderTaskWriteError, requireTaskEtag } from "../task_write";
 import { getOAuthAccessToken } from "../oauth";
 import { assertCompleteEventReadResponse, assertCreatedEventEvidence, eventCreateOperationID, googleEventCreateID } from "../event_create_identity";
 import { isOptionalTaskError, ProviderAuthError, TaskScopeMissingError } from "../errors";
@@ -365,7 +368,8 @@ export function toNormalizedGoogleTask(item: any): NormalizedTask {
 
 export function toGoogleTask(task: Task) {
   return {
-    due: task.due?.toISOString() ?? null,
+    // Tasks API stores a calendar day, never the canonical deadline's time.
+    due: task.due ? `${task.due.toISOString().slice(0, 10)}T00:00:00.000Z` : null,
     notes: task.description ?? null,
     status: task.status === "completed" ? "completed" : "needsAction",
     title: task.title,
@@ -375,7 +379,21 @@ export function toGoogleTask(task: Task) {
 type GoogleTaskRequestOptions = {
   baseUrl?: string;
   fetchImpl?: typeof fetch;
+  patch?: TaskProjection;
+  beforeMutation?: () => Promise<void>;
 };
+
+export async function readGoogleTask(accessToken: string, taskListId: string, externalTaskId: string, options: GoogleTaskRequestOptions = {}): Promise<TaskReadEvidence | null> {
+  const response = await (options.fetchImpl ?? fetch)(`${options.baseUrl ?? GTASKS}/lists/${encodeURIComponent(taskListId)}/tasks/${encodeURIComponent(externalTaskId)}`, { headers: { Authorization: `Bearer ${accessToken}`, "Cache-Control": "no-cache" }, redirect: "error" });
+  if (response.status === 404 || response.status === 410) return null;
+  if (!response.ok) throw await googleError(response);
+  const value = await response.json();
+  if (value.id !== externalTaskId || typeof value.title !== "string" || !["needsAction", "completed"].includes(value.status)) throw new ProviderTaskWriteError("task-projection-unavailable");
+  // Assigned Docs/Spaces tasks have different writable fields and deletion
+  // semantics. They are readable, but not general Musubi write destinations.
+  if (value.assignmentInfo) throw new ProviderTaskWriteError("task-source-read-only");
+  return { ref: { externalTaskId: value.id, etag: requireTaskEtag(value.etag), icalUid: null }, projection: { title: value.title, notes: value.notes ?? null, status: value.status, due: value.due ? `${String(value.due).slice(0, 10)}T00:00:00.000Z` : null } };
+}
 
 export async function createGoogleTask(
   accessToken: string,
@@ -385,6 +403,7 @@ export async function createGoogleTask(
 ) {
   const fetchImpl = options.fetchImpl ?? fetch;
   const baseUrl = options.baseUrl ?? GTASKS;
+  await options.beforeMutation?.();
   const res = await fetchImpl(
     `${baseUrl}/lists/${encodeURIComponent(taskListId)}/tasks`,
     {
@@ -396,10 +415,11 @@ export async function createGoogleTask(
       body: JSON.stringify(toGoogleTask(task)),
     },
   );
-  if (!res.ok) throw await googleError(res);
+  assertTaskMutationResponse(res);
   const created = await res.json();
+  if (typeof created.id !== "string" || !created.id) throw new ProviderTaskWriteError("task-write-failed", "unconfirmed");
   return {
-    etag: created.etag ?? null,
+    etag: requireTaskEtag(created.etag),
     externalTaskId: created.id,
     icalUid: null,
   };
@@ -413,9 +433,16 @@ export async function updateGoogleTask(
   etag: string | null | undefined,
   options: GoogleTaskRequestOptions = {},
 ) {
-  if (!etag) throw new Error("Google task update requires an ETag");
+  requireTaskEtag(etag);
   const fetchImpl = options.fetchImpl ?? fetch;
   const baseUrl = options.baseUrl ?? GTASKS;
+  const current = await readGoogleTask(accessToken, taskListId, externalTaskId, options);
+  if (!current) throw new ProviderTaskWriteError("task-provider-conflict");
+  assertTaskEtag(etag, current.ref.etag);
+  const patch = options.patch ?? toGoogleTask(task);
+  if (Object.keys(patch).some(key => !["title", "notes", "status", "due"].includes(key))) throw new ProviderTaskWriteError("task-projection-unavailable");
+  if (!Object.keys(patch).length) return { etag, icalUid: null };
+  await options.beforeMutation?.();
   const res = await fetchImpl(
     `${baseUrl}/lists/${encodeURIComponent(taskListId)}/tasks/${encodeURIComponent(externalTaskId)}`,
     {
@@ -423,14 +450,14 @@ export async function updateGoogleTask(
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
-        "If-Match": etag,
+        "If-Match": requireTaskEtag(etag),
       },
-      body: JSON.stringify(toGoogleTask(task)),
+      body: JSON.stringify(patch),
     },
   );
-  if (!res.ok) throw await googleError(res);
+  assertTaskMutationResponse(res);
   const updated = await res.json();
-  return { etag: updated.etag ?? null, icalUid: null };
+  return { etag: requireTaskEtag(updated.etag), icalUid: null };
 }
 
 export async function deleteGoogleTask(
@@ -440,21 +467,25 @@ export async function deleteGoogleTask(
   etag: string | null | undefined,
   options: GoogleTaskRequestOptions = {},
 ) {
-  if (!etag) throw new Error("Google task delete requires an ETag");
+  requireTaskEtag(etag);
   const fetchImpl = options.fetchImpl ?? fetch;
   const baseUrl = options.baseUrl ?? GTASKS;
+  const current = await readGoogleTask(accessToken, taskListId, externalTaskId, options);
+  if (!current) return;
+  assertTaskEtag(etag, current.ref.etag);
+  await options.beforeMutation?.();
   const res = await fetchImpl(
     `${baseUrl}/lists/${encodeURIComponent(taskListId)}/tasks/${encodeURIComponent(externalTaskId)}`,
     {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        "If-Match": etag,
+        "If-Match": requireTaskEtag(etag),
       },
     },
   );
   if (!res.ok && res.status !== 404 && res.status !== 410) {
-    throw await googleError(res);
+    assertTaskMutationResponse(res);
   }
 }
 
@@ -998,13 +1029,39 @@ export const googleAdapter: CalendarAdapter = {
     }
   },
 
-  async pushTaskCreate(userID, accountId, externalCalendarId, task) {
+  projectTask: toGoogleTask,
+
+  async readTask(userID, accountId, externalCalendarId, ref) {
+    const list = googleTaskListId(externalCalendarId);
+    if (!list) throw new ProviderTaskWriteError("task-source-read-only");
+    return readGoogleTask(await getGoogleAccessToken(userID, accountId, true), list, ref.externalTaskId);
+  },
+
+  async assertTaskWrite(userID, accountId, externalCalendarId, operation) {
+    const list = googleTaskListId(externalCalendarId);
+    if (!list) throw new ProviderTaskWriteError("task-source-read-only");
+    const token = await getGoogleAccessToken(userID, accountId, true);
+    if (operation.action === "create") {
+      const response = await fetch(`${GTASKS}/users/@me/lists/${encodeURIComponent(list)}`, { headers: { Authorization: `Bearer ${token}` }, redirect: "error" });
+      if (!response.ok) throw await googleError(response);
+      if ((await response.json()).id !== list) throw new ProviderTaskWriteError("task-projection-unavailable");
+      return;
+    }
+    if (!operation.external) throw new ProviderTaskWriteError("task-version-unavailable");
+    const current = await readGoogleTask(token, list, operation.external.externalTaskId);
+    if (!current && operation.action === "delete") return;
+    if (!current) throw new ProviderTaskWriteError("task-provider-conflict");
+    assertTaskEtag(operation.external.etag, current.ref.etag);
+  },
+
+  async pushTaskCreate(userID, accountId, externalCalendarId, task, beforeMutation) {
     const taskListId = googleTaskListId(externalCalendarId);
     if (!taskListId) throw new Error("Google task write requires a task list");
     return createGoogleTask(
       await getGoogleAccessToken(userID, accountId, true),
       taskListId,
       task,
+      { beforeMutation },
     );
   },
 
@@ -1015,6 +1072,7 @@ export const googleAdapter: CalendarAdapter = {
     externalTaskId,
     task,
     ref,
+    patch,
   ) {
     const taskListId = googleTaskListId(externalCalendarId);
     if (!taskListId) throw new Error("Google task write requires a task list");
@@ -1024,6 +1082,7 @@ export const googleAdapter: CalendarAdapter = {
       externalTaskId,
       task,
       ref?.etag,
+      { patch, beforeMutation: ref?.beforeMutation },
     );
   },
 
@@ -1041,6 +1100,7 @@ export const googleAdapter: CalendarAdapter = {
       taskListId,
       externalTaskId,
       ref?.etag,
+      { beforeMutation: ref?.beforeMutation },
     );
   },
 

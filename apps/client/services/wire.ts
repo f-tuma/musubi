@@ -29,11 +29,15 @@ import { z } from "zod";
  * copies, which is how a self-hoster's report reaches us at all.
  *
  * In development it throws, because there it can be fixed before it ships.
+ * A caller that acknowledges a committed mutation sets `requireValid`: a
+ * malformed receipt must fail in production too, keeping the unknown outcome
+ * and its retry identity intact.
  */
 export function readWire<T>(
   schema: z.ZodType<T>,
   data: unknown,
   endpoint: string,
+  options: { requireValid?: boolean } = {},
 ): T {
   const parsed = schema.safeParse(data);
   if (parsed.success) return parsed.data;
@@ -49,6 +53,9 @@ export function readWire<T>(
   recordServerDiagnostic(`✗ ${summary}`);
   console.error("Wire mismatch", endpoint, parsed.error.issues);
 
+  // A committed mutation receipt is evidence, not render-only content. Never
+  // acknowledge an unknown outcome or discard its retry identity on mismatch.
+  if (options.requireValid) throw new Error("The server did not confirm the change. Try again.");
   if (typeof __DEV__ !== "undefined" && __DEV__) throw new Error(summary);
 
   // Exactly what this call returned before there was any checking at all.

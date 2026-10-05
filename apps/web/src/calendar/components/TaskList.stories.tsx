@@ -35,6 +35,7 @@ const CALENDARS: Calendar[] = [
 
 const TASKS: Task[] = [
   {
+    revision: 1,
     calendarID: "work",
     completedAt: null,
     creatorID: "user-1",
@@ -53,6 +54,7 @@ const TASKS: Task[] = [
     url: null,
   },
   {
+    revision: 1,
     calendarID: "shared",
     completedAt: null,
     creatorID: "user-2",
@@ -71,6 +73,7 @@ const TASKS: Task[] = [
     url: null,
   },
   {
+    revision: 1,
     calendarID: "personal",
     completedAt: new Date(2026, 8, 2, 10, 15),
     creatorID: "user-1",
@@ -95,7 +98,7 @@ function TaskListExample({ offline = false, initialLayout = "list" }: { offline?
   const [tasks, setTasks] = useState(TASKS);
 
   async function create(input: TaskCreate): Promise<Task> {
-    const task: Task = { ...input, creatorID: "user-1", sequence: 0 };
+    const task: Task = { ...input, revision: 1, creatorID: "user-1", sequence: 0 };
     setTasks((current) => [...current, task]);
     return task;
   }

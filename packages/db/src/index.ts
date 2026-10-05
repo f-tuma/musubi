@@ -25,6 +25,8 @@ export * from './queries/oauth';
 export * from './queries/federation';
 export * from './queries/announcements';
 export * from './queries/tasks';
+export * from './queries/task-outbox';
+export * from './queries/task-delivery-status';
 export * from './schema';
 export * as schema from './schema';
 

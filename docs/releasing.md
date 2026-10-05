@@ -53,6 +53,21 @@ Going the other way — a client that needs an endpoint the server has not
 deployed — needs a feature flag or a capability check, not a careful eye on the
 deploy order.
 
+## 0.2.2 task protocol boundary
+
+The [0.2.2 release runbook](releases/0.2.2.md) records an exception to additive
+rollout: released 0.2.0/0.2.1 task write routes receive 426 before saving. Reads
+and compatible event/calendar functions remain available, but every native task
+write needs a 0.2.2 store build. Keep both global compatibility floors at 0.2.0;
+do not turn this task-specific boundary into a whole-app lockout.
+
+API → web → native distribution remains the order, but deploying API before the
+store build accepts a temporary native task-write gap. Stop the old API before
+starting the new one. The shared-task migration and old provider writers make
+an image-only rollback unsafe; keep a verified preupgrade database backup and
+follow [deployment and recovery](releases/0.2.2-deployment.md). A release tag is
+Dokploy's deployment signal, so prepare backup and maintenance before publication.
+
 ## K06 coordinated compatibility break (prepared, not deployed)
 
 The coordinated release is **0.2.0**. The former 0.1.8 development version was
@@ -241,7 +256,10 @@ Keep only changes users will notice; GitHub generates the complete engineering
 changelog separately.
 
 Announcement IDs share their date namespace with admin-written messages, so the
-migration must choose a free suffix rather than assuming the bare date is free.
+migration must choose an ID lexically greater than existing same-day IDs,
+not just a free suffix. Read markers compare strings: suffix `10` sorts before
+`9`; the allocator extends the highest suffix at that boundary (for example
+`9` to `90`). Preserve admin messages and read markers.
 The 0.1.7 migration also initializes the empty marker for accounts that predate
 the announcement feature. That is a one-time bootstrap and must not be repeated
 in later releases; new accounts intentionally baseline past old news.

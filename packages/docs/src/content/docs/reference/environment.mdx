@@ -181,14 +181,18 @@ Register this exact authorized **Web** redirect URI in Google Cloud:
 | --- | --- |
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Native Google sign-in id-token audience on both platforms |
 | `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | iOS native client id and derived URL scheme |
-| `EXPO_PUBLIC_IOS_APP_STORE_URL` | Direct App Store listing for the forced-update screen |
+| `EXPO_PUBLIC_IOS_APP_STORE_URL` | Direct App Store listing for the update screen, when publicly released |
+| `EXPO_PUBLIC_IOS_TESTFLIGHT_URL` | Direct TestFlight join URL for the iOS beta update action |
 
 `EXPO_PUBLIC_*` values are compiled into the app. Changing them requires a new
 native build; restarting the API is not enough. They are identifiers, not
-secrets. `EXPO_PUBLIC_IOS_APP_STORE_URL` is optional for local/development
-builds, which fall back to the Musubi download page. A production EAS build
-requires a direct `https://apps.apple.com/.../id<digits>` URL and fails during
-config evaluation if it is absent or malformed.
+secrets. Production iOS requires an App Store or TestFlight update destination.
+The production EAS profile supplies Musubi's current public TestFlight beta URL.
+When a public App Store listing is available, set `EXPO_PUBLIC_IOS_APP_STORE_URL`
+in the EAS production environment; the app prefers that listing. All-zero App
+Store IDs, malformed listings and non-Apple TestFlight URLs fail configuration.
+Android does not require either iOS value. An unconfigured development/preview
+build retains the Musubi download page fallback.
 
 See [Authentication](/docs/architecture/authentication/) and the
 [Google provider guide](/docs/providers/google/).

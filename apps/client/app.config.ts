@@ -15,13 +15,19 @@ const googleSignInPlugin: NonNullable<ExpoConfig["plugins"]>[number] = iosGoogle
   : "@react-native-google-signin/google-signin";
 
 const iosAppStoreUrl = process.env.EXPO_PUBLIC_IOS_APP_STORE_URL;
-const appStoreUrlPattern = /^https:\/\/apps\.apple\.com\/(?:[a-z]{2}\/)?app\/(?:[^/]+\/)?id\d+(?:\?.*)?$/;
+const appStoreUrlPattern = /^https:\/\/apps\.apple\.com\/(?:[a-z]{2}\/)?app\/(?:[^/]+\/)?id(\d+)(?:\?.*)?$/;
 
-if (iosAppStoreUrl && !appStoreUrlPattern.test(iosAppStoreUrl)) {
-  throw new Error("EXPO_PUBLIC_IOS_APP_STORE_URL must be a direct apps.apple.com URL ending in a numeric app id");
+const iosAppStoreId = iosAppStoreUrl?.match(appStoreUrlPattern)?.[1];
+if (iosAppStoreUrl && (!iosAppStoreId || !/[1-9]/.test(iosAppStoreId))) {
+  throw new Error("EXPO_PUBLIC_IOS_APP_STORE_URL must be a direct apps.apple.com URL ending in a nonzero numeric app id");
 }
-if (process.env.EAS_BUILD_PROFILE === "production" && !iosAppStoreUrl) {
-  throw new Error("EXPO_PUBLIC_IOS_APP_STORE_URL is required for production EAS builds");
+const iosTestFlightUrl = process.env.EXPO_PUBLIC_IOS_TESTFLIGHT_URL;
+const testFlightUrlPattern = /^https:\/\/testflight\.apple\.com\/join\/[a-zA-Z0-9]+$/;
+if (iosTestFlightUrl && !testFlightUrlPattern.test(iosTestFlightUrl)) {
+  throw new Error("EXPO_PUBLIC_IOS_TESTFLIGHT_URL must be a direct HTTPS TestFlight join URL");
+}
+if (process.env.EAS_BUILD_PROFILE === "production" && process.env.EAS_BUILD_PLATFORM === "ios" && !iosAppStoreUrl && !iosTestFlightUrl) {
+  throw new Error("An App Store or TestFlight update URL is required for production iOS EAS builds");
 }
 
 const expoConfig: ExpoConfig = {
@@ -190,6 +196,7 @@ const expoConfig: ExpoConfig = {
   },
   extra: {
     ...(iosAppStoreUrl ? { iosAppStoreUrl } : {}),
+    ...(iosTestFlightUrl ? { iosTestFlightUrl } : {}),
     eas: {
       projectId: "4e24bdfa-490c-4c3e-9a76-7abef4efa823",
     },

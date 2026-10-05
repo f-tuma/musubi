@@ -1,6 +1,9 @@
 import { lockCalendarLifecycle, lockUserLifecycle } from "./calendar-lifecycle";
 import { eq, inArray, or, sql } from "drizzle-orm";
-import { db, user, userAvatars, calendars, events, calendarEvents } from "..";
+import { randomUUID } from "node:crypto";
+import { db, user, userAvatars, calendars, events, calendarEvents, tasks, calendarTasks } from "..";
+import { removeCalendarTasksInTransaction } from "./calendars";
+import { appendTaskOutbox, prepareTaskOutboxInTransaction, taskOutboxSnapshot } from "./task-outbox";
 import { config } from "@musubi/config";
 import { ForbiddenError } from "@musubi/types";
 
@@ -19,6 +22,26 @@ export async function deleteUserWithCalendarRevisions(userID: string) {
     )).orderBy(events.id).for("update");
     const surviving = affected.filter((event) => event.creatorID !== userID).map((event) => event.id);
     if (surviving.length) await tx.update(events).set({ revision: sql`${events.revision} + 1` }).where(inArray(events.id, surviving));
+    // Lock the complete task union once before touching maps/outbox or cascading
+    // any calendar. Created-task purge keeps the existing event policy, but its
+    // accepted remote DELETE must survive on another user's provider account.
+    const affectedTasks = await tx.select().from(tasks).where(or(
+      eq(tasks.creatorID, userID),
+      ...(ids.length ? [inArray(tasks.originCalendarID, ids),
+        sql`${tasks.id} in (select ${calendarTasks.taskID} from ${calendarTasks} where ${inArray(calendarTasks.calendarID, ids)})`] : []),
+    )).orderBy(tasks.id).for("update");
+    for (const task of affectedTasks.filter((task) => task.creatorID === userID && !task.deletedAt)) {
+      const [deletedTask] = await tx.update(tasks).set({ deletedAt: new Date(), revision: task.revision + 1 })
+        .where(eq(tasks.id, task.id)).returning();
+      const links = await tx.select().from(calendarTasks).where(eq(calendarTasks.taskID, task.id));
+      const survivingCalendars = links.map((link) => link.calendarID).filter((id) => !ids.includes(id));
+      const snapshot = taskOutboxSnapshot(deletedTask, survivingCalendars);
+      const intents = await prepareTaskOutboxInTransaction(tx, snapshot,
+        survivingCalendars.map((calendarID) => ({ calendarID, action: "delete" })),
+        { actorID: userID, mutationID: randomUUID() }, undefined, true);
+      await appendTaskOutbox(tx, snapshot, intents);
+    }
+    for (const calendarID of ids) await removeCalendarTasksInTransaction(tx, calendarID, ids);
     const [deleted] = await tx.delete(user).where(eq(user.id, userID)).returning();
     return deleted;
   });

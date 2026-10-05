@@ -1,4 +1,5 @@
 import type { Calendar, Event, Task } from "@musubi/types";
+import { taskCalendarIDs, taskDisplayCalendar, taskHomeCalendarID, uniqueTasks } from "./task-sharing";
 
 /** Render-only calendar item. Never send this projection to an event endpoint. */
 export type CalendarTask = Event & { calendarTask: Task };
@@ -12,9 +13,8 @@ export function isCalendarTask(event: Event): event is CalendarTask {
  * Musubi all-day ends are inclusive. Both markers open the same task.
  */
 export function calendarTasks(tasks: readonly Task[], calendars: readonly Calendar[]): CalendarTask[] {
-  const byId = new Map(calendars.map(calendar => [calendar.id, calendar]));
-  return tasks.flatMap(task => {
-    const calendar = byId.get(task.calendarID);
+  return uniqueTasks(tasks).flatMap(task => {
+    const calendar = taskDisplayCalendar(task, calendars);
     if (!calendar || task.status === "cancelled") return [];
     const result: CalendarTask[] = [];
     for (const kind of ["start", "due"] as const) {
@@ -34,7 +34,7 @@ export function calendarTasks(tasks: readonly Task[], calendars: readonly Calend
         creatorID: task.creatorID, organizer: task.creatorID,
         title: task.title, color: calendar.color, start,
         end: new Date(allDay ? start.getTime() : Math.min(start.getTime() + 30 * 60000, nextDay.getTime())),
-        calendars: [task.calendarID], originCalendarID: task.calendarID,
+        calendars: taskCalendarIDs(task), originCalendarID: taskHomeCalendarID(task),
         isCanceled: false, isAllDay: allDay, hasAttendees: false,
         timeModel: allDay ? { kind: "all-day" } : undefined,
       });

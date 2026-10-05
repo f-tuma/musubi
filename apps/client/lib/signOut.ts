@@ -14,7 +14,7 @@ import { resetFederatedAccounts } from "@/services/federation";
 // expiry recovery all route through here so no path forgets a cleanup step:
 // stores → launcher widget → SQLite mirror → scheduled notifications → native
 // Google session → Better Auth session → welcome screen.
-export async function resetLocalAccountState() {
+export async function resetLocalAccountState(options: { requireNotificationCancellation?: boolean } = {}) {
   resetSettingsSync();
   await resetFederatedAccounts();
   useCalendarsStore.getState().loadCalendars([]);
@@ -23,7 +23,7 @@ export async function resetLocalAccountState() {
   resetOnboardingRoute();
   await clearAgendaWidget();
   await cacheClearAll();
-  await clearAllEventNotifications();
+  await clearAllEventNotifications({ requireCancellation: options.requireNotificationCancellation });
 }
 
 export async function signOutAndReset(authClient: {

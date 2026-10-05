@@ -3,14 +3,13 @@ import { View, Text, Linking, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Btn } from "@/components/ui/Btn";
 import Constants from "expo-constants";
+import { appUpdateTarget } from "@/lib/appUpdateTarget";
 
-const iosAppStoreUrl = Constants.expoConfig?.extra?.iosAppStoreUrl as string | undefined;
-const storeUrl = Platform.OS === "ios"
-  ? iosAppStoreUrl ?? "https://musubi.pro"
-  : "https://play.google.com/store/apps/details?id=dev.frgtn.musubi";
-const storeLabel = Platform.OS === "ios"
-  ? iosAppStoreUrl ? "Open App Store" : "Open download page"
-  : "Open Play Store";
+const updateTarget = appUpdateTarget({
+  platform: Platform.OS,
+  iosAppStoreUrl: Constants.expoConfig?.extra?.iosAppStoreUrl as string | undefined,
+  iosTestFlightUrl: Constants.expoConfig?.extra?.iosTestFlightUrl as string | undefined,
+});
 
 type Props = {
   currentVersion: string;
@@ -47,9 +46,9 @@ export default function UpdateRequiredModal({ currentVersion, requiredVersion }:
           </Text>
         </View>
         <Btn
-          label={storeLabel}
+          label={updateTarget.label}
           style={{ flex: 0, marginTop: 8 }}
-          onPress={() => Linking.openURL(storeUrl)}
+          onPress={() => Linking.openURL(updateTarget.url)}
         />
       </View>
     </View>

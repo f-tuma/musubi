@@ -13,5 +13,9 @@ export function normalizeServerUrl(value: string) {
 
 export function serverStoragePrefix(value: string) {
 	const origin = normalizeServerUrl(value);
-	return `musubi_${origin.slice(origin.indexOf("://") + 3).replace(/[^a-z0-9]/gi, "_")}`;
+	// SecureStore keys permit letters, digits, dots, hyphens and underscores.
+	// Escape the full origin, including scheme, and escape underscores too so
+	// host punctuation cannot alias another server. Never fall back to the old
+	// lossy keys: they do not establish which origin owns the stored credential.
+	return `musubi_v2_${origin.replace(/[^a-z0-9.-]/g, character => `_${character.charCodeAt(0).toString(16)}`)}`;
 }

@@ -61,15 +61,15 @@ async function main() {
     assert.equal((await task()).sequence, firstTask.sequence, "Retirement does not borrow native SEQUENCE");
     assert.equal((await task()).providerReadRetiredGeneration, 1);
     assert.equal((await db.select().from(tasks).where(eq(tasks.id, local.id)))[0]!.title, "Authored local task");
-    assert.equal(await updateTask(taskID, { ...firstTask, status: "completed" }), null, "Old full DTO cannot restore its private fields");
-    assert.equal(await updateTask(taskID, { ...firstTask, status: "completed" }, 1), null, "Current counter does not override denied source");
+    assert.equal(await updateTask(taskID, { ...firstTask, status: "completed" }, { actorID: userID, mutationID: randomUUID(), expectedRevision: firstTask.revision, expectedProviderReadRetiredGeneration: 0 }), null, "Old full DTO cannot restore its private fields");
+    assert.equal(await updateTask(taskID, { ...firstTask, status: "completed" }, { actorID: userID, mutationID: randomUUID(), expectedRevision: firstTask.revision, expectedProviderReadRetiredGeneration: 1 }), null, "Current counter does not override denied source");
     discovered = false; read = true; await assert.rejects(sync()); assert.equal((await task()).title, "Private task");
     discovered = true; read = null; await assert.rejects(sync()); assert.equal((await event()).title, "Busy");
     read = true; failed = false; readOnly = false; title = "Fresh permitted"; await sync();
     assert.equal((await event()).id, firstEvent.id); assert.equal((await event()).title, title);
     assert.equal((await task()).id, taskID); assert.equal((await task()).title, title); assert.equal((await task()).providerReadRetiredGeneration, 1);
     await db.update(tasks).set({ creatorID: userID }).where(eq(tasks.id, taskID));
-    const current = await task(); assert.ok(await updateTask(taskID, { ...current, status: "completed" }, 1));
+    const current = await task(); assert.ok(await updateTask(taskID, { ...current, status: "completed" }, { actorID: userID, mutationID: randomUUID(), expectedRevision: current.revision, expectedProviderReadRetiredGeneration: 1 }));
     // A captured read cannot write events, tasks or cursor across a grant ABA.
     let entered!: () => void, release!: () => void;
     const reached = new Promise<void>(resolve => { entered = resolve; });
@@ -150,7 +150,7 @@ async function main() {
     await assert.rejects(assertExternalTaskPush(await task(), latestContext), /read access/);
     await assert.rejects(setCursor(calendarID, "late-disconnect", latestContext));
     await db.insert(caldavAccounts).values(connected!);
-    absent = true; await sync(); assert.equal(await task(), undefined); assert.equal((await getUserExternalCalendars("caldav", userID, accountID)).length, 0);
+    absent = true; await sync(); assert.ok((await task()).deletedAt); assert.equal((await task()).title, "Private task"); assert.equal((await task()).originCalendarID, null); assert.equal((await getUserExternalCalendars("caldav", userID, accountID)).length, 0);
     console.log("CalDAV event/task read retirement, same-validator regain, ABA, task admission/ACK and notification fences: OK");
   } finally { await db.delete(user).where(eq(user.id, userID)); await db.delete(user).where(eq(user.id, editorID)); }
 }

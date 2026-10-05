@@ -60,7 +60,7 @@ Declare the following collection. Nothing is sold or used for advertising.
 | Personal info → User IDs | Required | App functionality, Account management | Server account identifier |
 | Photos and videos → Photos | Optional | App functionality, Account management | User-selected profile picture |
 | Calendar → Calendar events | Optional | App functionality | Musubi and connected-provider events, notes, locations, links, recurrence, and attendance |
-| App activity → Other user-generated content | Optional | App functionality | User-created calendar names and similar free-form content |
+| App activity → Other user-generated content | Optional | App functionality | User-created calendar names, task titles, notes and shared task content |
 | App activity → Other actions | Optional | App functionality | Attendance choices, invites, roles, and synced settings |
 | App info and performance → Diagnostics | Optional | App functionality | User-controlled problem-report email with app/build, platform/OS, and selected server |
 | Device or other IDs → Device or other IDs | Required | Fraud prevention, security and compliance; Account management | Session IP address and user agent |
@@ -92,8 +92,10 @@ tooling cannot contribute unused release permissions.
 
 ## Before each release
 
-1. Bump only the root `package.json` version, then run `pnpm
-   release:verify <version>` and `pnpm check`.
+1. Update the root `package.json` version and its `PRODUCT_VERSION` mirror in
+   `packages/types/src/version.ts`, then run `pnpm release:verify <version>` and
+   `pnpm check`. The native app inherits the root version; EAS increments the
+   platform build numbers separately.
 2. Generate or inspect the release manifest and confirm there is no camera,
    microphone, location, contacts, or broad media permission without a current
    feature that needs it.

@@ -1,6 +1,6 @@
 import { isValidElement, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CalendarSchema, TaskSchema, type Task } from "@musubi/types";
+import { CalendarSchema, TaskSchema, EventMutationError, type Task } from "@musubi/types";
 import { TaskEditorModal } from "./TaskEditorModal";
 
 const h = vi.hoisted(() => ({
@@ -35,13 +35,12 @@ vi.mock("@/constants/theme", () => ({ colors: {}, fonts: {}, styles: {} }));
 vi.mock("@/store/useSettingsStore", () => ({
   useSettingsStore: (selector: (state: { dateFormat: string; timeFormat: string }) => unknown) => selector({ dateFormat: "ymd", timeFormat: h.timeFormat }),
 }));
-vi.mock("@/lib/network", () => ({ userFacingError: (_error: unknown, fallback: string) => fallback }));
 
-const google = CalendarSchema.parse({ id: "google", creatorID: "owner", name: "Google Tasks", color: "red", provider: "google", supportsTasks: true, members: [] });
-const personal = CalendarSchema.parse({ id: "personal", creatorID: "owner", name: "Personal", color: "red", members: [] });
+const google = CalendarSchema.parse({ role: "owner", id: "google", creatorID: "owner", name: "Google Tasks", color: "red", provider: "google", supportsTasks: true, members: [] });
+const personal = CalendarSchema.parse({ role: "owner", id: "personal", creatorID: "owner", name: "Personal", color: "red", members: [] });
 type Props = {
   children?: ReactNode; header?: ReactNode; accessibilityLabel?: string; label?: string;
-  value?: Date; presentation?: string; is24Hour?: boolean;
+  value?: Date | string; presentation?: string; is24Hour?: boolean; editable?: boolean; disabled?: boolean; accessibilityRole?: string;
   onPress: () => void; onChangeText: (value: string) => void;
   onValueChange: (...args: unknown[]) => void;
 };
@@ -84,9 +83,9 @@ describe.each(["Europe/Prague", "America/Los_Angeles"])("native task dates in %s
   });
 
   it("preserves and clears the imported Google date", async () => {
-    const task = TaskSchema.parse({ id: "task", creatorID: "owner", calendarID: google.id, title: "Tickets", due: new Date("2026-09-25T00:00:00Z"), isAllDay: true });
+    const task = TaskSchema.parse({ revision: 1, id: "task", creatorID: "owner", calendarID: google.id, title: "Tickets", due: new Date("2026-09-25T00:00:00Z"), isAllDay: true });
     control(render(task), "due date").onPress();
-    const value = picker(render(task)).value!;
+    const value = picker(render(task)).value as Date;
     expect([value.getFullYear(), value.getMonth(), value.getDate()]).toEqual([2026, 8, 25]);
     picker(render(task)).onValueChange({}, new Date(2026, 8, 26));
     control(render(task), "Save").onPress();
@@ -100,7 +99,7 @@ describe.each(["Europe/Prague", "America/Los_Angeles"])("native task dates in %s
   });
 
   it("normalizes an older timed Google draft even when only its title changes", async () => {
-    const task = TaskSchema.parse({ id: "task", creatorID: "owner", calendarID: google.id, title: "Tickets", due: new Date(2026, 8, 25), isAllDay: false });
+    const task = TaskSchema.parse({ revision: 1, id: "task", creatorID: "owner", calendarID: google.id, title: "Tickets", due: new Date(2026, 8, 25), isAllDay: false });
     control(render(task), "Task title").onChangeText("Updated tickets");
     control(render(task), "Save").onPress();
     await settle();
@@ -115,7 +114,7 @@ describe.each(["Europe/Prague", "America/Los_Angeles"])("native task dates in %s
     expect(nodes(draw()).some(node => node.props.accessibilityLabel === "due time")).toBe(true);
     control(draw(), "Google Tasks calendar").onPress();
     control(draw(), "due date").onPress();
-    expect(picker(draw()).value!.getDate()).toBe(25);
+    expect((picker(draw()).value as Date).getDate()).toBe(25);
     picker(draw()).onValueChange({}, new Date(2026, 8, 25));
     control(draw(), "Personal calendar").onPress();
     control(draw(), "All-day task").onValueChange(false);
@@ -130,9 +129,9 @@ describe.each(["Europe/Prague", "America/Los_Angeles"])("native task dates in %s
     // In Prague this is still the previous UTC day; in Los Angeles it is already the next.
     const now = new Date(2026, 8, 25, timezone === "Europe/Prague" ? 0 : 23, 30);
     vi.setSystemTime(now);
-    const task = TaskSchema.parse({ id: "task", creatorID: "owner", calendarID: personal.id, title: "Undated", isAllDay: true });
+    const task = TaskSchema.parse({ revision: 1, id: "task", creatorID: "owner", calendarID: personal.id, title: "Undated", isAllDay: true });
     control(render(task), "due date").onPress();
-    const value = picker(render(task)).value!;
+    const value = picker(render(task)).value as Date;
     expect([value.getFullYear(), value.getMonth(), value.getDate()]).toEqual([2026, 8, 25]);
   });
 });
@@ -145,7 +144,7 @@ it.each(["android", "ios"])("keeps the native date picker presentation on %s", p
 
 it.each(["12h", "24h"])("uses the app's %s setting for native task time entry", timeFormat => {
   h.timeFormat = timeFormat;
-  const task = TaskSchema.parse({ id: "timed", creatorID: "owner", calendarID: personal.id, title: "Review", due: new Date(2026, 8, 25, 14, 30) });
+  const task = TaskSchema.parse({ revision: 1, id: "timed", creatorID: "owner", calendarID: personal.id, title: "Review", due: new Date(2026, 8, 25, 14, 30) });
   control(render(task), "due time").onPress();
   expect(picker(render(task)).is24Hour).toBe(timeFormat === "24h");
 });
@@ -156,4 +155,32 @@ it("locks the open picker while saving, like the other task controls", () => {
   control(render(), "due date").onPress();
   control(render(), "Create").onPress();
   expect(nodes(render()).some(node => node.type === "DateTimePicker")).toBe(false);
+});
+
+
+it("keeps the title draft open after an explicit 426 upgrade rejection", async () => {
+  h.save.mockRejectedValue(EventMutationError.from({
+    error: "Update Musubi to save tasks. Your task changes have not been saved.",
+    code: "task-client-upgrade-required", localCommitted: false,
+  }));
+  control(render(), "Task title").onChangeText("Keep this draft");
+  control(render(), "Create").onPress(); await settle();
+  const tree = render();
+  expect(h.close).not.toHaveBeenCalled();
+  expect(control(tree, "Task title").value).toBe("Keep this draft");
+  expect(control(tree, "Task title").editable).toBe(true);
+  expect(nodes(tree).find(node => node.props.accessibilityRole === "alert")?.props.children)
+    .toBe("Update Musubi to save tasks. Your task changes have not been saved.");
+});
+
+it("keeps a malformed acknowledgement draft and unlocks saving for a deliberate retry", async () => {
+  h.save.mockRejectedValue(new Error("The server did not confirm the change. Try again."));
+  control(render(), "Task title").onChangeText("Retry the same task");
+  control(render(), "Create").onPress(); await settle();
+  expect(h.close).not.toHaveBeenCalled();
+  expect(control(render(), "Task title").value).toBe("Retry the same task");
+  h.save.mockResolvedValue(undefined);
+  control(render(), "Create").onPress(); await settle();
+  expect(h.save).toHaveBeenCalledTimes(2);
+  expect(h.close).toHaveBeenCalledOnce();
 });

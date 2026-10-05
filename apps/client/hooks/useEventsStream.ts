@@ -1,5 +1,6 @@
+import { useTaskRefreshStore } from "@/store/useTaskRefreshStore";
 import { useDeliveryRefreshStore } from "@/store/useDeliveryRefreshStore";
-import { useEventsStore } from "@/store/useEventsStore";
+import { getEventLifecycle, useEventsStore } from "@/store/useEventsStore";
 import { CLIENT_VERSION_HEADER, PRODUCT_VERSION } from "@musubi/types";
 import { useEffect, useRef } from "react";
 import EventSource from "react-native-sse";
@@ -35,39 +36,48 @@ export function useConnectToEventStream() {
   });
   const silentRefresh = async (full = false) => {
     useDeliveryRefreshStore.getState().refresh();
+    useTaskRefreshStore.getState().refresh();
     try {
       await refreshRef.current({ providerSync: false, full });
     } catch (e) {
       console.warn("SSE-triggered refresh failed:", e);
     }
   };
-  const applyLiveMutation = (mutation: () => void | Promise<void>) => {
-    void serializeEventRefresh(async () => {
-      await mutation();
-    }).catch((e) => console.warn("SSE event apply failed:", e));
-  };
 
   // Offline → online (airplane mode off, wifi back): sync right away instead
-  // of waiting out the SSE retry cycle. Refs only inside — mount-once is safe.
+  // of waiting out the SSE retry cycle. Reinstall for a new server/auth client
+  // so its lifecycle guard follows that scope even if the tab stays mounted.
   useEffect(() => {
+    const lifecycle = getEventLifecycle();
+    let cancelled = false;
     let wasOffline = false;
     const sub = Network.addNetworkStateListener(
       ({ isConnected, isInternetReachable }) => {
+        if (cancelled || lifecycle !== getEventLifecycle()) return;
         const offline = isConnected === false || isInternetReachable === false;
         if (wasOffline && !offline) silentRefresh(true);
         wasOffline = offline;
       },
     );
-    return () => sub.remove();
-  }, []);
+    return () => { cancelled = true; sub.remove(); };
+  }, [apiUrl, authClient]);
 
   useEffect(() => {
     if (!apiUrl) return;
     const sources: EventSource[] = [];
+    const lifecycle = getEventLifecycle();
     let cancelled = false;
+    const isCurrent = () => !cancelled && lifecycle === getEventLifecycle();
+    const applyLiveMutation = (mutation: () => void | Promise<void>) => {
+      void serializeEventRefresh(async () => {
+        // A frame may wait behind a network refresh. Account/server reset must
+        // invalidate it before it can repopulate the next session's cache.
+        if (isCurrent()) await mutation();
+      }).catch((e) => { if (isCurrent()) console.warn("SSE event apply failed:", e); });
+    };
 
     const handleMessage = (event: { data?: string | null }) => {
-      if (!event.data) return;
+      if (!isCurrent() || !event.data) return;
       let data: any;
       try {
         data = JSON.parse(event.data);
@@ -86,6 +96,11 @@ export function useConnectToEventStream() {
       });
 
       switch (data.type) {
+        case "task_created":
+        case "task_updated":
+        case "task_removed":
+          useTaskRefreshStore.getState().refresh();
+          break;
         case "event_created":
           applyLiveMutation(() => localAddEvent(toEvent(data.payload)));
           break;
@@ -104,11 +119,13 @@ export function useConnectToEventStream() {
             applyLiveMutation(() => localRemoveEvent(toEvent(data.payload)));
           break;
         case "calendar_updated":
+          useTaskRefreshStore.getState().refresh();
           applyLiveMutation(() => {
             localUpdateCalendar(data.payload);
           });
           break;
         case "calendar_removed":
+          useTaskRefreshStore.getState().refresh();
           applyLiveMutation(async () => {
             localRemoveCalendar(data.payload);
             await localRemoveCalendarEvents(data.payload.id);
@@ -159,10 +176,12 @@ export function useConnectToEventStream() {
       // opens and never delivers looks exactly like a quiet calendar, and the
       // diagnostics screen had no way to tell those apart.
       sse.addEventListener("error", () => {
+        if (!isCurrent()) return;
         if (!disconnected) recordServerDiagnostic("× SSE /api/stream");
         disconnected = true;
       });
       sse.addEventListener("open", () => {
+        if (!isCurrent()) return;
         recordServerDiagnostic("← SSE /api/stream");
         if (opened || disconnected) silentRefresh(true);
         opened = true;
@@ -181,7 +200,7 @@ export function useConnectToEventStream() {
     const connect = async () => {
       const { data } = await authClient.getSession();
       const token = data?.session?.token;
-      if (cancelled || !token) return;
+      if (!isCurrent() || !token) return;
       subscribe(apiUrl, token);
     };
     connect();

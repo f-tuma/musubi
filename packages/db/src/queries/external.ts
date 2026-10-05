@@ -5,7 +5,9 @@ import { assertExternalCalendarAccess, type ExternalCalendarAccessContext } from
 import { assertNoPendingGraphSeriesCreate } from "./graph-series-create";
 import { caldavSeriesDesired } from "./caldav-series-scope";
 import { expandRecurringEvents } from "@musubi/calendar";
-import { ProviderReminderEditSchema, ProviderEventStateSchema, type ProviderEventState, type ProviderSettingTimeEvidence, hasKnownEventTime, BadRequestError, EventTimeModelSchema, OccurrenceStartSchema, type EventTimeModel, type OccurrenceStart } from "@musubi/types";
+import { TaskSchema, ProviderReminderEditSchema, ProviderEventStateSchema, type ProviderEventState, type ProviderSettingTimeEvidence, hasKnownEventTime, BadRequestError, EventTimeModelSchema, OccurrenceStartSchema, type EventTimeModel, type OccurrenceStart } from "@musubi/types";
+import { randomUUID } from "node:crypto";
+import { appendTaskOutbox, prepareTaskOutboxInTransaction, finishTaskOutboxInTransaction, assertTaskOutboxSourceInTransaction, taskOutboxLeaseGuard, type TaskOutboxRow } from "./task-outbox";
 import { assertLegacyEventTimePatch } from "./event-time-write";
 import { appendEventOutbox, reserveEventMutation, type EventOutboxIntent } from "./event-outbox";
 import { retainPendingEventPull, retainUnmappedCreatePull } from "./event-outbox-pull";
@@ -19,6 +21,7 @@ import {
   caldavAccounts,
   account,
   calendarEvents,
+  calendarTasks,
   calendarMembers,
   calendars,
   db,
@@ -28,6 +31,7 @@ import {
   eventOutbox,
   externalTasks,
   tasks,
+  taskOutbox,
   type NewEvent,
   type NewTask,
 } from "..";
@@ -1265,6 +1269,43 @@ export async function getExternalSyncUserIDs(): Promise<string[]> {
 }
 
 // For push update/delete: find the external id of an already-synced Musubi event.
+export type TaskSyncScope = { sourceID: string; accountID: string; providerAccessRevision: number; readStartedAt?: Date };
+
+export async function getTaskMirrorReadCalendars(calendarID: string) {
+  const links = await db.selectDistinct({ calendarID: calendarTasks.calendarID }).from(calendarTasks).innerJoin(tasks, eq(calendarTasks.taskID, tasks.id)).where(eq(tasks.originCalendarID, calendarID));
+  return [...new Set([calendarID, ...links.map(link => link.calendarID)])];
+}
+
+async function assertTaskSyncScope(tx: DbTransaction, provider: string, calendarID: string, externalCalendarID: string | undefined, scope?: TaskSyncScope) {
+  if (!scope) return;
+  const [source] = await tx.select().from(externalCalendars).where(and(eq(externalCalendars.id, scope.sourceID), eq(externalCalendars.calendarID, calendarID), eq(externalCalendars.provider, provider), eq(externalCalendars.accountID, scope.accountID), externalCalendarID ? eq(externalCalendars.externalCalendarID, externalCalendarID) : undefined, eq(externalCalendars.providerAccessRevision, scope.providerAccessRevision), eq(externalCalendars.supportsTasks, true), eq(externalCalendars.disabled, false))).for("share");
+  if (!source || source.providerAccessRole?.startsWith("caldav:read=no;")) throw new Error("Task source access changed during sync.");
+}
+
+function taskOriginPullPatch(provider: string, values: TaskValues, before: Record<string, unknown> | null, after: Record<string, unknown> | undefined): Partial<TaskValues> {
+  if (provider === "caldav" || !after) return values;
+  const fieldKeys: Partial<Record<keyof TaskValues, string>> = provider === "google"
+    ? { title: "title", description: "notes", status: "status", due: "due" }
+    : { title: "title", description: "body", status: "status", start: "startDateTime", due: "dueDateTime", priority: "importance" };
+  const changed = (key: string) => !before || JSON.stringify(before[key]) !== JSON.stringify(after[key]);
+  const patch = Object.fromEntries(Object.entries(fieldKeys).filter(([, key]) => changed(key)).map(([field]) => [field, values[field as keyof TaskValues]])) as Partial<TaskValues>;
+  if (changed("status")) {
+    patch.completedAt = values.completedAt;
+    patch.percentComplete = values.percentComplete;
+  }
+  // A date-only projection's unchanged calendar day cannot discard a canonical
+  // time. A real provider day change is authoritative only at the task's home.
+  if (provider === "google" && changed("due")) patch.isAllDay = values.isAllDay;
+  return patch;
+}
+
+async function appendImportedTaskFanout(tx: DbTransaction, row: typeof tasks.$inferSelect, sourceCalendarID: string, action: "update" | "delete") {
+  const links = await tx.select({ calendarID: calendarTasks.calendarID }).from(calendarTasks).where(eq(calendarTasks.taskID, row.id));
+  const snapshot = TaskSchema.parse({ ...row, calendarID: row.calendarID ?? sourceCalendarID, calendarIDs: links.map(link => link.calendarID) });
+  const actions = links.filter(link => link.calendarID !== sourceCalendarID).map(link => ({ calendarID: link.calendarID, action }));
+  await appendTaskOutbox(tx, snapshot, await prepareTaskOutboxInTransaction(tx, snapshot, actions, { actorID: row.creatorID, mutationID: randomUUID() }));
+}
+
 export async function upsertExternalTask(
   provider: string,
   userID: string,
@@ -1275,10 +1316,21 @@ export async function upsertExternalTask(
   etag: string | null = null,
   icalUid: string | null = null,
   accessContext?: ExternalCalendarAccessContext,
+  scope?: TaskSyncScope,
+  projection?: Record<string, unknown>,
 ): Promise<boolean> {
   return db.transaction(async (tx) => {
     await lockCalendarLifecycle(tx, [calendarID], "shared");
     await assertExternalCalendarAccess(tx, provider, calendarID, accessContext);
+    await assertTaskSyncScope(tx, provider, calendarID, externalCalendarID, scope);
+    const [retainedDelete] = await tx.select({ id: taskOutbox.id }).from(taskOutbox).where(and(eq(taskOutbox.provider, provider), eq(taskOutbox.calendarID, calendarID), eq(taskOutbox.externalCalendarID, externalCalendarID), scope ? eq(taskOutbox.externalCalendarLinkID, scope.sourceID) : undefined, scope ? eq(taskOutbox.accountID, scope.accountID) : undefined, eq(taskOutbox.action, "delete"), sql`(${taskOutbox.externalTaskID} = ${externalTaskID} or ${taskOutbox.resultRef}->>'externalTaskId' = ${externalTaskID} or exists (
+      with recursive previous as (
+        select id, predecessor_id, external_task_id, result_ref from task_outbox where id = ${taskOutbox.predecessorID}
+        union
+        select p.id, p.predecessor_id, p.external_task_id, p.result_ref from task_outbox p inner join previous q on p.id = q.predecessor_id
+      ) select 1 from previous where external_task_id = ${externalTaskID} or result_ref->>'externalTaskId' = ${externalTaskID}
+    ))`)).limit(1);
+    if (retainedDelete) return false;
     const [mapping] = await tx
       .select({
         id: externalTasks.id,
@@ -1286,6 +1338,9 @@ export async function upsertExternalTask(
         etag: externalTasks.etag,
         icalUid: externalTasks.icalUid,
         deletedAt: tasks.deletedAt,
+        originCalendarID: tasks.originCalendarID,
+        projectionBaseline: externalTasks.projectionBaseline,
+        providerAccessRevision: externalTasks.providerAccessRevision,
       })
       .from(externalTasks)
       .innerJoin(tasks, eq(externalTasks.taskID, tasks.id))
@@ -1294,30 +1349,59 @@ export async function upsertExternalTask(
           eq(externalTasks.provider, provider),
           eq(externalTasks.calendarID, calendarID),
           eq(externalTasks.externalTaskID, externalTaskID),
+          scope ? eq(externalTasks.externalCalendarLinkID, scope.sourceID) : undefined,
+          scope ? eq(externalTasks.accountID, scope.accountID) : undefined,
         ),
       );
 
     if (mapping) {
-      if (etag !== null && mapping.etag === etag && mapping.deletedAt === null)
+      if (etag !== null && mapping.etag === etag && mapping.deletedAt === null && (!scope || mapping.originCalendarID !== calendarID || mapping.providerAccessRevision === scope.providerAccessRevision))
         return false;
-      await tx
-        .update(tasks)
-        .set({ ...values, deletedAt: null })
-        .where(eq(tasks.id, mapping.taskID));
+      const [current] = await tx.select().from(tasks).where(eq(tasks.id, mapping.taskID)).for("update");
+      const [accepted] = await tx.select().from(externalTasks).where(eq(externalTasks.id, mapping.id)).for("update");
+      if (!current || !accepted) return false;
+      const [lateRead] = scope?.readStartedAt ? await tx.select({ id: taskOutbox.id }).from(taskOutbox).where(and(eq(taskOutbox.taskID, mapping.taskID), eq(taskOutbox.calendarID, calendarID), eq(taskOutbox.status, "completed"), sql`${taskOutbox.updatedAt} >= ${scope.readStartedAt.toISOString()}::timestamp`)).limit(1) : [];
+      if (lateRead) return false;
+      let acceptedOriginRevision: number | undefined;
+      // A secondary native copy is observation, never the task authority.
+      if (current.originCalendarID === calendarID) {
+        const patch = taskOriginPullPatch(provider, values, accepted.projectionBaseline, projection);
+        const [pending] = await tx.select({ id: taskOutbox.id }).from(taskOutbox).where(and(eq(taskOutbox.taskID, mapping.taskID), eq(taskOutbox.calendarID, calendarID), scope ? eq(taskOutbox.externalCalendarLinkID, scope.sourceID) : undefined, scope ? eq(taskOutbox.providerAccessRevision, scope.providerAccessRevision) : undefined, eq(taskOutbox.retiredGeneration, current.providerReadRetiredGeneration ?? 0), sql`${taskOutbox.status} not in ('completed', 'not-needed', 'cancelled')`)).limit(1);
+        const [localDeletion] = await tx.select({ id: taskOutbox.id }).from(taskOutbox).where(and(eq(taskOutbox.taskID, mapping.taskID), eq(taskOutbox.calendarID, calendarID), eq(taskOutbox.action, "delete"))).limit(1);
+        if (!pending && !(current.deletedAt && localDeletion)) {
+          acceptedOriginRevision = current.revision;
+          const changed = Object.fromEntries(Object.entries(patch).filter(([key, value]) => JSON.stringify(value) !== JSON.stringify(current[key as keyof typeof current])));
+          if (Object.keys(changed).length || current.deletedAt !== null) {
+            const [updated] = await tx.update(tasks).set({ ...changed, deletedAt: null, revision: sql`${tasks.revision} + 1` }).where(eq(tasks.id, mapping.taskID)).returning();
+            if (updated) {
+              acceptedOriginRevision = updated.revision;
+              await appendImportedTaskFanout(tx, updated, calendarID, "update");
+            }
+          }
+        }
+      }
       await tx
         .update(externalTasks)
-        .set({ etag, icalUid: icalUid ?? mapping.icalUid })
+        .set({ etag, icalUid: icalUid ?? accepted.icalUid, projectionBaseline: projection ?? accepted.projectionBaseline,
+          ...(acceptedOriginRevision !== undefined ? { acceptedRevision: acceptedOriginRevision, ...(scope ? { providerAccessRevision: scope.providerAccessRevision } : {}) } : {}),
+        })
         .where(eq(externalTasks.id, mapping.id));
     } else {
+      // A lost CREATE response has no trustworthy identity on Google/Graph.
+      // Do not import an unacknowledged copy as a second canonical task.
+      const [unresolvedCreate] = await tx.select({ id: taskOutbox.id }).from(taskOutbox).innerJoin(tasks, eq(tasks.id, taskOutbox.taskID)).where(and(eq(taskOutbox.calendarID, calendarID), scope ? eq(taskOutbox.externalCalendarLinkID, scope.sourceID) : undefined, scope ? eq(taskOutbox.providerAccessRevision, scope.providerAccessRevision) : undefined, sql`${taskOutbox.retiredGeneration} = coalesce(${tasks.providerReadRetiredGeneration}, 0)`, eq(taskOutbox.action, "create"), eq(taskOutbox.uncertain, true), sql`${taskOutbox.status} not in ('completed', 'not-needed', 'cancelled')`)).limit(1);
+      if (unresolvedCreate) return false;
       const [task] = await tx
         .insert(tasks)
         .values({
           id: crypto.randomUUID(),
           creatorID: userID,
           calendarID,
+          originCalendarID: calendarID,
           ...values,
         })
         .returning({ id: tasks.id });
+      await tx.insert(calendarTasks).values({ taskID: task.id, calendarID });
       await tx.insert(externalTasks).values({
         provider,
         taskID: task.id,
@@ -1326,80 +1410,58 @@ export async function upsertExternalTask(
         externalTaskID,
         etag,
         icalUid,
+        externalCalendarLinkID: scope?.sourceID ?? null,
+        accountID: scope?.accountID ?? null,
+        providerAccessRevision: scope?.providerAccessRevision ?? 0,
+        projectionBaseline: projection ?? null,
       });
     }
     return true;
   });
 }
 
-export async function deleteExternalTask(
-  provider: string,
-  calendarID: string,
-  externalTaskID: string,
-  accessContext?: ExternalCalendarAccessContext,
-): Promise<boolean> {
+async function retireTaskProjection(tx: DbTransaction, provider: string, calendarID: string, externalTaskID: string, scope?: TaskSyncScope): Promise<boolean> {
+  const rows = await tx.select({ mapping: externalTasks, task: tasks }).from(externalTasks).innerJoin(tasks, eq(externalTasks.taskID, tasks.id)).where(and(eq(externalTasks.provider, provider), eq(externalTasks.calendarID, calendarID), eq(externalTasks.externalTaskID, externalTaskID), scope ? eq(externalTasks.externalCalendarLinkID, scope.sourceID) : undefined, scope ? eq(externalTasks.accountID, scope.accountID) : undefined));
+  let changed = false;
+  for (const row of rows) {
+    const [current] = await tx.select().from(tasks).where(eq(tasks.id, row.task.id)).for("update");
+    if (!current) continue;
+    const [lateRead] = scope?.readStartedAt ? await tx.select({ id: taskOutbox.id }).from(taskOutbox).where(and(eq(taskOutbox.taskID, row.task.id), eq(taskOutbox.calendarID, calendarID), eq(taskOutbox.status, "completed"), sql`${taskOutbox.updatedAt} >= ${scope.readStartedAt.toISOString()}::timestamp`)).limit(1) : [];
+    if (lateRead) continue;
+    const [pending] = await tx.select({ id: taskOutbox.id }).from(taskOutbox).where(and(eq(taskOutbox.taskID, row.task.id), eq(taskOutbox.calendarID, calendarID), scope ? eq(taskOutbox.externalCalendarLinkID, scope.sourceID) : undefined, scope ? eq(taskOutbox.providerAccessRevision, scope.providerAccessRevision) : undefined, eq(taskOutbox.retiredGeneration, current.providerReadRetiredGeneration ?? 0), sql`${taskOutbox.status} not in ('completed', 'not-needed', 'cancelled')`)).limit(1);
+    if (pending) continue;
+    await tx.select({ id: externalTasks.id }).from(externalTasks).where(eq(externalTasks.id, row.mapping.id)).for("update");
+    if (current.originCalendarID === calendarID && current.deletedAt === null) {
+      const [deleted] = await tx.update(tasks).set({ deletedAt: new Date(), revision: sql`${tasks.revision} + 1` }).where(eq(tasks.id, row.task.id)).returning();
+      if (deleted) await appendImportedTaskFanout(tx, deleted, calendarID, "delete");
+      changed = true;
+    } else if (row.mapping.etag !== null || row.mapping.projectionBaseline !== null) changed = true;
+    // Keep the captured address: a later update must not silently recreate a
+    // copy which somebody removed outside Musubi.
+    await tx.update(externalTasks).set({ etag: null, projectionBaseline: null }).where(eq(externalTasks.id, row.mapping.id));
+  }
+  return changed;
+}
+
+export async function deleteExternalTask(provider: string, calendarID: string, externalTaskID: string, accessContext?: ExternalCalendarAccessContext, scope?: TaskSyncScope): Promise<boolean> {
   return db.transaction(async tx => {
     await lockCalendarLifecycle(tx, [calendarID], "shared");
     await assertExternalCalendarAccess(tx, provider, calendarID, accessContext);
-  const rows = await tx
-    .update(tasks)
-    .set({ deletedAt: new Date() })
-    .where(
-      and(
-        isNull(tasks.deletedAt),
-        inArray(
-          tasks.id,
-          tx
-            .select({ id: externalTasks.taskID })
-            .from(externalTasks)
-            .where(
-              and(
-                eq(externalTasks.provider, provider),
-                eq(externalTasks.calendarID, calendarID),
-                eq(externalTasks.externalTaskID, externalTaskID),
-              ),
-            ),
-        ),
-      ),
-    )
-    .returning({ id: tasks.id });
-  return rows.length > 0;
+    await assertTaskSyncScope(tx, provider, calendarID, undefined, scope);
+    return retireTaskProjection(tx, provider, calendarID, externalTaskID, scope);
   });
 }
 
-export async function sweepExternalTasks(
-  provider: string,
-  calendarID: string,
-  seenExternalTaskIDs: string[],
-  accessContext?: ExternalCalendarAccessContext,
-): Promise<number> {
+export async function sweepExternalTasks(provider: string, calendarID: string, seenExternalTaskIDs: string[], accessContext?: ExternalCalendarAccessContext, scope?: TaskSyncScope): Promise<number> {
   return db.transaction(async tx => {
     await lockCalendarLifecycle(tx, [calendarID], "shared");
     await assertExternalCalendarAccess(tx, provider, calendarID, accessContext);
-  const mappings = await tx
-    .select({
-      taskID: externalTasks.taskID,
-      externalTaskID: externalTasks.externalTaskID,
-    })
-    .from(externalTasks)
-    .innerJoin(tasks, eq(externalTasks.taskID, tasks.id))
-    .where(
-      and(
-        eq(externalTasks.provider, provider),
-        eq(externalTasks.calendarID, calendarID),
-        isNull(tasks.deletedAt),
-      ),
-    );
-  const seen = new Set(seenExternalTaskIDs);
-  const gone = mappings
-    .filter((mapping) => !seen.has(mapping.externalTaskID))
-    .map((mapping) => mapping.taskID);
-  if (gone.length === 0) return 0;
-  await tx
-    .update(tasks)
-    .set({ deletedAt: new Date() })
-    .where(inArray(tasks.id, gone));
-  return gone.length;
+    await assertTaskSyncScope(tx, provider, calendarID, undefined, scope);
+    const mappings = await tx.select({ externalTaskID: externalTasks.externalTaskID }).from(externalTasks).where(and(eq(externalTasks.provider, provider), eq(externalTasks.calendarID, calendarID), scope ? eq(externalTasks.externalCalendarLinkID, scope.sourceID) : undefined, scope ? eq(externalTasks.accountID, scope.accountID) : undefined));
+    const seen = new Set(seenExternalTaskIDs);
+    let changed = 0;
+    for (const mapping of mappings) if (!seen.has(mapping.externalTaskID) && await retireTaskProjection(tx, provider, calendarID, mapping.externalTaskID, scope)) changed++;
+    return changed;
   });
 }
 
@@ -1522,12 +1584,15 @@ export async function getExternalTask(
   provider: string,
   taskID: string,
   externalCalendarID: string,
+  calendarID?: string,
+  scope?: TaskSyncScope,
 ) {
-  const [result] = await db
+  const results = await db
     .select({
       externalTaskId: externalTasks.externalTaskID,
       etag: externalTasks.etag,
       icalUid: externalTasks.icalUid,
+      projectionBaseline: externalTasks.projectionBaseline,
     })
     .from(externalTasks)
     .where(
@@ -1535,15 +1600,20 @@ export async function getExternalTask(
         eq(externalTasks.provider, provider),
         eq(externalTasks.taskID, taskID),
         eq(externalTasks.externalCalendarID, externalCalendarID),
+        calendarID ? eq(externalTasks.calendarID, calendarID) : undefined,
+        scope ? eq(externalTasks.externalCalendarLinkID, scope.sourceID) : undefined,
+        scope ? eq(externalTasks.accountID, scope.accountID) : undefined,
       ),
     );
-  return result ?? null;
+  if (results.length > 1) throw new Error("Ambiguous provider task address. Supply its local source scope.");
+  return results[0] ?? null;
 }
 
 type TaskPushSnapshot = Pick<typeof tasks.$inferSelect, "id" | "calendarID" | "sequence"> & { providerReadRetiredGeneration?: number | null };
 type TaskPushAdmission = { task: TaskPushSnapshot; context: ExternalCalendarAccessContext };
 
 async function assertTaskPushInTransaction(tx: DbTransaction, { task, context }: TaskPushAdmission) {
+  if (!task.calendarID) throw new Error("Task source is unavailable.");
   await lockCalendarLifecycle(tx, [task.calendarID], "shared");
   const access = await assertExternalCalendarAccess(tx, context.provider ?? "caldav", task.calendarID, context);
   if (access?.role?.startsWith("caldav:read=no;")) throw new Error("Task source read access is unavailable.");
@@ -1557,6 +1627,8 @@ export async function setExternalTaskSyncData(
   externalCalendarID: string,
   data: { etag: string | null; icalUid: string | null },
   admission?: TaskPushAdmission,
+  calendarID?: string,
+  scope?: TaskSyncScope,
 ) {
   await db.transaction(async tx => {
     if (admission) await assertTaskPushInTransaction(tx, admission);
@@ -1564,6 +1636,9 @@ export async function setExternalTaskSyncData(
       eq(externalTasks.provider, provider),
       eq(externalTasks.taskID, taskID),
       eq(externalTasks.externalCalendarID, externalCalendarID),
+      calendarID ? eq(externalTasks.calendarID, calendarID) : undefined,
+      scope ? eq(externalTasks.externalCalendarLinkID, scope.sourceID) : undefined,
+      scope ? eq(externalTasks.accountID, scope.accountID) : undefined,
     ));
   });
 }
@@ -1580,7 +1655,41 @@ export async function importExternalTask(
 ) {
   await db.transaction(async tx => {
     if (admission) await assertTaskPushInTransaction(tx, admission);
-    await tx.insert(externalTasks).values({ provider, taskID, calendarID, externalCalendarID, externalTaskID, etag, icalUid });
+    const [source] = await tx.select().from(externalCalendars).where(and(eq(externalCalendars.calendarID, calendarID), eq(externalCalendars.provider, provider), eq(externalCalendars.externalCalendarID, externalCalendarID)));
+    await tx.insert(externalTasks).values({ provider, taskID, calendarID, externalCalendarID, externalTaskID, etag, icalUid, externalCalendarLinkID: source?.id ?? null, accountID: source?.accountID ?? null, providerAccessRevision: source?.providerAccessRevision ?? 0 });
+  });
+}
+
+/** The validated lease, captured source and mapping ACK commit together. A
+ * removed attachment can retain delivery proof without resurrecting a mirror. */
+export async function acceptTaskOutboxDelivery(row: TaskOutboxRow, leaseToken: string, evidence: { ref: { externalTaskId: string; etag?: string | null; icalUid?: string | null }; projection: Record<string, unknown> } | null, deletionRef?: { externalTaskId: string; etag?: string | null; icalUid?: string | null }) {
+  return db.transaction(async tx => {
+    await lockCalendarLifecycle(tx, [row.calendarID], "shared");
+    const [task] = await tx.select().from(tasks).where(eq(tasks.id, row.taskID)).for("update");
+    const [claim] = await tx.select({ id: taskOutbox.id }).from(taskOutbox).where(taskOutboxLeaseGuard(row.id, leaseToken)).for("update");
+    if (!claim) return false;
+    if (!await assertTaskOutboxSourceInTransaction(tx, row, { allowDeletedTask: true })) {
+      await finishTaskOutboxInTransaction(tx, row.id, leaseToken, "blocked", "task-source-changed", { uncertain: !evidence && row.uncertain, resultRef: evidence?.ref ?? deletionRef ?? row.resultRef, remoteSnapshot: evidence?.projection ?? null });
+      return false;
+    }
+    const [attached] = await tx.select({ taskID: calendarTasks.taskID }).from(calendarTasks).where(and(eq(calendarTasks.taskID, row.taskID), eq(calendarTasks.calendarID, row.calendarID)));
+    const address = and(eq(externalTasks.taskID, row.taskID), eq(externalTasks.calendarID, row.calendarID), eq(externalTasks.provider, row.provider), eq(externalTasks.externalCalendarLinkID, row.externalCalendarLinkID), eq(externalTasks.accountID, row.accountID));
+    if (row.action === "delete") await tx.delete(externalTasks).where(address);
+    else if (evidence && task?.deletedAt === null && attached) {
+      const [mapping] = await tx.select({ id: externalTasks.id }).from(externalTasks).where(address).for("update");
+      const data = { externalCalendarID: row.externalCalendarID, externalTaskID: evidence.ref.externalTaskId, etag: evidence.ref.etag ?? null, icalUid: evidence.ref.icalUid ?? null, providerAccessRevision: row.providerAccessRevision, projectionBaseline: evidence.projection, acceptedRevision: row.revision };
+      if (mapping) await tx.update(externalTasks).set(data).where(eq(externalTasks.id, mapping.id));
+      else await tx.insert(externalTasks).values({ taskID: row.taskID, calendarID: row.calendarID, provider: row.provider, externalCalendarLinkID: row.externalCalendarLinkID, accountID: row.accountID, ...data });
+    }
+    return finishTaskOutboxInTransaction(tx, row.id, leaseToken, "completed", null, { resultRef: evidence?.ref ?? deletionRef ?? (row.externalTaskID ? { externalTaskId: row.externalTaskID, etag: row.expectedEtag, icalUid: row.icalUid } : null), remoteSnapshot: evidence?.projection ?? null });
+  });
+}
+
+export async function assertTaskOutboxDeliverySource(row: TaskOutboxRow, allowDeletedTask = false) {
+  return db.transaction(async tx => {
+    await lockCalendarLifecycle(tx, [row.calendarID], "shared");
+    await tx.select({ id: tasks.id }).from(tasks).where(eq(tasks.id, row.taskID)).for("share");
+    return assertTaskOutboxSourceInTransaction(tx, row, { allowDeletedTask });
   });
 }
 
