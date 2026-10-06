@@ -28,7 +28,7 @@ function validationError(xml: string): DavReadResponseError {
   throw new Error("Expected validation failure");
 }
 const mismatch = validationError(document(response('<c:calendar-home-set><d:href>/private-home/</d:href></c:calendar-home-set>', "HTTP/1.1 200 OK", "https://dav.example.test/private-user/")));
-assert.deepEqual(mismatch.cause, { code: "caldav-read-response-invalid", reason: "discovery-response-resource", responseCount: 1, hrefRelation: "different-path", readKind: "home" });
+assert.deepEqual(mismatch.cause, { code: "caldav-read-response-invalid", reason: "discovery-response-resource", responseCount: 1, hrefRelation: "different-path", providerKind: "other", requestResource: "other", responseResource: "other", readKind: "home" });
 assert.equal(validationError(document("")).cause.reason, "discovery-response-count");
 assert.equal(validationError(document("")).cause.responseCount, 0);
 assert.deepEqual(validationError(document(`<d:response><d:href>${principalURL}</d:href><d:status>HTTP/1.1 403 Forbidden</d:status></d:response>`)).cause, { code: "caldav-read-response-invalid", reason: "discovery-response-status", responseCount: 1, responseStatus: 403, readKind: "home" });
@@ -42,6 +42,20 @@ try {
 } finally { process.stderr.write = originalWrite; }
 assert.deepEqual(JSON.parse(logged).error.cause, mismatch.cause, "Grafana receives structured diagnostic fields through the existing logger");
 for (const privateValue of ["https://dav.example.test", "private-user", "private-home", "calendar-home-set", "<d:"]) assert.ok(!logged.includes(privateValue), "Validation diagnostics contain no server XML or private resource identity");
+const icloudPrincipal = "https://p42-caldav.icloud.com/123456789/principal/";
+const icloudMismatch = document(response('<c:calendar-home-set><d:href>/123456789/calendars/</d:href></c:calendar-home-set>', "HTTP/1.1 200 OK", "https://p42-caldav.icloud.com/principal/"));
+let icloudError: DavReadResponseError | undefined;
+try { assertDavReadResponse(icloudMismatch, icloudPrincipal, "home"); }
+catch (error) { assert.ok(error instanceof DavReadResponseError); icloudError = error; }
+assert.ok(icloudError, "Known iCloud address shapes are not a shortcut around principal identity proof");
+assert.deepEqual(icloudError.cause, { code: "caldav-read-response-invalid", reason: "discovery-response-resource", responseCount: 1, hrefRelation: "different-path", providerKind: "icloud", requestResource: "account-principal", responseResource: "principal-alias", homeTargetMatchesPrincipalID: true, readKind: "home" });
+for (const privateValue of ["123456789", "p42", "https:", "<d:"]) assert.ok(!JSON.stringify(icloudError.cause).includes(privateValue));
+for (const [homeHref, match] of [["/987654321/calendars/", false], ["/123456789/calendars/?private=yes", false], ["https://secret@p42-caldav.icloud.com/123456789/calendars/", false]] as const) {
+  assert.throws(() => assertDavReadResponse(icloudMismatch.replace("/123456789/calendars/", homeHref), icloudPrincipal, "home"), error => error instanceof DavReadResponseError && error.cause.homeTargetMatchesPrincipalID === match);
+}
+for (const origin of ["https://p42-caldav.icloud.com.evil.test", "http://p42-caldav.icloud.com", "https://p42-caldav.icloud.com:8443"]) {
+  assert.throws(() => assertDavReadResponse(icloudMismatch.split("https://p42-caldav.icloud.com").join(origin), origin + "/123456789/principal/", "home"), error => error instanceof DavReadResponseError && error.cause.providerKind === "other");
+}
 const privilege = '<d:current-user-privilege-set><d:privilege><d:read/></d:privilege><d:privilege><c:read-free-busy/></d:privilege></d:current-user-privilege-set>';
 const [valid] = davMultistatus(document(response(privilege)), url);
 assert.equal(successfulDavProperty(valid!, DAV, "current-user-privilege-set")!.children[1]!.children[0]!.name, `{${CALDAV}}read-free-busy`);

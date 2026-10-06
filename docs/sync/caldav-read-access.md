@@ -93,3 +93,11 @@ The supported structural boundary is explicit:
 Complete property evidence requires exactly HTTP 200 within propstat, including scheduling proof; inner 206 is partial/unknown. Multiget resource reads reject redirects before following them, preventing a final response origin from rebinding the original path-only request identities.
 
 The convenience projection rejects every non-200 successful propstat globally, including optional sync tokens and display metadata; it never forwards partial-success properties to tsdav. Ordinary failed optional properties (for example 404 sync-token) remain allowed and omitted by its projection.
+
+Discovery resource mismatches include fixed diagnostic categories for the
+provider and request/response resource shapes. An optional boolean says whether
+the home target's numeric account segment matches the requested principal's
+segment. No host, path, account identifier or XML is recorded. These fields
+help distinguish an iCloud principal alias from another mismatch; they are
+never identity or ACL evidence and do not relax any rejection. See the
+[October 2026 diagnostic checkpoint](../audits/caldav-discovery-diagnostic-2026-10-06.md).

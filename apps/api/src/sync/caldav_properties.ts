@@ -7,10 +7,11 @@ export type DavResponse = { href: string; status?: number; properties: Map<strin
 export type DavReadKind = "principal" | "home" | "discovery" | "listing" | "multiget" | "sync";
 type DavReadFailureReason = "invalid-structure" | "invalid-xml" | "response-href-authority" | "response-href-invalid" | "response-href-duplicate" | "projection-namespace" | "partial-property" | "discovery-response-count" | "discovery-response-status" | "discovery-response-resource" | "discovery-property-unavailable" | "discovery-property-shape" | "discovery-target-shape" | "discovery-target-invalid" | "http-status" | "http-partial" | "http-content-type";
 type DavHrefRelation = "exact" | "collection-slash" | "different-origin" | "different-query" | "different-path";
+type DavDiscoveryResource = "root" | "principal-alias" | "account-principal" | "account-calendar-home" | "other";
 export class DavReadResponseError extends Error {
   // The logger serializes Error.cause. Keep this diagnostic to fixed enums and
   // counts/statuses: DAV XML, resource paths and credential data must stay out.
-  cause: { code: "caldav-read-response-invalid"; reason: DavReadFailureReason; readKind?: DavReadKind; responseCount?: number; responseStatus?: number; propertyStatus?: number; httpStatus?: number; hrefRelation?: DavHrefRelation };
+  cause: { code: "caldav-read-response-invalid"; reason: DavReadFailureReason; readKind?: DavReadKind; responseCount?: number; responseStatus?: number; propertyStatus?: number; httpStatus?: number; hrefRelation?: DavHrefRelation; providerKind?: "icloud" | "other"; requestResource?: DavDiscoveryResource; responseResource?: DavDiscoveryResource; homeTargetMatchesPrincipalID?: boolean };
   constructor(reason: DavReadFailureReason, details: Omit<DavReadResponseError["cause"], "code" | "reason"> = {}) {
     super("CalDAV property response is incomplete or ambiguous.");
     this.name = "DavReadResponseError";
@@ -31,6 +32,37 @@ function discoveryHrefRelation(href: string, requestURL: string): DavHrefRelatio
   // object reads and authoritative collection listings still use exact hrefs.
   if (!request.pathname.endsWith("/") && target.pathname === request.pathname + "/") return "collection-slash";
   return "different-path";
+}
+function discoveryResource(url: URL): DavDiscoveryResource {
+  if (url.pathname === "/") return "root";
+  if (/^\/principal\/?$/.test(url.pathname)) return "principal-alias";
+  if (/^\/\d+\/principal\/?$/.test(url.pathname)) return "account-principal";
+  if (/^\/\d+\/calendars\/?$/.test(url.pathname)) return "account-calendar-home";
+  return "other";
+}
+function discoveryIdentityDiagnostic(row: DavResponse, requestURL: string) {
+  const request = new URL(requestURL), response = new URL(row.href);
+  const principalID = /^\/(\d+)\/principal\/?$/.exec(request.pathname)?.[1];
+  const home = successfulDavProperty(row, CALDAV, "calendar-home-set");
+  let homeTargetMatchesPrincipalID: boolean | undefined;
+  if (principalID && home && !home.text && home.children.length === 1) {
+    const href = home.children[0]!;
+    if (href.name === davName(DAV, "href") && !href.children.length && href.text) {
+      try {
+        const target = new URL(href.text, request);
+        homeTargetMatchesPrincipalID = !target.username && !target.password && !target.search && !target.hash
+          && target.pathname === `/${principalID}/calendars/`;
+      } catch { /* Malformed home metadata supplies no diagnostic match. */ }
+    }
+  }
+  // Fixed resource categories and a boolean only. This is diagnostic data,
+  // never identity/ACL evidence and never an exception to strict validation.
+  return {
+    providerKind: request.protocol === "https:" && !request.port
+      && /^(?:caldav|p\d+-caldav)\.icloud\.com$/.test(request.hostname) ? "icloud" as const : "other" as const,
+    requestResource: discoveryResource(request), responseResource: discoveryResource(response),
+    ...(homeTargetMatchesPrincipalID === undefined ? {} : { homeTargetMatchesPrincipalID }),
+  };
 }
 function provenCollectionAlias(row: DavResponse, url: string, contentLocation?: string): boolean {
   // A principal may also be a noncollection resource, where adding '/' is not
@@ -158,7 +190,7 @@ function validateDavReadResponse(xml: string, url: string, kind: DavReadKind, re
   if (kind === "principal" || kind === "home") {
     if (responses.length !== 1) invalid("discovery-response-count", { responseCount: responses.length });
     const row = responses[0]!, hrefRelation = discoveryHrefRelation(row.href, url);
-    if (hrefRelation !== "exact" && !(hrefRelation === "collection-slash" && provenCollectionAlias(row, url, contentLocation))) invalid("discovery-response-resource", { responseCount: responses.length, hrefRelation });
+    if (hrefRelation !== "exact" && !(hrefRelation === "collection-slash" && provenCollectionAlias(row, url, contentLocation))) invalid("discovery-response-resource", { responseCount: responses.length, hrefRelation, ...discoveryIdentityDiagnostic(row, url) });
     if (row.status !== undefined) invalid("discovery-response-status", { responseCount: responses.length, responseStatus: row.status });
     const namespace = kind === "principal" ? DAV : CALDAV, name = kind === "principal" ? "current-user-principal" : "calendar-home-set";
     const value = successfulDavProperty(row, namespace, name);
