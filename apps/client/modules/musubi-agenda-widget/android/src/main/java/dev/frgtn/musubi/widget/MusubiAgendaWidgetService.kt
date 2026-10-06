@@ -10,11 +10,14 @@ import android.widget.RemoteViewsService
 class MusubiAgendaWidgetService : RemoteViewsService() {
   override fun onGetViewFactory(intent: Intent): RemoteViewsFactory = WidgetRemoteViewsFactory(applicationContext,
     intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID),
-    intent.getBooleanExtra("tasks", false))
+    intent.getBooleanExtra("tasks", false),
+    if (intent.hasExtra("width")) intent.getIntExtra("width", 0) else null,
+    if (intent.hasExtra("groups")) intent.getBooleanExtra("groups", false) else null)
 }
 
 private class WidgetRemoteViewsFactory(private val context: Context, private val widgetId: Int,
-  private val tasks: Boolean) : RemoteViewsService.RemoteViewsFactory {
+  private val tasks: Boolean, private val configuredWidth: Int?,
+  private val configuredGroups: Boolean?) : RemoteViewsService.RemoteViewsFactory {
   private var snapshot = WidgetSnapshot()
   private var events = emptyList<WidgetEvent>()
   private var taskRows = emptyList<WidgetTask>()
@@ -35,8 +38,9 @@ private class WidgetRemoteViewsFactory(private val context: Context, private val
     }
     ids = WidgetInvariants.stableIds(if (tasks) taskRows.map { it.id } else events.map { it.key })
     val options = AppWidgetManager.getInstance(context).getAppWidgetOptions(widgetId)
-    wide = WidgetCollection.width(context, options) >= 320
-    groups = WidgetCollection.height(context, options) >= WidgetPresentation.dp(context, R.dimen.musubi_widget_min_grouped_list_height)
+    wide = (configuredWidth ?: WidgetCollection.width(context, options)) >= 320
+    groups = configuredGroups ?: (WidgetCollection.height(context, options) >=
+      WidgetPresentation.dp(context, R.dimen.musubi_widget_min_grouped_list_height))
     nextEvent = events.indexOfFirst { !it.allDay }
   }
   override fun onDestroy() { events = emptyList(); taskRows = emptyList(); ids = emptyList() }

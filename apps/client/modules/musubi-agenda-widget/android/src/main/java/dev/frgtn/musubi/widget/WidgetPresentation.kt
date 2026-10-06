@@ -6,6 +6,9 @@ import android.content.Intent
 import android.graphics.Paint
 import android.content.res.Configuration
 import android.os.Build
+import android.os.Bundle
+import android.appwidget.AppWidgetManager
+import android.util.SizeF
 import android.net.Uri
 import android.text.format.DateUtils
 import android.view.View
@@ -18,6 +21,26 @@ import java.util.TimeZone
 internal object WidgetPresentation {
   val TIME_ACTIONS = setOf(Intent.ACTION_DATE_CHANGED, Intent.ACTION_LOCALE_CHANGED,
     Intent.ACTION_TIMEZONE_CHANGED, Intent.ACTION_TIME_CHANGED)
+
+  // Hosts can rotate without changing their persisted min/max size options or
+  // calling the provider again. Supply both layouts so the host can choose.
+  fun responsive(options: Bundle, fallbackWidth: Float, fallbackHeight: Float,
+    render: (Int, Int) -> RemoteViews): RemoteViews {
+    val portraitWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, fallbackWidth.toInt())
+    val portraitHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, fallbackHeight.toInt())
+    val landscapeWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, portraitWidth)
+    val landscapeHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, portraitHeight)
+    val portrait = render(portraitWidth, portraitHeight)
+    val landscape = if (portraitWidth == landscapeWidth && portraitHeight == landscapeHeight) portrait
+      else render(landscapeWidth, landscapeHeight)
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) RemoteViews(linkedMapOf(
+      // Some letterboxed launchers allocate less than either reported size.
+      // A minimal fallback must explain the shortage instead of clipping rows.
+      SizeF(1f, 1f) to render(portraitWidth, 1),
+      SizeF(portraitWidth.toFloat(), portraitHeight.toFloat()) to portrait,
+      SizeF(landscapeWidth.toFloat(), landscapeHeight.toFloat()) to landscape))
+      else RemoteViews(landscape, portrait)
+  }
 
   fun route(context: Context, uri: Uri): PendingIntent = PendingIntent.getActivity(context, 0,
     Intent(Intent.ACTION_VIEW, uri).setPackage(context.packageName).apply {

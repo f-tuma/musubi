@@ -72,8 +72,18 @@ internal object WidgetCollection {
   fun update(context: Context, manager: AppWidgetManager, id: Int, tasks: Boolean) = synchronized(AgendaWidgetStorage) {
     val snapshot = AgendaWidgetData.read(context)
     val options = manager.getAppWidgetOptions(id)
-    val width = width(context, options)
-    val groups = height(context, options) >= WidgetPresentation.dp(context, R.dimen.musubi_widget_min_grouped_list_height)
+    val views = WidgetPresentation.responsive(options,
+      WidgetPresentation.dp(context, R.dimen.musubi_widget_min_list_width),
+      WidgetPresentation.dp(context, R.dimen.musubi_widget_min_list_height)) { width, height ->
+      render(context, id, tasks, snapshot, width, height)
+    }
+    manager.updateAppWidget(id, views)
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) manager.notifyAppWidgetViewDataChanged(id, R.id.musubi_widget_events)
+  }
+
+  private fun render(context: Context, id: Int, tasks: Boolean, snapshot: WidgetSnapshot,
+    width: Int, height: Int): RemoteViews {
+    val groups = height >= WidgetPresentation.dp(context, R.dimen.musubi_widget_min_grouped_list_height)
     val selection = CalendarWidgetPreferences.read(context, id, "tasks")
     val wide = width >= 320
     val taskRows = if (tasks) AgendaWidgetData.tasks(snapshot, selection) else emptyList()
@@ -81,6 +91,8 @@ internal object WidgetCollection {
     val keys = if (tasks) taskRows.map { it.id } else eventRows.map { it.key }
     val count = keys.size
     val empty = WidgetPresentation.empty(context, snapshot, tasks, count)
+      ?: if (height < WidgetPresentation.dp(context, R.dimen.musubi_widget_min_list_height))
+        context.getString(R.string.musubi_widget_resize_list) else null
     val views = RemoteViews(context.packageName, R.layout.musubi_agenda_widget_v4)
     WidgetPresentation.shell(context, views, snapshot, tasks, empty, width, count > MAX_VISIBLE_ROWS)
     views.setOnClickPendingIntent(R.id.musubi_widget_settings, WidgetPresentation.route(context,
@@ -114,12 +126,13 @@ internal object WidgetCollection {
       val intent = Intent(context, MusubiAgendaWidgetService::class.java).apply {
         putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
         putExtra("tasks", tasks)
+        putExtra("width", width)
+        putExtra("groups", groups)
         data = Uri.parse(toUri(Intent.URI_INTENT_SCHEME))
       }
       views.setRemoteAdapter(R.id.musubi_widget_events, intent)
     }
-    manager.updateAppWidget(id, views)
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) manager.notifyAppWidgetViewDataChanged(id, R.id.musubi_widget_events)
+    return views
   }
 
   private fun template(context: Context, widgetId: Int, tasks: Boolean): PendingIntent {

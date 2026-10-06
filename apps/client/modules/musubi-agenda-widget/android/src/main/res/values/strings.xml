@@ -48,4 +48,5 @@
   <string name="musubi_widget_shared_task">Shared task</string>
   <string name="musubi_widget_undated">No date</string>
   <string name="musubi_widget_resize">Enlarge the widget to show dates</string>
+  <string name="musubi_widget_resize_list">Enlarge the widget to show items</string>
 </resources>

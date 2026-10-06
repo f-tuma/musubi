@@ -333,12 +333,28 @@ instead of shrinking. Existing test widgets survived replacement of the debug
 APK and restart of this disposable emulator. Temporary screenshots are outside
 the repository; they are not a maintained screenshot catalog.
 
-This is one emulator/launcher configuration with injected display fixtures,
-not an end-to-end authenticated-app, production-upgrade, or physical-device test.
+Additional release checks used a real authenticated app against a disposable
+local API and PostgreSQL database. Completing a widget task committed revision
+2 through the normal task mutation endpoint and removed the row from the widget.
+With the API connection removed, refresh retained the cached task and showed
+the failed-update state; attempting completion did not change its revision or
+status. Restoring the connection recovered the calendar snapshot. No production
+account was used.
+
+Forced display rotation exposed a launcher that letterboxes its home screen
+without reporting a smaller widget size. Providers now supply responsive
+portrait/landscape layouts plus a minimal enlargement state; the letterboxed
+widget no longer displays a partially clipped task row. Both themes and the
+return to portrait were checked. The normal portrait suite again passed all
+42 Calendar number/weekday alignment checks. Pre-31 collection-factory runtime,
+physical-device TalkBack gestures and production APK upgrade remain unverified.
+The emulator TalkBack service was bound with touch exploration enabled, but
+that alone is not an accessibility acceptance test.
 
 Native resource/module changes require rebuilding the development client; a
-Metro export alone is insufficient. The debug build above is not an Android
-release artifact. Use the existing
+Metro export alone is insufficient. Both local debug and x86_64 release builds
+compile. The local release APK uses test signing and is not a Play release
+artifact. Use the existing
 [Android QA workflow](../../handoffs/windows-android-qa-2026-09-13.md).
 
 On emulator and a physical device, record launcher/version, widget size, theme,

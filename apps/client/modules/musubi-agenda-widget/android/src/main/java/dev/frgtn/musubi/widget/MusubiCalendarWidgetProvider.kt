@@ -462,7 +462,15 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
     }
 
     internal fun update(context: Context, manager: AppWidgetManager, widgetId: Int) = synchronized(AgendaWidgetStorage) {
-      val (width, height) = widgetSize(context, manager.getAppWidgetOptions(widgetId))
+      val views = WidgetPresentation.responsive(manager.getAppWidgetOptions(widgetId),
+        WidgetPresentation.dp(context, R.dimen.musubi_widget_min_calendar_width),
+        WidgetPresentation.dp(context, R.dimen.musubi_widget_min_calendar_height)) { width, height ->
+        render(context, widgetId, width, height)
+      }
+      manager.updateAppWidget(widgetId, views)
+    }
+
+    private fun render(context: Context, widgetId: Int, width: Int, height: Int): RemoteViews {
       val chrome = WidgetPresentation.dp(context, R.dimen.musubi_widget_inset) * 2 +
         maxOf(WidgetPresentation.dp(context, R.dimen.musubi_widget_header_height),
           WidgetPresentation.textHeight(context, R.dimen.musubi_widget_month_title_size)) +
@@ -765,23 +773,7 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
       }
 
       if (hiddenOverflow) views.setTextViewText(R.id.musubi_calendar_status, WidgetPresentation.status(context, snapshot, false, true))
-      manager.updateAppWidget(widgetId, views)
-    }
-
-    private fun widgetSize(context: Context, options: Bundle): Pair<Int, Int> {
-      val landscape =
-        context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-      val width = options.getInt(
-        if (landscape) AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH
-        else AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,
-        250,
-      )
-      val height = options.getInt(
-        if (landscape) AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT
-        else AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,
-        180,
-      )
-      return width to height
+      return views
     }
 
     private fun dotBitmap(context: Context, colors: List<String>): Bitmap {
