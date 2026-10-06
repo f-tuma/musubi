@@ -4,7 +4,7 @@ import { widgetThemeTokens, widgetTokens } from "./widget-tokens";
 /** SwiftUI receives the same semantic colours and geometry as RemoteViews. */
 export function renderIosWidgetTokensSwift() {
   const sections = Object.entries(widgetTokens).filter(([name]) => name === "layout" || name === "type")
-    .map(([name, values]) => `  enum ${name === "type" ? "Type" : "Layout"} {\n${Object.entries(values).map(([key, value]) => `    static let ${key}: CGFloat = ${value}`).join("\n")}\n  }`);
+    .map(([name, values]) => `  enum ${name === "type" ? "Typography" : "Layout"} {\n${Object.entries(values).map(([key, value]) => `    static let ${key}: CGFloat = ${value}`).join("\n")}\n  }`);
   const colours = Object.keys(widgetThemeTokens.light).map(key => {
     const value = (scheme: "light" | "dark") => {
       const { rgb, alpha } = parseColor(widgetThemeTokens[scheme][key as keyof typeof widgetThemeTokens.light]);

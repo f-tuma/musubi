@@ -44,7 +44,7 @@ enum WidgetTokens {
     static let yearWidth: CGFloat = 32
     static let yearHeight: CGFloat = 24
   }
-  enum Type {
+  enum Typography {
     static let titleSize: CGFloat = 14
     static let headerTitleSize: CGFloat = 18
     static let metaSize: CGFloat = 12

@@ -92,9 +92,9 @@ struct MusubiWidgetView: View {
   @Environment(\.widgetFamily) private var family
   @Environment(\.colorScheme) private var scheme
   @Environment(\.dynamicTypeSize) private var dynamicType
-  @ScaledMetric(relativeTo: .headline) private var headerSize = WidgetTokens.Type.headerTitleSize
-  @ScaledMetric(relativeTo: .body) private var titleSize = WidgetTokens.Type.titleSize
-  @ScaledMetric(relativeTo: .caption) private var metaSize = WidgetTokens.Type.metaSize
+  @ScaledMetric(relativeTo: .headline) private var headerSize = WidgetTokens.Typography.headerTitleSize
+  @ScaledMetric(relativeTo: .body) private var titleSize = WidgetTokens.Typography.titleSize
+  @ScaledMetric(relativeTo: .caption) private var metaSize = WidgetTokens.Typography.metaSize
   @ScaledMetric(relativeTo: .body) private var rowHeight = WidgetTokens.Layout.iosRowHeight
   private var small: Bool { family == .systemSmall }
   private var ink: Color { WidgetTokens.foreground(scheme) }
@@ -278,7 +278,7 @@ struct MusubiWidgetView: View {
   }
   private var todayCard: some View {
     VStack(alignment: .leading, spacing: WidgetTokens.Layout.contentGap) {
-      Text(entry.date.formatted(.dateTime.day())).font(.system(size: WidgetTokens.Type.markSize, weight: .semibold, design: .serif)).foregroundStyle(WidgetTokens.accentText(scheme))
+      Text(entry.date.formatted(.dateTime.day())).font(.system(size: WidgetTokens.Typography.markSize, weight: .semibold, design: .serif)).foregroundStyle(WidgetTokens.accentText(scheme))
       Text(entry.date.formatted(.dateTime.weekday(.wide))).font(.system(size: titleSize)).lineLimit(1)
       Text(selectedEvents.first?.title ?? empty(entry.snapshot?.eventsStatus, tasks: false)).font(.system(size: metaSize)).foregroundStyle(muted).lineLimit(1)
       Spacer(minLength: 0)
