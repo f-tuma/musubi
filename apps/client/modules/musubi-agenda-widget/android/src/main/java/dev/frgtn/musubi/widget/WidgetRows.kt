@@ -37,7 +37,7 @@ internal object WidgetRows {
     val due = AgendaWidgetData.taskDue(task, context, snapshot.timeFormat)
     val uri = Uri.Builder().scheme("musubi").authority("tasks").appendQueryParameter("taskId", task.id).build()
     val token = AgendaWidgetStorage.taskCompletion(context, snapshot.scope, task)
-    return RemoteViews(context.packageName, R.layout.musubi_tasks_widget_row).apply {
+    return RemoteViews(context.packageName, R.layout.musubi_tasks_widget_row_v2).apply {
       setTextViewText(R.id.musubi_widget_title, title)
       setTextViewText(R.id.musubi_widget_meta, listOf(due, task.calendarName).filter { it.isNotBlank() }.joinToString(" · "))
       WidgetPresentation.textColor(context, this, R.id.musubi_widget_meta, if (AgendaWidgetData.taskBucket(task) == 0)

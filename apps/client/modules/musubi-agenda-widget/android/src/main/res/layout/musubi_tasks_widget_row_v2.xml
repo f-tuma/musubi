@@ -10,7 +10,7 @@
       <TextView android:id="@+id/musubi_widget_title" style="@style/MusubiWidgetTitle" />
       <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
         <TextView android:id="@+id/musubi_widget_meta" style="@style/MusubiWidgetMeta" android:layout_width="0dp" android:layout_weight="1" />
-        <ImageView android:id="@+id/musubi_widget_task_shared" android:layout_width="@dimen/musubi_widget_meta_icon_size" android:layout_height="@dimen/musubi_widget_meta_icon_size" android:src="@drawable/musubi_widget_shared" android:visibility="gone" android:contentDescription="@string/musubi_widget_shared_task" />
+        <ImageView android:id="@+id/musubi_widget_task_shared" android:layout_width="@dimen/musubi_widget_control_size" android:scaleType="center" android:layout_height="@dimen/musubi_widget_meta_icon_size" android:src="@drawable/musubi_widget_shared" android:visibility="gone" android:contentDescription="@string/musubi_widget_shared_task" />
       </LinearLayout>
     </LinearLayout>
   </LinearLayout>
