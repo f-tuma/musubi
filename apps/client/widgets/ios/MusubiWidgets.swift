@@ -40,6 +40,7 @@ struct MusubiEntry: TimelineEntry {
   }
 }
 struct MusubiProvider: AppIntentTimelineProvider {
+  let kind: MusubiWidgetKind
   func placeholder(in context: Context) -> MusubiEntry { .empty() }
   func snapshot(for configuration: MusubiWidgetConfiguration, in context: Context) async -> MusubiEntry {
     load(configuration)
@@ -67,7 +68,12 @@ struct MusubiProvider: AppIntentTimelineProvider {
           entry.invalidSelection = !selected.allSatisfy { all.contains($0.id) }
           entry.calendarIds = Set(snapshot.readableCalendarIds.filter { id in selected.contains { $0.id == snapshot.scope + "\n" + id } })
         }
-        entry.tickets = (try? store.issue(for: snapshot, now: entry.date.timeIntervalSince1970 * 1000)) ?? [:]
+        let visible = Set(snapshot.tasks.filter { task in
+          !entry.invalidSelection && (entry.calendarIds == nil || task.calendarIds.contains { entry.calendarIds!.contains($0) })
+        }.prefix(12).map(\.id))
+        if kind == .tasks {
+          entry.tickets = (try? store.issue(for: snapshot, taskIds: visible, now: entry.date.timeIntervalSince1970 * 1000)) ?? [:]
+        }
       }
     } catch { /* Missing, protected or corrupt data is unknown, never empty. */ }
     return entry
@@ -171,7 +177,7 @@ struct MusubiWidgetView: View {
           if status.state == "error" { Text("Could not update · cached data") }
           else if status.state == "loading" { Text("Updating · cached data") }
           else if !status.complete || status.truncated { Text("Open Musubi for more") }
-          else if let synced = status.lastSyncAt { Text(Date(timeIntervalSince1970: synced / 1000), style: .relative) }
+          else if let synced = status.lastSyncAt { Text("Updated ") + Text(Date(timeIntervalSince1970: synced / 1000), style: .relative) }
           else { Text("Cached data") }
         }.font(.system(size: metaSize)).foregroundStyle(muted).lineLimit(1)
       }
@@ -344,21 +350,21 @@ struct MusubiWidgetView: View {
 
 struct MusubiAgendaWidget: Widget {
   var body: some WidgetConfiguration {
-    AppIntentConfiguration(kind: "MusubiAgenda", intent: MusubiWidgetConfiguration.self, provider: MusubiProvider()) { MusubiWidgetView(entry: $0, kind: .agenda) }
+    AppIntentConfiguration(kind: "MusubiAgenda", intent: MusubiWidgetConfiguration.self, provider: MusubiProvider(kind: .agenda)) { MusubiWidgetView(entry: $0, kind: .agenda) }
       .configurationDisplayName("Musubi Agenda").description("Upcoming events from your calendars.")
       .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
   }
 }
 struct MusubiCalendarWidget: Widget {
   var body: some WidgetConfiguration {
-    AppIntentConfiguration(kind: "MusubiCalendar", intent: MusubiWidgetConfiguration.self, provider: MusubiProvider()) { MusubiWidgetView(entry: $0, kind: .calendar) }
+    AppIntentConfiguration(kind: "MusubiCalendar", intent: MusubiWidgetConfiguration.self, provider: MusubiProvider(kind: .calendar)) { MusubiWidgetView(entry: $0, kind: .calendar) }
       .configurationDisplayName("Musubi Calendar").description("Your month and upcoming events.")
       .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
   }
 }
 struct MusubiTasksWidget: Widget {
   var body: some WidgetConfiguration {
-    AppIntentConfiguration(kind: "MusubiTasks", intent: MusubiWidgetConfiguration.self, provider: MusubiProvider()) { MusubiWidgetView(entry: $0, kind: .tasks) }
+    AppIntentConfiguration(kind: "MusubiTasks", intent: MusubiWidgetConfiguration.self, provider: MusubiProvider(kind: .tasks)) { MusubiWidgetView(entry: $0, kind: .tasks) }
       .configurationDisplayName("Musubi Tasks").description("Open tasks and their due dates.")
       .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
   }

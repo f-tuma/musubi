@@ -68,4 +68,11 @@ try check((try? WidgetSnapshot.decode(JSONEncoder().encode(duplicate))) == nil, 
 try check(civilDate("2026-02-30") == nil && civilDate("2026-2-01") == nil && civilDate("2024-02-29") != nil, "Strict civil dates")
 try check(first.zoneMatches(first.tasksStatus, TimeZone(identifier: "Europe/Prague")!), "Device zone")
 try check(!first.eventsUsable(at: Date(), zone: TimeZone(identifier: "America/New_York")!), "Zone changes do not publish stale expansion")
+let filteredStore = WidgetStore(url: directory.appendingPathComponent("filtered.json"))
+_ = try filteredStore.begin("one")
+var many = first
+many.tasks = (0..<80).map { index in var row = first.tasks[0]; row.id = "task-\(index)"; return row }
+try check(try filteredStore.write(JSONEncoder().encode(many)), "Large task collection")
+let selected = try filteredStore.issue(for: many, taskIds: ["task-79"], now: 100)
+try check(selected.keys.sorted() == ["task-79"], "Filtered widget actions are not limited to the first unfiltered rows")
 print("Swift widget storage, retention, membership, action and lifecycle invariants: OK")

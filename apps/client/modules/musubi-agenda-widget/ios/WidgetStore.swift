@@ -95,13 +95,14 @@ final class WidgetStore {
       return true
     }
   }
-  func issue(for snapshot: WidgetSnapshot, now: Double) throws -> [String: String] {
+  func issue(for snapshot: WidgetSnapshot, taskIds: Set<String>? = nil, now: Double) throws -> [String: String] {
     try change { state in
       guard let latest = state.snapshot, latest.scope == snapshot.scope, latest.generation == snapshot.generation,
         latest.lifecycle == snapshot.lifecycle, latest.scope == state.scope else { return [:] }
       state.tickets = state.tickets.filter { $0.value.live(scope: snapshot.scope, now: now) }
       var issued: [String: String] = [:]
-      for task in snapshot.tasks.prefix(64) where task.canComplete && task.revision > 0 {
+      let visible = snapshot.tasks.filter { taskIds == nil || taskIds!.contains($0.id) }
+      for task in visible.prefix(64) where task.canComplete && task.revision > 0 {
         if let old = state.tickets.first(where: { $0.value.taskId == task.id && $0.value.revision == task.revision && $0.value.providerReadRetiredGeneration == task.providerReadRetiredGeneration }) {
           issued[task.id] = old.key; continue
         }
