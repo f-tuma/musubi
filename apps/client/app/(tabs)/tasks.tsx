@@ -1,6 +1,8 @@
 import { useServer } from "@/contexts/ServerContext";
 import { taskCapabilities, taskCalendarIDs, taskDisplayCalendar, uniqueTasks } from "@musubi/calendar";
 import { acceptTaskMutation, runTaskMutation } from "@/services/taskCollection";
+import { completeWidgetTask } from "@/services/widgetTaskActions";
+import { getEventLifecycle } from "@/store/useEventsStore";
 import { useTaskCollection } from "@/hooks/useTaskCollection";
 import CalendarWidgetSettingsModal from "@/components/calendar/CalendarWidgetSettingsModal";
 import { TaskEditorModal } from "@/components/tasks/TaskEditorModal";
@@ -39,10 +41,12 @@ export default function TasksTab() {
 
 function TasksTabScreen() {
   const { tasks, ready, status, refreshing, error, scope, apiRef, refresh } = useTaskCollection();
-  const params = useLocalSearchParams<{ taskId?: string | string[]; widgetRefresh?: string | string[]; tasksWidgetId?: string | string[] }>();
+  const params = useLocalSearchParams<{ taskId?: string | string[]; widgetRefresh?: string | string[]; tasksWidgetId?: string | string[]; widgetComplete?: string | string[]; widgetAdd?: string | string[] }>();
   const taskId = Array.isArray(params.taskId) ? params.taskId[0] : params.taskId;
   const widgetRefresh = Array.isArray(params.widgetRefresh) ? params.widgetRefresh[0] : params.widgetRefresh;
   const tasksWidgetId = Array.isArray(params.tasksWidgetId) ? params.tasksWidgetId[0] : params.tasksWidgetId;
+  const widgetComplete = Array.isArray(params.widgetComplete) ? params.widgetComplete[0] : params.widgetComplete;
+  const widgetAdd = Array.isArray(params.widgetAdd) ? params.widgetAdd[0] : params.widgetAdd;
   const widgetSettingsNumber = tasksWidgetId && /^\d+$/.test(tasksWidgetId) ? Number(tasksWidgetId) : NaN;
   const widgetSettingsId = Number.isSafeInteger(widgetSettingsNumber) ? widgetSettingsNumber : null;
   const dateFormat = useSettingsStore(s => s.dateFormat);
@@ -54,6 +58,34 @@ function TasksTabScreen() {
   const [detailId, setDetailId] = useState<string>();
   const [selected, setSelected] = useState<Task>();
   const [saving, setSaving] = useState<string>();
+  const editableCalendars = calendars.filter(calendar => can(calendar.role, "editTasks") && (!calendar.provider || calendar.supportsTasks === true));
+  const widgetCreationTarget = widgetAdd === "1" ? editableCalendars.find(calendar => activeCals.has(calendar.id)) ?? editableCalendars[0] : undefined;
+  const creationCalendar = creating ?? widgetCreationTarget?.id;
+  const claimedWidgetAction = useRef<string | undefined>(undefined);
+  const screenActive = useRef(true);
+  const latestLinkedTask = useRef(taskId);
+  useEffect(() => { screenActive.current = true; return () => { screenActive.current = false; }; }, []);
+  useEffect(() => { latestLinkedTask.current = taskId; }, [taskId]);
+  useEffect(() => {
+    if (!scope || !taskId || !widgetComplete || claimedWidgetAction.current === widgetComplete || saving || status === "not-loaded" || status === "cached") return;
+    claimedWidgetAction.current = widgetComplete;
+    router.setParams({ widgetComplete: "" });
+    const lifecycle = getEventLifecycle();
+    setSaving(taskId);
+    void completeWidgetTask(scope, taskId, widgetComplete, apiRef.current).then(completed => {
+      if (completed && screenActive.current && latestLinkedTask.current === taskId) router.setParams({ taskId: "" });
+    }).catch(error => {
+      if (screenActive.current && lifecycle === getEventLifecycle()) showToast({ message: userFacingError(error, "Could not complete task.") });
+    }).finally(() => { if (screenActive.current && lifecycle === getEventLifecycle()) setSaving(undefined); });
+  }, [scope, taskId, widgetComplete, saving, status, apiRef]);
+  useEffect(() => { if (widgetAdd === "1") newId.current = uuidv7(); }, [widgetAdd]);
+  useEffect(() => {
+    if (widgetAdd !== "1" || !scope || !calendars.length) return;
+    if (!widgetCreationTarget) {
+      router.setParams({ widgetAdd: "" });
+      showToast({ message: "No editable task calendar is available." });
+    }
+  }, [widgetAdd, scope, calendars.length, widgetCreationTarget]);
   useFocusEffect(useCallback(() => { void refresh().catch(() => {}); }, [refresh]));
   useEffect(() => {
     if (widgetRefresh !== "1" || !scope) return;
@@ -148,12 +180,12 @@ function TasksTabScreen() {
         </View>;
       })}
     </ScrollView>
-    {!creating && calendars.some(calendar => can(calendar.role, "editTasks") && (!calendar.provider || calendar.supportsTasks === true)) ? <Tap style={styles.fab} haptic="thump" accessibilityLabel="Create task" onPress={() => {
+    {!creationCalendar && editableCalendars.length > 0 ? <Tap style={styles.fab} haptic="thump" accessibilityLabel="Create task" onPress={() => {
       const editable = calendars.filter(calendar => can(calendar.role, "editTasks") && (!calendar.provider || calendar.supportsTasks === true));
       const target = editable.find(calendar => activeCals.has(calendar.id)) ?? editable[0];
       if (target) { newId.current = uuidv7(); setCreating(target.id); }
     }}><Text style={{ color: colors.onFill, fontSize: 28, lineHeight: 30 }}>+</Text></Tap> : null}
-    {creating ? <TaskEditorModal calendarID={creating} calendars={calendars.filter(calendar => can(calendar.role, "editTasks") && (!calendar.provider || calendar.supportsTasks === true))} onClose={() => setCreating(undefined)} onSave={async draft => {
+    {creationCalendar ? <TaskEditorModal calendarID={creationCalendar} calendars={editableCalendars} onClose={() => { setCreating(undefined); if (widgetAdd) router.setParams({ widgetAdd: "" }); }} onSave={async draft => {
       const api = apiRef.current;
       const saved = await runTaskMutation(scope, api, newId.current, () => api.createTask({ ...draft, id: newId.current }));
       if (!saved) return;

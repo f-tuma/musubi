@@ -120,7 +120,8 @@ function AppContent() {
     const agendaStart = pathname === '/agenda' || initialUrl?.startsWith('musubi://agenda');
     const calendarStart = !!initialUrl?.startsWith('musubi:///?time=')
       || !!initialUrl?.startsWith('musubi:///?calendarWidgetId=')
-      || !!initialUrl?.startsWith('musubi:///?widgetRefresh=');
+      || !!initialUrl?.startsWith('musubi:///?widgetRefresh=')
+      || !!initialUrl?.startsWith('musubi:///?widgetAdd=');
     const tasksStart = pathname === '/tasks' || !!initialUrl?.startsWith('musubi://tasks');
     // Invite routes handle signed-out users themselves: they persist the token,
     // open auth, then restore the invite after a successful sign-in/sign-up.

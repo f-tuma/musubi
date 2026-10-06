@@ -7,9 +7,11 @@ import { resetTaskCollection } from "@/services/taskCollection";
 const h = vi.hoisted(() => ({
   actor: "owner", key: undefined as string | undefined, slots: [] as unknown[], index: 0, focus: undefined as undefined | (() => void | (() => void)),
   effects: [] as { deps?: readonly unknown[]; cleanup?: () => void }[], effectIndex: 0,
-  params: {} as { taskId?: string; widgetRefresh?: string; tasksWidgetId?: string }, setParams: vi.fn(),
+  params: {} as { taskId?: string; widgetRefresh?: string; tasksWidgetId?: string; widgetComplete?: string; widgetAdd?: string }, setParams: vi.fn(),
+  complete: vi.fn(),
   api: { getTasks: vi.fn(), syncProviderCalendars: vi.fn(), createTask: vi.fn() },
 }));
+vi.mock("@/services/widgetTaskActions", () => ({ completeWidgetTask: h.complete }));
 vi.mock("react", async original => ({
   ...await original<typeof import("react")>(),
   useState: (initial: unknown) => {
@@ -93,6 +95,7 @@ beforeEach(() => {
   resetTaskCollection(); h.params = {};
   h.actor = "owner"; h.key = undefined; h.slots = []; h.index = 0; h.focus = undefined;
   vi.resetAllMocks();
+  h.complete.mockResolvedValue(true);
   h.api.getTasks.mockResolvedValue([]);
   h.api.syncProviderCalendars.mockResolvedValue(undefined);
 });
@@ -243,4 +246,33 @@ it("opens the Tasks widget calendar picker independently of app filters", async 
   expect(nodes(render()).find(node => node.type === "CalendarWidgetSettingsModal")?.props.widgetId).toBeNull();
   h.params = { tasksWidgetId: "42" };
   expect(nodes(render()).find(node => node.type === "CalendarWidgetSettingsModal")?.props.widgetId).toBe(42);
+});
+
+it("opens the task creator once from the widget plus action", async () => {
+  h.params = { widgetAdd: "1" };
+  render(); await settle();
+  expect(nodes(render()).some(node => node.type === "TaskEditorModal")).toBe(true);
+  nodes(render()).find(node => node.type === "TaskEditorModal")!.props.onClose!();
+  expect(h.params.widgetAdd).toBe("");
+  expect(h.setParams).toHaveBeenCalledWith({ widgetAdd: "" });
+});
+it("claims a completion link once after task hydration", async () => {
+  h.api.getTasks.mockResolvedValue([task]); h.params = { taskId: task.id, widgetComplete: "ticket" };
+  render(); await settle(); render(); await settle(); render(); await settle();
+  expect(h.complete).toHaveBeenCalledOnce();
+  expect(h.complete).toHaveBeenCalledWith(JSON.stringify(["https://example.test", "owner"]), task.id, "ticket", h.api);
+  expect(h.params.widgetComplete).toBe(""); expect(h.params.taskId).toBe("");
+});
+
+it("keeps a newer detail link open when an older widget completion finishes", async () => {
+  const other = { ...task, id: "other" };
+  h.api.getTasks.mockResolvedValue([task, other]);
+  let resolve!: (completed: boolean) => void;
+  h.complete.mockReturnValueOnce(new Promise<boolean>(done => { resolve = done; }));
+  h.params = { taskId: task.id, widgetComplete: "ticket" };
+  render(); await settle(); render(); await settle();
+  h.params = { taskId: other.id };
+  render(); resolve(true); await settle();
+  expect(h.params.taskId).toBe(other.id);
+  expect(nodes(render()).find(node => node.type === "TaskDetailModal")!.props.task?.id).toBe(other.id);
 });

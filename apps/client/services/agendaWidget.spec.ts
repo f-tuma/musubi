@@ -6,6 +6,7 @@ const fixture = vi.hoisted(() => ({
   events: [] as CachedEvent[], lifecycle: 0,
   calendars: [{ id: "calendar", name: "Home", color: "#c8553d" }],
   snapshot: vi.fn(async (_snapshot: string) => true),
+  claim: vi.fn(async (_token: string, _scope: string) => ({ taskId: "task", revision: 1, providerReadRetiredGeneration: 0, scope: _scope })),
   begin: vi.fn(async (_scope: string) => 1), clear: vi.fn(async () => {}),
   foreground: undefined as undefined | ((state: string) => void),
   listeners: new Set<(state: { events: CachedEvent[] }, previous: { events: CachedEvent[] }) => void>(),
@@ -16,7 +17,7 @@ vi.mock("react-native", () => ({ Platform: { OS: "android" }, AppState: {
   },
 } }));
 vi.mock("@/modules/musubi-agenda-widget", () => ({ default: {
-  updateSnapshot: fixture.snapshot, beginSession: fixture.begin, clearSnapshot: fixture.clear,
+  updateSnapshot: fixture.snapshot, beginSession: fixture.begin, clearSnapshot: fixture.clear, consumeTaskCompletion: fixture.claim,
 } }));
 vi.mock("@/store/useEventsStore", () => ({
   getEventLifecycle: () => fixture.lifecycle,
@@ -34,7 +35,7 @@ vi.mock("@/store/useCalendarsStore", () => ({ useCalendarsStore: {
 vi.mock("@/store/useSettingsStore", () => ({ useSettingsStore: {
   getState: () => ({ timeFormat: "24h", weekStartsOn: "monday" }), subscribe: () => () => {},
 } }));
-const { startAgendaWidgetSync, clearAgendaWidget } = await import("./agendaWidget");
+const { startAgendaWidgetSync, clearAgendaWidget, consumeWidgetTaskCompletion } = await import("./agendaWidget");
 const { resetWidgetData, widgetCalendarsLoaded, widgetEventsLoaded, widgetEventsFailed } = await import("@/store/useWidgetDataStore");
 const { useTasksStore, emptyTaskCollection } = await import("@/store/useTasksStore");
 let stop = () => {};
@@ -42,6 +43,7 @@ beforeEach(() => {
   vi.useFakeTimers(); vi.setSystemTime(new Date("2026-09-08T12:00:00Z"));
   fixture.events = []; fixture.lifecycle = 0;
   fixture.snapshot.mockReset().mockResolvedValue(true);
+  fixture.claim.mockClear();
   fixture.begin.mockReset().mockResolvedValue(1); fixture.clear.mockClear(); resetWidgetData();
   useTasksStore.setState({ ...emptyTaskCollection });
 });
@@ -138,4 +140,22 @@ it("cannot publish an old lifecycle after account reset", async () => {
   widgetEventsLoaded(Date.now()); stop = startAgendaWidgetSync("account"); fixture.lifecycle++;
   await vi.advanceTimersByTimeAsync(120);
   expect(fixture.snapshot).not.toHaveBeenCalled();
+});
+
+it("claims widget completion only inside the current account lifecycle", async () => {
+  await start();
+  expect(await consumeWidgetTaskCompletion("ticket", "foreign")).toBeNull();
+  expect(await consumeWidgetTaskCompletion("ticket", "account")).toMatchObject({ taskId: "task", scope: "account" });
+  expect(fixture.claim).toHaveBeenCalledOnce();
+  fixture.lifecycle++;
+  expect(await consumeWidgetTaskCompletion("ticket", "account")).toBeNull();
+  expect(fixture.claim).toHaveBeenCalledOnce();
+});
+it("drops a queued claim when its owner changes before native session adoption", async () => {
+  let resolve!: (lifecycle: number) => void;
+  fixture.begin.mockReturnValueOnce(new Promise<number>(done => { resolve = done; }));
+  stop = startAgendaWidgetSync("account"); await Promise.resolve();
+  const claiming = consumeWidgetTaskCompletion("ticket", "account");
+  stop(); stop = startAgendaWidgetSync("other"); resolve(1);
+  expect(await claiming).toBeNull(); expect(fixture.claim).not.toHaveBeenCalled();
 });

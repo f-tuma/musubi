@@ -79,7 +79,8 @@ internal object AgendaWidgetData {
         WidgetTask(item.getString("id").also { require(it.isNotBlank()) }, item.getString("title"),
           item.getString("status"), item.optInt("priority"), item.getString("color"),
           item.optString("calendarName"), strings(item.getJSONArray("calendarIds")),
-          if (item.isNull("due")) null else item.getLong("due"), item.optBoolean("dueDateOnly"))
+          if (item.isNull("due")) null else item.getLong("due"), item.optBoolean("dueDateOnly"),
+          item.optLong("revision", 0), item.optBoolean("canComplete", false), item.optBoolean("shared", false), item.optLong("providerReadRetiredGeneration", 0))
       }
       require(tasks.map { it.id }.distinct().size == tasks.size && tasks.all { it.calendarIds.any(readable::contains) })
       WidgetSnapshot(true, json.getString("timeFormat").also { require(it == "12h" || it == "24h") }, events,
@@ -114,18 +115,21 @@ internal object AgendaWidgetData {
     .sortedWith(compareBy<WidgetTask> { taskBucket(it) }.thenBy { it.due ?: Long.MAX_VALUE }
       .thenBy { if (it.priority == 0) 10 else it.priority }.thenBy { it.title.lowercase(Locale.getDefault()) }.thenBy { it.id })
 
-  private fun taskBucket(task: WidgetTask): Int {
+  internal fun taskBucket(task: WidgetTask, now: Long = System.currentTimeMillis()): Int {
     if (task.due == null) return 3
     val day = dateKey(task.due, if (task.dueDateOnly) UTC else TimeZone.getDefault())
-    val today = dateKey(System.currentTimeMillis(), TimeZone.getDefault())
+    val today = dateKey(now, TimeZone.getDefault())
     return if (day < today) 0 else if (day == today) 1 else 2
   }
 
-  fun taskDue(task: WidgetTask, context: Context): String {
+  fun taskDue(task: WidgetTask, context: Context, timeFormat: String = "24h"): String {
     val due = task.due ?: return context.getString(R.string.musubi_widget_undated)
     val bucket = taskBucket(task)
-    if (bucket == 0) return context.getString(R.string.musubi_widget_overdue)
-    if (bucket == 1) return context.getString(R.string.musubi_widget_today)
+    if (bucket == 1) return if (task.dueDateOnly) context.getString(R.string.musubi_widget_today)
+      else SimpleDateFormat(if (timeFormat == "12h") "h:mm a" else "H:mm", Locale.getDefault()).format(Date(due))
+    val relative = Calendar.getInstance().apply { add(Calendar.DAY_OF_MONTH, if (bucket == 0) -1 else 1) }
+    if (dateKey(due, if (task.dueDateOnly) UTC else TimeZone.getDefault()) == dateKey(relative.timeInMillis, TimeZone.getDefault()))
+      return context.getString(if (bucket == 0) R.string.musubi_widget_yesterday else R.string.musubi_widget_tomorrow)
     return SimpleDateFormat("d MMM", Locale.getDefault()).apply {
       if (task.dueDateOnly) timeZone = UTC
     }.format(Date(due))
@@ -166,7 +170,7 @@ internal object AgendaWidgetData {
     val tomorrow = dateKey(tomorrowCalendar.timeInMillis, TimeZone.getDefault())
     val eventKey = dateKey(date.time, TimeZone.getDefault())
     return when (eventKey) {
-      today -> "TODAY"
+      today -> ""
       tomorrow -> if (compact) "TMRW" else "TOMORROW"
       else -> SimpleDateFormat(if (compact) "EEE d" else "EEE d MMM", Locale.getDefault())
         .format(date)
@@ -231,4 +235,5 @@ internal data class WidgetEvent(val key: String, val id: String, val title: Stri
   val end: Long, val allDay: Boolean, val color: String, val calendarName: String, val location: String,
   val calendarIds: List<String>, val startKey: String, val endKey: String, val taskId: String? = null)
 internal data class WidgetTask(val id: String, val title: String, val status: String, val priority: Int,
-  val color: String, val calendarName: String, val calendarIds: List<String>, val due: Long?, val dueDateOnly: Boolean)
+  val color: String, val calendarName: String, val calendarIds: List<String>, val due: Long?, val dueDateOnly: Boolean,
+  val revision: Long = 0, val canComplete: Boolean = false, val shared: Boolean = false, val providerReadRetiredGeneration: Long = 0)

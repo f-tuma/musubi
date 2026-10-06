@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+  <LinearLayout android:id="@+id/musubi_widget_group" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="@dimen/musubi_widget_group_height" android:orientation="horizontal" android:gravity="center_vertical" android:visibility="gone">
+    <TextView android:id="@+id/musubi_widget_group_label" style="@style/MusubiWidgetGroup" />
+    <TextView android:layout_width="0dp" android:layout_height="@dimen/musubi_widget_divider_width" android:layout_weight="1" android:layout_marginStart="@dimen/musubi_widget_content_gap" android:background="@color/musubi_widget_line" android:importantForAccessibility="no" />
+  </LinearLayout>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="@dimen/musubi_widget_row_height" android:orientation="horizontal" android:gravity="center_vertical">
+    <ImageView android:id="@+id/musubi_widget_task_check" style="@style/MusubiWidgetIconControl" android:layout_marginStart="0dp" android:src="@drawable/musubi_widget_check" android:contentDescription="@string/musubi_widget_read_only_task" />
+    <LinearLayout android:id="@+id/musubi_widget_event" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="@dimen/musubi_widget_row_height" android:layout_weight="1" android:orientation="vertical" android:gravity="center_vertical" android:paddingTop="@dimen/musubi_widget_row_gap" android:paddingBottom="@dimen/musubi_widget_row_gap" android:foreground="@drawable/musubi_calendar_day_feedback">
+      <TextView android:id="@+id/musubi_widget_title" style="@style/MusubiWidgetTitle" />
+      <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+        <TextView android:id="@+id/musubi_widget_meta" style="@style/MusubiWidgetMeta" android:layout_width="0dp" android:layout_weight="1" />
+        <ImageView android:id="@+id/musubi_widget_task_shared" android:layout_width="@dimen/musubi_widget_meta_icon_size" android:layout_height="@dimen/musubi_widget_meta_icon_size" android:src="@drawable/musubi_widget_shared" android:visibility="gone" android:contentDescription="@string/musubi_widget_shared_task" />
+      </LinearLayout>
+    </LinearLayout>
+  </LinearLayout>
+</LinearLayout>

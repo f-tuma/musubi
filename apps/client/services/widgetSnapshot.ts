@@ -1,6 +1,6 @@
 import {
   calendarTasks, civilToInstant, expandRecurringEvents, instantToCivil,
-  taskCalendarIDs, taskDisplayCalendar, uniqueTasks,
+  taskCalendarIDs, taskDisplayCalendar, taskCapabilities, uniqueTasks,
   type ICalendarEventBase,
 } from "@musubi/calendar";
 import { occurrenceKey, type Calendar, type Event, type Task } from "@musubi/types";
@@ -24,6 +24,7 @@ export type WidgetTask = {
   id: string; title: string; status: Task["status"]; priority: number;
   color: string; calendarName: string; calendarIds: string[];
   due: number | null; dueDateOnly: boolean;
+  revision: number; providerReadRetiredGeneration: number; canComplete: boolean; shared: boolean;
 };
 export type WidgetSnapshot = {
   version: 2; scope: string; lifecycle: number; generation: number;
@@ -89,7 +90,9 @@ export function buildWidgetSnapshot(input: Input): WidgetSnapshot {
         return { id: task.id, title: shorten(task.title), status: task.status, priority: task.priority,
           color: calendar.color, calendarName: shorten(calendar.name),
           calendarIds: taskCalendarIDs(task).filter(id => byCalendar.has(id)),
-          due: task.due?.getTime() ?? null, dueDateOnly: task.isAllDay };
+          due: task.due?.getTime() ?? null, dueDateOnly: task.isAllDay,
+          revision: task.revision ?? 0, providerReadRetiredGeneration: task.providerReadRetiredGeneration ?? 0, canComplete: taskCapabilities(task, input.calendars).edit,
+          shared: taskCalendarIDs(task).length > 1 };
       });
     if (snapshot.tasks.length > WIDGET_BUDGET.tasks) {
       snapshot.tasks.length = WIDGET_BUDGET.tasks;

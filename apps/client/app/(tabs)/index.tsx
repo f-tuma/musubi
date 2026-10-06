@@ -235,12 +235,18 @@ export default function MainTab() {
 
   // Android calendar VIEW intent (com.android.calendar/time/<ms>, routed via
   // +not-found → root index): jump the calendar to the requested date.
-  const { time, calendarWidgetId, view, widgetRefresh } = useLocalSearchParams<{
+  const { time, calendarWidgetId, view, widgetRefresh, widgetAdd } = useLocalSearchParams<{
     view?: string;
     time?: string;
     calendarWidgetId?: string;
     widgetRefresh?: string;
+    widgetAdd?: string;
   }>();
+  useEffect(() => {
+    if (widgetAdd !== "1" || !calendars.length) return;
+    router.setParams({ widgetAdd: "" });
+    useEditComposerStore.getState().open();
+  }, [widgetAdd, calendars]);
   useEffect(() => {
     if (widgetRefresh !== "1") return;
     router.setParams({ widgetRefresh: "" });

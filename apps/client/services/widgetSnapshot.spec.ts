@@ -334,3 +334,14 @@ describe("budgets and unavailable sections", () => {
     expect(result.eventsStatus.complete).toBe(true);
   });
 });
+
+it("projects home permissions, shared membership and the conditional completion revision", () => {
+  const result = snapshot({ tasks: [
+    task(1, { calendarIDs: [calendar.id, mirror.id], providerReadRetiredGeneration: 3 }),
+    task(2, { calendarID: "private", originCalendarID: "private", calendarIDs: [mirror.id] }),
+    task(3, { capabilities: { edit: false, delete: false, link: false, fork: true, unlinkCalendarIDs: [] } }),
+    task(4, { revision: 0 }),
+  ] });
+  expect(result.tasks.find(row => row.id === id(1))).toMatchObject({ shared: true, canComplete: true, revision: 1, providerReadRetiredGeneration: 3 });
+  for (const value of [2, 3, 4]) expect(result.tasks.find(row => row.id === id(value))?.canComplete).toBe(false);
+});

@@ -9,7 +9,7 @@ import { buildWidgetSnapshot, serializeWidgetSnapshot, type WidgetSnapshot } fro
 
 const UPDATE_DEBOUNCE_MS = 120;
 let writes: Promise<unknown> = Promise.resolve();
-let active: { stop: () => void } | undefined;
+let active: { scope: string; lifecycle: number; stop: () => void } | undefined;
 
 // Bridge writes and clears share a queue. The native lifecycle/generation fence
 // additionally rejects a late operation, including across a process restart.
@@ -109,7 +109,7 @@ export function startAgendaWidgetSync(scope: string) {
     const next = `${new Date().toDateString()}:${Intl.DateTimeFormat().resolvedOptions().timeZone}`;
     if (next !== clock) { clock = next; schedule(); }
   }, 60_000);
-  const owner = { stop: () => {
+  const owner = { scope, lifecycle: eventLifecycle, stop: () => {
     if (disposed) return;
     disposed = true;
     unsubscribers.forEach(unsubscribe => unsubscribe());
@@ -132,6 +132,12 @@ export async function clearAgendaWidget() {
   if (Platform.OS !== "android" || !MusubiAgendaWidget) return;
   const native = MusubiAgendaWidget;
   await enqueue(() => native.clearSnapshot());
+}
+
+export async function consumeWidgetTaskCompletion(token: string, scope: string) {
+  const owner = active, native = MusubiAgendaWidget;
+  if (Platform.OS !== "android" || owner?.scope !== scope || owner.lifecycle !== getEventLifecycle() || typeof native?.consumeTaskCompletion !== "function") return null;
+  return enqueue(() => active === owner && owner.lifecycle === getEventLifecycle() ? native.consumeTaskCompletion(token, scope) : Promise.resolve(null));
 }
 
 export async function getCalendarWidgetSelection(widgetId: number): Promise<string[] | null> {

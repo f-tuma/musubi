@@ -31,8 +31,9 @@ If a newly added widget asks you to open Musubi, open the app and let it load yo
 ## Use the Agenda widget
 
 - Scroll the event list when there are more rows than fit.
+- Tap **+** to create an event in Musubi. The next timed event has a subtle raised background; each row uses one calendar-colour stripe.
 - Recurring series are expanded, so every upcoming occurrence appears separately.
-- All-day events use the compact **ALL** label.
+- All-day events use **All day**. Today is named in the header; future rows retain their date.
 - Wider rows add the end time and location when available.
 - Tap an event to open the Agenda tab with that exact occurrence's detail sheet already open.
 - Task start/deadline markers open the canonical task's detail instead of an event editor.
@@ -41,11 +42,12 @@ The persisted snapshot retains covered occurrences beyond the first day's rows. 
 
 ## Use and filter the Calendar widget
 
+- The header shows the month and full year; narrow or large-text variants abbreviate the month. Tap **+** to create an event.
 - Tap a day to open Musubi at that date. A short accent ripple confirms the press before the app opens.
 - Compact sizes show event colours as dots. Tall sizes use the same coloured event pills as the app.
 - The number of visible pills is calculated from the actual height available to each week row; overflow is shown when it fits.
 - Pill text automatically switches between dark and light ink for contrast.
-- Tap **CALENDARS** in the header to open **Widget calendars**.
+- Tap the **three-dot menu** in the header to open **Widget calendars**.
 - Tap calendar pills to show or hide them. Long-press a pill to show only that calendar. **Show all** resets the selection.
 
 Calendar visibility is stored **per widget instance**. Filtering one Calendar widget does not change the Home/Agenda filters in Musubi or another widget on the same launcher.
@@ -53,12 +55,13 @@ Calendar visibility is stored **per widget instance**. Filtering one Calendar wi
 ## Use and filter the Tasks widget
 
 - The list includes **Needs action** and **In progress** tasks; completed and cancelled tasks are excluded.
-- Tasks are grouped by due date: overdue, today, upcoming, then undated. Priority, title, and canonical ID break ties.
+- Taller widgets show **Overdue**, **Today**, and **Later** groups. Low widgets omit group headings to leave room for tasks. Priority, title, and canonical ID break ties; undated tasks follow dated tasks.
 - Each canonical task appears once even when it is readable through several calendars. An independent copy remains a separate task.
-- Tap a row to open its task detail. The widget is **read-only**; status marks do not complete tasks.
-- Tap the calendar-selection control to choose calendars for that Tasks widget instance. Its selection is separate from the app's filters and other widgets.
+- Tap a row to open its task detail. Tap its **circle** to request completion in Musubi. A **lock** means the task is read-only; tapping it opens details. The app reads current access and task state before saving.
+- The **+** opens the task creator. A small shared icon identifies tasks linked to more than one calendar.
+- Tap **All calendars**, **Selected calendars**, or the **three-dot menu** to choose calendars for that Tasks widget instance. Its selection is separate from the app's filters and other widgets.
 
-The header opens Tasks. Tasks are cached for the current server/account, so previously loaded rows can appear on a cold offline launch. An authoritative removal, authorization loss, or account/server reset clears data that is no longer readable.
+The header opens Tasks and shows the open-task count when space permits. Tasks are cached for the current server/account, so previously loaded rows can appear on a cold offline launch. An authoritative removal, authorization loss, or account/server reset clears data that is no longer readable.
 
 ## Read the data status
 
@@ -100,6 +103,7 @@ Calendar coverage runs from the previous month through the same calendar month i
   - services/widgetSnapshot.ts — pure v2 projector, recurrence/day/reference/byte budgets
   - services/agendaWidget.ts — scoped lifecycle, debounced projections, serialized bridge writes
   - services/taskCollection.ts — session-scoped task hydrate, refresh, and reconciliation
+  - services/widgetTaskActions.ts — fresh access/revision checks before authenticated completion
   - services/tasksCache.ts — local scoped task persistence
   - store/useTasksStore.ts — shared task collection and freshness state
   - store/useWidgetDataStore.ts — event hydrate/sync readiness
@@ -115,6 +119,7 @@ Calendar coverage runs from the previous month through the same calendar month i
       - AgendaWidgetStorage.kt — validated snapshot persistence and lifecycle/generation fences
       - WidgetPresentation.kt — shared states, freshness labels, and app-opening controls
       - WidgetRows.kt — readable Agenda/Tasks rows and canonical routes
+      - WidgetTaskActions.kt — bounded, scoped, single-use completion tickets
       - WidgetInvariants.kt — collection ID and lifecycle checks
       - CalendarWidgetPreferences.kt — account-scoped calendar selections per widget instance
     - android/src/main/res/ — layouts, styles, drawables, generated tokens, and widget metadata
@@ -123,6 +128,8 @@ Calendar coverage runs from the previous month through the same calendar month i
   - src/android-widget.ts — native colour/dimension resource adapter
   - scripts/generate-css.ts — generates both widget themes with the web tokens
 </FileTree>
+
+Completion tickets contain scope, canonical task ID, revision, and provider-read retirement generation. They are single-use, expire after 24 hours, and are cleared on account/server change or sign-out. They authorize only a request: Musubi verifies fresh home-calendar rights and conditional revision/retirement fences through the normal task API. Completion needs a working connection; the widget does not toggle offline state.
 
 The v2 snapshot contains display fields and an account/server scope, lifecycle/generation, section freshness, coverage, completeness, readable calendar IDs, occurrence keys, and canonical task IDs. Credentials do not belong in widget snapshots or preferences. Event and task sections can fail independently; explicitly retained rows keep their original freshness and timezone.
 
@@ -137,6 +144,8 @@ Widget deep links route through Expo Router:
 - Calendar picker → `musubi:///?calendarWidgetId=…`
 - Task detail, including Agenda task markers → `musubi://tasks?taskId=…`
 - Tasks picker → `musubi://tasks?tasksWidgetId=…`
+- New task/event → `musubi://tasks?widgetAdd=1` / `musubi:///?widgetAdd=1`
+- Completion request → `musubi://tasks?taskId=…&widgetComplete=…` (native single-use ticket, never credentials)
 - Refresh → `musubi://agenda?widgetRefresh=1`, `musubi:///?widgetRefresh=1`, or `musubi://tasks?widgetRefresh=1`
 
 Cold-start routing preserves parameters until scoped data hydrates. Agenda redirects to Home's Agenda view while retaining occurrence/refresh parameters; task links use the canonical task ID.
@@ -171,7 +180,7 @@ Android launchers may reapply a `RemoteViews` update onto a cached tree when the
 - Confirm recurring events appear as separate Agenda rows and Calendar occurrences.
 - Scroll the Agenda and open both a normal event and a recurring occurrence.
 - Tap a Calendar day and confirm the press feedback and selected date in Musubi.
-- Open a task from Tasks and an Agenda task marker; confirm canonical detail and no native completion action.
+- Open a task from Tasks and an Agenda task marker; confirm canonical detail. Check circle completion with current edit rights, lock behavior on read-only mirrors, stale revision rejection, offline failure, and repeated/switch-account links.
 - Hide one calendar in Calendar and Tasks; confirm only the configured widget changes.
 - Switch Android between dark and light without resizing the widget; day numbers must remain readable.
 - Check TalkBack names, press targets, scrolling, and focus after returning from the app.

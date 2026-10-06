@@ -13,6 +13,12 @@
   </style>
   <style name="MusubiWidgetIconControl" parent="MusubiWidgetControl">
     <item name="android:scaleType">center</item>
+    <item name="android:background">@drawable/musubi_calendar_day_feedback</item>
+  </style>
+  <style name="MusubiWidgetGroup" parent="MusubiWidgetMeta">
+    <item name="android:textSize">@dimen/musubi_widget_group_size</item>
+    <item name="android:layout_width">wrap_content</item>
+    <item name="android:textAllCaps">true</item>
   </style>
   <style name="MusubiWidgetEventRow">
     <item name="android:layout_width">match_parent</item><item name="android:layout_height">wrap_content</item>
@@ -58,6 +64,16 @@
     <item name="android:gravity">center_horizontal</item><item name="android:foreground">@drawable/musubi_calendar_day_feedback</item>
     <item name="android:orientation">vertical</item>
   </style>
+  <style name="MusubiCalendarCompactDay" parent="MusubiCalendarLargeDay">
+    <item name="android:gravity">center</item>
+  </style>
+  <style name="MusubiCalendarCompactNumber" parent="MusubiWidgetMeta">
+    <item name="android:gravity">center</item><item name="android:textSize">@dimen/musubi_widget_calendar_day_size</item>
+  </style>
+  <style name="MusubiCalendarCompactDots">
+    <item name="android:layout_width">match_parent</item><item name="android:layout_height">@dimen/musubi_widget_calendar_dot_row_height</item>
+    <item name="android:scaleType">center</item>
+  </style>
   <style name="MusubiCalendarYearStamp">
     <item name="android:layout_width">@dimen/musubi_widget_year_width</item><item name="android:layout_height">@dimen/musubi_widget_year_height</item>
     <item name="android:background">@drawable/musubi_calendar_year_stamp</item><item name="android:fontFamily">serif</item><item name="android:gravity">center</item>
@@ -66,7 +82,7 @@
   </style>
   <style name="MusubiCalendarMonthTitle" parent="MusubiWidgetHeaderLabel">
     <item name="android:layout_width">wrap_content</item><item name="android:layout_height">wrap_content</item>
-    <item name="android:fontFamily">serif</item><item name="android:textSize">@dimen/musubi_widget_month_title_size</item>
+    <item name="android:fontFamily">sans-serif-medium</item><item name="android:textSize">@dimen/musubi_widget_month_title_size</item>
   </style>
   <style name="MusubiCalendarTodayLabel" parent="MusubiWidgetControl" />
   <style name="MusubiCalendarLargeNumber">

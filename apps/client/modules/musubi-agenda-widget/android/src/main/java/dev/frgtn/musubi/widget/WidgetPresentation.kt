@@ -4,6 +4,8 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Paint
+import android.content.res.Configuration
+import android.os.Build
 import android.net.Uri
 import android.text.format.DateUtils
 import android.view.View
@@ -62,10 +64,16 @@ internal object WidgetPresentation {
   fun shell(context: Context, views: RemoteViews, snapshot: WidgetSnapshot, tasks: Boolean,
     empty: String?, width: Int, more: Boolean = false) {
     val target = if (tasks) "musubi://tasks" else "musubi://agenda"
-    views.setTextViewText(R.id.musubi_widget_label,
-      context.getString(if (tasks) R.string.musubi_tasks_widget_label else R.string.musubi_agenda_widget_label))
-    views.setTextViewText(R.id.musubi_widget_date, SimpleDateFormat("EEE d", Locale.getDefault()).format(Date()))
-    views.setViewVisibility(R.id.musubi_widget_date, if (width >= 280) View.VISIBLE else View.GONE)
+    views.setTextViewText(R.id.musubi_widget_label, if (tasks) context.getString(R.string.musubi_tasks_widget_label)
+      else SimpleDateFormat("EEE d MMM", Locale.getDefault()).format(Date()))
+    views.setTextViewText(R.id.musubi_widget_date, context.getString(if (tasks)
+      R.string.musubi_widget_all_calendars else R.string.musubi_agenda_widget_label))
+    views.setViewVisibility(R.id.musubi_widget_add, if (snapshot.signedIn == true && width >= 280 &&
+      context.resources.configuration.fontScale < 1.5f) View.VISIBLE else View.GONE)
+    views.setContentDescription(R.id.musubi_widget_add, context.getString(if (tasks)
+      R.string.musubi_widget_add_task else R.string.musubi_widget_add_event))
+    views.setOnClickPendingIntent(R.id.musubi_widget_add, route(context,
+      if (tasks) "musubi://tasks?widgetAdd=1" else "musubi:///?widgetAdd=1"))
     views.setOnClickPendingIntent(R.id.musubi_widget_header, route(context, target))
     views.setOnClickPendingIntent(R.id.musubi_widget_refresh, route(context, "$target?widgetRefresh=1"))
     views.setContentDescription(R.id.musubi_widget_refresh, context.getString(R.string.musubi_widget_refresh))
@@ -77,6 +85,15 @@ internal object WidgetPresentation {
   }
 
   fun dp(context: Context, resource: Int): Float = context.resources.getDimension(resource) / context.resources.displayMetrics.density
+
+  fun textColor(context: Context, views: RemoteViews, id: Int, resource: Int) {
+    fun color(mode: Int) = context.createConfigurationContext(Configuration(context.resources.configuration).apply {
+      uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or mode
+    }).getColor(resource)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) views.setColorInt(id, "setTextColor",
+      color(Configuration.UI_MODE_NIGHT_NO), color(Configuration.UI_MODE_NIGHT_YES))
+    else views.setTextColor(id, context.getColor(resource))
+  }
 
   fun textHeight(context: Context, resource: Int): Float = Paint().apply {
     textSize = context.resources.getDimension(resource)

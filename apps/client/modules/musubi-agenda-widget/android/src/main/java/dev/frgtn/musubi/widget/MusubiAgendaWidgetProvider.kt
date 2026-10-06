@@ -59,20 +59,47 @@ internal object WidgetCollection {
     if (context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
       AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH else AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 220)
 
+  fun height(context: Context, options: Bundle): Int = options.getInt(
+    if (context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
+      AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT else AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 220)
+
+  fun taskGroup(rows: List<WidgetTask>, index: Int, showGroups: Boolean): Int? {
+    if (!showGroups) return null
+    val bucket = AgendaWidgetData.taskBucket(rows[index]).coerceAtMost(2)
+    return bucket.takeIf { index == 0 || AgendaWidgetData.taskBucket(rows[index - 1]).coerceAtMost(2) != bucket }
+  }
+
   fun update(context: Context, manager: AppWidgetManager, id: Int, tasks: Boolean) = synchronized(AgendaWidgetStorage) {
     val snapshot = AgendaWidgetData.read(context)
-    val width = width(context, manager.getAppWidgetOptions(id))
+    val options = manager.getAppWidgetOptions(id)
+    val width = width(context, options)
+    val groups = height(context, options) >= WidgetPresentation.dp(context, R.dimen.musubi_widget_min_grouped_list_height)
+    val selection = CalendarWidgetPreferences.read(context, id, "tasks")
     val wide = width >= 320
-    val taskRows = if (tasks) AgendaWidgetData.tasks(snapshot, CalendarWidgetPreferences.read(context, id, "tasks")) else emptyList()
+    val taskRows = if (tasks) AgendaWidgetData.tasks(snapshot, selection) else emptyList()
     val eventRows = if (!tasks) AgendaWidgetData.upcoming(snapshot) else emptyList()
     val keys = if (tasks) taskRows.map { it.id } else eventRows.map { it.key }
     val count = keys.size
     val empty = WidgetPresentation.empty(context, snapshot, tasks, count)
-    val views = RemoteViews(context.packageName, R.layout.musubi_agenda_widget_v3)
+    val views = RemoteViews(context.packageName, R.layout.musubi_agenda_widget_v4)
     WidgetPresentation.shell(context, views, snapshot, tasks, empty, width, count > MAX_VISIBLE_ROWS)
     views.setOnClickPendingIntent(R.id.musubi_widget_settings, WidgetPresentation.route(context,
       "musubi://tasks?tasksWidgetId=$id"))
     views.setViewVisibility(R.id.musubi_widget_settings, if (tasks) android.view.View.VISIBLE else android.view.View.GONE)
+    if (tasks) {
+      if (empty == null && width >= 280 && context.resources.configuration.fontScale < 1.5f) {
+        val title = context.getString(R.string.musubi_tasks_widget_label)
+        val label = android.text.SpannableString("$title $count")
+        label.setSpan(android.text.style.RelativeSizeSpan(context.resources.getDimension(R.dimen.musubi_widget_meta_size) /
+          context.resources.getDimension(R.dimen.musubi_widget_header_title_size)), title.length + 1, label.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        views.setTextViewText(R.id.musubi_widget_label, label)
+      }
+      views.setContentDescription(R.id.musubi_widget_header, "${context.getString(R.string.musubi_tasks_widget_label)}, $count")
+      views.setTextViewText(R.id.musubi_widget_date, context.getString(if (selection == null)
+        R.string.musubi_widget_all_calendars else R.string.musubi_widget_selected_calendars))
+      views.setOnClickPendingIntent(R.id.musubi_widget_date, WidgetPresentation.route(context, "musubi://tasks?tasksWidgetId=$id"))
+    }
+    val nextEvent = eventRows.indexOfFirst { !it.allDay }
     views.setEmptyView(R.id.musubi_widget_events, R.id.musubi_widget_empty)
     views.setPendingIntentTemplate(R.id.musubi_widget_events, template(context, id, tasks))
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -80,8 +107,8 @@ internal object WidgetCollection {
       if (empty == null) {
         val ids = WidgetInvariants.stableIds(keys.take(MAX_VISIBLE_ROWS))
         ids.forEachIndexed { index, itemId ->
-          val row = if (tasks) WidgetRows.task(context, taskRows[index], wide, false)
-            else WidgetRows.agenda(context, eventRows[index], snapshot.timeFormat, wide, false)
+          val row = if (tasks) WidgetRows.task(context, taskRows[index], snapshot, taskGroup(taskRows, index, groups), false)
+            else WidgetRows.agenda(context, eventRows[index], snapshot.timeFormat, wide, false, index == nextEvent)
           collection.addItem(itemId, row)
         }
       }

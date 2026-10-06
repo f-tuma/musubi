@@ -116,6 +116,42 @@ fun main() {
     check(!safe.getJSONObject("eventsStatus").getBoolean("complete") && safe.getJSONObject("eventsStatus").getBoolean("truncated"))
     check(AgendaWidgetData.parse(safe.toString()).problem == null)
   }
+  test("completion tickets are scoped single-use and bounded by lifetime") {
+    val issued = WidgetTaskActions.issue(null, "one", "task", 3, 100, 2)
+    check(WidgetTaskActions.take(issued.raw, issued.token, "two", "one", 101).action == null)
+    check(WidgetTaskActions.take(issued.raw, issued.token, "two", "two", 101).action == null)
+    check(WidgetTaskActions.take(issued.raw, "invented", "one", "one", 101).action == null)
+    check(WidgetTaskActions.take(issued.raw, issued.token, "one", "one", 99).action == null)
+    check(WidgetTaskActions.take(issued.raw, issued.token, "one", "one", 100 + WidgetTaskActions.LIFETIME_MS).action == null)
+    val taken = WidgetTaskActions.take(issued.raw, issued.token, "one", "one", 101)
+    check(taken.action == WidgetTaskAction("task", 3, "one", 2))
+    check(WidgetTaskActions.take(taken.raw, issued.token, "one", "one", 102).action == null)
+    check(WidgetTaskActions.issue(issued.raw, "one", "task", 3, 101, 2).token == issued.token)
+    check(WidgetTaskActions.issue(issued.raw, "one", "task", 3, 101, 3).token != issued.token)
+    check(WidgetTaskActions.issue(issued.raw, "one", "task", 4, 101).token != issued.token)
+  }
+  test("completion ticket storage purges foreign expired and excess entries") {
+    val old = WidgetTaskActions.issue(null, "old", "private", 1, 100)
+    var issued = WidgetTaskActions.issue(old.raw, "new", "current", 1, 101)
+    check(JSONObject(issued.raw).length() == 1)
+    for (index in 1..WidgetTaskActions.MAX_ACTIONS) issued = WidgetTaskActions.issue(issued.raw, "new", "t$index", 1, 101L + index)
+    check(JSONObject(issued.raw).length() == WidgetTaskActions.MAX_ACTIONS)
+    val fresh = WidgetTaskActions.issue(issued.raw, "new", "fresh", 1, 101L + WidgetTaskActions.MAX_ACTIONS + WidgetTaskActions.LIFETIME_MS)
+    check(JSONObject(fresh.raw).length() == 1)
+  }
+  test("task grouping respects local civil dates rather than UTC due timestamps") {
+    val original = TimeZone.getDefault()
+    try {
+      TimeZone.setDefault(TimeZone.getTimeZone("Europe/Prague"))
+      val now = java.time.Instant.parse("2026-10-06T10:00:00Z").toEpochMilli()
+      val dateOnly = WidgetTask("task", "Task", "needs-action", 0, "#333333", "Home", listOf("public"),
+        java.time.Instant.parse("2026-10-06T00:00:00Z").toEpochMilli(), true)
+      check(AgendaWidgetData.taskBucket(dateOnly, now) == 1)
+      check(AgendaWidgetData.taskBucket(dateOnly.copy(due = java.time.Instant.parse("2026-10-05T00:00:00Z").toEpochMilli()), now) == 0)
+      check(AgendaWidgetData.taskBucket(dateOnly.copy(due = java.time.Instant.parse("2026-10-05T22:30:00Z").toEpochMilli(), dueDateOnly = false), now) == 1)
+      check(AgendaWidgetData.taskBucket(dateOnly.copy(due = null), now) == 3)
+    } finally { TimeZone.setDefault(original) }
+  }
   println("$passed native widget invariants passed")
 }
 

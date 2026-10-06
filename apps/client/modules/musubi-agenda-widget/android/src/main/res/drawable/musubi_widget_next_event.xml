@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/musubi_widget_surface_raised" /><corners android:radius="@dimen/musubi_widget_row_radius" /></shape>

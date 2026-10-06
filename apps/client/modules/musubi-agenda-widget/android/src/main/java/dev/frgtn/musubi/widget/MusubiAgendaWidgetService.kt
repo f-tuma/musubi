@@ -20,6 +20,8 @@ private class WidgetRemoteViewsFactory(private val context: Context, private val
   private var taskRows = emptyList<WidgetTask>()
   private var ids = emptyList<Long>()
   private var wide = false
+  private var groups = false
+  private var nextEvent = -1
   private var revision = WidgetRevision(null, 0, 0)
   override fun onCreate() = Unit
   override fun onDataSetChanged() = synchronized(AgendaWidgetStorage) {
@@ -32,7 +34,10 @@ private class WidgetRemoteViewsFactory(private val context: Context, private val
       events = emptyList(); taskRows = emptyList()
     }
     ids = WidgetInvariants.stableIds(if (tasks) taskRows.map { it.id } else events.map { it.key })
-    wide = WidgetCollection.width(context, AppWidgetManager.getInstance(context).getAppWidgetOptions(widgetId)) >= 320
+    val options = AppWidgetManager.getInstance(context).getAppWidgetOptions(widgetId)
+    wide = WidgetCollection.width(context, options) >= 320
+    groups = WidgetCollection.height(context, options) >= WidgetPresentation.dp(context, R.dimen.musubi_widget_min_grouped_list_height)
+    nextEvent = events.indexOfFirst { !it.allDay }
   }
   override fun onDestroy() { events = emptyList(); taskRows = emptyList(); ids = emptyList() }
   override fun getCount(): Int = synchronized(AgendaWidgetStorage) {
@@ -41,8 +46,8 @@ private class WidgetRemoteViewsFactory(private val context: Context, private val
   override fun getViewAt(position: Int): RemoteViews? = synchronized(AgendaWidgetStorage) {
     if (revision != AgendaWidgetStorage.revision(context)) return@synchronized getLoadingView()
     if (tasks) taskRows.getOrNull(position)?.let {
-    WidgetRows.task(context, it, wide, false)
-  } else events.getOrNull(position)?.let { WidgetRows.agenda(context, it, snapshot.timeFormat, wide, false) }
+    WidgetRows.task(context, it, snapshot, WidgetCollection.taskGroup(taskRows, position, groups), false)
+  } else events.getOrNull(position)?.let { WidgetRows.agenda(context, it, snapshot.timeFormat, wide, false, position == nextEvent) }
   }
   override fun getLoadingView(): RemoteViews = RemoteViews(context.packageName, R.layout.musubi_widget_loading_row)
   override fun getViewTypeCount(): Int = 2

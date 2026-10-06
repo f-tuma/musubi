@@ -8,6 +8,7 @@
   <color name="musubi_widget_foreground_secondary">#b8e8e4d9</color>
   <color name="musubi_widget_foreground_muted">#8fe8e4d9</color>
   <color name="musubi_widget_accent">#c8553d</color>
+  <color name="musubi_widget_accent_text">#df745c</color>
   <color name="musubi_widget_on_accent">#000000</color>
   <color name="musubi_widget_control_fill">#e8e4d9</color>
   <color name="musubi_widget_on_control">#0c0c0e</color>

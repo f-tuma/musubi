@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="@dimen/musubi_widget_task_check_size" android:height="@dimen/musubi_widget_task_check_size" android:viewportWidth="24" android:viewportHeight="24">
+  <path android:fillColor="@android:color/transparent" android:strokeColor="@color/musubi_widget_foreground_muted" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M7,11 L7,7 A5,5 0,0 1,17,7 L17,11 M5,11 L19,11 L19,21 L5,21 Z" />
+</vector>

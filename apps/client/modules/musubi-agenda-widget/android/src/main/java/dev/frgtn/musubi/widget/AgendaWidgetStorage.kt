@@ -10,6 +10,7 @@ internal object AgendaWidgetStorage {
   private const val SCOPE = "scope"
   private const val LIFECYCLE = "lifecycle"
   private const val GENERATION = "generation"
+  private const val ACTIONS = "task_actions"
   const val MAX_BYTES = 2_097_152
 
   private fun preferences(context: Context) = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
@@ -27,10 +28,25 @@ internal object AgendaWidgetStorage {
     val edit = preferences.edit().putString(SCOPE, scope).putLong(LIFECYCLE, lifecycle).putLong(GENERATION, 0)
     if (changed) {
       edit.remove(SNAPSHOT)
+      edit.remove(ACTIONS)
       CalendarWidgetPreferences.clear(context)
     }
     check(edit.commit()) { "Could not persist widget session" }
     return lifecycle
+  }
+
+  @Synchronized fun taskCompletion(context: Context, scope: String, task: WidgetTask): String? {
+    if (AgendaWidgetStorage.scope(context) != scope || !task.canComplete || task.revision <= 0) return null
+    val preferences = preferences(context)
+    val previous = preferences.getString(ACTIONS, null)
+    val issued = WidgetTaskActions.issue(previous, scope, task.id, task.revision, System.currentTimeMillis(), task.providerReadRetiredGeneration)
+    return if (previous == issued.raw || preferences.edit().putString(ACTIONS, issued.raw).commit()) issued.token else null
+  }
+
+  @Synchronized fun consumeTaskCompletion(context: Context, token: String, scope: String): WidgetTaskAction? {
+    val preferences = preferences(context)
+    val taken = WidgetTaskActions.take(preferences.getString(ACTIONS, null), token, AgendaWidgetStorage.scope(context), scope, System.currentTimeMillis())
+    return if (preferences.edit().putString(ACTIONS, taken.raw).commit()) taken.action else null
   }
 
   @Synchronized fun write(context: Context, raw: String): Boolean {
@@ -167,7 +183,7 @@ internal object AgendaWidgetStorage {
 
   @Synchronized fun markSignedOut(context: Context) {
     val preferences = preferences(context)
-    check(preferences.edit().remove(SCOPE).putLong(LIFECYCLE, preferences.getLong(LIFECYCLE, 0) + 1)
+    check(preferences.edit().remove(SCOPE).remove(ACTIONS).putLong(LIFECYCLE, preferences.getLong(LIFECYCLE, 0) + 1)
       .putLong(GENERATION, 0).putString(SNAPSHOT, "{\"version\":2,\"signedIn\":false}").commit()) {
       "Could not clear widget snapshot"
     }

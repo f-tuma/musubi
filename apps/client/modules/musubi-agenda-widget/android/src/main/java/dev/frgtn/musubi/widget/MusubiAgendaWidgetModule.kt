@@ -8,6 +8,12 @@ import expo.modules.kotlin.modules.ModuleDefinition
 class MusubiAgendaWidgetModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("MusubiAgendaWidget")
+    AsyncFunction("consumeTaskCompletion") { token: String, scope: String -> synchronized(AgendaWidgetStorage) {
+      val context = appContext.reactContext ?: throw Exceptions.ReactContextLost()
+      AgendaWidgetStorage.consumeTaskCompletion(context, token, scope)?.let {
+        mapOf("taskId" to it.taskId, "revision" to it.revision, "scope" to it.scope, "providerReadRetiredGeneration" to it.providerReadRetiredGeneration)
+      }
+    } }
     AsyncFunction("beginSession") { scope: String -> synchronized(AgendaWidgetStorage) {
       val context = appContext.reactContext ?: throw Exceptions.ReactContextLost()
       val lifecycle = AgendaWidgetStorage.beginSession(context, scope)

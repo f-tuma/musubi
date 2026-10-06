@@ -1,4 +1,5 @@
 <resources>
+  <string name="musubi_widget_all_day">All day</string>
   <string name="musubi_agenda_widget_name">Musubi Agenda</string>
   <string name="musubi_agenda_widget_description">Your next Musubi events at a glance</string>
   <string name="musubi_agenda_widget_empty">Nothing ahead</string>
@@ -35,6 +36,16 @@
   <string name="musubi_widget_calendars">Choose widget calendars</string>
   <string name="musubi_widget_today">Today</string>
   <string name="musubi_widget_overdue">Overdue</string>
+  <string name="musubi_widget_later">Later</string>
+  <string name="musubi_widget_yesterday">Yesterday</string>
+  <string name="musubi_widget_tomorrow">Tomorrow</string>
+  <string name="musubi_widget_all_calendars">All calendars</string>
+  <string name="musubi_widget_selected_calendars">Selected calendars</string>
+  <string name="musubi_widget_add_task">Add task</string>
+  <string name="musubi_widget_add_event">Add event</string>
+  <string name="musubi_widget_complete_task">Complete %1$s</string>
+  <string name="musubi_widget_read_only_task">Read-only %1$s</string>
+  <string name="musubi_widget_shared_task">Shared task</string>
   <string name="musubi_widget_undated">No date</string>
   <string name="musubi_widget_resize">Enlarge the widget to show dates</string>
 </resources>

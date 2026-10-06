@@ -33,7 +33,7 @@ if not java:
 # Put concrete org.json ahead of the SDK's Android-only stubs at runtime.
 classpath = os.pathsep.join([jar("org.json", "json", "20180813"), compiler[1], str(android), str(resources)])
 source = module / "src/main/java/dev/frgtn/musubi/widget"
-sources = [str(source / name) for name in ["WidgetInvariants.kt", "AgendaWidgetData.kt", "AgendaWidgetStorage.kt", "CalendarWidgetPreferences.kt"]]
+sources = [str(source / name) for name in ["WidgetTaskActions.kt", "WidgetInvariants.kt", "AgendaWidgetData.kt", "AgendaWidgetStorage.kt", "CalendarWidgetPreferences.kt"]]
 sources.append(str(module / "tests/WidgetSnapshotSpec.kt"))
 with tempfile.TemporaryDirectory(prefix="musubi-widget-tests-") as output:
     subprocess.run([java, "-cp", os.pathsep.join(compiler), "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler",

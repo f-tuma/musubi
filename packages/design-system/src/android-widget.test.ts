@@ -35,6 +35,9 @@ for (const scheme of ["light", "dark"] as const) {
     }
   }
   assert.ok(contrastRatio(palette.onAccent, palette.accent) >= 4.5);
+  for (const surface of [palette.surface, palette.surfaceRaised]) {
+    assert.ok(contrastRatio(palette.accentText, surface) >= 4.5, `${scheme} small accent words must remain readable`);
+  }
   assert.ok(contrastRatio(palette.onControl, palette.controlFill) >= 4.5);
 
   // User pigments can be any colour. Both candidates must remain available in

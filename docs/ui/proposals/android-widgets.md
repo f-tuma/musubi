@@ -1,9 +1,9 @@
 # Android widget rework
 
-Date: 2026-10-05. Status: **implemented on `codex/android-widget-rework`; device acceptance pending**.
+Date: 2026-10-06. Status: **implemented on `codex/android-widget-rework`; device acceptance pending**.
 
-Scope: refresh the Android Agenda and Calendar widgets, then add a small,
-read-only Tasks widget. Android comes first; iOS is a later platform project.
+Scope: refresh the Android Agenda and Calendar widgets, then add a compact
+Tasks widget with authenticated completion requests. Android comes first; iOS is a later platform project.
 This document records the audit, implemented design, and remaining acceptance
 work. The user guide is [Home screen widgets](../../../packages/docs/src/content/docs/guides/widgets.mdx).
 No launcher/device behavior is certified by source tests alone.
@@ -27,7 +27,7 @@ RemoteViews approach. No new dependencies are proposed for these phases.
   cancellation/moved-exception context until expansion and ignores wholly
   unreadable families. Explicit consumer zones cover legacy and known recurrence
   paths. Identical foreground data and sync timestamps reuse expanded rows.
-- Agenda, Calendar and the new read-only Tasks widget share generated Musubi
+- Agenda, Calendar and the new Tasks widget share generated Musubi
   colors, dimensions, accessible controls and state/freshness presentation. Native
   collection IDs use occurrence identity with collision handling. Calendar bars
   preserve empty lanes. Refresh opens the authenticated app; it is not native
@@ -178,7 +178,7 @@ available width, height, and font scale instead of shrinking text to fit.
 Check both themes, readable pigment text, accessible names, and usable native
 touch targets. No web UI edit is required by this phase.
 
-## Phase 3: persisted Tasks and a small read-only widget
+## Phase 3: persisted Tasks and a compact widget
 
 Tasks currently live in separate session-scoped component snapshots in
 [TasksTab][tasks-tab] and [useCalendarTasks][calendar-tasks]. They fetch on focus
@@ -214,12 +214,32 @@ Exclude completed/cancelled tasks from this view and filter by the widget's own
 calendar selection. A row opens task detail by canonical ID after hydration;
 the header opens Tasks. Add and verify that route explicitly.
 
-Keep this first widget read-only, including for editable tasks. A mirror's
-cached permissions must never imply completion rights. Native completion is a
-later feature requiring fresh capabilities, canonical revision and retired-read
-generation fences, authenticated transport, and committed mutation receipts
-through the [existing task mutation API][task-api]. Do not optimistically toggle
-native state or fall back to legacy task writes.
+The approved visual follow-up adds task-specific rows with completion circles,
+calendar/due metadata, a shared glyph, and Overdue / Today / Later headings when
+height permits. Read-only tasks use a lock and open detail. Native single-use
+tickets bind the rendered action to server/account, canonical revision and
+provider-read retirement generation. The app refreshes current calendars and
+tasks, checks home capabilities, then commits through the normal mutation API.
+Tickets expire after 24 hours and are cleared on account change/sign-out.
+No offline optimistic state or legacy writes are used.
+
+## Approved visual refinement (2026-10-06)
+
+- Tasks use their own list anatomy, with no time column or coloured task stripe.
+  Small plus/overflow actions and freshness/refresh share a consistent header/footer.
+- Agenda uses one stripe between time and title, with a subtle next-event highlight.
+  Today is already in the header, so rows omit its repeated date label. Larger
+  font scales show only the start time instead of squeezing in an end time.
+- Calendar uses a full month/year heading, abbreviated month at narrow/large-text
+  sizes, and footer refresh. Weekday/date columns retain identical geometry.
+  Compact dots have a separate, uniformly reserved slot below each date, so an
+  event cannot shift its date number. Number slots share the remaining cell
+  height; the compact today's background is omitted when its circle cannot fit
+  beside the reserved dots, retaining bold accent text. The large today's marker grows equally
+  in both axes with font scale and remains round.
+  Large week rows preserve continuous all-day bars and their empty lanes.
+- New hierarchy/layout resource versions preserve safe launcher replacement.
+  All dimensions/colours come from generated design-system tokens.
 
 ## Later work: background transport and iOS
 
@@ -249,7 +269,7 @@ meaning and tokens, not Android RemoteViews or assumptions about OS scheduling.
 
 ## Acceptance and delivery
 
-Implementation validation on 2026-10-05:
+Initial implementation validation on 2026-10-05 (before the approved visual refinement):
 
 | Check | Result |
 | --- | --- |
@@ -262,6 +282,37 @@ Implementation validation on 2026-10-05:
 | Android Hermes bundle export | Pass with dotenv disabled |
 | Documentation build | 31 pages build successfully |
 | Disposable Android 17 / API 37 emulator, Pixel Launcher 17 | All three widgets render in light/dark; tested 1.0 and 2.0 font scales without widget-load errors |
+
+Approved-refinement validation on 2026-10-06:
+
+| Check | Result |
+| --- | --- |
+| Full client Vitest suite | 613 tests in 54 files pass |
+| Client TypeScript / ESLint | Pass; no lint errors, 77 existing warnings |
+| Native parser, storage, action tickets and civil-date grouping | 14 invariant checks pass |
+| Design-system generation, tests and TypeScript | Pass; generated resources are current and small accent text has AA contrast in both themes |
+| Android debug build / Hermes export | x86_64 debug APK and Android bundle pass, with dotenv disabled |
+| API 37 / Pixel Launcher, both themes, font scales 1.0 and 2.0 | All three widgets render at phone and wider-display sizes; final wide Calendar also passes all 42 column/number center checks and round-marker bounds |
+
+The new completion regressions cover unissued/replayed tickets, account changes,
+revision and retirement changes, server capability revocation, read-only mirrors,
+offline reads, mutation failure, and a newer task detail opened during an older
+completion request. Native tests verify single use, expiry and bounded storage.
+
+The refinement's launcher checks used 1080×2400 and 1800×2400 displays at density
+420. Agenda and Tasks used four columns; Calendar used four columns × four rows
+on the phone and six columns × six rows on the wider display (about 606×664 dp).
+The phone and wide suites each captured all three widgets in both themes at
+both font scales. The final wide Calendar was checked again after the round
+today-marker correction. Changing launcher display profiles required re-adding
+the six-column test instance to the four-column phone grid; these are separate
+size checks, not a landscape/rotation acceptance test.
+The final compact 4×3 Calendar also passes horizontal and vertical date-slot
+alignment in both themes at normal font scale. With font scale 2.0 it shows the
+explicit enlargement prompt, since the grid cannot fit readable text at that
+height; it does not shrink dates to make them fit.
+After that compact-layout correction, 4×4 was checked again at font scale 2.0
+in both themes: all 42 date slots retain horizontal and vertical alignment.
 
 Regressions cover long spans, more than 64 early events, failed/empty/corrupt
 hydration, recurrence exclusions and bounded expansion, timezone/DST changes,
