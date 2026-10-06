@@ -31,10 +31,11 @@ const statuses: PickerOption[] = [
 function DetailRow({ icon, label, value, link = false }: { icon: React.ComponentProps<typeof Feather>["name"]; label: string; value: string; link?: boolean }) {
   return <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
     <Feather name={icon} size={17} color={colors.fg3} style={{ marginTop: 2 }} />
-    <View style={{ flex: 1, gap: 5 }}><Text style={styles.sectionLabel}>{label}</Text><Text selectable={!link} numberOfLines={link ? 2 : undefined} ellipsizeMode="tail" style={[copy, link && { textDecorationLine: "underline" }]}>{value}</Text></View>
+    <View style={{ flex: 1, gap: 5 }}><Text style={styles.sectionLabel}>{label}</Text><Text selectable={!link} numberOfLines={link ? 2 : undefined} ellipsizeMode="tail" style={[copy(), link && { textDecorationLine: "underline" }]}>{value}</Text></View>
   </View>;
 }
-const copy = { fontFamily: fonts.sans, fontSize: 14, color: colors.fg2 };
+// Read theme colors while rendering, including after a light/dark switch.
+const copy = () => ({ fontFamily: fonts.sans, fontSize: 14, color: colors.fg2 });
 
 export function TaskDetailModal({ task, calendar, calendars = calendar ? [calendar] : [], editable, busy: externalBusy, onClose, onStatus, onPriority, onSaved, relatedTask, onOpenRelated }: {
   relatedTask?: Task; onOpenRelated?: (id: string) => void;
@@ -110,8 +111,8 @@ export function TaskDetailModal({ task, calendar, calendars = calendar ? [calend
             </View>
           ) : null}
           <View style={{ flexDirection: "row", gap: 10 }}>
-            <Tap disabled={!editable || busy} onPress={() => setPicker("status")} accessibilityLabel={`Task status: ${status}`} style={{ flex: 1, minHeight: 48, padding: 12, borderRadius: 12, backgroundColor: colors.bg3 }}><View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}><TaskStatusIcon status={task.status} color={colors.fg3} /><Text style={[copy, { flexShrink: 1 }]}>{status}</Text></View></Tap>
-            <Tap disabled={!editable || busy} onPress={() => setPicker("priority")} accessibilityLabel={`Task priority: ${taskPriorityLabel(task.priority)}`} style={{ flex: 1, minHeight: 48, padding: 12, borderRadius: 12, backgroundColor: colors.bg3, flexDirection: "row", alignItems: "center", gap: 8 }}><Feather name="flag" size={15} color={colors.fg3} /><Text style={[copy, { flexShrink: 1 }]}>{taskPriorityLabel(task.priority)}</Text></Tap>
+            <Tap disabled={!editable || busy} onPress={() => setPicker("status")} accessibilityLabel={`Task status: ${status}`} style={{ flex: 1, minHeight: 48, padding: 12, borderRadius: 12, backgroundColor: colors.bg3 }}><View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}><TaskStatusIcon status={task.status} color={colors.fg3} /><Text style={[copy(), { flexShrink: 1 }]}>{status}</Text></View></Tap>
+            <Tap disabled={!editable || busy} onPress={() => setPicker("priority")} accessibilityLabel={`Task priority: ${taskPriorityLabel(task.priority)}`} style={{ flex: 1, minHeight: 48, padding: 12, borderRadius: 12, backgroundColor: colors.bg3, flexDirection: "row", alignItems: "center", gap: 8 }}><Feather name="flag" size={15} color={colors.fg3} /><Text style={[copy(), { flexShrink: 1 }]}>{taskPriorityLabel(task.priority)}</Text></Tap>
           </View>
           {busy ? <ActivityIndicator color={colors.fg3} /> : null}
           {task.description ? <View style={{ gap: 8 }}>

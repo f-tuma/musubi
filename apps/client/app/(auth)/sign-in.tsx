@@ -92,7 +92,8 @@ export default function SignIn() {
 
   return (
     <View style={styles.screen}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+      {/* Android's adjustResize follows rotation; KAV height caches the first window height. */}
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
         <ScrollView
           contentContainerStyle={{ flexGrow: 1, justifyContent: "space-between" }}
           keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
