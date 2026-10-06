@@ -89,10 +89,7 @@ internal object WidgetCollection {
     if (tasks) {
       if (empty == null && width >= 280 && context.resources.configuration.fontScale < 1.5f) {
         val title = context.getString(R.string.musubi_tasks_widget_label)
-        val label = android.text.SpannableString("$title $count")
-        label.setSpan(android.text.style.RelativeSizeSpan(context.resources.getDimension(R.dimen.musubi_widget_meta_size) /
-          context.resources.getDimension(R.dimen.musubi_widget_header_title_size)), title.length + 1, label.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-        views.setTextViewText(R.id.musubi_widget_label, label)
+        views.setTextViewText(R.id.musubi_widget_label, "$title $count")
       }
       views.setContentDescription(R.id.musubi_widget_header, "${context.getString(R.string.musubi_tasks_widget_label)}, $count")
       views.setTextViewText(R.id.musubi_widget_date, context.getString(if (selection == null)
