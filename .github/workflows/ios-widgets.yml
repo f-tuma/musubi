@@ -20,10 +20,11 @@ concurrency:
 jobs:
   native:
     name: WidgetKit and iOS bridge
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 45
     env:
       EXPO_NO_DOTENV: '1'
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
       - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996
@@ -31,6 +32,10 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - name: Verify Apple toolchain
+        run: |
+          xcodebuild -version
+          swift --version
       - run: pnpm install --frozen-lockfile
       - name: Native storage and action invariants
         run: |
