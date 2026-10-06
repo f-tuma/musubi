@@ -299,7 +299,7 @@ struct MusubiWidgetView: View {
     let symbols = Calendar.current.veryShortStandaloneWeekdaySymbols
     let cellHeight = (height - WidgetTokens.Layout.calendarWeekdayHeight - WidgetTokens.Layout.contentGap) / 6
     return VStack(spacing: 0) {
-      if cellHeight < titleSize + WidgetTokens.Layout.calendarDotRowHeight {
+      if cellHeight < titleSize + WidgetTokens.Layout.contentGap + WidgetTokens.Layout.calendarDotRowHeight {
         Text("Open Musubi to see dates").font(.system(size: titleSize)).foregroundStyle(muted).frame(maxHeight: .infinity)
       } else {
         HStack(spacing: 0) {
