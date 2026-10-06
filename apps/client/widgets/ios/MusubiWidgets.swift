@@ -300,7 +300,7 @@ struct MusubiWidgetView: View {
           HStack(spacing: 0) {
             ForEach(0..<7, id: \.self) { column in
               let date = dates[row * 7 + column]
-              Link(destination: widgetURL("", ["date": dayKey(date)])) {
+              Link(destination: widgetURL("", ["time": String(Int64(date.timeIntervalSince1970 * 1000))])) {
                 VStack(spacing: 0) {
                   Text(date.formatted(.dateTime.day())).font(.system(size: titleSize, weight: Calendar.current.isDate(date, inSameDayAs: entry.date) ? .semibold : .regular))
                     .foregroundStyle(Calendar.current.isDate(date, inSameDayAs: entry.date) ? WidgetTokens.onAccent(scheme) : Calendar.current.isDate(date, equalTo: entry.date, toGranularity: .month) ? ink : muted)

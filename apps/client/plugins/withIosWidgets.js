@@ -25,7 +25,7 @@ function configureProject(project, config) {
     project.addBuildPhase(files.map(file => `${TARGET}/${file}`), 'PBXSourcesBuildPhase', 'Sources', target.uuid);
     project.addBuildPhase([], 'PBXResourcesBuildPhase', 'Resources', target.uuid);
     project.addBuildPhase([], 'PBXFrameworksBuildPhase', 'Frameworks', target.uuid);
-    const group = project.addPbxGroup(files.map(file => `${TARGET}/${file}`), TARGET);
+    const group = project.addPbxGroup(files.map(file => `${TARGET}/${file}`), TARGET, '.');
     project.addToPbxGroup(group.uuid, project.getFirstProject().firstProject.mainGroup);
   }
   const list = project.pbxXCConfigurationList()[target.pbxNativeTarget.buildConfigurationList];

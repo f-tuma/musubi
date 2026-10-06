@@ -16,6 +16,9 @@ const target = Object.entries(project.pbxNativeTargetSection()).filter(([, t]) =
 assert.equal(target.length, 1);
 const [id, definition] = target[0];
 const objects = project.hash.project.objects;
+for (const group of Object.values(objects.PBXGroup)) {
+ if (group && typeof group === 'object') assert.notEqual(group.path, 'undefined', 'Source groups need a real base path');
+}
 const sources = definition.buildPhases.map(p => objects.PBXSourcesBuildPhase[p.value]).find(Boolean);
 assert.equal(sources.files.length, 4);
 const configs = objects.XCConfigurationList[definition.buildConfigurationList].buildConfigurations;
