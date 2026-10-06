@@ -1,5 +1,6 @@
 {
-  "platforms": ["android"],
+  "platforms": ["android", "apple"],
+  "apple": { "modules": ["MusubiAgendaWidgetModule"] },
   "android": {
     "modules": ["dev.frgtn.musubi.widget.MusubiAgendaWidgetModule"]
   }

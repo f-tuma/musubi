@@ -3,6 +3,7 @@ import type { CachedEvent } from "./eventsCache";
 import * as projector from "./widgetSnapshot";
 
 const fixture = vi.hoisted(() => ({
+  platform: "android",
   events: [] as CachedEvent[], lifecycle: 0,
   calendars: [{ id: "calendar", name: "Home", color: "#c8553d" }],
   snapshot: vi.fn(async (_snapshot: string) => true),
@@ -11,7 +12,7 @@ const fixture = vi.hoisted(() => ({
   foreground: undefined as undefined | ((state: string) => void),
   listeners: new Set<(state: { events: CachedEvent[] }, previous: { events: CachedEvent[] }) => void>(),
 }));
-vi.mock("react-native", () => ({ Platform: { OS: "android" }, AppState: {
+vi.mock("react-native", () => ({ Platform: { get OS() { return fixture.platform; } }, AppState: {
   currentState: "active", addEventListener: (_event: string, listener: (state: string) => void) => {
     fixture.foreground = listener; return { remove: () => { fixture.foreground = undefined; } };
   },
@@ -40,6 +41,7 @@ const { resetWidgetData, widgetCalendarsLoaded, widgetEventsLoaded, widgetEvents
 const { useTasksStore, emptyTaskCollection } = await import("@/store/useTasksStore");
 let stop = () => {};
 beforeEach(() => {
+  fixture.platform = "android";
   vi.useFakeTimers(); vi.setSystemTime(new Date("2026-09-08T12:00:00Z"));
   fixture.events = []; fixture.lifecycle = 0;
   fixture.snapshot.mockReset().mockResolvedValue(true);
@@ -49,6 +51,15 @@ beforeEach(() => {
 });
 afterEach(async () => { stop(); await clearAgendaWidget(); vi.useRealTimers(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 const start = async () => { stop = startAgendaWidgetSync("account"); await vi.advanceTimersByTimeAsync(120); };
+it("publishes and claims the same scoped snapshot through the iOS bridge", async () => {
+  fixture.platform = "ios";
+  widgetCalendarsLoaded(); widgetEventsLoaded(Date.now()); await start();
+  expect(fixture.snapshot).toHaveBeenCalledTimes(1);
+  expect(JSON.parse(fixture.snapshot.mock.calls[0][0]).calendars).toEqual(fixture.calendars);
+  await expect(consumeWidgetTaskCompletion("ticket", "account")).resolves.toMatchObject({ taskId: "task", scope: "account" });
+  await clearAgendaWidget();
+  expect(fixture.clear).toHaveBeenCalled();
+});
 function event(id: string, start = new Date("2026-09-08T00:00:00Z"), end = start): CachedEvent {
   return { id, creatorID: "owner", organizer: "owner", title: id, color: "red", calendars: ["calendar"],
     isCanceled: false, hasAttendees: false, isAllDay: true, start, end };

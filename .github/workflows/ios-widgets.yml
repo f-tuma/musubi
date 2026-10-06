@@ -1,0 +1,61 @@
+name: iOS widgets
+on:
+  pull_request:
+    paths:
+      - 'apps/client/**'
+      - 'packages/design-system/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/ios-widgets.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/client/**'
+      - 'packages/design-system/**'
+      - '.github/workflows/ios-widgets.yml'
+permissions:
+  contents: read
+concurrency:
+  group: ios-widgets-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  native:
+    name: WidgetKit and iOS bridge
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      EXPO_NO_DOTENV: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Native storage and action invariants
+        run: |
+          swiftc apps/client/modules/musubi-agenda-widget/ios/WidgetSnapshot.swift \
+            apps/client/modules/musubi-agenda-widget/ios/WidgetStore.swift \
+            apps/client/widgets/tests/main.swift -o /tmp/widget-tests
+          /tmp/widget-tests
+      - name: Generate native project
+        working-directory: apps/client
+        run: pnpm exec expo prebuild --platform ios --no-install
+      - name: Verify target, embedding and idempotency
+        run: node apps/client/widgets/tests/plugin.test.cjs
+      - name: Compile release extension
+        working-directory: apps/client
+        run: >-
+          xcodebuild -project ios/Musubi.xcodeproj -target MusubiWidgets
+          -configuration Release -sdk iphonesimulator
+          CODE_SIGNING_ALLOWED=NO build
+      - name: Install native pods
+        working-directory: apps/client/ios
+        run: pod install
+      - name: Compile app and Expo module with embedded extension
+        working-directory: apps/client
+        run: >-
+          xcodebuild -workspace ios/Musubi.xcworkspace -scheme Musubi
+          -configuration Debug -sdk iphonesimulator
+          -destination 'generic/platform=iOS Simulator'
+          CODE_SIGNING_ALLOWED=NO build

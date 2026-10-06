@@ -39,6 +39,10 @@ export const widgetTokens = {
     dividerWidth: 1,
     headerActionGap: spacing[1],
     rowHeight: controlHeights.touch.control,
+    // WidgetKit margins leave less vertical space in small/medium families.
+    iosHeaderHeight: spacing[8],
+    iosFooterHeight: spacing[6],
+    iosRowHeight: controlHeights.pointer.compact,
     rowGap: spacing[1],
     contentGap: spacing[2],
     stripeWidth: fineSpacing[0.5],

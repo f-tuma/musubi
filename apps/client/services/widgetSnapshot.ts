@@ -30,6 +30,7 @@ export type WidgetSnapshot = {
   version: 2; scope: string; lifecycle: number; generation: number;
   signedIn: true; generatedAt: number; timeZone: string;
   readableCalendarIds: string[];
+  calendars?: { id: string; name: string; color: string }[];
   timeFormat: "24h" | "12h"; weekStartsOn: "monday" | "sunday";
   eventsStatus: SectionStatus & { coverageStart: number; coverageEnd: number };
   tasksStatus: SectionStatus;
@@ -67,6 +68,7 @@ export function buildWidgetSnapshot(input: Input): WidgetSnapshot {
     version: 2, scope: input.scope, lifecycle: input.lifecycle, generation: input.generation,
     signedIn: true, generatedAt: input.now.getTime(), timeZone: input.timeZone,
     readableCalendarIds: [...byCalendar.keys()],
+    calendars: input.calendars.map(({ id, name, color }) => ({ id, name: shorten(name), color })),
     timeFormat: input.timeFormat, weekStartsOn: input.weekStartsOn,
     eventsStatus: { ...section(input.eventsError ? "error" : input.eventsReady ? "ready" : "loading", input.eventsLastSyncAt), preservePrevious: !input.eventsReady,
       coverageStart: start.instant.getTime(), coverageEnd: end.instant.getTime() },

@@ -21,7 +21,7 @@ function enqueue<T>(operation: () => Promise<T>): Promise<T> {
 
 export function startAgendaWidgetSync(scope: string) {
   active?.stop();
-  if (Platform.OS !== "android" || !MusubiAgendaWidget || !scope) return () => {};
+  if (!["android", "ios"].includes(Platform.OS) || !MusubiAgendaWidget || !scope) return () => {};
   const native = MusubiAgendaWidget;
   const eventLifecycle = getEventLifecycle();
   let disposed = false;
@@ -129,14 +129,14 @@ export function startAgendaWidgetSync(scope: string) {
 export async function clearAgendaWidget() {
   active?.stop();
   resetWidgetData();
-  if (Platform.OS !== "android" || !MusubiAgendaWidget) return;
+  if (!["android", "ios"].includes(Platform.OS) || !MusubiAgendaWidget) return;
   const native = MusubiAgendaWidget;
   await enqueue(() => native.clearSnapshot());
 }
 
 export async function consumeWidgetTaskCompletion(token: string, scope: string) {
   const owner = active, native = MusubiAgendaWidget;
-  if (Platform.OS !== "android" || owner?.scope !== scope || owner.lifecycle !== getEventLifecycle() || typeof native?.consumeTaskCompletion !== "function") return null;
+  if (!["android", "ios"].includes(Platform.OS) || owner?.scope !== scope || owner.lifecycle !== getEventLifecycle() || typeof native?.consumeTaskCompletion !== "function") return null;
   return enqueue(() => active === owner && owner.lifecycle === getEventLifecycle() ? native.consumeTaskCompletion(token, scope) : Promise.resolve(null));
 }
 
