@@ -16,8 +16,11 @@ struct WidgetCalendarQuery: EntityQuery {
       .map { WidgetCalendarEntity(id: snapshot.scope + "\n" + $0.id, name: $0.name) }
   }
   func entities(for identifiers: [WidgetCalendarEntity.ID]) async throws -> [WidgetCalendarEntity] {
-    let ids = Set(identifiers)
-    return try await suggestedEntities().filter { ids.contains($0.id) }
+    let available = (try? await suggestedEntities()) ?? []
+    let byId = Dictionary(uniqueKeysWithValues: available.map { ($0.id, $0) })
+    // Keep unknown IDs as unavailable selections, rather than letting an old
+    // account's configured widget silently reset to "all" in a new account.
+    return identifiers.map { byId[$0] ?? WidgetCalendarEntity(id: $0, name: "Unavailable calendar") }
   }
 }
 struct MusubiWidgetConfiguration: WidgetConfigurationIntent {
@@ -75,7 +78,7 @@ enum MusubiWidgetKind { case agenda, calendar, tasks
   var route: String { self == .tasks ? "tasks" : self == .agenda ? "agenda" : "" }
   var title: String { self == .tasks ? "Tasks" : self == .calendar ? "Calendar" : "Agenda" }
 }
-func widgetURL(_ route: String = "", _ query: [String: String] = [:]) -> URL {
+func musubiLinkURL(_ route: String = "", _ query: [String: String] = [:]) -> URL {
   var components = URLComponents(string: route.isEmpty ? "musubi:///" : "musubi://\(route)")!
   components.queryItems = query.sorted { $0.key < $1.key }.map { URLQueryItem(name: $0.key, value: $0.value) }
   return components.url!
@@ -131,7 +134,7 @@ struct MusubiWidgetView: View {
       .foregroundStyle(ink)
     }
     .containerBackground(for: .widget) { WidgetTokens.surface(scheme) }
-    .widgetURL(widgetURL(kind.route))
+    .widgetURL(musubiLinkURL(kind.route))
     .privacySensitive()
   }
   private func capacity(_ height: CGFloat) -> Int {
@@ -153,7 +156,7 @@ struct MusubiWidgetView: View {
         .lineLimit(1)
       Spacer(minLength: 0)
       if !small && entry.snapshot != nil && !dynamicType.isAccessibilitySize {
-        Link(destination: widgetURL(kind == .tasks ? "tasks" : "", ["widgetAdd": "1"])) {
+        Link(destination: musubiLinkURL(kind == .tasks ? "tasks" : "", ["widgetAdd": "1"])) {
           Image(systemName: "plus").font(.system(size: WidgetTokens.Layout.controlIconSize))
             .frame(width: WidgetTokens.Layout.controlSize, height: WidgetTokens.Layout.iosHeaderHeight)
         }.accessibilityLabel(kind == .tasks ? "Add task" : "Add event")
@@ -174,7 +177,7 @@ struct MusubiWidgetView: View {
       }
       Spacer(minLength: 0)
       if !small {
-        Link(destination: widgetURL(kind.route, ["widgetRefresh": "1"])) {
+        Link(destination: musubiLinkURL(kind.route, ["widgetRefresh": "1"])) {
           Image(systemName: "arrow.clockwise").font(.system(size: WidgetTokens.Layout.controlIconSize))
             .frame(width: WidgetTokens.Layout.controlSize, height: WidgetTokens.Layout.iosFooterHeight)
         }.accessibilityLabel("Refresh in Musubi")
@@ -197,10 +200,10 @@ struct MusubiWidgetView: View {
           HStack(spacing: WidgetTokens.Layout.contentGap) {
             if small { taskSymbol(task) }
             else {
-              Link(destination: widgetURL("tasks", ["taskId": task.id].merging(entry.tickets[task.id].map { ["widgetComplete": $0] } ?? [:], uniquingKeysWith: { _, value in value }))) { taskSymbol(task) }
+              Link(destination: musubiLinkURL("tasks", ["taskId": task.id].merging(entry.tickets[task.id].map { ["widgetComplete": $0] } ?? [:], uniquingKeysWith: { _, value in value }))) { taskSymbol(task) }
                 .accessibilityLabel(entry.tickets[task.id] != nil ? "Complete \(task.title)" : "Open \(task.title)")
             }
-            rowLink(widgetURL("tasks", ["taskId": task.id])) {
+            rowLink(musubiLinkURL("tasks", ["taskId": task.id])) {
               VStack(alignment: .leading, spacing: 0) {
                 Text(task.title).font(.system(size: titleSize, weight: .medium)).lineLimit(1)
                 Text(taskMeta(task)).font(.system(size: metaSize)).foregroundStyle(taskOverdue(task) ? WidgetTokens.accentText(scheme) : muted).lineLimit(1)
@@ -273,8 +276,8 @@ struct MusubiWidgetView: View {
     return formatter.string(from: Date(timeIntervalSince1970: milliseconds / 1000))
   }
   private func eventURL(_ event: WidgetEvent) -> URL {
-    if let taskId = event.taskId { return widgetURL("tasks", ["taskId": taskId]) }
-    return widgetURL("agenda", ["eventId": event.id, "occurrenceStart": String(Int64(event.start))])
+    if let taskId = event.taskId { return musubiLinkURL("tasks", ["taskId": taskId]) }
+    return musubiLinkURL("agenda", ["eventId": event.id, "occurrenceStart": String(Int64(event.start))])
   }
   private var todayCard: some View {
     VStack(alignment: .leading, spacing: WidgetTokens.Layout.contentGap) {
@@ -300,7 +303,7 @@ struct MusubiWidgetView: View {
           HStack(spacing: 0) {
             ForEach(0..<7, id: \.self) { column in
               let date = dates[row * 7 + column]
-              Link(destination: widgetURL("", ["time": String(Int64(date.timeIntervalSince1970 * 1000))])) {
+              Link(destination: musubiLinkURL("", ["time": String(Int64(date.timeIntervalSince1970 * 1000))])) {
                 VStack(spacing: 0) {
                   Text(date.formatted(.dateTime.day())).font(.system(size: titleSize, weight: Calendar.current.isDate(date, inSameDayAs: entry.date) ? .semibold : .regular))
                     .foregroundStyle(Calendar.current.isDate(date, inSameDayAs: entry.date) ? WidgetTokens.onAccent(scheme) : Calendar.current.isDate(date, equalTo: entry.date, toGranularity: .month) ? ink : muted)
