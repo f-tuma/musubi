@@ -15,6 +15,41 @@ permissions:
 # "verify" means reading a log to find out what broke.
 
 jobs:
+  android-system-bars:
+    name: Android system bars
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      EXPO_NO_DOTENV: "1"
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Verify artifact scanner and native cutout compatibility
+        run: python3 -m unittest discover -s scripts -p test_android_system_bars.py
+      - name: Generate Android project
+        run: pnpm --filter @musubi/client exec expo prebuild --platform android --no-install
+      - name: Build native APK and AAB with system bar verification
+        working-directory: apps/client/android
+        # Exercise device and emulator ABIs within the runner's memory budget.
+        # Store builds retain the full production ABI set.
+        run: >-
+          JAVA_HOME="$JAVA_HOME_17_X64" ./gradlew :app:assembleRelease :app:bundleRelease
+          -PreactNativeArchitectures=arm64-v8a,x86_64 --max-workers=2 --no-daemon --console=plain
+      - name: Verify shipped DEX
+        run: |
+          python3 scripts/verify-android-system-bars.py apps/client/android/app/build/outputs/apk/release/app-release.apk --dexdump "$ANDROID_HOME/build-tools/36.0.0/dexdump"
+          python3 scripts/verify-android-system-bars.py apps/client/android/app/build/outputs/bundle/release/app-release.aab --dexdump "$ANDROID_HOME/build-tools/36.0.0/dexdump"
+      - name: Native verification evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: android-system-bars
+          path: apps/client/android/app/build/reports/musubi-system-bars.json
+
   compat:
     name: Old client compatibility
     runs-on: ubuntu-latest

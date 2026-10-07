@@ -1,0 +1,184 @@
+// The app permanently uses edge-to-edge with transparent window themes. Specialize
+// the pinned libraries' legacy color/cutout paths before DEX, keeping their inset,
+// contrast, visibility and icon-style code. No reflection or API-name obfuscation.
+import com.android.build.api.instrumentation.AsmClassVisitorFactory
+import com.android.build.api.instrumentation.ClassContext
+import com.android.build.api.instrumentation.ClassData
+import com.android.build.api.instrumentation.FramesComputationMode
+import com.android.build.api.instrumentation.InstrumentationParameters
+import com.android.build.api.instrumentation.InstrumentationScope
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.MethodVisitor
+import org.objectweb.asm.Opcodes
+
+abstract class MusubiSystemBarsFactory implements AsmClassVisitorFactory<InstrumentationParameters.None> {
+    static boolean selected(String name) {
+        ['com.facebook.react.views.view.WindowUtilKt',
+         'com.facebook.react.modules.statusbar.StatusBarModule',
+         'com.google.android.material.internal.EdgeToEdgeUtils',
+         'com.google.android.material.bottomsheet.BottomSheetDialog',
+         'com.google.android.material.sidesheet.SheetDialog'].any {
+            name == it || name.startsWith(it + '$')
+        }
+    }
+
+    @Override
+    boolean isInstrumentable(ClassData data) { selected(data.className) }
+
+    @Override
+    ClassVisitor createClassVisitor(ClassContext context, ClassVisitor next) {
+        visitor(next)
+    }
+
+    static ClassVisitor visitor(ClassVisitor next) {
+        new ClassVisitor(Opcodes.ASM9, next) {
+            @Override
+            MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+                def output = super.visitMethod(access, name, descriptor, signature, exceptions)
+                new MethodVisitor(Opcodes.ASM9, output) {
+                    @Override
+                    void visitMethodInsn(int opcode, String owner, String called, String desc, boolean isInterface) {
+                        if (opcode == Opcodes.INVOKEVIRTUAL && owner == 'android/view/Window') {
+                            if (called in ['getStatusBarColor', 'getNavigationBarColor'] && desc == '()I') {
+                                // These windows' themes are transparent; don't query an obsolete platform color.
+                                super.visitInsn(Opcodes.POP)
+                                super.visitInsn(Opcodes.ICONST_0)
+                                return
+                            }
+                            if (called in ['setStatusBarColor', 'setNavigationBarColor'] && desc == '(I)V') {
+                                // Transparency comes from the theme. Insets and view backgrounds protect content.
+                                super.visitInsn(Opcodes.POP)
+                                super.visitInsn(Opcodes.POP)
+                                return
+                            }
+                        }
+                        super.visitMethodInsn(opcode, owner, called, desc, isInterface)
+                    }
+
+                    @Override
+                    void visitFieldInsn(int opcode, String owner, String field, String desc) {
+                        if (opcode == Opcodes.PUTFIELD && owner == 'android/view/WindowManager$LayoutParams' && field == 'layoutInDisplayCutoutMode' && desc == 'I') {
+                            // Discard SHORT_EDGES/DEFAULT requests, preserve old-platform safe cutouts.
+                            super.visitInsn(Opcodes.POP)
+                            super.visitMethodInsn(Opcodes.INVOKESTATIC, 'dev/frgtn/musubi/compat/DisplayCutout', 'allowContent', '(Landroid/view/WindowManager$LayoutParams;)V', false)
+                            return
+                        }
+                        super.visitFieldInsn(opcode, owner, field, desc)
+                    }
+                }
+            }
+        }
+    }
+}
+
+class MusubiSystemBarsAudit extends ClassVisitor {
+    final List<String> calls = []
+    MusubiSystemBarsAudit() { super(Opcodes.ASM9) }
+
+    @Override
+    MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        new MethodVisitor(Opcodes.ASM9) {
+            @Override
+            void visitMethodInsn(int opcode, String owner, String called, String desc, boolean isInterface) {
+                if (owner == 'android/view/Window' && called in ['getStatusBarColor', 'getNavigationBarColor', 'setStatusBarColor', 'setNavigationBarColor']) {
+                    calls.add("${name}: ${called}")
+                }
+            }
+
+            @Override
+            void visitFieldInsn(int opcode, String owner, String field, String desc) {
+                if (opcode == Opcodes.PUTFIELD && owner == 'android/view/WindowManager$LayoutParams' && field == 'layoutInDisplayCutoutMode') {
+                    calls.add("${name}: cutout mode")
+                }
+            }
+        }
+    }
+}
+
+// Register in the app script's existing AGP classloader.
+if (project.findProperty('edgeToEdgeEnabled') != 'true') {
+    throw new GradleException('Musubi system bars require permanent edgeToEdgeEnabled=true.')
+}
+
+// Fail before applying the specialization to a different binary contract.
+configurations.matching { it.name.endsWith('RuntimeClasspath') }.configureEach {
+    incoming.afterResolve {
+        resolutionResult.allComponents.each { component ->
+            def module = component.moduleVersion
+            if (module?.group == 'com.facebook.react' && module.name == 'react-android' && module.version != '0.86.3') {
+                throw new GradleException("Review Musubi system bars for React Native ${module.version}.")
+            }
+            if (module?.group == 'com.google.android.material' && module.name == 'material' && module.version != '1.13.0') {
+                throw new GradleException("Review Musubi system bars for Material ${module.version}.")
+            }
+        }
+    }
+}
+
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.instrumentation.transformClassesWith(MusubiSystemBarsFactory, InstrumentationScope.ALL) {}
+        variant.instrumentation.setAsmFramesComputationMode(FramesComputationMode.COMPUTE_FRAMES_FOR_INSTRUMENTED_METHODS)
+    }
+}
+
+def systemBarsReport = layout.buildDirectory.file('reports/musubi-system-bars.json')
+def nativeSystemBarArtifacts = providers.provider {
+    def runtime = configurations.getByName('releaseRuntimeClasspath')
+    runtime.incoming.artifactView {
+        attributes.attribute(org.gradle.api.attributes.Attribute.of('artifactType', String), 'aar')
+        componentFilter { id ->
+            id instanceof org.gradle.api.artifacts.component.ModuleComponentIdentifier &&
+                ((id.group == 'com.facebook.react' && id.module == 'react-android') ||
+                 (id.group == 'com.google.android.material' && id.module == 'material'))
+        }
+    }.artifacts
+}
+def verifySystemBars = tasks.register('verifyMusubiSystemBars') {
+    group = 'verification'
+    description = 'Verify the actual pinned RN/Material classes and their migrated bytecode.'
+    inputs.files(nativeSystemBarArtifacts.map { it.artifactFiles })
+    inputs.file(project.file('build.gradle'))
+    outputs.file(systemBarsReport)
+    doLast {
+        def report = []
+        nativeSystemBarArtifacts.get().artifacts.each { artifact ->
+            new java.util.zip.ZipFile(artifact.file).withCloseable { aar ->
+                def classes = aar.getEntry('classes.jar')
+                if (!classes) throw new GradleException("Missing classes.jar in ${artifact.file.name}.")
+                new java.util.jar.JarInputStream(aar.getInputStream(classes)).withCloseable { jar ->
+                    def entry
+                    while ((entry = jar.nextJarEntry) != null) {
+                        if (!entry.name.endsWith('.class')) continue
+                        def bytes = jar.readAllBytes()
+                        def reader = new ClassReader(bytes)
+                        def name = reader.className.replace('/', '.')
+                        if (!MusubiSystemBarsFactory.selected(name)) continue
+                        def before = new MusubiSystemBarsAudit()
+                        reader.accept(before, 0)
+                        def writer = new ClassWriter(0)
+                        reader.accept(MusubiSystemBarsFactory.visitor(writer), 0)
+                        def after = new MusubiSystemBarsAudit()
+                        new ClassReader(writer.toByteArray()).accept(after, 0)
+                        if (!after.calls.empty) throw new GradleException("Unmigrated system bar calls in ${name}: ${after.calls}")
+                        report.add([name: name, removedCalls: before.calls])
+                    }
+                }
+            }
+        }
+        ['com.facebook.react.views.view.WindowUtilKt', 'com.facebook.react.modules.statusbar.StatusBarModule',
+         'com.google.android.material.internal.EdgeToEdgeUtils', 'com.google.android.material.bottomsheet.BottomSheetDialog',
+         'com.google.android.material.sidesheet.SheetDialog'].each { name ->
+            if (!report.any { it.name == name && !it.removedCalls.empty }) {
+                throw new GradleException("Missing expected native system bar contract: ${name}")
+            }
+        }
+        def file = systemBarsReport.get().asFile
+        file.parentFile.mkdirs()
+        file.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(report))
+        logger.lifecycle("Musubi system bars: verified ${report.size()} native classes, ${report.sum { it.removedCalls.size() }} legacy calls migrated.")
+    }
+}
+tasks.matching { it.name == 'preReleaseBuild' }.configureEach { dependsOn(verifySystemBars) }
