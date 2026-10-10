@@ -129,9 +129,8 @@ site-search button {
 }
 
 /* ── Mermaid diagrams ── */
-/* Diagrams render at intrinsic size (useMaxWidth:false in astro.config); this
-   container lets a wide diagram scroll horizontally on narrow screens instead
-   of shrinking to illegibility or clipping. Small diagrams just center. */
+/* Inline diagrams are compact previews. Open diagram provides their full
+   intrinsic size, fit and zoom in a separate scrollable viewport. */
 .mermaid {
   overflow-x: auto;
   overflow-y: hidden;
@@ -142,9 +141,140 @@ site-search button {
   /* momentum scroll on iOS */
   -webkit-overflow-scrolling: touch;
 }
-.mermaid svg {
-  max-width: none; /* don't let the SVG cap itself below its natural size */
+pre.mermaid svg {
+  max-width: 100%;
   height: auto;
+  flex-shrink: 0;
+}
+
+/* ── Diagram viewer ── */
+.diagram-preview {
+  margin-block: 2rem;
+}
+.diagram-preview pre.mermaid {
+  margin-block: 0 0.5rem;
+  cursor: zoom-in;
+  justify-content: safe center;
+}
+.diagram-open,
+.diagram-viewer button {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--sl-color-hairline-light);
+  border-radius: 0.375rem;
+  background: var(--sl-color-bg-nav);
+  color: var(--sl-color-white);
+  font: inherit;
+  font-size: var(--sl-text-sm);
+  line-height: 1;
+  cursor: pointer;
+}
+.diagram-open:hover,
+.diagram-viewer button:hover {
+  border-color: var(--sl-color-text-accent);
+}
+.diagram-open:focus-visible,
+.diagram-viewer button:focus-visible,
+.diagram-viewer-viewport:focus-visible {
+  outline: 2px solid var(--sl-color-text-accent);
+  outline-offset: 2px;
+}
+.diagram-viewer button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.diagram-viewer {
+  box-sizing: border-box;
+  width: calc(100vw - 2rem);
+  height: calc(100dvh - 2rem);
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--sl-color-hairline-light);
+  border-radius: 0.75rem;
+  background: var(--sl-color-bg);
+  color: var(--sl-color-white);
+  box-shadow: var(--sl-shadow-lg);
+}
+.diagram-viewer::backdrop {
+  background: var(--sl-color-backdrop-overlay);
+}
+.diagram-viewer-frame {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.diagram-viewer-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--sl-color-hairline-light);
+}
+.diagram-viewer-toolbar h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--sl-text-lg);
+}
+.diagram-viewer-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.diagram-viewer-scale {
+  min-width: 3.5rem;
+  text-align: center;
+  font-size: var(--sl-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+.diagram-viewer-viewport {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 1rem;
+}
+.diagram-viewer-canvas {
+  margin-inline: auto;
+}
+.diagram-viewer-canvas > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none !important;
+}
+@media (max-width: 40rem) {
+  .diagram-viewer {
+    width: calc(100vw - 1rem);
+    height: calc(100dvh - 1rem);
+  }
+  .diagram-viewer-toolbar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+  .diagram-viewer-controls {
+    order: 1;
+    flex-basis: 100%;
+    justify-content: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  pre.mermaid:not([data-processed]) {
+    animation: none !important;
+  }
+}
+@media print {
+  .diagram-open,
+  .diagram-viewer {
+    display: none !important;
+  }
 }
 
 /* ── Card grid ── */

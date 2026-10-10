@@ -1,0 +1,22 @@
+<dialog class="diagram-viewer" id="diagram-viewer" aria-labelledby="diagram-viewer-title">
+  <div class="diagram-viewer-frame">
+    <div class="diagram-viewer-toolbar">
+      <h2 id="diagram-viewer-title">Diagram</h2>
+      <div class="diagram-viewer-controls" role="group" aria-label="Diagram zoom">
+        <button type="button" data-diagram-action="out" aria-label="Zoom out">−</button>
+        <output class="diagram-viewer-scale" aria-live="polite" aria-label="Zoom level">100%</output>
+        <button type="button" data-diagram-action="in" aria-label="Zoom in">+</button>
+        <button type="button" data-diagram-action="fit" aria-label="Fit diagram">Fit</button>
+        <button type="button" data-diagram-action="actual" aria-label="Actual size">100%</button>
+      </div>
+      <button type="button" data-diagram-action="close" aria-label="Close diagram" autofocus>×</button>
+    </div>
+    <div class="diagram-viewer-viewport" tabindex="0" role="region" aria-label="Diagram. Scroll to pan.">
+      <div class="diagram-viewer-canvas"></div>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  import "../scripts/diagram-viewer";
+</script>

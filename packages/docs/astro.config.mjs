@@ -20,9 +20,9 @@ export default defineConfig({
 		// astro-mermaid must come BEFORE starlight so its rehype step runs first.
 		// Renders client-side (no build-time headless browser) and follows the
 		// active light/dark theme.
-		// useMaxWidth:false keeps diagrams at a legible intrinsic size instead of
-		// shrinking to fit — on narrow screens the .mermaid container scrolls
-		// horizontally (see custom.css) rather than rendering unreadable text.
+		// Preserve intrinsic dimensions for the enlarged diagram viewer. The
+		// inline diagram stays a compact preview; the viewer offers actual size,
+		// fit and zoom without changing Mermaid's rendering or SVG references.
 		mermaid({
 			theme: "default",
 			autoTheme: true,
@@ -37,6 +37,9 @@ export default defineConfig({
 			description:
 				"Learn Musubi’s architecture, run it locally, contribute safely, and operate your own server.",
 			customCss: ["./src/styles/custom.css"],
+			components: {
+				MarkdownContent: "./src/components/MarkdownContent.astro",
+			},
 			editLink: {
 				baseUrl:
 					"https://github.com/f-tuma/musubi/edit/main/packages/docs/",
