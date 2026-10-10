@@ -1,7 +1,7 @@
 import { colors, fonts, styles } from "@/constants/theme";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { View, Text, Linking, KeyboardAvoidingView } from "react-native";
+import { View, Text, Linking, KeyboardAvoidingView, ScrollView } from "react-native";
 import InputModal from "@/components/TextInputModal";
 import { Btn } from "@/components/ui/Btn";
 import { useServer } from "@/contexts/ServerContext";
@@ -57,7 +57,7 @@ export default function Welcome() {
   return (
     <View style={styles.screen}>
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-      <View style={{ alignItems: "center", justifyContent: "space-between", flex: 1, paddingTop: 60 }}>
+      <ScrollView contentContainerStyle={{ alignItems: "center", justifyContent: "space-between", flexGrow: 1, paddingTop: 60, gap: 28 }}>
         <View style={{ alignItems: "center", justifyContent: "center", gap: 12 }}>
           <BrandMark size={96} />
           <Text style={{ color: colors.fg3 }}>
@@ -113,7 +113,7 @@ export default function Welcome() {
             </Text>
           </Text>
         </View>
-      </View >
+      </ScrollView>
       </KeyboardAvoidingView>
       <InputModal
         visible={inputModalVisible}

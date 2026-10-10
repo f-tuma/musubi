@@ -23,7 +23,6 @@ const MONTH_LANES = 2;     // at most this many spanning all-day lanes per week 
 const BAR_H = 16;          // lane height of a spanning bar
 const DAYNUM_H = 27;       // day-number area at the top of a cell
 const OVERFLOW_H = 12;     // the "+N" line at the bottom of a cell
-const MIN_ROWS = 2;        // never fewer event rows than this, even on tiny cells
 
 type Props = {
   base: Date;                       // month shown at page index 0
@@ -48,7 +47,9 @@ export const MonthView = memo(function MonthView({ base, events, weekStartsOn, e
   const cellH = (size.h - DOW_H) / 6;
   // Event rows per cell FIT to the real cell height (device-dependent) instead
   // of a fixed count — tall screens show 4-5 rows, small ones fall back to fewer.
-  const rowsPerCell = Math.max(MIN_ROWS, Math.floor((cellH - DAYNUM_H - OVERFLOW_H) / BAR_H));
+  const rowsPerCell = Math.max(0, Math.floor((cellH - DAYNUM_H - OVERFLOW_H) / BAR_H));
+  const visibleLanes = Math.min(MONTH_LANES, rowsPerCell);
+  const compact = rowsPerCell === 0;
 
   const renderPage = useCallback(({ index }: { index: number }) => {
     const month = addMonths(base, index);
@@ -66,7 +67,7 @@ export const MonthView = memo(function MonthView({ base, events, weekStartsOn, e
           // all-day events run as continuous bars across the row; timed events
           // stay as per-cell chips below them
           const spans = allDaySpans(events, week);
-          const bars = spans.filter(sp => sp.lane < MONTH_LANES);
+          const bars = spans.filter(sp => sp.lane < visibleLanes);
           // Chips shift down PER DAY, by the lanes actually covering that day —
           // a row-wide count stole chip rows from days no bar passes over.
           // (Highest covering lane wins: a day under only a lane-1 bar still
@@ -74,7 +75,7 @@ export const MonthView = memo(function MonthView({ base, events, weekStartsOn, e
           const lanesOn = (col: number) =>
             Math.max(0, ...bars.filter(sp => sp.startCol <= col && col <= sp.endCol).map(sp => sp.lane + 1));
           const hiddenOn = (col: number) =>
-            spans.filter(sp => sp.lane >= MONTH_LANES && sp.startCol <= col && col <= sp.endCol).length;
+            spans.filter(sp => sp.lane >= visibleLanes && sp.startCol <= col && col <= sp.endCol).length;
           return (
             <View key={r} style={{ flex: 1, flexDirection: "row" }}>
               {week.map((day, c) => {
@@ -84,7 +85,7 @@ export const MonthView = memo(function MonthView({ base, events, weekStartsOn, e
                 const chipRows = rowsPerCell - dayLanes;
                 const dayEvents = byDay.get(dayKey(day)) ?? [];
                 const timed = dayEvents.filter(e => !e.isAllDay);
-                const overflow = timed.length - chipRows + hiddenOn(c);
+                const overflow = Math.max(0, timed.length - chipRows) + hiddenOn(c);
                 const dateLabel = day.toLocaleDateString("en-UK", {
                   weekday: "long", day: "numeric", month: "long", year: "numeric",
                 });
@@ -102,23 +103,28 @@ export const MonthView = memo(function MonthView({ base, events, weekStartsOn, e
                       opacity: inMonth ? 1 : 0.35,
                     }}
                   >
-                    <View style={{
-                      alignSelf: "center", width: 22, height: 22, borderRadius: 11,
-                      alignItems: "center", justifyContent: "center", marginBottom: 2,
-                      overflow: "hidden",
-                    }}>
-                      {isToday ? (
-                        <View pointerEvents="none" style={{
-                          position: "absolute", inset: 0, borderRadius: 11,
-                          backgroundColor: colors.accent,
-                        }} />
-                      ) : null}
-                      <Text style={{
-                        fontFamily: fonts.sans, fontSize: 12,
-                        color: isToday ? "#f4f1e8" : inMonth ? colors.fg2 : colors.fg4,
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                      <View style={{
+                        alignSelf: "center", width: 22, height: 22, borderRadius: 11,
+                        alignItems: "center", justifyContent: "center", marginBottom: 2,
+                        overflow: "hidden",
                       }}>
-                        {day.getDate()}
-                      </Text>
+                        {isToday ? (
+                          <View pointerEvents="none" style={{
+                            position: "absolute", inset: 0, borderRadius: 11,
+                            backgroundColor: colors.accent,
+                          }} />
+                        ) : null}
+                        <Text style={{
+                          fontFamily: fonts.sans, fontSize: 12,
+                          color: isToday ? "#f4f1e8" : inMonth ? colors.fg2 : colors.fg4,
+                        }}>
+                          {day.getDate()}
+                        </Text>
+                      </View>
+                      {compact && overflow > 0 && (
+                        <Text style={{ fontFamily: fonts.sans, fontSize: 8.5, color: colors.fg3, paddingLeft: 3 }}>+{overflow}</Text>
+                      )}
                     </View>
                     {dayLanes > 0 && <View style={{ height: dayLanes * BAR_H }} />}
                     {timed.slice(0, Math.max(chipRows, 0)).map((e, i) => (
@@ -131,7 +137,7 @@ export const MonthView = memo(function MonthView({ base, events, weekStartsOn, e
                         </Text>
                       </View>
                     ))}
-                    {overflow > 0 && (
+                    {!compact && overflow > 0 && (
                       <Text style={{ fontFamily: fonts.sans, fontSize: 8.5, color: colors.fg3, paddingLeft: 3 }}>
                         +{overflow}
                       </Text>
@@ -164,7 +170,7 @@ export const MonthView = memo(function MonthView({ base, events, weekStartsOn, e
         })}
       </View>
     );
-  }, [base, byDay, weekStartsOn, dowLabels, cellW, cellH, eventColorOf, onDayPress, today]);
+  }, [base, events, byDay, weekStartsOn, dowLabels, cellW, cellH, rowsPerCell, visibleLanes, compact, eventColorOf, onDayPress, today]);
 
   return (
     <View style={{ flex: 1 }} onLayout={e => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>

@@ -35,7 +35,8 @@ const expoConfig: ExpoConfig = {
   slug: "musubi",
   owner: "frgtn",
   version: rootPackage.version,
-  orientation: "portrait",
+  // Let Android follow the device and adapt to tablet/foldable windows.
+  orientation: "default",
   icon: "./assets/images/icon.png",
   scheme: "musubi",
   userInterfaceStyle: "automatic",
@@ -64,6 +65,11 @@ const expoConfig: ExpoConfig = {
     "associatedDomains": ["applinks:musubi.pro", "applinks:dev.musubi.pro"],
     "infoPlist": {
       "ITSAppUsesNonExemptEncryption": false,
+      // Keep the existing iOS orientations while Android becomes adaptive.
+      "UISupportedInterfaceOrientations": [
+        "UIInterfaceOrientationPortrait",
+        "UIInterfaceOrientationPortraitUpsideDown"
+      ],
       // We drive the status bar style at runtime from the app theme (root Stack
       // statusBarStyle) — iOS only honors that with this set to YES.
       "UIViewControllerBasedStatusBarAppearance": true,
