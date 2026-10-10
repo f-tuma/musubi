@@ -67,7 +67,7 @@ async function main() {
       await assert.rejects(async () => { const client = await createCaldavClient(origin, "fixture", "fixture"); await client.fetchCalendars(); }, error => {
         if (bad === "home-href") {
           assert.ok(error instanceof DavReadResponseError);
-          assert.deepEqual(error.cause, { code: "caldav-read-response-invalid", reason: "discovery-response-resource", responseCount: 1, hrefRelation: "different-path", readKind: "home" });
+          assert.deepEqual(error.cause, { code: "caldav-read-response-invalid", reason: "discovery-response-resource", responseCount: 1, hrefRelation: "different-path", providerKind: "other", requestResource: "principal-alias", responseResource: "other", readKind: "home" });
         }
         return true;
       });
