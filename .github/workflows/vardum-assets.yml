@@ -1,0 +1,79 @@
+name: Vardum private assets
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-restore:
+    name: Restore committed mobile assets
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Store VARDUM_API_KEY here; restrict this environment to the main branch.
+    environment: vardum-private-ci
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Download frozen snapshot and verify committed bytes
+        env:
+          VARDUM_API_KEY: ${{ secrets.VARDUM_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$VARDUM_API_KEY" ]; then
+            echo "::error::Add a read-only Musubi key as VARDUM_API_KEY in the vardum-private-ci environment"
+            exit 1
+          fi
+
+          cli_package="$(cd apps/client && node -p 'require.resolve("@vardum/cli/package.json")')"
+          cli_entry="$(node -e 'const fs = require("node:fs"); const path = require("node:path"); const file = process.argv[1]; const pkg = JSON.parse(fs.readFileSync(file, "utf8")); if (pkg.version !== "0.6.0") throw new Error("Expected CLI 0.6.0"); console.log(path.resolve(path.dirname(file), pkg.bin.vardum));' "$cli_package")"
+
+          staging="$(mktemp -d "$RUNNER_TEMP/musubi-vardum.XXXXXX")"
+          trap 'rm -rf -- "$staging"' EXIT
+          cp apps/client/assets/vardum.json apps/client/assets/.vardum.lock "$staging/"
+
+          (
+            cd "$staging"
+            export VARDUM_CONFIG_HOME="$staging/cli-config"
+            node "$cli_entry" pull --frozen --json
+          )
+
+          cmp apps/client/assets/vardum.json "$staging/vardum.json"
+          cmp apps/client/assets/.vardum.lock "$staging/.vardum.lock"
+
+          VARDUM_RESTORE_DIR="$staging" node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { createHash } from "node:crypto";
+          import { readFile } from "node:fs/promises";
+          import { resolve } from "node:path";
+
+          const source = resolve("apps/client/assets");
+          const restored = process.env.VARDUM_RESTORE_DIR;
+          const lock = JSON.parse(await readFile(resolve(source, ".vardum.lock"), "utf8"));
+          assert.equal(lock.schema, 2, "Expected a schema 2 frozen snapshot");
+          const items = Object.values(lock.items);
+          assert.ok(items.length > 0, "Snapshot must contain at least one output");
+
+          for (const item of items) {
+            const bytes = await readFile(resolve(restored, item.path));
+            const hash = createHash("sha256").update(bytes).digest("hex");
+            assert.equal(hash, item.checksum, "Restored output checksum differs from lock");
+            const committed = await readFile(resolve(source, item.path));
+            assert.ok(bytes.equals(committed), "Restored output differs from committed asset");
+          }
+          console.log("Verified frozen restoration of " + items.length + " committed output(s).");
+          NODE
