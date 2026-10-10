@@ -36,6 +36,9 @@
   <dimen name="musubi_widget_divider_width">1dp</dimen>
   <dimen name="musubi_widget_header_action_gap">4dp</dimen>
   <dimen name="musubi_widget_row_height">48dp</dimen>
+  <dimen name="musubi_widget_ios_header_height">32dp</dimen>
+  <dimen name="musubi_widget_ios_footer_height">24dp</dimen>
+  <dimen name="musubi_widget_ios_row_height">38dp</dimen>
   <dimen name="musubi_widget_row_gap">4dp</dimen>
   <dimen name="musubi_widget_content_gap">8dp</dimen>
   <dimen name="musubi_widget_stripe_width">2dp</dimen>

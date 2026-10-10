@@ -109,7 +109,7 @@ export default defineConfig({
 						{ label: "Capabilities & Verification", slug: "operations/capabilities" },
 						{ label: "Releases & Upgrades", slug: "operations/releases" },
 						{ label: "Observability", slug: "operations/observability" },
-						{ label: "Android Widgets", slug: "guides/widgets" },
+						{ label: "Home Screen Widgets", slug: "guides/widgets" },
 						{
 							label: "Google Play Release",
 							slug: "guides/google-play-release",

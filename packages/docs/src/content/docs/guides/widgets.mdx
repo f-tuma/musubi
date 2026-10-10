@@ -1,11 +1,16 @@
 ---
 title: Home screen widgets
-description: Add, configure, refresh, and develop Musubi's Android Agenda, Calendar, and Tasks widgets.
+description: Add, configure, refresh, and develop Musubi's Android and iOS Agenda, Calendar, and Tasks widgets.
 ---
 
 import { Aside, FileTree, Steps } from '@astrojs/starlight/components';
 
 Musubi provides three **Android home screen widgets**. They share Musubi's light/dark colours, readable headers and rows, a refresh control, and a compact data-status line. Resizing changes how much content and metadata appears.
+
+The iPhone/iPad WidgetKit extension provides the same three kinds on iOS 17 and
+later. Its first device acceptance is through TestFlight; see the
+[iOS setup and testing](#ios-widgets-and-testflight) below. The Android instructions
+in the following sections describe launcher-specific scrolling and controls.
 
 | Widget | Small size | More space |
 |---|---|---|
@@ -188,6 +193,88 @@ Android launchers may reapply a `RemoteViews` update onto a cached tree when the
 - Sign out and switch account/server; confirm private content and old account selections disappear, including delayed writes.
 - Record launcher/version, sizes, theme, steps, and screenshots. Logic tests and a native build do not establish physical-device acceptance.
 
-## iOS status
+## iOS widgets and TestFlight
 
-The current module is Android-only. iOS is a separate later project requiring a WidgetKit extension, shared-container storage, timeline/refresh policy, signing, and device verification. No iOS widget dependency or closed-app refresh behavior is established by this Android implementation.
+The native **Musubi Agenda**, **Musubi Calendar**, and **Musubi Tasks** widgets
+support small, medium, large and iPad extra-large families. Small widgets open
+their corresponding tab when tapped; their task circles are display indicators.
+Larger Agenda/Tasks widgets have individual detail links, an add control and
+**Refresh in Musubi**. Task completion opens Musubi and uses the same fresh
+rights, revision and retirement checks as Android. WidgetKit lists show the rows
+that fit; they do not scroll.
+
+Calendar uses a today card at small size, upcoming items at medium size, and a
+42-cell month grid with calendar-colour dots at large/extra-large size. Every
+day column reserves the same dot space and today's marker stays round. Dynamic
+Type reduces visible rows; a month grid that cannot fit readable dates asks you
+to open Musubi rather than shrink text.
+
+<Steps>
+1. Install the widget build from TestFlight and open Musubi once to load your account.
+2. Long-press the iPhone/iPad home screen, choose **Edit → Add Widget**, and find **Musubi**.
+3. Add the Agenda, Calendar or Tasks widget in the desired family.
+4. Long-press a widget and choose **Edit Widget → Calendars** to filter it. An empty selection means all readable calendars.
+</Steps>
+
+Selections belong to each widget's native configuration and include the current
+server/account scope. Old-account selections request a new calendar selection;
+they cannot silently match another account's data. Empty calendars remain
+available in the picker because the snapshot includes calendar metadata.
+
+The app and extension share a protected display-data file in the App Group
+`group.dev.frgtn.musubi.widgets`. Coordinated atomic writes, lifecycle/generation
+fences and independent section retention prevent stale writes or failures from
+becoming an authoritative empty result. Sign-out clears private rows and action
+tickets. Neither the extension nor this shared file contains session credentials.
+
+WidgetKit timelines advance cached dates and overdue labels. App updates request
+timeline reloads, but iOS controls their scheduling; they are not a background
+network sync or a guaranteed midnight refresh. **Refresh in Musubi** opens the
+authenticated app. A changed timezone or expired coverage requires a new app
+projection. Keep the app's normal notifications for time-critical reminders.
+
+### Build and signing
+
+`apps/client/plugins/withIosWidgets.js` creates and embeds the **MusubiWidgets**
+target (`dev.frgtn.musubi.widgets`, iOS 17+), copies the canonical Swift sources
+and generated tokens, and supplies matching App Group entitlements to the host
+and extension. App version/build settings stay aligned. EAS sees the extension
+declaration in `extra.eas.build.experimental.ios.appExtensions` before prebuild.
+Signing requires provisioning profiles for both App IDs with this App Group.
+
+| Source | Responsibility |
+|---|---|
+| `modules/musubi-agenda-widget/ios/` | Expo bridge, Foundation snapshot validation, scoped storage and one-use tickets |
+| `widgets/ios/MusubiWidgets.swift` | WidgetKit configuration, timelines, SwiftUI views and canonical deep links |
+| `widgets/ios/WidgetTokens.swift` | Generated shared design-system values; never edit by hand |
+| `widgets/tests/main.swift` | Native retention, membership, ticket and lifecycle regressions |
+| `widgets/tests/plugin.test.cjs` | Target embedding, versions and idempotent generation |
+| `.github/workflows/ios-widgets.yml` | macOS native tests, release extension compilation and app/Expo bridge compilation |
+
+From `apps/client`, with dotenv disabled when inspecting isolated test builds:
+
+```sh
+EXPO_NO_DOTENV=1 pnpm exec expo prebuild --platform ios --no-install
+EXPO_NO_DOTENV=1 eas build --platform ios --profile production
+EXPO_NO_DOTENV=1 eas submit --platform ios --profile production --id <verified-build-id>
+```
+
+Native WidgetKit and App Group changes require a rebuilt binary. An OTA or Metro
+update cannot add the extension. macOS CI compiles without production signing;
+only the EAS archive verifies distribution provisioning. TestFlight installation
+and device behavior remain separate acceptance checks.
+
+### TestFlight acceptance
+
+Record the TestFlight build number, device, iOS version, family, appearance and
+Dynamic Type size. On iPhone and iPad verify all three widgets and their larger
+families, light/dark and tinted appearance, VoiceOver names, calendar filtering,
+empty and failed states, day/event/recurring-occurrence/task links, app cold
+start, add and refresh, and completion with editable/read-only shared tasks.
+Completion during a connection failure must leave the task unchanged.
+
+Also verify midnight/DST/timezone changes, reopening after process death,
+sign-out/account/server switches, stale selections and task tickets, and a
+TestFlight upgrade with existing widgets. Reopen Musubi after switching accounts
+and confirm old content disappears; iOS timeline scheduling can delay visual
+reloading, so a successful build alone does not establish device acceptance.

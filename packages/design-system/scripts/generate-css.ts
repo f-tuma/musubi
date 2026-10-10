@@ -7,8 +7,10 @@ import {
 import { penpotTokens } from "../src/penpot-tokens";
 import { renderTailwindThemeCss } from "../src/tailwind";
 import { renderAndroidWidgetTokensXml } from "../src/android-widget";
+import { renderIosWidgetTokensSwift } from "../src/ios-widget";
 
 const outputs = [
+  ["../../../apps/client/widgets/ios/WidgetTokens.swift", renderIosWidgetTokensSwift()],
   ["../src/colors.css", renderThemeTokensCss()],
   ["../src/foundations.css", renderFoundationTokensCss()],
   // Tailwind v4 theme over the same values, for the web client.

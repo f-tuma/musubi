@@ -195,6 +195,7 @@ const expoConfig: ExpoConfig = {
     ],
     "./plugins/withCalendarAppCategory",
     "./plugins/withExactAlarms",
+    "./plugins/withIosWidgets",
     "expo-sharing"
   ],
   experiments: {
@@ -206,6 +207,17 @@ const expoConfig: ExpoConfig = {
     ...(iosTestFlightUrl ? { iosTestFlightUrl } : {}),
     eas: {
       projectId: "4e24bdfa-490c-4c3e-9a76-7abef4efa823",
+      build: {
+        experimental: {
+          ios: {
+            appExtensions: [{
+              targetName: "MusubiWidgets",
+              bundleIdentifier: "dev.frgtn.musubi.widgets",
+              entitlements: { "com.apple.security.application-groups": ["group.dev.frgtn.musubi.widgets"] },
+            }],
+          },
+        },
+      },
     },
   }
 }

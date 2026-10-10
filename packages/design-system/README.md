@@ -22,8 +22,9 @@ committed, and the test suite fails if they are stale:
 | `design-tokens.json` | The same values in the W3C design-tokens shape |
 | `apps/client/modules/musubi-agenda-widget/android/src/main/res/values/musubi_widget_tokens.xml` | Widget colours, dp geometry and sp type |
 | `apps/client/modules/musubi-agenda-widget/android/src/main/res/values-night/musubi_widget_tokens.xml` | Widget dark colours; shared dimensions inherit from the default set |
+| `apps/client/widgets/ios/WidgetTokens.swift` | SwiftUI widget colours, point geometry and type roles |
 
-The Android paths are relative to the repository root. Never edit generated
+The native paths are relative to the repository root. Never edit generated
 files by hand. Edit `theme-tokens.ts`, `foundation-tokens.ts` or `widget-tokens.ts`
 and regenerate. The Android adapter preserves alpha as `#AARRGGBB`; design tools
 receive `#RRGGBBAA`. Widget tests check generated-file staleness and contrast
