@@ -8,6 +8,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
@@ -15,8 +18,6 @@ import android.os.Build
 import android.os.Bundle
 import android.text.Spannable
 import android.text.SpannableString
-import android.text.style.ForegroundColorSpan
-import android.text.style.RelativeSizeSpan
 import android.text.style.StyleSpan
 import android.view.View
 import android.widget.RemoteViews
@@ -50,18 +51,10 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
 
   override fun onReceive(context: Context, intent: Intent) {
     super.onReceive(context, intent)
-    if (intent.action in TIME_CHANGE_ACTIONS) updateAll(context)
+    if (intent.action in WidgetPresentation.TIME_ACTIONS) updateAll(context)
   }
 
   companion object {
-    private val TIME_CHANGE_ACTIONS = setOf(
-      Intent.ACTION_DATE_CHANGED,
-      Intent.ACTION_CONFIGURATION_CHANGED,
-      Intent.ACTION_LOCALE_CHANGED,
-      Intent.ACTION_TIMEZONE_CHANGED,
-      Intent.ACTION_TIME_CHANGED,
-    )
-
     private val compactDayIds = intArrayOf(
       R.id.musubi_calendar_day_1,
       R.id.musubi_calendar_day_2,
@@ -105,6 +98,96 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
       R.id.musubi_calendar_day_40,
       R.id.musubi_calendar_day_41,
       R.id.musubi_calendar_day_42,
+    )
+
+    private val compactNumberIds = intArrayOf(
+      R.id.musubi_calendar_compact_number_1,
+      R.id.musubi_calendar_compact_number_2,
+      R.id.musubi_calendar_compact_number_3,
+      R.id.musubi_calendar_compact_number_4,
+      R.id.musubi_calendar_compact_number_5,
+      R.id.musubi_calendar_compact_number_6,
+      R.id.musubi_calendar_compact_number_7,
+      R.id.musubi_calendar_compact_number_8,
+      R.id.musubi_calendar_compact_number_9,
+      R.id.musubi_calendar_compact_number_10,
+      R.id.musubi_calendar_compact_number_11,
+      R.id.musubi_calendar_compact_number_12,
+      R.id.musubi_calendar_compact_number_13,
+      R.id.musubi_calendar_compact_number_14,
+      R.id.musubi_calendar_compact_number_15,
+      R.id.musubi_calendar_compact_number_16,
+      R.id.musubi_calendar_compact_number_17,
+      R.id.musubi_calendar_compact_number_18,
+      R.id.musubi_calendar_compact_number_19,
+      R.id.musubi_calendar_compact_number_20,
+      R.id.musubi_calendar_compact_number_21,
+      R.id.musubi_calendar_compact_number_22,
+      R.id.musubi_calendar_compact_number_23,
+      R.id.musubi_calendar_compact_number_24,
+      R.id.musubi_calendar_compact_number_25,
+      R.id.musubi_calendar_compact_number_26,
+      R.id.musubi_calendar_compact_number_27,
+      R.id.musubi_calendar_compact_number_28,
+      R.id.musubi_calendar_compact_number_29,
+      R.id.musubi_calendar_compact_number_30,
+      R.id.musubi_calendar_compact_number_31,
+      R.id.musubi_calendar_compact_number_32,
+      R.id.musubi_calendar_compact_number_33,
+      R.id.musubi_calendar_compact_number_34,
+      R.id.musubi_calendar_compact_number_35,
+      R.id.musubi_calendar_compact_number_36,
+      R.id.musubi_calendar_compact_number_37,
+      R.id.musubi_calendar_compact_number_38,
+      R.id.musubi_calendar_compact_number_39,
+      R.id.musubi_calendar_compact_number_40,
+      R.id.musubi_calendar_compact_number_41,
+      R.id.musubi_calendar_compact_number_42,
+    )
+
+    private val compactDotsIds = intArrayOf(
+      R.id.musubi_calendar_compact_dots_1,
+      R.id.musubi_calendar_compact_dots_2,
+      R.id.musubi_calendar_compact_dots_3,
+      R.id.musubi_calendar_compact_dots_4,
+      R.id.musubi_calendar_compact_dots_5,
+      R.id.musubi_calendar_compact_dots_6,
+      R.id.musubi_calendar_compact_dots_7,
+      R.id.musubi_calendar_compact_dots_8,
+      R.id.musubi_calendar_compact_dots_9,
+      R.id.musubi_calendar_compact_dots_10,
+      R.id.musubi_calendar_compact_dots_11,
+      R.id.musubi_calendar_compact_dots_12,
+      R.id.musubi_calendar_compact_dots_13,
+      R.id.musubi_calendar_compact_dots_14,
+      R.id.musubi_calendar_compact_dots_15,
+      R.id.musubi_calendar_compact_dots_16,
+      R.id.musubi_calendar_compact_dots_17,
+      R.id.musubi_calendar_compact_dots_18,
+      R.id.musubi_calendar_compact_dots_19,
+      R.id.musubi_calendar_compact_dots_20,
+      R.id.musubi_calendar_compact_dots_21,
+      R.id.musubi_calendar_compact_dots_22,
+      R.id.musubi_calendar_compact_dots_23,
+      R.id.musubi_calendar_compact_dots_24,
+      R.id.musubi_calendar_compact_dots_25,
+      R.id.musubi_calendar_compact_dots_26,
+      R.id.musubi_calendar_compact_dots_27,
+      R.id.musubi_calendar_compact_dots_28,
+      R.id.musubi_calendar_compact_dots_29,
+      R.id.musubi_calendar_compact_dots_30,
+      R.id.musubi_calendar_compact_dots_31,
+      R.id.musubi_calendar_compact_dots_32,
+      R.id.musubi_calendar_compact_dots_33,
+      R.id.musubi_calendar_compact_dots_34,
+      R.id.musubi_calendar_compact_dots_35,
+      R.id.musubi_calendar_compact_dots_36,
+      R.id.musubi_calendar_compact_dots_37,
+      R.id.musubi_calendar_compact_dots_38,
+      R.id.musubi_calendar_compact_dots_39,
+      R.id.musubi_calendar_compact_dots_40,
+      R.id.musubi_calendar_compact_dots_41,
+      R.id.musubi_calendar_compact_dots_42,
     )
 
     private val largeDayViews = listOf(
@@ -378,20 +461,50 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
       manager.getAppWidgetIds(component).forEach { update(context, manager, it) }
     }
 
-    internal fun update(context: Context, manager: AppWidgetManager, widgetId: Int) {
-      val (width, height) = widgetSize(context, manager.getAppWidgetOptions(widgetId))
-      val usePills = width >= 280 && height >= 420
-      val dayCellHeight = ((height - CALENDAR_CHROME_HEIGHT_DP) / 6f).coerceAtLeast(0f)
-      val pillLimit = ((dayCellHeight - DAY_NUMBER_AREA_HEIGHT_DP) / EVENT_PILL_SLOT_HEIGHT_DP)
-        .toInt()
-        .coerceIn(0, MAX_EVENT_PILLS)
-      val showOverflow = dayCellHeight - DAY_NUMBER_AREA_HEIGHT_DP -
-        pillLimit * EVENT_PILL_SLOT_HEIGHT_DP >= EVENT_OVERFLOW_HEIGHT_DP
-      val inlineDots = height < 230
+    internal fun update(context: Context, manager: AppWidgetManager, widgetId: Int) = synchronized(AgendaWidgetStorage) {
+      val views = WidgetPresentation.responsive(manager.getAppWidgetOptions(widgetId),
+        WidgetPresentation.dp(context, R.dimen.musubi_widget_min_calendar_width),
+        WidgetPresentation.dp(context, R.dimen.musubi_widget_min_calendar_height)) { width, height ->
+        render(context, widgetId, width, height)
+      }
+      manager.updateAppWidget(widgetId, views)
+    }
+
+    private fun render(context: Context, widgetId: Int, width: Int, height: Int): RemoteViews {
+      val chrome = WidgetPresentation.dp(context, R.dimen.musubi_widget_inset) * 2 +
+        maxOf(WidgetPresentation.dp(context, R.dimen.musubi_widget_header_height),
+          WidgetPresentation.textHeight(context, R.dimen.musubi_widget_month_title_size)) +
+        maxOf(WidgetPresentation.dp(context, R.dimen.musubi_widget_calendar_weekday_height),
+          WidgetPresentation.textHeight(context, R.dimen.musubi_widget_date_size)) +
+        maxOf(WidgetPresentation.dp(context, R.dimen.musubi_widget_footer_height),
+          WidgetPresentation.textHeight(context, R.dimen.musubi_widget_status_size)) +
+        WidgetPresentation.dp(context, R.dimen.musubi_widget_row_gap) * 2
+      val numberArea = maxOf(WidgetPresentation.dp(context, R.dimen.musubi_widget_calendar_number_area_height),
+        WidgetPresentation.textHeight(context, R.dimen.musubi_widget_calendar_number_size))
+      // A wrap-content number grows vertically with font scale. Grow both axes
+      // together so today's round marker never becomes an oval.
+      val numberDiameter = kotlin.math.ceil(maxOf(numberArea,
+        WidgetPresentation.dp(context, R.dimen.musubi_widget_calendar_today_size)) *
+        context.resources.displayMetrics.density).toInt()
+      val pillSlot = maxOf(WidgetPresentation.dp(context, R.dimen.musubi_widget_calendar_pill_height),
+        WidgetPresentation.textHeight(context, R.dimen.musubi_widget_calendar_pill_size)) +
+        WidgetPresentation.dp(context, R.dimen.musubi_widget_calendar_pill_gap)
+      val overflowHeight = maxOf(WidgetPresentation.dp(context, R.dimen.musubi_widget_calendar_overflow_height),
+        WidgetPresentation.textHeight(context, R.dimen.musubi_widget_calendar_overflow_size))
+      val dayCellHeight = ((height - chrome) / 6f).coerceAtLeast(0f)
+      val available = (dayCellHeight - numberArea).coerceAtLeast(0f)
+      val showOverflow = available >= pillSlot + overflowHeight
+      val pillLimit = ((available - if (showOverflow) overflowHeight else 0f) / pillSlot)
+        .toInt().coerceIn(0, MAX_EVENT_PILLS)
+      val usePills = width >= 336 && height >= 420 && pillLimit > 0
+      val dateHeight = WidgetPresentation.textHeight(context, R.dimen.musubi_widget_calendar_day_size)
+      val cellWidth = (width - WidgetPresentation.dp(context, R.dimen.musubi_widget_inset) * 2) / 7f
+      val dotHeight = WidgetPresentation.dp(context, R.dimen.musubi_widget_calendar_dot_row_height)
+      val showCompactDots = dayCellHeight >= dateHeight + dotHeight && cellWidth >= WidgetPresentation.dateWidth(context) * 2
       val layout = if (usePills) {
-        R.layout.musubi_calendar_widget_large_v4
+        R.layout.musubi_calendar_widget_large_v7
       } else {
-        R.layout.musubi_calendar_widget_v4
+        R.layout.musubi_calendar_widget_v10
       }
       val views = RemoteViews(context.packageName, layout)
       val snapshot = AgendaWidgetData.read(context)
@@ -401,6 +514,23 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
         context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
           Configuration.UI_MODE_NIGHT_YES
       ) darkPalette else lightPalette
+      var empty = WidgetPresentation.empty(context, snapshot, false, snapshot.events.size)
+      // A successful empty month still has a usable calendar grid.
+      if (snapshot.signedIn == true && snapshot.problem == null && AgendaWidgetData.eventsUsable(snapshot) &&
+          snapshot.eventsStatus.state == "ready" && snapshot.eventsStatus.complete && !snapshot.eventsStatus.truncated) empty = null
+      if (empty == null && !usePills && (dayCellHeight < dateHeight || cellWidth < WidgetPresentation.dateWidth(context))) {
+        empty = context.getString(R.string.musubi_widget_resize)
+      }
+      views.setViewVisibility(R.id.musubi_calendar_grid, if (empty == null) View.VISIBLE else View.GONE)
+      views.setViewVisibility(R.id.musubi_calendar_empty, if (empty == null) View.GONE else View.VISIBLE)
+      if (empty != null) views.setTextViewText(R.id.musubi_calendar_empty, empty)
+      views.setTextViewText(R.id.musubi_calendar_status, WidgetPresentation.status(context, snapshot, false))
+      val refresh = WidgetPresentation.route(context, "musubi:///?widgetRefresh=1")
+      views.setOnClickPendingIntent(R.id.musubi_calendar_refresh, refresh)
+      views.setOnClickPendingIntent(R.id.musubi_calendar_empty, refresh)
+      views.setOnClickPendingIntent(R.id.musubi_calendar_add, WidgetPresentation.route(context, "musubi:///?widgetAdd=1"))
+      views.setViewVisibility(R.id.musubi_calendar_add, if (snapshot.signedIn == true && width >= 320 &&
+        context.resources.configuration.fontScale < 1.5f) View.VISIBLE else View.GONE)
       val now = Calendar.getInstance()
       val firstOfMonth = (now.clone() as Calendar).apply {
         set(Calendar.DAY_OF_MONTH, 1)
@@ -418,15 +548,8 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
 
       views.setTextViewText(
         R.id.musubi_calendar_month,
-        SimpleDateFormat("MMMM", Locale.UK).format(firstOfMonth.time),
-      )
-      views.setTextViewText(
-        R.id.musubi_calendar_year,
-        firstOfMonth.get(Calendar.YEAR).toString().takeLast(2),
-      )
-      views.setTextViewText(
-        R.id.musubi_calendar_today,
-        context.getString(R.string.musubi_calendar_widget_calendars),
+        SimpleDateFormat(if (width < 320 || context.resources.configuration.fontScale >= 1.5f)
+          "MMM yyyy" else "MMMM yyyy", Locale.getDefault()).format(firstOfMonth.time),
       )
       setAdaptiveTextColor(
         views,
@@ -435,27 +558,14 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
         darkPalette.foreground,
         currentPalette.foreground,
       )
-      listOf(
-        R.id.musubi_calendar_year,
-        R.id.musubi_calendar_today,
-      ).forEach { id ->
-        setAdaptiveTextColor(
-          views,
-          id,
-          lightPalette.muted,
-          darkPalette.muted,
-          currentPalette.muted,
-        )
-      }
       views.setOnClickPendingIntent(
         R.id.musubi_calendar_today,
         openCalendarSettingsIntent(context, widgetId),
       )
 
-      val weekdayLabels = if (mondayFirst) {
-        listOf("M", "T", "W", "T", "F", "S", "S")
-      } else {
-        listOf("S", "M", "T", "W", "T", "F", "S")
+      val weekdayLabels = (0 until 7).map { offset ->
+        val day = Calendar.getInstance().apply { set(Calendar.DAY_OF_WEEK, (weekStart - 1 + offset) % 7 + 1) }
+        SimpleDateFormat("EEEEE", Locale.getDefault()).format(day.time)
       }
       weekdayIds.forEachIndexed { index, id ->
         views.setTextViewText(id, weekdayLabels[index])
@@ -471,8 +581,10 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
       val dateKeyFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
         timeZone = TimeZone.getDefault()
       }
-      val fullDateFormat = SimpleDateFormat("EEEE, d MMMM yyyy", Locale.UK)
+      val fullDateFormat = SimpleDateFormat("EEEE, d MMMM yyyy", Locale.getDefault())
       val selectedCalendars = CalendarWidgetPreferences.read(context, widgetId)
+      val calendarDays = if (empty == null) snapshot.calendarDays else emptyMap()
+      var hiddenOverflow = false
 
       fun keyForIndex(i: Int): String =
         dateKeyFormat.format((gridStart.clone() as Calendar).apply {
@@ -480,7 +592,7 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
         }.time)
 
       fun chipVisible(chip: CalendarWidgetChip): Boolean =
-        selectedCalendars == null || chip.calendarIds.isEmpty() ||
+        selectedCalendars == null ||
           chip.calendarIds.any(selectedCalendars::contains)
 
       // Multi-day all-day bars: assign each all-day event a stable lane (row) per
@@ -492,7 +604,7 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
         // event id -> columns (0..6) it covers this week
         val cols = LinkedHashMap<String, Pair<CalendarWidgetChip, MutableList<Int>>>()
         for (col in 0 until 7) {
-          val chips = snapshot.calendarDays[keyForIndex(base + col)]?.events.orEmpty()
+          val chips = calendarDays[keyForIndex(base + col)]?.events.orEmpty()
           for (chip in chips) {
             if (!chip.allDay || !chipVisible(chip)) continue
             val id = chip.id.ifBlank { "${chip.startKey}:${chip.title}" }
@@ -524,9 +636,9 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
       repeat(42) { index ->
         val date = (gridStart.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, index) }
         val key = dateKeyFormat.format(date.time)
-        val summary = snapshot.calendarDays[key]
+        val summary = calendarDays[key]
         val visibleEvents = summary?.events.orEmpty().filter { event ->
-          selectedCalendars == null || event.calendarIds.isEmpty() ||
+          selectedCalendars == null ||
             event.calendarIds.any(selectedCalendars::contains)
         }
         val visibleCount = if (
@@ -546,6 +658,8 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
 
         if (usePills) {
           val day = largeDayViews[index]
+          views.setInt(day.number, "setMinWidth", numberDiameter)
+          views.setInt(day.number, "setMinHeight", numberDiameter)
           views.setTextViewText(day.number, number)
           setAdaptiveTextColor(
             views,
@@ -583,6 +697,7 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
           // Slot 0/1 map to lanes 0/1: a multi-day bar keeps the same row across
           // days. Slots without a bar are filled by that day's timed events.
           val bars = barLanes[index]
+          val lastLane = bars.indexOfLast { it != null }.coerceAtMost(pillLimit - 1)
           val timed = visibleEvents.filter { !it.allDay }
           var timedPointer = 0
           var shown = 0
@@ -623,10 +738,12 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
                 views.setTextColor(pillId, pillTextColor(context, pillColor))
                 shown++
               }
-              else -> views.setViewVisibility(pillId, View.GONE)
+              else -> views.setViewVisibility(pillId,
+                if (WidgetInvariants.reserveLane(slot, lastLane, pillLimit)) View.INVISIBLE else View.GONE)
             }
           }
           val overflow = visibleCount - shown
+          if (!showOverflow && overflow > 0) hiddenOverflow = true
           views.setViewVisibility(
             day.overflow,
             if (showOverflow && overflow > 0) View.VISIBLE else View.GONE,
@@ -634,96 +751,48 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
           if (showOverflow && overflow > 0) views.setTextViewText(day.overflow, "+$overflow")
         } else {
           val id = compactDayIds[index]
-          val colors = visibleEvents.map { it.color }
-            .distinct()
-            .take(if (inlineDots) 2 else 3)
-          val dots = colors.joinToString(if (inlineDots) "" else " ") { "●" }
-          val labelText = when {
-            dots.isEmpty() -> number
-            inlineDots -> "$number $dots"
-            else -> "$number\n$dots"
-          }
-          val label = SpannableString(labelText)
-          setAdaptiveTextColor(
-            views,
-            id,
-            when {
-              isToday -> lightPalette.accent
-              inMonth -> lightPalette.foreground
-              else -> lightPalette.muted
-            },
-            when {
-              isToday -> darkPalette.accent
-              inMonth -> darkPalette.foreground
-              else -> darkPalette.muted
-            },
-            when {
-              isToday -> currentPalette.accent
-              inMonth -> currentPalette.foreground
-              else -> currentPalette.muted
-            },
-          )
-          if (isToday) {
-            label.setSpan(
-              StyleSpan(Typeface.BOLD),
-              0,
-              number.length,
-              Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
-            )
-          }
-          val dotsStart = number.length + 1
-          if (dots.isNotEmpty()) {
-            label.setSpan(
-              RelativeSizeSpan(0.78f),
-              dotsStart,
-              label.length,
-              Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
-            )
-            var dotOffset = dotsStart
-            colors.forEach { color ->
-              label.setSpan(
-                ForegroundColorSpan(AgendaWidgetData.parseColor(color)),
-                dotOffset,
-                dotOffset + 1,
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
-              )
-              dotOffset += if (inlineDots) 1 else 2
-            }
-          }
-          views.setTextViewText(id, label)
-          views.setInt(
-            id,
-            "setBackgroundResource",
-            if (isToday) R.drawable.musubi_calendar_today else 0,
-          )
+          val numberId = compactNumberIds[index]
+          val dotsId = compactDotsIds[index]
+          val colors = visibleEvents.map { it.color }.distinct().take(if (showCompactDots) 3 else 0)
+          val label = SpannableString(number)
+          setAdaptiveTextColor(views, numberId,
+            if (isToday) lightPalette.accentText else if (inMonth) lightPalette.foreground else lightPalette.muted,
+            if (isToday) darkPalette.accentText else if (inMonth) darkPalette.foreground else darkPalette.muted,
+            if (isToday) currentPalette.accentText else if (inMonth) currentPalette.foreground else currentPalette.muted)
+          if (isToday) label.setSpan(StyleSpan(Typeface.BOLD), 0, number.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+          views.setTextViewText(numberId, label)
+          if (colors.isNotEmpty()) views.setImageViewBitmap(dotsId, dotBitmap(context, colors))
+          // Every day reserves the same dot slot, including empty days. Never
+          // concatenate dots with a date: centering that group moves the number.
+          views.setViewVisibility(dotsId, if (!showCompactDots) View.GONE else if (colors.isEmpty()) View.INVISIBLE else View.VISIBLE)
+          views.setInt(numberId, "setBackgroundResource", if (isToday && dayCellHeight - (if (showCompactDots) dotHeight else 0f) >=
+            WidgetPresentation.dp(context, R.dimen.musubi_widget_calendar_today_size)) R.drawable.musubi_calendar_today else 0)
           views.setContentDescription(id, description)
           views.setOnClickPendingIntent(id, click)
         }
       }
 
-      manager.updateAppWidget(widgetId, views)
+      if (hiddenOverflow) views.setTextViewText(R.id.musubi_calendar_status, WidgetPresentation.status(context, snapshot, false, true))
+      return views
     }
 
-    private fun widgetSize(context: Context, options: Bundle): Pair<Int, Int> {
-      val landscape =
-        context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-      val width = options.getInt(
-        if (landscape) AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH
-        else AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,
-        250,
-      )
-      val height = options.getInt(
-        if (landscape) AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT
-        else AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,
-        180,
-      )
-      return width to height
+    private fun dotBitmap(context: Context, colors: List<String>): Bitmap {
+      val resources = context.resources
+      val width = resources.getDimensionPixelSize(R.dimen.musubi_widget_calendar_dot_group_width)
+      val height = resources.getDimensionPixelSize(R.dimen.musubi_widget_calendar_dot_row_height)
+      val size = resources.getDimension(R.dimen.musubi_widget_calendar_dot_size)
+      val gap = resources.getDimension(R.dimen.musubi_widget_calendar_dot_gap)
+      val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+      val canvas = Canvas(bitmap)
+      val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+      val start = (width - colors.size * size - (colors.size - 1) * gap) / 2f
+      colors.forEachIndexed { index, color ->
+        paint.color = AgendaWidgetData.parseColor(color)
+        canvas.drawCircle(start + index * (size + gap) + size / 2f, height / 2f, size / 2f, paint)
+      }
+      return bitmap
     }
 
-    private const val CALENDAR_CHROME_HEIGHT_DP = 69f
-    private const val DAY_NUMBER_AREA_HEIGHT_DP = 19f
-    private const val EVENT_PILL_SLOT_HEIGHT_DP = 13f
-    private const val EVENT_OVERFLOW_HEIGHT_DP = 10f
     private const val MAX_EVENT_PILLS = 5
 
     private fun widgetPalette(context: Context, nightMode: Int): WidgetPalette {
@@ -735,6 +804,7 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
         foreground = themed.getColor(R.color.musubi_widget_foreground),
         muted = themed.getColor(R.color.musubi_widget_foreground_muted),
         accent = themed.getColor(R.color.musubi_widget_accent),
+        accentText = themed.getColor(R.color.musubi_widget_accent_text),
         onAccent = themed.getColor(R.color.musubi_widget_on_accent),
       )
     }
@@ -774,7 +844,7 @@ class MusubiCalendarWidgetProvider : AppWidgetProvider() {
 
     private fun pillTextColor(context: Context, background: Int): Int {
       val dark = context.getColor(R.color.musubi_widget_pill_ink)
-      val light = context.getColor(R.color.musubi_widget_on_accent)
+      val light = context.getColor(R.color.musubi_widget_pill_ink_light)
       return if (contrast(background, dark) >= contrast(background, light)) dark else light
     }
 
@@ -855,6 +925,6 @@ private data class WidgetPalette(
   val foreground: Int,
   val muted: Int,
   val accent: Int,
+  val accentText: Int,
   val onAccent: Int,
 )
-

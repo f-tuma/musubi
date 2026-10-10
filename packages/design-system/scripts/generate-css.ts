@@ -6,6 +6,7 @@ import {
 } from "../src/css";
 import { penpotTokens } from "../src/penpot-tokens";
 import { renderTailwindThemeCss } from "../src/tailwind";
+import { renderAndroidWidgetTokensXml } from "../src/android-widget";
 
 const outputs = [
   ["../src/colors.css", renderThemeTokensCss()],
@@ -17,6 +18,14 @@ const outputs = [
   [
     "../design-tokens.json",
     `${JSON.stringify(penpotTokens(), null, 2)}\n`,
+  ],
+  [
+    "../../../apps/client/modules/musubi-agenda-widget/android/src/main/res/values/musubi_widget_tokens.xml",
+    renderAndroidWidgetTokensXml("light"),
+  ],
+  [
+    "../../../apps/client/modules/musubi-agenda-widget/android/src/main/res/values-night/musubi_widget_tokens.xml",
+    renderAndroidWidgetTokensXml("dark"),
   ],
 ] as const;
 

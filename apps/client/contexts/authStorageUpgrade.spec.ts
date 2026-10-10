@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeEach, expect, it, vi } from "vitest";
 import { migrate } from "drizzle-orm/expo-sqlite/migrator";
+import { eq } from "drizzle-orm";
 import migrations from "@/drizzle/migrations";
 import { CalendarSchema, EventSchema } from "@musubi/types";
 
@@ -53,7 +54,7 @@ vi.mock("expo-notifications", () => ({
 }));
 
 const { db, sqlite } = await import("@/services/db");
-const { notificationsTable } = await import("@/db/schema");
+const { notificationsTable, syncMetaTable } = await import("@/db/schema");
 const { ServerProvider } = await import("./ServerContext");
 const { prepareAuthStorage } = await import("@/lib/authStorageUpgrade");
 const { accountCacheOwner, prepareAccountCache } = await import("@/lib/accountCache");
@@ -107,6 +108,14 @@ it("starts a fresh install by migrating its empty SQLite database before cleanup
   expect(h.storage.get("musubi_auth_storage_version")).toBe("2");
   expect(h.clearWidget).toHaveBeenCalledOnce();
   expect(h.cancelReminders).toHaveBeenCalledOnce();
+});
+
+it.each(["invalid JSON", "{}", '[{"id":"incomplete"}]'])("rejects a corrupt membership cache (%s) instead of declaring no calendars", async saved => {
+  await seedAccountA();
+  await db.update(syncMetaTable).set({ value: saved }).where(eq(syncMetaTable.key, "calendars"));
+  await expect(cacheGetCalendars()).rejects.toThrow();
+  await cacheSetCalendars([calendar]);
+  expect(await cacheGetCalendars()).toEqual([calendar]);
 });
 
 it("wipes account A's persisted mirror, widget and reminders before fresh account B can initialize", async () => {

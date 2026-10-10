@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v9 keeps columns aligned and moves freshness/refresh to the footer. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/musubi_calendar_root"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:background="@drawable/musubi_widget_background"
+  android:orientation="vertical"
+  android:padding="@dimen/musubi_widget_inset">
+
+  <LinearLayout
+    android:id="@+id/musubi_calendar_header"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" android:minHeight="@dimen/musubi_widget_header_height"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <TextView android:id="@+id/musubi_calendar_month" style="@style/MusubiCalendarMonthTitle" android:layout_width="0dp" android:layout_weight="1" android:text="October 2026" />
+    <ImageView android:id="@+id/musubi_calendar_add" style="@style/MusubiWidgetIconControl" android:src="@drawable/musubi_widget_add" android:contentDescription="@string/musubi_widget_add_event" />
+    <ImageView android:id="@+id/musubi_calendar_today" style="@style/MusubiWidgetIconControl" android:src="@drawable/musubi_widget_more" android:contentDescription="@string/musubi_widget_calendars" />
+  </LinearLayout>
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" android:minHeight="@dimen/musubi_widget_calendar_weekday_height"
+    android:layout_marginTop="@dimen/musubi_widget_row_gap"
+    android:orientation="horizontal">
+    <TextView android:id="@+id/musubi_calendar_weekday_1" style="@style/MusubiCalendarWeekday" android:text="M" />
+    <TextView android:id="@+id/musubi_calendar_weekday_2" style="@style/MusubiCalendarWeekday" android:text="T" />
+    <TextView android:id="@+id/musubi_calendar_weekday_3" style="@style/MusubiCalendarWeekday" android:text="W" />
+    <TextView android:id="@+id/musubi_calendar_weekday_4" style="@style/MusubiCalendarWeekday" android:text="T" />
+    <TextView android:id="@+id/musubi_calendar_weekday_5" style="@style/MusubiCalendarWeekday" android:text="F" />
+    <TextView android:id="@+id/musubi_calendar_weekday_6" style="@style/MusubiCalendarWeekday" android:text="S" />
+    <TextView android:id="@+id/musubi_calendar_weekday_7" style="@style/MusubiCalendarWeekday" android:text="S" />
+  </LinearLayout>
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:id="@+id/musubi_calendar_grid"
+    android:layout_height="0dp"
+    android:layout_marginTop="@dimen/musubi_widget_row_gap"
+    android:layout_weight="1"
+    android:orientation="vertical">
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="horizontal">
+        <LinearLayout android:id="@+id/musubi_calendar_day_1" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_1" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_1" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_2" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_2" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_2" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_3" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_3" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_3" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_4" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_4" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_4" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_5" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_5" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_5" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_6" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_6" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_6" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_7" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_7" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_7" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="horizontal">
+        <LinearLayout android:id="@+id/musubi_calendar_day_8" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_8" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_8" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_9" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_9" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_9" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_10" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_10" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_10" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_11" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_11" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_11" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_12" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_12" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_12" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_13" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_13" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_13" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_14" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_14" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_14" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="horizontal">
+        <LinearLayout android:id="@+id/musubi_calendar_day_15" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_15" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_15" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_16" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_16" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_16" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_17" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_17" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_17" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_18" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_18" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_18" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_19" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_19" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_19" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_20" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_20" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_20" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_21" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_21" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_21" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="horizontal">
+        <LinearLayout android:id="@+id/musubi_calendar_day_22" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_22" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_22" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_23" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_23" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_23" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_24" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_24" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_24" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_25" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_25" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_25" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_26" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_26" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_26" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_27" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_27" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_27" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_28" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_28" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_28" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="horizontal">
+        <LinearLayout android:id="@+id/musubi_calendar_day_29" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_29" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_29" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_30" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_30" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_30" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_31" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_31" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_31" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_32" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_32" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_32" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_33" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_33" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_33" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_34" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_34" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_34" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_35" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_35" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_35" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:orientation="horizontal">
+        <LinearLayout android:id="@+id/musubi_calendar_day_36" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_36" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_36" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_37" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_37" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_37" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_38" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_38" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_38" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_39" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_39" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_39" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_40" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_40" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_40" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_41" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_41" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_41" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/musubi_calendar_day_42" style="@style/MusubiCalendarCompactDay">
+          <TextView android:id="@+id/musubi_calendar_compact_number_42" style="@style/MusubiCalendarCompactNumber" android:layout_height="0dp" android:layout_weight="1" android:importantForAccessibility="no" />
+          <ImageView android:id="@+id/musubi_calendar_compact_dots_42" style="@style/MusubiCalendarCompactDots" android:importantForAccessibility="no" />
+        </LinearLayout>
+    </LinearLayout>
+  </LinearLayout>
+  <TextView android:id="@+id/musubi_calendar_empty" style="@style/MusubiWidgetEmpty" android:layout_height="0dp" android:layout_weight="1" android:visibility="gone" />
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="@dimen/musubi_widget_footer_height" android:gravity="center_vertical" android:orientation="horizontal">
+    <TextView android:id="@+id/musubi_calendar_status" style="@style/MusubiWidgetMeta" android:layout_width="0dp" android:layout_weight="1" />
+    <ImageView android:id="@+id/musubi_calendar_refresh" style="@style/MusubiWidgetIconControl" android:src="@drawable/musubi_widget_refresh" android:contentDescription="@string/musubi_widget_refresh" />
+  </LinearLayout>
+</LinearLayout>

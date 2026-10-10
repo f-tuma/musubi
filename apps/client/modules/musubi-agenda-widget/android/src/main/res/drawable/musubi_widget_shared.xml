@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="@dimen/musubi_widget_meta_icon_size" android:height="@dimen/musubi_widget_meta_icon_size" android:viewportWidth="24" android:viewportHeight="24">
+  <path android:fillColor="@android:color/transparent" android:strokeColor="@color/musubi_widget_foreground_muted" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M16,21 L16,19 A4,4 0,0 0,12,15 L6,15 A4,4 0,0 0,2,19 L2,21 M13,7 A4,4 0,1 1,5,7 A4,4 0,1 1,13,7 M22,21 L22,19 A4,4 0,0 0,19,15 M16,3 A4,4 0,0 1,16,11" />
+</vector>

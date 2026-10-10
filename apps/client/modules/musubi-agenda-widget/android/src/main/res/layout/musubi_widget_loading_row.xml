@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android" style="@style/MusubiWidgetEmpty" android:layout_height="@dimen/musubi_widget_row_height" android:text="@string/musubi_widget_loading" />

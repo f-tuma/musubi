@@ -229,7 +229,18 @@ export async function cacheGetCalendars(): Promise<Calendar[]> {
     .select()
     .from(syncMetaTable)
     .where(eq(syncMetaTable.key, "calendars"));
-  return row ? parseArray<Calendar>(row.value) : [];
+  // A broken membership cache is unknown, rather than a successful empty list.
+  // Widget hydration must retain its last valid content until a fresh read.
+  if (!row) return [];
+  const calendars = JSON.parse(row.value);
+  // The legacy mirror also holds local/federated metadata and may lack current
+  // wire-only fields. Validate display/membership keys without stripping or
+  // rejecting those compatible cached records.
+  if (!Array.isArray(calendars) || calendars.some(calendar => calendar == null
+    || typeof calendar.id !== "string" || !calendar.id
+    || typeof calendar.name !== "string" || typeof calendar.color !== "string"))
+    throw new Error("The saved calendar membership could not be read.");
+  return calendars;
 }
 
 export async function getLastSync(): Promise<string | null> {

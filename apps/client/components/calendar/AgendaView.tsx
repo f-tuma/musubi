@@ -4,6 +4,7 @@ import { ModeSwitch } from "@/components/cal/ModeSwitch";
 import { Feather } from "@expo/vector-icons";
 import { CalendarCoverageNotice } from "@/components/calendar/CalendarCoverageNotice";
 import { expandCalendarView } from "@/lib/calendarExpansion";
+import { resolveWidgetEventLink } from "@/lib/widgetEventLink";
 import { CalendarExpansionError } from "@/components/calendar/CalendarExpansionError";
 import { AddEventModal } from "@/components/calendar/AddEventModal";
 import { CalendarFilterBar } from "@/components/calendar/CalendarFilterBar";
@@ -155,27 +156,12 @@ export default function AgendaTab({ calendarTasks }: { calendarTasks: ReturnType
 
   const openWidgetEvent = useCallback(
     (id: string, startValue?: string): boolean => {
-      const direct = events.find((event) => event.id === id);
-      const master =
-        direct ?? events.find((event) => event.id === id.replace(/_\d+$/, ""));
-      if (!master) return false;
-
-      const startMs = Number(startValue);
-      const selected =
-        !direct && Number.isFinite(startMs)
-          ? {
-              ...master,
-              id,
-              start: new Date(startMs),
-              end: new Date(
-                startMs + master.end.getTime() - master.start.getTime(),
-              ),
-            }
-          : master;
+      const selected = resolveWidgetEventLink(events, new Set(calendarById.keys()), id, startValue, consumerTimeZone);
+      if (!selected) return false;
       presentEventDetail(events, selected);
       return true;
     },
-    [events],
+    [events, calendarById, consumerTimeZone],
   );
 
   // Query params cover a cold launch. The URL listener also handles tapping

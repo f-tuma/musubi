@@ -1,0 +1,3 @@
+<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="@color/musubi_widget_day_feedback">
+  <item><shape android:shape="rectangle"><solid android:color="@color/musubi_widget_control_fill" /><corners android:radius="@dimen/musubi_widget_radius" /></shape></item>
+</ripple>

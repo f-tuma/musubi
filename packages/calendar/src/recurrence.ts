@@ -1,8 +1,10 @@
 import { EventExpansionError, expandKnownTimeEvents } from "./time-expansion"
 export { EventExpansionError } from "./time-expansion"
-import { rrulestr } from 'rrule'
+import { RRuleSet, rrulestr } from 'rrule'
 import type { ICalendarEventBase } from './interfaces'
 import { joinRecurrence, splitRecurrence } from './rrule-editor'
+import { civilToInstant, instantToCivil } from './time-zone'
+import { validateBoundedLegacyRule } from './recurrence-validation'
 
 export { joinRecurrence, splitRecurrence } from './rrule-editor'
 
@@ -106,11 +108,12 @@ export function remainderRule(
 // per-Date, so occurrences on either side of the change come back at the same
 // wall clock with different offsets — which is the whole point.
 //
-// Known limit: the wall clock is the *viewer's*, because an event stores no
-// TZID. Two people in different zones therefore anchor a series differently
+// Legacy records use the consumer's explicit zone when provided, otherwise
+// the machine's local zone. Two people in different zones anchor a series differently
 // after a change that only one of their zones makes. Fixing that needs a
 // timezone on the event, not a different frame here.
-function toFloating(date: Date): Date {
+function toFloating(date: Date, zone?: string): Date {
+  if (zone) return new Date(`${instantToCivil(date, zone)}Z`)
   return new Date(
     Date.UTC(
       date.getFullYear(),
@@ -124,7 +127,8 @@ function toFloating(date: Date): Date {
   )
 }
 
-function fromFloating(date: Date): Date {
+function fromFloating(date: Date, zone?: string): Date {
+  if (zone) return civilToInstant(date.toISOString().slice(0, -1), zone, "explicit")!
   // A wall clock that does not exist (02:30 on a spring-forward day) lands on
   // the next real minute, which is what a calendar should do with it.
   return new Date(
@@ -147,8 +151,8 @@ function fromFloating(date: Date): Date {
  * change. Stamps carrying a TZID are left alone: they are already somebody's
  * wall clock, and rrule reads them the same way this frame does.
  */
-function floatingRecurrence(recurrence: string): string {
-  const shift = (stamp: string) => toICalUTC(toFloating(new Date(fromICalUTC(stamp))))
+function floatingRecurrence(recurrence: string, zone?: string): string {
+  const shift = (stamp: string) => toICalUTC(toFloating(new Date(fromICalUTC(stamp)), zone))
 
   return recurrence
     .split('\n')
@@ -171,6 +175,11 @@ export function expandRecurringEvents<T extends ICalendarEventBase>(
     consumerTimeZone?: string
     /** Agenda keeps standalone/detached events beyond the finite RRULE window. */
     includeAllNonRecurring?: boolean
+    /** Optional budgets for persisted/background projections. Count candidates
+     * before the requested window too, so an old dense series cannot block it. */
+    maxCandidates?: number
+    maxOccurrences?: number
+    strict?: boolean
   } = {},
 ): T[] {
   const known = events.filter(event => event.seriesID || event.originalStart || (event.timeModel && event.timeModel.kind !== "legacy-unknown"))
@@ -181,55 +190,100 @@ export function expandRecurringEvents<T extends ICalendarEventBase>(
     if (parent && !knownSet.has(parent))
       throw new EventExpansionError(event.id, "legacy-exception-parent-unresolved")
   }
-  const result: T[] = expandKnownTimeEvents(known, rangeStart, rangeEnd, options.consumerTimeZone, options.includeAllNonRecurring)
+  for (const limit of [options.maxCandidates, options.maxOccurrences]) {
+    if (limit !== undefined && (!Number.isSafeInteger(limit) || limit < 1))
+      throw new RangeError("Invalid recurrence budget")
+  }
+  const candidateBudget = options.maxCandidates === undefined ? undefined : { remaining: options.maxCandidates }
+  const result: T[] = expandKnownTimeEvents(known, rangeStart, rangeEnd, options.consumerTimeZone, options.includeAllNonRecurring, options.maxCandidates, options.maxOccurrences, candidateBudget)
+  const append = (event: T) => {
+    if (result.length >= (options.maxOccurrences ?? Infinity))
+      throw new EventExpansionError(event.id, "occurrence-budget-exceeded")
+    result.push(event)
+  }
 
   for (const event of events) {
     if (knownSet.has(event)) continue
+    if (options.strict && (!Number.isFinite(event.start.getTime())
+      || !Number.isFinite(event.end.getTime()) || event.end < event.start))
+      throw new EventExpansionError(event.id, "invalid-legacy-event-time")
     if (!event.recurrence) {
       // Keep only if it overlaps the window — an event years away shouldn't
       // flow through filter/enrich on every swipe. Overlap (not start-in-range)
       // so multi-day events spanning into the window from before it survive.
-      if (options.includeAllNonRecurring || (event.end >= rangeStart && event.start <= rangeEnd)) result.push(event)
+      if (options.includeAllNonRecurring || (event.end >= rangeStart && event.start <= rangeEnd)) append(event)
       continue
     }
 
     try {
+      if (options.maxCandidates !== undefined && event.recurrence.length > 16_384)
+        throw new EventExpansionError(event.id, "recurrence-too-large")
+      if (options.maxCandidates !== undefined)
+        validateBoundedLegacyRule(event.recurrence, reason => {
+          throw new EventExpansionError(event.id, reason)
+        })
       const duration = event.end.getTime() - event.start.getTime()
       // All-day events are already timezone-invariant DATEs pinned to UTC
       // midnight (see `eventDay`), so they expand in the frame they are stored
       // in. Timed events are wall-clock and expand in the floating frame.
       const floating = !event.isAllDay
-      const anchor = floating ? toFloating(event.start) : event.start
+      const anchor = floating ? toFloating(event.start, options.consumerTimeZone) : event.start
       // rrulestr handles both "RRULE:FREQ=..." and bare "FREQ=..." formats.
       // Passing dtstart anchors the series to the event's own start so the
       // recurrence doesn't drift when the rrule string has no DTSTART line.
       const rule = getRule(
-        floating ? floatingRecurrence(event.recurrence) : event.recurrence,
+        floating ? floatingRecurrence(event.recurrence, options.consumerTimeZone) : event.recurrence,
         anchor,
       )
       // Search back by one occurrence duration so an event that starts before
       // the window but overlaps its leading edge is not lost.
       const searchStart = new Date(rangeStart.getTime() - Math.max(0, duration))
-      const occurrences = rule.between(
-        floating ? toFloating(searchStart) : searchStart,
-        floating ? toFloating(rangeEnd) : rangeEnd,
-        true /* inclusive */,
-      )
+      const from = floating ? toFloating(searchStart, options.consumerTimeZone) : searchStart
+      const to = floating ? toFloating(rangeEnd, options.consumerTimeZone) : rangeEnd
+      let examined = 0
+      const chargeCandidate = () => {
+        if (++examined > options.maxCandidates! || --candidateBudget!.remaining < 0)
+          throw new EventExpansionError(event.id, "recurrence-budget-exceeded")
+      }
+      const preflight = (part: ParsedRule): void => {
+        if (part instanceof RRuleSet) {
+          for (const _date of [...part.rdates(), ...part.exdates()]) chargeCandidate()
+          for (const child of [...part.rrules(), ...part.exrules()]) preflight(child)
+        } else {
+          part.all(candidate => {
+            chargeCandidate()
+            return candidate <= to
+          })
+        }
+      }
+      const occurrences = options.maxCandidates === undefined
+        ? rule.between(from, to, true /* inclusive */)
+        : rule instanceof RRuleSet
+          // A set's callback runs AFTER exclusions, so an excluded dense rule
+          // may never reach it. Bound each positive/exclusion rule first, then
+          // evaluate the set within the finite window with its usual semantics.
+          ? (preflight(rule), rule.between(from, to, true /* inclusive */))
+          : rule.all((candidate) => {
+            chargeCandidate()
+            return candidate <= to
+          }).filter(candidate => candidate >= from)
 
       for (const occurrence of occurrences) {
-        const start = floating ? fromFloating(occurrence) : occurrence
+        const start = floating ? fromFloating(occurrence, options.consumerTimeZone) : occurrence
         const end = new Date(start.getTime() + duration)
         if (end < rangeStart) continue
-        result.push({
+        append({
           ...event,
           id: `${event.id ?? 'r'}_${start.getTime()}`,
           start,
           end,
         })
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof EventExpansionError) throw error
+      if (options.strict) throw new EventExpansionError(event.id, "invalid-legacy-recurrence")
       // Malformed rrule — fall back to treating the event as non-recurring.
-      result.push(event)
+      append(event)
     }
   }
 

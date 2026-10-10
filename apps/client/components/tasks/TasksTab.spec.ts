@@ -2,11 +2,16 @@ import { isValidElement, type ReactNode } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { CalendarSchema, TaskSchema } from "@musubi/types";
 import TasksTab from "../../app/(tabs)/tasks";
+import { resetTaskCollection } from "@/services/taskCollection";
 
 const h = vi.hoisted(() => ({
-  actor: "owner", key: undefined as string | undefined, slots: [] as unknown[], index: 0, focus: undefined as undefined | (() => () => void),
+  actor: "owner", key: undefined as string | undefined, slots: [] as unknown[], index: 0, focus: undefined as undefined | (() => void | (() => void)),
+  effects: [] as { deps?: readonly unknown[]; cleanup?: () => void }[], effectIndex: 0,
+  params: {} as { taskId?: string; widgetRefresh?: string; tasksWidgetId?: string; widgetComplete?: string; widgetAdd?: string }, setParams: vi.fn(),
+  complete: vi.fn(),
   api: { getTasks: vi.fn(), syncProviderCalendars: vi.fn(), createTask: vi.fn() },
 }));
+vi.mock("@/services/widgetTaskActions", () => ({ completeWidgetTask: h.complete }));
 vi.mock("react", async original => ({
   ...await original<typeof import("react")>(),
   useState: (initial: unknown) => {
@@ -16,16 +21,29 @@ vi.mock("react", async original => ({
     return [slots[index], (next: unknown) => { slots[index] = typeof next === "function" ? next(slots[index]) : next; }];
   },
   useRef: (initial: unknown) => { const index = h.index++; return h.slots[index] ??= { current: initial }; },
-  useEffect: () => {},
+  useSyncExternalStore: (_subscribe: unknown, getSnapshot: () => unknown) => getSnapshot(),
+  useDebugValue: () => {},
+  useEffect: (effect: () => (() => void) | void, deps?: readonly unknown[]) => {
+    const index = h.effectIndex++;
+    const previous = h.effects[index];
+    if (deps && previous?.deps && deps.length === previous.deps.length && deps.every((value, i) => value === previous.deps?.[i])) return;
+    previous?.cleanup?.();
+    h.effects[index] = { deps, cleanup: effect() || undefined };
+  },
   useCallback: (callback: unknown) => callback,
 }));
 vi.mock("react-native", () => ({ ActivityIndicator: "ActivityIndicator", RefreshControl: "RefreshControl", ScrollView: "ScrollView", Text: "Text", View: "View" }));
-vi.mock("expo-router", () => ({ useFocusEffect: (callback: () => () => void) => { h.focus = callback; } }));
+vi.mock("expo-router", () => ({
+  useFocusEffect: (callback: () => void | (() => void)) => { h.focus = callback; },
+  useLocalSearchParams: () => h.params,
+  router: { setParams: (params: typeof h.params) => { h.setParams(params); Object.assign(h.params, params); } },
+}));
 vi.mock("@expo/vector-icons", () => ({ Feather: "Feather" }));
 vi.mock("@/components/tasks/TaskEditorModal", () => ({ TaskEditorModal: "TaskEditorModal" }));
 vi.mock("@/components/tasks/TaskDetailModal", () => ({ TaskDetailModal: "TaskDetailModal" }));
 vi.mock("@/components/calendar/ProviderIcon", () => ({ ProviderIcon: "ProviderIcon" }));
 vi.mock("@/components/calendar/CalendarFilterBar", () => ({ CalendarFilterBar: "CalendarFilterBar" }));
+vi.mock("@/components/calendar/CalendarWidgetSettingsModal", () => ({ default: "CalendarWidgetSettingsModal" }));
 vi.mock("@/components/ui/Tap", () => ({ Tap: "Tap" }));
 vi.mock("@/components/ui/OptionPicker", () => ({ OptionPicker: "OptionPicker" }));
 vi.mock("@/components/ui/Empty", () => ({ Empty: "Empty" }));
@@ -35,11 +53,22 @@ vi.mock("@/contexts/ServerContext", () => ({ useServer: () => ({ apiUrl: "https:
 vi.mock("@/services/api", () => ({ useApi: () => h.api }));
 vi.mock("@/lib/network", async original => ({ ...await original<typeof import("@/lib/network")>(), userFacingError: (error: Error) => error.message }));
 vi.mock("@/store/useSettingsStore", () => ({ useSettingsStore: (selector: (state: { dateFormat: string; timeFormat: string }) => unknown) => selector({ dateFormat: "ymd", timeFormat: "24h" }) }));
-vi.mock("@/store/useCalendarsStore", () => ({ useCalendarsStore: () => ({ calendars: [calendar], activeCals: new Set([calendar.id]), toggleCal: vi.fn() }) }));
+vi.mock("@/store/useCalendarsStore", () => {
+  const getState = () => ({ calendars: [calendar], activeCals: new Set([calendar.id]), toggleCal: vi.fn() });
+  return { useCalendarsStore: Object.assign((selector?: (state: ReturnType<typeof getState>) => unknown) => selector ? selector(getState()) : getState(), { getState, subscribe: () => () => {} }) };
+});
+vi.mock("@/store/useEventsStore", () => ({ getEventLifecycle: () => 0, useEventsStore: { subscribe: () => () => {} } }));
+vi.mock("@/services/tasksCache", () => ({ cacheGetTasks: () => null, cacheSetTasks: () => {}, cacheDeleteTasks: () => {} }));
+vi.mock("@/store/useTasksStore", async original => {
+  const module = await original<typeof import("@/store/useTasksStore")>();
+  // Render harness reads the real collection; Zustand's React adapter is outside
+  // Vitest's React mock and needs no hooks for these explicit harness renders.
+  return { ...module, useTasksStore: Object.assign(() => module.useTasksStore.getState(), module.useTasksStore) };
+});
 
 const calendar = CalendarSchema.parse({ role: "owner", id: "google", creatorID: "owner", name: "Google Tasks", provider: "google", supportsTasks: true, color: "red", members: [] });
 const task = TaskSchema.parse({ id: "task", creatorID: "owner", calendarID: calendar.id, title: "QA from Google" });
-type Props = { children?: ReactNode; refreshControl?: ReactNode; accessibilityLabel?: string; accessibilityRole?: string; disabled?: boolean; onPress?: () => void; onRefresh?: () => void; refreshing?: boolean; onSave?: (draft: unknown) => Promise<void> };
+type Props = { children?: ReactNode; refreshControl?: ReactNode; accessibilityLabel?: string; accessibilityRole?: string; disabled?: boolean; onPress?: () => void; onRefresh?: () => void; refreshing?: boolean; onSave?: (draft: unknown) => Promise<void>; task?: typeof task; widgetId?: number | null; kind?: string; onClose?: () => void };
 function nodes(node: ReactNode): { type: unknown; props: Props }[] {
   if (Array.isArray(node)) return node.flatMap(nodes);
   if (!isValidElement<Props>(node)) return [];
@@ -47,8 +76,11 @@ function nodes(node: ReactNode): { type: unknown; props: Props }[] {
 }
 function render() {
   const screen = TasksTab();
-  if (screen.key !== h.key) { h.key = screen.key ?? undefined; h.slots = []; }
-  h.index = 0;
+  if (screen.key !== h.key) {
+    h.effects.forEach(effect => effect.cleanup?.()); h.effects = [];
+    h.key = screen.key ?? undefined; h.slots = [];
+  }
+  h.index = 0; h.effectIndex = 0;
   return (screen.type as () => ReactNode)();
 }
 function refresh(kind: "button" | "gesture" = "button") {
@@ -57,10 +89,13 @@ function refresh(kind: "button" | "gesture" = "button") {
   else tree.find(node => node.type === "RefreshControl")!.props.onRefresh!();
 }
 function deferred() { let resolve!: () => void; const promise = new Promise<void>(done => { resolve = done; }); return { promise, resolve }; }
-async function settle() { for (let i = 0; i < 8; i++) await Promise.resolve(); }
+async function settle() { for (let i = 0; i < 16; i++) await Promise.resolve(); }
 beforeEach(() => {
+  h.effects.forEach(effect => effect.cleanup?.()); h.effects = []; h.effectIndex = 0;
+  resetTaskCollection(); h.params = {};
   h.actor = "owner"; h.key = undefined; h.slots = []; h.index = 0; h.focus = undefined;
   vi.resetAllMocks();
+  h.complete.mockResolvedValue(true);
   h.api.getTasks.mockResolvedValue([]);
   h.api.syncProviderCalendars.mockResolvedValue(undefined);
 });
@@ -75,6 +110,7 @@ it.each(["button", "gesture"] as const)("waits for provider changes before readi
   const sync = deferred();
   h.api.syncProviderCalendars.mockReturnValue(sync.promise);
   h.api.getTasks.mockResolvedValue([task]);
+  render(); await settle(); h.api.getTasks.mockClear();
   refresh(kind);
   expect(h.api.syncProviderCalendars).toHaveBeenCalledOnce();
   expect(h.api.getTasks).not.toHaveBeenCalled();
@@ -98,14 +134,15 @@ it("keeps existing tasks and shows the error when provider refresh fails", async
   expect(tree.find(node => node.type === "RefreshControl")!.props.refreshing).toBe(false);
 });
 
-it("ignores a provider refresh that finishes after leaving the screen", async () => {
-  render(); const leave = h.focus!(); await settle(); h.api.getTasks.mockClear();
+it("finishes a provider refresh for the shared collection after leaving the task screen", async () => {
+  render(); h.focus!(); await settle(); h.api.getTasks.mockClear();
   const sync = deferred(); h.api.syncProviderCalendars.mockReturnValue(sync.promise);
-  refresh(); leave(); sync.resolve(); await settle();
-  expect(h.api.getTasks).not.toHaveBeenCalled();
+  refresh(); sync.resolve(); await settle();
+  expect(h.api.getTasks).toHaveBeenCalledOnce();
 });
 
 it("ignores an older provider refresh after a newer refresh has completed", async () => {
+  render(); await settle(); h.api.getTasks.mockClear();
   const old = deferred(); h.api.syncProviderCalendars.mockReturnValueOnce(old.promise);
   h.api.getTasks.mockResolvedValue([task]);
   refresh(); refresh(); await settle(); old.resolve(); await settle();
@@ -132,6 +169,7 @@ it("drops the old actor's snapshot immediately and ignores an old in-flight read
   h.api.getTasks.mockReturnValueOnce(new Promise<typeof task[]>(done => { resolve = done; }));
   refresh("gesture"); await settle();
   h.actor = "new-actor";
+  h.api.getTasks.mockResolvedValue([]);
   expect(nodes(render()).some(node => node.props.children === task.title)).toBe(false);
   resolve([task]); await settle();
   expect(nodes(render()).some(node => node.props.children === task.title)).toBe(false);
@@ -148,7 +186,7 @@ it("clears previously readable private task text when the authorized read is rej
   expect(nodes(render()).find(node => node.props.accessibilityRole === "alert")!.props.children).toBe("403: Membership removed");
 });
 
-it("ends an invalidated refresh when a create receipt arrives before its in-flight read", async () => {
+it("keeps a create receipt while the shared collection refreshes its remaining tasks", async () => {
   h.api.getTasks.mockResolvedValue([]);
   render(); h.focus!(); await settle();
   nodes(render()).find(node => node.props.accessibilityLabel === "Create task")!.props.onPress!();
@@ -158,11 +196,83 @@ it("ends an invalidated refresh when a create receipt arrives before its in-flig
   expect(nodes(render()).find(node => node.type === "RefreshControl")!.props.refreshing).toBe(true);
   const created = { ...task, revision: 1 };
   h.api.createTask.mockResolvedValue(created);
+  h.api.getTasks.mockResolvedValue([created]);
   const editor = nodes(render()).find(node => node.type === "TaskEditorModal")!;
   await editor.props.onSave!({ ...created, calendarID: calendar.id });
   const tree = nodes(render());
-  expect(tree.find(node => node.type === "RefreshControl")!.props.refreshing).toBe(false);
+  await settle();
   expect(tree.some(node => node.props.children === task.title)).toBe(true);
   resolve([]); await settle();
   expect(nodes(render()).some(node => node.props.children === task.title)).toBe(true);
+});
+
+it("opens a canonical widget task after data loads and consumes it on close", async () => {
+  h.params = { taskId: task.id, widgetRefresh: "1" }; h.api.getTasks.mockResolvedValue([task]);
+  expect(nodes(render()).some(node => node.type === "TaskDetailModal")).toBe(false);
+  await settle(); const tree = nodes(render());
+  const detail = tree.find(node => node.type === "TaskDetailModal")!;
+  expect(detail.props.task?.id).toBe(task.id);
+  expect(h.params.taskId).toBe(task.id);
+  expect(h.setParams).toHaveBeenCalledWith({ widgetRefresh: "" });
+  expect(h.api.syncProviderCalendars).toHaveBeenCalledOnce();
+  expect(tree.some(node => node.props.children === task.title)).toBe(true);
+  detail.props.onClose!();
+  expect(h.setParams).toHaveBeenCalledWith({ taskId: "" });
+  expect(nodes(render()).some(node => node.type === "TaskDetailModal")).toBe(false);
+  h.params = { taskId: task.id };
+  expect(nodes(render()).find(node => node.type === "TaskDetailModal")?.props.task?.id).toBe(task.id);
+});
+
+it("lets a new widget link replace an already opened task", async () => {
+  const second = { ...task, id: "second", title: "Second task" };
+  h.api.getTasks.mockResolvedValue([task, second]);
+  render(); await settle();
+  nodes(render()).find(node => node.props.accessibilityLabel === `Open task: ${task.title}`)!.props.onPress!();
+  expect(nodes(render()).find(node => node.type === "TaskDetailModal")?.props.task?.id).toBe(task.id);
+  h.params = { taskId: second.id };
+  const detail = nodes(render()).find(node => node.type === "TaskDetailModal")!;
+  expect(detail.props.task?.id).toBe(second.id);
+  detail.props.onClose!();
+  expect(nodes(render()).some(node => node.type === "TaskDetailModal")).toBe(false);
+});
+
+it("opens the Tasks widget calendar picker independently of app filters", async () => {
+  h.params = { tasksWidgetId: "42" }; render();
+  const picker = nodes(render()).find(node => node.type === "CalendarWidgetSettingsModal")!;
+  expect(picker.props).toMatchObject({ widgetId: 42, kind: "tasks" });
+  expect(h.params.tasksWidgetId).toBe("42");
+  picker.props.onClose!();
+  expect(h.setParams).toHaveBeenCalledWith({ tasksWidgetId: "" });
+  expect(nodes(render()).find(node => node.type === "CalendarWidgetSettingsModal")?.props.widgetId).toBeNull();
+  h.params = { tasksWidgetId: "42" };
+  expect(nodes(render()).find(node => node.type === "CalendarWidgetSettingsModal")?.props.widgetId).toBe(42);
+});
+
+it("opens the task creator once from the widget plus action", async () => {
+  h.params = { widgetAdd: "1" };
+  render(); await settle();
+  expect(nodes(render()).some(node => node.type === "TaskEditorModal")).toBe(true);
+  nodes(render()).find(node => node.type === "TaskEditorModal")!.props.onClose!();
+  expect(h.params.widgetAdd).toBe("");
+  expect(h.setParams).toHaveBeenCalledWith({ widgetAdd: "" });
+});
+it("claims a completion link once after task hydration", async () => {
+  h.api.getTasks.mockResolvedValue([task]); h.params = { taskId: task.id, widgetComplete: "ticket" };
+  render(); await settle(); render(); await settle(); render(); await settle();
+  expect(h.complete).toHaveBeenCalledOnce();
+  expect(h.complete).toHaveBeenCalledWith(JSON.stringify(["https://example.test", "owner"]), task.id, "ticket", h.api);
+  expect(h.params.widgetComplete).toBe(""); expect(h.params.taskId).toBe("");
+});
+
+it("keeps a newer detail link open when an older widget completion finishes", async () => {
+  const other = { ...task, id: "other" };
+  h.api.getTasks.mockResolvedValue([task, other]);
+  let resolve!: (completed: boolean) => void;
+  h.complete.mockReturnValueOnce(new Promise<boolean>(done => { resolve = done; }));
+  h.params = { taskId: task.id, widgetComplete: "ticket" };
+  render(); await settle(); render(); await settle();
+  h.params = { taskId: other.id };
+  render(); resolve(true); await settle();
+  expect(h.params.taskId).toBe(other.id);
+  expect(nodes(render()).find(node => node.type === "TaskDetailModal")!.props.task?.id).toBe(other.id);
 });

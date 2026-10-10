@@ -116,15 +116,24 @@ export default function MainTab() {
   } = useCalendarDrill(anchorDate);
 
   const refresh = useRefreshData();
-  const refreshRef = useRef(refresh);
+  const refreshRef = useRef({ events: refresh, tasks: calendarTasks.refresh });
   useEffect(() => {
-    refreshRef.current = refresh;
-  });
+    refreshRef.current = { events: refresh, tasks: calendarTasks.refresh };
+  }, [refresh, calendarTasks.refresh]);
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async function runRefresh() {
     setRefreshing(true);
     try {
-      await refreshRef.current();
+      const current = refreshRef.current;
+      const eventsRead = current.events();
+      // The event refresh triggers provider sync first. Read tasks afterwards,
+      // including when events fail, without triggering that provider sync twice.
+      const results = await Promise.allSettled([
+        eventsRead,
+        eventsRead.catch(() => undefined).then(() => current.tasks()),
+      ]);
+      const failure = results.find(result => result.status === "rejected");
+      if (failure?.status === "rejected") throw failure.reason;
     } catch (e) {
       console.error(e);
       showToast({
@@ -226,11 +235,23 @@ export default function MainTab() {
 
   // Android calendar VIEW intent (com.android.calendar/time/<ms>, routed via
   // +not-found → root index): jump the calendar to the requested date.
-  const { time, calendarWidgetId, view } = useLocalSearchParams<{
+  const { time, calendarWidgetId, view, widgetRefresh, widgetAdd } = useLocalSearchParams<{
     view?: string;
     time?: string;
     calendarWidgetId?: string;
+    widgetRefresh?: string;
+    widgetAdd?: string;
   }>();
+  useEffect(() => {
+    if (widgetAdd !== "1" || !calendars.length) return;
+    router.setParams({ widgetAdd: "" });
+    useEditComposerStore.getState().open();
+  }, [widgetAdd, calendars]);
+  useEffect(() => {
+    if (widgetRefresh !== "1") return;
+    router.setParams({ widgetRefresh: "" });
+    void onRefresh();
+  }, [widgetRefresh, onRefresh]);
   useEffect(() => {
     if (view === "day" || view === "week" || view === "month") {
       resetDrill();

@@ -9,6 +9,7 @@ import {
 } from "@musubi/types";
 import type { ICalendarEventBase } from "./interfaces";
 import { civilToInstant, instantToCivil } from "./time-zone";
+import { recurrenceNumericRanges } from "./recurrence-validation";
 
 export class EventExpansionError extends Error {
   constructor(
@@ -33,6 +34,9 @@ export function expandKnownTimeEvents<T extends ICalendarEventBase>(
   to: Date,
   consumerTimeZone?: string,
   includeAllNonRecurring = false,
+  maxCandidates = MAX_CANDIDATES,
+  maxOccurrences = Infinity,
+  candidateBudget?: { remaining: number },
 ): T[] {
   if (
     !Number.isFinite(from.getTime()) ||
@@ -41,6 +45,11 @@ export function expandKnownTimeEvents<T extends ICalendarEventBase>(
   )
     throw new RangeError("Invalid expansion window");
   const result: T[] = [];
+  const append = (event: T) => {
+    if (result.length >= maxOccurrences)
+      throw new EventExpansionError(event.id, "occurrence-budget-exceeded");
+    result.push(event);
+  };
   const exceptions = new Map<string, T>();
   const used = new Set<string>();
   const byId = new Map<string, T>();
@@ -170,7 +179,7 @@ export function expandKnownTimeEvents<T extends ICalendarEventBase>(
           !Number.isFinite(event.end.getTime()) || event.end < event.start)
         fail(event, "invalid-event-range");
       if (includeAllNonRecurring || overlaps(event.start, event.end))
-        result.push({
+        append({
           ...event,
           occurrenceIdentity: {
             seriesId: event.seriesID!,
@@ -184,7 +193,7 @@ export function expandKnownTimeEvents<T extends ICalendarEventBase>(
       includeAllNonRecurring ||
       overlaps(f.start, f.end, f.model.kind === "all-day")
     )
-      result.push({
+      append({
         ...event,
         start: f.start,
         end: f.end,
@@ -202,7 +211,7 @@ export function expandKnownTimeEvents<T extends ICalendarEventBase>(
         includeAllNonRecurring ||
         overlaps(f.start, f.end, f.model.kind === "all-day")
       )
-        result.push({ ...event, start: f.start, end: f.end });
+        append({ ...event, start: f.start, end: f.end });
       continue;
     }
     if (event.recurrence.length > 16_384) fail(event, "recurrence-too-large");
@@ -345,7 +354,7 @@ export function expandKnownTimeEvents<T extends ICalendarEventBase>(
         originalStart: original,
       };
       if (overlaps(start, end, f.model.kind === "all-day"))
-        result.push({
+        append({
           ...event,
           id: `${event.id}_${stable}`,
           start,
@@ -390,19 +399,9 @@ export function expandKnownTimeEvents<T extends ICalendarEventBase>(
         "BYMINUTE",
         "BYSECOND",
       ]);
-      const numericRanges: Record<string, [number, number, boolean]> = {
-        BYMONTH: [1, 12, false],
-        BYMONTHDAY: [-31, 31, true],
-        BYYEARDAY: [-366, 366, true],
-        BYWEEKNO: [-53, 53, true],
-        BYSETPOS: [-366, 366, true],
-        BYHOUR: [0, 23, false],
-        BYMINUTE: [0, 59, false],
-        BYSECOND: [0, 59, false],
-      };
       for (const [name, value] of fields) {
         if (!supported.has(name)) fail(event, "unsupported-recurrence-field");
-        const range = numericRanges[name];
+        const range = recurrenceNumericRanges[name];
         if (
           range &&
           new Set(value.split(",").map(Number)).size !== value.split(",").length
@@ -530,7 +529,7 @@ export function expandKnownTimeEvents<T extends ICalendarEventBase>(
       // Count candidates before the visible window too: rrule otherwise
       // filters them internally before our callback and bypasses the budget.
       rule.between(secondAnchor, upper, true, (date) => {
-        if (++examined > MAX_CANDIDATES)
+        if (++examined > maxCandidates || (candidateBudget && --candidateBudget.remaining < 0))
           fail(event, "recurrence-budget-exceeded");
         if (date.getTime() === secondAnchor.getTime()) return true;
         if (count != null && valid >= count) return false;

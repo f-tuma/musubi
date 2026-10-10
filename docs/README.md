@@ -26,6 +26,9 @@ Current entry points:
   [v0.2.2 deployment/recovery runbook](./releases/0.2.2-deployment.md).
 - [Storybook](../apps/web/.storybook/) and colocated stories are the visual
   reference; the removed screenshot catalog is not maintained.
+- [Android widget rework proposal](./ui/proposals/android-widgets.md) records
+  current loading/refresh defects and the proposed Agenda, Calendar and Tasks
+  work. It is a plan, not a shipped implementation.
 
 Dated audits retain the state of their original investigation. Use the current
 capability matrix and implementation contracts when deciding what is supported

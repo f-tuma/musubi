@@ -4492,6 +4492,8 @@ test("keeps desktop event details beside the calendar with toolbar controls acce
 		})),
 	).toEqual({ horizontal: 0, vertical: 0 });
 	await page.keyboard.press("Escape");
+	await expect(leftDetails).toBeHidden();
+	await expect(leftTrigger).toBeFocused();
 
 	const rightTrigger = page.getByRole("button", {
 		name: /Theatre night/,
