@@ -145,6 +145,7 @@ const expoConfig: ExpoConfig = {
     "favicon": "./assets/images/favicon.png"
   },
   plugins: [
+    "./plugins/withModernSystemBars",
     "expo-router",
     [
       "expo-sqlite",
