@@ -24,6 +24,9 @@ Current entry points:
   for current provider boundaries and outstanding live/device checks.
 - [Releases and upgrades](https://musubi.pro/docs/operations/releases/) and the
   [v0.2.2 deployment/recovery runbook](./releases/0.2.2-deployment.md).
+- [Unpublished 0.2.3 candidate notes](./releases/0.2.3-notes.md) and
+  [candidate deployment/recovery preparation](./releases/0.2.3-deployment.md).
+  Published artifacts remain v0.2.2; preparation does not publish or deploy them.
 - [Storybook](../apps/web/.storybook/) and colocated stories are the visual
   reference; the removed screenshot catalog is not maintained.
 - [Android widget rework proposal](./ui/proposals/android-widgets.md) records
