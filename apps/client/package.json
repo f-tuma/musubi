@@ -86,7 +86,7 @@
     "@types/node": "^25.9.5",
     "@types/react": "~19.2.18",
     "@types/semver": "^7.8.0",
-    "@vardum/cli": "0.6.0",
+    "@vardum/cli": "0.8.0",
     "babel-plugin-inline-import": "^3.0.0",
     "babel-preset-expo": "^57.0.8",
     "drizzle-kit": "^0.31.10",

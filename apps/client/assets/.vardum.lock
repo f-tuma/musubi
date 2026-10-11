@@ -4,12 +4,61 @@
   "workspace": "90473c38-68d7-407a-b7f1-41fcd7fdd2f2",
   "vard": "1525488f-6770-4a63-899d-9cda36e4b0d6",
   "items": {
+    "a3f00baf-0f29-4ba4-95d5-cbf91635dc06": {
+      "path": "images/android-icon-background.png",
+      "versionId": "69f11412-7bec-4fe9-a4b3-e55d7c497bc3",
+      "fingerprint": "69f11412-7bec-4fe9-a4b3-e55d7c497bc3:",
+      "downloadUrl": "https://vardum.com/w/musubi/__v/69f11412-7bec-4fe9-a4b3-e55d7c497bc3/brand/mobile/android-icon-background.png",
+      "checksum": "9aa67be692a818856e0ed80fbca2c4ae67b6a024169037a1adac059d0a9fee27"
+    },
+    "ff9765f6-21c8-49ae-bbb5-7307c4ae710d": {
+      "path": "images/android-icon-foreground.png",
+      "versionId": "f76cc4de-9916-4f40-9692-c98c089ed077",
+      "fingerprint": "f76cc4de-9916-4f40-9692-c98c089ed077:",
+      "downloadUrl": "https://vardum.com/w/musubi/__v/f76cc4de-9916-4f40-9692-c98c089ed077/brand/mobile/android-icon-foreground.png",
+      "checksum": "8c6b4698c3de685dc22f50642c928b0041353f5148d861e1c5eff5ed9129ce15"
+    },
+    "7541b8c8-993f-4f46-be11-dfcfbdd7d448": {
+      "path": "images/android-icon-monochrome.png",
+      "versionId": "4179f069-5ac5-4274-b10c-d636487c2e7c",
+      "fingerprint": "4179f069-5ac5-4274-b10c-d636487c2e7c:",
+      "downloadUrl": "https://vardum.com/w/musubi/__v/4179f069-5ac5-4274-b10c-d636487c2e7c/brand/mobile/android-icon-monochrome.png",
+      "checksum": "09588ac86e99b3fe33c9b37565d811c9a59180d3ba85272d9a137ce7492a1fd6"
+    },
+    "e0153165-e08e-4a52-a4db-f8a10fad7f65": {
+      "path": "images/favicon.png",
+      "versionId": "8384c855-5ea5-4595-ab6d-138a36cec6b3",
+      "fingerprint": "8384c855-5ea5-4595-ab6d-138a36cec6b3:",
+      "downloadUrl": "https://vardum.com/w/musubi/__v/8384c855-5ea5-4595-ab6d-138a36cec6b3/brand/mobile/favicon.png",
+      "checksum": "b5386c622f30cbbbcd62bf6b483f90d5a9829011a3431bb22ef9ebefcede8c74"
+    },
+    "e3a21330-7ea9-4729-9c96-ec2216cfcbac": {
+      "path": "images/icon-light.png",
+      "versionId": "320b744f-888a-4dd7-9f42-3f3fe4dc10e6",
+      "fingerprint": "320b744f-888a-4dd7-9f42-3f3fe4dc10e6:",
+      "downloadUrl": "https://vardum.com/w/musubi/__v/320b744f-888a-4dd7-9f42-3f3fe4dc10e6/brand/mobile/icon-light.png",
+      "checksum": "191e1e4c1bb4cae5c1c39e3d40ab6a06b3538af45474ae680b31435267cb4b81"
+    },
     "a0eb051e-2437-456f-bb07-87377cc08a37": {
       "path": "images/icon.png",
       "versionId": "263ce44c-004a-4f70-ae82-f59e5fc3c303",
       "fingerprint": "263ce44c-004a-4f70-ae82-f59e5fc3c303:",
       "downloadUrl": "https://vardum.com/w/musubi/__v/263ce44c-004a-4f70-ae82-f59e5fc3c303/brand/mobile/icon",
       "checksum": "e8a6e40f0141f552a5ea95cf8948b35e3abe932bb964c55c3fc997b56a15c693"
+    },
+    "16767f98-8ffb-4360-9525-771f8ca24758": {
+      "path": "images/splash-icon-light.png",
+      "versionId": "dade222c-f0b5-45e8-8474-6c50309bd634",
+      "fingerprint": "dade222c-f0b5-45e8-8474-6c50309bd634:",
+      "downloadUrl": "https://vardum.com/w/musubi/__v/dade222c-f0b5-45e8-8474-6c50309bd634/brand/mobile/splash-icon-light.png",
+      "checksum": "c1138adff9266e01aa272e39d9f4e3a82b9044721fcddbfb6488a78cc4d32b24"
+    },
+    "52bed015-441c-47f3-88a2-b244b5617dd2": {
+      "path": "images/splash-icon.png",
+      "versionId": "c3b1baac-d567-4487-a5aa-0af9bd73eae4",
+      "fingerprint": "c3b1baac-d567-4487-a5aa-0af9bd73eae4:",
+      "downloadUrl": "https://vardum.com/w/musubi/__v/c3b1baac-d567-4487-a5aa-0af9bd73eae4/brand/mobile/splash-icon.png",
+      "checksum": "5b12c2c9b1f16d8341ceeb33312f5726a9680351e7a0532dcee08e0477954f7b"
     }
   }
 }

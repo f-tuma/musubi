@@ -40,7 +40,7 @@ jobs:
           fi
 
           cli_package="$(cd apps/client && node -p 'require.resolve("@vardum/cli/package.json")')"
-          cli_entry="$(node -e 'const fs = require("node:fs"); const path = require("node:path"); const file = process.argv[1]; const pkg = JSON.parse(fs.readFileSync(file, "utf8")); if (pkg.version !== "0.6.0") throw new Error("Expected CLI 0.6.0"); console.log(path.resolve(path.dirname(file), pkg.bin.vardum));' "$cli_package")"
+          cli_entry="$(node -e 'const fs = require("node:fs"); const path = require("node:path"); const file = process.argv[1]; const pkg = JSON.parse(fs.readFileSync(file, "utf8")); if (pkg.version !== "0.8.0") throw new Error("Expected CLI 0.8.0"); console.log(path.resolve(path.dirname(file), pkg.bin.vardum));' "$cli_package")"
 
           staging="$(mktemp -d "$RUNNER_TEMP/musubi-vardum.XXXXXX")"
           trap 'rm -rf -- "$staging"' EXIT
