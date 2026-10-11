@@ -7,7 +7,7 @@ take ownership of.
 Covers two repositories: **Musubi** (this one) and **musubi-website** (the
 marketing site at musubi.pro). Paths in the second are marked `website:`.
 
-Last walked: 2026-08-16.
+Web app verified: 2026-10-11. Other inventories below retain their 2026-08-16 audit date.
 
 The format, pixel size and safe area each of these has to be produced at is in
 [`brand-asset-spec.md`](./brand-asset-spec.md).
@@ -43,26 +43,53 @@ each themed variant is a separate file and both must exist.
 
 ## Web app — musubi.pro/app
 
-**The mark inside the app is a React component, not a file.**
-`apps/web/src/components/BrandMark.tsx` draws both arms as SVG paths, and it is
-the mark people actually look at — the sidebar, the login shell and every
-route state. It takes no file and no bucket URL, because it has
-to recolour itself: one arm is `currentColor` so it follows the text on either
-theme, the other is `var(--accent-primary)`. A bucket asset has its colours
-baked in and would go invisible on the light theme.
+The app uses public stable Vardum URLs from `apps/web/src/brand.ts`, under
+`https://vardum.com/w/musubi/brand/web-app/`. These are separate from the
+marketing site's `brand/website/` and the private, frozen mobile pilot.
 
-Used by `Sidebar.tsx`, `AuthShell.tsx`, `RouteState.tsx`, and `ProviderIcon.tsx`.
-Its size is set in CSS in three places —
-`workspace.module.css .brandMark`,
-`primitives.module.css .authBrand svg` and `.routeStateMark`,
-`provider-icon.module.css .musubiMark` — so a change of aspect ratio has to be
-followed there too.
+| Key | Consumer | Original adopted on 2026-10-11 |
+| --- | --- | --- |
+| `favicon` | Root favicon link | Existing app SVG, 48×48 viewBox |
+| `apple-touch-icon` | Root Apple icon and push notification icon | Existing opaque 180×180 PNG |
+| `og` | Root `og:image` | Existing app 1200×630 PNG; deliberately different from marketing OG |
+| `logo-ink` | BrandMark's foreground arm | Exact original first path, transparent 48×48 SVG |
+| `logo-accent` | BrandMark's accent arm | Exact original second path, transparent 48×48 SVG |
 
-| Where | Asset |
-| --- | --- |
-| `apps/web/src/routes/__root.tsx:29` | `/favicon.svg` |
-| `apps/web/src/push/service-worker.js:39` | `/favicon.svg` as the push notification icon |
-| `apps/web/src/routes/favicon[.]ico.ts` | Answers `/favicon.ico` with **204, no image** — deliberate; the apex serves the real `.ico` |
+`BrandMark.tsx` loads the two silhouettes as native SVG images inside alpha
+masks. The app still supplies `currentColor` and `var(--accent-primary)`, so
+light/dark themes and monochrome calendar pigments retain their current look.
+Callers in the sidebar, auth shell, route states and provider marks keep the
+same SVG props and sizes. No remote SVG markup is injected.
+
+SSR and no-JavaScript pages use the original paths. Live images mount after
+hydration, avoiding missed cached-image load events. Both must load before
+switching; an error in either restores the complete original mark. This local
+fallback intentionally remains the old artwork until a later app release.
+
+To update artwork:
+
+1. In the Musubi workspace, open **Assets → brand → web-app**.
+2. Upload a new version to the existing asset, preserving its key and public
+   visibility. Do not replace the app OG with the marketing OG accidentally.
+3. For logo arms, upload/restore matching revisions together. Each SVG must
+   have a `0 0 48 48` viewBox, a transparent canvas and only the appropriate
+   silhouette. Opaque plates, empty images and mismatched canvases break masks.
+   Two stable pointers are independent; publication is not atomic.
+4. Check the app in both themes and a coloured calendar. The app does not need
+   a build for compatible artwork updates; an open page needs a reload.
+
+Stable redirects currently cache for 60 seconds with stale-while-revalidate up
+to 300 seconds. Original version URLs are immutable. Browser favicons and social
+platforms have separate caches, so changes are not promised to appear instantly.
+Native SVG image elements deliberately omit `crossOrigin`: the stable redirect
+currently lacks CORS headers, so CSS masks or anonymous-CORS images would fail.
+
+The worker source is still served as a tiny raw script. `push/source.ts` prepends
+the centralized PNG URL, and `/app/sw.js` retains its no-cache header, scope,
+payload handling and click behavior. OS/browser notification presentation and
+resource-fetch timing vary; this migration does not add a separate icon fetch
+to the handler. `/favicon.ico` still deliberately returns
+204 on the app upstream.
 
 ## Docs site
 
@@ -131,9 +158,9 @@ control, so a DAM is strictly better than what exists now.
 A DAM cannot own these as-is. Either they become files it manages, or they stay
 a manual step on every logo change.
 
-- `apps/web/src/components/BrandMark.tsx` — the mark the app itself shows, as
-  two SVG paths in a React component. This one cannot become a managed file: it
-  needs `currentColor` to survive both themes
+- `apps/web/src/components/BrandMark.tsx` — original paths remain the frozen
+  loading/offline fallback; the live silhouettes now belong to Vardum, while
+  theme and calendar colours remain controlled by the app
 - `apps/web/public/favicon.svg` — literal coordinates and colours
 - `.github/assets/banner.svg` — mark, 結 and wordmark, all as SVG primitives
 
@@ -144,14 +171,14 @@ Left over from the Expo template, referenced nowhere:
 - `apps/client/assets/images/react-logo.png`, `@2x`, `@3x`
 - `apps/client/assets/images/partial-react-logo.png`
 
-## Gaps worth fixing while the assets are being touched
+## Historical gaps (2026-08-16)
 
-- **No `apple-touch-icon`** anywhere. `https://musubi.pro/apple-touch-icon.png`
-  is a 404, so an iOS home-screen shortcut gets a screenshot of the page instead
-  of the mark.
+- **Apple touch icon resolved for the app:** the existing 180×180 production
+  bucket PNG was verified and adopted under `brand/web-app/apple-touch-icon`
+  on 2026-10-11. The old apex-404 observation is no longer an app gap.
 - **No web manifest.** `/site.webmanifest` and `/manifest.json` are both 404, so
   neither site is installable and neither declares icons to the OS.
-- **The deployed web app is behind.** `curl https://musubi.pro/login` returns a
+- **Historical deployment observation, not current status:** `curl https://musubi.pro/login` returns a
   head with no icon at all. That is not a code fault: a local production build
   of the current tree server-renders the icon links correctly, so the running
   image simply predates them. It fixes itself on the next web deploy.

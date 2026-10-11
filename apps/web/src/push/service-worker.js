@@ -1,8 +1,8 @@
-/* global self */
+/* global self, NOTIFICATION_ICON */
 
 // The only part of Musubi that runs when nobody has the app open.
 //
-// Deliberately tiny and dependency-free: it is served as-is (see the route at
+// Deliberately tiny and dependency-free: the shared icon URL is prepended (see
 // `routes/app/sw[.]js.ts`), never bundled, and a syntax error here is a feature
 // that silently stops working for everyone whose browser cached it.
 
@@ -36,7 +36,7 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(payload.title, {
       body: payload.body ?? "",
       data: { eventID: payload.eventID },
-      icon: "/favicon.svg",
+      icon: NOTIFICATION_ICON,
       // The occurrence id. A reminder re-sent after a restart replaces the
       // banner already on screen instead of stacking a second copy.
       tag: payload.tag,
