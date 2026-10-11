@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import source from "~/push/service-worker.js?raw";
+import { serviceWorkerSource } from "~/push/source";
 
 /**
  * The push service worker, served under `/app/`.
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/app/sw.js")({
   server: {
     handlers: {
       GET: () =>
-        new Response(source, {
+        new Response(serviceWorkerSource, {
           headers: {
             // No caching: a browser that pinned an old worker would keep
             // showing whatever that version did, for as long as it liked.

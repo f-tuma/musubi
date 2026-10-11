@@ -27,11 +27,11 @@ export const Route = createRootRouteWithContext<{
   head: () => ({
     links: [
       {
-        href: `${BRAND_ASSETS}/favicon.svg`,
+        href: BRAND_ASSETS.favicon,
         rel: "icon",
         type: "image/svg+xml",
       },
-      { href: `${BRAND_ASSETS}/apple-touch-icon.png`, rel: "apple-touch-icon" },
+      { href: BRAND_ASSETS.appleTouchIcon, rel: "apple-touch-icon" },
       { rel: "stylesheet", href: appCss },
     ],
     meta: [
@@ -51,7 +51,7 @@ export const Route = createRootRouteWithContext<{
       },
       // Login and invite URLs are public and commonly shared. Give them a
       // default preview; a route that wants its own image overrides this key.
-      { content: `${BRAND_ASSETS}/og.png`, property: "og:image" },
+      { content: BRAND_ASSETS.social, property: "og:image" },
       { content: "summary_large_image", name: "twitter:card" },
     ],
   }),

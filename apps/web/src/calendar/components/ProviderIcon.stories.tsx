@@ -7,6 +7,7 @@ import { AccountMark } from "./ProviderIcon";
 import { fixtureCalendars } from "../fixtures";
 
 const providers = [
+  { flavor: "musubi", label: "Musubi", account: "Personal calendar" },
   { flavor: "google", label: "Google Calendar", account: "haruki@example.com" },
   { flavor: "microsoft", label: "Outlook", account: "haruki@studio.example" },
   { flavor: "apple", label: "iCloud", account: "Haruki’s personal account" },
@@ -42,8 +43,8 @@ export const CalendarPigments: Story = {
     <SettingsSection title="Calendar colours">
       {providers.map((provider, index) => <Row
         key={provider.flavor}
-        icon={<AccountMark flavor={provider.flavor} size="compact" color={fixtureCalendars[index].color} />}
-        label={fixtureCalendars[index].name}
+        icon={<AccountMark flavor={provider.flavor} size="compact" color={fixtureCalendars[index % fixtureCalendars.length].color} />}
+        label={fixtureCalendars[index % fixtureCalendars.length].name}
         detail={provider.label}
       />)}
     </SettingsSection>
