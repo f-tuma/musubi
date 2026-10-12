@@ -107,5 +107,11 @@ export async function deleteGraphSeries(token: string, saved: GraphSeriesDeletio
     const after = await transport.read();
     if (!deletionObserved(saved, after)) unknown();
     return after;
-  } catch { return unknown(); }
+  } catch (error) {
+    if (error instanceof ProviderEventWriteError && (error.providerStatus === 429 ||
+        error.providerStatus === 408 || (error.providerStatus ?? 0) >= 500)) {
+      throw new ProviderEventWriteError("provider-write-failed", "unconfirmed", error.providerStatus, error.retryAfterMs);
+    }
+    return unknown();
+  }
 }

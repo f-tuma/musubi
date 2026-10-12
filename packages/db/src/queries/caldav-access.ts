@@ -17,7 +17,7 @@ export async function reconcileCaldavReadAccess(userID: string, accountID: strin
     const role = readOnly ? "viewer" : "owner", accessRole = caldavReadRole(evidence);
     if (source.providerAccessRole === accessRole && member.role === role) return false;
     if (member.role !== role) await tx.update(calendarMembers).set({ role }).where(eq(calendarMembers.id, member.id));
-    await tx.update(externalCalendars).set({ providerAccessRole: accessRole, providerAccessRevision: sql`${externalCalendars.providerAccessRevision} + 1`, cursor: null }).where(eq(externalCalendars.id, source.id));
+    await tx.update(externalCalendars).set({ providerAccessRole: accessRole, providerAccessRevision: sql`${externalCalendars.providerAccessRevision} + 1`, sourceGeneration: sql`${externalCalendars.sourceGeneration} + 1`, checkpointRevision: sql`${externalCalendars.checkpointRevision} + 1`, cursor: null, readCoverage: null }).where(eq(externalCalendars.id, source.id));
     return evidence.read === false && caldavHasRead(source.providerAccessRole) !== false
       ? redactGoogleCalendarMirror(tx, calendarID, userID, source.id, "caldav") : [calendarID];
   });

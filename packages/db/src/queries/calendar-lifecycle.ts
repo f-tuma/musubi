@@ -22,7 +22,7 @@ async function lockLifecycle(tx: DbTransaction, ids: string[], namespace: string
   // Order actual lock keys, not UUIDs, so even hash collisions cannot invert order.
   const keys = await tx.execute<{ key: string }>(sql`
     select distinct hashtextextended(${namespace} || id, 0)::text as key
-    from unnest(${sql`ARRAY[${sql.join(ids.map((id) => sql`${id}::text`), sql`, `)}]::text[]`}) as id
+    from unnest(${sql.param(ids)}::text[]) as id
     order by key`);
   for (const { key } of keys.rows) {
     if (mode === "exclusive") await tx.execute(sql`select pg_advisory_xact_lock(${key}::bigint)`);

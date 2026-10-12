@@ -15,7 +15,7 @@ async function main() {
   const oldFetch = globalThis.fetch, oldFlag = config.api.eventTimeEditsEnabled;
   config.api.eventTimeEditsEnabled = true;
   try {
-    for (const mode of ["occurrence", "series", "all-day", "moved", "stale-admission", "stale-delivery", "sibling-change", "lost-applied", "lost-retained", "restart", "local-race", "denied"] as const) {
+    for (const mode of ["occurrence", "series", "all-day", "moved", "stale-admission", "stale-delivery", "sibling-change", "lost-applied", "lost-retained", "restart", "local-race", "denied", "private-denied-series", "masked-404-series", "calendar-denied-series", "calendar-partial-series", "calendar-malformed-series", "calendar-throttled-series"] as const) {
       const owner = `graph-delete-${randomUUID()}`, allDay = mode === "all-day";
       let deletes = 0, removed = false;
       const base: any = { id: "master", iCalUId: "master-uid", "@odata.etag": 'W/"master-1"', type: "seriesMaster", subject: "Series", body: { contentType: "text", content: "Notes" }, location: { displayName: "Office" }, organizer: { emailAddress: { address: "owner@example.test" } }, isOrganizer: true, isCancelled: false, isDraft: false, isOnlineMeeting: false, onlineMeeting: null, onlineMeetingUrl: null, attendees: [], isAllDay: allDay, originalStartTimeZone: "UTC", originalEndTimeZone: "UTC", start: { dateTime: `2026-09-25T${allDay ? "00" : "09"}:00:00`, timeZone: "UTC" }, end: { dateTime: allDay ? "2026-09-26T00:00:00" : "2026-09-25T10:00:00", timeZone: "UTC" }, recurrence: { pattern: { type: "daily", interval: 1 }, range: { type: "numbered", numberOfOccurrences: 3, startDate: "2026-09-25", recurrenceTimeZone: "UTC" } }, cancelledOccurrences: [], exceptionOccurrences: [], isReminderOn: true, reminderMinutesBeforeStart: 15, showAs: "busy", sensitivity: "normal", responseStatus: { response: "organizer" } };
@@ -25,7 +25,13 @@ async function main() {
       globalThis.fetch = async (input, init) => {
         const url = new URL(String(input)); assert.equal(url.origin, "https://graph.microsoft.com"); assert.equal(init?.redirect, "error");
         if (url.pathname === "/v1.0/me") return response({ id: "graph-user", mail: "owner@example.test", userPrincipalName: "owner@example.test" });
-        if (url.pathname === "/v1.0/me/calendars/native-calendar") return response({ id: "native-calendar", canEdit: true, owner: { address: "owner@example.test" } });
+        if (removed && url.pathname === "/v1.0/me/calendars/native-calendar" && url.searchParams.get("$select") === "id,canViewPrivateItems") {
+          if (mode === "calendar-throttled-series") return new Response(JSON.stringify({ error: { code: "TooManyRequests" } }), { status: 429, headers: { "Retry-After": "60" } });
+          if (mode === "calendar-denied-series") return response({ error: { code: "ErrorAccessDenied" } }, 403);
+          if (mode === "calendar-partial-series") return response({ id: "native-calendar", canViewPrivateItems: true }, 206);
+          if (mode === "calendar-malformed-series") return new Response("{", { status: 200 });
+        }
+        if (url.pathname === "/v1.0/me/calendars/native-calendar") return response({ id: "native-calendar", canEdit: true, canViewPrivateItems: !(removed && mode === "private-denied-series"), owner: { address: "owner@example.test" } });
         if (url.pathname.endsWith("/instances")) return response({ value: instances });
         const nativeID = url.pathname.split("/").pop();
         if (init?.method === "DELETE") {
@@ -38,7 +44,7 @@ async function main() {
           return new Response(null, { status: 204 });
         }
         const native = removed ? undefined : nativeID === "master" ? base : instances.find(value => value.id === nativeID);
-        return native ? response(native) : response({ error: { code: "ErrorItemNotFound" } }, 404);
+        return native ? response(native) : response({ error: { code: removed && mode === "masked-404-series" ? "ErrorAccessDenied" : "ErrorItemNotFound" } }, 404);
       };
       await db.insert(user).values({ id: owner, name: "Fixture", email: `${owner}@example.test` });
       try {
@@ -51,7 +57,7 @@ async function main() {
         const address = { userID: owner, accountID: "fixture", calendarID: calendar.id, externalMasterID: "master" };
         await replaceGraphFamily(await readGraphFamilyContext(address), observation);
         const context = await readGraphFamilyContext(address), child = context.children.find(value => value.originalStart?.value.includes("2026-09-26"))!;
-        const request = { action: "delete", operationID: randomUUID(), expectedRevision: context.root.revision, ...(mode === "series" ? { scope: "series" } : { scope: "occurrence", originalStart: child.originalStart, expectedOccurrenceRevision: child.revision }) };
+        const request = { action: "delete", operationID: randomUUID(), expectedRevision: context.root.revision, ...(mode.endsWith("series") ? { scope: "series" } : { scope: "occurrence", originalStart: child.originalStart, expectedOccurrenceRevision: child.revision }) };
         const required = await applyLocalEventScope(context.root.id, owner, request, { prepareProvider: true }); assert.equal(required.status, "graph_delete_required");
         if (mode === "stale-admission") { base["@odata.etag"] = 'W/"changed"'; await assert.rejects(() => microsoftAdapter.prepareGraphDeletion!(context, request)); assert.equal(deletes, 0); continue; }
         const proof = await microsoftAdapter.prepareGraphDeletion!(context, request);
@@ -66,6 +72,16 @@ async function main() {
         const run = () => deliverEventOutbox(request.operationID, () => microsoftAdapter);
         const result = await run();
         if (["stale-delivery", "sibling-change", "denied", "restart"].includes(mode)) { assert.equal(deletes, 0); assert.notEqual(result?.status, "completed"); }
+        else if (["private-denied-series", "masked-404-series", "calendar-denied-series", "calendar-partial-series", "calendar-malformed-series", "calendar-throttled-series"].includes(mode)) {
+          assert.equal(deletes, 1); assert.equal(result?.status, "unconfirmed");
+          if (mode === "calendar-throttled-series") assert.ok(result!.nextAttemptAt.getTime() >= Date.now() + 55_000, "Negative proof preserves provider Retry-After lower bound");
+          assert.equal(result?.uncertain, true); assert.equal(result?.resultRef, null);
+          const acceptedPayload = result!.payload.event;
+          await db.update(eventOutbox).set({ nextAttemptAt: new Date(0) }).where(eq(eventOutbox.id, request.operationID));
+          const recovered = await run();
+          assert.equal(recovered?.status, "unconfirmed"); assert.equal(deletes, 1, "Permission loss or masked absence never authorizes another DELETE");
+          assert.deepEqual(recovered?.payload.event, acceptedPayload);
+        }
         else if (mode.startsWith("lost-")) {
           assert.equal(deletes, 1); assert.equal(result?.status, "unconfirmed");
           await db.update(eventOutbox).set({ nextAttemptAt: new Date(0) }).where(eq(eventOutbox.id, request.operationID));

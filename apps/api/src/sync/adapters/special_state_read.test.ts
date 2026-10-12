@@ -19,7 +19,7 @@ async function main() {
     assert.equal(init?.method ?? "GET", "GET");
     assert.equal(new Headers(init?.headers).get("authorization"), "Bearer fixture");
     requests.push(String(input));
-    return new Response(JSON.stringify({ value: [{ ...rich, subject: title }], "@odata.deltaLink": graphBase + "/delta" }), { status: 200, headers: { "content-type": "application/json" } });
+    return new Response(JSON.stringify({ value: [{ ...rich, subject: title }], "@odata.deltaLink": graphBase + "/me/calendars/calendar/calendarView/delta?token=fixture" }), { status: 200, headers: { "content-type": "application/json" } });
   };
   const options = { graphBase, fetchImpl, now: Date.parse("2026-09-01T00:00Z") };
   const first = await fetchMicrosoftChanges("fixture", "calendar", null, options);

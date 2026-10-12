@@ -6,6 +6,7 @@ import type { Request, Response } from "express";
 import { and, eq, inArray } from "drizzle-orm";
 import { logger } from "@musubi/config";
 import {
+  account,
   calendarEvents,
   caldavAccounts,
   calendarMembers,
@@ -14,6 +15,7 @@ import {
   db,
   deleteExternalEvent,
   events,
+  externalCalendars,
   externalEvents,
   getEvent,
   getEventCalendars,
@@ -22,6 +24,7 @@ import {
   importExternalCalendar,
   importExternalEvent,
   linkEventToCalendars,
+  reconcileMicrosoftCalendarAccess,
   sweepExternalEvents,
   upsertExternalEvent,
   unlinkEventAndTombstoneIfOrphaned,
@@ -30,6 +33,7 @@ import {
 import { assertCanEditEvent, assertCanViewEvent } from "../permissions";
 import { handlerStream } from "../handlers/stream";
 import { getAdapter, syncProvider } from "./engine";
+import type { CalendarAdapter, NormalizedChange } from "./adapter";
 
 // Run only against a disposable, migrated test database. These fixtures use
 // real query/permission paths; no provider credentials or network calls.
@@ -62,6 +66,11 @@ async function main() {
           encryptedPassword: "unused-fixture",
         })));
       }
+      if (provider === "microsoft") await db.insert(account).values(accountIDs.map((id, index) => ({
+        id: randomUUID(), userId: index === 1 ? bob : alice, accountId: id,
+        providerId: "microsoft", scope: "Calendars.ReadWrite", refreshToken: "fixture-only",
+        accessToken: "fixture-only", accessTokenExpiresAt: new Date(Date.now() + 3600000),
+      })));
       const home = await importExternalCalendar(
         provider,
         alice,
@@ -452,6 +461,11 @@ async function checkUnlinkNotifications(
     assert.ok(link);
     const adapter = getAdapter(f.provider);
     assert.ok(adapter);
+    const graph = f.provider === "microsoft";
+    if (graph) await reconcileMicrosoftCalendarAccess(f.bob, link.accountID, f.copy, { canEdit: true, canViewPrivateItems: true });
+    const [sourceBeforeRead] = await db.select().from(externalCalendars).where(eq(externalCalendars.calendarID, f.copy));
+    const eventBeforeRead = await getEvent(id);
+    const mappingsBeforeRead = await db.select().from(externalEvents).where(eq(externalEvents.eventID, id));
     const unlinkRevision = (await getEvent(id))!.revision + 1;
     const query = db.$client.query.bind(db.$client);
     let relinked = false;
@@ -468,52 +482,56 @@ async function checkUnlinkNotifications(
       }
       return result;
     };
-    const sync = syncProvider(
-      {
+    const changes: NormalizedChange[] = reset ? [] : [graph ? {
+      // This engine/DB fixture supplies already verified adapter evidence.
+      // Real Graph HTTP proof is exercised by graph_read_coverage.integration.
+      kind: "event-absence", externalId: id, reason: "window-removal",
+      deletionEvidence: { kind: "scoped-native-absence", responseStatus: 404,
+        readAuthorityVerified: true, nativeReadProfile: "graph-event-double-404-calendar-v1" },
+    } : { kind: "event", data: { ...eventValues(), externalId: id, status: "cancelled" } },
+      ...(failAfterUnlink ? [{ kind: "event" as const, data: {
+        ...eventValues(), externalId: randomUUID(), status: "active" as const, start: new Date(NaN),
+      } }] : []),
+    ];
+    const simulatedAdapter: CalendarAdapter = {
         ...adapter,
         listCalendars: async () => ({
           taskListsComplete: true,
           calendars: [
-            { externalId: f.remoteCalendar, name: "Copy", color: "#7A8BA3" },
+            { externalId: f.remoteCalendar, name: "Copy", color: "#7A8BA3",
+              ...(graph ? { microsoftAccess: { canEdit: true, canViewPrivateItems: true } } : {}) },
           ],
         }),
         fetchChanges: async () => ({
-          changes: reset
-            ? []
-            : [
-                {
-                  kind: "event",
-                  data: {
-                    ...eventValues(),
-                    externalId: id,
-                    status: "cancelled",
-                  },
-                },
-                ...(failAfterUnlink
-                  ? [
-                      {
-                        kind: "event" as const,
-                        data: {
-                          ...eventValues(),
-                          externalId: randomUUID(),
-                          status: "active" as const,
-                          start: new Date(NaN),
-                        },
-                      },
-                    ]
-                  : []),
-              ],
-          reset,
-          nextCursor: `after-${id}`,
+          changes,
+          reset: graph ? false : reset,
+          nextCursor: graph ? JSON.stringify({ version: 2, calendarId: f.remoteCalendar,
+            link: `https://graph.microsoft.com/v1.0/me/calendars/${encodeURIComponent(f.remoteCalendar)}/calendarView/delta?$deltatoken=${id}`,
+            windowStart: Date.parse("2025-01-01T00:00:00Z"), windowEnd: Date.parse("2030-01-01T00:00:00Z"),
+          }) : `after-${id}`,
+          ...(graph ? { coverage: { kind: "window" as const, fromInclusive: "2025-01-01T00:00:00Z", untilExclusive: "2030-01-01T00:00:00Z", complete: true } } : {}),
         }),
-      },
-      f.bob,
-      { id: link.accountID, label: "Copy" },
-    );
+    };
+    const sync = syncProvider(simulatedAdapter, f.bob, { id: link.accountID, label: "Copy" });
     try {
       if (failAfterUnlink) await assert.rejects(sync);
       else await sync;
     } finally { db.$client.query = query; }
+    if (graph && (reset || failAfterUnlink)) {
+      assert.deepEqual(await getEvent(id), eventBeforeRead, "Empty Graph coverage or a later failed item preserves the canonical revision");
+      assert.deepEqual(await db.select().from(externalEvents).where(eq(externalEvents.eventID, id)), mappingsBeforeRead, "Graph absence/rollback keeps all source-copy binding identities");
+      const [sourceAfterRead] = await db.select().from(externalCalendars).where(eq(externalCalendars.calendarID, f.copy));
+      if (failAfterUnlink) {
+        for (const key of ["cursor", "readCoverage", "sourceGeneration", "checkpointRevision"] as const)
+          assert.deepEqual(sourceAfterRead[key], sourceBeforeRead![key], "A failed Graph batch cannot publish its checkpoint or coverage");
+      } else {
+        assert.equal(sourceAfterRead.checkpointRevision, sourceBeforeRead!.checkpointRevision + 1, "Completed empty Graph coverage advances only its checkpoint");
+      }
+      assert.ok(responses.every(response => !response.writes.some(frame => frame.includes('"type":"event_removed"'))), "No unlink SSE may escape empty coverage or a rolled-back Graph batch");
+      assert.ok((await getUsersEvents(viewer)).some(row => row.event.id === id));
+      assert.ok((await getEventCalendars(id)).includes(f.copy));
+      return;
+    }
     if (relinkDuringNotification) {
       assert.equal(relinked, true);
       assert.equal((await getEvent(id))!.revision, unlinkRevision + 1);

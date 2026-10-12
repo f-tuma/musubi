@@ -192,7 +192,11 @@ export async function listGraphFamilyContexts(userID: string, accountID: string,
  * Retain native maps and original UUIDs for subsequent full-proof revival. */
 export async function removeGraphFamily(context: GraphFamilyContext): Promise<{ changed: boolean; seenExternalIDs: string[] }> {
   context = structuredClone(context);
-  return db.transaction(async tx => {
+  return db.transaction(tx => removeGraphFamilyInTransaction(tx, context)).catch(() => { throw new Error("Complete Graph family could not be removed."); });
+}
+
+/** Shared with atomic read apply; retains full context and lifecycle checks. */
+export async function removeGraphFamilyInTransaction(tx: DbTransaction, context: GraphFamilyContext): Promise<{ changed: boolean; seenExternalIDs: string[] }> {
     await lockGraphFamilyAddress(tx, context.address);
     const current = await graphFamilyContextInTransaction(tx, context.address);
     if (!same(context, current)) refuse();
@@ -202,7 +206,6 @@ export async function removeGraphFamily(context: GraphFamilyContext): Promise<{ 
       changed = true;
     }
     return { changed, seenExternalIDs: current.mappings.map(value => value.externalEventID).sort() };
-  }).catch(() => { throw new Error("Complete Graph family could not be removed."); });
 }
 
 /** Accept a complete unchanged personal creation family and release its journal

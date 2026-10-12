@@ -1,6 +1,9 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { account, db } from "../index";
+import { account, db, externalCalendars } from "../index";
 import type { GoogleCheck } from "@musubi/types";
+import type { DbTransaction } from "./calendars";
+import { lockCalendarLifecycle, lockUserLifecycle } from "./calendar-lifecycle";
+import { retireExternalSourceReads } from "./source-read-lifecycle";
 
 // OAuth calendar-provider account status/tokens — operates on the Better Auth
 // `account` table, not the sync tables. (Sync lives in queries/external.ts.)
@@ -130,6 +133,20 @@ function unchangedOAuthCredentials(expected?: OAuthCredentialSnapshot) {
   );
 }
 
+function oauthSourcePredicate(userID: string, provider: string, accountID?: string) {
+  return and(eq(externalCalendars.userID, userID), eq(externalCalendars.provider, provider), accountID === undefined ? undefined : eq(externalCalendars.accountID, accountID))!;
+}
+/** Retirement uses user -> complete calendar set -> account/source rows. User
+ * exclusion also fences a first mirror being imported during OAuth relink. */
+async function withOAuthReadLifecycle<T>(userID: string, provider: string, accountID: string | undefined, change: (tx: DbTransaction) => Promise<T>) {
+  return db.transaction(async tx => {
+    await lockUserLifecycle(tx, [userID], "exclusive");
+    const sources = await tx.select({ calendarID: externalCalendars.calendarID }).from(externalCalendars).where(oauthSourcePredicate(userID, provider, accountID));
+    await lockCalendarLifecycle(tx, sources.flatMap(source => source.calendarID ? [source.calendarID] : []), "exclusive");
+    return change(tx);
+  });
+}
+
 export async function updateOAuthTokens(
   userID: string,
   provider: string,
@@ -137,7 +154,7 @@ export async function updateOAuthTokens(
   tokens: { accessToken: string; accessTokenExpiresAt: Date; refreshToken?: string; scope?: string },
   expected?: OAuthCredentialSnapshot,
 ) {
-  const rows = await db.update(account)
+  const save = (tx: Pick<DbTransaction, "update">) => tx.update(account)
     .set({
       accessToken: tokens.accessToken,
       accessTokenExpiresAt: tokens.accessTokenExpiresAt,
@@ -150,9 +167,18 @@ export async function updateOAuthTokens(
       eq(account.accountId, accountID),
       unchangedOAuthCredentials(expected),
     ))
-    .returning({ id: account.id })
-    .catch(() => { throw new Error("OAuth credential update failed"); });
-  return rows.length > 0;
+    .returning({ id: account.id });
+  try {
+    // A normal token refresh leaves read authority unchanged. An explicitly
+    // changed grant retires old reads atomically without touching write epochs.
+    if (tokens.scope === undefined || expected && tokens.scope === expected.scope) return (await save(db)).length > 0;
+    return await withOAuthReadLifecycle(userID, provider, accountID, async tx => {
+      const [before] = await tx.select({ scope: account.scope }).from(account).where(and(eq(account.userId, userID), eq(account.providerId, provider), eq(account.accountId, accountID))).for("update");
+      const rows = await save(tx);
+      if (rows.length && before?.scope !== tokens.scope) await retireExternalSourceReads(tx, oauthSourcePredicate(userID, provider, accountID));
+      return rows.length > 0;
+    });
+  } catch { throw new Error("OAuth credential update failed"); }
 }
 
 export async function markOAuthAccountReconnectRequired(
@@ -163,7 +189,8 @@ export async function markOAuthAccountReconnectRequired(
   errorSubtype?: string,
   expected?: OAuthCredentialSnapshot,
 ) {
-  const rows = await db.update(account)
+  try { return await withOAuthReadLifecycle(userID, provider, accountID, async tx => {
+  const rows = await tx.update(account)
     .set({
       accessToken: null,
       refreshToken: null,
@@ -180,20 +207,25 @@ export async function markOAuthAccountReconnectRequired(
       eq(account.accountId, accountID),
       unchangedOAuthCredentials(expected),
     ))
-    .returning({ id: account.id })
-    .catch(() => { throw new Error("OAuth account status update failed"); });
+    .returning({ id: account.id });
+  if (rows.length) await retireExternalSourceReads(tx, oauthSourcePredicate(userID, provider, accountID));
   return rows.length > 0;
+  }); } catch { throw new Error("OAuth account status update failed"); }
 }
 
 // Better Auth calls this after a successful OAuth relink updates the account.
 export async function markOAuthAccountActive(userID: string, provider: string, accountID: string) {
-  await db.update(account)
+  await withOAuthReadLifecycle(userID, provider, accountID, async tx => {
+  const [before] = await tx.select({ status: account.syncStatus }).from(account).where(and(eq(account.userId, userID), eq(account.providerId, provider), eq(account.accountId, accountID))).for("update");
+  await tx.update(account)
     .set({ syncStatus: "active", syncErrorCode: null, syncErrorSubtype: null, syncDisabledAt: null })
     .where(and(
       eq(account.userId, userID),
       eq(account.providerId, provider),
       eq(account.accountId, accountID),
     ));
+  if (before && before.status !== "active") await retireExternalSourceReads(tx, oauthSourcePredicate(userID, provider, accountID));
+  });
 }
 
 export async function getOAuthRefreshToken(userID: string, provider: string) {
@@ -210,7 +242,8 @@ export async function getOAuthRefreshToken(userID: string, provider: string) {
 // Provider-wide legacy cleanup. Do not use this for an account-specific
 // disconnect; it intentionally clears every matching account for the user.
 export async function cleanProviderOAuthTokens(userID: string, provider: string) {
-  await db.update(account).set({
+  await withOAuthReadLifecycle(userID, provider, undefined, async tx => {
+  await tx.update(account).set({
     refreshToken: null,
     accessToken: null,
     accessTokenExpiresAt: null,
@@ -225,6 +258,8 @@ export async function cleanProviderOAuthTokens(userID: string, provider: string)
       eq(account.userId, userID),
       eq(account.providerId, provider),
     ));
+  await retireExternalSourceReads(tx, oauthSourcePredicate(userID, provider));
+  });
 }
 
 // Account-scoped fallback for the modern disconnect flow. Better Auth may
@@ -235,7 +270,8 @@ export async function cleanOAuthAccountTokens(
   provider: string,
   accountID: string,
 ) {
-  await db.update(account).set({
+  await withOAuthReadLifecycle(userID, provider, accountID, async tx => {
+  await tx.update(account).set({
     refreshToken: null,
     accessToken: null,
     accessTokenExpiresAt: null,
@@ -251,4 +287,6 @@ export async function cleanOAuthAccountTokens(
       eq(account.providerId, provider),
       eq(account.accountId, accountID),
     ));
+  await retireExternalSourceReads(tx, oauthSourcePredicate(userID, provider, accountID));
+  });
 }

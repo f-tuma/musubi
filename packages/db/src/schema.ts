@@ -33,6 +33,7 @@ import {
   type ProviderEventState,
   type EventTimeModel,
   type OccurrenceStart,
+  type SyncCoverage,
 } from "@musubi/types";
 
 // drizzle has no built-in bytea — minimal custom type
@@ -105,13 +106,17 @@ export const account = pgTable(
     syncErrorCode: text("sync_error_code"),
     syncErrorSubtype: text("sync_error_subtype"),
     syncDisabledAt: timestamp("sync_disabled_at"),
+    // Trigger-maintained read incarnation also catches direct Better Auth grant
+    // ABA. Ordinary non-null token rotation leaves this generation unchanged.
+    syncReadGeneration: integer("sync_read_generation").notNull().default(0),
     password: text("password"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
   },
-  (table) => [index("account_userId_idx").on(table.userId)],
+  (table) => [index("account_userId_idx").on(table.userId),
+    check("account_sync_read_generation_check", sql`${table.syncReadGeneration} >= 0`)],
 );
 
 export const verification = pgTable(
@@ -852,6 +857,12 @@ export const externalCalendars = pgTable(
     // Locally ordered discovery grant; invalidates in-flight reads and cursors.
     providerAccessRole: text("provider_access_role"),
     providerAccessRevision: integer("provider_access_revision").notNull().default(0),
+    // Read lifecycle and checkpoint ordering are independent of pending writes'
+    // permission admission. A window renewal must never retire those intents.
+    sourceGeneration: integer("source_generation").notNull().default(0),
+    checkpointRevision: integer("checkpoint_revision").notNull().default(0),
+    readConfigurationFingerprint: text("read_configuration_fingerprint"),
+    readCoverage: jsonb("read_coverage").$type<SyncCoverage>(),
     supportsEvents: boolean("supports_events").notNull().default(true),
     supportsTasks: boolean("supports_tasks").notNull().default(false),
     providerDefaultCalendar: boolean("provider_default_calendar"),
@@ -860,6 +871,8 @@ export const externalCalendars = pgTable(
   (t) => [
     unique().on(t.provider, t.accountID, t.externalCalendarID),
     unique().on(t.calendarID),
+    check("external_calendars_source_generation_check", sql`${t.sourceGeneration} >= 0`),
+    check("external_calendars_checkpoint_revision_check", sql`${t.checkpointRevision} >= 0`),
   ],
 );
 

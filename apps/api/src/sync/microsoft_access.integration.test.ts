@@ -22,12 +22,16 @@ async function main() {
       if (discoveryFailure) { res.statusCode = 503; return json({ error: { message: "offline discovery" } }); }
       return json({ value: absent ? [] : [{ id: "calendar", name: "Private shared", canEdit, canViewPrivateItems: privateAccess }] });
     }
-    if (url.pathname.endsWith("/calendarView/delta") || url.pathname === "/delta") {
+    if (url.pathname === "/v1.0/me/calendars/calendar") return json({ id: "calendar", canViewPrivateItems: privateAccess });
+    if (url.pathname === "/v1.0/me/calendars/calendar/events/event") {
+      assert.equal(mode, "delete"); res.statusCode = 404; return json({ error: { code: "ErrorItemNotFound" } });
+    }
+    if (url.pathname.endsWith("/calendarView/delta")) {
       paths.push(url.pathname); const cursor = ++serial;
       if (failure) { res.statusCode = 503; return json({ error: { message: "offline events" } }); }
       const value = mode === "empty" ? [] : mode === "delete" ? [{ id: "event", "@removed": { reason: "deleted" } }] : [{ id: "event", type: "singleInstance", "@odata.etag": '"same"', sensitivity: "private", subject: title, body: { content: title === "Busy" ? "" : "Secret notes" }, location: { displayName: title === "Busy" ? "" : "Secret room" }, start: { dateTime: "2026-09-15T09:00:00", timeZone: "UTC" }, end: { dateTime: "2026-09-15T10:00:00", timeZone: "UTC" } }];
       const pending = hold; hold = undefined; if (pending) { pending.entered(); await pending.wait; }
-      return json({ value, "@odata.deltaLink": `https://graph.microsoft.com/delta?cursor=${cursor}` });
+      return json({ value, "@odata.deltaLink": `https://graph.microsoft.com/v1.0/me/calendars/calendar/calendarView/delta?$deltatoken=${cursor}` });
     }
     res.statusCode = 500; json({ error: { message: "Unexpected fixture path" } });
   });

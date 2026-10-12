@@ -4,7 +4,7 @@ import { createServer } from "node:http";
 import { eq } from "drizzle-orm";
 import {
   account, db, events, getUserExternalCalendars, importExternalCalendar,
-  reconcileMicrosoftCalendarAccess, setCursor, upsertExternalEvent, user,
+  reconcileMicrosoftCalendarAccess, upsertExternalEvent, user,
 } from "@musubi/db";
 import { microsoftAdapter } from "./adapters/microsoft";
 import { syncProvider } from "./engine";
@@ -16,6 +16,9 @@ async function main() {
   const masterID = "master/+?";
   let failure: number | "network" | "json" | "null" = 503;
   let removed = false;
+  let prime = true;
+  const deltaPath = `/v1.0/me/calendars/${encodeURIComponent(calendar)}/calendarView/delta`;
+  const deltaLink = (token: string) => `https://graph.microsoft.com${deltaPath}?$deltatoken=${token}`;
   const masterPaths: string[] = [];
   const deltaPaths: string[] = [];
   const stub = (id: string) => ({ id, type: "occurrence", seriesMasterId: masterID,
@@ -30,15 +33,20 @@ async function main() {
     const json = (body: unknown) => res.end(JSON.stringify(body));
     if (url.pathname === "/v1.0/me/calendars") return json({ value: [{ id: calendar, name: "Shared", canEdit: false, canViewPrivateItems: true }] });
     if (url.pathname === "/v1.0/me/todo/lists") return json({ value: [] });
-    if (url.pathname.startsWith("/v1.0/delta-")) {
+    if (url.pathname === `/v1.0/me/calendars/${encodeURIComponent(calendar)}`) return json({ id: calendar, canViewPrivateItems: true });
+    if (url.pathname.endsWith("/events/old-removed") || removed && url.pathname.endsWith("/events/occurrence-1")) {
+      res.statusCode = 404; return json({ error: { code: "ErrorItemNotFound" } });
+    }
+    if (url.pathname === deltaPath) {
       deltaPaths.push(url.pathname);
+      if (prime) return json({ value: [], "@odata.deltaLink": deltaLink("original") });
       return json({ value: removed
         ? [{ id: "occurrence-1", seriesMasterId: masterID, "@removed": { reason: "deleted" } }]
         : [
           { ...stub("ordinary"), seriesMasterId: undefined, type: "singleInstance", subject: "Precedes failure" },
           { id: "old-removed", "@removed": { reason: "deleted" } },
           stub("occurrence-1"), stub("occurrence-2"),
-        ], "@odata.deltaLink": "https://graph.microsoft.com/v1.0/delta-next" });
+        ], "@odata.deltaLink": deltaLink("next") });
     }
     if (url.pathname.endsWith(`/events/${encodeURIComponent(masterID)}`)) {
       masterPaths.push(url.pathname);
@@ -69,15 +77,17 @@ async function main() {
       accessTokenExpiresAt: new Date(Date.now() + 3600_000),
     });
     const { id: calendarID } = await importExternalCalendar("microsoft", userID, "account", "Fixture", { externalId: calendar, name: "Shared", color: "#7A8BA3" });
-    const oldCursor = JSON.stringify({ link: "https://graph.microsoft.com/v1.0/delta-original", windowEnd: Date.now() + 730 * 86400_000 });
     await reconcileMicrosoftCalendarAccess(userID, "account", calendarID, { canEdit: false, canViewPrivateItems: true });
-    await setCursor(calendarID, oldCursor);
+    const sync = () => syncProvider(microsoftAdapter, userID, { id: "account", label: "Fixture" });
+    await sync(); prime = false;
+    const oldCursor = (await getUserExternalCalendars("microsoft", userID, "account"))[0].cursor!;
+    assert.equal(JSON.parse(oldCursor).version, 2);
+    assert.equal(JSON.parse(oldCursor).link, deltaLink("original"));
     for (const id of ["occurrence-1", "old-removed"]) await upsertExternalEvent("microsoft", userID, calendarID, calendar, id, {
       title: "Original", color: "#7A8BA3", start: new Date("2026-09-10T00:00:00Z"), end: new Date("2026-09-11T00:00:00Z"),
       isAllDay: false, description: null, location: null, organizer: "", recurrence: null, url: null,
     });
     const eventsBefore = await db.select().from(events).where(eq(events.creatorID, userID));
-    const sync = () => syncProvider(microsoftAdapter, userID, { id: "account", label: "Fixture" });
     const cursor = async () => (await getUserExternalCalendars("microsoft", userID, "account"))[0].cursor;
     for (const status of [503, 429, 500, 403, 404, 410, "network", "json", "null"] as const) {
       failure = status;
@@ -85,13 +95,13 @@ async function main() {
       assert.equal(await cursor(), oldCursor, `${status}: incomplete hydration cannot advance cursor`);
       assert.deepEqual(await db.select().from(events).where(eq(events.creatorID, userID)), eventsBefore, `${status}: no partial imports or fabricated tombstones`);
     }
-    assert.ok(deltaPaths.every((path) => path === "/v1.0/delta-original"));
+    assert.ok(deltaPaths.every((path) => path === deltaPath));
     assert.ok(masterPaths.every((path) => path === `/v1.0/me/calendars/${encodeURIComponent(calendar)}/events/${encodeURIComponent(masterID)}`), "Master lookup must remain in the shared calendar's scope");
     failure = 200;
     masterPaths.length = 0;
     await sync();
     assert.equal(masterPaths.length, 1, "Successful master cache is per delta attempt");
-    assert.equal(JSON.parse((await cursor())!).link, "https://graph.microsoft.com/v1.0/delta-next");
+    assert.equal(JSON.parse((await cursor())!).link, deltaLink("next"));
     const stored = await db.select().from(events).where(eq(events.creatorID, userID));
     const hydrated = stored.filter((event) => event.title === "Hydrated all-day series");
     assert.equal(hydrated.length, 2, "Retry updates the known occurrence and imports the missing one");
@@ -99,7 +109,8 @@ async function main() {
     assert.equal(stored.filter((event) => event.deletedAt).length, 1);
     await sync();
     assert.equal((await db.select().from(events).where(eq(events.creatorID, userID))).length, stored.length, "Replay creates no duplicate occurrences");
-    // An explicit removal is complete without a master, even when it is gone.
+    // A known removal with two exact 404s and current private-read authority is
+    // complete without a series master, even when that master is gone.
     removed = true;
     failure = 404;
     masterPaths.length = 0;

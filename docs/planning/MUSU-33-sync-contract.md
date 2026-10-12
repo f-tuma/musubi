@@ -2,6 +2,11 @@
 
 **C02 · 12. října 2026 · výchozí main `be267b2a960c768c60bd0f91de1106f8878e7999`.**
 
+Publikace: [PR #344](https://github.com/f-tuma/musubi/pull/344) po nezávislém
+skeptickém schválení a všech 21 zelených Quality kontrolách na head `a5cd664`.
+Squash main commit je `920df6fe93f549bb961f5f32a3d77aadcdc65240`
+(12. října 2026, 12:34:21 UTC). Produkční deployment tím není potvrzen.
+
 Implementace zavádí interní normativní profil `sync-profile-v1`. Odděluje host
 authority od provider transportu a poskytuje čistá runtime schémata i transakční
 apply port. Následující C03 použije tento kontrakt při opravě Graph coverage a

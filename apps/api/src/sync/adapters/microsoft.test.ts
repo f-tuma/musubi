@@ -64,8 +64,8 @@ async function main() {
   assert.equal(parseGraphDate("2026-07-18T20:30:00.0000000").toISOString(), "2026-07-18T20:30:00.000Z");
   assert.equal(parseGraphDate("2026-07-18T20:30:00").toISOString(), "2026-07-18T20:30:00.000Z");
 
-  // toNormalized: @removed → cancelled tombstone
-  assert.equal(toNormalized({ id: "x", "@removed": { reason: "deleted" } }).status, "cancelled");
+  // A calendarView removal cannot pass through the generic deletion mapper.
+  assert.throws(() => toNormalized({ id: "x", "@removed": { reason: "deleted" } }), /not a deletion proof/);
 
   // toNormalized: timed event
   const timed = toNormalized({
@@ -147,8 +147,10 @@ async function main() {
   assert.equal(nearestMicrosoftCalendarColor("#e21d1d").name, "lightRed");
   assert.equal(nearestMicrosoftCalendarColor("not-a-color").name, MICROSOFT_CALENDAR_COLORS[0].name);
 
-  // parseCursor: valid JSON cursor, garbage, and null
-  assert.deepEqual(parseCursor(JSON.stringify({ link: "https://g/delta?x", windowEnd: 123 })), { link: "https://g/delta?x", windowEnd: 123 });
+  // A cursor must preserve both exact window bounds and its collection scope.
+  const windowCursor = { version: 2, calendarId: "calendar", link: "https://graph.microsoft.com/v1.0/me/calendars/calendar/calendarView/delta?token=x", windowStart: 1, windowEnd: 123 };
+  assert.deepEqual(parseCursor(JSON.stringify(windowCursor)), windowCursor);
+  assert.equal(parseCursor(JSON.stringify({ link: "https://g/delta?x", windowEnd: 123 })), null);
   assert.equal(parseCursor("https://plain-url-from-older-code"), null);
   assert.equal(parseCursor(null), null);
 

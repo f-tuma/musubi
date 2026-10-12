@@ -43,8 +43,8 @@ async function run(scenario: string, until = false) {
       return json({ id: "series" }, 201);
     }
     assert.equal(req.method, "GET");
-    if (path === "/v1.0/me/calendars") return json({ value: [{ id: "calendar", name: "Fixture", canEdit: true }] });
-    if (path === "/v1.0/me/calendars/calendar") return mode === "initial-failure" ? json({}, 503) : json({ id: "calendar", canEdit: mode !== "native-denied" });
+    if (path === "/v1.0/me/calendars") return json({ value: [{ id: "calendar", name: "Fixture", canEdit: true, canViewPrivateItems: true }] });
+    if (path === "/v1.0/me/calendars/calendar") return mode === "initial-failure" ? json({}, 503) : json({ id: "calendar", canViewPrivateItems: true, canEdit: mode !== "native-denied" });
     if (path === "/v1.0/me/calendars/calendar/events") {
       if (!raced && ["local-race", "grant-race", "lease-race"].includes(mode)) {
         raced = true;
@@ -60,7 +60,7 @@ async function run(scenario: string, until = false) {
       if (mode === "late-lease") await db.update(eventOutbox).set({ leaseUntil: new Date(0) }).where(eq(eventOutbox.id, operationID));
       return json({ value: mode === "partial" ? instances().slice(0, 2) : instances() });
     }
-    if (path.endsWith("/calendarView/delta") || path === "/delta") return json({ value: instances(), "@odata.deltaLink": "https://graph.microsoft.com/delta" });
+    if (path.endsWith("/calendarView/delta")) return json({ value: instances(), "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/calendars/calendar/calendarView/delta?$deltatoken=fixture" });
     throw new Error(`Unexpected fixture route ${path}`);
   })().catch(error => { console.error(error); res.statusCode = 500; res.end(); }); });
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));

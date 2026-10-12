@@ -166,6 +166,7 @@ async function main() {
         revision++;
         returnedScope = failure === "narrowed" ? CALENDAR_SCOPE[provider] : undefined;
         await update({ scope: failure === "missing" ? CALENDAR_SCOPE[provider] : `${CALENDAR_SCOPE[provider]},${TASK_SCOPE[provider]}`, ...(failure === "narrowed" ? { accessTokenExpiresAt: new Date(0) } : {}) });
+        const beforeTaskRead = (await links()).find((link) => link.calendarID === taskLink.calendarID)!;
         const beforeCalls: number = taskCalls;
         await run();
         if (failure === "missing" || failure === "narrowed") {
@@ -181,7 +182,23 @@ async function main() {
         }
         assert.deepEqual(await db.select().from(tasks).where(eq(tasks.creatorID, userID)), beforeTasks, failure);
         assert.deepEqual(await db.select().from(externalTasks).where(eq(externalTasks.calendarID, taskLink.calendarID)), beforeMappings, failure);
-        assert.deepEqual((await links()).find((link) => link.calendarID === taskLink.calendarID), taskLink, `${failure}: task mirror/cursor unchanged`);
+        const afterTaskRead = (await links()).find((link) => link.calendarID === taskLink.calendarID)!;
+        const mirrorIdentity = (link: typeof taskLink) => {
+          const { sourceGeneration: _generation, checkpointRevision: _checkpoint, cursor: _cursor, ...identity } = link;
+          return identity;
+        };
+        assert.deepEqual(mirrorIdentity(afterTaskRead), mirrorIdentity(taskLink), `${failure}: task mirror identity, capabilities and read authority unchanged`);
+        if (failure === "narrowed") {
+          // Successful refresh retires the old read incarnation when its grant
+          // narrows. This is independent of the failed/omitted Tasks read.
+          assert.equal(afterTaskRead.sourceGeneration, beforeTaskRead.sourceGeneration + 1);
+          assert.equal(afterTaskRead.checkpointRevision, beforeTaskRead.checkpointRevision + 1);
+          assert.equal(afterTaskRead.cursor, null, "Scope retirement invalidates the old task cursor without accepting a new read");
+        } else {
+          assert.equal(afterTaskRead.sourceGeneration, beforeTaskRead.sourceGeneration);
+          assert.equal(afterTaskRead.checkpointRevision, beforeTaskRead.checkpointRevision);
+          assert.equal(afterTaskRead.cursor, beforeTaskRead.cursor, `${failure}: unsuccessful Tasks read cannot advance or erase its admitted cursor`);
+        }
         const [event] = await db.select().from(events).where(eq(events.creatorID, userID));
         assert.equal(event.title, `Event ${revision}`, `${failure}: events still import`);
         const eventLink = (await links()).find((link) => link.supportsEvents)!;

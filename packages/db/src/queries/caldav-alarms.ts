@@ -145,7 +145,7 @@ export async function confirmCaldavAlarm(id: string, token: string, result?: { r
       if (!completed) throw new LeaseLost();
       const replaced = row.payload.resolution?.replacedOperationIDs ?? [];
       if (replaced.length) await tx.update(eventOutbox).set({ status: "not-needed", updatedAt: new Date() }).where(and(inArray(eventOutbox.id, replaced), eq(eventOutbox.eventID, row.eventID), eq(eventOutbox.externalCalendarLinkID, row.externalCalendarLinkID), eq(eventOutbox.status, "cancelled"), eq(eventOutbox.errorCode, "superseded-by-resolution")));
-      await tx.update(externalCalendars).set({ cursor: null, providerAccessRevision: sql`${externalCalendars.providerAccessRevision} + 1` }).where(eq(externalCalendars.id, row.externalCalendarLinkID));
+      await tx.update(externalCalendars).set({ cursor: null, readCoverage: null, providerAccessRevision: sql`${externalCalendars.providerAccessRevision} + 1`, sourceGeneration: sql`${externalCalendars.sourceGeneration} + 1`, checkpointRevision: sql`${externalCalendars.checkpointRevision} + 1` }).where(eq(externalCalendars.id, row.externalCalendarLinkID));
       return true;
     });
   } catch (error) { if (error instanceof LeaseLost || error instanceof EventWriteError) return false; throw error; }
@@ -175,6 +175,6 @@ export async function discardCaldavAlarm(actorID: string, eventID: string, opera
     const ancestors = row.payload.resolution?.replacedOperationIDs ?? [];
     if (ancestors.length) await tx.update(eventOutbox).set({ status: "not-needed", errorCode: "alarm-discarded", updatedAt: new Date() }).where(and(inArray(eventOutbox.id, ancestors), eq(eventOutbox.userID, actorID), eq(eventOutbox.eventID, eventID), eq(eventOutbox.externalCalendarLinkID, row.externalCalendarLinkID), eq(eventOutbox.status, "cancelled"), eq(eventOutbox.errorCode, "superseded-by-resolution"), sql`${eventOutbox.payload}->'caldavAlarm' is not null`));
     await tx.update(eventOutbox).set({ status: "not-needed", errorCode: "alarm-discarded", updatedAt: new Date() }).where(eq(eventOutbox.id, row.id));
-    await tx.update(externalCalendars).set({ cursor: null, providerAccessRevision: sql`${externalCalendars.providerAccessRevision} + 1` }).where(eq(externalCalendars.id, row.externalCalendarLinkID));
+    await tx.update(externalCalendars).set({ cursor: null, readCoverage: null, providerAccessRevision: sql`${externalCalendars.providerAccessRevision} + 1`, sourceGeneration: sql`${externalCalendars.sourceGeneration} + 1`, checkpointRevision: sql`${externalCalendars.checkpointRevision} + 1` }).where(eq(externalCalendars.id, row.externalCalendarLinkID));
   });
 }

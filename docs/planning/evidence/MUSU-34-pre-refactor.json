@@ -1,0 +1,355 @@
+{
+  "schemaVersion": 1,
+  "recordRole": "historical-baseline-regression-witness",
+  "baseCommit": "be267b2a960c768c60bd0f91de1106f8878e7999",
+  "executionPath": "microsoftAdapter.listCalendars/fetchChanges -> syncProvider -> reconcileExternalChanges(reset=true) -> sweepExternalEvents -> deleteExternalEvent -> appendInboundEventFanout",
+  "t0": "2026-10-12T12:20:25.987Z",
+  "t1": "2028-07-14T12:20:25.987Z",
+  "nativeEventRemainsPresent": true,
+  "providerRequests": [
+    {
+      "method": "GET",
+      "path": "/v1.0/me/calendars",
+      "query": "?$select=id,name,hexColor,canEdit,canViewPrivateItems,isDefaultCalendar&$top=100"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/me/calendars/graph-calendar-0334de6e-1234-45ad-8704-ee0e452d7f11/calendarView/delta",
+      "query": "?startDateTime=2026-04-15T12:20:25.987Z&endDateTime=2028-10-11T12:20:25.987Z"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/me/calendars",
+      "query": "?$select=id,name,hexColor,canEdit,canViewPrivateItems,isDefaultCalendar&$top=100"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/me/calendars/graph-calendar-0334de6e-1234-45ad-8704-ee0e452d7f11/calendarView/delta",
+      "query": "?startDateTime=2028-01-16T12:20:25.987Z&endDateTime=2030-07-14T12:20:25.987Z"
+    }
+  ],
+  "foreignProviderMutationCount": 0,
+  "conclusion": "A renewed Graph window that excludes an existing source-origin event tombstones its canonical home event and admits a Google destination delete intent. No foreign DELETE was executed.",
+  "before": {
+    "event": {
+      "id": "85c77b05-0127-4b8c-886f-2fe1d58c4160",
+      "revision": 1,
+      "providerReadRetiredRevision": null,
+      "createdAt": "2026-10-12T12:20:26.076Z",
+      "updatedAt": "2026-10-12T12:20:26.076Z",
+      "creatorID": "graph-reset-owner-237806b1-3129-4557-a574-a14bf6a17f13",
+      "title": "Synthetic window witness",
+      "color": "#0078D4",
+      "start": "2026-10-13T12:20:25.987Z",
+      "end": "2026-10-13T13:20:25.987Z",
+      "isAllDay": false,
+      "description": "Synthetic test data",
+      "location": "Fixture",
+      "isCanceled": false,
+      "hasAttendees": false,
+      "organizer": "",
+      "recurrence": null,
+      "timeModel": null,
+      "seriesID": null,
+      "originalStart": null,
+      "url": null,
+      "originCalendarID": "7d377c87-a1fc-4d77-8bbb-696d89ce58b6",
+      "deletedAt": null
+    },
+    "bindings": [
+      {
+        "id": "11b999f0-8290-4ccd-b1cc-f04cfd85ed0d",
+        "createdAt": "2026-10-12T12:20:26.105Z",
+        "updatedAt": "2026-10-12T12:20:26.105Z",
+        "provider": "google",
+        "eventID": "85c77b05-0127-4b8c-886f-2fe1d58c4160",
+        "calendarID": "4876fc10-1f64-433b-8eda-2626d6560bea",
+        "externalCalendarID": "google-calendar-e16aa66f-62d4-4a12-99bb-27add03f6804",
+        "externalEventID": "google-event-3c90a650-1605-4be5-b1ba-ed0bc2d3077b",
+        "etag": "\"google-version-1\"",
+        "icalUid": "synthetic-uid-7f03166b-3086-4ab2-a2ba-1609f03fe8df",
+        "providerState": null,
+        "providerStateObservedAt": null,
+        "readRedactionRevision": null,
+        "externalSeriesID": null,
+        "originalStart": null
+      },
+      {
+        "id": "167aa254-5785-4fb8-902e-f15888ba5b82",
+        "createdAt": "2026-10-12T12:20:26.076Z",
+        "updatedAt": "2026-10-12T12:20:26.076Z",
+        "provider": "microsoft",
+        "eventID": "85c77b05-0127-4b8c-886f-2fe1d58c4160",
+        "calendarID": "7d377c87-a1fc-4d77-8bbb-696d89ce58b6",
+        "externalCalendarID": "graph-calendar-0334de6e-1234-45ad-8704-ee0e452d7f11",
+        "externalEventID": "graph-event-8ad20321-77f7-4bb5-a351-e808cd4c4bda",
+        "etag": "\"graph-version-1\"",
+        "icalUid": "synthetic-uid-7f03166b-3086-4ab2-a2ba-1609f03fe8df",
+        "providerState": {
+          "status": null,
+          "privacy": "normal",
+          "provider": "microsoft",
+          "attendees": [],
+          "eventType": "singleInstance",
+          "organizer": null,
+          "reminders": {
+            "isOn": null,
+            "provider": "microsoft",
+            "minutesBeforeStart": null
+          },
+          "isOrganizer": null,
+          "ownResponse": null,
+          "availability": null,
+          "conferenceURLs": [],
+          "attendeesComplete": false
+        },
+        "providerStateObservedAt": "2026-10-12T12:20:26.083Z",
+        "readRedactionRevision": null,
+        "externalSeriesID": null,
+        "originalStart": null
+      }
+    ],
+    "links": [
+      {
+        "id": "2cce48df-92c5-4fd3-95ae-01ff27122661",
+        "createdAt": "2026-10-12T12:20:26.076Z",
+        "updatedAt": "2026-10-12T12:20:26.076Z",
+        "eventID": "85c77b05-0127-4b8c-886f-2fe1d58c4160",
+        "calendarID": "7d377c87-a1fc-4d77-8bbb-696d89ce58b6"
+      },
+      {
+        "id": "b1c8f78f-afb2-44b2-b188-aaf8f4736fc6",
+        "createdAt": "2026-10-12T12:20:26.104Z",
+        "updatedAt": "2026-10-12T12:20:26.104Z",
+        "eventID": "85c77b05-0127-4b8c-886f-2fe1d58c4160",
+        "calendarID": "4876fc10-1f64-433b-8eda-2626d6560bea"
+      }
+    ],
+    "members": [
+      {
+        "userID": "graph-reset-owner-237806b1-3129-4557-a574-a14bf6a17f13",
+        "role": "owner"
+      },
+      {
+        "userID": "graph-reset-viewer-4f901d0b-483a-46a6-b6e6-a996c89614ac",
+        "role": "viewer"
+      }
+    ],
+    "outbox": [],
+    "sourceState": {
+      "id": "276a382b-59b0-4d67-8661-9bdcfe6803f5",
+      "createdAt": "2026-10-12T12:20:26.051Z",
+      "updatedAt": "2026-10-12T12:20:26.091Z",
+      "provider": "microsoft",
+      "userID": "graph-reset-owner-237806b1-3129-4557-a574-a14bf6a17f13",
+      "accountID": "graph-account-2d4d6a7c-6ffb-4823-bd28-6ecd134fa89d",
+      "accountLabel": "Synthetic Graph account",
+      "calendarID": "7d377c87-a1fc-4d77-8bbb-696d89ce58b6",
+      "externalCalendarID": "graph-calendar-0334de6e-1234-45ad-8704-ee0e452d7f11",
+      "cursor": "{\"link\":\"https://graph.microsoft.com/fixture-delta?round=1\",\"windowEnd\":1854879625987}",
+      "providerAccessRole": "microsoft:private=yes;edit=yes",
+      "providerAccessRevision": 1,
+      "supportsEvents": true,
+      "supportsTasks": false,
+      "providerDefaultCalendar": null,
+      "disabled": false
+    }
+  },
+  "after": {
+    "event": {
+      "id": "85c77b05-0127-4b8c-886f-2fe1d58c4160",
+      "revision": 2,
+      "providerReadRetiredRevision": null,
+      "createdAt": "2026-10-12T12:20:26.076Z",
+      "updatedAt": "2026-10-12T12:20:26.136Z",
+      "creatorID": "graph-reset-owner-237806b1-3129-4557-a574-a14bf6a17f13",
+      "title": "Synthetic window witness",
+      "color": "#0078D4",
+      "start": "2026-10-13T12:20:25.987Z",
+      "end": "2026-10-13T13:20:25.987Z",
+      "isAllDay": false,
+      "description": "Synthetic test data",
+      "location": "Fixture",
+      "isCanceled": false,
+      "hasAttendees": false,
+      "organizer": "",
+      "recurrence": null,
+      "timeModel": null,
+      "seriesID": null,
+      "originalStart": null,
+      "url": null,
+      "originCalendarID": "7d377c87-a1fc-4d77-8bbb-696d89ce58b6",
+      "deletedAt": "2026-10-12T12:20:26.135Z"
+    },
+    "bindings": [
+      {
+        "id": "11b999f0-8290-4ccd-b1cc-f04cfd85ed0d",
+        "createdAt": "2026-10-12T12:20:26.105Z",
+        "updatedAt": "2026-10-12T12:20:26.105Z",
+        "provider": "google",
+        "eventID": "85c77b05-0127-4b8c-886f-2fe1d58c4160",
+        "calendarID": "4876fc10-1f64-433b-8eda-2626d6560bea",
+        "externalCalendarID": "google-calendar-e16aa66f-62d4-4a12-99bb-27add03f6804",
+        "externalEventID": "google-event-3c90a650-1605-4be5-b1ba-ed0bc2d3077b",
+        "etag": "\"google-version-1\"",
+        "icalUid": "synthetic-uid-7f03166b-3086-4ab2-a2ba-1609f03fe8df",
+        "providerState": null,
+        "providerStateObservedAt": null,
+        "readRedactionRevision": null,
+        "externalSeriesID": null,
+        "originalStart": null
+      },
+      {
+        "id": "167aa254-5785-4fb8-902e-f15888ba5b82",
+        "createdAt": "2026-10-12T12:20:26.076Z",
+        "updatedAt": "2026-10-12T12:20:26.076Z",
+        "provider": "microsoft",
+        "eventID": "85c77b05-0127-4b8c-886f-2fe1d58c4160",
+        "calendarID": "7d377c87-a1fc-4d77-8bbb-696d89ce58b6",
+        "externalCalendarID": "graph-calendar-0334de6e-1234-45ad-8704-ee0e452d7f11",
+        "externalEventID": "graph-event-8ad20321-77f7-4bb5-a351-e808cd4c4bda",
+        "etag": "\"graph-version-1\"",
+        "icalUid": "synthetic-uid-7f03166b-3086-4ab2-a2ba-1609f03fe8df",
+        "providerState": {
+          "status": null,
+          "privacy": "normal",
+          "provider": "microsoft",
+          "attendees": [],
+          "eventType": "singleInstance",
+          "organizer": null,
+          "reminders": {
+            "isOn": null,
+            "provider": "microsoft",
+            "minutesBeforeStart": null
+          },
+          "isOrganizer": null,
+          "ownResponse": null,
+          "availability": null,
+          "conferenceURLs": [],
+          "attendeesComplete": false
+        },
+        "providerStateObservedAt": "2026-10-12T12:20:26.083Z",
+        "readRedactionRevision": null,
+        "externalSeriesID": null,
+        "originalStart": null
+      }
+    ],
+    "links": [
+      {
+        "id": "2cce48df-92c5-4fd3-95ae-01ff27122661",
+        "createdAt": "2026-10-12T12:20:26.076Z",
+        "updatedAt": "2026-10-12T12:20:26.076Z",
+        "eventID": "85c77b05-0127-4b8c-886f-2fe1d58c4160",
+        "calendarID": "7d377c87-a1fc-4d77-8bbb-696d89ce58b6"
+      },
+      {
+        "id": "b1c8f78f-afb2-44b2-b188-aaf8f4736fc6",
+        "createdAt": "2026-10-12T12:20:26.104Z",
+        "updatedAt": "2026-10-12T12:20:26.104Z",
+        "eventID": "85c77b05-0127-4b8c-886f-2fe1d58c4160",
+        "calendarID": "4876fc10-1f64-433b-8eda-2626d6560bea"
+      }
+    ],
+    "members": [
+      {
+        "userID": "graph-reset-owner-237806b1-3129-4557-a574-a14bf6a17f13",
+        "role": "owner"
+      },
+      {
+        "userID": "graph-reset-viewer-4f901d0b-483a-46a6-b6e6-a996c89614ac",
+        "role": "viewer"
+      }
+    ],
+    "outbox": [
+      {
+        "id": "68cef99d-3195-49b7-9c6d-d5ff35942333",
+        "actorID": "graph-reset-owner-237806b1-3129-4557-a574-a14bf6a17f13",
+        "mutationID": "d2cec90b-2be4-4369-9e55-ba2dda79697e",
+        "position": 0,
+        "eventID": "85c77b05-0127-4b8c-886f-2fe1d58c4160",
+        "revision": 2,
+        "predecessorID": null,
+        "calendarID": "4876fc10-1f64-433b-8eda-2626d6560bea",
+        "externalCalendarLinkID": "13cf32a7-890d-408a-bc6b-106109e44911",
+        "provider": "google",
+        "userID": "graph-reset-owner-237806b1-3129-4557-a574-a14bf6a17f13",
+        "accountID": "google-account-1cd9da95-41ef-4552-afb6-ea3fe510f154",
+        "externalCalendarID": "google-calendar-e16aa66f-62d4-4a12-99bb-27add03f6804",
+        "externalEventID": "google-event-3c90a650-1605-4be5-b1ba-ed0bc2d3077b",
+        "expectedEtag": "\"google-version-1\"",
+        "icalUid": "synthetic-uid-7f03166b-3086-4ab2-a2ba-1609f03fe8df",
+        "action": "delete",
+        "personalReadRecovery": null,
+        "payload": {
+          "event": {
+            "id": "85c77b05-0127-4b8c-886f-2fe1d58c4160",
+            "end": "2026-10-13T13:20:25.987Z",
+            "url": null,
+            "color": "#0078D4",
+            "start": "2026-10-13T12:20:25.987Z",
+            "title": "Synthetic window witness",
+            "isAllDay": false,
+            "location": "Fixture",
+            "revision": 2,
+            "seriesID": null,
+            "calendars": [
+              "7d377c87-a1fc-4d77-8bbb-696d89ce58b6",
+              "4876fc10-1f64-433b-8eda-2626d6560bea"
+            ],
+            "createdAt": "2026-10-12T12:20:26.076Z",
+            "creatorID": "graph-reset-owner-237806b1-3129-4557-a574-a14bf6a17f13",
+            "deletedAt": "2026-10-12T12:20:26.135Z",
+            "organizer": "",
+            "timeModel": null,
+            "updatedAt": "2026-10-12T12:20:26.136Z",
+            "isCanceled": false,
+            "recurrence": null,
+            "description": "Synthetic test data",
+            "hasAttendees": false,
+            "originalStart": null,
+            "originCalendarID": "7d377c87-a1fc-4d77-8bbb-696d89ce58b6",
+            "providerReadRetiredRevision": null
+          },
+          "patch": {},
+          "createIdentityVersion": 1
+        },
+        "status": "pending",
+        "attempts": 0,
+        "attemptedAt": null,
+        "leaseToken": null,
+        "leaseUntil": null,
+        "nextAttemptAt": "2026-10-12T12:20:26.130Z",
+        "uncertain": false,
+        "resultRef": null,
+        "remoteSnapshot": null,
+        "errorCode": null,
+        "createdAt": "2026-10-12T12:20:26.141Z",
+        "updatedAt": "2026-10-12T12:20:26.130Z"
+      }
+    ],
+    "sourceState": {
+      "id": "276a382b-59b0-4d67-8661-9bdcfe6803f5",
+      "createdAt": "2026-10-12T12:20:26.051Z",
+      "updatedAt": "2026-10-12T12:20:26.153Z",
+      "provider": "microsoft",
+      "userID": "graph-reset-owner-237806b1-3129-4557-a574-a14bf6a17f13",
+      "accountID": "graph-account-2d4d6a7c-6ffb-4823-bd28-6ecd134fa89d",
+      "accountLabel": "Synthetic Graph account",
+      "calendarID": "7d377c87-a1fc-4d77-8bbb-696d89ce58b6",
+      "externalCalendarID": "graph-calendar-0334de6e-1234-45ad-8704-ee0e452d7f11",
+      "cursor": "{\"link\":\"https://graph.microsoft.com/fixture-delta?round=2\",\"windowEnd\":1910262025987}",
+      "providerAccessRole": "microsoft:private=yes;edit=yes",
+      "providerAccessRevision": 1,
+      "supportsEvents": true,
+      "supportsTasks": false,
+      "providerDefaultCalendar": null,
+      "disabled": false
+    }
+  },
+  "cleanup": {
+    "fixtureUsersDeleted": true,
+    "fixtureEventsDeleted": true,
+    "fixtureOutboxDeleted": true,
+    "disposableDatabaseRetainedForC03Upgrade": true
+  }
+}

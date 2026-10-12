@@ -14,6 +14,7 @@ import { retainPendingEventPull, retainUnmappedCreatePull } from "./event-outbox
 import { appendInboundEventFanout } from "./event-outbox-fanout";
 import { retainUnmappedEventDeletion, lockExternalEventAddress } from "./event-outbox-deletions";
 import { lockCalendarLifecycle, lockUserLifecycle } from "./calendar-lifecycle";
+import { retireExternalSourceReads } from "./source-read-lifecycle";
 import { and, eq, inArray, isNull, isNotNull, sql } from "drizzle-orm";
 import { logger } from "@musubi/config";
 import {
@@ -97,6 +98,10 @@ export async function getUserExternalCalendars(
       sourceID: externalCalendars.id,
       providerAccessRole: externalCalendars.providerAccessRole,
       providerAccessRevision: externalCalendars.providerAccessRevision,
+      sourceGeneration: externalCalendars.sourceGeneration,
+      checkpointRevision: externalCalendars.checkpointRevision,
+      readConfigurationFingerprint: externalCalendars.readConfigurationFingerprint,
+      readCoverage: externalCalendars.readCoverage,
       supportsEvents: externalCalendars.supportsEvents,
       supportsTasks: externalCalendars.supportsTasks,
       providerDefaultCalendar: externalCalendars.providerDefaultCalendar,
@@ -186,7 +191,9 @@ export async function disableExternalCalendar(
     await lockCalendarLifecycle(tx, [calendarID], "exclusive");
     const [row] = await tx
       .update(externalCalendars)
-      .set({ disabled: true, calendarID: null, cursor: null })
+      .set({ disabled: true, calendarID: null, cursor: null, readCoverage: null,
+        sourceGeneration: sql`${externalCalendars.sourceGeneration} + 1`,
+        checkpointRevision: sql`${externalCalendars.checkpointRevision} + 1` })
       .where(
         and(
           eq(externalCalendars.calendarID, calendarID),
@@ -281,28 +288,32 @@ export async function setExternalCalendarCapabilities(
   externalCalendarID: string,
   capabilities: { supportsEvents: boolean; supportsTasks: boolean; providerDefaultCalendar?: boolean | null },
 ) {
-  await db
-    .update(externalCalendars)
-    .set(capabilities)
-    .where(
-      and(
-        eq(externalCalendars.provider, provider),
-        eq(externalCalendars.userID, userID),
-        eq(externalCalendars.accountID, accountID),
-        eq(externalCalendars.externalCalendarID, externalCalendarID),
-      ),
-    );
+  await db.transaction(async tx => {
+    // Stabilize the complete source set before discovering calendar fences.
+    await lockUserLifecycle(tx, [userID], "exclusive");
+    const predicate = and(eq(externalCalendars.provider, provider), eq(externalCalendars.userID, userID), eq(externalCalendars.accountID, accountID), eq(externalCalendars.externalCalendarID, externalCalendarID))!;
+    const [initial] = await tx.select().from(externalCalendars).where(predicate);
+    if (!initial) return;
+    await lockCalendarLifecycle(tx, initial.calendarID ? [initial.calendarID] : [], "exclusive");
+    const [source] = await tx.select().from(externalCalendars).where(predicate);
+    if (!source || source.id !== initial.id || source.calendarID !== initial.calendarID) throw new Error("External calendar capability source changed.");
+    const readChanged = source.supportsEvents !== capabilities.supportsEvents || source.supportsTasks !== capabilities.supportsTasks;
+    const changed = readChanged || capabilities.providerDefaultCalendar !== undefined && source.providerDefaultCalendar !== capabilities.providerDefaultCalendar;
+    if (!changed) return;
+    if (readChanged) await retireExternalSourceReads(tx, eq(externalCalendars.id, source.id));
+    await tx.update(externalCalendars).set(capabilities).where(eq(externalCalendars.id, source.id));
+  });
 }
 
 export async function setCursor(calendarID: string, cursor: string | null, context?: ExternalCalendarAccessContext) {
   if (context) return db.transaction(async tx => {
     await lockCalendarLifecycle(tx, [calendarID], "shared");
     await assertExternalCalendarAccess(tx, context.provider ?? "google", calendarID, context);
-    await tx.update(externalCalendars).set({ cursor }).where(eq(externalCalendars.calendarID, calendarID));
+    await tx.update(externalCalendars).set({ cursor, checkpointRevision: sql`${externalCalendars.checkpointRevision} + 1` }).where(eq(externalCalendars.calendarID, calendarID));
   });
   await db
     .update(externalCalendars)
-    .set({ cursor })
+    .set({ cursor, checkpointRevision: sql`${externalCalendars.checkpointRevision} + 1` })
     .where(eq(externalCalendars.calendarID, calendarID));
 }
 
@@ -790,7 +801,7 @@ export async function replaceExternalEventResource(
   }).catch(() => { throw new Error("Complete external event resource could not be persisted."); });
 }
 
-async function upsertExternalEventInTransaction(
+export async function upsertExternalEventInTransaction(
   tx: DbTransaction,
   deferFamilyValidation: boolean,
   provider: string,
@@ -1073,8 +1084,20 @@ export async function deleteExternalEvent(
   onUnlink?: (eventID: string, revision: number) => void,
   accessContext?: ExternalCalendarAccessContext,
 ): Promise<boolean> {
+  const result = await db.transaction(tx => deleteExternalEventInTransaction(tx, provider, calendarID, externalEventID, accessContext))
+    .catch(() => { throw new Error("External event deletion could not be persisted."); });
+  if (result.unlinked) onUnlink?.(result.unlinked.id, result.unlinked.revision);
+  return result.changed;
+}
+
+export type ExternalEventDeletionResult = { changed: boolean; unlinked?: { id: string; revision: number } };
+/** Database-only form; callers publish unlink receipts after their own COMMIT. */
+export async function deleteExternalEventInTransaction(
+  tx: DbTransaction, provider: string, calendarID: string, externalEventID: string,
+  accessContext?: ExternalCalendarAccessContext,
+): Promise<ExternalEventDeletionResult> {
   let unlinked: { id: string; revision: number } | undefined;
-  const changed = await db.transaction(async (tx) => {
+  const changed = await (async () => {
     await lockCalendarLifecycle(tx, [calendarID], "shared");
     await assertExternalCalendarAccess(tx, provider, calendarID, accessContext);
     // Resource writers lock the root before components. A missing child from a
@@ -1187,10 +1210,8 @@ export async function deleteExternalEvent(
       .where(eq(events.id, mapped.event.id));
     await appendInboundEventFanout(tx, mapped.event.id, calendarID, "delete");
     return true;
-  }).catch(() => { throw new Error("External event deletion could not be persisted."); });
-  // Emit receipts only after commit, never for rolled-back link changes.
-  if (unlinked) onUnlink?.(unlinked.id, unlinked.revision);
-  return changed;
+  })();
+  return { changed, ...(unlinked ? { unlinked } : {}) };
 }
 
 /** Reconcile a complete snapshot using the same authority rules as delta deletes. */

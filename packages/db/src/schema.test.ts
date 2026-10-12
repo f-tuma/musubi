@@ -4,6 +4,7 @@ import {
   calendarEvents,
   calendarMembers,
   calendarTasks,
+  account,
   eventReminders,
   eventUsers,
   events,
@@ -70,6 +71,10 @@ assert.deepEqual(getTableConfig(taskOutbox).foreignKeys.flatMap((key) => key.ref
 assert.ok(getTableConfig(taskOutbox).uniqueConstraints.some((c) => c.name === "task_outbox_mutation_position_unique"));
 assert.equal(externalCalendars.supportsEvents.default, true);
 assert.equal(externalCalendars.supportsTasks.default, false);
+assert.equal(externalCalendars.sourceGeneration.default, 0);
+assert.equal(externalCalendars.checkpointRevision.default, 0);
+assert.equal(account.syncReadGeneration.default, 0);
+assert.equal(externalCalendars.readCoverage.notNull, false);
 
 const externalTaskUnique = getTableConfig(externalTasks).uniqueConstraints.find(
   (constraint) =>

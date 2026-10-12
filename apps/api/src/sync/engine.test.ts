@@ -83,6 +83,20 @@ async function main() {
   );
   assert.deepEqual(noResetCalls, ["task-1"]);
 
+  // Even a native absence assertion grants no authority to the generic
+  // reconciler. Its source/checkpoint-fenced host path must interpret it.
+  const unexpected = async (): Promise<never> => { throw new Error("Absence mutated through the generic writer"); };
+  assert.equal(await reconcileExternalChanges([
+    { kind: "event-absence", externalId: "outside-window", reason: "window-removal" },
+    { kind: "event-absence", externalId: "native-404", reason: "window-removal", deletionEvidence: {
+      kind: "scoped-native-absence", responseStatus: 404, readAuthorityVerified: true,
+      nativeReadProfile: "graph-event-double-404-calendar-v1",
+    } },
+  ], false, {
+    deleteEvent: unexpected, deleteTask: unexpected, upsertEvent: unexpected,
+    upsertTask: unexpected, sweepEvents: unexpected, sweepTasks: unexpected,
+  }), 0);
+
   console.log("mixed event/task reconciliation self-check: OK");
 }
 
