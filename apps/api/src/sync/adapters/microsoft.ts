@@ -13,7 +13,8 @@ import { readGraphSeriesFamily, readGraphSeriesFamilyOrMissing } from "./microso
 import { microsoftEventState } from "./provider_event_state";
 import { config, logger } from "@musubi/config";
 import { getOAuthAccountIDs, hasOAuthTaskScope } from "@musubi/db";
-import { assertTaskMutationResponse, ProviderTaskWriteError } from "../task_write";
+import { assertTaskMutationResponse, assertTaskReadResponse, ProviderTaskWriteError } from "../task_write";
+import { observedProviderFetch, observedProviderRequest } from "../provider_http_metrics";
 import {
   DEFAULT_CALENDAR_COLOR,
   EventWriteError,
@@ -73,6 +74,7 @@ async function getAccessToken(
   userID: string,
   accountId: string,
   requireTasks = false,
+  signal?: AbortSignal,
 ) {
   const tenant = config.social.microsoftTenantID;
   const accessToken = await getOAuthAccessToken(
@@ -87,6 +89,7 @@ async function getAccessToken(
       // Tasks when granted, without escalating calendar-only consent.
       subtypeKey: "suberror",
     },
+    { signal },
   );
   // Refresh may return a narrower grant. Check after minting, before any Tasks
   // endpoint, including task writes that bypass discovery.
@@ -298,6 +301,7 @@ type MicrosoftTaskRequestOptions = {
   graphBase?: string;
   beforeMutation?: () => Promise<void>;
   patch?: Record<string, unknown>;
+  signal?: AbortSignal;
 };
 
 function microsoftTaskPath(taskListId: string, taskId?: string) {
@@ -386,11 +390,14 @@ export async function createMicrosoftTask(
   task: Task,
   options: MicrosoftTaskRequestOptions = {},
 ) {
+  options.signal?.throwIfAborted();
   const fetchImpl = options.fetchImpl ?? fetch;
   const graphBase = options.graphBase ?? GRAPH;
   await options.beforeMutation?.();
-  const res = await fetchImpl(`${graphBase}${microsoftTaskPath(taskListId)}`, {
+  options.signal?.throwIfAborted();
+  const res = await observedProviderRequest(fetchImpl, `${graphBase}${microsoftTaskPath(taskListId)}`, {
     method: "POST",
+    signal: options.signal,
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
@@ -415,14 +422,17 @@ export async function updateMicrosoftTask(
   etag: string | null | undefined,
   options: MicrosoftTaskRequestOptions = {},
 ) {
+  options.signal?.throwIfAborted();
   if (!etag) throw new Error("Microsoft task update requires an ETag");
   const fetchImpl = options.fetchImpl ?? fetch;
   const graphBase = options.graphBase ?? GRAPH;
   await options.beforeMutation?.();
-  const res = await fetchImpl(
+  options.signal?.throwIfAborted();
+  const res = await observedProviderRequest(fetchImpl,
     `${graphBase}${microsoftTaskPath(taskListId, externalTaskId)}`,
     {
       method: "PATCH",
+      signal: options.signal,
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
@@ -443,14 +453,17 @@ export async function deleteMicrosoftTask(
   etag: string | null | undefined,
   options: MicrosoftTaskRequestOptions = {},
 ) {
+  options.signal?.throwIfAborted();
   if (!etag) throw new Error("Microsoft task delete requires an ETag");
   const fetchImpl = options.fetchImpl ?? fetch;
   const graphBase = options.graphBase ?? GRAPH;
   await options.beforeMutation?.();
-  const res = await fetchImpl(
+  options.signal?.throwIfAborted();
+  const res = await observedProviderRequest(fetchImpl,
     `${graphBase}${microsoftTaskPath(taskListId, externalTaskId)}`,
     {
       method: "DELETE",
+      signal: options.signal,
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "If-Match": etag,
@@ -507,8 +520,10 @@ async function graphGet(
   accessToken: string,
   url: string,
   fetchImpl: typeof fetch = fetch,
+  signal?: AbortSignal,
 ): Promise<Response> {
-  return fetchImpl(url, {
+  return observedProviderRequest(fetchImpl, url, {
+    signal,
     headers: { Authorization: `Bearer ${accessToken}`, Prefer: PREFER },
   });
 }
@@ -725,7 +740,7 @@ export const microsoftAdapter: CalendarAdapter = {
         let label = id;
         try {
           const accessToken = await getAccessToken(userID, id);
-          const res = await fetch(`${GRAPH}/me`, {
+          const res = await observedProviderFetch(`${GRAPH}/me`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           });
           if (res.ok) {
@@ -840,7 +855,7 @@ export const microsoftAdapter: CalendarAdapter = {
     if (!config.api.eventTimeEditsEnabled) throw new EventWriteError("event-write", "unsupported");
     const accessToken = await getAccessToken(userID, accountID);
     if (!calendarID || calendarID.trim() !== calendarID || [".", ".."].includes(calendarID)) throw new ProviderEventWriteError("provider-conflict");
-    const permission = await fetch(`https://graph.microsoft.com/v1.0/me/calendars/${encodeURIComponent(calendarID)}?$select=id,canEdit`, { headers: { Authorization: `Bearer ${accessToken}`, "Cache-Control": "no-cache" }, redirect: "error", signal: identity.signal });
+    const permission = await observedProviderFetch(`https://graph.microsoft.com/v1.0/me/calendars/${encodeURIComponent(calendarID)}?$select=id,canEdit`, { headers: { Authorization: `Bearer ${accessToken}`, "Cache-Control": "no-cache" }, redirect: "error", signal: identity.signal });
     assertCompleteEventReadResponse(permission);
     const calendar = await permission.json();
     if (calendar.id !== calendarID) throw new ProviderEventWriteError("provider-conflict");
@@ -887,7 +902,7 @@ export const microsoftAdapter: CalendarAdapter = {
       return;
     }
     const headers = { Authorization: `Bearer ${accessToken}` };
-    const response = await fetch(
+    const response = await observedProviderFetch(
       `${GRAPH}/me/calendars/${encodeURIComponent(externalCalendarId)}?$select=canEdit`,
       { headers, signal: operation.signal },
     );
@@ -920,7 +935,7 @@ export const microsoftAdapter: CalendarAdapter = {
       )
         throw new ProviderEventWriteError("provider-write-failed");
       visited.add(url.href);
-      const response: Response = await fetch(url, {
+      const response: Response = await observedProviderFetch(url, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           Prefer: 'outlook.timezone="UTC"',
@@ -971,7 +986,7 @@ export const microsoftAdapter: CalendarAdapter = {
       );
     }
     const accessToken = await getAccessToken(userID, accountId);
-    const res = await fetch(
+    const res = await observedProviderFetch(
       `${GRAPH}/me/calendars/${encodeURIComponent(externalCalendarId)}/events`,
       {
         method: "POST",
@@ -1006,7 +1021,7 @@ export const microsoftAdapter: CalendarAdapter = {
 
   async readEvent(userID, accountId, externalCalendarId, ref, signal) {
     const token = await getAccessToken(userID, accountId);
-    const response = await fetch(`${GRAPH}${microsoftEventPath(externalCalendarId, ref.externalEventId)}`, {
+    const response = await observedProviderFetch(`${GRAPH}${microsoftEventPath(externalCalendarId, ref.externalEventId)}`, {
       headers: { Authorization: `Bearer ${token}`, Prefer: PREFER, "Cache-Control": "no-cache" }, redirect: "error", signal,
     });
     if (response.status === 404) return null;
@@ -1034,12 +1049,12 @@ export const microsoftAdapter: CalendarAdapter = {
 
   projectTask: toGraphTask,
 
-  async readTask(userID, accountId, externalCalendarId, ref) {
+  async readTask(userID, accountId, externalCalendarId, ref, signal) {
     const list = microsoftTaskListId(externalCalendarId);
     if (!list) throw new ProviderTaskWriteError("task-source-read-only");
-    const response = await graphGet(await getAccessToken(userID, accountId, true), `${GRAPH}${microsoftTaskPath(list, ref.externalTaskId)}`);
+    const response = await graphGet(await getAccessToken(userID, accountId, true, signal), `${GRAPH}${microsoftTaskPath(list, ref.externalTaskId)}`, fetch, signal);
     if (response.status === 404 || response.status === 410) return null;
-    if (!response.ok) throw await graphError(response);
+    assertTaskReadResponse(response);
     const value = await response.json();
     if (value.id !== ref.externalTaskId || typeof value.title !== "string") throw new ProviderTaskWriteError("task-projection-unavailable");
     return { ref: { externalTaskId: value.id, etag: value["@odata.etag"] ?? null, icalUid: null }, projection: toGraphTask({ ...toNormalizedMicrosoftTask(value), id: value.id, creatorID: userID, calendarID: "" }) };
@@ -1048,8 +1063,8 @@ export const microsoftAdapter: CalendarAdapter = {
   async assertTaskWrite(userID, accountId, externalCalendarId, operation) {
     const list = microsoftTaskListId(externalCalendarId);
     if (!list) throw new ProviderTaskWriteError("task-source-read-only");
-    const response = await graphGet(await getAccessToken(userID, accountId, true), `${GRAPH}/me/todo/lists/${encodeURIComponent(list)}`);
-    if (!response.ok) throw await graphError(response);
+    const response = await graphGet(await getAccessToken(userID, accountId, true, operation.signal), `${GRAPH}/me/todo/lists/${encodeURIComponent(list)}`, fetch, operation.signal);
+    assertTaskReadResponse(response);
     const nativeList = await response.json();
     if (nativeList.id !== list) throw new ProviderTaskWriteError("task-projection-unavailable");
     if (operation.secondary && nativeList.isOwner !== true) throw new ProviderTaskWriteError("task-source-read-only");
@@ -1059,21 +1074,21 @@ export const microsoftAdapter: CalendarAdapter = {
     if (operation.secondary) throw new ProviderTaskWriteError("task-conditional-write-unsupported");
     if (operation.action !== "create") {
       if (!operation.external?.etag) throw new ProviderTaskWriteError("task-version-unavailable");
-      const current = await microsoftAdapter.readTask!(userID, accountId, externalCalendarId, operation.external);
+      const current = await microsoftAdapter.readTask!(userID, accountId, externalCalendarId, operation.external, operation.signal);
       if (!current && operation.action === "delete") return;
       if (!current || current.ref.etag !== operation.external.etag) throw new ProviderTaskWriteError("task-provider-conflict");
     }
   },
 
-  async pushTaskCreate(userID, accountId, externalCalendarId, task, beforeMutation) {
+  async pushTaskCreate(userID, accountId, externalCalendarId, task, beforeMutation, signal) {
     const taskListId = microsoftTaskListId(externalCalendarId);
     if (!taskListId)
       throw new Error("Microsoft task write requires a task list");
     return createMicrosoftTask(
-      await getAccessToken(userID, accountId, true),
+      await getAccessToken(userID, accountId, true, signal),
       taskListId,
       task,
-      { beforeMutation },
+      { beforeMutation, signal },
     );
   },
 
@@ -1085,17 +1100,18 @@ export const microsoftAdapter: CalendarAdapter = {
     task,
     ref,
     patch,
+    signal,
   ) {
     const taskListId = microsoftTaskListId(externalCalendarId);
     if (!taskListId)
       throw new Error("Microsoft task write requires a task list");
     return updateMicrosoftTask(
-      await getAccessToken(userID, accountId, true),
+      await getAccessToken(userID, accountId, true, signal),
       taskListId,
       externalTaskId,
       task,
       ref?.etag,
-      { patch, beforeMutation: ref?.beforeMutation },
+      { patch, beforeMutation: ref?.beforeMutation, signal },
     );
   },
 
@@ -1105,16 +1121,17 @@ export const microsoftAdapter: CalendarAdapter = {
     externalCalendarId,
     externalTaskId,
     ref,
+    signal,
   ) {
     const taskListId = microsoftTaskListId(externalCalendarId);
     if (!taskListId)
       throw new Error("Microsoft task write requires a task list");
     await deleteMicrosoftTask(
-      await getAccessToken(userID, accountId, true),
+      await getAccessToken(userID, accountId, true, signal),
       taskListId,
       externalTaskId,
       ref?.etag,
-      { beforeMutation: ref?.beforeMutation },
+      { beforeMutation: ref?.beforeMutation, signal },
     );
   },
 
@@ -1124,7 +1141,7 @@ export const microsoftAdapter: CalendarAdapter = {
     // calendars, so this is normally an exact match.
     const accessToken = await getAccessToken(userID, accountId);
     await assertOAuthEventWriteGrant(userID, "microsoft", accountId);
-    const res = await fetch(`${GRAPH}/me/calendars`, {
+    const res = await observedProviderFetch(`${GRAPH}/me/calendars`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -1149,7 +1166,7 @@ export const microsoftAdapter: CalendarAdapter = {
     )
       throw new TaskScopeMissingError();
     if (taskListId) {
-      const res = await fetch(
+      const res = await observedProviderFetch(
         `${GRAPH}/me/todo/lists/${encodeURIComponent(taskListId)}`,
         {
           method: "PATCH",
@@ -1168,7 +1185,7 @@ export const microsoftAdapter: CalendarAdapter = {
     if ((await metadata.json()).isDefaultCalendar !== false) {
       throw new Error("The default Outlook calendar's name and color cannot be changed in Musubi.");
     }
-    const res = await fetch(
+    const res = await observedProviderFetch(
       `${GRAPH}/me/calendars/${encodeURIComponent(externalCalendarId)}`,
       {
         method: "PATCH",
@@ -1193,7 +1210,7 @@ export const microsoftAdapter: CalendarAdapter = {
       !(await hasOAuthTaskScope(userID, "microsoft", accountId))
     )
       throw new TaskScopeMissingError();
-    const res = await fetch(
+    const res = await observedProviderFetch(
       taskListId
         ? `${GRAPH}/me/todo/lists/${encodeURIComponent(taskListId)}`
         : `${GRAPH}/me/calendars/${encodeURIComponent(externalCalendarId)}`,

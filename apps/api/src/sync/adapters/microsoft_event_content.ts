@@ -3,6 +3,7 @@ import type { EventContentPatch } from "@musubi/db";
 import { EventWriteError } from "@musubi/types";
 import { ProviderEventWriteError, assertEventWriteEvidence, assertProviderEventMutationResponse, requireEventPatch } from "../event_write";
 import { assertCompleteEventReadResponse } from "../event_create_identity";
+import { observedProviderRequest } from "../provider_http_metrics";
 
 const GRAPH = "https://graph.microsoft.com/v1.0";
 const boundedSignal = (signal?: AbortSignal) => signal ? AbortSignal.any([signal, AbortSignal.timeout(15_000)]) : AbortSignal.timeout(15_000);
@@ -44,7 +45,7 @@ function pathFor(calendarID: string, eventID: string) {
 }
 export type MicrosoftContentSession = { token: string; calendarID: string; eventID: string; etag: string | null | undefined; signal?: AbortSignal; fetchImpl?: typeof fetch };
 async function get(session: MicrosoftContentSession, path: string, allowMissing = false) {
-  const response = await (session.fetchImpl ?? fetch)(`${GRAPH}${path}`, {
+  const response = await observedProviderRequest(session.fetchImpl ?? fetch, `${GRAPH}${path}`, {
     headers: { Authorization: `Bearer ${session.token}`, Prefer: PREFER, "Cache-Control": "no-cache" },
     redirect: "error", signal: boundedSignal(session.signal),
   });
@@ -73,7 +74,7 @@ export async function updateMicrosoftPersonalContent(session: MicrosoftContentSe
   const etag = requireVersion(session.etag);
   await assertMicrosoftPersonalContent(session);
   if (!Object.keys(payload).length) return;
-  const response = await (session.fetchImpl ?? fetch)(`${GRAPH}${pathFor(session.calendarID, session.eventID)}`, {
+  const response = await observedProviderRequest(session.fetchImpl ?? fetch, `${GRAPH}${pathFor(session.calendarID, session.eventID)}`, {
     method: "PATCH", headers: { Authorization: `Bearer ${session.token}`, "Content-Type": "application/json", Prefer: PREFER, "If-Match": etag },
     body: JSON.stringify(payload), redirect: "error", signal: boundedSignal(session.signal),
   });
@@ -94,7 +95,7 @@ export async function deleteMicrosoftPersonalEvent(session: MicrosoftContentSess
   const path = pathFor(session.calendarID, session.eventID);
   let response: Response;
   try {
-    response = await (session.fetchImpl ?? fetch)(`${GRAPH}${path}`, {
+    response = await observedProviderRequest(session.fetchImpl ?? fetch, `${GRAPH}${path}`, {
       method: "DELETE",
       // Retain the native condition as best effort, never as proof of CAS.
       headers: { Authorization: `Bearer ${session.token}`, "If-Match": requireVersion(session.etag) },

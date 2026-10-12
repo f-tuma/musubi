@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import { hasKnownEventTime, EventWriteError, type Event, type Task } from "@musubi/types";
 import { config, logger } from "@musubi/config";
 import {
-  getDueEventOutboxIDs, getEventOutboxBacklog,
+  getDueEventOutboxIDs,
   getDueTaskOutboxIDs, getTaskMirrorReadCalendars,
   listGraphFamilyContexts, replaceGraphFamily, removeGraphFamily, type GraphFamilyContext, type GraphFamilyObservation,
   type EventOutboxIntent,
@@ -60,8 +60,9 @@ import {
   providerAuthErrorFields,
   ProviderAuthError,
 } from "./errors";
-import { recordExternalSyncFailure, recordEventOutboxBacklog, recordSyncRun, recordSyncObjects } from "../metrics";
+import { recordExternalSyncFailure, recordSyncRun, recordSyncObjects } from "../metrics";
 import { ProviderEventWriteError, requireEventPatch } from "./event_write";
+import { withDeliveryDeadline } from "./delivery_policy";
 import { type ProviderSyncOptions, runProviderSyncs } from "./orchestrator";
 
 // provider -> adapter. Register new providers here.
@@ -96,7 +97,7 @@ export async function prepareTaskWrites(task: Task, actions: readonly { calendar
       patch = baseline ? diffTaskProjection(baseline, projection) : projection;
       // A pending CREATE may not yet have an address. The immutable predecessor
       // resolves it in the executor; preflight never sends a speculative POST.
-      if (action !== "delete" || external) await adapter.assertTaskWrite(source.userID, source.accountID, source.externalCalendarID, { task, action: action === "update" && !external ? "create" : action, external: external ?? undefined, projection, secondary });
+      if (action !== "delete" || external) await withDeliveryDeadline(signal => adapter.assertTaskWrite!(source.userID, source.accountID, source.externalCalendarID, { task, action: action === "update" && !external ? "create" : action, external: external ?? undefined, projection, secondary, signal }));
     } catch (error) { errorCode = error instanceof ProviderTaskWriteError ? error.code : "task-write-failed"; }
     prepared.push({ ...captured, providerProjection: { version: 1, projection, baseline, patch, ...(errorCode ? { errorCode } : {}) } });
   }
@@ -149,7 +150,6 @@ export async function drainEventOutbox() {
       await deliverEventOutboxAndNotify(id);
     }
   }));
-  recordEventOutboxBacklog(await getEventOutboxBacklog());
 }
 
 // NormalizedEvent -> the primitive column values the DB layer expects.
@@ -702,15 +702,16 @@ export async function prepareEventWrites(
       if (operation.action === "update" && external)
         requireEventPatch(operation.patch);
       try {
-        await adapter.assertEventWrite(
+        await withDeliveryDeadline(signal => adapter.assertEventWrite!(
           link.userID,
           link.accountID,
           link.externalCalendarID,
           {
             ...operation,
             external: external ?? undefined,
+            signal,
           },
-        );
+        ));
       } catch (error) {
         if (
           error instanceof EventWriteError ||

@@ -1,3 +1,4 @@
+import { observedProviderFetch as fetch } from "../provider_http_metrics";
 import { resolveEventTimeEdit, unambiguousCivilToInstant, outlookEndpointZonesMatch, outlookTimeZoneMatches } from "@musubi/calendar";
 import { microsoftEventVersion } from "./microsoft_event_content";
 import { graphTimeForEvent } from "./microsoft_time";

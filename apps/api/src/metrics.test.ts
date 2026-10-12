@@ -41,7 +41,7 @@ const DERIVED_SUFFIX = /_(bucket|count|sum|total_created|created)$/;
 const PROMETHEUS_OWN = new Set(["up"]);
 
 async function main() {
-  const { metricRoute, metricsRegistry, middlewareMetrics } = await import("./metrics");
+  const { metricRoute, metricsRegistry, middlewareMetrics, boundedOutboxRows } = await import("./metrics");
 
   const registered = new Set(
     metricsRegistry.getMetricsAsArray().map((metric) => metric.name),
@@ -194,6 +194,17 @@ async function main() {
   assert.equal(product.values[0].value, 1, "finish plus close must not double count");
   assert.deepEqual(product.values[0].labels, {feature: "tasks", method: "PUT", outcome: "success", device: "mobile"});
   assert.ok(!JSON.stringify(product).includes("private-user-id"));
+
+  const sanitized = boundedOutboxRows([
+    { provider: "private-provider-a", status: "pending", count: 2, ageSeconds: 10, dueCount: 1, dueLagSeconds: 4 },
+    { provider: "private-provider-b", status: "pending", count: 3, ageSeconds: 20, dueCount: 2, dueLagSeconds: 2 },
+  ]);
+  assert.deepEqual(sanitized.find(row => row.provider === "unknown" && row.status === "pending"),
+    { provider: "unknown", status: "pending", count: 5, ageSeconds: 20, dueCount: 3, dueLagSeconds: 4 },
+    "bounded provider categories must aggregate rather than overwrite colliding rows");
+  assert.equal(sanitized.find(row => row.provider === "google" && row.status === "pending")?.count, 0,
+    "empty healthy queues have explicit zero values");
+  assert.ok(!JSON.stringify(sanitized).includes("private-provider"));
 
   console.log(
     `Observability contract verified: ${referenced.size} series read by ops/, ` +

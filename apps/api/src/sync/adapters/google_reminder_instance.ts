@@ -1,3 +1,4 @@
+import { observedProviderFetch as fetch } from "../provider_http_metrics";
 import { unambiguousCivilToInstant } from "@musubi/calendar";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";

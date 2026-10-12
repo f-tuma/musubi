@@ -210,6 +210,17 @@ handshake runs once before the API listens; restart it after changing SMTP.
 
 ## External calendar sync
 
+### Accepted changes remain pending after restart
+
+Check `sync.delivery_recovery.enabled` or `sync.delivery_recovery.disabled` in
+the startup logs. The default `EXTERNAL_DELIVERY_RECOVERY_MODE=independent`
+recovers event/task/move deliveries at boot and every 15 seconds even with
+polling disabled. `legacy` with `EXTERNAL_SYNC_INTERVAL_MIN=0`, or `disabled`,
+pauses that background recovery. Request wakeups can still run, so a successful
+new save does not prove retained work will recover after a restart. Inspect the
+delivery receipt: uncertain or blocked operations still require their existing
+safe observation or resolution path.
+
 ### Provider changes do not appear
 
 1. Temporarily set `LOG_LEVEL=debug`.

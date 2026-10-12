@@ -328,6 +328,50 @@ This version deliberately does not turn background API requests into a claimed
 human-retention metric. Reliable adoption funnels and DAU cohorts require a
 separately defined, explicit user-interaction event model and retention policy.
 
+### Delivery HTTP and durable queue metrics
+
+`musubi_provider_http_requests_total{provider,family,method,status}` counts each
+HTTP dispatch inside an accepted event or task delivery. Preflight reads,
+post-write observation and OAuth refresh are included, as are separate requests
+made during read authentication recovery. This measures provider cost per
+delivery family; account sync runs and polling outside a delivery are outside
+its scope. It is not a count of mutations or successful deliveries. A request
+whose signal is already aborted before dispatch contributes no HTTP call.
+
+Providers are limited to `google`, `microsoft`, `caldav` and `unknown`; families
+are `event` and `task`. Methods use a fixed HTTP/DAV vocabulary with `OTHER` as
+fallback. Status holds a bounded HTTP code, `network-error`, `aborted` or
+`unknown`. No URL, token, account ID, object ID, response body or exception text
+is used as a label. The matching
+`musubi_provider_http_request_duration_seconds` histogram measures time until
+response headers or transport failure, excluding response-body parsing. These
+in-memory counters reset when the API process restarts.
+
+Both `musubi_event_outbox_*` and `musubi_task_outbox_*` export `operations`,
+`oldest_seconds`, `due_operations` and `due_lag_seconds`, labeled by provider and
+state. Queue age starts at durable admission and includes work requiring manual
+resolution. Due lag starts at the currently scheduled `next_attempt_at`, and
+only includes rows that the worker can claim now. Active leases, future retries
+and unresolved predecessors contribute no due lag. Expired leases and due
+observation of uncertain results remain eligible; eligibility never authorizes
+an unsafe mutation replay.
+
+Queue gauges refresh from PostgreSQL during scraping, independently of provider
+polling and worker progress. Collectors share one snapshot cached for 15 seconds
+and reuse the worker's claim predicate. Database access uses the monitoring
+connection with statement and collection deadlines. A failed refresh preserves
+last-good values; a cold failure exports no labeled queue values rather than a
+fabricated zero. Check `musubi_delivery_snapshot_success` and
+`musubi_delivery_snapshot_timestamp_seconds` before interpreting queue values.
+A successful empty snapshot publishes zero for each known provider/state pair.
+
+For example, inspect eligible work with
+`sum by (provider) (musubi_task_outbox_due_operations)` and the oldest eligible
+delay with `max by (provider) (musubi_event_outbox_due_lag_seconds)`. Compare
+HTTP cost with `sum by (provider,family) (rate(musubi_provider_http_requests_total[5m]))`.
+Choose alert thresholds from the deployment's observed workload, and distinguish
+manual-resolution age from overdue automatic recovery.
+
 ### Prometheus setup
 
 `ops/prometheus/prometheus.yml` is a usable configuration example for the Compose
@@ -353,12 +397,15 @@ configure your Alertmanager and receivers. Validate before rollout with
 Grafana instance with access controls; importing a dashboard does not deploy or
 activate the collector on an existing API image.
 
-`EXTERNAL_SYNC_INTERVAL_MIN` also controls scheduled outbox recovery. A positive
-value enables the startup drain and the 15-second event/task outbox worker as
-well as provider polling. A value of `0` disables those scheduled recovery
-paths; request-triggered delivery wakeups remain, but they do not establish that
-retained work will drain after a restart. Confirm this setting through permitted
-deployment metadata; do not expose environment secrets during an audit.
+`EXTERNAL_DELIVERY_RECOVERY_MODE=independent` (the default) enables event/task/move
+recovery at startup and every 15 seconds, even when `EXTERNAL_SYNC_INTERVAL_MIN=0`
+disables provider polling. `legacy` restores the old coupling: recovery runs
+only with a positive polling interval. `disabled` stops scheduled recovery.
+Request-triggered delivery wakeups remain in every mode. The startup
+`sync.delivery_recovery.enabled`/`disabled` log records the mode and effective
+interval; `server.started` records both configuration values. Confirm these
+through permitted deployment metadata. An enabled schedule does not establish
+that every retained operation can safely progress or has been acknowledged.
 
 ### Deployment and receiver verification
 

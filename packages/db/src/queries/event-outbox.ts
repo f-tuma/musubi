@@ -160,7 +160,8 @@ export function unresolvedEventOutbox() {
   ))`;
 }
 
-function eligibleEventOutbox() {
+/** Shared by claims and monitoring: waiting predecessors/active leases are not due. */
+export function eligibleEventOutbox() {
   return sql`${eventOutbox.nextAttemptAt} <= clock_timestamp() and (
     ${eventOutbox.status} in ('pending', 'retry', 'unconfirmed') or
     (${eventOutbox.status} = 'attempting' and (${eventOutbox.leaseUntil} is null or ${eventOutbox.leaseUntil} <= clock_timestamp()))

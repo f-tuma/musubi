@@ -34,7 +34,8 @@ Generate the auth secret with `openssl rand -base64 32`.
 | `BETTER_AUTH_URL` | Yes | — | Better Auth base URL, emails, invites, avatar URLs |
 | `BETTER_AUTH_SECRET` | Yes | — | Session signing and OAuth-token encryption; outside `dev`, at least 32 non-placeholder characters |
 | `API_SERVER_PORT` | No | `7531` | Public API listener |
-| `EXTERNAL_SYNC_INTERVAL_MIN` | No | `5` | Provider polling interval. A positive value also enables event/task outbox recovery at boot and every 15 seconds; `0` disables both schedules, while request-triggered delivery remains enabled |
+| `EXTERNAL_SYNC_INTERVAL_MIN` | No | `5` | Provider polling interval in minutes; `0` disables scheduled provider pulls |
+| `EXTERNAL_DELIVERY_RECOVERY_MODE` | No | `independent` | Background event/task/move recovery at boot and every 15 seconds. `independent` runs even with polling disabled; `legacy` runs only with a positive polling interval; `disabled` stops scheduled recovery. Request-triggered delivery remains enabled in every mode |
 | `LOG_LEVEL` | No | `info` | `debug`, `info`, `warn`, `error`, or `silent` |
 | `METRICS_PORT` | No | `9464` | Separate Prometheus listener; `0` disables it |
 | `ADMIN_EMAILS` | No | empty (no admin) | Comma-separated, case-insensitive list of accounts allowed to write server announcements; gates the admin write endpoints and the web admin panel link. Empty means this server has no admin — the admin endpoints refuse everyone, not the other way around |

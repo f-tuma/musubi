@@ -91,6 +91,26 @@ function parseMetricsPort(value: string | undefined) {
   return port;
 }
 
+export const EXTERNAL_DELIVERY_RECOVERY_MODES = [
+  "independent",
+  "legacy",
+  "disabled",
+] as const;
+export type ExternalDeliveryRecoveryMode =
+  (typeof EXTERNAL_DELIVERY_RECOVERY_MODES)[number];
+
+export function parseExternalDeliveryRecoveryMode(
+  value: string | undefined,
+): ExternalDeliveryRecoveryMode {
+  if (value === undefined) return "independent";
+  if (!EXTERNAL_DELIVERY_RECOVERY_MODES.includes(value as ExternalDeliveryRecoveryMode)) {
+    throw new Error(
+      "Invalid EXTERNAL_DELIVERY_RECOVERY_MODE. Expected independent, legacy, or disabled.",
+    );
+  }
+  return value as ExternalDeliveryRecoveryMode;
+}
+
 type APIConfig = {
   // Opt-in until both editors and the release compatibility gate are ready.
   eventTimeEditsEnabled: boolean;
@@ -107,8 +127,11 @@ type APIConfig = {
   environment: Environment;
   url: string;
   // Minutes between scheduled external-provider syncs (Google/CalDAV polling
-  // → SSE broadcast). 0 disables the scheduler.
+  // → SSE broadcast). 0 disables scheduled pulls.
   externalSyncIntervalMin: number;
+  // Recovery of already accepted event/task/move intents runs independently by
+  // default. legacy retains the historical pull-interval-controlled switch.
+  externalDeliveryRecoveryMode: ExternalDeliveryRecoveryMode;
   logLevel: LogLevel;
   // Separate internal listener; 0 disables Prometheus metrics.
   metricsPort: number;
@@ -276,6 +299,9 @@ const apiConfig: APIConfig = {
     process.env.EXTERNAL_SYNC_INTERVAL_MIN === undefined
       ? 5
       : Number(process.env.EXTERNAL_SYNC_INTERVAL_MIN) || 0, // unparsable/0 → disabled
+  externalDeliveryRecoveryMode: parseExternalDeliveryRecoveryMode(
+    process.env.EXTERNAL_DELIVERY_RECOVERY_MODE,
+  ),
   logLevel: parseLogLevel(process.env.LOG_LEVEL ?? "info"),
   metricsPort: parseMetricsPort(process.env.METRICS_PORT),
 };

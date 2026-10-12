@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { observedProviderRequest } from "../provider_http_metrics";
 import type { AvailabilityRequest } from "@musubi/types";
 const interval = z.object({ start: z.iso.datetime({ offset: true }), end: z.iso.datetime({ offset: true }) }).strict();
 /** HTTP 200 alone does not prove this calendar's computation succeeded. */
@@ -22,7 +23,7 @@ export function normalizeGoogleFreebusy(input: unknown, calendarID: string, rang
   return merged.map(item => ({ start: new Date(item.start).toISOString(), end: new Date(item.end).toISOString() }));
 }
 export async function queryGoogleFreebusy(token: string, calendarID: string, range: Pick<AvailabilityRequest, "start" | "end">, signal: AbortSignal, fetchImpl = fetch) {
-  const response = await fetchImpl("https://www.googleapis.com/calendar/v3/freeBusy", {
+  const response = await observedProviderRequest(fetchImpl, "https://www.googleapis.com/calendar/v3/freeBusy", {
     method: "POST", redirect: "error", signal,
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "Cache-Control": "no-cache" },
     body: JSON.stringify({ timeMin: range.start, timeMax: range.end, timeZone: "UTC", calendarExpansionMax: 1, items: [{ id: calendarID }] }),

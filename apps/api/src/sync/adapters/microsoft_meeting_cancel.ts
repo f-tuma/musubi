@@ -1,3 +1,4 @@
+import { observedProviderFetch as fetch } from "../provider_http_metrics";
 import { EventSchema, type MicrosoftSeriesCancellationRequest } from "@musubi/types";
 import { assertGraphMeetingRequest, graphMeetingVersion, sameCaldavScopeContext as same, type GraphFamilyObservation, type GraphMeetingContext, type GraphMeetingCancellation } from "@musubi/db";
 import { ProviderEventWriteError } from "../event_write";

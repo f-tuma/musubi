@@ -1,3 +1,4 @@
+import { observedProviderFetch as fetch } from "../provider_http_metrics";
 import { verifiedGraphIdentity } from "./microsoft_identity";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";

@@ -1,14 +1,17 @@
 import { DAV, CALDAV, davMultistatus, davName, successfulDavProperty, type DavNode } from "./caldav_properties";
 import { createGuardedCaldavFetch } from "./caldav_client";
+import { ProviderEventWriteError, providerRetryAfterMs } from "./event_write";
 
 const fetch = createGuardedCaldavFetch();
 
 /** Only explicit successful propstats for the exact requested resource count. */
 async function properties(url: string, authorization: string, names: string[], signal?: AbortSignal, redirect: RequestRedirect = "follow") {
   const response = await fetch(url, { method: "PROPFIND", headers: { authorization, depth: "0", "content-type": "application/xml", "cache-control": "no-cache" }, body: `<d:propfind xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav"><d:prop>${names.map(name => `<${name}/>`).join("")}</d:prop></d:propfind>`, signal, redirect });
+  if (response.status === 429 || response.status === 408 || response.status >= 500)
+    throw new ProviderEventWriteError("provider-write-failed", "not-written", response.status, providerRetryAfterMs(response));
   if (response.status !== 207 || response.headers.has("content-range")) return undefined;
   let rows;
-  try { rows = davMultistatus(await response.text(), url); } catch { return undefined; }
+  try { rows = davMultistatus(await response.text(), url); } catch { signal?.throwIfAborted(); return undefined; }
   const matching = rows.filter(row => row.href === new URL(url).href);
   return matching.length === 1 && matching[0]!.status === undefined ? matching[0] : undefined;
 }
@@ -19,7 +22,9 @@ export async function caldavEventPrivileges(url: string, authorization: string, 
 
 /** Missing is deliberately narrower than unknown: only an explicit, empty DAV
  * property with 404 status is evidence that this server omits resource ACLs.
- * HTTP errors, malformed XML, absent properties and denied propstats stay unknown. */
+ * HTTP denial, malformed XML, absent properties and denied propstats stay unknown.
+ * Throttling, request timeout and server failures propagate as transient read
+ * errors with Retry-After; they cannot prove a missing or denied write grant. */
 export async function caldavEventWritePermission(url: string, authorization: string, signal?: AbortSignal, redirect: RequestRedirect = "follow"): Promise<{ privileges: Set<string> | undefined; missing: boolean }> {
   const response = await properties(url, authorization, ["d:current-user-privilege-set"], signal, redirect);
   const property = response?.properties.get(davName(DAV, "current-user-privilege-set"));

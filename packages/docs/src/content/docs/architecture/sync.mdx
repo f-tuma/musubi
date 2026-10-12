@@ -190,12 +190,18 @@ generator. Clients offer only native targets when sharing recurrence. For
 field-level provider limits, see [Google](/docs/providers/google/),
 [Microsoft](/docs/providers/microsoft/), and [CalDAV](/docs/providers/caldav/).
 
-Request wakeups and `drainTaskOutbox` use the same executor. When
-`EXTERNAL_SYNC_INTERVAL_MIN > 0`, the process runs the shared event/task outbox
-drain at startup and every **15 seconds**, independently of the provider-pull
-interval. Setting that variable to **0 disables background outbox recovery as
-well as scheduled pulls**; request wakeups still operate. Each task drain takes
-up to 40 due candidates with four workers.
+Request wakeups and `drainTaskOutbox` use the same executor.
+`EXTERNAL_DELIVERY_RECOVERY_MODE=independent` (the default) runs event/task/move
+recovery at startup and every **15 seconds**, including when provider polling is
+disabled with `EXTERNAL_SYNC_INTERVAL_MIN=0`. A queue-read failure in one family
+does not skip the other families. Each task drain takes up to 40 due candidates
+with four workers.
+
+For compatibility with older releases, `EXTERNAL_DELIVERY_RECOVERY_MODE=legacy`
+enables background recovery only with a positive `EXTERNAL_SYNC_INTERVAL_MIN`.
+`disabled` stops scheduled recovery for any polling interval. Neither setting
+disables request wakeups or revokes already accepted writes. Polling remains a
+separate delayed schedule; recovery runs once after migration at every startup.
 
 Clients consume `localCommitted` before deciding whether to keep a draft.
 Delivery discovery/status/retry uses the [task delivery API](/docs/reference/api/#delivery-receipts-and-retry),

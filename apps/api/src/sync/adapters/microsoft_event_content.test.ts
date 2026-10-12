@@ -5,6 +5,7 @@ process.env.BETTER_AUTH_URL ??= "http://localhost:7531";
 
 async function main() {
   const { microsoftEventVersion, microsoftPersonalContentPatch, updateMicrosoftPersonalContent } = await import("./microsoft_event_content");
+  const { providerHttpMetricsRegistry, withProviderCallMetrics } = await import("../provider_http_metrics");
   const etag = 'W/"native-opaque-version"';
   assert.equal(microsoftEventVersion(etag), etag);
   for (const value of [undefined, null, '*', '"strong"', 'changeKey', ' W/"space"', 'W/"newline\n"']) assert.equal(microsoftEventVersion(value), null);
@@ -34,8 +35,25 @@ async function main() {
       return json(response, status);
     }) as typeof fetch;
   }
-  assert.deepEqual(await updateMicrosoftPersonalContent({ ...session, fetchImpl: transport() }, { title: 'After' }), { etag: 'W/"next-version"' });
+  assert.deepEqual(await withProviderCallMetrics("microsoft", "event", () =>
+    updateMicrosoftPersonalContent({ ...session, fetchImpl: transport() }, { title: 'After' }),
+  ), { etag: 'W/"next-version"' });
   assert.equal(calls!.filter(c => c.method === 'PATCH').length, 1);
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = transport();
+    await withProviderCallMetrics("microsoft", "event", () => updateMicrosoftPersonalContent(session, { title: "After" }));
+    assert.equal(calls!.length, 4);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+  const expectedCounts = [
+    { labels: { provider: "microsoft", family: "event", method: "GET", status: "200" }, value: 6 },
+    { labels: { provider: "microsoft", family: "event", method: "PATCH", status: "200" }, value: 2 },
+  ];
+  const requests = providerHttpMetricsRegistry.getSingleMetric("musubi_provider_http_requests_total")!;
+  assert.deepEqual((await requests.get()).values.map(({ labels, value }) => ({ labels, value })), expectedCounts,
+    "each identity/calendar/event preflight and PATCH is counted exactly once for injected and default transports");
   for (const invalid of [ { attendees: [{}] }, { attendees: undefined }, { type: 'seriesMaster' }, { recurrence: {} }, { isOrganizer: false }, { isCancelled: true }, { isOnlineMeeting: true }, { isOnlineMeeting: undefined }, { 'attendees@odata.nextLink': 'next' }, { '@odata.etag': 'W/"stale"' }, { id: 'different-event' } ]) {
     await assert.rejects(() => updateMicrosoftPersonalContent({ ...session, fetchImpl: transport({ event: invalid as any }) }, { title: 'After' }));
     assert.equal(calls!.some(c => c.method === 'PATCH'), false);
@@ -49,6 +67,8 @@ async function main() {
   assert.deepEqual(await updateMicrosoftPersonalContent({ ...session, fetchImpl: transport({ response: { id: native.id } as any }) }, { title: 'After' }), { etag: null });
   await assert.rejects(() => updateMicrosoftPersonalContent({ ...session, fetchImpl: transport({ response: { id: 'wrong' } as any }) }, { title: 'After' }), (error: any) => error.outcome === 'unconfirmed');
   for (const status of [202, 301, 500]) await assert.rejects(() => updateMicrosoftPersonalContent({ ...session, fetchImpl: transport({ status }) }, { title: 'After' }));
+  assert.deepEqual((await requests.get()).values.map(({ labels, value }) => ({ labels, value })), expectedCounts,
+    "personal content requests outside delivery scope do not enter delivery metrics");
   console.log('Outlook personal content: exact native PATCH validator, preservation, ACL/identity/kind guards, conflict and ambiguous response checks passed.');
 }
 main().catch(error => { console.error(error); process.exit(1); });

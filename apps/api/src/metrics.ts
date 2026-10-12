@@ -5,12 +5,13 @@ import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { config } from "@musubi/config";
 import { logger } from "@musubi/config";
-import { account, caldavAccounts, events, session, user, calendars, tasks, externalCalendars } from "@musubi/db";
+import { account, caldavAccounts, events, session, user, calendars, tasks, externalCalendars, eventOutbox, taskOutbox, eligibleEventOutbox, eligibleTaskOutbox } from "@musubi/db";
 import { count, countDistinct, eq, gt, isNull, sql } from "drizzle-orm";
 import { clientFamily, clientFamilySql, providerFamily, syncStatusFamily, taskStatusFamily, priorityFamily, snapshotCache } from "./product_metrics";
 import { sseStats } from "./handlers/stream";
+import { providerHttpMetricsRegistry } from "./sync/provider_http_metrics";
 
-const registry = new Registry();
+const registry = Registry.merge([new Registry(), providerHttpMetricsRegistry]);
 registry.setDefaultLabels({ service: "api" });
 
 collectDefaultMetrics({
@@ -53,26 +54,6 @@ const scheduledTaskSkips = new Counter({
   labelNames: ["task"] as const,
   registers: [registry],
 });
-
-const eventOutboxBacklog = new Gauge({
-  name: "musubi_event_outbox_operations", help: "Unresolved EVENT deliveries by provider and state.",
-  labelNames: ["provider", "status"] as const, registers: [registry],
-});
-const eventOutboxAge = new Gauge({
-  name: "musubi_event_outbox_oldest_seconds", help: "Age of the oldest unresolved EVENT delivery.",
-  labelNames: ["provider", "status"] as const, registers: [registry],
-});
-
-export function recordEventOutboxBacklog(rows: { provider: string; status: string; count: number; ageSeconds: number }[]) {
-  eventOutboxBacklog.reset();
-  eventOutboxAge.reset();
-  for (const row of rows) {
-    const labels = { provider: KNOWN_SYNC_PROVIDERS.has(row.provider) ? row.provider : "unknown",
-      status: ["pending", "attempting", "retry", "unconfirmed", "conflict", "blocked", "not-written"].includes(row.status) ? row.status : "unknown" };
-    eventOutboxBacklog.set(labels, row.count);
-    eventOutboxAge.set(labels, row.ageSeconds);
-  }
-}
 
 const reminderPushes = new Counter({
   name: "musubi_reminder_pushes_total",
@@ -123,6 +104,97 @@ const inventoryPool = new Pool({ connectionString: config.db.databaseUrl, max: 1
   allowExitOnIdle: true });
 inventoryPool.on("error", () => logger.warn("metrics.inventory.connection_failed"));
 const inventoryDb = drizzle(inventoryPool);
+
+export type OutboxMetricRow = {
+  provider: string;
+  status: string;
+  count: number;
+  ageSeconds: number;
+  dueCount: number;
+  dueLagSeconds: number;
+};
+
+/** Monitoring reuses claim eligibility, including causal barriers and leases. */
+export async function loadOutboxSnapshot() {
+  return inventoryDb.transaction(async (tx) => {
+    await tx.execute(sql`set local statement_timeout = '1000ms'`);
+    const eventDue = eligibleEventOutbox();
+    const taskDue = eligibleTaskOutbox();
+    const eventRows = await tx.select({
+      provider: eventOutbox.provider,
+      status: eventOutbox.status,
+      count: sql<number>`count(*)::int`,
+      ageSeconds: sql<number>`greatest(0, extract(epoch from clock_timestamp() - min(${eventOutbox.createdAt})))::float`,
+      dueCount: sql<number>`(count(*) filter (where ${eventDue}))::int`,
+      dueLagSeconds: sql<number>`coalesce(greatest(0, extract(epoch from clock_timestamp() - min(${eventOutbox.nextAttemptAt}) filter (where ${eventDue}))), 0)::float`,
+    }).from(eventOutbox)
+      .where(sql`${eventOutbox.status} not in ('completed', 'not-needed', 'cancelled')`)
+      .groupBy(eventOutbox.provider, eventOutbox.status);
+    const taskRows = await tx.select({
+      provider: taskOutbox.provider,
+      status: taskOutbox.status,
+      count: sql<number>`count(*)::int`,
+      ageSeconds: sql<number>`greatest(0, extract(epoch from clock_timestamp() - min(${taskOutbox.createdAt})))::float`,
+      dueCount: sql<number>`(count(*) filter (where ${taskDue}))::int`,
+      dueLagSeconds: sql<number>`coalesce(greatest(0, extract(epoch from clock_timestamp() - min(${taskOutbox.nextAttemptAt}) filter (where ${taskDue}))), 0)::float`,
+    }).from(taskOutbox)
+      .where(sql`${taskOutbox.status} not in ('completed', 'not-needed', 'cancelled')`)
+      .groupBy(taskOutbox.provider, taskOutbox.status);
+    return { eventRows, taskRows };
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+}
+
+const outboxes = snapshotCache(loadOutboxSnapshot, 15_000);
+const outboxStates = ["pending", "attempting", "retry", "unconfirmed", "conflict", "blocked", "not-written"];
+const outboxProviders = ["caldav", "google", "microsoft"];
+
+// Sanitized categories can collide; sum counts and preserve the oldest age/lag.
+export function boundedOutboxRows(rows: OutboxMetricRow[]) {
+  const grouped = new Map<string, OutboxMetricRow>();
+  for (const provider of outboxProviders) for (const status of outboxStates) {
+    grouped.set(`${provider}:${status}`, { provider, status, count: 0, ageSeconds: 0, dueCount: 0, dueLagSeconds: 0 });
+  }
+  for (const row of rows) {
+    const provider = outboxProviders.includes(row.provider) ? row.provider : "unknown";
+    const status = outboxStates.includes(row.status) ? row.status : "unknown";
+    const key = `${provider}:${status}`;
+    const current = grouped.get(key) ?? { provider, status, count: 0, ageSeconds: 0, dueCount: 0, dueLagSeconds: 0 };
+    current.count += row.count;
+    current.ageSeconds = Math.max(current.ageSeconds, row.ageSeconds);
+    current.dueCount += row.dueCount;
+    current.dueLagSeconds = Math.max(current.dueLagSeconds, row.dueLagSeconds);
+    grouped.set(key, current);
+  }
+  return [...grouped.values()];
+}
+
+for (const family of ["event", "task"] as const) {
+  for (const [suffix, field, help] of [
+    ["operations", "count", "Unresolved deliveries by provider and state."],
+    ["oldest_seconds", "ageSeconds", "Age of oldest unresolved delivery, including work awaiting manual resolution."],
+    ["due_operations", "dueCount", "Deliveries eligible for a worker claim now, excluding waiting predecessors and active leases."],
+    ["due_lag_seconds", "dueLagSeconds", "Time since oldest currently eligible delivery became due; zero when none are eligible."],
+  ] as const) {
+    new Gauge({
+      name: `musubi_${family}_outbox_${suffix}`,
+      help: `${family.toUpperCase()} ${help}`,
+      labelNames: ["provider", "status"] as const,
+      registers: [registry],
+      async collect() {
+        const snapshot = await outboxes.get();
+        this.reset();
+        if (snapshot) for (const { provider, status, ...row } of boundedOutboxRows(snapshot[`${family}Rows`])) {
+          this.set({ provider, status }, row[field]);
+        }
+      },
+    });
+  }
+}
+new Gauge({ name: "musubi_delivery_snapshot_success", help: "Whether latest event/task outbox monitoring refresh succeeded.", registers: [registry],
+  async collect() { await outboxes.get(); this.set(Number(outboxes.healthy)); } });
+new Gauge({ name: "musubi_delivery_snapshot_timestamp_seconds", help: "Unix time of last successful event/task outbox refresh; zero before first success.", registers: [registry],
+  async collect() { await outboxes.get(); this.set(outboxes.lastSuccess); } });
+
 export async function loadUsageSnapshot() {
   return inventoryDb.transaction(async (tx) => {
     // All counts see one database snapshot; the timeout bounds scrape work.

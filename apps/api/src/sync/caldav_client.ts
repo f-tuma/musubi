@@ -6,6 +6,8 @@ import { config } from "@musubi/config";
 import { createDAVClient } from "tsdav";
 import { Agent } from "undici";
 import { type LookupAll, resolveHttpAddresses } from "../federation_origin";
+import { observedProviderFetch } from "./provider_http_metrics";
+import { ProviderEventWriteError, providerRetryAfterMs } from "./event_write";
 
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 const pinnedAgents = new Map<string, Agent>();
@@ -33,7 +35,7 @@ function fetchPinned(
 		});
 		pinnedAgents.set(key, dispatcher);
 	}
-	return globalThis.fetch(url, {
+	return observedProviderFetch(url, {
 		...init,
 		dispatcher,
 	} as RequestInit & { dispatcher: Agent });
@@ -92,10 +94,12 @@ export function createGuardedCaldavFetch({
 				: { ...init };
 
 		for (let redirects = 0; ; redirects += 1) {
+			requestInit.signal?.throwIfAborted();
 			const [address] = await assertCaldavTarget(url.href, {
 				allowPrivate,
 				lookupImpl,
 			});
+			requestInit.signal?.throwIfAborted();
 			const response = await fetchPinnedImpl(
 				url,
 				{ ...requestInit, redirect: "manual" },
@@ -160,22 +164,28 @@ export function createCaldavClient(
 	serverUrl: string,
 	username: string,
 	password: string,
+	signal?: AbortSignal,
 ) {
+  signal?.throwIfAborted();
   const guarded = createGuardedCaldavFetch();
   const resourceReads = new AsyncLocalStorage<Map<string, string>>();
   let discoveryFailure: unknown;
   const verified: typeof globalThis.fetch = async (input, init) => {
+    signal?.throwIfAborted();
     if (discoveryFailure) throw discoveryFailure;
     const method = init?.method?.toUpperCase(), headers = new Headers(init?.headers);
     const body = typeof init?.body === "string" ? init.body : "";
     const kind = method === "PROPFIND" && body.includes("current-user-principal") ? "principal" : method === "PROPFIND" && body.includes("calendar-home-set") ? "home" : method === "PROPFIND" && headers.get("depth") === "1" ? (body.includes("resourcetype") ? "discovery" : body.includes("getetag") ? "listing" : undefined) : method === "REPORT" && body.includes("calendar-multiget") ? "multiget" : method === "REPORT" && body.includes("sync-collection") ? "sync" : undefined;
     let response: Response;
-    try { response = await guarded(input, kind === "multiget" ? { ...init, redirect: "error" } : init); } catch (error) {
+    const options = { ...init, ...(signal ? { signal: init?.signal ? AbortSignal.any([signal, init.signal]) : signal } : {}), ...(kind === "multiget" ? { redirect: "error" as const } : {}) };
+    try { response = await guarded(input, options); } catch (error) {
       if (kind === "principal" || kind === "home") discoveryFailure = error;
       throw error;
     }
     if (kind) {
       try {
+      if (response.status === 429 || response.status === 408 || response.status >= 500)
+        throw new ProviderEventWriteError("provider-write-failed", "not-written", response.status, providerRetryAfterMs(response));
       if (response.status !== 207) throw new DavReadResponseError("http-status", { readKind: kind, httpStatus: response.status });
       if (response.headers.has("content-range")) throw new DavReadResponseError("http-partial", { readKind: kind, httpStatus: response.status });
       if (!/^(?:application|text)\/(?:[a-z0-9!#$&^_.+-]+\+)?xml(?:\s*;|$)/i.test(response.headers.get("content-type") ?? "")) throw new DavReadResponseError("http-content-type", { readKind: kind, httpStatus: response.status });

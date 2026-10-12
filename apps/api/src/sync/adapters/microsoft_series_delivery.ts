@@ -1,3 +1,4 @@
+import { observedProviderFetch as fetch } from "../provider_http_metrics";
 import { graphSeriesFootprint } from "./microsoft_series_footprint";
 import { config } from "@musubi/config";
 import { EventWriteError, type Event } from "@musubi/types";
