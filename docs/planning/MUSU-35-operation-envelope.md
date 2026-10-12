@@ -13,11 +13,15 @@ má zatím `codec-unavailable` HOLD; encoder, codec registry a backfill zde nejs
 [Event](../../apps/api/src/sync/event_delivery.ts) a
 [task](../../apps/api/src/sync/task_delivery.ts) zachovají lease fencing, celý
 accepted payload, IDs, response evidence a předešlou dispatch nejistotu.
-Claim sám není důkaz dispatch. Unknown operace přejde z due fronty do HOLD,
+Claim sám není důkaz dispatch; older floor však při odebrání live unknown
+worker lease musí konzervativně zachovat možný dispatch jako uncertainty. Unknown operace přejde z due fronty do HOLD,
 takže další podporované operace v dalším batch mohou pokračovat.
 
 Pull odmítne legacy echo fallback před organizer, baseline, onlyReplaceObservation,
-DELETE, late unmapped-create i CalDAV family deletion shortcuts. Nejasnou native
+DELETE, late unmapped-create i CalDAV family deletion shortcuts. Neadresovaný
+unknown task CREATE se při shodném source/privacy capture neadoptuje jako druhý
+canonical task. Completed cancellation history a všechny řádky CalDAV split
+páru/causal resolution chain se dekódují před legacy interpretací. Nejasnou native
 observation uloží, ale nepřepíše accepted payload a neprovede ACK. Resolution
 context odmítne převést unknown persisted formát do nové legacy operace.
 
