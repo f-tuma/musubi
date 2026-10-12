@@ -18,6 +18,9 @@ working OAuth review tracker.
 
 Current entry points:
 
+- [Sync profile v1](./protocol/sync-profile-v1.md), the internal host-independent
+  identity, time, capability, coverage and delivery evidence contract.
+
 - [Sync refactor roadmap and Its a Plan issue mapping](./planning/sync-refactor-roadmap.md), ordered phases without fixed dates and the future Calendar Relay context (2026-10-12).
 
 - [Provider sync research: Nylas, Musubi and alternative architectures](./research/nylas/README.md), including a proposed open-source protocol and implementation plan (2026-10-12).

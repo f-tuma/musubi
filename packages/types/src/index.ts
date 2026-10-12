@@ -3,6 +3,7 @@ export * from "./user";
 export * from "./calendar";
 export * from "./event";
 export * from "./event_time";
+export * from "./sync_protocol";
 export * from "./event_delivery";
 export * from "./task";
 export * from "./invite";
