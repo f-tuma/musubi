@@ -3,12 +3,14 @@ import { deliverEventOutbox } from "./event_delivery";
 import { deliverTaskOutbox as executeTaskOutbox } from "./task_delivery";
 import { diffTaskProjection, jsonTaskProjection, ProviderTaskWriteError } from "./task_write";
 import { randomUUID } from "node:crypto";
-import { hasKnownEventTime, EventWriteError, type Event, type Task } from "@musubi/types";
+import { SYNC_PROFILE_V1, SyncCoverageSchema, hasKnownEventTime, EventWriteError, type Event, type Task } from "@musubi/types";
 import { config, logger } from "@musubi/config";
 import {
   getDueEventOutboxIDs,
   getDueTaskOutboxIDs, getTaskMirrorReadCalendars,
-  listGraphFamilyContexts, replaceGraphFamily, removeGraphFamily, type GraphFamilyContext, type GraphFamilyObservation,
+  listGraphFamilyContexts, type GraphFamilyContext, type GraphFamilyObservation,
+  beginGraphRead, applyGraphReadBatch, replaceGraphFamilyInTransaction, removeGraphFamilyInTransaction,
+  upsertExternalEventInTransaction, deleteExternalEventInTransaction,
   type EventOutboxIntent,
   deleteExternalEvent,
   deleteExternalTask,
@@ -208,7 +210,11 @@ export async function reconcileExternalChanges(
   const seenTasks: string[] = [];
 
   for (const change of changes) {
-    if (change.kind === "event-resource") {
+    if (change.kind === "event-absence") {
+      // Absence is not a generic tombstone. Only the fenced Graph host path
+      // below may interpret its separately verified native evidence.
+      seenEvents.push(change.externalId);
+    } else if (change.kind === "event-resource") {
       if (!writer.replaceResource) throw new Error("Complete event resource writer is unavailable.");
       seenEvents.push(...change.events.map(event => event.externalId));
       if (await writer.replaceResource(change.externalId, change.events)) changed++;
@@ -284,6 +290,19 @@ async function notifyExternalEventUnlinks(
 
 // Pull: reconcile calendars, then pull each calendar's changes into Musubi. Scoped
 // to ONE connected account of the provider.
+/** The selection policy is stable across event edits. Configured read semantics
+ * change the source generation; rolling window bounds belong to coverage. */
+function graphReadConfigurationFingerprint() {
+  return JSON.stringify({
+    profile: SYNC_PROFILE_V1,
+    reader: "graph-calendar-view-v2",
+    eventTimeEdits: config.api.eventTimeEditsEnabled,
+    rsvpOccurrences: config.api.providerRsvpEditsEnabled,
+    trackedFamilies: "complete-finite-native-v1",
+    deletion: "graph-event-double-404-calendar-v1",
+  });
+}
+
 async function syncProviderImpl(
   adapter: CalendarAdapter,
   userID: string,
@@ -390,6 +409,10 @@ async function syncProviderImpl(
     if (provider === "caldav" && caldavHasRead(link.providerAccessRole) === false) continue;
     const taskOnly = link.supportsTasks && !link.supportsEvents;
     if (taskOnly && !remoteIDs.has(link.externalCalendarID)) continue;
+    const graphRead = provider === "microsoft" && !taskOnly
+      ? await beginGraphRead({ userID, accountID: accountId, calendarID: link.calendarID,
+        sourceID: link.sourceID, configurationFingerprint: graphReadConfigurationFingerprint() })
+      : undefined;
     const calendarStartedAt = performance.now();
     const taskReadStartedAt = new Date();
     let fetched;
@@ -402,6 +425,8 @@ async function syncProviderImpl(
           const mapping = context.mappings.find(value => value.eventID === context.root.id)!;
           const native = await adapter.readGraphFamily(userID, accountId, link.externalCalendarID, { ...context.root, calendars: [link.calendarID] }, { externalEventId: mapping.externalEventID, icalUid: mapping.icalUid, etag: mapping.etag });
           if (!native) {
+            if (!graphRead?.readAuthorityVerified)
+              throw new Error("Missing Graph family requires current full-read authority.");
             families.push({ context, observation: null });
             excludedSeriesIDs.add(mapping.externalEventID);
             for (const value of context.mappings) excludedEventIDs.add(value.externalEventID);
@@ -424,8 +449,12 @@ async function syncProviderImpl(
         userID,
         accountId,
         link.externalCalendarID,
-        link.cursor,
-        families.length ? { excludedEventIDs: [...excludedEventIDs], excludedSeriesIDs: [...excludedSeriesIDs] } : undefined,
+        graphRead ? graphRead.cursor : link.cursor,
+        graphRead ? {
+          excludedEventIDs: [...excludedEventIDs], excludedSeriesIDs: [...excludedSeriesIDs],
+          knownEventIDs: graphRead.knownEventIDs,
+          microsoftReadAuthorityVerified: graphRead.readAuthorityVerified,
+        } : families.length ? { excludedEventIDs: [...excludedEventIDs], excludedSeriesIDs: [...excludedSeriesIDs] } : undefined,
       );
     } catch (error) {
       if (
@@ -443,6 +472,71 @@ async function syncProviderImpl(
       continue;
     }
     const { changes, nextCursor } = fetched;
+    if (graphRead) {
+      const coverage = SyncCoverageSchema.parse(fetched.coverage);
+      if (coverage.kind !== "window" || !coverage.complete || !nextCursor)
+        throw new Error("Graph read requires a complete, scoped window checkpoint.");
+      // Every native GET/hydration has finished. Database effects and the
+      // checkpoint now share the current source incarnation and lifecycle fence.
+      const committed = await applyGraphReadBatch(graphRead, {
+        coverage, nextCursor, configurationFingerprint: graphReadConfigurationFingerprint(),
+      }, async (tx, currentAccess) => {
+        if (graphReadConfigurationFingerprint() !== graphRead.configurationFingerprint)
+          throw new Error("Graph read configuration changed before apply.");
+        const unlinks: { id: string; revision: number }[] = [];
+        let changed = 0;
+        for (const family of families) {
+          const result = family.observation
+            ? await replaceGraphFamilyInTransaction(tx, family.context, family.observation)
+            : await removeGraphFamilyInTransaction(tx, family.context);
+          if (result.changed) changed++;
+        }
+        for (const change of changes) {
+          if (change.kind === "event-absence") {
+            // Both native proof and current host authority are necessary. An
+            // unmapped @removed cannot poison future creates with a tombstone.
+            if (!change.deletionEvidence || !graphRead.readAuthorityVerified ||
+                !graphRead.knownEventIDs.includes(change.externalId)) continue;
+            const result = await deleteExternalEventInTransaction(tx, provider, link.calendarID, change.externalId, currentAccess);
+            if (result.changed) changed++;
+            if (result.unlinked) unlinks.push(result.unlinked);
+          } else if (change.kind === "event") {
+            const event = change.data;
+            if (event.status === "cancelled") {
+              const result = await deleteExternalEventInTransaction(tx, provider, link.calendarID, event.externalId, currentAccess);
+              if (result.changed) changed++;
+              if (result.unlinked) unlinks.push(result.unlinked);
+            } else if (await upsertExternalEventInTransaction(tx, false,
+              provider, userID, link.calendarID, link.externalCalendarID, event.externalId,
+              toEventValues(event, link.calColor), event.etag ?? null, event.icalUid ?? null, event.creationOperationID,
+              event.timeModel ? { timeModel: event.timeModel, externalSeriesID: event.externalSeriesID,
+                originalStart: event.originalStart, isCanceled: event.isCanceled } : undefined,
+              event.providerOccurrence, event.providerState, event.reminderTimeEvidence, event.sourceSeriesID, currentAccess,
+            )) changed++;
+          } else {
+            throw new Error("Unexpected resource family in a Graph event read.");
+          }
+        }
+        // Window absence has no destructive sweep. All canonical rows, binding
+        // IDs, native addresses, original slots and pending writes are retained.
+        return { changed, unlinks };
+      });
+      await notifyExternalEventUnlinks(link.calendarID, committed.unlinks);
+      if (committed.changed) {
+        const calendars = [...new Set([link.calendarID, ...await getGoogleMirrorReadCalendars(link.calendarID)])];
+        const members = await Promise.all(calendars.map(id => getCalendarMembers(id)));
+        notifyCalendarMembers([...new Set([userID, ...members.flat().map(member => member.userID)])], "external_sync", { calendars });
+        changedCalendarIDs.push(...calendars);
+      }
+      recordSyncObjects(provider, changes.filter(({ kind }) => kind === "event").length, 0);
+      logger.debug("sync.calendar.completed", {
+        provider, userId: userID, accountId, calendarId: link.calendarID,
+        fetchedEvents: changes.filter(({ kind }) => kind === "event").length, fetchedTasks: 0,
+        changedObjects: committed.changed, coverage: coverage.kind, fullSet: false,
+        durationMs: Math.round((performance.now() - calendarStartedAt) * 10) / 10,
+      });
+      continue;
+    }
     // A grant-invalidated Google cursor requires authoritative reconciliation
     // even when known-time editing is disabled. The adapter fully pages this list.
     const reset = fetched.reset || (["google", "microsoft"].includes(provider) && !!accessContext && link.cursor === null);
@@ -458,14 +552,8 @@ async function syncProviderImpl(
       if (["google", "microsoft", "caldav"].includes(provider) && result) googleReadChanged = true;
       return result;
     };
-    const retainedGraphIDs = new Set<string>();
     const taskScope = { sourceID: link.sourceID, accountID: accountId, providerAccessRevision: link.providerAccessRevision, readStartedAt: taskReadStartedAt };
     try {
-      for (const family of families) {
-        const result = family.observation ? await replaceGraphFamily(family.context, family.observation) : await removeGraphFamily(family.context);
-        if (result.changed) { changed++; googleReadChanged = true; }
-        for (const id of result.seenExternalIDs) retainedGraphIDs.add(id);
-      }
       changed += await reconcileExternalChanges(changes, reset, {
         replaceResource: (resourceID, observations) => trackGoogleRead(replaceExternalEventResource(provider, userID, link.calendarID, link.externalCalendarID, resourceID, observations.map(event => {
           if (!event.timeModel || !event.icalUid) throw new Error("Resource observation requires a time model and UID.");
@@ -511,7 +599,7 @@ async function syncProviderImpl(
           trackGoogleRead(sweepExternalEvents(
             provider,
             link.calendarID,
-            [...new Set([...seenExternalIDs, ...retainedGraphIDs])],
+            seenExternalIDs,
             onUnlink,
             accessContext,
           )),

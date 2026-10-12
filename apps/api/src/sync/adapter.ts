@@ -7,7 +7,7 @@ import type { GoogleRsvpEvidence, GoogleRsvpResponse, GoogleRsvpOccurrence } fro
 import type { GoogleOccurrenceIntent } from "@musubi/db";
 import type { GoogleOccurrenceEvidence, GoogleSeriesEvidence } from "./adapters/google_occurrence";
 import type { CaldavSeriesSplit, CaldavSeriesDeletion, CaldavSeriesIntent, CaldavSeriesEvidence, CaldavSeriesWrite, CaldavSeriesResolutionEvidence } from "./adapters/caldav_series";
-import type { GoogleReminderWrite, ProviderEventState, Event, Task, TaskStatus, ProviderSettingTimeEvidence, EventTimeModel, OccurrenceStart } from "@musubi/types";
+import type { GoogleReminderWrite, ProviderEventState, Event, Task, TaskStatus, ProviderSettingTimeEvidence, EventTimeModel, OccurrenceStart, SyncCoverage } from "@musubi/types";
 import type { EventContentPatch } from "@musubi/db";
 
 // A calendar event reduced to what Musubi stores, provider-agnostic.
@@ -62,6 +62,18 @@ export type NormalizedTask = {
 export type NormalizedChange =
   | { kind: "event"; data: NormalizedEvent }
   | { kind: "event-resource"; externalId: string; events: NormalizedEvent[] }
+  | {
+      kind: "event-absence";
+      externalId: string;
+      reason: "window-removal";
+      /** Window absence alone never authorizes a host tombstone or fanout. */
+      deletionEvidence?: {
+        kind: "scoped-native-absence";
+        responseStatus: 404;
+        readAuthorityVerified: true;
+        nativeReadProfile: "graph-event-double-404-calendar-v1";
+      };
+    }
   | { kind: "task"; data: NormalizedTask };
 
 export type ExternalEventRef = {
@@ -136,7 +148,10 @@ export type CalendarDiscoveryResult = {
 export type FetchChangesResult = {
   changes: NormalizedChange[];
   nextCursor: string | null;
-  reset?: boolean; // true => reconcile the complete collection snapshot (e.g. Google 410)
+  /** A window is never complete collection inventory, including on restart. */
+  coverage?: SyncCoverage;
+  reset?: boolean; // Complete collection inventory only; a bounded window must never set this.
+  cursorRestarted?: boolean; // Diagnostic: a fresh cursor/window is distinct from an inventory reset.
 };
 
 // Everything provider-specific lives behind this. The generic core (sync engine)
@@ -208,7 +223,13 @@ export type CalendarAdapter = {
     accountId: string,
     externalCalendarId: string,
     cursor: string | null,
-    options?: { excludedEventIDs?: readonly string[]; excludedSeriesIDs?: readonly string[] },
+    options?: {
+      excludedEventIDs?: readonly string[];
+      excludedSeriesIDs?: readonly string[];
+      knownEventIDs?: readonly string[];
+      /** Host checks a full event-read grant; apply must revalidate its source fence. */
+      microsoftReadAuthorityVerified?: boolean;
+    },
   ): Promise<FetchChangesResult>;
 
   // Read current provider evidence before any local mutation or provider write.

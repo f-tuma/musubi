@@ -596,6 +596,13 @@
       "when": 1791186094564,
       "tag": "0084_release_0_2_2_announcement",
       "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1791807655174,
+      "tag": "0085_graph_read_coverage",
+      "breakpoints": true
     }
   ]
 }

@@ -27,7 +27,7 @@ export async function reconcileGoogleCalendarAccess(userID: string, accountID: s
     const role = ["owner", "writer"].includes(accessRole) ? "owner" : "viewer";
     if (member.role !== role) await tx.update(calendarMembers).set({ role }).where(eq(calendarMembers.id, member.id));
     if (source.providerAccessRole === accessRole && member.role === role) return false;
-    await tx.update(externalCalendars).set({ providerAccessRole: accessRole, providerAccessRevision: sql`${externalCalendars.providerAccessRevision} + 1`, cursor: null }).where(eq(externalCalendars.id, source.id));
+    await tx.update(externalCalendars).set({ providerAccessRole: accessRole, providerAccessRevision: sql`${externalCalendars.providerAccessRevision} + 1`, sourceGeneration: sql`${externalCalendars.sourceGeneration} + 1`, checkpointRevision: sql`${externalCalendars.checkpointRevision} + 1`, cursor: null, readCoverage: null }).where(eq(externalCalendars.id, source.id));
     return role === "viewer" ? redactGoogleCalendarMirror(tx, calendarID, userID, source.id) : [calendarID];
   });
 }

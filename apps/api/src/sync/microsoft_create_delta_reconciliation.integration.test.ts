@@ -13,7 +13,7 @@ async function main() {
   const previousFetch = globalThis.fetch;
   const previousFlags = [config.api.providerOrganizerEditsEnabled, config.api.eventTimeEditsEnabled];
   config.api.providerOrganizerEditsEnabled = config.api.eventTimeEditsEnabled = true;
-  let native: any, posts = 0, fullReads = 0, deltaReads = 0;
+  let native: any, posts = 0, fullReads = 0, deltaReads = 0, removedProof = false;
   globalThis.fetch = async (input, init) => {
     const url = new URL(String(input));
     assert.equal(url.origin, "https://graph.microsoft.com", "All provider traffic is intercepted");
@@ -28,23 +28,22 @@ async function main() {
     if (url.pathname === "/v1.0/me") return response({ id: "graph-object-id", mail: "owner@example.test", userPrincipalName: "owner@example.test" });
     const calendar = { id: "primary", name: "Primary", isDefaultCalendar: true, canEdit: true, canViewPrivateItems: true, owner: { address: "owner@example.test" } };
     if (url.pathname === "/v1.0/me/calendar") return response(calendar);
+    if (url.pathname === "/v1.0/me/calendars/primary") return response(calendar);
     if (url.pathname === "/v1.0/me/calendars") return response({ value: [calendar] });
     if (url.pathname === "/v1.0/me/calendars/primary/events") return response({ value: native ? [native] : [] });
+    if (url.pathname === "/v1.0/me/calendars/primary/events/native") return native ? response(native) : response({ error: { code: "ErrorItemNotFound" } }, 404);
     if (url.pathname.endsWith("/calendarView/delta")) {
-      fullReads++;
-      return response({ value: native ? [native] : [], "@odata.deltaLink": "https://graph.microsoft.com/delta" });
-    }
-    if (url.pathname === "/delta") {
-      deltaReads++;
-      // Inject observed missing-change behavior without asserting its provider cause.
-      return response({ value: [], "@odata.deltaLink": "https://graph.microsoft.com/delta" });
+      if (url.searchParams.has("$deltatoken")) deltaReads++; else fullReads++;
+      // Missing incremental changes and empty window renewal are not native
+      // deletion proof. An explicit candidate still requires scoped native GETs.
+      return response({ value: removedProof ? [{ id: "native", "@removed": { reason: "deleted" } }] : url.searchParams.has("$deltatoken") ? [] : native ? [native] : [], "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/calendars/primary/calendarView/delta?$deltatoken=fixture" });
     }
     throw new Error(`Unexpected intercepted route: ${url.pathname}`);
   };
   try {
     for (const pending of [false, true]) {
       const actor = `graph-create-delta-${randomUUID()}`;
-      native = undefined; posts = fullReads = deltaReads = 0;
+      native = undefined; posts = fullReads = deltaReads = 0; removedProof = false;
       await db.insert(user).values({ id: actor, name: "Fixture", email: `${actor}@example.test` });
       try {
         await db.insert(account).values({ id: randomUUID(), userId: actor, providerId: "microsoft", accountId: "fixture", scope: "Calendars.ReadWrite", accessToken: "fixture", refreshToken: "fixture", accessTokenExpiresAt: new Date(Date.now() + 3600000) });
@@ -75,16 +74,23 @@ async function main() {
           pendingID = randomUUID();
           await db.insert(eventOutbox).values({ ...accepted, id: pendingID, mutationID: randomUUID(), predecessorID: accepted.id, action: "update", externalEventID: "native", expectedEtag: originalMappings[0]!.etag, payload: { event: accepted.payload.event }, status: "pending", attempts: 0, resultRef: null, remoteSnapshot: null, leaseToken: null, leaseUntil: null });
         }
+        const pendingBefore = pendingID ? (await db.select().from(eventOutbox).where(eq(eventOutbox.id, pendingID)))[0]! : undefined;
         const link = await source();
         assert.notEqual(link.providerAccessRole, null);
         await setCursor(link.calendarID, null, { provider: "microsoft", linkID: link.sourceID, revision: link.providerAccessRevision, userID: actor, accountID: "fixture", externalCalendarID: link.externalCalendarID });
         await sync();
         assert.equal(fullReads, 2);
-        assert.deepEqual(await mappings(), originalMappings, "Full reconciliation retains identity for revival");
+        assert.deepEqual(await mappings(), originalMappings, "Empty replacement coverage retains identity");
         assert.deepEqual(await journal(), accepted, "Completed creation journal stays intact");
         assert.ok((await source()).cursor);
+        assert.deepEqual(await event(), originalEvent, "An empty replacement window cannot tombstone the canonical event");
+        if (pendingID) assert.deepEqual((await db.select().from(eventOutbox).where(eq(eventOutbox.id, pendingID)))[0], pendingBefore, "Empty replacement coverage preserves the accepted pending operation byte for byte");
+        removedProof = true;
+        await sync();
+        assert.deepEqual(await mappings(), originalMappings, "Proven deletion retains mapping identity for revival");
+        assert.deepEqual(await journal(), accepted, "Native proof leaves the completed create receipt unchanged");
         if (pendingID) {
-          assert.deepEqual(await event(), originalEvent, "Pending intent protects local event from sweep");
+          assert.deepEqual(await event(), originalEvent, "Pending intent protects the canonical event from proven native absence");
           const [retained] = await db.select().from(eventOutbox).where(eq(eventOutbox.id, pendingID));
           assert.equal(retained!.status, "conflict");
           assert.equal(retained!.errorCode, "provider-conflict");

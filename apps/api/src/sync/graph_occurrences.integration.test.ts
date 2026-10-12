@@ -19,25 +19,28 @@ async function main(rsvpOnly = false) {
   let omitOriginalStart = false;
   let expire = false;
   let alwaysExpire = false;
+  let nativeRemoved = false;
   const server = createServer((req, res) => {
     assert.equal(req.method, "GET");
     res.setHeader("content-type", "application/json");
     const url = new URL(req.url!, "http://fixture.test");
     const json = (body: unknown) => res.end(JSON.stringify(body));
-    if (url.pathname === "/v1.0/me/calendars") return json({ value: [{ id: "calendar", name: "Fixture", canEdit: true }] });
+    if (url.pathname === "/v1.0/me/calendars") return json({ value: [{ id: "calendar", name: "Fixture", canEdit: true, canViewPrivateItems: true }] });
+    if (url.pathname === "/v1.0/me/calendars/calendar") return json({ id: "calendar", canViewPrivateItems: true });
     if (url.pathname.endsWith("/events/series")) return json(master);
     if (url.pathname.endsWith("/events/ordinary")) {
       assert.equal(url.searchParams.get("$select"), "*,originalStart");
       return json(omitOriginalStart ? { ...occurrence, originalStart: undefined } : occurrence);
     }
     if (url.pathname.endsWith("/events/moved")) {
+      if (nativeRemoved) { res.statusCode = 404; return json({ error: { code: "ErrorItemNotFound" } }); }
       assert.equal(url.searchParams.get("$select"), "*,originalStart");
       if (failHydration) { res.statusCode = 503; return json({ error: { message: "fixture failure" } }); }
       return json(moved);
     }
-    if (url.pathname.endsWith("/calendarView/delta") || url.pathname === "/delta") {
-      if (alwaysExpire || expire && url.pathname === "/delta") { expire = false; res.statusCode = 410; return json({ error: { message: "expired" } }); }
-      return json({ value: items.map(item => item.id === "ordinary" ? { ...item, originalStart: undefined } : item), "@odata.deltaLink": "https://graph.microsoft.com/delta" });
+    if (url.pathname.endsWith("/calendarView/delta")) {
+      if (alwaysExpire || expire && url.searchParams.has("$deltatoken")) { expire = false; res.statusCode = 410; return json({ error: { message: "expired" } }); }
+      return json({ value: items.map(item => item.id === "ordinary" ? { ...item, originalStart: undefined } : item), "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/calendars/calendar/calendarView/delta?$deltatoken=fixture" });
     }
     res.statusCode = 500; json({ error: { message: "Unexpected fixture route" } });
   });
@@ -101,16 +104,18 @@ async function main(rsvpOnly = false) {
     moved.originalStart = "2026-03-29T07:00:00.0000001Z";
     await assert.rejects(sync(), /exact millisecond/);
     moved.originalStart = "2026-03-30T07:00:00Z";
-    await assert.rejects(sync(), /observation could not be persisted/);
+    await assert.rejects(sync(), /Graph read batch could not be persisted/);
     moved.originalStart = validOriginal;
     assert.deepEqual(await rows(), initial);
     assert.deepEqual(await getUserExternalCalendars("microsoft", userID, "account"), cursorBefore);
     alwaysExpire = true;
     await assert.rejects(sync(), /initial calendar window/);
     alwaysExpire = false;
+    nativeRemoved = true;
     items = [{ id: "moved", "@removed": { reason: "deleted" } }];
     await sync();
     assert.ok((await rows()).find(event => event.title === "Own title")!.deletedAt);
+    nativeRemoved = false;
     items = [occurrence, moved];
     await setCursor(link.calendarID, null);
     await sync();

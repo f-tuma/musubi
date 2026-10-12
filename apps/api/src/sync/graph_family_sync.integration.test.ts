@@ -24,7 +24,7 @@ async function main() {
     const url = new URL(req.url!, "http://fixture.test"); reads.push(url.pathname);
     const json = (body: unknown, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(body)); };
     if (url.pathname === "/v1.0/me/calendars") return json({ value: [{ id: "calendar", name: "Fixture", canEdit: true, canViewPrivateItems: privateRead }] });
-    if (url.pathname === "/v1.0/me/calendars/calendar") return json({ id: "calendar" }, mode === "removed-denied" ? 403 : 200);
+    if (url.pathname === "/v1.0/me/calendars/calendar") return json({ id: "calendar", canViewPrivateItems: mode === "removed-private-denied" ? false : privateRead }, mode === "removed-denied" ? 403 : 200);
     if (url.pathname === "/v1.0/me/calendars/calendar/events/series") {
       if (mode !== "late-root") assert.equal(url.searchParams.get("$expand"), "exceptionOccurrences", "Tracked series use the full reader, never calendarView hydration");
       if (mode === "master-failure") return json({}, 503);
@@ -38,12 +38,12 @@ async function main() {
       if (mode === "incomplete") return json({ value: instances.slice(0, 1) });
       return json({ value: instances });
     }
-    if (url.pathname.endsWith("/calendarView/delta") || url.pathname === "/delta") {
+    if (url.pathname.endsWith("/calendarView/delta")) {
       if (localChange) { const change = localChange; localChange = undefined; await change(); }
       if (mode === "view-failure") return json({}, 503);
       // The full family is authoritative even when the bounded view is empty,
       // or contains stale IDs absent from both current maps and native slots.
-      return json({ value: mode === "late-root" ? [...ordinary, oneOff] : mode === "empty-view" ? [oneOff] : [...ordinary, { id: "retired-unmapped", seriesMasterId: "series", type: "exception" }, { id: "occ-28", "@removed": { reason: "deleted" } }, oneOff], "@odata.deltaLink": "https://graph.microsoft.com/delta" });
+      return json({ value: mode === "late-root" ? [...ordinary, oneOff] : mode === "empty-view" ? [oneOff] : [...ordinary, { id: "retired-unmapped", seriesMasterId: "series", type: "exception" }, { id: "occ-28", "@removed": { reason: "deleted" } }, oneOff], "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/calendars/calendar/calendarView/delta?$deltatoken=fixture" });
     }
     return json({ error: "Unexpected hydration route" }, 500);
   })().catch(error => { console.error(error); res.statusCode = 500; res.end(); }); });
@@ -78,7 +78,8 @@ async function main() {
     assert.deepEqual(await sync(), []); assert.deepEqual(await rows(), initial);
     for (const flag of [true, false]) {
       config.api.eventTimeEditsEnabled = flag; mode = "empty-view"; reads = [];
-      await setCursor(calendar.id, JSON.stringify({ link: "https://graph.microsoft.com/delta", windowEnd: 0 }));
+      const cursor = JSON.parse((await getUserExternalCalendars("microsoft", userID, "account"))[0]!.cursor!);
+      await setCursor(calendar.id, JSON.stringify({ ...cursor, windowEnd: Date.now() + 86400000 }));
       assert.deepEqual(await sync(), []); assert.deepEqual(await rows(), initial, "Window renewal cannot sweep tracked masters/instances");
       assert.equal((await maps()).length, 6); assert.ok(reads.some(value => value.endsWith("/calendarView/delta")));
     }
@@ -111,8 +112,10 @@ async function main() {
     assert.equal((await getUserExternalCalendars("microsoft", userID, "account"))[0]!.cursor, oldCursor);
     assert.equal((await rows()).find(value => value.id === child("occ-28").id)!.isCanceled, true, "Stale context cannot partially revive children");
     await sync(); assert.equal((await rows()).length, 6); assert.equal((await rows()).filter(value => value.isCanceled).length, 0);
-    mode = "removed-denied";
-    const beforeDenied = await snapshot(); await assert.rejects(sync); assert.deepEqual(await snapshot(), beforeDenied);
+    for (const denial of ["removed-denied", "removed-private-denied"]) {
+      mode = denial;
+      const beforeDenied = await snapshot(); await assert.rejects(sync); assert.deepEqual(await snapshot(), beforeDenied, "Failed native read authority cannot remove a complete family or advance its checkpoint");
+    }
     mode = "removed";
     localChange = async () => { await db.update(events).set({ revision: sql`${events.revision} + 1` }).where(eq(events.id, root.id)); };
     await assert.rejects(sync); assert.ok((await rows()).every(value => !value.deletedAt), "Stale context cannot remove the family");

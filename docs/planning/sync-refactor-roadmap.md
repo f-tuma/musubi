@@ -1,6 +1,6 @@
 # Musubi sync refactor: roadmap a stav trackeru
 
-**Aktualizováno 12. října 2026. Projekt Its a Plan: frgtn.MUSU.** Plán má pouze pořadí a podmínky postupu, bez pevných termínů. C01/MUSU-32 je sloučený v main přes [PR #343](https://github.com/f-tuma/musubi/pull/343), po všech 21 zelených Quality kontrolách; squash commit je `be267b2a960c768c60bd0f91de1106f8878e7999`. C02/MUSU-33 je ve skutečné implementaci. Produkční acceptance zůstává v provozních úkolech; následující fáze zůstávají plánem.
+**Aktualizováno 12. října 2026. Projekt Its a Plan: frgtn.MUSU.** Plán má pouze pořadí a podmínky postupu, bez pevných termínů. C01/MUSU-32 je sloučený v main přes [PR #343](https://github.com/f-tuma/musubi/pull/343), po všech 21 zelených Quality kontrolách; squash commit je `be267b2a960c768c60bd0f91de1106f8878e7999`. C02/MUSU-33 je sloučený v main přes [PR #344](https://github.com/f-tuma/musubi/pull/344) po všech 21 zelených kontrolách; squash commit je `920df6fe93f549bb961f5f32a3d77aadcdc65240`. C03/MUSU-34 je ve skutečné implementaci. Produkční acceptance zůstává v provozních úkolech; následující fáze zůstávají plánem.
 
 ## Architektonické rozhodnutí
 
@@ -33,7 +33,7 @@ C03 má dva oddělené bezpečnostní slices. C04/C05 rozdělují extrakci port�
 
 **Orientační úsilí core: 45–79 člověkodnů.** Jde o původní forecast pro omezený profil, ne závazek délky fáze. C03 a C05 přepočítají zbytek podle migration/parity výsledků. RF05 může rozšířit nový storage rozsah; RF07 vyžaduje inventory specialized rodin. Portable alpha neslibuje implicitně všechny legacy Musubi operace.
 
-První fáze **C01/MUSU-32 je dokončená a sloučená v main**. Lokální důkazy a upgrade konfigurace: [MUSU-32 delivery recovery](./MUSU-32-delivery-recovery.md). Aktivní milestone je **C02–C03 / MUSU-33–35**; začíná [MUSU-33 sync kontraktem](./MUSU-33-sync-contract.md). Ostatní nové úkoly jsou v backlogu za svými gates; tracker žádného automatického agenta nespouští.
+První fáze **C01/MUSU-32 je dokončená a sloučená v main**. Lokální důkazy a upgrade konfigurace: [MUSU-32 delivery recovery](./MUSU-32-delivery-recovery.md). Aktivní milestone je **C02–C03 / MUSU-33–35**; [MUSU-33 sync kontrakt](./MUSU-33-sync-contract.md) je dokončený v main, pokračuje [MUSU-34 coverage](./MUSU-34-read-coverage.md). Ostatní nové úkoly jsou v backlogu za svými gates; tracker žádného automatického agenta nespouští.
 
 ## Záruky, které refactor zachová
 

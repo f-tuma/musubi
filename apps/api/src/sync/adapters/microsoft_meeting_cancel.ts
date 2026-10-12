@@ -114,5 +114,11 @@ export async function cancelGraphMeeting(token: string, saved: GraphMeetingCance
     const after = await transport.read(saved.template, saved.baseline.master.icalUid);
     if (!graphMeetingCancellationObserved(saved, after)) return unknown();
     return after;
-  } catch { return unknown(); }
+  } catch (error) {
+    if (error instanceof ProviderEventWriteError && (error.providerStatus === 429 ||
+        error.providerStatus === 408 || (error.providerStatus ?? 0) >= 500)) {
+      throw new ProviderEventWriteError("provider-write-failed", "unconfirmed", error.providerStatus, error.retryAfterMs);
+    }
+    return unknown();
+  }
 }

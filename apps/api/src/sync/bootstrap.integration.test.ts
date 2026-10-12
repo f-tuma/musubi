@@ -31,8 +31,8 @@ async function main() {
     if (path === "/v1.0/me") return json({ mail: "fixture@example.test" });
     if (path.startsWith("/v1.0/me/calendars?"))
       return json({ value: [{ id: "calendar", name: "Work", canEdit: true }] });
-    if (path.includes("/calendarView/delta") || path === "/v1.0/delta-done")
-      return json({ value: [], "@odata.deltaLink": "https://graph.microsoft.com/v1.0/delta-done" });
+    if (path.includes("/calendarView/delta"))
+      return json({ value: [], "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/calendars/calendar/calendarView/delta?$deltatoken=done" });
     if (path.startsWith("/v1.0/me/todo/lists")) return json({ value: [] });
     res.statusCode = 500;
     return json({ error: { message: `Unexpected fixture request ${path}` } });

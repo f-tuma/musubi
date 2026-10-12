@@ -55,8 +55,9 @@ function microsoftTaskListId(externalCalendarId: string) {
 // Graph's v1.0 event delta only works on a calendarView — a FIXED date range
 // baked into the delta token at the initial sync. Events outside the window
 // are invisible to the mirror; when the future edge gets close, we force a
-// full re-sync with a fresh window (reset: true → the engine wipes + refetches
-// and its sweep tombstones events that slid out of the window).
+// fresh window. Neither missing window entries nor @removed prove deletion:
+// Graph also returns @removed for events changed outside the date range.
+// https://learn.microsoft.com/en-us/graph/api/event-delta?view=graph-rest-1.0
 // ponytail: rolling ~2.5y view, not full history like Google. Upgrade path:
 // beta /events/delta (unbounded) once it hits v1.0.
 const WINDOW_PAST_DAYS = 180;
@@ -127,19 +128,7 @@ export function parseGraphDate(dateTime: string): Date {
 // is always null here — no RRULE conversion on pull.
 export function toNormalized(item: any): NormalizedEvent {
   if (item["@removed"]) {
-    return {
-      externalId: item.id,
-      status: "cancelled",
-      title: "",
-      start: new Date(0),
-      end: new Date(0),
-      isAllDay: false,
-      description: null,
-      location: null,
-      organizer: null,
-      recurrence: null,
-      url: null,
-    };
+    throw new Error("Outlook window removal is not a deletion proof.");
   }
 
   const isAllDay = !!item.isAllDay;
@@ -497,23 +486,100 @@ async function listMicrosoftTaskLists(accessToken: string) {
   return lists;
 }
 
-// The cursor stores the deltaLink AND the window's future edge so we know when
-// to re-window. Old plain-URL cursors (or garbage) parse as "no cursor".
+export type MicrosoftWindowCursor = {
+  version: 2;
+  calendarId: string;
+  link: string;
+  windowStart: number;
+  windowEnd: number;
+};
+
+// Older cursors did not preserve the exact start bound. Never guess that bound
+// or certify inventory from an old token: renew as a nondestructive window.
 export function parseCursor(
   cursor: string | null,
-): { link: string; windowEnd: number } | null {
+): MicrosoftWindowCursor | null {
   if (!cursor) return null;
   try {
     const parsed = JSON.parse(cursor);
     if (
-      typeof parsed?.link === "string" &&
-      typeof parsed?.windowEnd === "number"
+      parsed?.version === 2 && Object.keys(parsed).length === 5 && validGraphId(parsed.calendarId) &&
+      typeof parsed.link === "string" && parsed.link.length > 0 &&
+      Number.isSafeInteger(parsed.windowStart) && Number.isSafeInteger(parsed.windowEnd) &&
+      parsed.windowStart < parsed.windowEnd &&
+      Number.isFinite(new Date(parsed.windowStart).getTime()) &&
+      Number.isFinite(new Date(parsed.windowEnd).getTime())
     )
       return parsed;
   } catch {
     /* treat as no cursor */
   }
   return null;
+}
+
+function validGraphId(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && value.trim() === value &&
+    value !== "." && value !== ".." && !/[\u0000-\u001f\u007f]/.test(value);
+}
+
+async function assertCompleteGraphRead(response: Response) {
+  // A read failure cannot have dispatched a write. Preserve Graph's typed
+  // status/Retry-After error rather than labelling it an uncertain mutation.
+  if (!response.ok) throw await graphError(response);
+  assertCompleteEventReadResponse(response);
+  if (response.status !== 200 || response.redirected) {
+    throw new Error("Outlook returned an incomplete read response.");
+  }
+}
+
+function assertDeltaLink(link: unknown, calendarID: string, graphBase: string): string {
+  if (typeof link !== "string" || !link || link.trim() !== link) {
+    throw new Error("Outlook returned an invalid delta link.");
+  }
+  const expected = new URL(`${graphBase}/me/calendars/${encodeURIComponent(calendarID)}/calendarView/delta`);
+  let parsed: URL;
+  try { parsed = new URL(link); } catch { throw new Error("Outlook returned an invalid delta link."); }
+  if (parsed.origin !== expected.origin || parsed.pathname !== expected.pathname ||
+    parsed.username || parsed.password || parsed.hash || parsed.protocol !== expected.protocol ||
+    !["https:", "http:"].includes(expected.protocol)) {
+    throw new Error("Outlook returned a delta link outside the calendar read scope.");
+  }
+  return link;
+}
+
+function assertActiveGraphItem(item: any, expectedID?: string) {
+  if (!item || typeof item !== "object" || Array.isArray(item) || !validGraphId(item.id) ||
+    (expectedID !== undefined && item.id !== expectedID) || item["@removed"] ||
+    item["@odata.nextLink"] !== undefined || item["@odata.deltaLink"] !== undefined ||
+    !validGraphDateTime(item.start?.dateTime) || !validGraphDateTime(item.end?.dateTime) ||
+    (item.isAllDay ? parseGraphDate(item.start.dateTime) >= parseGraphDate(item.end.dateTime)
+      : parseGraphDate(item.start.dateTime) > parseGraphDate(item.end.dateTime))) {
+    throw new Error("Outlook returned an invalid event read.");
+  }
+}
+
+function validGraphDateTime(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const parts = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,7})?(?:Z|[+-]\d{2}:\d{2})?$/i.exec(value);
+  if (!parts || !Number.isFinite(parseGraphDate(value).getTime())) return false;
+  const [, year, month, day, hour, minute, second] = parts.map(Number);
+  const calendar = new Date(0);
+  calendar.setUTCFullYear(year!, month! - 1, day!);
+  calendar.setUTCHours(hour!, minute!, second!, 0);
+  return calendar.getUTCFullYear() === year && calendar.getUTCMonth() + 1 === month &&
+    calendar.getUTCDate() === day && calendar.getUTCHours() === hour &&
+    calendar.getUTCMinutes() === minute && calendar.getUTCSeconds() === second;
+}
+
+async function assertExactGraphMissing(response: Response) {
+  if (response.status !== 404 || response.headers.has("content-range") || response.redirected) {
+    throw new Error("Outlook event absence could not be verified.");
+  }
+  const error = await response.json();
+  // Unknown/masked error codes remain ambiguous even when HTTP says 404.
+  if (!error || typeof error !== "object" || error.error?.code !== "ErrorItemNotFound") {
+    throw new Error("Outlook event absence could not be verified.");
+  }
 }
 
 async function graphGet(
@@ -524,6 +590,7 @@ async function graphGet(
 ): Promise<Response> {
   return observedProviderRequest(fetchImpl, url, {
     signal,
+    redirect: "error",
     headers: { Authorization: `Bearer ${accessToken}`, Prefer: PREFER },
   });
 }
@@ -547,12 +614,12 @@ async function fetchSeriesMaster(
     `${graphBase}${microsoftEventPath(externalCalendarId, id)}`,
     fetchImpl,
   );
-  // Even 404/410 on an active occurrence's dependency is ambiguous. Only
-  // explicit delta @removed entries authorize removal; never advance past an
+  // Even 404/410 on an active occurrence's dependency is ambiguous. Never
+  // advance past an
   // incomplete hydration or cache an error as a successful empty master.
-  if (!res.ok) throw await graphError(res);
+  await assertCompleteGraphRead(res);
   const master = await res.json();
-  if (!master || master.id !== id || master["@removed"]) {
+  if (!master || master.id !== id || master["@removed"] || master["@odata.nextLink"]) {
     throw new Error("Outlook returned an invalid series master");
   }
   cache.set(id, master);
@@ -572,116 +639,160 @@ export async function fetchMicrosoftChanges(
     organizerEventIDs?: readonly string[];
     excludedEventIDs?: readonly string[];
     excludedSeriesIDs?: readonly string[];
+    knownEventIDs?: readonly string[];
+    microsoftReadAuthorityVerified?: boolean;
   } = {},
 ): Promise<FetchChangesResult> {
   const fetchImpl = options.fetchImpl ?? fetch;
   const graphBase = options.graphBase ?? GRAPH;
   const now = options.now ?? Date.now();
+  if (!validGraphId(externalCalendarId) || !Number.isSafeInteger(now))
+    throw new Error("Outlook returned an invalid calendar read scope.");
   const changes: NormalizedChange[] = [];
   const excludedEvents = new Set(options.excludedEventIDs ?? []);
   const excludedSeries = new Set(options.excludedSeriesIDs ?? []);
+  const knownEvents = new Set(options.knownEventIDs ?? []);
 
   let parsed = parseCursor(cursor);
-  // Window edge approaching → start over with a fresh window.
-  if (parsed && parsed.windowEnd - now < WINDOW_RENEW_MARGIN_DAYS * DAY_MS)
-    parsed = null;
-
-  let reset = !parsed && (!!cursor || !!options.timeModels); // had a cursor but can't continue from it → wipe
+  if (parsed && parsed.calendarId !== externalCalendarId) parsed = null;
+  if (parsed && parsed.windowEnd - now < WINDOW_RENEW_MARGIN_DAYS * DAY_MS) parsed = null;
+  // Invalid/out-of-scope cursor links are renewed without sending credentials.
+  if (parsed) {
+    try { assertDeltaLink(parsed.link, externalCalendarId, graphBase); } catch { parsed = null; }
+  }
+  let reset = !parsed;
+  let windowStart = parsed?.windowStart ?? now - WINDOW_PAST_DAYS * DAY_MS;
   let windowEnd = parsed?.windowEnd ?? now + WINDOW_FUTURE_DAYS * DAY_MS;
-  let url =
-    parsed?.link ??
-    initialDeltaUrl(externalCalendarId, windowEnd, now, graphBase);
+  let url = parsed?.link ?? initialDeltaUrl(externalCalendarId, windowStart, windowEnd, graphBase);
   let deltaLink: string | null = null;
   const seriesMasters = new Map<string, any>();
+  const visited = new Set<string>();
   let restarted = false;
+  let pages = 0;
+
+  const normalize = async (input: any, forceOccurrenceIdentity = false): Promise<NormalizedEvent> => {
+    let item = input;
+    assertActiveGraphItem(item);
+    if (item.seriesMasterId != null) {
+      if (!validGraphId(item.seriesMasterId) || item.seriesMasterId === item.id)
+        throw new Error("Outlook returned an invalid source series address.");
+      const master = await fetchSeriesMaster(accessToken, externalCalendarId, item.seriesMasterId,
+        seriesMasters, fetchImpl, graphBase);
+      if (options.timeModels || options.rsvpOccurrences || forceOccurrenceIdentity) {
+        if (!item.originalStart || item.type === "exception") {
+          const response = await graphGet(accessToken,
+            `${graphBase}${microsoftEventPath(externalCalendarId, item.id)}?$select=*,originalStart`, fetchImpl);
+          await assertCompleteGraphRead(response);
+          const instance = await response.json();
+          assertActiveGraphItem(instance, item.id);
+          if (instance.seriesMasterId !== item.seriesMasterId)
+            throw new Error("Outlook returned an invalid occurrence dependency.");
+          item = { ...item, ...instance };
+        }
+        if (!validGraphDateTime(item.originalStart) || !/(?:Z|[+-]\d{2}:\d{2})$/i.test(item.originalStart) ||
+          /\.\d{3}\d*[1-9]\d*(?:Z|[+-]\d{2}:\d{2})$/i.test(item.originalStart))
+          throw new Error("Outlook occurrence identity requires an exact millisecond UTC instant.");
+        const originalStart = OccurrenceStartSchema.parse({ kind: "instant", value: parseGraphDate(item.originalStart).toISOString() });
+        item = { ...master, ...item, "@odata.etag": item["@odata.etag"] ?? null,
+          providerOccurrence: { externalSeriesID: item.seriesMasterId, originalStart } };
+      } else {
+        // A master validator never authorizes an instance write, even with edits disabled.
+        item = { ...master, ...item, "@odata.etag": item["@odata.etag"] ?? null };
+      }
+    }
+    const event = toNormalized(item);
+    if (options.organizerEventIDs?.includes(item.id)) {
+      const time = graphRsvpTime({ ...item, isCancelled: false });
+      event.start = time.start; event.end = time.end; event.isAllDay = time.isAllDay; event.timeModel = time.timeModel;
+      if (item.isCancelled) event.status = "cancelled";
+    }
+    if (item.seriesMasterId != null) event.sourceSeriesID = item.seriesMasterId;
+    if (options.timeModels || options.rsvpOccurrences || forceOccurrenceIdentity) {
+      event.providerOccurrence = item.providerOccurrence;
+      if (item.isCancelled) event.status = "cancelled";
+    }
+    return event;
+  };
+
+  const removal = async (id: string): Promise<NormalizedChange> => {
+    const absence: NormalizedChange = { kind: "event-absence", externalId: id, reason: "window-removal" };
+    // A grant restricted to basic/private-redacted data cannot prove that a
+    // previously visible item was deleted. Preserve its binding and intents.
+    if (!knownEvents.has(id) || options.microsoftReadAuthorityVerified !== true) return absence;
+    const eventURL = `${graphBase}${microsoftEventPath(externalCalendarId, id)}`;
+    const first = await graphGet(accessToken, eventURL, fetchImpl);
+    if (first.status !== 404) {
+      await assertCompleteGraphRead(first);
+      const event = await first.json();
+      assertActiveGraphItem(event, id);
+      // A definition is not a single expanded instance. A separately tracked
+      // full-family reader owns it; never flatten its RRULE on point recovery.
+      if (event.type === "seriesMaster") return absence;
+      return { kind: "event", data: await normalize(event, true) };
+    }
+    await assertExactGraphMissing(first);
+    const calendarResponse = await graphGet(accessToken,
+      `${graphBase}/me/calendars/${encodeURIComponent(externalCalendarId)}?$select=id,canViewPrivateItems`, fetchImpl);
+    await assertCompleteGraphRead(calendarResponse);
+    const calendar = await calendarResponse.json();
+    if (!calendar || calendar.id !== externalCalendarId || calendar.canViewPrivateItems !== true || calendar["@removed"] !== undefined ||
+      calendar["@odata.nextLink"] !== undefined || calendar["@odata.deltaLink"] !== undefined)
+      throw new Error("Outlook calendar read authority could not be verified.");
+    await assertExactGraphMissing(await graphGet(accessToken, eventURL, fetchImpl));
+    return { ...absence, deletionEvidence: { kind: "scoped-native-absence", responseStatus: 404,
+      readAuthorityVerified: true, nativeReadProfile: "graph-event-double-404-calendar-v1" } };
+  };
 
   while (!deltaLink) {
+    assertDeltaLink(url, externalCalendarId, graphBase);
+    const key = new URL(url).href;
+    if (visited.has(key) || ++pages > 1000) throw new Error("Outlook returned a cyclic or excessive delta page set.");
+    visited.add(key);
     const res = await graphGet(accessToken, url, fetchImpl);
-
-    // Delta token expired → discard partial incremental pages and restart as a
-    // full set. The engine sweeps mappings missing from the completed result.
     if (res.status === 410) {
       if (restarted || !parsed) throw new Error("Outlook rejected the initial calendar window.");
       restarted = true;
       reset = true;
       changes.length = 0;
       seriesMasters.clear();
+      visited.clear();
+      windowStart = now - WINDOW_PAST_DAYS * DAY_MS;
       windowEnd = now + WINDOW_FUTURE_DAYS * DAY_MS;
-      url = initialDeltaUrl(externalCalendarId, windowEnd, now, graphBase);
+      url = initialDeltaUrl(externalCalendarId, windowStart, windowEnd, graphBase);
       continue;
     }
-    if (!res.ok) throw await graphError(res);
-
+    await assertCompleteGraphRead(res);
     const data = await res.json();
-    for (let item of data.value ?? []) {
-      // A complete native family is reconciled separately. Filter before
-      // hydration, including stale/removed IDs and the flag-off read path.
+    if (!data || typeof data !== "object" || Array.isArray(data) || !Array.isArray(data.value))
+      throw new Error("Outlook returned an invalid delta page.");
+    const hasNext = data["@odata.nextLink"] !== undefined;
+    const hasDelta = data["@odata.deltaLink"] !== undefined;
+    if (hasNext === hasDelta) throw new Error("Outlook returned an unfinished or ambiguous delta page.");
+    const continuation = assertDeltaLink(data[hasNext ? "@odata.nextLink" : "@odata.deltaLink"], externalCalendarId, graphBase);
+    for (const item of data.value) {
+      if (!item || typeof item !== "object" || Array.isArray(item) || !validGraphId(item.id))
+        throw new Error("Outlook returned an invalid delta event address.");
+      // Full native families are reconciled separately, including their explicit missing proof.
       if (excludedEvents.has(item.id) || excludedSeries.has(item.seriesMasterId)) continue;
-      if (item.type === "seriesMaster") continue; // definition only; occurrences carry the instances
-      // Occurrences/exceptions inherit subject, isAllDay, body, … from their
-      // master; backfill them (the occurrence's own start/end/id win on spread).
-      if (item.seriesMasterId && !item["@removed"]) {
-        const master = await fetchSeriesMaster(
-          accessToken,
-          externalCalendarId,
-          item.seriesMasterId,
-          seriesMasters,
-          fetchImpl,
-          graphBase,
-        );
-        if (options.timeModels || options.rsvpOccurrences) {
-          if (!item.originalStart || item.type === "exception") {
-            // Graph can omit originalStart even from an unprojected instance
-            // GET. Select it explicitly while retaining the default fields so
-            // exception overrides and the instance validator remain available.
-            const response = await graphGet(accessToken, `${graphBase}${microsoftEventPath(externalCalendarId, item.id)}?$select=*,originalStart`, fetchImpl);
-            if (!response.ok) throw await graphError(response);
-            const instance = await response.json();
-            if (instance.id !== item.id || instance.seriesMasterId !== item.seriesMasterId || instance["@removed"])
-              throw new Error("Outlook returned an invalid occurrence dependency.");
-            item = { ...item, ...instance };
-          }
-          if (typeof item.originalStart !== "string" || !/(?:Z|[+-]\d{2}:\d{2})$/i.test(item.originalStart) || /\.\d{3}\d*[1-9]\d*(?:Z|[+-]\d{2}:\d{2})$/i.test(item.originalStart))
-            throw new Error("Outlook occurrence identity requires an exact millisecond UTC instant.");
-          const originalStart = OccurrenceStartSchema.parse({ kind: "instant", value: parseGraphDate(item.originalStart).toISOString() });
-          const providerOccurrence = { externalSeriesID: item.seriesMasterId, originalStart };
-          // A master validator never authorizes a conditional instance write.
-          item = { ...master, ...item, "@odata.etag": item["@odata.etag"] ?? null, providerOccurrence };
-        } else item = { ...master, ...item };
+      if (item["@removed"] !== undefined) {
+        if (!item["@removed"] || typeof item["@removed"] !== "object" || Array.isArray(item["@removed"]) ||
+          item["@removed"].reason !== "deleted") throw new Error("Outlook returned an invalid window removal.");
+        changes.push(await removal(item.id));
+      } else if (item.type !== "seriesMaster") {
+        changes.push({ kind: "event", data: await normalize(item) });
       }
-      const event = toNormalized(item);
-      if (options.organizerEventIDs?.includes(item.id) && !item["@removed"]) {
-        const time = graphRsvpTime({ ...item, isCancelled: false });
-        event.start = time.start; event.end = time.end; event.isAllDay = time.isAllDay; event.timeModel = time.timeModel;
-        if (item.isCancelled) event.status = "cancelled";
-      }
-      // Keep the native parent address even with time editing disabled. A
-      // family may be accepted after this fetch captured its exclusions.
-      if (item.seriesMasterId != null) {
-        if (typeof item.seriesMasterId !== "string" || !item.seriesMasterId.trim() || item.seriesMasterId.trim() !== item.seriesMasterId || item.seriesMasterId === item.id)
-          throw new Error("Outlook returned an invalid source series address.");
-        event.sourceSeriesID = item.seriesMasterId;
-      }
-      if ((options.timeModels || options.rsvpOccurrences) && !item["@removed"]) {
-        event.providerOccurrence = item.providerOccurrence;
-        // The provider expands this bounded view. Never attach its recurrence
-        // to local instances, which would generate the series a second time.
-        if (item.isCancelled) event.status = "cancelled";
-      }
-      changes.push({ kind: "event", data: event });
     }
-
-    if (data["@odata.nextLink"]) {
-      url = data["@odata.nextLink"];
-    } else {
-      deltaLink = data["@odata.deltaLink"] ?? url;
-    }
+    if (hasNext) url = continuation;
+    else deltaLink = continuation;
   }
 
   return {
     changes,
-    nextCursor: JSON.stringify({ link: deltaLink, windowEnd }),
-    reset,
+    nextCursor: JSON.stringify({ version: 2, calendarId: externalCalendarId, link: deltaLink, windowStart, windowEnd } satisfies MicrosoftWindowCursor),
+    reset: false,
+    cursorRestarted: reset,
+    coverage: { kind: "window", fromInclusive: new Date(windowStart).toISOString(),
+      untilExclusive: new Date(windowEnd).toISOString(), complete: true },
   };
 }
 
@@ -800,7 +911,12 @@ export const microsoftAdapter: CalendarAdapter = {
     cursor,
     options,
   ): Promise<FetchChangesResult> {
-    const exclusions = { excludedEventIDs: [...(options?.excludedEventIDs ?? [])], excludedSeriesIDs: [...(options?.excludedSeriesIDs ?? [])] };
+    const exclusions = {
+      excludedEventIDs: [...(options?.excludedEventIDs ?? [])],
+      excludedSeriesIDs: [...(options?.excludedSeriesIDs ?? [])],
+      knownEventIDs: [...(options?.knownEventIDs ?? [])],
+      microsoftReadAuthorityVerified: options?.microsoftReadAuthorityVerified,
+    };
     const accessToken = await getAccessToken(userID, accountId);
     const taskListId = microsoftTaskListId(externalCalendarId);
     if (
@@ -1228,11 +1344,11 @@ export const microsoftAdapter: CalendarAdapter = {
 
 function initialDeltaUrl(
   externalCalendarId: string,
+  windowStart: number,
   windowEnd: number,
-  now = Date.now(),
   graphBase = GRAPH,
 ): string {
-  const start = new Date(now - WINDOW_PAST_DAYS * DAY_MS).toISOString();
+  const start = new Date(windowStart).toISOString();
   const end = new Date(windowEnd).toISOString();
   return `${graphBase}/me/calendars/${encodeURIComponent(externalCalendarId)}/calendarView/delta?startDateTime=${start}&endDateTime=${end}`;
 }

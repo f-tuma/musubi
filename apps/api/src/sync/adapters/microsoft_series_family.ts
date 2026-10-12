@@ -29,6 +29,13 @@ const master = event.extend({
   "exceptionOccurrences@odata.count": z.number().int().nonnegative().optional(), "cancelledOccurrences@odata.count": z.number().int().nonnegative().optional(),
 });
 function refuse(): never { throw new ProviderEventWriteError("provider-conflict"); }
+
+/** Unavailable negative read evidence is neither a proven native conflict nor
+ * a rejected mutation. Delivery retains its persisted dispatch uncertainty. */
+export class GraphFamilyReadUnavailableError extends Error {
+  constructor() { super("Outlook family absence read could not be verified."); this.name = "GraphFamilyReadUnavailableError"; }
+}
+function unavailableAbsence(): never { throw new GraphFamilyReadUnavailableError(); }
 const key = (value: GraphSeriesOccurrence["originalStart"]) => JSON.stringify(value);
 
 export type GraphSeriesFamily = {
@@ -127,20 +134,31 @@ async function readFamily(accessToken: string, calendarID: string, template: Eve
   masterURL.searchParams.set("$expand", "exceptionOccurrences");
   const firstResponse = await request(masterURL);
   if (allowMissing && firstResponse.status === 404) {
-    const missing = async (response: Response) => {
-      if (response.status !== 404 || response.headers.has("content-range")) refuse();
-      // Consume and validate the complete standard Graph error response. A
-      // truncated/partial body or a generic failed request is not absence.
-      const error = z.object({ error: z.object({ code: z.string().min(1) }) }).safeParse(await response.json());
-      if (!error.success) refuse();
-    };
-    await missing(firstResponse);
-    const calendarURL = new URL(`https://graph.microsoft.com/v1.0/me/calendars/${encodeURIComponent(calendarID)}`);
-    calendarURL.searchParams.set("$select", "id");
-    const calendar = z.object({ id: opaque, "@odata.nextLink": z.never().optional(), "@removed": z.never().optional() }).safeParse(await read(calendarURL));
-    if (!calendar.success || calendar.data.id !== calendarID) refuse();
-    await missing(await request(masterURL));
-    return null;
+    try {
+      const missing = async (response: Response) => {
+        if (response.status !== 404 || response.headers.has("content-range")) unavailableAbsence();
+        // Consume and validate the complete standard Graph error response. A
+        // truncated/partial body or a generic failed request is not absence.
+        const error = z.object({ error: z.object({ code: z.literal("ErrorItemNotFound") }) }).safeParse(await response.json());
+        if (!error.success) unavailableAbsence();
+      };
+      await missing(firstResponse);
+      const calendarURL = new URL(`https://graph.microsoft.com/v1.0/me/calendars/${encodeURIComponent(calendarID)}`);
+      calendarURL.searchParams.set("$select", "id,canViewPrivateItems");
+      const calendar = z.object({ id: opaque, canViewPrivateItems: z.literal(true), "@odata.nextLink": z.never().optional(), "@odata.deltaLink": z.never().optional(), "@removed": z.never().optional() }).safeParse(await read(calendarURL));
+      if (!calendar.success || calendar.data.id !== calendarID) unavailableAbsence();
+      await missing(await request(masterURL));
+      return null;
+    } catch (error) {
+      // Failure to prove source absence is a read failure. In particular a
+      // denied/partial calendar GET cannot prove that an earlier dispatched
+      // cancellation or DELETE was rejected, or release its uncertainty.
+      // Retryable read errors carry the provider's Retry-After lower bound;
+      // unlike definite-rejection errors, these already retain uncertainty.
+      if (error instanceof ProviderEventWriteError && (error.providerStatus === 429 ||
+          error.providerStatus === 408 || (error.providerStatus ?? 0) >= 500)) throw error;
+      return unavailableAbsence();
+    }
   }
   assertCompleteEventReadResponse(firstResponse);
   const first = await firstResponse.json();
@@ -181,7 +199,8 @@ export async function readGraphSeriesFamily(accessToken: string, calendarID: str
 }
 
 /** Null means two complete exact-master 404 responses bracketing a successful
- * exact-calendar read. It is never permission to repeat a create POST. */
+ * exact-calendar read with explicit current private-read authority. It is never
+ * permission to repeat a create POST or accept a masked permission error. */
 export function readGraphSeriesFamilyOrMissing(accessToken: string, calendarID: string, template: Event, ref: ExternalEventRef, signal?: AbortSignal): Promise<GraphSeriesFamily | null> {
   return readFamily(accessToken, calendarID, template, ref, signal, true);
 }

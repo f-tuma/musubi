@@ -1,0 +1,873 @@
+{
+  "kind": "musubi-populated-graph-upgrade",
+  "baselineCommit": "be267b2a960c768c60bd0f91de1106f8878e7999",
+  "migration": "0085_graph_read_coverage",
+  "migrationSHA256": "e0ed61f5db4f6029f7840e420eb5a5e150383074ac3eca80d41a801decd3a496",
+  "databaseName": "musubi_c03_upgrade",
+  "executedAt": "2026-10-12T12:40:51.985Z",
+  "journals": {
+    "beforeCount": 85,
+    "afterCount": 86,
+    "beforeLast": {
+      "id": 85,
+      "hash": "b74122eab4e6df97c1b9fa1408e7416c23485448165d379c8eee12414a12769a",
+      "created_at": "1791186094564"
+    },
+    "afterLast": {
+      "id": 86,
+      "hash": "e0ed61f5db4f6029f7840e420eb5a5e150383074ac3eca80d41a801decd3a496",
+      "created_at": "1791807655174"
+    }
+  },
+  "cases": [
+    {
+      "kind": "plain",
+      "calendarID": "78932ca6-1ccb-4b6b-808f-c8636d7e1353",
+      "sourceID": "57d3ba00-c4b1-4b08-a013-6632e0bc56a3",
+      "nativeCalendarID": "upgrade-plain-65f437a7-b3f3-4c09-ad82-9c9363aacb7e",
+      "eventID": "f8d4a6aa-806a-428e-9f2b-9f7246a68864",
+      "nativeEventID": "native-plain-dc932d10-4431-431d-a6a3-46c6d30ccb12",
+      "sourceMappingID": "d9770c45-d472-46d9-929d-0bf443c4ed25",
+      "destinationMappingID": "8e6992fb-7bd9-42ff-9cab-15862a1fa0e3",
+      "sourceOperationID": "a2603950-5ce6-4f3d-917d-30557ab91431",
+      "destinationOperationID": "ebdfe7f2-d7f6-471e-b0f2-5ae95655b2de"
+    },
+    {
+      "kind": "v1",
+      "calendarID": "876630e2-4b53-4c5a-89ac-4467bfeeb105",
+      "sourceID": "cb21861d-30c2-4eb8-927d-0669552652d3",
+      "nativeCalendarID": "upgrade-v1-f2a2ec07-b92e-4ecf-ac89-5e37ad02527f",
+      "eventID": "b9462f34-e6ef-4048-afcf-b0bafc088bc0",
+      "nativeEventID": "native-v1-96fc6b58-30a8-426f-ba41-8dd7f8911dd0",
+      "sourceMappingID": "096d9d9b-54c5-4484-b4f3-0cec1fcd9ae6",
+      "destinationMappingID": "761a3195-8d61-4f4b-a8d4-7d3d07cdf841",
+      "sourceOperationID": "9ee78056-758d-4db6-9b37-b43f64a9da71",
+      "destinationOperationID": "da4cab65-fb0f-4bd5-84a1-ce8475a2dc4f"
+    }
+  ],
+  "before": {
+    "accounts": [
+      {
+        "id": "ef4db9a1-fd56-4755-872a-37c9de18debf",
+        "account_id": "upgrade-account-7873302f-4436-421d-a479-4669baea6f96",
+        "provider_id": "microsoft",
+        "user_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "access_token": "fixture-only",
+        "refresh_token": "fixture-only",
+        "id_token": null,
+        "access_token_expires_at": "2034-12-31T23:00:00.000Z",
+        "refresh_token_expires_at": null,
+        "scope": "Calendars.ReadWrite",
+        "password": null,
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.816Z",
+        "sync_status": "active",
+        "sync_error_code": null,
+        "sync_error_subtype": null,
+        "sync_disabled_at": null
+      }
+    ],
+    "calendars": [
+      {
+        "id": "1c92a18c-9a4d-46d9-9ae7-6232dca8d57e",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "creator_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "name": "Synthetic shared calendar",
+        "color": "red",
+        "is_default": false
+      },
+      {
+        "id": "78932ca6-1ccb-4b6b-808f-c8636d7e1353",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "creator_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "name": "Synthetic plain source",
+        "color": "red",
+        "is_default": false
+      },
+      {
+        "id": "876630e2-4b53-4c5a-89ac-4467bfeeb105",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "creator_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "name": "Synthetic v1 source",
+        "color": "red",
+        "is_default": false
+      },
+      {
+        "id": "c377ec9d-9664-4667-a3fc-0ee1b04019fc",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "creator_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "name": "Synthetic Google target",
+        "color": "red",
+        "is_default": false
+      }
+    ],
+    "sources": [
+      {
+        "id": "57d3ba00-c4b1-4b08-a013-6632e0bc56a3",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "provider": "microsoft",
+        "user_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "calendar_id": "78932ca6-1ccb-4b6b-808f-c8636d7e1353",
+        "external_calendar_id": "upgrade-plain-65f437a7-b3f3-4c09-ad82-9c9363aacb7e",
+        "cursor": "https://graph.microsoft.com/v1.0/me/calendars/upgrade-plain-65f437a7-b3f3-4c09-ad82-9c9363aacb7e/calendarView/delta?$deltatoken=old-plain",
+        "account_id": "upgrade-account-7873302f-4436-421d-a479-4669baea6f96",
+        "account_label": "Synthetic Graph account",
+        "disabled": false,
+        "supports_events": true,
+        "supports_tasks": false,
+        "provider_access_role": "microsoft:private=yes;edit=yes",
+        "provider_access_revision": 7,
+        "provider_default_calendar": null
+      },
+      {
+        "id": "acf0ec28-07f4-4dd7-b1e2-e069d3bb1ff0",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "provider": "google",
+        "user_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "calendar_id": "c377ec9d-9664-4667-a3fc-0ee1b04019fc",
+        "external_calendar_id": "synthetic-google",
+        "cursor": null,
+        "account_id": "upgrade-google-c7d4b8ad-ffd8-463c-9140-6ee8d916af0c",
+        "account_label": "Synthetic Google target",
+        "disabled": false,
+        "supports_events": true,
+        "supports_tasks": false,
+        "provider_access_role": "owner",
+        "provider_access_revision": 5,
+        "provider_default_calendar": null
+      },
+      {
+        "id": "cb21861d-30c2-4eb8-927d-0669552652d3",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "provider": "microsoft",
+        "user_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "calendar_id": "876630e2-4b53-4c5a-89ac-4467bfeeb105",
+        "external_calendar_id": "upgrade-v1-f2a2ec07-b92e-4ecf-ac89-5e37ad02527f",
+        "cursor": "{\"link\":\"https://graph.microsoft.com/v1.0/me/calendars/upgrade-v1-f2a2ec07-b92e-4ecf-ac89-5e37ad02527f/calendarView/delta?$deltatoken=old-v1\",\"windowEnd\":1792454400000}",
+        "account_id": "upgrade-account-7873302f-4436-421d-a479-4669baea6f96",
+        "account_label": "Synthetic Graph account",
+        "disabled": false,
+        "supports_events": true,
+        "supports_tasks": false,
+        "provider_access_role": "microsoft:private=yes;edit=yes",
+        "provider_access_revision": 7,
+        "provider_default_calendar": null
+      }
+    ],
+    "events": [
+      {
+        "id": "b9462f34-e6ef-4048-afcf-b0bafc088bc0",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "creator_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "name": "Old v1 canonical event",
+        "color": "red",
+        "start_at": "2024-01-15T09:00:00.000Z",
+        "end_at": "2024-01-15T10:00:00.000Z",
+        "is_all_day": false,
+        "description": "Synthetic retained notes",
+        "location": null,
+        "is_canceled": false,
+        "organizer": "",
+        "recurrence": null,
+        "url": null,
+        "deleted_at": null,
+        "origin_calendar_id": "876630e2-4b53-4c5a-89ac-4467bfeeb105",
+        "has_attendees": false,
+        "revision": 1,
+        "time_model": null,
+        "series_id": null,
+        "original_start": null,
+        "provider_read_retired_revision": null
+      },
+      {
+        "id": "f8d4a6aa-806a-428e-9f2b-9f7246a68864",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "creator_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "name": "Old plain canonical event",
+        "color": "red",
+        "start_at": "2024-01-15T09:00:00.000Z",
+        "end_at": "2024-01-15T10:00:00.000Z",
+        "is_all_day": false,
+        "description": "Synthetic retained notes",
+        "location": null,
+        "is_canceled": false,
+        "organizer": "",
+        "recurrence": null,
+        "url": null,
+        "deleted_at": null,
+        "origin_calendar_id": "78932ca6-1ccb-4b6b-808f-c8636d7e1353",
+        "has_attendees": false,
+        "revision": 1,
+        "time_model": null,
+        "series_id": null,
+        "original_start": null,
+        "provider_read_retired_revision": null
+      }
+    ],
+    "memberships": [
+      {
+        "id": "f1a3c4fa-cd0a-47ea-a623-96e70d3563ad",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "user_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "calendar_id": "1c92a18c-9a4d-46d9-9ae7-6232dca8d57e",
+        "role": "owner",
+        "reminder": null
+      },
+      {
+        "id": "f864cce9-afc4-4e5a-be56-fd4e8f98a72d",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "user_id": "upgrade-viewer-6dd9a9b9-888a-418b-bd15-7ece46f6e8a5",
+        "calendar_id": "1c92a18c-9a4d-46d9-9ae7-6232dca8d57e",
+        "role": "viewer",
+        "reminder": null
+      },
+      {
+        "id": "1adf0497-aa30-487a-bae3-41d14e977ff8",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "user_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "calendar_id": "78932ca6-1ccb-4b6b-808f-c8636d7e1353",
+        "role": "owner",
+        "reminder": null
+      },
+      {
+        "id": "e90791c0-4f6a-4577-94db-d74e95215404",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "user_id": "upgrade-viewer-6dd9a9b9-888a-418b-bd15-7ece46f6e8a5",
+        "calendar_id": "78932ca6-1ccb-4b6b-808f-c8636d7e1353",
+        "role": "viewer",
+        "reminder": null
+      },
+      {
+        "id": "b16b4836-b891-4daa-a0b9-1f93197183fc",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "user_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "calendar_id": "876630e2-4b53-4c5a-89ac-4467bfeeb105",
+        "role": "owner",
+        "reminder": null
+      },
+      {
+        "id": "5e5d9e95-812d-4e56-83d6-445d774964b0",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "user_id": "upgrade-viewer-6dd9a9b9-888a-418b-bd15-7ece46f6e8a5",
+        "calendar_id": "876630e2-4b53-4c5a-89ac-4467bfeeb105",
+        "role": "viewer",
+        "reminder": null
+      },
+      {
+        "id": "3b5c1a4b-78ca-4a8c-8005-9f71c33c4c9c",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "user_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "calendar_id": "c377ec9d-9664-4667-a3fc-0ee1b04019fc",
+        "role": "owner",
+        "reminder": null
+      },
+      {
+        "id": "fa1573a5-f3e7-43b6-92d8-b4eabacf1877",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "user_id": "upgrade-viewer-6dd9a9b9-888a-418b-bd15-7ece46f6e8a5",
+        "calendar_id": "c377ec9d-9664-4667-a3fc-0ee1b04019fc",
+        "role": "viewer",
+        "reminder": null
+      }
+    ],
+    "links": [
+      {
+        "id": "208390c7-c819-4f76-a924-0a4d9962810f",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "event_id": "b9462f34-e6ef-4048-afcf-b0bafc088bc0",
+        "calendar_id": "1c92a18c-9a4d-46d9-9ae7-6232dca8d57e"
+      },
+      {
+        "id": "0630f06a-bb2a-49f6-ab2f-041222e1358a",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "event_id": "f8d4a6aa-806a-428e-9f2b-9f7246a68864",
+        "calendar_id": "1c92a18c-9a4d-46d9-9ae7-6232dca8d57e"
+      },
+      {
+        "id": "cb0aec7c-8880-4cf5-82f1-2565863e3a89",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "event_id": "f8d4a6aa-806a-428e-9f2b-9f7246a68864",
+        "calendar_id": "78932ca6-1ccb-4b6b-808f-c8636d7e1353"
+      },
+      {
+        "id": "16d22bb7-95c9-4432-994f-6466199282ab",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "event_id": "b9462f34-e6ef-4048-afcf-b0bafc088bc0",
+        "calendar_id": "876630e2-4b53-4c5a-89ac-4467bfeeb105"
+      },
+      {
+        "id": "95940e48-416d-48d8-bae2-ac4ad6d08bd2",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "event_id": "b9462f34-e6ef-4048-afcf-b0bafc088bc0",
+        "calendar_id": "c377ec9d-9664-4667-a3fc-0ee1b04019fc"
+      },
+      {
+        "id": "824cfeb3-33e6-4829-90c5-3817eb44eda5",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "event_id": "f8d4a6aa-806a-428e-9f2b-9f7246a68864",
+        "calendar_id": "c377ec9d-9664-4667-a3fc-0ee1b04019fc"
+      }
+    ],
+    "mappings": [
+      {
+        "id": "096d9d9b-54c5-4484-b4f3-0cec1fcd9ae6",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "provider": "microsoft",
+        "event_id": "b9462f34-e6ef-4048-afcf-b0bafc088bc0",
+        "external_calendar_id": "upgrade-v1-f2a2ec07-b92e-4ecf-ac89-5e37ad02527f",
+        "external_event_id": "native-v1-96fc6b58-30a8-426f-ba41-8dd7f8911dd0",
+        "etag": "W/\"old-native\"",
+        "calendar_id": "876630e2-4b53-4c5a-89ac-4467bfeeb105",
+        "ical_uid": "synthetic-uid-v1",
+        "external_series_id": null,
+        "original_start": null,
+        "provider_state": null,
+        "provider_state_observed_at": null,
+        "read_redaction_revision": null
+      },
+      {
+        "id": "761a3195-8d61-4f4b-a8d4-7d3d07cdf841",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "provider": "google",
+        "event_id": "b9462f34-e6ef-4048-afcf-b0bafc088bc0",
+        "external_calendar_id": "synthetic-google",
+        "external_event_id": "google-copy-v1",
+        "etag": "\"old-google\"",
+        "calendar_id": "c377ec9d-9664-4667-a3fc-0ee1b04019fc",
+        "ical_uid": "synthetic-uid-v1",
+        "external_series_id": null,
+        "original_start": null,
+        "provider_state": null,
+        "provider_state_observed_at": null,
+        "read_redaction_revision": null
+      },
+      {
+        "id": "8e6992fb-7bd9-42ff-9cab-15862a1fa0e3",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "provider": "google",
+        "event_id": "f8d4a6aa-806a-428e-9f2b-9f7246a68864",
+        "external_calendar_id": "synthetic-google",
+        "external_event_id": "google-copy-plain",
+        "etag": "\"old-google\"",
+        "calendar_id": "c377ec9d-9664-4667-a3fc-0ee1b04019fc",
+        "ical_uid": "synthetic-uid-plain",
+        "external_series_id": null,
+        "original_start": null,
+        "provider_state": null,
+        "provider_state_observed_at": null,
+        "read_redaction_revision": null
+      },
+      {
+        "id": "d9770c45-d472-46d9-929d-0bf443c4ed25",
+        "created_at": "2026-10-12T10:40:51.814Z",
+        "updated_at": "2026-10-12T10:40:51.814Z",
+        "provider": "microsoft",
+        "event_id": "f8d4a6aa-806a-428e-9f2b-9f7246a68864",
+        "external_calendar_id": "upgrade-plain-65f437a7-b3f3-4c09-ad82-9c9363aacb7e",
+        "external_event_id": "native-plain-dc932d10-4431-431d-a6a3-46c6d30ccb12",
+        "etag": "W/\"old-native\"",
+        "calendar_id": "78932ca6-1ccb-4b6b-808f-c8636d7e1353",
+        "ical_uid": "synthetic-uid-plain",
+        "external_series_id": null,
+        "original_start": null,
+        "provider_state": null,
+        "provider_state_observed_at": null,
+        "read_redaction_revision": null
+      }
+    ],
+    "outbox": [
+      {
+        "id": "9ee78056-758d-4db6-9b37-b43f64a9da71",
+        "actor_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "mutation_id": "0ea9425b-4fc6-4704-b50a-39673eea4b05",
+        "position": 0,
+        "event_id": "b9462f34-e6ef-4048-afcf-b0bafc088bc0",
+        "revision": 1,
+        "predecessor_id": null,
+        "calendar_id": "876630e2-4b53-4c5a-89ac-4467bfeeb105",
+        "external_calendar_link_id": "cb21861d-30c2-4eb8-927d-0669552652d3",
+        "provider": "microsoft",
+        "user_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "account_id": "upgrade-account-7873302f-4436-421d-a479-4669baea6f96",
+        "external_calendar_id": "upgrade-v1-f2a2ec07-b92e-4ecf-ac89-5e37ad02527f",
+        "external_event_id": "native-v1-96fc6b58-30a8-426f-ba41-8dd7f8911dd0",
+        "expected_etag": null,
+        "ical_uid": null,
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "b9462f34-e6ef-4048-afcf-b0bafc088bc0",
+            "end": "2024-01-15T11:00:00.000Z",
+            "url": null,
+            "color": "red",
+            "start": "2024-01-15T10:00:00.000Z",
+            "title": "Old v1 canonical event",
+            "isAllDay": false,
+            "location": null,
+            "revision": 1,
+            "seriesID": null,
+            "calendars": [
+              "876630e2-4b53-4c5a-89ac-4467bfeeb105",
+              "c377ec9d-9664-4667-a3fc-0ee1b04019fc",
+              "1c92a18c-9a4d-46d9-9ae7-6232dca8d57e"
+            ],
+            "createdAt": "2026-10-12T12:40:51.814Z",
+            "creatorID": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+            "deletedAt": null,
+            "organizer": "",
+            "timeModel": null,
+            "updatedAt": "2026-10-12T12:40:51.814Z",
+            "isCanceled": false,
+            "recurrence": null,
+            "description": "Synthetic retained notes",
+            "hasAttendees": false,
+            "originalStart": null,
+            "originCalendarID": "876630e2-4b53-4c5a-89ac-4467bfeeb105",
+            "providerReadRetiredRevision": null
+          },
+          "patch": {
+            "title": "Immutable accepted microsoft intent"
+          },
+          "createIdentityVersion": 1
+        },
+        "status": "unconfirmed",
+        "attempts": 1,
+        "attempted_at": null,
+        "error_code": null,
+        "created_at": "2026-10-12T10:40:51.844Z",
+        "updated_at": "2026-10-12T10:40:51.844Z",
+        "lease_token": null,
+        "lease_until": null,
+        "next_attempt_at": "2026-10-12T12:40:51.844Z",
+        "uncertain": true,
+        "result_ref": null,
+        "remote_snapshot": null,
+        "personal_read_recovery": null
+      },
+      {
+        "id": "a2603950-5ce6-4f3d-917d-30557ab91431",
+        "actor_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "mutation_id": "ed9c8487-6da2-43f4-baed-1916e15d19e1",
+        "position": 0,
+        "event_id": "f8d4a6aa-806a-428e-9f2b-9f7246a68864",
+        "revision": 1,
+        "predecessor_id": null,
+        "calendar_id": "78932ca6-1ccb-4b6b-808f-c8636d7e1353",
+        "external_calendar_link_id": "57d3ba00-c4b1-4b08-a013-6632e0bc56a3",
+        "provider": "microsoft",
+        "user_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "account_id": "upgrade-account-7873302f-4436-421d-a479-4669baea6f96",
+        "external_calendar_id": "upgrade-plain-65f437a7-b3f3-4c09-ad82-9c9363aacb7e",
+        "external_event_id": "native-plain-dc932d10-4431-431d-a6a3-46c6d30ccb12",
+        "expected_etag": null,
+        "ical_uid": null,
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "f8d4a6aa-806a-428e-9f2b-9f7246a68864",
+            "end": "2024-01-15T11:00:00.000Z",
+            "url": null,
+            "color": "red",
+            "start": "2024-01-15T10:00:00.000Z",
+            "title": "Old plain canonical event",
+            "isAllDay": false,
+            "location": null,
+            "revision": 1,
+            "seriesID": null,
+            "calendars": [
+              "78932ca6-1ccb-4b6b-808f-c8636d7e1353",
+              "c377ec9d-9664-4667-a3fc-0ee1b04019fc",
+              "1c92a18c-9a4d-46d9-9ae7-6232dca8d57e"
+            ],
+            "createdAt": "2026-10-12T12:40:51.814Z",
+            "creatorID": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+            "deletedAt": null,
+            "organizer": "",
+            "timeModel": null,
+            "updatedAt": "2026-10-12T12:40:51.814Z",
+            "isCanceled": false,
+            "recurrence": null,
+            "description": "Synthetic retained notes",
+            "hasAttendees": false,
+            "originalStart": null,
+            "originCalendarID": "78932ca6-1ccb-4b6b-808f-c8636d7e1353",
+            "providerReadRetiredRevision": null
+          },
+          "patch": {
+            "title": "Immutable accepted microsoft intent"
+          },
+          "createIdentityVersion": 1
+        },
+        "status": "unconfirmed",
+        "attempts": 1,
+        "attempted_at": null,
+        "error_code": null,
+        "created_at": "2026-10-12T10:40:51.837Z",
+        "updated_at": "2026-10-12T10:40:51.837Z",
+        "lease_token": null,
+        "lease_until": null,
+        "next_attempt_at": "2026-10-12T12:40:51.837Z",
+        "uncertain": true,
+        "result_ref": null,
+        "remote_snapshot": null,
+        "personal_read_recovery": null
+      },
+      {
+        "id": "da4cab65-fb0f-4bd5-84a1-ce8475a2dc4f",
+        "actor_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "mutation_id": "a89df45b-ae84-4bda-898f-b8dd4766267b",
+        "position": 0,
+        "event_id": "b9462f34-e6ef-4048-afcf-b0bafc088bc0",
+        "revision": 1,
+        "predecessor_id": null,
+        "calendar_id": "c377ec9d-9664-4667-a3fc-0ee1b04019fc",
+        "external_calendar_link_id": "acf0ec28-07f4-4dd7-b1e2-e069d3bb1ff0",
+        "provider": "google",
+        "user_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "account_id": "upgrade-google-c7d4b8ad-ffd8-463c-9140-6ee8d916af0c",
+        "external_calendar_id": "synthetic-google",
+        "external_event_id": "google-copy-v1",
+        "expected_etag": null,
+        "ical_uid": null,
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "b9462f34-e6ef-4048-afcf-b0bafc088bc0",
+            "end": "2024-01-15T11:00:00.000Z",
+            "url": null,
+            "color": "red",
+            "start": "2024-01-15T10:00:00.000Z",
+            "title": "Old v1 canonical event",
+            "isAllDay": false,
+            "location": null,
+            "revision": 1,
+            "seriesID": null,
+            "calendars": [
+              "876630e2-4b53-4c5a-89ac-4467bfeeb105",
+              "c377ec9d-9664-4667-a3fc-0ee1b04019fc",
+              "1c92a18c-9a4d-46d9-9ae7-6232dca8d57e"
+            ],
+            "createdAt": "2026-10-12T12:40:51.814Z",
+            "creatorID": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+            "deletedAt": null,
+            "organizer": "",
+            "timeModel": null,
+            "updatedAt": "2026-10-12T12:40:51.814Z",
+            "isCanceled": false,
+            "recurrence": null,
+            "description": "Synthetic retained notes",
+            "hasAttendees": false,
+            "originalStart": null,
+            "originCalendarID": "876630e2-4b53-4c5a-89ac-4467bfeeb105",
+            "providerReadRetiredRevision": null
+          },
+          "patch": {
+            "title": "Immutable accepted google intent"
+          },
+          "createIdentityVersion": 1
+        },
+        "status": "pending",
+        "attempts": 0,
+        "attempted_at": null,
+        "error_code": null,
+        "created_at": "2026-10-12T10:40:51.846Z",
+        "updated_at": "2026-10-12T10:40:51.846Z",
+        "lease_token": null,
+        "lease_until": null,
+        "next_attempt_at": "2026-10-12T12:40:51.846Z",
+        "uncertain": false,
+        "result_ref": null,
+        "remote_snapshot": null,
+        "personal_read_recovery": null
+      },
+      {
+        "id": "ebdfe7f2-d7f6-471e-b0f2-5ae95655b2de",
+        "actor_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "mutation_id": "0af1fe03-5847-4537-b751-ba74f6c3ccca",
+        "position": 0,
+        "event_id": "f8d4a6aa-806a-428e-9f2b-9f7246a68864",
+        "revision": 1,
+        "predecessor_id": null,
+        "calendar_id": "c377ec9d-9664-4667-a3fc-0ee1b04019fc",
+        "external_calendar_link_id": "acf0ec28-07f4-4dd7-b1e2-e069d3bb1ff0",
+        "provider": "google",
+        "user_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+        "account_id": "upgrade-google-c7d4b8ad-ffd8-463c-9140-6ee8d916af0c",
+        "external_calendar_id": "synthetic-google",
+        "external_event_id": "google-copy-plain",
+        "expected_etag": null,
+        "ical_uid": null,
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "f8d4a6aa-806a-428e-9f2b-9f7246a68864",
+            "end": "2024-01-15T11:00:00.000Z",
+            "url": null,
+            "color": "red",
+            "start": "2024-01-15T10:00:00.000Z",
+            "title": "Old plain canonical event",
+            "isAllDay": false,
+            "location": null,
+            "revision": 1,
+            "seriesID": null,
+            "calendars": [
+              "78932ca6-1ccb-4b6b-808f-c8636d7e1353",
+              "c377ec9d-9664-4667-a3fc-0ee1b04019fc",
+              "1c92a18c-9a4d-46d9-9ae7-6232dca8d57e"
+            ],
+            "createdAt": "2026-10-12T12:40:51.814Z",
+            "creatorID": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+            "deletedAt": null,
+            "organizer": "",
+            "timeModel": null,
+            "updatedAt": "2026-10-12T12:40:51.814Z",
+            "isCanceled": false,
+            "recurrence": null,
+            "description": "Synthetic retained notes",
+            "hasAttendees": false,
+            "originalStart": null,
+            "originCalendarID": "78932ca6-1ccb-4b6b-808f-c8636d7e1353",
+            "providerReadRetiredRevision": null
+          },
+          "patch": {
+            "title": "Immutable accepted google intent"
+          },
+          "createIdentityVersion": 1
+        },
+        "status": "pending",
+        "attempts": 0,
+        "attempted_at": null,
+        "error_code": null,
+        "created_at": "2026-10-12T10:40:51.840Z",
+        "updated_at": "2026-10-12T10:40:51.840Z",
+        "lease_token": null,
+        "lease_until": null,
+        "next_attempt_at": "2026-10-12T12:40:51.840Z",
+        "uncertain": false,
+        "result_ref": null,
+        "remote_snapshot": null,
+        "personal_read_recovery": null
+      }
+    ],
+    "tombstones": []
+  },
+  "migrationParity": {
+    "beforeLegacyColumnsSHA256": "447be01236e8e27fca1036d5862342b2d95bfc53efc02082f40c6ab6a96a8a24",
+    "afterLegacyColumnsSHA256": "447be01236e8e27fca1036d5862342b2d95bfc53efc02082f40c6ab6a96a8a24",
+    "defaults": [
+      {
+        "id": "57d3ba00-c4b1-4b08-a013-6632e0bc56a3",
+        "sourceGeneration": 0,
+        "checkpointRevision": 0,
+        "configurationFingerprint": null,
+        "coverage": null
+      },
+      {
+        "id": "acf0ec28-07f4-4dd7-b1e2-e069d3bb1ff0",
+        "sourceGeneration": 0,
+        "checkpointRevision": 0,
+        "configurationFingerprint": null,
+        "coverage": null
+      },
+      {
+        "id": "cb21861d-30c2-4eb8-927d-0669552652d3",
+        "sourceGeneration": 0,
+        "checkpointRevision": 0,
+        "configurationFingerprint": null,
+        "coverage": null
+      }
+    ],
+    "connectionGeneration": 0
+  },
+  "retainedTableParity": {
+    "events": {
+      "beforeSHA256": "b0020d074dc0a51ad186c87dfd0de6415b94c6a21f05fb7776439b057d2270ee",
+      "afterReadSHA256": "b0020d074dc0a51ad186c87dfd0de6415b94c6a21f05fb7776439b057d2270ee"
+    },
+    "mappings": {
+      "beforeSHA256": "e2d7462c3050eae169515c9672e7070cdf6ca77c770ad3c6a4b9e56248b6ad8f",
+      "afterReadSHA256": "e2d7462c3050eae169515c9672e7070cdf6ca77c770ad3c6a4b9e56248b6ad8f"
+    },
+    "links": {
+      "beforeSHA256": "2b8cdf3144131e108c81a7887c240212cdeaed7c0d60714bca8a0068e21220a2",
+      "afterReadSHA256": "2b8cdf3144131e108c81a7887c240212cdeaed7c0d60714bca8a0068e21220a2"
+    },
+    "memberships": {
+      "beforeSHA256": "daad44d2f8e75c6cc8de1decfe152ccabba9404f6c8dcc432eb588eeeb2271f7",
+      "afterReadSHA256": "daad44d2f8e75c6cc8de1decfe152ccabba9404f6c8dcc432eb588eeeb2271f7"
+    },
+    "outbox": {
+      "beforeSHA256": "9c41d085ee1a7e0bebb6e358cea6aeba2ed67c263db4e90fb21ce6a0932b78d7",
+      "afterReadSHA256": "9c41d085ee1a7e0bebb6e358cea6aeba2ed67c263db4e90fb21ce6a0932b78d7"
+    },
+    "tombstones": {
+      "beforeSHA256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "afterReadSHA256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  },
+  "sourceAfterRead": [
+    {
+      "id": "57d3ba00-c4b1-4b08-a013-6632e0bc56a3",
+      "created_at": "2026-10-12T10:40:51.814Z",
+      "updated_at": "2026-10-12T10:40:51.950Z",
+      "provider": "microsoft",
+      "user_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+      "calendar_id": "78932ca6-1ccb-4b6b-808f-c8636d7e1353",
+      "external_calendar_id": "upgrade-plain-65f437a7-b3f3-4c09-ad82-9c9363aacb7e",
+      "cursor": "{\"version\":2,\"calendarId\":\"upgrade-plain-65f437a7-b3f3-4c09-ad82-9c9363aacb7e\",\"link\":\"https://graph.microsoft.com/v1.0/me/calendars/upgrade-plain-65f437a7-b3f3-4c09-ad82-9c9363aacb7e/calendarView/delta?$deltatoken=new-plain\",\"windowStart\":1776256851937,\"windowEnd\":1854880851937}",
+      "account_id": "upgrade-account-7873302f-4436-421d-a479-4669baea6f96",
+      "account_label": "Synthetic Graph account",
+      "disabled": false,
+      "supports_events": true,
+      "supports_tasks": false,
+      "provider_access_role": "microsoft:private=yes;edit=yes",
+      "provider_access_revision": 7,
+      "provider_default_calendar": null,
+      "source_generation": 1,
+      "checkpoint_revision": 2,
+      "read_configuration_fingerprint": "{\"profile\":\"sync-profile-v1\",\"reader\":\"graph-calendar-view-v2\",\"eventTimeEdits\":false,\"rsvpOccurrences\":false,\"trackedFamilies\":\"complete-finite-native-v1\",\"deletion\":\"graph-event-double-404-calendar-v1\"}",
+      "read_coverage": {
+        "kind": "window",
+        "complete": true,
+        "fromInclusive": "2026-04-15T12:40:51.937Z",
+        "untilExclusive": "2028-10-11T12:40:51.937Z"
+      }
+    },
+    {
+      "id": "acf0ec28-07f4-4dd7-b1e2-e069d3bb1ff0",
+      "created_at": "2026-10-12T10:40:51.814Z",
+      "updated_at": "2026-10-12T10:40:51.814Z",
+      "provider": "google",
+      "user_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+      "calendar_id": "c377ec9d-9664-4667-a3fc-0ee1b04019fc",
+      "external_calendar_id": "synthetic-google",
+      "cursor": null,
+      "account_id": "upgrade-google-c7d4b8ad-ffd8-463c-9140-6ee8d916af0c",
+      "account_label": "Synthetic Google target",
+      "disabled": false,
+      "supports_events": true,
+      "supports_tasks": false,
+      "provider_access_role": "owner",
+      "provider_access_revision": 5,
+      "provider_default_calendar": null,
+      "source_generation": 0,
+      "checkpoint_revision": 0,
+      "read_configuration_fingerprint": null,
+      "read_coverage": null
+    },
+    {
+      "id": "cb21861d-30c2-4eb8-927d-0669552652d3",
+      "created_at": "2026-10-12T10:40:51.814Z",
+      "updated_at": "2026-10-12T10:40:51.971Z",
+      "provider": "microsoft",
+      "user_id": "upgrade-owner-a47a0197-6a5d-4f5a-bd18-d4cfa2e1ad7e",
+      "calendar_id": "876630e2-4b53-4c5a-89ac-4467bfeeb105",
+      "external_calendar_id": "upgrade-v1-f2a2ec07-b92e-4ecf-ac89-5e37ad02527f",
+      "cursor": "{\"version\":2,\"calendarId\":\"upgrade-v1-f2a2ec07-b92e-4ecf-ac89-5e37ad02527f\",\"link\":\"https://graph.microsoft.com/v1.0/me/calendars/upgrade-v1-f2a2ec07-b92e-4ecf-ac89-5e37ad02527f/calendarView/delta?$deltatoken=new-v1\",\"windowStart\":1776256851962,\"windowEnd\":1854880851962}",
+      "account_id": "upgrade-account-7873302f-4436-421d-a479-4669baea6f96",
+      "account_label": "Synthetic Graph account",
+      "disabled": false,
+      "supports_events": true,
+      "supports_tasks": false,
+      "provider_access_role": "microsoft:private=yes;edit=yes",
+      "provider_access_revision": 7,
+      "provider_default_calendar": null,
+      "source_generation": 1,
+      "checkpoint_revision": 2,
+      "read_configuration_fingerprint": "{\"profile\":\"sync-profile-v1\",\"reader\":\"graph-calendar-view-v2\",\"eventTimeEdits\":false,\"rsvpOccurrences\":false,\"trackedFamilies\":\"complete-finite-native-v1\",\"deletion\":\"graph-event-double-404-calendar-v1\"}",
+      "read_coverage": {
+        "kind": "window",
+        "complete": true,
+        "fromInclusive": "2026-04-15T12:40:51.962Z",
+        "untilExclusive": "2028-10-11T12:40:51.962Z"
+      }
+    }
+  ],
+  "wireParity": {
+    "rangeRows": 6,
+    "deltaRows": 6,
+    "before": {
+      "rangeSHA256": "9e373e90c504c11dd82c97d981b49ccd89a5b6272c034d43d2a01132c2c5c1f5",
+      "deltaSHA256": "9e373e90c504c11dd82c97d981b49ccd89a5b6272c034d43d2a01132c2c5c1f5"
+    },
+    "afterMigration": {
+      "rangeSHA256": "9e373e90c504c11dd82c97d981b49ccd89a5b6272c034d43d2a01132c2c5c1f5",
+      "deltaSHA256": "9e373e90c504c11dd82c97d981b49ccd89a5b6272c034d43d2a01132c2c5c1f5"
+    },
+    "afterRead": {
+      "rangeSHA256": "9e373e90c504c11dd82c97d981b49ccd89a5b6272c034d43d2a01132c2c5c1f5",
+      "deltaSHA256": "9e373e90c504c11dd82c97d981b49ccd89a5b6272c034d43d2a01132c2c5c1f5"
+    }
+  },
+  "providerRequests": [
+    {
+      "kind": "engine",
+      "method": "GET",
+      "path": "/v1.0/me/calendars",
+      "query": "?$select=id,name,hexColor,canEdit,canViewPrivateItems,isDefaultCalendar&$top=100"
+    },
+    {
+      "kind": "engine",
+      "method": "GET",
+      "path": "/v1.0/me/calendars/upgrade-plain-65f437a7-b3f3-4c09-ad82-9c9363aacb7e/calendarView/delta",
+      "query": "?startDateTime=2026-04-15T12:40:51.937Z&endDateTime=2028-10-11T12:40:51.937Z"
+    },
+    {
+      "kind": "engine",
+      "method": "GET",
+      "path": "/v1.0/me/calendars/upgrade-v1-f2a2ec07-b92e-4ecf-ac89-5e37ad02527f/calendarView/delta",
+      "query": "?startDateTime=2026-04-15T12:40:51.962Z&endDateTime=2028-10-11T12:40:51.962Z"
+    },
+    {
+      "kind": "native-fixture-probe",
+      "method": "GET",
+      "path": "/v1.0/me/calendars/upgrade-plain-65f437a7-b3f3-4c09-ad82-9c9363aacb7e/events/native-plain-dc932d10-4431-431d-a6a3-46c6d30ccb12",
+      "query": ""
+    },
+    {
+      "kind": "native-fixture-probe",
+      "method": "GET",
+      "path": "/v1.0/me/calendars/upgrade-v1-f2a2ec07-b92e-4ecf-ac89-5e37ad02527f/events/native-v1-96fc6b58-30a8-426f-ba41-8dd7f8911dd0",
+      "query": ""
+    }
+  ],
+  "providerMutationRequests": 0,
+  "outboxDeliveryExecutions": 0,
+  "assertions": {
+    "realOldSchemaBeforeSeed": true,
+    "realPopulatedMigration": true,
+    "oldColumnByteParity": true,
+    "newDefaults": true,
+    "rangeAndDeltaParity": true,
+    "emptyWindowRetention": true,
+    "legacyPlainAndV1CursorUpgrade": true,
+    "pendingAndUnconfirmedPayloadParity": true
+  },
+  "fixtureCleanupVerified": true
+}

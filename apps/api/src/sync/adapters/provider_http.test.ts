@@ -220,7 +220,8 @@ async function main() {
       res.writeHead(204);
       return res.end();
     }
-    if (url.pathname === "/graph-expired") {
+    const graphView = `${origin}/graph/me/calendars/calendar-graph/calendarView/delta`;
+    if (url.pathname === "/graph/me/calendars/calendar-graph/calendarView/delta" && url.searchParams.get("token") === "expired") {
       return json(200, {
         value: [
           {
@@ -231,16 +232,16 @@ async function main() {
             end: { dateTime: "2026-07-20T10:00:00.0000000", timeZone: "UTC" },
           },
         ],
-        "@odata.nextLink": `${origin}/graph-expired-page-2`,
+        "@odata.nextLink": `${graphView}?token=expired-page-2`,
       });
     }
-    if (url.pathname === "/graph-expired-page-2") {
+    if (url.pathname === "/graph/me/calendars/calendar-graph/calendarView/delta" && url.searchParams.get("token") === "expired-page-2") {
       return json(410, { error: { message: "delta expired" } });
     }
     if (
       url.pathname.includes(
         "/graph/me/calendars/calendar-graph/calendarView/delta",
-      )
+      ) && url.searchParams.get("token") !== "fresh-page-2"
     ) {
       return json(200, {
         value: [
@@ -253,7 +254,7 @@ async function main() {
             end: { dateTime: "2026-07-24T10:00:00.0000000", timeZone: "UTC" },
           },
         ],
-        "@odata.nextLink": `${origin}/graph-page-2`,
+        "@odata.nextLink": `${graphView}?token=fresh-page-2`,
       });
     }
     if (url.pathname === "/graph/me/calendars/calendar-graph/events/master-1") {
@@ -266,7 +267,7 @@ async function main() {
         }),
       );
     }
-    if (url.pathname === "/graph-page-2") {
+    if (url.pathname === "/graph/me/calendars/calendar-graph/calendarView/delta" && url.searchParams.get("token") === "fresh-page-2") {
       return json(200, {
         value: [
           {
@@ -277,7 +278,7 @@ async function main() {
             end: { dateTime: "2026-07-25T10:00:00.0000000", timeZone: "UTC" },
           },
         ],
-        "@odata.deltaLink": `${origin}/graph-delta-fresh`,
+        "@odata.deltaLink": `${graphView}?token=delta-fresh`,
       });
     }
 
@@ -351,7 +352,7 @@ async function main() {
     assert.equal(google.reset, true);
     assert.equal(google.nextCursor, "fresh-cursor");
     assert.deepEqual(
-      google.changes.filter(change => change.kind !== "event-resource").map(({ data: { externalId, status } }) => ({
+      google.changes.filter(change => change.kind === "event").map(({ data: { externalId, status } }) => ({
         externalId,
         status,
       })),
@@ -361,7 +362,7 @@ async function main() {
       ],
     );
     assert.equal(
-      google.changes.filter(change => change.kind !== "event-resource").some(
+      google.changes.filter(change => change.kind === "event").some(
         ({ data }) => data.externalId === "discard-before-410",
       ),
       false,
@@ -398,7 +399,7 @@ async function main() {
     assert.equal(googleTasks.reset, true);
     assert.equal(googleTasks.nextCursor, null);
     assert.deepEqual(
-      googleTasks.changes.filter(change => change.kind !== "event-resource").map(({ data }) => ({
+      googleTasks.changes.filter(change => change.kind === "task").map(({ data }) => ({
         completed: data.status === "completed",
         deleted: "deleted" in data && data.deleted === true,
         due: "due" in data ? data.due?.toISOString() : undefined,
@@ -516,7 +517,10 @@ async function main() {
       "graph-access",
       "calendar-graph",
       JSON.stringify({
-        link: `${origin}/graph-expired`,
+        version: 2,
+        calendarId: "calendar-graph",
+        link: `${origin}/graph/me/calendars/calendar-graph/calendarView/delta?token=expired`,
+        windowStart: now - 180 * 86_400_000,
         windowEnd: now + 365 * 86_400_000,
       }),
       {
@@ -524,9 +528,14 @@ async function main() {
         now,
       },
     );
-    assert.equal(microsoft.reset, true);
+    assert.equal(microsoft.reset, false);
+    assert.equal(microsoft.cursorRestarted, true);
+    assert.deepEqual(microsoft.coverage, {
+      kind: "window", fromInclusive: new Date(now - 180 * 86_400_000).toISOString(),
+      untilExclusive: new Date(now + 730 * 86_400_000).toISOString(), complete: true,
+    });
     assert.deepEqual(
-      microsoft.changes.filter(change => change.kind !== "event-resource").map(({ data: { externalId, title } }) => ({
+      microsoft.changes.filter(change => change.kind === "event").map(({ data: { externalId, title } }) => ({
         externalId,
         title,
       })),
@@ -536,7 +545,7 @@ async function main() {
       ],
     );
     assert.equal(
-      microsoft.changes.filter(change => change.kind !== "event-resource").some(
+      microsoft.changes.filter(change => change.kind === "event").some(
         ({ data }) => data.externalId === "discard-before-410",
       ),
       false,
@@ -546,7 +555,7 @@ async function main() {
     assert.equal(graphMasterRequests, 2);
     assert.equal(
       parseCursor(microsoft.nextCursor)?.link,
-      `${origin}/graph-delta-fresh`,
+      `${origin}/graph/me/calendars/calendar-graph/calendarView/delta?token=delta-fresh`,
     );
 
     assert.deepEqual(
@@ -574,13 +583,13 @@ async function main() {
     assert.equal(microsoftTasks.reset, true);
     assert.equal(microsoftTasks.nextCursor, `${origin}/graph-task-delta-fresh`);
     assert.equal(
-      microsoftTasks.changes.filter(change => change.kind !== "event-resource").some(
+      microsoftTasks.changes.filter(change => change.kind === "task").some(
         ({ data }) => data.externalId === "discard-task-before-410",
       ),
       false,
     );
     assert.deepEqual(
-      microsoftTasks.changes.filter(change => change.kind !== "event-resource").map(({ data }) => ({
+      microsoftTasks.changes.filter(change => change.kind === "task").map(({ data }) => ({
         deleted: "deleted" in data && data.deleted === true,
         externalId: data.externalId,
         priority: "priority" in data ? data.priority : undefined,

@@ -96,18 +96,24 @@ async function main() {
     if (mode.startsWith("missing")) {
       const error = { error: { code: "ErrorItemNotFound" } };
       if (url.pathname === "/v1.0/me/calendars/cal%2Fone") {
-        assert.equal(url.searchParams.get("$select"), "id");
+        assert.equal(url.searchParams.get("$select"), "id,canViewPrivateItems");
         if (mode === "missing-calendar-denied") return send(error, 403);
         if (mode === "missing-calendar-gone") return send(error, 404);
         if (mode === "missing-calendar-failed") return send(error, 503);
         if (mode === "missing-calendar-partial") res.setHeader("Content-Range", "bytes 0-10/100");
-        return send({ id: mode === "missing-wrong-calendar" ? "other" : "cal/one" });
+        return send({ id: mode === "missing-wrong-calendar" ? "other" : "cal/one",
+          ...(mode === "missing-calendar-private-unknown" ? {} : {
+            canViewPrivateItems: mode === "missing-calendar-private-lost" ? false
+              : mode === "missing-calendar-private-null" ? null : true,
+          }),
+        });
       }
       assert.equal(url.pathname, path); masterReads++;
       if (mode === "missing-restored" && masterReads === 2) return send(changed);
       if (mode === "missing-partial") res.setHeader("Content-Range", "bytes 0-10/100");
       if (mode === "missing-truncated") { res.writeHead(404, { "Content-Type": "application/json" }); res.end('{"error":'); return; }
-      return send(mode === "missing-malformed" ? {} : error, 404);
+      return send(mode === "missing-malformed" ? {}
+        : mode === "missing-masked-404" ? { error: { code: "ErrorAccessDenied" } } : error, 404);
     }
     if (mode === "partial") { res.setHeader("Content-Range", "bytes 0-10/100"); return send(changed); }
     if (mode === "redirect") { res.writeHead(302, { location: "https://other.test/leak" }); res.end(); return; }
@@ -159,7 +165,7 @@ async function main() {
     reads = []; masterReads = 0;
     assert.equal(await readGraphSeriesFamilyOrMissing("synthetic-token", "cal/one", template, ref), null);
     assert.equal(masterReads, 2); assert.equal(reads.length, 3);
-    for (const scenario of ["missing-calendar-denied", "missing-calendar-gone", "missing-calendar-failed", "missing-calendar-partial", "missing-wrong-calendar", "missing-restored", "missing-partial", "missing-truncated", "missing-malformed", "master-failure", "page-failure"]) {
+    for (const scenario of ["missing-calendar-denied", "missing-calendar-gone", "missing-calendar-failed", "missing-calendar-partial", "missing-wrong-calendar", "missing-restored", "missing-partial", "missing-truncated", "missing-malformed", "missing-masked-404", "missing-calendar-private-lost", "missing-calendar-private-unknown", "missing-calendar-private-null", "master-failure", "page-failure"]) {
       mode = scenario; reads = []; masterReads = 0;
       await assert.rejects(() => readGraphSeriesFamilyOrMissing("synthetic-token", "cal/one", template, ref));
     }
