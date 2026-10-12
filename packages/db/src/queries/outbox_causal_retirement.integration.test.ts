@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { config } from "@musubi/config";
-import { EventSchema, SyncOperationEnvelopeSchema, type Event } from "@musubi/types";
+import { EventSchema, SyncOperationCaptureSchema, SyncOperationEnvelopeSchema, type Event } from "@musubi/types";
 import { db, user, account, events, tasks, eventOutbox, taskOutbox, externalCalendars, caldavAccounts,
   createCalendar, createEvent, patchEventAndCalendarLinks, createTask, updateTask,
   claimEventOutbox, claimTaskOutbox, decodeEventOutboxOperation, decodeTaskOutboxOperation,
@@ -10,6 +10,7 @@ import { db, user, account, events, tasks, eventOutbox, taskOutbox, externalCale
   taskOutboxSnapshot, prepareTaskOutboxInTransaction, appendTaskOutbox } from "..";
 
 import { lockCalendarLifecycle } from "./calendar-lifecycle";
+import { assertPinnedOutboxSourceInTransaction } from "./operation-admission";
 
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 
@@ -214,6 +215,77 @@ async function main() {
     assert.equal((await row("event", firstIntent.id!)).status, "cancelled");
     assert.equal((await row("event", siblingIntent.id!)).status, "blocked", "sibling grant/source capture remains unchanged");
     assert.ok(await claim("event", newIntent.id!)); cases++;
+    // Legacy host source keys are opaque strings. A retired DAV projection
+    // need not have a physical credential row; causal recovery has no new proof
+    // to derive and must preserve its ordinary legacy admission path.
+    config.api.syncOperationV1EncoderEnabled = false;
+    const opaqueCalendar = await createCalendar({ creatorID: owner, name: "Opaque retired DAV", color: "#112233" });
+    const [opaqueSource] = await db.insert(externalCalendars).values({ calendarID: opaqueCalendar.id, provider: "caldav",
+      userID: owner, accountID: "retired-account", externalCalendarID: "retired-collection",
+      providerAccessRole: "caldav:read=yes;freebusy=yes", supportsEvents: true, supportsTasks: true }).returning();
+    const opaqueTask = await createTask({ id: randomUUID(), creatorID: owner, calendarID: opaqueCalendar.id,
+      title: "Legacy opaque source task" }, { actorID: owner, mutationID: randomUUID() });
+    const [opaqueReceipt] = await db.select().from(taskOutbox).where(eq(taskOutbox.taskID, opaqueTask.id));
+    assert.equal(opaqueReceipt.payload.operationEnvelope, undefined); assert.equal(opaqueReceipt.status, "pending"); cases++;
+    await db.update(externalCalendars).set({ disabled: true, providerAccessRole: "caldav:read=no;freebusy=yes" }).where(eq(externalCalendars.id, opaqueSource.id));
+    await db.transaction(async tx => {
+      await lockCalendarLifecycle(tx, [opaqueCalendar.id], "shared");
+      await tx.select().from(tasks).where(eq(tasks.id, opaqueTask.id)).for("update");
+      const [saved] = await tx.update(tasks).set({ revision: 2, title: "Canonical authoritative A2" }).where(eq(tasks.id, opaqueTask.id)).returning();
+      const target = taskOutboxSnapshot(saved, [opaqueCalendar.id]);
+      const intents = await prepareTaskOutboxInTransaction(tx, target, [{ calendarID: opaqueCalendar.id, action: "update" }],
+        { actorID: owner, mutationID: randomUUID() }, undefined, true);
+      await appendTaskOutbox(tx, target, intents);
+    });
+    const [unavailable] = await db.select().from(taskOutbox).where(and(eq(taskOutbox.taskID, opaqueTask.id), eq(taskOutbox.revision, 2)));
+    assert.equal(unavailable.status, "blocked"); assert.equal(unavailable.errorCode, "task-source-read-only");
+    assert.equal(unavailable.payload.operationEnvelope, undefined); cases++;
+    const opaqueEvent = EventSchema.parse({ id: randomUUID(), creatorID: owner, organizer: owner, title: "Legacy opaque source event",
+      start: "2026-10-01T09:00:00Z", end: "2026-10-01T10:00:00Z", isAllDay: false, isCanceled: false,
+      color: "#112233", calendars: [opaqueCalendar.id], originCalendarID: opaqueCalendar.id });
+    const opaqueIntent: EventOutboxIntent = { id: randomUUID(), actorID: owner, mutationID: randomUUID(), position: 0,
+      eventID: opaqueEvent.id, calendarID: opaqueCalendar.id, externalCalendarLinkID: opaqueSource.id, provider: "caldav",
+      userID: owner, accountID: opaqueSource.accountID, externalCalendarID: opaqueSource.externalCalendarID,
+      action: "create", payload: { event: opaqueEvent } };
+    await createEvent(opaqueEvent, opaqueEvent.calendars, [opaqueIntent]);
+    assert.equal((await row("event", opaqueIntent.id!)).payload.operationEnvelope, undefined); cases++;
+    // Enabling v1 never invents a physical DAV connection identity for an old
+    // opaque source. Both canonical kinds still commit on their legacy profile.
+    config.api.syncOperationV1EncoderEnabled = true;
+    await db.update(externalCalendars).set({ disabled: false, providerAccessRole: "caldav:read=yes;freebusy=yes" }).where(eq(externalCalendars.id, opaqueSource.id));
+    const enabledOpaqueTask = await createTask({ id: randomUUID(), creatorID: owner, calendarID: opaqueCalendar.id,
+      title: "Encoder enabled, legacy opaque source task" }, { actorID: owner, mutationID: randomUUID() });
+    const [enabledOpaqueReceipt] = await db.select().from(taskOutbox).where(eq(taskOutbox.taskID, enabledOpaqueTask.id));
+    assert.equal(enabledOpaqueReceipt.payload.operationEnvelope, undefined);
+    assert.equal(enabledOpaqueReceipt.payload.operationCapture, undefined);
+    assert.equal((await db.select({ title: tasks.title }).from(tasks).where(eq(tasks.id, enabledOpaqueTask.id)))[0]!.title,
+      "Encoder enabled, legacy opaque source task"); cases++;
+    const enabledOpaqueEvent = EventSchema.parse({ ...opaqueEvent, id: randomUUID(), title: "Encoder enabled, legacy opaque source event" });
+    const enabledOpaqueIntent = { ...opaqueIntent, id: randomUUID(), mutationID: randomUUID(), eventID: enabledOpaqueEvent.id,
+      payload: { event: enabledOpaqueEvent } };
+    await createEvent(enabledOpaqueEvent, enabledOpaqueEvent.calendars, [enabledOpaqueIntent]);
+    assert.equal((await row("event", enabledOpaqueIntent.id!)).payload.operationEnvelope, undefined);
+    assert.equal((await db.select({ title: events.title }).from(events).where(eq(events.id, enabledOpaqueEvent.id)))[0]!.title,
+      "Encoder enabled, legacy opaque source event"); cases++;
+
+    // A structurally valid captured UUID cannot make an opaque host account key
+    // queryable in the UUID credential table. Test the authority primitive
+    // directly (dispatcher format binding is a separate gate) and prove that
+    // rejecting it leaves this same PostgreSQL transaction usable.
+    const captured = SyncOperationCaptureSchema.parse(dispatched.receipt.payload.operationCapture);
+    const noPhysicalIdentity: TaskOutboxRow = { ...(dispatched.receipt as TaskOutboxRow), taskID: enabledOpaqueTask.id,
+      calendarID: opaqueCalendar.id, externalCalendarLinkID: opaqueSource.id, provider: "caldav",
+      accountID: opaqueSource.accountID, externalCalendarID: opaqueSource.externalCalendarID,
+      payload: { ...dispatched.receipt.payload, operationCapture: { ...captured, sourceId: opaqueSource.id,
+        writeGeneration: opaqueSource.providerAccessRevision, privacyEpoch: "task:0" } } } as TaskOutboxRow;
+    await db.transaction(async tx => {
+      await lockCalendarLifecycle(tx, [opaqueCalendar.id], "shared");
+      await tx.select().from(tasks).where(eq(tasks.id, enabledOpaqueTask.id)).for("update");
+      assert.equal(await assertPinnedOutboxSourceInTransaction(tx, noPhysicalIdentity), false,
+        "Opaque CalDAV host key cannot grant a physical connection-incarnation proof");
+      const proof = await tx.execute(sql`select 1 as proof`);
+      assert.equal(proof.rows[0]?.proof, 1, "rejected key never sends invalid UUID SQL or aborts its transaction");
+    }); cases++;
     console.log(`Causal retirement PostgreSQL: ${cases} scoped known-format/no-effect and retained-barrier cases passed`);
   } finally {
     config.api.syncOperationV1EncoderEnabled = originalEncoder;

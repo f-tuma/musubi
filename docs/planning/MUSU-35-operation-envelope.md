@@ -133,7 +133,7 @@ reconnect s novou zachycenou generací a jedním skutečným zápisem. Popis o d
 2 000 001 znaků se uloží beze zkrácení a použije legacy; hodnota 1 990 000
 projde v1. Existing DAV collection o délce 2 105 i planned URL o délce 2 049
 zachovají legacy; planned URL o délce přesně 2 048 je v1 positive control.
-Dedicated causal recovery corpus ověřuje 32 skutečných DB scénářů pro event/task:
+Dedicated causal recovery corpus nyní ověřuje 38 skutečných DB scénářů pro event/task:
 nová operace po reconnectu se claimne, old no-write CREATE dostane poctivý nový
 CREATE, unknown/uncertain/response/observation/expired-attempting/saved-dispatch
 history zůstane překážkou. Source/private epoch, DAV timestamp a OAuth sibling
@@ -187,6 +187,21 @@ image vrátil HTTP 200 a verzi 0.2.3. Reviewer nezávisle uvnitř produkční im
 ověřil všech 18 provider × event/task × CREATE/UPDATE/DELETE kombinací
 encoderu a semantic decoderu; všechny prošly. Oprava image vyžaduje nové skeptické schválení
 a všechny zelené kontroly opraveného PR headu; první failed build není přeskočen.
+
+
+CI head `4562b658a68cbbef620d5d8a478415ddd0cae60e` poté odhalil legacy hranici:
+`externalCalendars.accountID` je opaque TEXT, kdežto physical `caldavAccounts.id`
+je UUID. Retired legacy source s `retired-account` způsobil v novém helperu
+SQL cast error při canonical task admission. Host nyní odmítne tento physical
+lookup před SQL, neodvodí žádnou retirement/authority proof a nové intents tohoto
+host aliasu ponechá legacy i při zapnutém encoderu. Portable locator schema se
+nezúžil a přítomná envelope nedostane fallback. Connection capture stejně odmítá
+neprokázaný physical key před SQL, aby ACK transakce nezůstala aborted.
+Falling-before-fix fixture, celý původní DB task integration a všech 38 causal/
+legacy cases prošly. Corpus navíc dokazuje ON/OFF opaque task/event canonical
+commit a usable SELECT 1 ve stejné transakci po authority refusal. Reviewer
+38-case corpus znovu nezávisle provedl se stejným výsledkem. Oprava opět vyžaduje
+explicitní approval a green CI opraveného headu.
 
 Tyto lokální důkazy nepředstavují produkční deploy ani live provider acceptance.
 

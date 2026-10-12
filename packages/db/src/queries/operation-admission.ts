@@ -16,9 +16,15 @@ const providers = ["google", "microsoft", "caldav"];
 const own = (value: object, key: string) => Object.prototype.hasOwnProperty.call(value, key);
 const eventSpecialized = ["organizer", "rsvp", "reminderEdit", "reminderInstance", "timeEdit", "googleOccurrence", "graphOccurrence", "graphOccurrenceContent", "graphMeetingCancellation", "graphSeriesDeletion", "graphSeriesCreate", "caldavAlarm", "caldavSplit", "caldavSeries", "caldavSeriesDeletion"];
 const changed = (): never => { throw new Error("Operation admission source changed. No changes were saved."); };
+// Portable source/account keys stay opaque. This host's physical DAV account
+// table uses UUIDs; an old unavailable text alias has no provable incarnation.
+const physicalCaldavAccountKey = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
 async function connectionCapture(tx: DbTransaction, target: Target, requireActive = true) {
   if (target.provider === "caldav") {
+    // Reject before SQL: a caught UUID cast error leaves an ACK transaction
+    // aborted and cannot be converted into a safe HOLD by a later UPDATE.
+    if (!physicalCaldavAccountKey(target.accountID)) return changed();
     const [row] = await tx.select({ id: caldavAccounts.id, updatedAt: caldavAccounts.updatedAt }).from(caldavAccounts)
       .where(and(eq(caldavAccounts.id, target.accountID), eq(caldavAccounts.userID, target.userID))).for("share");
     if (!row) return changed();
@@ -130,7 +136,8 @@ export async function admitEventOperationInTransaction(tx: DbTransaction, event:
   predecessorID: string | null): Promise<EventOutboxRow["payload"]> {
   const payload = { ...intent.payload, event };
   if (!config.api.syncOperationV1EncoderEnabled || own(payload, "operationEnvelope") ||
-      !providers.includes(intent.provider) || eventSpecialized.some(key => own(payload, key)) ||
+      !providers.includes(intent.provider) || intent.provider === "caldav" && !physicalCaldavAccountKey(intent.accountID) ||
+      eventSpecialized.some(key => own(payload, key)) ||
       event.hasAttendees || event.isMeeting || event.seriesID || event.originalStart ||
       event.timeModel && event.timeModel.kind !== "legacy-unknown" || !pinnedEventProfile(event, intent) ||
       oversizedV1Identity(intent.id, intent.mutationID, event.id, intent.externalCalendarLinkID, intent.accountID,
@@ -155,7 +162,8 @@ export async function admitTaskOperationInTransaction(tx: DbTransaction, task: T
   predecessorID: string | null): Promise<TaskOutboxRow["payload"]> {
   const payload = { ...intent.payload, task };
   if (!config.api.syncOperationV1EncoderEnabled || own(payload, "operationEnvelope") ||
-      !providers.includes(intent.provider) || !pinnedTaskProfile(task, intent) ||
+      !providers.includes(intent.provider) || intent.provider === "caldav" && !physicalCaldavAccountKey(intent.accountID) ||
+      !pinnedTaskProfile(task, intent) ||
       oversizedV1Identity(intent.id, intent.mutationID, task.id, intent.externalCalendarLinkID, intent.accountID,
         intent.externalCalendarID, intent.externalTaskID, predecessorID)) return payload;
   if (intent.action !== "create" && !intent.externalTaskID && !predecessorID) return payload;

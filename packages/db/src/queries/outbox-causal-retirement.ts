@@ -39,6 +39,10 @@ export async function retireKnownUnwrittenOutboxInTransaction(tx: DbTransaction,
   if (!source) return [];
   let connection: { id: string; generation: number } | undefined;
   if (target.provider === "caldav") {
+    // Only this physical credential table uses UUIDs. Legacy source/portable
+    // locator keys remain opaque; without a physical account key there is no
+    // connection-incarnation proof to derive, so retain the causal history.
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(target.accountID)) return [];
     const [row] = await tx.select({ id: caldavAccounts.id, updatedAt: caldavAccounts.updatedAt }).from(caldavAccounts)
       .where(and(eq(caldavAccounts.id, target.accountID), eq(caldavAccounts.userID, target.userID))).for("share");
     if (row) connection = { id: row.id, generation: row.updatedAt.getTime() };

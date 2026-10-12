@@ -115,6 +115,12 @@ DAV UPDATE nezrekonstruuje celý server resource z canonical objektu. Do aktuál
 resource načteného s exact UID/ETag aplikuje jen uložený property allowlist a
 uložené replacement values. Zachová ostatní provider properties, alarmy,
 VTIMEZONE a nezměněné fyzické řádky. Nepodporovaná/ambiguous family se odmítne.
+Portable connection keys zůstávají opaque. Tento Musubi host ukládá physical
+DAV account row ID jako UUID; neprokázaný legacy text alias se nekastuje do
+physical UUID SQL a nová admission zůstane legacy. Neuděluje retirement ani
+write authority a guard musí odmítnout lookup před SQL, aby nepoškodil ACK
+transakci. Přítomná envelope nikdy nedostane legacy fallback.
+
 Predecessor CREATE může poskytnout prokázaný saved UID; bez prokázaného UID
 UPDATE/DELETE zůstává explicitní legacy profil. Canonical UUID se nesmí vydávat
 za neznámý native UID.
