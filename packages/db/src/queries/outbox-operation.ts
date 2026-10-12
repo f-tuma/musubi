@@ -10,7 +10,7 @@ export function decodeEventOutboxOperation(row: EventOutboxRow) {
     kind: "event", action: row.action, operationId: row.id, commandId: row.mutationID,
     hostObjectId: row.eventID, provider: row.provider, connectionId: row.accountID,
     collectionId: row.externalCalendarID, resourceId: row.externalEventID,
-    acceptedRevision: row.revision,
+    acceptedRevision: row.revision, predecessorOperationId: row.predecessorID,
   });
 }
 
@@ -19,6 +19,6 @@ export function decodeTaskOutboxOperation(row: TaskOutboxRow) {
     kind: "task", action: row.action, operationId: row.id, commandId: row.mutationID,
     hostObjectId: row.taskID, provider: row.provider, connectionId: row.accountID,
     collectionId: row.externalCalendarID, resourceId: row.externalTaskID,
-    acceptedRevision: row.revision,
+    acceptedRevision: row.revision, predecessorOperationId: row.predecessorID,
   });
 }

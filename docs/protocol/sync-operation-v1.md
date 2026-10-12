@@ -31,7 +31,7 @@ Absence envelope je explicitní legacy profil, nikoli implicitní nejnovější 
 | serializer.id/version | Konkrétní provider/family datový formát a jeho verze |
 | commandId, operationId | Lidský záměr a stabilní operace; retry nevytváří nové ID |
 | hostObjectId | Objekt, pro který host přijal intent |
-| locator, sourceEpoch | Exact scoped provider target a zachycená source generace |
+| locator, predecessorOperationId, sourceEpoch | Exact scoped target; native resource ID je null, pokud dosud není známý, s explicitní predecessor dependency a zachycenou source generací |
 | acceptedRevision, privacyEpoch | Zachycená host revize a privacy lifecycle evidence |
 | allowedSideEffects | Explicitně content write a případně provider notification |
 | admittedProjection.data | Přesně přijatá normalizovaná JSON projekce |
@@ -51,9 +51,9 @@ Následný slice musí dodat explicitní registry selection konkrétního immuta
 
 ## Row binding a lifecycle evidence
 
-Decoder porovnává envelope s bounded outbox row bindingem: kind, action, operation ID, command ID, host object ID, provider, connection, collection a accepted revision. Zachycený resource ID se musí shodovat. Update/delete bez známého resource ID se nepovažují za valid bound operaci.
+Decoder porovnává envelope s bounded outbox row bindingem: kind, action, operation ID, command ID, host object ID, provider, connection, collection a accepted revision. Zachycený resource ID se musí shodovat. Update/delete bez něj potřebuje přesně shodný persisted predecessorOperationId; resourceId pak zůstane null. Nevymýšlí se native address ani UID.
 
-Legacy CREATE row může mít resource ID null před získáním adresy. Decoder pak ověří pouze již uložená scoped pole; plánovanou native identity ještě nemůže dokázat. Operace přesto zůstane HOLD. Budoucí codec/admission musí samostatně prokázat planned identity a recovery profile.
+CREATE row může mít resource ID null před získáním adresy. Graph event a Google/Graph task mají poctivý null target; planned Google event a DAV address musí budoucí codec samostatně prokázat. Decoder pak ověří pouze již uložená scoped pole; plánovanou native identity ještě nemůže dokázat. Operace přesto zůstane HOLD. Budoucí codec/admission musí samostatně prokázat planned identity a recovery profile.
 
 Source epoch a privacy epoch se porovnávají, pokud je row skutečně zachytila. Integrátor NESMÍ namísto chybějící admission evidence dosadit aktuální connection generation. Generic event rows takový capture dnes nemají; tento decoder-only slice nevymýšlí novou historickou evidence a nepovoluje v1 dispatch.
 

@@ -121,4 +121,15 @@ blocked([], "operation-payload-malformed");
 assert.equal(isSyncOperationBlockCode("not-a-public-block-code"), false);
 assert.equal(isSyncOperationBlockCode(null), false);
 
+const deferredCreateRow = { ...binding, action: "create" as const, resourceId: null };
+const deferredCreate = { ...envelope, operation: { ...envelope.operation, action: "create" },
+  locator: { ...envelope.locator, resourceId: null } };
+blocked(payload(deferredCreate), "operation-envelope-codec-unavailable", deferredCreateRow);
+const dependentRow = { ...binding, resourceId: null, predecessorOperationId: "prior-operation-1" };
+const dependent = { ...envelope, locator: { ...envelope.locator, resourceId: null }, predecessorOperationId: "prior-operation-1" };
+blocked(payload(dependent), "operation-envelope-codec-unavailable", dependentRow);
+blocked(payload({ ...dependent, predecessorOperationId: "other-operation" }), "operation-envelope-binding-mismatch", dependentRow);
+blocked(payload({ ...dependent, locator: { ...envelope.locator, resourceId: "invented-native-id" } }), "operation-envelope-binding-mismatch", dependentRow);
+blocked(payload({ ...dependent, predecessorOperationId: undefined }), "operation-envelope-binding-mismatch", dependentRow);
+
 console.log("Decoder-first operation envelope HOLD contract: OK");

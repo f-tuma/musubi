@@ -91,7 +91,9 @@ export const SyncOperationEnvelopeSchema = z.object({
   commandId: SyncCommandIdSchema,
   operationId: SyncOperationIdSchema,
   hostObjectId: SyncHostObjectIdSchema,
-  locator: SyncProviderLocatorSchema,
+  /** Native address when known; null retains an unresolved creation/dependency honestly. */
+  locator: SyncProviderLocatorSchema.extend({ resourceId: OpaqueStringSchema.nullable() }).strict(),
+  predecessorOperationId: SyncOperationIdSchema.optional(),
   sourceEpoch: SyncSourceEpochSchema,
   acceptedRevision: RevisionSchema,
   privacyEpoch: OpaqueStringSchema,
@@ -126,6 +128,7 @@ export const SyncOperationRowBindingSchema = z.object({
   collectionId: OpaqueStringSchema,
   resourceId: OpaqueStringSchema.nullable(),
   acceptedRevision: RevisionSchema,
+  predecessorOperationId: OpaqueStringSchema.nullable().optional(),
   /** Only supply evidence already captured by admission; do not invent a current epoch. */
   sourceEpoch: SyncSourceEpochSchema.optional(),
   privacyEpoch: OpaqueStringSchema.optional(),
@@ -178,7 +181,9 @@ function matchesRow(envelope: SyncOperationEnvelope, row: SyncOperationRowBindin
     envelope.locator.collectionId !== row.collectionId) return false;
   // A CREATE can have a planned resource ID before the legacy row has a captured address.
   if (row.resourceId !== null && envelope.locator.resourceId !== row.resourceId) return false;
-  if (row.resourceId === null && row.action !== "create") return false;
+  if (envelope.predecessorOperationId !== (row.predecessorOperationId ?? undefined)) return false;
+  if (row.resourceId === null && row.action !== "create" &&
+      (!row.predecessorOperationId || envelope.locator.resourceId !== null)) return false;
   if (row.sourceEpoch && (row.sourceEpoch.sourceId !== envelope.sourceEpoch.sourceId ||
     row.sourceEpoch.generation !== envelope.sourceEpoch.generation)) return false;
   return row.privacyEpoch == null || envelope.privacyEpoch === row.privacyEpoch;
