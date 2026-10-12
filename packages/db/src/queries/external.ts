@@ -10,7 +10,7 @@ import { randomUUID } from "node:crypto";
 import { appendTaskOutbox, prepareTaskOutboxInTransaction, finishTaskOutboxInTransaction, assertTaskOutboxSourceInTransaction, taskOutboxLeaseGuard, type TaskOutboxRow } from "./task-outbox";
 import { assertLegacyEventTimePatch } from "./event-time-write";
 import { appendEventOutbox, reserveEventMutation, type EventOutboxIntent } from "./event-outbox";
-import { retainPendingEventPull, retainUnmappedCreatePull } from "./event-outbox-pull";
+import { retainPendingEventPull, retainUnmappedCreatePull, retainUnsupportedEventPull } from "./event-outbox-pull";
 import { appendInboundEventFanout } from "./event-outbox-fanout";
 import { retainUnmappedEventDeletion, lockExternalEventAddress } from "./event-outbox-deletions";
 import { lockCalendarLifecycle, lockUserLifecycle } from "./calendar-lifecycle";
@@ -845,6 +845,7 @@ export async function upsertExternalEventInTransaction(
       const intent = candidate?.payload.organizer;
       if (candidate && intent?.instance) {
         const map = await mappedEventForUpdate(tx, provider, calendarID, externalEventID);
+        if (map && await retainUnsupportedEventPull(tx, candidate, externalEventID, values, etag, icalUid, state)) return false;
         const [link] = await tx.select().from(externalCalendars).where(and(
           eq(externalCalendars.id, candidate.externalCalendarLinkID), eq(externalCalendars.userID, userID),
           eq(externalCalendars.provider, provider), eq(externalCalendars.accountID, candidate.accountID),
@@ -1127,6 +1128,7 @@ export async function deleteExternalEventInTransaction(
         sql`coalesce(${eventOutbox.payload}->'caldavSplit'->'prepared'->'context'->'mappings', ${eventOutbox.payload}->'caldavSeries'->'context'->'mappings', ${eventOutbox.payload}->'caldavSeriesDeletion'->'context'->'mappings') @> ${JSON.stringify([{ eventID: mapped.event.id, externalEventID }])}::jsonb`,
       )).for("update");
       if (family) {
+        if (await retainUnsupportedEventPull(tx, family, externalEventID, null, null, mapped.icalUid)) return false;
         const removedByIntent = !!family.payload.caldavSeriesDeletion ||
           !!family.payload.caldavSplit?.after.moved.some(child => child.id === mapped.event.id) ||
           !!(family.payload.caldavSeries?.write.followingDelete && mapped.event.id !== family.eventID && !caldavSeriesDesired(family.payload.caldavSeries.write).children.some(child => child.id === mapped.event.id));

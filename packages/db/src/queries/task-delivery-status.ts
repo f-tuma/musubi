@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
-import { NotFoundError, type TaskDelivery, type TaskDeliveryInbox, type TaskDeliveryTarget } from "@musubi/types";
+import { NotFoundError, isSyncOperationBlockCode, type TaskDelivery, type TaskDeliveryInbox, type TaskDeliveryTarget } from "@musubi/types";
 import { db } from "..";
 import { calendars, calendarMembers, externalCalendars, taskOutbox, tasks } from "../schema";
 import { lockCalendarLifecycle } from "./calendar-lifecycle";
@@ -13,6 +13,7 @@ function deliveryIssue(status: TaskDeliveryTarget["status"], code: string | null
   if (["completed", "not-needed", "pending", "attempting"].includes(status)) return null;
   if (status === "conflict" || code === "task-provider-conflict") return "conflict";
   if (status === "unconfirmed") return "unconfirmed";
+  if (isSyncOperationBlockCode(code)) return "recovery-unavailable";
   if (code?.includes("reconnect")) return "reconnect-required";
   if (code === "task-source-read-only" || code === "provider-write-denied") return "write-denied";
   if (code === "task-conditional-write-unsupported" || code === "task-recurrence-projection-unsupported") return "write-unsupported";

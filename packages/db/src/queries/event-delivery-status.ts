@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, or, sql } from "drizzle-orm";
 import {
   NotFoundError,
+  isSyncOperationBlockCode,
   type EventDelivery,
   type EventDeliveryTarget,
 } from "@musubi/types";
@@ -21,6 +22,7 @@ function deliveryIssue(
 ): EventDeliveryTarget["issue"] {
   if (["unknown", "completed", "not-needed"].includes(status)) return null;
   if (status === "conflict") return "conflict";
+  if (isSyncOperationBlockCode(code)) return "recovery-unavailable";
   if (code === "provider-reconnect-required") return "reconnect-required";
   if (code === "provider-write-denied") return "write-denied";
   if (code === "provider-write-unsupported") return "write-unsupported";

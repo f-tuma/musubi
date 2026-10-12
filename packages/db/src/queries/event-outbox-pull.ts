@@ -6,6 +6,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { eventOutbox, events, externalCalendars } from "../schema";
 import type { DbTransaction } from "./calendars";
 import type { EventOutboxRow } from "./event-outbox";
+import { decodeEventOutboxOperation } from "./outbox-operation";
 
 type PullValues = Partial<Pick<Event, "timeModel" | "originalStart" | "isCanceled" | "seriesID">> & {
   title: string;
@@ -55,6 +56,31 @@ function matchesProjection(row: EventOutboxRow, values: PullValues, providerStat
   );
 }
 
+/** Call under the caller's event/resource fence. Unknown formats retain native
+ * observations without claiming an echo, even for terminal late-create history.
+ * The outbox lock prevents a concurrent ACK from being reopened by stale reads.
+ */
+export async function retainUnsupportedEventPull(
+  tx: DbTransaction, address: EventOutboxRow, externalEventID: string,
+  values: PullValues | null, etag: string | null, icalUid: string | null, providerState?: ProviderEventState,
+) {
+  const [row] = await tx.select().from(eventOutbox).where(eq(eventOutbox.id, address.id)).for("update");
+  if (!row) return false;
+  const decoded = decodeEventOutboxOperation(row);
+  if (decoded.kind !== "blocked") return false;
+  const terminal = ["completed", "not-needed", "cancelled"].includes(row.status);
+  await tx.update(eventOutbox).set({
+    ...(!terminal ? { status: "blocked" as const, errorCode: decoded.code } : {}),
+    remoteSnapshot: {
+      externalEventId: externalEventID, etag, icalUid, deleted: !values,
+      observedAt: new Date().toISOString(), ...(providerState ? { providerState } : {}),
+      ...(values ? { values: JSON.parse(JSON.stringify(values)) } : {}),
+    },
+    leaseToken: null, leaseUntil: null, updatedAt: new Date(),
+  }).where(eq(eventOutbox.id, row.id));
+  return true;
+}
+
 /** Event lock is held by caller. A pull may advance its cursor only after this
  * conflicting content is retained. Never overwrite a pending local intention. */
 export async function retainPendingEventPull(
@@ -81,7 +107,16 @@ export async function retainPendingEventPull(
       ),
     )
     .for("update");
-  if (!rows.length || (onlyReplaceObservation && !rows.some(row => row.remoteSnapshot))) return false;
+  if (!rows.length) return false;
+  // This gate precedes every family/baseline and DELETE echo shortcut. A new
+  // format cannot acknowledge itself by falling back to the old event snapshot.
+  const blocked = rows.map(row => ({ row, decoded: decodeEventOutboxOperation(row) }))
+    .filter(item => item.decoded.kind === "blocked");
+  if (blocked.length) {
+    for (const { row } of blocked) await retainUnsupportedEventPull(tx, row, externalEventID, values, etag, icalUid, providerState);
+    return true;
+  }
+  if (onlyReplaceObservation && !rows.some(row => row.remoteSnapshot)) return false;
   // Retain organizer observations without revoking the active native reader's
   // lease. Full resource comparison, source CAS and permanent dispatch marker
   // remain mandatory; projected content never acknowledges guest notifications.
@@ -221,6 +256,7 @@ export async function retainUnmappedCreatePull(
     .from(events)
     .where(eq(events.id, row.eventID))
     .for("update");
+  if (await retainUnsupportedEventPull(tx, row, externalEventID, values, etag, icalUid, providerState)) return true;
   // Completed or removed local identities must not be resurrected by a late echo.
   const retained = await retainPendingEventPull(
     tx,

@@ -1,5 +1,5 @@
 import { TaskSchema } from "@musubi/types";
-import { claimTaskOutbox, getTaskOutbox, getTaskOutboxPredecessorEvidence, renewTaskOutboxLease, assertTaskOutboxDeliverySource, setTaskOutboxProjection, finishTaskOutbox, acceptTaskOutboxDelivery, type TaskOutboxRow } from "@musubi/db";
+import { claimTaskOutbox, decodeTaskOutboxOperation, getTaskOutbox, getTaskOutboxPredecessorEvidence, renewTaskOutboxLease, assertTaskOutboxDeliverySource, setTaskOutboxProjection, finishTaskOutbox, acceptTaskOutboxDelivery, type TaskOutboxRow } from "@musubi/db";
 import type { CalendarAdapter, ExternalTaskRef, TaskProjection } from "./adapter";
 import { createDeliveryAttempt, deliveryNextAttemptAt, validateDeliveryAttemptOptions, type DeliveryAttemptOptions } from "./delivery_policy";
 import { withProviderCallMetrics } from "./provider_http_metrics";
@@ -26,6 +26,11 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
   const row = await claimTaskOutbox(id);
   if (!row?.leaseToken) return undefined;
   const token = row.leaseToken;
+  const decoded = decodeTaskOutboxOperation(row);
+  if (decoded.kind === "blocked") {
+    await finishTaskOutbox(row.id, token, "blocked", decoded.code, { uncertain: row.reconciling });
+    return getTaskOutbox(row.id);
+  }
   let dispatched = false;
   let resultRef: ExternalTaskRef | undefined;
   let mutationAccepted = false;
