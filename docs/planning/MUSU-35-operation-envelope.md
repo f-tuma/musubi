@@ -176,6 +176,18 @@ Finální skeptické review výslovně schválilo source+docs diff
 `1248ce285f29c61650bbb8570d329653b1bca460` před otevřením druhého PR. Pozdější
 commit doplnil pouze tyto ověřené facts; runtime ani testovací logika se nezměnily.
 
+
+Po otevření PR #347 první CI head `d6e021f4287ab6a81f1b07238a26290bf1364067`
+odhalil chybějící `packages/sync-codec` v explicitním API Docker COPY seznamu.
+Build AMD64/ARM64 image selhal před deploy closure; žádný runtime formát se kvůli
+opravě nezměnil. Doplněný COPY prošel lokálním skutečným Docker buildem produkční
+closure, importem pinned codec/types uvnitř image a startem API s migracemi na
+nové prázdné syntetické DB. Health endpoint `/api/v1/server/ok` v této izolované
+image vrátil HTTP 200 a verzi 0.2.3. Reviewer nezávisle uvnitř produkční image
+ověřil všech 18 provider × event/task × CREATE/UPDATE/DELETE kombinací
+encoderu a semantic decoderu; všechny prošly. Oprava image vyžaduje nové skeptické schválení
+a všechny zelené kontroly opraveného PR headu; první failed build není přeskočen.
+
 Tyto lokální důkazy nepředstavují produkční deploy ani live provider acceptance.
 
 ## Provozní hranice a zbývající gate
