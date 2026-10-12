@@ -50,6 +50,8 @@ import {
   googleEventCreateID,
 } from "./event_create_identity";
 import { ProviderEventWriteError, strongEventEtag } from "./event_write";
+import { createDeliveryAttempt, deliveryNextAttemptAt, validateDeliveryAttemptOptions } from "./delivery_policy";
+import { withProviderCallMetrics } from "./provider_http_metrics";
 
 export function matchesReminderIntent(intent: GoogleReminderWrite, state: ProviderEventState) {
   return matchesGoogleReminderIntent(intent, state);
@@ -106,34 +108,19 @@ export async function deliverEventOutbox(
   adapterFor: (provider: string) => CalendarAdapter | null,
   options: { timeoutMs?: number } = {},
 ): Promise<EventOutboxRow | undefined> {
+  validateDeliveryAttemptOptions(options);
   const row = await claimEventOutbox(id);
   if (!row) return getEventOutboxRow(id);
   const token = row.leaseToken!;
   const adapter = adapterFor(row.provider);
-  const controller = new AbortController();
-  const signal = controller.signal;
+  const attempt = createDeliveryAttempt(() => renewEventOutboxLease(row.id, token), options);
+  const signal = attempt.signal;
   let mutationStarted = false;
   let caldavDispatchPossible = row.payload.rsvp?.request.provider === "caldav" &&
     (row.payload.rsvp.caldavDelivery === undefined || row.payload.rsvp.caldavDelivery?.startedAt !== undefined);
   let remoteSnapshot: EventOutboxRow["remoteSnapshot"] = null;
   let expectedRef: ExternalEventRef | null = null;
   let resultRef: ExternalEventRef | null = null;
-  let heartbeatBusy = false;
-  const heartbeat = setInterval(() => {
-    if (heartbeatBusy || signal.aborted) return;
-    heartbeatBusy = true;
-    void renewEventOutboxLease(row.id, token)
-      .then(
-        (ok) => {
-          if (!ok) controller.abort();
-        },
-        () => controller.abort(),
-      )
-      .finally(() => {
-        heartbeatBusy = false;
-      });
-  }, 20_000);
-  let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
     const run = async () => {
       const event = EventSchema.parse(row.payload.event);
@@ -705,8 +692,7 @@ export async function deliverEventOutbox(
       signal.throwIfAborted();
       await completeEventOutbox(row.id, token, resultRef, expectedRef);
     };
-    await Promise.race([
-      run().catch(async (error) => {
+    await attempt.run(() => withProviderCallMetrics(row.provider, "event", () => run().catch(async (error) => {
         if (
           error instanceof ProviderEventWriteError &&
           error.code === "provider-conflict" &&
@@ -730,16 +716,7 @@ export async function deliverEventOutbox(
           }
         }
         throw error;
-      }),
-      new Promise<never>((_, reject) => {
-        timeout = setTimeout(() => {
-          controller.abort();
-          reject(
-            new ProviderEventWriteError("provider-write-failed", "unconfirmed"),
-          );
-        }, options.timeoutMs ?? 45_000);
-      }),
-    ]);
+      })));
   } catch (error) {
     const providerError =
       error instanceof ProviderEventWriteError ? error : undefined;
@@ -761,11 +738,6 @@ export async function deliverEventOutbox(
     if (row.payload.graphOccurrenceContent && (conflict || blocked || error instanceof BadRequestError) && await stopGraphOccurrenceContent(row)) return getEventOutboxRow(row.id);
     if (row.payload.graphMeetingCancellation && (conflict || blocked) && await stopUndispatchedGraphMeetingCancellation(row)) return getEventOutboxRow(row.id);
     if (row.payload.organizer && (conflict || blocked || error instanceof BadRequestError) && await stopMicrosoftMeetingUpdate(row)) return getEventOutboxRow(row.id);
-    const delay = Math.max(
-      providerError?.retryAfterMs ?? 0,
-      Math.min(3_600_000, 1_000 * 2 ** Math.min(row.attempts, 12)) *
-        (0.75 + Math.random() * 0.5),
-    );
     await finishEventOutbox(
       row.id,
       token,
@@ -788,17 +760,13 @@ export async function deliverEventOutbox(
               : "provider-write-failed"),
       {
         uncertain,
-        nextAttemptAt: new Date(
-          Date.now() + Math.min(delay, 8.64e15 - Date.now()),
-        ),
+        nextAttemptAt: deliveryNextAttemptAt(row.attempts, providerError?.retryAfterMs),
         ...(remoteSnapshot ? { remoteSnapshot } : {}),
         ...(resultRef ? { resultRef } : {}),
       },
     );
   } finally {
-    clearInterval(heartbeat);
-    if (timeout) clearTimeout(timeout);
-    controller.abort();
+    attempt.dispose();
   }
   return getEventOutboxRow(row.id);
 }

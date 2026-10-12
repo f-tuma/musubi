@@ -6,6 +6,7 @@ import {
 import { ProviderAuthError } from "./errors";
 import { decryptToken, encryptToken } from "../tokenCrypto";
 import { createHash } from "node:crypto";
+import { observedProviderFetch } from "./provider_http_metrics";
 
 // Shared OAuth access-token minting for adapter API calls (google, microsoft).
 // Refreshes expired access tokens directly against the provider's token
@@ -28,9 +29,23 @@ type AccessTokenOptions = {
   // A resource GET can reject a token before our stored expiry. Refresh only
   // that rejected token; a newer stored token is already the recovery result.
   rejectedAccessToken?: string;
+  signal?: AbortSignal;
 };
 
 const refreshes = new Map<string, Promise<string>>();
+// A shared refresh outlives an individual delivery deadline. Its own HTTP
+// deadline bounds the work without cancelling a sibling waiting on that grant.
+const REFRESH_TIMEOUT_MS = 30_000;
+
+function awaitRefresh<T>(pending: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (!signal) return pending;
+  signal.throwIfAborted();
+  return new Promise((resolve, reject) => {
+    const aborted = () => reject(signal.reason);
+    signal.addEventListener("abort", aborted, { once: true });
+    pending.then(resolve, reject).finally(() => signal.removeEventListener("abort", aborted));
+  });
+}
 
 export async function getOAuthAccessToken(
   provider: string,
@@ -39,8 +54,10 @@ export async function getOAuthAccessToken(
   cfg: TokenEndpointConfig,
   options: AccessTokenOptions = {},
 ): Promise<string> {
+  options.signal?.throwIfAborted();
   const credentials = await readActiveCredentials(provider, userID, accountId);
   const token = await usableAccessToken(credentials, options);
+  options.signal?.throwIfAborted();
   if (token) return token;
 
   // A new grant must not wait on a refresh of the old one, whose result can be
@@ -50,14 +67,12 @@ export async function getOAuthAccessToken(
     credentials.refreshToken, credentials.scope, credentials.accessTokenExpiresAt,
   ])).digest("hex");
   const pending = refreshes.get(key);
-  if (pending) return pending;
-  const refresh = refreshOAuthAccessToken(provider, userID, accountId, cfg, options);
-  refreshes.set(key, refresh);
-  try {
-    return await refresh;
-  } finally {
+  if (pending) return awaitRefresh(pending, options.signal);
+  const refresh = refreshOAuthAccessToken(provider, userID, accountId, cfg, { rejectedAccessToken: options.rejectedAccessToken }).finally(() => {
     if (refreshes.get(key) === refresh) refreshes.delete(key);
-  }
+  });
+  refreshes.set(key, refresh);
+  return awaitRefresh(refresh, options.signal);
 }
 
 async function readActiveCredentials(provider: string, userID: string, accountId: string) {
@@ -93,6 +108,7 @@ async function refreshOAuthAccessToken(
   cfg: TokenEndpointConfig,
   options: AccessTokenOptions,
 ): Promise<string> {
+  const signal = AbortSignal.timeout(REFRESH_TIMEOUT_MS);
   // A failed compare-and-swap means the grant changed while HTTP was in flight.
   // Re-read once; never return or revoke credentials from the obsolete grant.
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -109,7 +125,8 @@ async function refreshOAuthAccessToken(
     const refreshToken = await decryptToken(credentials.refreshToken);
     let response: Response;
     try {
-      response = await fetch(cfg.tokenEndpoint, {
+      response = await observedProviderFetch(cfg.tokenEndpoint, {
+        signal,
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
         body: new URLSearchParams({
@@ -131,6 +148,7 @@ async function refreshOAuthAccessToken(
       error?: unknown;
       [key: string]: unknown;
     };
+    signal.throwIfAborted();
 
     if (!response.ok) {
       const code = safeOAuthCode(payload.error) ?? `http_${response.status}`;

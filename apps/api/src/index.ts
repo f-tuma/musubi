@@ -149,6 +149,7 @@ import {
 import { dispatchDueReminders, pushEnabled } from "./reminder_dispatch";
 import { drainPendingNotifications } from "./notification_dispatch";
 import { nonOverlapping } from "./scheduling";
+import { runDeliveryRecovery, startExternalBackground } from "./sync/background";
 import { acquireApiSingletonLock } from "./singleton";
 import { trustPrivateProxies } from "./middleware/proxy";
 
@@ -613,7 +614,7 @@ async function cleanupExpired() {
 // something actually changed, and their clients run a silent delta refresh.
 // Polling is the uniform answer here — true Google push (watch webhooks) needs a
 // public HTTPS endpoint + channel renewal (self-host-unfriendly), and CalDAV has
-// no push protocol at all. EXTERNAL_SYNC_INTERVAL_MIN=0 disables.
+// no push protocol at all. EXTERNAL_SYNC_INTERVAL_MIN=0 disables scheduled pulls.
 async function syncExternalAccounts() {
   const startedAt = performance.now();
   try {
@@ -669,8 +670,16 @@ const runExternalSync = nonOverlapping(syncExternalAccounts, () => {
 });
 
 const runEventOutbox = nonOverlapping(async () => {
-  try { await drainEventOutbox(); await drainTaskOutbox(); await drainOutlookMoves(); }
-  catch { logger.error("sync.event_outbox.scheduler_failed", { code: "delivery-state-unavailable" }); }
+  await runDeliveryRecovery([
+    { family: "events", run: drainEventOutbox },
+    { family: "tasks", run: drainTaskOutbox },
+    { family: "outlook_moves", run: drainOutlookMoves },
+  ], (family) => {
+    logger.error("sync.event_outbox.scheduler_failed", {
+      family,
+      code: "delivery-state-unavailable",
+    });
+  });
 }, () => { recordScheduledTaskSkip("event_outbox"); });
 
 const runReminders = nonOverlapping(dispatchReminders, () => {
@@ -711,6 +720,7 @@ async function start() {
       deploymentMode: "single-replica",
       logLevel: config.api.logLevel,
       externalSyncIntervalMin: config.api.externalSyncIntervalMin,
+      externalDeliveryRecoveryMode: config.api.externalDeliveryRecoveryMode,
     });
   });
 
@@ -739,16 +749,24 @@ async function start() {
     logger.info("notifications.disabled", { reason: "no_smtp" });
   }
 
-  if (config.api.externalSyncIntervalMin > 0) {
-    void runEventOutbox();
-    setInterval(() => void runEventOutbox(), 15_000);
+  const background = startExternalBackground({
+    pullIntervalMin: config.api.externalSyncIntervalMin,
+    deliveryRecoveryMode: config.api.externalDeliveryRecoveryMode,
+  }, {
+    runPull: runExternalSync,
+    runDeliveryRecovery: runEventOutbox,
+    every: (callback, intervalMs) => { setInterval(callback, intervalMs); },
+  });
+  logger.info(background.deliveryRecoveryEnabled
+    ? "sync.delivery_recovery.enabled"
+    : "sync.delivery_recovery.disabled", {
+    mode: config.api.externalDeliveryRecoveryMode,
+    intervalSec: background.deliveryRecoveryEnabled ? 15 : 0,
+  });
+  if (background.pullEnabled) {
     logger.info("sync.scheduler.enabled", {
       intervalMin: config.api.externalSyncIntervalMin,
     });
-    setInterval(
-      () => void runExternalSync(),
-      config.api.externalSyncIntervalMin * 60 * 1000,
-    );
   } else {
     logger.info("sync.scheduler.disabled");
   }

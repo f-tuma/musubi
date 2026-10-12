@@ -1,0 +1,70 @@
+{
+  "recordRole": "Local acceptance snapshot before PR publication; GitHub CI and merge are verified separately",
+  "date": "2026-10-12",
+  "issue": {
+    "id": 347,
+    "identifier": "MUSU-32",
+    "columnId": 4,
+    "checklistItems": [
+      {
+        "id": 4,
+        "done": true
+      },
+      {
+        "id": 5,
+        "done": true
+      },
+      {
+        "id": 6,
+        "done": true
+      },
+      {
+        "id": 7,
+        "done": true
+      }
+    ]
+  },
+  "phase": {
+    "id": 15,
+    "status": "completed",
+    "progress": {
+      "completed": 1,
+      "canceled": 0,
+      "total": 1
+    },
+    "startDate": null,
+    "targetDate": null
+  },
+  "document": {
+    "id": 2,
+    "version": 24
+  },
+  "implementation": {
+    "committed": false,
+    "deployed": false,
+    "realProviderAccountsUsed": false
+  },
+  "validation": {
+    "apiUnitCommandsPassed": 79,
+    "apiTypecheck": "passed",
+    "docsBuild": "passed",
+    "routeContracts": "passed",
+    "realtimeContracts": "passed",
+    "releaseMetadata": "passed",
+    "postgresqlFixtures": [
+      "task delivery",
+      "event delivery",
+      "task API",
+      "shared tasks",
+      "CalDAV RSVP",
+      "Microsoft RSVP",
+      "Google RSVP",
+      "Google organizer",
+      "CalDAV organizer",
+      "Graph series create",
+      "provider create recovery",
+      "outbox metrics"
+    ],
+    "runtime": "installed Node/tsx; pnpm launcher registry verification unavailable"
+  }
+}

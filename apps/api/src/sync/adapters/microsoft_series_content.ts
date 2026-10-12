@@ -1,3 +1,4 @@
+import { observedProviderFetch as fetch } from "../provider_http_metrics";
 import { requireSupportedSeriesZone } from "./microsoft_time_zone";
 import { config } from "@musubi/config";
 import { OrganizerAdmissionRejectedError } from "@musubi/types";

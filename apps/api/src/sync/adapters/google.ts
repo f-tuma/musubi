@@ -24,7 +24,8 @@ import type {
   TaskProjection,
   TaskReadEvidence,
 } from "../adapter";
-import { assertTaskEtag, assertTaskMutationResponse, ProviderTaskWriteError, requireTaskEtag } from "../task_write";
+import { assertTaskEtag, assertTaskMutationResponse, assertTaskReadResponse, ProviderTaskWriteError, requireTaskEtag } from "../task_write";
+import { observedProviderFetch, observedProviderRequest } from "../provider_http_metrics";
 import { getOAuthAccessToken } from "../oauth";
 import { assertCompleteEventReadResponse, assertCreatedEventEvidence, eventCreateOperationID, googleEventCreateID } from "../event_create_identity";
 import { isOptionalTaskError, ProviderAuthError, TaskScopeMissingError } from "../errors";
@@ -74,7 +75,7 @@ async function patchCalendarColor(
   calendarId: string,
   color: string,
 ) {
-  const res = await fetch(
+  const res = await observedProviderFetch(
     `${GCAL}/users/me/calendarList/${encodeURIComponent(calendarId)}?colorRgbFormat=true`,
     {
       method: "PATCH",
@@ -96,13 +97,14 @@ export async function getGoogleAccessToken(
   accountId: string,
   requireTasks = false,
   rejectedAccessToken?: string,
+  signal?: AbortSignal,
 ) {
   const accessToken = await getOAuthAccessToken("google", userID, accountId, {
     tokenEndpoint: GOOGLE_TOKEN_ENDPOINT,
     clientId: config.social.googleWebClientID,
     clientSecret: config.social.googleClientSecret,
     subtypeKey: "error_subtype",
-  }, { rejectedAccessToken });
+  }, { rejectedAccessToken, signal });
   // Refresh may return a narrower grant. Check after minting, before any Tasks
   // endpoint, including task writes that bypass discovery.
   if (requireTasks && !(await hasOAuthTaskScope(userID, "google", accountId)))
@@ -119,12 +121,12 @@ function googleReadFetch(userID: string, accountId: string, initialToken: string
     const request = () => {
       const headers = new Headers(init?.headers);
       headers.set("Authorization", `Bearer ${accessToken}`);
-      return fetch(input, { ...init, headers });
+      return observedProviderFetch(input, { ...init, headers });
     };
     const response = await request();
     if (response.status !== 401) return response;
     await response.body?.cancel();
-    accessToken = await getGoogleAccessToken(userID, accountId, requireTasks, accessToken);
+    accessToken = await getGoogleAccessToken(userID, accountId, requireTasks, accessToken, init?.signal ?? undefined);
     const retried = await request();
     if (retried.status !== 401) return retried;
     await retried.body?.cancel();
@@ -381,12 +383,16 @@ type GoogleTaskRequestOptions = {
   fetchImpl?: typeof fetch;
   patch?: TaskProjection;
   beforeMutation?: () => Promise<void>;
+  signal?: AbortSignal;
+  // A GET-only recovery wrapper owns instrumentation of each network dispatch.
+  readFetchImpl?: typeof fetch;
 };
 
 export async function readGoogleTask(accessToken: string, taskListId: string, externalTaskId: string, options: GoogleTaskRequestOptions = {}): Promise<TaskReadEvidence | null> {
-  const response = await (options.fetchImpl ?? fetch)(`${options.baseUrl ?? GTASKS}/lists/${encodeURIComponent(taskListId)}/tasks/${encodeURIComponent(externalTaskId)}`, { headers: { Authorization: `Bearer ${accessToken}`, "Cache-Control": "no-cache" }, redirect: "error" });
+  const readFetch: typeof fetch = options.readFetchImpl ?? ((input, init) => observedProviderRequest(options.fetchImpl ?? fetch, input, init));
+  const response = await readFetch(`${options.baseUrl ?? GTASKS}/lists/${encodeURIComponent(taskListId)}/tasks/${encodeURIComponent(externalTaskId)}`, { signal: options.signal, headers: { Authorization: `Bearer ${accessToken}`, "Cache-Control": "no-cache" }, redirect: "error" });
   if (response.status === 404 || response.status === 410) return null;
-  if (!response.ok) throw await googleError(response);
+  assertTaskReadResponse(response);
   const value = await response.json();
   if (value.id !== externalTaskId || typeof value.title !== "string" || !["needsAction", "completed"].includes(value.status)) throw new ProviderTaskWriteError("task-projection-unavailable");
   // Assigned Docs/Spaces tasks have different writable fields and deletion
@@ -401,13 +407,16 @@ export async function createGoogleTask(
   task: Task,
   options: GoogleTaskRequestOptions = {},
 ) {
+  options.signal?.throwIfAborted();
   const fetchImpl = options.fetchImpl ?? fetch;
   const baseUrl = options.baseUrl ?? GTASKS;
   await options.beforeMutation?.();
-  const res = await fetchImpl(
+  options.signal?.throwIfAborted();
+  const res = await observedProviderRequest(fetchImpl,
     `${baseUrl}/lists/${encodeURIComponent(taskListId)}/tasks`,
     {
       method: "POST",
+      signal: options.signal,
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
@@ -433,6 +442,7 @@ export async function updateGoogleTask(
   etag: string | null | undefined,
   options: GoogleTaskRequestOptions = {},
 ) {
+  options.signal?.throwIfAborted();
   requireTaskEtag(etag);
   const fetchImpl = options.fetchImpl ?? fetch;
   const baseUrl = options.baseUrl ?? GTASKS;
@@ -443,10 +453,12 @@ export async function updateGoogleTask(
   if (Object.keys(patch).some(key => !["title", "notes", "status", "due"].includes(key))) throw new ProviderTaskWriteError("task-projection-unavailable");
   if (!Object.keys(patch).length) return { etag, icalUid: null };
   await options.beforeMutation?.();
-  const res = await fetchImpl(
+  options.signal?.throwIfAborted();
+  const res = await observedProviderRequest(fetchImpl,
     `${baseUrl}/lists/${encodeURIComponent(taskListId)}/tasks/${encodeURIComponent(externalTaskId)}`,
     {
       method: "PATCH",
+      signal: options.signal,
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
@@ -467,6 +479,7 @@ export async function deleteGoogleTask(
   etag: string | null | undefined,
   options: GoogleTaskRequestOptions = {},
 ) {
+  options.signal?.throwIfAborted();
   requireTaskEtag(etag);
   const fetchImpl = options.fetchImpl ?? fetch;
   const baseUrl = options.baseUrl ?? GTASKS;
@@ -474,10 +487,12 @@ export async function deleteGoogleTask(
   if (!current) return;
   assertTaskEtag(etag, current.ref.etag);
   await options.beforeMutation?.();
-  const res = await fetchImpl(
+  options.signal?.throwIfAborted();
+  const res = await observedProviderRequest(fetchImpl,
     `${baseUrl}/lists/${encodeURIComponent(taskListId)}/tasks/${encodeURIComponent(externalTaskId)}`,
     {
       method: "DELETE",
+      signal: options.signal,
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "If-Match": requireTaskEtag(etag),
@@ -689,7 +704,7 @@ export const googleAdapter: CalendarAdapter = {
         let label = id;
         try {
           const accessToken = await getGoogleAccessToken(userID, id);
-          const res = await fetch(
+          const res = await observedProviderFetch(
             "https://www.googleapis.com/oauth2/v3/userinfo",
             {
               headers: { Authorization: `Bearer ${accessToken}` },
@@ -788,7 +803,7 @@ export const googleAdapter: CalendarAdapter = {
     const accessToken = await getGoogleAccessToken(userID, accountId);
     await assertOAuthEventWriteGrant(userID, "google", accountId);
     const headers = { Authorization: `Bearer ${accessToken}` };
-    const response = await fetch(
+    const response = await observedProviderFetch(
       `${GCAL}/users/me/calendarList/${encodeURIComponent(externalCalendarId)}`,
       { headers, signal: operation.signal },
     );
@@ -806,7 +821,7 @@ export const googleAdapter: CalendarAdapter = {
       requireEventEtag(operation.external.etag);
       if (operation.action === "update")
         toGoogleEventPatch(operation.event, operation.patch);
-      const response = await fetch(
+      const response = await observedProviderFetch(
         `${GCAL}/calendars/${encodeURIComponent(externalCalendarId)}/events/${encodeURIComponent(operation.external.externalEventId)}`,
         { headers, signal: operation.signal },
       );
@@ -833,7 +848,7 @@ export const googleAdapter: CalendarAdapter = {
   },
 
   async readReminderState(userID, accountId, externalCalendarId, ref, signal) {
-    const response = await fetch(`${GCAL}/calendars/${encodeURIComponent(externalCalendarId)}/events/${encodeURIComponent(ref.externalEventId)}`, { headers: { Authorization: `Bearer ${await getGoogleAccessToken(userID, accountId)}`, "Cache-Control": "no-cache" }, redirect: "error", signal });
+    const response = await observedProviderFetch(`${GCAL}/calendars/${encodeURIComponent(externalCalendarId)}/events/${encodeURIComponent(ref.externalEventId)}`, { headers: { Authorization: `Bearer ${await getGoogleAccessToken(userID, accountId)}`, "Cache-Control": "no-cache" }, redirect: "error", signal });
     if ([404, 410].includes(response.status)) return null;
     assertCompleteEventReadResponse(response);
     const data = await response.json();
@@ -850,7 +865,7 @@ export const googleAdapter: CalendarAdapter = {
     const reminders = GoogleReminderWriteSchema.parse(input);
     await assertOAuthEventWriteGrant(userID, "google", accountId);
     const accessToken = await getGoogleAccessToken(userID, accountId);
-    const calendarResponse = await fetch(`${GCAL}/users/me/calendarList/${encodeURIComponent(externalCalendarId)}`, { headers: { Authorization: `Bearer ${accessToken}` }, redirect: "error", signal });
+    const calendarResponse = await observedProviderFetch(`${GCAL}/users/me/calendarList/${encodeURIComponent(externalCalendarId)}`, { headers: { Authorization: `Bearer ${accessToken}` }, redirect: "error", signal });
     assertEventWriteResponse(calendarResponse);
     const calendar = await calendarResponse.json();
     assertEventWriteEvidence(typeof calendar.accessRole === "string" ? ["owner", "writer"].includes(calendar.accessRole) : undefined, "event-write");
@@ -860,7 +875,7 @@ export const googleAdapter: CalendarAdapter = {
     await beforeWrite();
     signal?.throwIfAborted();
     // Only this authenticated copy's reminders change, never participants/time.
-    const response = await fetch(`${GCAL}/calendars/${encodeURIComponent(externalCalendarId)}/events/${encodeURIComponent(ref.externalEventId)}?sendUpdates=none`, { method: "PATCH", headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json", "If-Match": requireEventEtag(ref.etag) }, body: JSON.stringify({ reminders }), redirect: "error", signal });
+    const response = await observedProviderFetch(`${GCAL}/calendars/${encodeURIComponent(externalCalendarId)}/events/${encodeURIComponent(ref.externalEventId)}?sendUpdates=none`, { method: "PATCH", headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json", "If-Match": requireEventEtag(ref.etag) }, body: JSON.stringify({ reminders }), redirect: "error", signal });
     assertProviderEventMutationResponse(response);
     const data = await response.json().catch(() => null);
     if (data?.id !== ref.externalEventId) throw new ProviderEventWriteError("provider-write-failed", "unconfirmed", response.status);
@@ -876,7 +891,7 @@ export const googleAdapter: CalendarAdapter = {
   },
 
   async readEvent(userID, accountId, externalCalendarId, ref, signal) {
-    const response = await fetch(
+    const response = await observedProviderFetch(
       `${GCAL}/calendars/${encodeURIComponent(externalCalendarId)}/events/${encodeURIComponent(ref.externalEventId)}`,
       { headers: { Authorization: `Bearer ${await getGoogleAccessToken(userID, accountId)}`, "Cache-Control": "no-cache" }, redirect: "error", signal },
     );
@@ -891,7 +906,7 @@ export const googleAdapter: CalendarAdapter = {
 
   async findCreatedEvent(userID, accountId, externalCalendarId, identity) {
     const id = googleEventCreateID(identity);
-    const response = await fetch(
+    const response = await observedProviderFetch(
       `${GCAL}/calendars/${encodeURIComponent(externalCalendarId)}/events/${id}`,
       {
         headers: {
@@ -928,7 +943,7 @@ export const googleAdapter: CalendarAdapter = {
     identity,
   ) {
     const accessToken = await getGoogleAccessToken(userID, accountId);
-    const res = await fetch(
+    const res = await observedProviderFetch(
       `${GCAL}/calendars/${encodeURIComponent(externalCalendarId)}/events`,
       {
         method: "POST",
@@ -983,7 +998,7 @@ export const googleAdapter: CalendarAdapter = {
     const payload = toGoogleEventPatch(event, patch);
     if (Object.keys(payload).length === 0) return; // Known local-only/no-op diff, no write.
     const accessToken = await getGoogleAccessToken(userID, accountId);
-    const res = await fetch(
+    const res = await observedProviderFetch(
       `${GCAL}/calendars/${encodeURIComponent(externalCalendarId)}/events/${encodeURIComponent(externalEventId)}`,
       {
         method: "PATCH",
@@ -1014,7 +1029,7 @@ export const googleAdapter: CalendarAdapter = {
   ) {
     const etag = requireEventEtag(ref?.etag);
     const accessToken = await getGoogleAccessToken(userID, accountId);
-    const res = await fetch(
+    const res = await observedProviderFetch(
       `${GCAL}/calendars/${encodeURIComponent(externalCalendarId)}/events/${encodeURIComponent(externalEventId)}`,
       {
         method: "DELETE",
@@ -1031,37 +1046,39 @@ export const googleAdapter: CalendarAdapter = {
 
   projectTask: toGoogleTask,
 
-  async readTask(userID, accountId, externalCalendarId, ref) {
+  async readTask(userID, accountId, externalCalendarId, ref, signal) {
     const list = googleTaskListId(externalCalendarId);
     if (!list) throw new ProviderTaskWriteError("task-source-read-only");
-    return readGoogleTask(await getGoogleAccessToken(userID, accountId, true), list, ref.externalTaskId);
+    const token = await getGoogleAccessToken(userID, accountId, true, undefined, signal);
+    return readGoogleTask(token, list, ref.externalTaskId, { signal, readFetchImpl: googleReadFetch(userID, accountId, token, true) });
   },
 
   async assertTaskWrite(userID, accountId, externalCalendarId, operation) {
     const list = googleTaskListId(externalCalendarId);
     if (!list) throw new ProviderTaskWriteError("task-source-read-only");
-    const token = await getGoogleAccessToken(userID, accountId, true);
+    const token = await getGoogleAccessToken(userID, accountId, true, undefined, operation.signal);
+    const readFetchImpl = googleReadFetch(userID, accountId, token, true);
     if (operation.action === "create") {
-      const response = await fetch(`${GTASKS}/users/@me/lists/${encodeURIComponent(list)}`, { headers: { Authorization: `Bearer ${token}` }, redirect: "error" });
-      if (!response.ok) throw await googleError(response);
+      const response = await readFetchImpl(`${GTASKS}/users/@me/lists/${encodeURIComponent(list)}`, { signal: operation.signal, headers: { Authorization: `Bearer ${token}` }, redirect: "error" });
+      assertTaskReadResponse(response);
       if ((await response.json()).id !== list) throw new ProviderTaskWriteError("task-projection-unavailable");
       return;
     }
     if (!operation.external) throw new ProviderTaskWriteError("task-version-unavailable");
-    const current = await readGoogleTask(token, list, operation.external.externalTaskId);
+    const current = await readGoogleTask(token, list, operation.external.externalTaskId, { signal: operation.signal, readFetchImpl });
     if (!current && operation.action === "delete") return;
     if (!current) throw new ProviderTaskWriteError("task-provider-conflict");
     assertTaskEtag(operation.external.etag, current.ref.etag);
   },
 
-  async pushTaskCreate(userID, accountId, externalCalendarId, task, beforeMutation) {
+  async pushTaskCreate(userID, accountId, externalCalendarId, task, beforeMutation, signal) {
     const taskListId = googleTaskListId(externalCalendarId);
     if (!taskListId) throw new Error("Google task write requires a task list");
     return createGoogleTask(
-      await getGoogleAccessToken(userID, accountId, true),
+      await getGoogleAccessToken(userID, accountId, true, undefined, signal),
       taskListId,
       task,
-      { beforeMutation },
+      { beforeMutation, signal },
     );
   },
 
@@ -1073,16 +1090,17 @@ export const googleAdapter: CalendarAdapter = {
     task,
     ref,
     patch,
+    signal,
   ) {
     const taskListId = googleTaskListId(externalCalendarId);
     if (!taskListId) throw new Error("Google task write requires a task list");
     return updateGoogleTask(
-      await getGoogleAccessToken(userID, accountId, true),
+      await getGoogleAccessToken(userID, accountId, true, undefined, signal),
       taskListId,
       externalTaskId,
       task,
       ref?.etag,
-      { patch, beforeMutation: ref?.beforeMutation },
+      { patch, beforeMutation: ref?.beforeMutation, signal },
     );
   },
 
@@ -1092,22 +1110,23 @@ export const googleAdapter: CalendarAdapter = {
     externalCalendarId,
     externalTaskId,
     ref,
+    signal,
   ) {
     const taskListId = googleTaskListId(externalCalendarId);
     if (!taskListId) throw new Error("Google task write requires a task list");
     await deleteGoogleTask(
-      await getGoogleAccessToken(userID, accountId, true),
+      await getGoogleAccessToken(userID, accountId, true, undefined, signal),
       taskListId,
       externalTaskId,
       ref?.etag,
-      { beforeMutation: ref?.beforeMutation },
+      { beforeMutation: ref?.beforeMutation, signal },
     );
   },
 
   async createCalendar(userID, accountId, { name, color }) {
     const accessToken = await getGoogleAccessToken(userID, accountId);
     await assertOAuthEventWriteGrant(userID, "google", accountId);
-    const res = await fetch(`${GCAL}/calendars`, {
+    const res = await observedProviderFetch(`${GCAL}/calendars`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -1127,7 +1146,7 @@ export const googleAdapter: CalendarAdapter = {
     if (taskListId && !(await hasOAuthTaskScope(userID, "google", accountId)))
       throw new TaskScopeMissingError();
     if (taskListId) {
-      const res = await fetch(
+      const res = await observedProviderFetch(
         `${GTASKS}/users/@me/lists/${encodeURIComponent(taskListId)}`,
         {
           method: "PATCH",
@@ -1141,7 +1160,7 @@ export const googleAdapter: CalendarAdapter = {
       if (!res.ok) throw await googleError(res);
       return;
     }
-    const res = await fetch(
+    const res = await observedProviderFetch(
       `${GCAL}/calendars/${encodeURIComponent(externalCalendarId)}`,
       {
         method: "PATCH",
@@ -1161,7 +1180,7 @@ export const googleAdapter: CalendarAdapter = {
     const taskListId = googleTaskListId(externalCalendarId);
     if (taskListId && !(await hasOAuthTaskScope(userID, "google", accountId)))
       throw new TaskScopeMissingError();
-    const res = await fetch(
+    const res = await observedProviderFetch(
       taskListId
         ? `${GTASKS}/users/@me/lists/${encodeURIComponent(taskListId)}`
         : `${GCAL}/calendars/${encodeURIComponent(externalCalendarId)}`,

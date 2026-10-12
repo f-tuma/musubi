@@ -269,9 +269,10 @@ export type CalendarAdapter = {
     externalCalendarId: string,
     task: Task,
     beforeMutation?: () => Promise<void>,
+    signal?: AbortSignal,
   ): Promise<ExternalTaskRef>;
   projectTask?(task: Task): TaskProjection;
-  readTask?(userID: string, accountID: string, externalCalendarID: string, ref: ExternalTaskRef): Promise<TaskReadEvidence | null>;
+  readTask?(userID: string, accountID: string, externalCalendarID: string, ref: ExternalTaskRef, signal?: AbortSignal): Promise<TaskReadEvidence | null>;
   assertTaskWrite?(userID: string, accountID: string, externalCalendarID: string, operation: TaskWriteOperation): Promise<void>;
   pushTaskUpdate?(
     userID: string,
@@ -281,6 +282,7 @@ export type CalendarAdapter = {
     task: Task,
     ref?: ExternalTaskRef,
     patch?: TaskProjection,
+    signal?: AbortSignal,
   ): Promise<{ etag?: string | null; icalUid?: string | null } | void>;
   pushTaskDelete?(
     userID: string,
@@ -288,6 +290,7 @@ export type CalendarAdapter = {
     externalCalendarId: string,
     externalTaskId: string,
     ref?: ExternalTaskRef,
+    signal?: AbortSignal,
   ): Promise<void>;
 
   // Calendar-level writes — create/rename/recolor/delete the calendar itself

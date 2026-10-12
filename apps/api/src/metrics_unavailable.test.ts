@@ -10,6 +10,9 @@ async function main() {
   const exported = await metricsRegistry.metrics();
   assert.ok(performance.now() - start < 6500, "database outage must not exhaust the scrape timeout");
   assert.match(exported, /musubi_usage_snapshot_success\{[^\n]*\} 0/);
+  assert.match(exported, /musubi_delivery_snapshot_success\{[^\n]*\} 0/);
+  assert.match(exported, /musubi_delivery_snapshot_timestamp_seconds\{[^\n]*\} 0/);
+  assert.ok(!/musubi_(event|task)_outbox_operations\{/.test(exported), "cold queue failure does not fabricate an empty queue");
   assert.match(exported, /musubi_users_total\{[^\n]*\} Na[nN]/);
   assert.match(exported, /# HELP musubi_http_requests_total/);
   console.log("cold database outage: operational metrics still export within the scrape deadline");

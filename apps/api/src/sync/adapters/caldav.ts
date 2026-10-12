@@ -48,7 +48,7 @@ import type {
   NormalizedTask,
   TaskProjection,
 } from "../adapter";
-import { assertTaskEtag, assertTaskMutationResponse, canonicalTaskProjection, ProviderTaskWriteError, requireTaskEtag } from "../task_write";
+import { assertTaskEtag, assertTaskMutationResponse, assertTaskReadResponse, canonicalTaskProjection, ProviderTaskWriteError, requireTaskEtag } from "../task_write";
 import { assertCompleteEventReadResponse, assertCreatedEventEvidence, caldavEventCreateIdentity } from "../event_create_identity";
 import { createCaldavClient, createGuardedCaldavFetch } from "../caldav_client";
 import { decryptSecret } from "../crypto";
@@ -78,13 +78,15 @@ const TASK_STATUS_BY_ICAL: Record<string, TaskStatus> = {
   CANCELLED: "cancelled",
 };
 
-async function clientForAccount(accountId: string) {
+async function clientForAccount(accountId: string, signal?: AbortSignal) {
+  signal?.throwIfAborted();
   const acc = await getCaldavAccountById(accountId);
   if (!acc) throw new Error("CalDAV account not found");
   return createCaldavClient(
     acc.serverUrl,
     acc.username,
     decryptSecret(acc.encryptedPassword),
+    signal,
   );
 }
 
@@ -906,6 +908,7 @@ async function etagAfterWrite(
   externalCalendarId: string,
   externalEventId: string,
   response: Response,
+  signal?: AbortSignal,
 ) {
   const responseEtag = response.headers.get("etag");
   if (responseEtag) return responseEtag;
@@ -917,6 +920,7 @@ async function etagAfterWrite(
     });
     return object?.etag ?? null;
   } catch (error) {
+    signal?.throwIfAborted();
     logger.warn("caldav.event.etag_refresh_failed", {
       externalCalendarId,
       externalEventId,
@@ -1834,11 +1838,11 @@ export const caldavAdapter: CalendarAdapter = {
 
   projectTask: projectCaldavTask,
 
-  async readTask(_userID, accountId, externalCalendarId, ref) {
+  async readTask(_userID, accountId, externalCalendarId, ref, signal) {
     const address = caldavSeriesResourceURL(externalCalendarId, ref.externalTaskId);
-    const response = await caldavFetch(address.href, { headers: { authorization: await basicAuthForAccount(accountId), "Cache-Control": "no-cache" }, redirect: "error" });
+    const response = await caldavFetch(address.href, { signal, headers: { authorization: await basicAuthForAccount(accountId), "Cache-Control": "no-cache" }, redirect: "error" });
     if (response.status === 404 || response.status === 410) return null;
-    if (!response.ok) throw new ProviderTaskWriteError("task-write-failed", "not-written", response.status);
+    assertTaskReadResponse(response);
     const parsed = icalToNormalizedTask({ url: address.href, etag: response.headers.get("etag") ?? undefined, data: await response.text() });
     if (!parsed?.icalUid || ref.icalUid && parsed.icalUid !== ref.icalUid) throw new ProviderTaskWriteError("task-projection-unavailable");
     return { ref: { externalTaskId: address.href, etag: requireTaskEtag(parsed.etag), icalUid: parsed.icalUid }, projection: canonicalTaskProjection(parsed) };
@@ -1852,15 +1856,15 @@ export const caldavAdapter: CalendarAdapter = {
     if (caldavAllows(permission.privileges, operation.action) !== true || caldavReadAccess(permission.privileges).read !== true) throw new ProviderTaskWriteError("task-source-read-only");
     if (operation.action !== "create") {
       if (!operation.external) throw new ProviderTaskWriteError("task-version-unavailable");
-      const current = await caldavAdapter.readTask!(userID, accountId, externalCalendarId, operation.external);
+      const current = await caldavAdapter.readTask!(userID, accountId, externalCalendarId, operation.external, operation.signal);
       if (!current && operation.action === "delete") return;
       if (!current) throw new ProviderTaskWriteError("task-provider-conflict");
       assertTaskEtag(operation.external.etag, current.ref.etag);
     }
   },
 
-  async pushTaskCreate(_userID, accountId, externalCalendarId, task: Task, beforeMutation) {
-    const client = await clientForAccount(accountId);
+  async pushTaskCreate(_userID, accountId, externalCalendarId, task: Task, beforeMutation, signal) {
+    const client = await clientForAccount(accountId, signal);
     const authorization = await basicAuthForAccount(accountId);
     const filename = `${task.id}.ics`;
     const base = externalCalendarId.endsWith("/")
@@ -1869,7 +1873,8 @@ export const caldavAdapter: CalendarAdapter = {
     const externalTaskId = `${base}${filename}`;
     const body = toTaskIcal(task);
     await beforeMutation?.();
-    const res = await caldavFetch(externalTaskId, { method: "PUT", headers: { authorization, "Content-Type": "text/calendar; charset=utf-8", "If-None-Match": "*" }, body, redirect: "error" });
+    signal?.throwIfAborted();
+    const res = await caldavFetch(externalTaskId, { signal, method: "PUT", headers: { authorization, "Content-Type": "text/calendar; charset=utf-8", "If-None-Match": "*" }, body, redirect: "error" });
     assertTaskMutationResponse(res);
     return {
       externalTaskId,
@@ -1878,6 +1883,7 @@ export const caldavAdapter: CalendarAdapter = {
         externalCalendarId,
         externalTaskId,
         res,
+        signal,
       ),
       icalUid: task.id,
     };
@@ -1891,8 +1897,9 @@ export const caldavAdapter: CalendarAdapter = {
     task: Task,
     ref,
     patch,
+    signal,
   ) {
-    const client = await clientForAccount(accountId);
+    const client = await clientForAccount(accountId, signal);
     const { calendarObject, uid: icalUid } = await taskCalendarObjectForUpdate(
       client,
       externalCalendarId,
@@ -1902,6 +1909,7 @@ export const caldavAdapter: CalendarAdapter = {
       patch,
     );
     await ref?.beforeMutation?.();
+    signal?.throwIfAborted();
     const res = await client.updateCalendarObject({ calendarObject });
     assertTaskMutationResponse(res);
     return {
@@ -1910,6 +1918,7 @@ export const caldavAdapter: CalendarAdapter = {
         externalCalendarId,
         externalTaskId,
         res,
+        signal,
       ),
       icalUid,
     };
@@ -1921,11 +1930,13 @@ export const caldavAdapter: CalendarAdapter = {
     _externalCalendarId,
     externalTaskId,
     ref,
+    signal,
   ) {
     if (!ref?.etag)
       throw new Error("CalDAV task has no ETag; refusing an unsafe delete");
-    const client = await clientForAccount(accountId);
+    const client = await clientForAccount(accountId, signal);
     await ref.beforeMutation?.();
+    signal?.throwIfAborted();
     const res = await client.deleteCalendarObject({
       calendarObject: { url: externalTaskId, etag: ref.etag },
     });

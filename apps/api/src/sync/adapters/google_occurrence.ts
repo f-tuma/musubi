@@ -1,3 +1,4 @@
+import { observedProviderFetch as fetch } from "../provider_http_metrics";
 import { createHash } from "node:crypto";
 import { config } from "@musubi/config";
 import {

@@ -11,11 +11,19 @@ async function main() {
     parseAdminEmails,
     parseDevAuthCookiePrefix,
     parseEnvironment,
+    parseExternalDeliveryRecoveryMode,
     parseMediaConfig,
     validateAuthSecret,
   } = await import("./index");
 
   assert.equal(config.api.icloudRsvpEditsEnabled, false);
+  assert.equal(parseExternalDeliveryRecoveryMode(undefined), "independent");
+  for (const mode of ["independent", "legacy", "disabled"] as const) {
+    assert.equal(parseExternalDeliveryRecoveryMode(mode), mode);
+  }
+  for (const mode of ["", "true", "false", "poll", "Independent", " legacy "]) {
+    assert.throws(() => parseExternalDeliveryRecoveryMode(mode), /Expected independent, legacy, or disabled/);
+  }
   for (const environment of ["dev", "test", "prod"] as const) {
     assert.equal(parseDevAuthCookiePrefix(environment, undefined), undefined);
     assert.equal(parseDevAuthCookiePrefix(environment, "  "), undefined);

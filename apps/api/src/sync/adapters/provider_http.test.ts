@@ -651,6 +651,27 @@ async function main() {
       ],
     );
 
+    // Exercise the real provider helpers, rather than only a synthetic fetch
+    // wrapper: pagination and mutation each contribute exactly one per dispatch.
+    const { withProviderCallMetrics, providerHttpMetricsRegistry } = await import("../provider_http_metrics");
+    const httpCounter = providerHttpMetricsRegistry.getSingleMetric("musubi_provider_http_requests_total")!;
+    assert.equal((await httpCounter.get()).values.length, 0, "unscoped polling is not claimed as delivery HTTP cost");
+    const beforeMeasured = requests.length;
+    await withProviderCallMetrics("google", "task", () => createGoogleTask(
+      "google-access", "task-list", localTask, { baseUrl: `${origin}/google-tasks` },
+    ));
+    await withProviderCallMetrics("microsoft", "task", () => fetchMicrosoftTaskChanges(
+      "graph-access", "task-list", null, { graphBase: `${origin}/graph` },
+    ));
+    const measured = (await httpCounter.get()).values;
+    assert.equal(requests.length - beforeMeasured, 3, "one Google POST and two Graph delta GET pages reach the fixture");
+    assert.equal(measured.reduce((sum, row) => sum + row.value, 0), requests.length - beforeMeasured,
+      "real helper composition counts actual requests once");
+    assert.deepEqual(measured.map(({ labels, value }) => ({ labels, value })), [
+      { labels: { provider: "google", family: "task", method: "POST", status: "200" }, value: 1 },
+      { labels: { provider: "microsoft", family: "task", method: "GET", status: "200" }, value: 2 },
+    ]);
+
     assert.ok(
       requests.every(
         (request) =>

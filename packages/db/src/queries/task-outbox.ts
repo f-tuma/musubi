@@ -122,7 +122,8 @@ export async function appendTaskOutbox(tx: DbTransaction, task: Task, intents: r
   }
 }
 
-function eligibleTaskOutbox() {
+/** Shared by claims and monitoring: waiting predecessors/active leases are not due. */
+export function eligibleTaskOutbox() {
   return sql`${taskOutbox.nextAttemptAt} <= clock_timestamp() and (
     ${taskOutbox.status} in ('pending', 'retry', 'unconfirmed') or
     (${taskOutbox.status} = 'attempting' and (${taskOutbox.leaseUntil} is null or ${taskOutbox.leaseUntil} <= clock_timestamp()))

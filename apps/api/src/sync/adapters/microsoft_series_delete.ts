@@ -1,3 +1,4 @@
+import { observedProviderFetch as fetch } from "../provider_http_metrics";
 import { z } from "zod";
 import { EventSchema, EventScopeRequestSchema } from "@musubi/types";
 import { sameCaldavScopeContext as same, type GraphFamilyContext, type GraphFamilyObservation, type GraphSeriesDeletionPrepared } from "@musubi/db";

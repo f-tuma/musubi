@@ -1,10 +1,10 @@
 import type { Task } from "@musubi/types";
 import type { TaskProjection } from "./adapter";
-import { strongEventEtag } from "./event_write";
+import { providerRetryAfterMs, strongEventEtag } from "./event_write";
 
 export type ProviderTaskWriteCode = "task-provider-conflict" | "task-version-unavailable" | "task-write-failed" | "task-conditional-write-unsupported" | "task-recurrence-projection-unsupported" | "task-source-read-only" | "task-create-unconfirmed" | "task-projection-unavailable";
 export class ProviderTaskWriteError extends Error {
-  constructor(readonly code: ProviderTaskWriteCode, readonly outcome: "not-written" | "unconfirmed" = "not-written", readonly providerStatus?: number) {
+  constructor(readonly code: ProviderTaskWriteCode, readonly outcome: "not-written" | "unconfirmed" = "not-written", readonly providerStatus?: number, readonly retryAfterMs?: number) {
     super(`Task delivery: ${code}.`);
     this.name = "ProviderTaskWriteError";
   }
@@ -19,7 +19,11 @@ export function assertTaskEtag(expected: unknown, current: unknown) {
 }
 export function assertTaskMutationResponse(response: Response) {
   if ([200, 201, 204].includes(response.status)) return;
-  throw new ProviderTaskWriteError(response.status === 412 ? "task-provider-conflict" : "task-write-failed", response.ok || response.status >= 500 ? "unconfirmed" : "not-written", response.status);
+  throw new ProviderTaskWriteError(response.status === 412 ? "task-provider-conflict" : "task-write-failed", response.ok || response.status >= 500 ? "unconfirmed" : "not-written", response.status, providerRetryAfterMs(response));
+}
+/** Preflight/read failure cannot have applied a task mutation. */
+export function assertTaskReadResponse(response: Response) {
+  if (!response.ok) throw new ProviderTaskWriteError("task-write-failed", "not-written", response.status, providerRetryAfterMs(response));
 }
 export function jsonTaskProjection(value: TaskProjection): TaskProjection {
   return JSON.parse(JSON.stringify(value));

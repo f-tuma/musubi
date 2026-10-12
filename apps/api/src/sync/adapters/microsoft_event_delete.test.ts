@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { deleteMicrosoftPersonalEvent } from "./microsoft_event_content";
+import { providerHttpMetricsRegistry, withProviderCallMetrics } from "../provider_http_metrics";
 
 async function main() {
   const etag = 'W/"accepted-version"';
@@ -35,6 +36,30 @@ async function main() {
       return status === 204 ? new Response(null, { status }) : json({}, status);
     }) as typeof fetch;
   }
+  await withProviderCallMetrics("microsoft", "event", () => deleteMicrosoftPersonalEvent({ ...session, fetchImpl: transport() }));
+  assert.equal(calls.length, 5);
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = transport();
+    await withProviderCallMetrics("microsoft", "event", () => deleteMicrosoftPersonalEvent(session));
+    assert.equal(calls.length, 5);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+  await withProviderCallMetrics("microsoft", "event", () => assert.rejects(
+    deleteMicrosoftPersonalEvent({ ...session, fetchImpl: transport({ lost: true }) }),
+    (e: any) => e.outcome === "unconfirmed",
+  ));
+  assert.equal(calls.length, 4, "a lost DELETE response is counted without retry or observation");
+  const expectedCounts = [
+    { labels: { provider: "microsoft", family: "event", method: "GET", status: "200" }, value: 9 },
+    { labels: { provider: "microsoft", family: "event", method: "DELETE", status: "204" }, value: 2 },
+    { labels: { provider: "microsoft", family: "event", method: "GET", status: "404" }, value: 2 },
+    { labels: { provider: "microsoft", family: "event", method: "DELETE", status: "network-error" }, value: 1 },
+  ];
+  const requests = providerHttpMetricsRegistry.getSingleMetric("musubi_provider_http_requests_total")!;
+  assert.deepEqual((await requests.get()).values.map(({ labels, value }) => ({ labels, value })), expectedCounts,
+    "all personal DELETE preflights, mutations and absence observations are counted exactly once");
   for (const options of [{}, { missing: true }, { race: true }]) {
     await deleteMicrosoftPersonalEvent({ ...session, fetchImpl: transport(options) });
     assert.equal(calls.filter(c => c.method === "DELETE").length, options.missing ? 0 : 1);
@@ -55,6 +80,8 @@ async function main() {
   for (const status of [401, 403, 412, 429]) await assert.rejects(() => deleteMicrosoftPersonalEvent({ ...session, fetchImpl: transport({ status }) }), (e: any) => e.outcome === "not-written");
   await assert.rejects(() => deleteMicrosoftPersonalEvent({ ...session, etag: null, fetchImpl: transport() }), /provider-version-unavailable/);
   assert.equal(calls.length, 0);
+  assert.deepEqual((await requests.get()).values.map(({ labels, value }) => ({ labels, value })), expectedCounts,
+    "delete requests outside delivery scope do not enter delivery metrics");
   console.log("Outlook guarded delete: source/kind/version checks, absence confirmation, ambiguous outcomes and documented post-read race: OK");
 }
 main().catch(error => { console.error(error); process.exit(1); });
