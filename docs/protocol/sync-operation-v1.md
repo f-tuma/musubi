@@ -67,7 +67,9 @@ Obecná JSON validace nemůže prokázat, že libovolný string neobsahuje secre
 
 ## Existující task dispatch projection
 
-Legacy task payload má separátní dispatchProjection. Její nepřítomnost zachovává současné chování. Přítomná hodnota musí mít version 1, JSON-object projection/patch, explicitní JSON-object-or-null baseline a případně string errorCode.
+Legacy task payload má separátní dispatchProjection. Nové v1 codec budgets a
+identity length limits se na staré legacy-v0 rows retroaktivně neuplatňují;
+legacy v1 dispatch snapshot musí zůstat lossless JSON, bez nového size limitu. Její nepřítomnost zachovává současné chování. Přítomná hodnota musí mít version 1, JSON-object projection/patch, explicitní JSON-object-or-null baseline a případně string errorCode.
 
 Přítomná malformed/null/undefined projection nebo unknown verze je blocked před jakýmkoli provider GET. Valid legacy version 1 prochází **původní payload beze změny**; decoder nevybere aktuální projector ani nepřepíše saved baseline. ProviderProjection je preflight diagnostic preview a není totožná s dispatch evidence, takže její samotná verze tento dispatch gate neřídí.
 

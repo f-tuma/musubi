@@ -18,7 +18,7 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /** Bounds apply to codec data, never silently truncate an admitted plan. */
-function isBoundedJson(value: unknown, rejectCredentialFields = false): value is SyncJsonValue {
+function isBoundedJson(value: unknown, rejectCredentialFields = false, applyLimits = true): value is SyncJsonValue {
   const active = new Set<object>();
   const stack: Array<{ value: unknown; depth: number; exit?: boolean }> = [{ value, depth: 0 }];
   let nodes = 0;
@@ -27,13 +27,14 @@ function isBoundedJson(value: unknown, rejectCredentialFields = false): value is
     while (stack.length) {
       const item = stack.pop()!;
       if (item.exit) { active.delete(item.value as object); continue; }
-      if (++nodes > MAX_JSON_NODES || item.depth > MAX_JSON_DEPTH) return false;
+      nodes++;
+      if (applyLimits && (nodes > MAX_JSON_NODES || item.depth > MAX_JSON_DEPTH)) return false;
       const current = item.value;
       if (current === null || typeof current === "boolean") continue;
       if (typeof current === "number") { if (!Number.isFinite(current)) return false; continue; }
       if (typeof current === "string") {
         stringUnits += current.length;
-        if (stringUnits > MAX_JSON_STRING_UNITS) return false;
+        if (applyLimits && stringUnits > MAX_JSON_STRING_UNITS) return false;
         continue;
       }
       if (typeof current !== "object" || active.has(current)) return false;
@@ -43,6 +44,8 @@ function isBoundedJson(value: unknown, rejectCredentialFields = false): value is
       stack.push({ value: current, depth: item.depth, exit: true });
       const descriptors = Object.getOwnPropertyDescriptors(current);
       if (Array.isArray(current)) {
+        const prototype = Object.getPrototypeOf(current);
+        if (prototype !== Array.prototype && prototype !== null) return false;
         // Sparse arrays and custom array properties do not faithfully encode as JSON.
         if (Object.keys(descriptors).length !== current.length + 1) return false;
         for (let index = current.length - 1; index >= 0; index--) {
@@ -54,7 +57,7 @@ function isBoundedJson(value: unknown, rejectCredentialFields = false): value is
         for (const [key, descriptor] of Object.entries(descriptors)) {
           if (!("value" in descriptor) || !descriptor.enumerable) return false;
           stringUnits += key.length;
-          if (stringUnits > MAX_JSON_STRING_UNITS || (rejectCredentialFields && isCredentialField(key))) return false;
+          if ((applyLimits && stringUnits > MAX_JSON_STRING_UNITS) || (rejectCredentialFields && isCredentialField(key))) return false;
           stack.push({ value: descriptor.value, depth: item.depth + 1 });
         }
       }
@@ -135,12 +138,16 @@ export const SyncOperationRowBindingSchema = z.object({
 }).strict();
 export type SyncOperationRowBinding = z.infer<typeof SyncOperationRowBindingSchema>;
 
+const LegacyJsonObjectSchema = z.custom<SyncJsonObject>(
+  value => isPlainRecord(value) && isBoundedJson(value, false, false),
+  "Expected lossless legacy JSON object",
+);
 export const SyncLegacyTaskDispatchProjectionSchema = z.object({
   version: z.literal(1),
-  projection: SyncJsonObjectSchema,
-  patch: SyncJsonObjectSchema,
-  baseline: SyncJsonObjectSchema.nullable(),
-  errorCode: OpaqueStringSchema.optional(),
+  projection: LegacyJsonObjectSchema,
+  patch: LegacyJsonObjectSchema,
+  baseline: LegacyJsonObjectSchema.nullable(),
+  errorCode: z.string().min(1).optional(),
 }).strict();
 export type SyncLegacyTaskDispatchProjection = z.infer<typeof SyncLegacyTaskDispatchProjectionSchema>;
 
@@ -196,10 +203,13 @@ function matchesRow(envelope: SyncOperationEnvelope, row: SyncOperationRowBindin
 export function decodeSyncOperationPayload(payload: unknown, inputBinding: SyncOperationRowBinding): SyncOperationDecodeResult {
   try {
     if (!isPlainRecord(payload)) return block("operation-payload-malformed");
-    const parsedBinding = SyncOperationRowBindingSchema.safeParse(inputBinding);
-    if (!parsedBinding.success) return block("operation-envelope-binding-mismatch");
-    const binding = parsedBinding.data;
+    // Legacy identities retain their existing storage/runtime limits. New v1
+    // bounds must not retroactively reject an otherwise unchanged legacy row.
+    const binding = inputBinding;
     if (own(payload, "operationEnvelope")) {
+      const parsedBinding = SyncOperationRowBindingSchema.safeParse(inputBinding);
+      if (!parsedBinding.success) return block("operation-envelope-binding-mismatch");
+      const binding = parsedBinding.data;
       const raw = ownData(payload, "operationEnvelope");
       if (!isPlainRecord(raw)) return block("operation-envelope-malformed");
       if (!own(raw, "schemaVersion") || !own(raw, "profileVersion")) return block("operation-envelope-malformed");

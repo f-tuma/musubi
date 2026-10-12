@@ -132,4 +132,15 @@ blocked(payload({ ...dependent, predecessorOperationId: "other-operation" }), "o
 blocked(payload({ ...dependent, locator: { ...envelope.locator, resourceId: "invented-native-id" } }), "operation-envelope-binding-mismatch", dependentRow);
 blocked(payload({ ...dependent, predecessorOperationId: undefined }), "operation-envelope-binding-mismatch", dependentRow);
 
+const longLegacyRow = { ...binding, resourceId: "https://dav.example.test/" + "a".repeat(2049) };
+assert.equal(decode(legacyEvent, longLegacyRow).kind, "legacy-v0", "v1 bounds never retire a long legacy DAV address");
+blocked(payload(envelope), "operation-envelope-binding-mismatch", longLegacyRow);
+const largeLegacyTarget = { description: "A".repeat(2_000_001) };
+assert.equal(decode({ task: taskPayload.task, dispatchProjection: { version: 1,
+  projection: largeLegacyTarget, patch: largeLegacyTarget, baseline: null } }, taskBinding).kind, "legacy-v0");
+assert.equal(SyncJsonValueSchema.safeParse(largeLegacyTarget).success, false, "new codec still enforces its budget");
+class RewritingArray extends Array { toJSON() { return "changed encoding"; } }
+const customArray = new RewritingArray(); customArray.push("original");
+assert.equal(SyncJsonValueSchema.safeParse(customArray).success, false, "inherited array serialization hooks cannot change admitted bytes");
+
 console.log("Decoder-first operation envelope HOLD contract: OK");
