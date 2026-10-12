@@ -26,6 +26,7 @@ import {
   matchesGoogleReminderIntent,
   matchesEventProviderProjection,
   claimEventOutbox,
+  decodeEventOutboxOperation,
   completeEventOutbox,
   finishEventOutbox,
   getEventOutboxExpectedRef,
@@ -112,6 +113,13 @@ export async function deliverEventOutbox(
   const row = await claimEventOutbox(id);
   if (!row) return getEventOutboxRow(id);
   const token = row.leaseToken!;
+  const decoded = decodeEventOutboxOperation(row);
+  if (decoded.kind === "blocked") {
+    // A claim does not prove dispatch. Preserve prior uncertainty, payload and
+    // remote evidence; never route an unknown format through legacy adapters.
+    await finishEventOutbox(row.id, token, "blocked", decoded.code, { uncertain: row.reconciling });
+    return getEventOutboxRow(row.id);
+  }
   const adapter = adapterFor(row.provider);
   const attempt = createDeliveryAttempt(() => renewEventOutboxLease(row.id, token), options);
   const signal = attempt.signal;

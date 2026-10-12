@@ -124,3 +124,12 @@ vlastní provozní rozhodnutí, nikoli automatický rollback této migrace.
 
 PR/green CI/main merge, produkční rollout a live provider acceptance zůstávají
 oddělenými důkazy. Další MUSU-35 zavede decoder-before-encoder a neměnný zápis.
+
+## Publikace
+
+[PR #345](https://github.com/f-tuma/musubi/pull/345) prošel všemi 21 kontrolami
+[Quality CI](https://github.com/f-tuma/musubi/actions/runs/38254502393) na headu
+`f612fa5312f320ab6a2a3eca3b64f917890b5844`. Před PR byl finální diff výslovně
+schválen nezávislým skeptickým subagentem. Squash main commit je
+`b01813a6bf251ac01de3711ef5771b486bd090b8`; MUSU-34 je Done. C03 pokračuje
+v MUSU-35. Publikace nepotvrzuje produkční nasazení.

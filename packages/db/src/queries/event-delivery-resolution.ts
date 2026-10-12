@@ -45,6 +45,7 @@ import type { DbTransaction } from "./calendars";
 import type { EventContentPatch } from "./events";
 import type { EventDeliveryRef } from "./event-outbox-delivery";
 import { lockCalendarLifecycle } from "./calendar-lifecycle";
+import { decodeEventOutboxOperation } from "./outbox-operation";
 import { lockExternalEventIdentity } from "./event-outbox-deletions";
 
 export class EventDeliveryResolutionError extends Error {
@@ -77,6 +78,10 @@ async function resolutionContext(
     );
   if (!row) throw new NotFoundError("Delivery operation not found.");
   await assertEventDeliveryDestination(tx, row, userID, lockDestination);
+  // An old resolver cannot reinterpret a new persisted plan as a fresh legacy
+  // action. Availability is checked again after a compatible codec is deployed.
+  if (decodeEventOutboxOperation(row).kind === "blocked")
+    throw new EventDeliveryResolutionError("delivery-resolution-unavailable");
   const target = and(
     eq(eventOutbox.eventID, eventID),
     eq(eventOutbox.externalCalendarLinkID, row.externalCalendarLinkID),
@@ -103,6 +108,9 @@ async function resolutionContext(
       asc(eventOutbox.id),
     )
     .limit(1001);
+  if (decodeEventOutboxOperation(latest).kind === "blocked" ||
+      pending.some(item => decodeEventOutboxOperation(item).kind === "blocked"))
+    throw new EventDeliveryResolutionError("delivery-resolution-unavailable");
   const head = pending[0] ?? latest;
   if (
     row.id !== head.id ||

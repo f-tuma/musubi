@@ -10,8 +10,9 @@ import { randomUUID } from "node:crypto";
 import { appendTaskOutbox, prepareTaskOutboxInTransaction, finishTaskOutboxInTransaction, assertTaskOutboxSourceInTransaction, taskOutboxLeaseGuard, type TaskOutboxRow } from "./task-outbox";
 import { assertLegacyEventTimePatch } from "./event-time-write";
 import { appendEventOutbox, reserveEventMutation, type EventOutboxIntent } from "./event-outbox";
-import { retainPendingEventPull, retainUnmappedCreatePull } from "./event-outbox-pull";
+import { retainPendingEventPull, retainUnmappedCreatePull, retainUnsupportedEventPull } from "./event-outbox-pull";
 import { appendInboundEventFanout } from "./event-outbox-fanout";
+import { decodeTaskOutboxOperation } from "./outbox-operation";
 import { retainUnmappedEventDeletion, lockExternalEventAddress } from "./event-outbox-deletions";
 import { lockCalendarLifecycle, lockUserLifecycle } from "./calendar-lifecycle";
 import { retireExternalSourceReads } from "./source-read-lifecycle";
@@ -845,6 +846,7 @@ export async function upsertExternalEventInTransaction(
       const intent = candidate?.payload.organizer;
       if (candidate && intent?.instance) {
         const map = await mappedEventForUpdate(tx, provider, calendarID, externalEventID);
+        if (map && await retainUnsupportedEventPull(tx, candidate, externalEventID, values, etag, icalUid, state)) return false;
         const [link] = await tx.select().from(externalCalendars).where(and(
           eq(externalCalendars.id, candidate.externalCalendarLinkID), eq(externalCalendars.userID, userID),
           eq(externalCalendars.provider, provider), eq(externalCalendars.accountID, candidate.accountID),
@@ -874,8 +876,8 @@ export async function upsertExternalEventInTransaction(
     // an active late pull. Retain it for read-only reconciliation of the same
     // permanently marked action; never recreate or send another cancellation.
     if (provider === "google" || provider === "caldav") {
-      const [cancelled] = await tx.select({ id: eventOutbox.id, eventID: eventOutbox.eventID }).from(eventOutbox).where(and(eq(eventOutbox.provider, provider), eq(eventOutbox.userID, userID), eq(eventOutbox.calendarID, calendarID), eq(eventOutbox.externalCalendarID, externalCalendarID), eq(eventOutbox.externalEventID, externalEventID), eq(eventOutbox.action, "delete"), eq(eventOutbox.status, "completed"), sql`${eventOutbox.payload}->'organizer'->'dispatch' is not null`)).limit(1);
-      if (cancelled) { await tx.select({ id: events.id }).from(events).where(eq(events.id, cancelled.eventID)).for("update"); await tx.update(eventOutbox).set({ status: "conflict", errorCode: "provider-conflict", remoteSnapshot: { externalEventId: externalEventID, etag, icalUid, deleted: false, observedAt: new Date().toISOString(), values: JSON.parse(JSON.stringify(values)), ...(state ? { providerState: state } : {}) } }).where(eq(eventOutbox.id, cancelled.id)); return false; }
+      const [cancelled] = await tx.select().from(eventOutbox).where(and(eq(eventOutbox.provider, provider), eq(eventOutbox.userID, userID), eq(eventOutbox.calendarID, calendarID), eq(eventOutbox.externalCalendarID, externalCalendarID), eq(eventOutbox.externalEventID, externalEventID), eq(eventOutbox.action, "delete"), eq(eventOutbox.status, "completed"), sql`${eventOutbox.payload}->'organizer'->'dispatch' is not null`)).limit(1);
+      if (cancelled) { await tx.select({ id: events.id }).from(events).where(eq(events.id, cancelled.eventID)).for("update"); if (await retainUnsupportedEventPull(tx, cancelled, externalEventID, values, etag, icalUid, state)) return false; await tx.update(eventOutbox).set({ status: "conflict", errorCode: "provider-conflict", remoteSnapshot: { externalEventId: externalEventID, etag, icalUid, deleted: false, observedAt: new Date().toISOString(), values: JSON.parse(JSON.stringify(values)), ...(state ? { providerState: state } : {}) } }).where(eq(eventOutbox.id, cancelled.id)); return false; }
     }
 
     if (sourceSeriesID !== undefined) {
@@ -1127,6 +1129,7 @@ export async function deleteExternalEventInTransaction(
         sql`coalesce(${eventOutbox.payload}->'caldavSplit'->'prepared'->'context'->'mappings', ${eventOutbox.payload}->'caldavSeries'->'context'->'mappings', ${eventOutbox.payload}->'caldavSeriesDeletion'->'context'->'mappings') @> ${JSON.stringify([{ eventID: mapped.event.id, externalEventID }])}::jsonb`,
       )).for("update");
       if (family) {
+        if (await retainUnsupportedEventPull(tx, family, externalEventID, null, null, mapped.icalUid)) return false;
         const removedByIntent = !!family.payload.caldavSeriesDeletion ||
           !!family.payload.caldavSplit?.after.moved.some(child => child.id === mapped.event.id) ||
           !!(family.payload.caldavSeries?.write.followingDelete && mapped.event.id !== family.eventID && !caldavSeriesDesired(family.payload.caldavSeries.write).children.some(child => child.id === mapped.event.id));
@@ -1153,9 +1156,18 @@ export async function deleteExternalEventInTransaction(
       unlinked = { id: mapped.event.id, revision: mapped.event.revision + 1 };
       return true;
     }
+    // Lock the canonical family before its terminal outbox history.
+    const children = await tx.select().from(events).where(eq(events.seriesID, mapped.event.id)).orderBy(events.id).for("update");
+    // Unknown terminal cancellation history protects the entire family. Check
+    // it before child tombstones, pending-intent retirement or derived fan-out.
+    const cancellations = (provider === "google" || provider === "caldav") && mapped.event.isCanceled
+      ? await tx.select().from(eventOutbox).where(and(eq(eventOutbox.eventID, mapped.event.id), eq(eventOutbox.calendarID, calendarID), eq(eventOutbox.provider, provider), eq(eventOutbox.externalEventID, externalEventID), eq(eventOutbox.revision, mapped.event.revision), eq(eventOutbox.status, "completed"), eq(eventOutbox.action, "delete"))).for("update")
+      : [];
+    for (const row of cancellations) {
+      if (await retainUnsupportedEventPull(tx, row, externalEventID, null, null, mapped.icalUid)) return false;
+    }
     // Deleting a provider master must not strand its visible exceptions. Keep
     // mappings for stable revival; unresolved child work normally blocks removal.
-    const children = await tx.select().from(events).where(eq(events.seriesID, mapped.event.id)).orderBy(events.id).for("update");
     for (const child of children) {
       if (child.originCalendarID !== calendarID || child.creatorID !== mapped.event.creatorID)
         throw new Error("Provider family removal crosses event authority.");
@@ -1195,8 +1207,7 @@ export async function deleteExternalEventInTransaction(
     // Record only this exact accepted cancellation's ordinary deletion transition.
     // Later reconciliation may accept this tombstone, never unrelated edits/deletes.
     const deletedAt = new Date();
-    if ((provider === "google" || provider === "caldav") && mapped.event.isCanceled) {
-      const cancellations = await tx.select().from(eventOutbox).where(and(eq(eventOutbox.eventID, mapped.event.id), eq(eventOutbox.calendarID, calendarID), eq(eventOutbox.provider, provider), eq(eventOutbox.externalEventID, externalEventID), eq(eventOutbox.revision, mapped.event.revision), eq(eventOutbox.status, "completed"), eq(eventOutbox.action, "delete"))).for("update");
+    if (cancellations.length) {
       for (const row of cancellations) {
         const intent = row.payload.organizer;
         if (!intent?.dispatch?.acceptedAt || intent.mappingID !== mapped.id || row.actorID !== row.userID || row.payload.event.originCalendarID !== calendarID || intent.sourceEvent.id !== mapped.event.id || intent.sourceEvent.creatorID !== mapped.event.creatorID) continue;
@@ -1327,6 +1338,55 @@ async function appendImportedTaskFanout(tx: DbTransaction, row: typeof tasks.$in
   await appendTaskOutbox(tx, snapshot, await prepareTaskOutboxInTransaction(tx, snapshot, actions, { actorID: row.creatorID, mutationID: randomUUID() }));
 }
 
+/** An unmapped native task cannot be correlated by interpreting an unknown
+ * CREATE journal. Retain an explicitly uncorrelated observation under the
+ * current source/privacy capture; never adopt a guessed legacy address. */
+async function retainUnmappedUnsupportedTaskCreate(
+  tx: DbTransaction, provider: string, userID: string, calendarID: string,
+  externalCalendarID: string, externalTaskID: string, values: TaskValues,
+  etag: string | null, icalUid: string | null, scope?: TaskSyncScope,
+) {
+  const [source] = await tx.select().from(externalCalendars).where(and(
+    eq(externalCalendars.calendarID, calendarID), eq(externalCalendars.provider, provider),
+    eq(externalCalendars.userID, userID), eq(externalCalendars.externalCalendarID, externalCalendarID),
+    eq(externalCalendars.disabled, false), eq(externalCalendars.supportsTasks, true),
+    scope ? eq(externalCalendars.id, scope.sourceID) : undefined,
+    scope ? eq(externalCalendars.accountID, scope.accountID) : undefined,
+    scope ? eq(externalCalendars.providerAccessRevision, scope.providerAccessRevision) : undefined,
+  )).for("share");
+  if (!source) return false;
+  const capture = and(
+    eq(taskOutbox.provider, provider), eq(taskOutbox.userID, userID), eq(taskOutbox.calendarID, calendarID),
+    eq(taskOutbox.externalCalendarID, externalCalendarID), eq(taskOutbox.externalCalendarLinkID, source.id),
+    eq(taskOutbox.accountID, source.accountID), eq(taskOutbox.providerAccessRevision, source.providerAccessRevision),
+    eq(taskOutbox.action, "create"), sql`${taskOutbox.retiredGeneration} = coalesce(${tasks.providerReadRetiredGeneration}, 0)`,
+  );
+  const candidates = await tx.select({ row: taskOutbox }).from(taskOutbox)
+    .innerJoin(tasks, eq(tasks.id, taskOutbox.taskID)).where(capture);
+  const ids = [...new Set(candidates.filter(({ row }) => decodeTaskOutboxOperation(row).kind === "blocked").map(({ row }) => row.taskID))];
+  if (!ids.length) return false;
+  // Match writer lock order: calendar/source, canonical tasks, then outbox.
+  await tx.select({ id: tasks.id }).from(tasks).where(inArray(tasks.id, ids)).orderBy(tasks.id).for("update");
+  const rows = await tx.select({ row: taskOutbox }).from(taskOutbox)
+    .innerJoin(tasks, eq(tasks.id, taskOutbox.taskID)).where(and(capture, inArray(taskOutbox.taskID, ids)))
+    .orderBy(taskOutbox.id).for("update", { of: taskOutbox });
+  let retained = false;
+  for (const { row } of rows) {
+    const decoded = decodeTaskOutboxOperation(row);
+    if (decoded.kind !== "blocked") continue;
+    const terminal = ["completed", "not-needed", "cancelled"].includes(row.status);
+    await tx.update(taskOutbox).set({
+      ...(!terminal ? { status: "blocked" as const, errorCode: decoded.code } : {}),
+      remoteSnapshot: { unmapped: true, externalTaskId: externalTaskID, etag, icalUid,
+        observedAt: new Date().toISOString(), values: JSON.parse(JSON.stringify(values)) },
+      uncertain: row.uncertain || row.status === "attempting",
+      leaseToken: null, leaseUntil: null, updatedAt: new Date(),
+    }).where(eq(taskOutbox.id, row.id));
+    retained = true;
+  }
+  return retained;
+}
+
 export async function upsertExternalTask(
   provider: string,
   userID: string,
@@ -1408,6 +1468,8 @@ export async function upsertExternalTask(
         })
         .where(eq(externalTasks.id, mapping.id));
     } else {
+      if (await retainUnmappedUnsupportedTaskCreate(tx, provider, userID, calendarID,
+        externalCalendarID, externalTaskID, values, etag, icalUid, scope)) return false;
       // A lost CREATE response has no trustworthy identity on Google/Graph.
       // Do not import an unacknowledged copy as a second canonical task.
       const [unresolvedCreate] = await tx.select({ id: taskOutbox.id }).from(taskOutbox).innerJoin(tasks, eq(tasks.id, taskOutbox.taskID)).where(and(eq(taskOutbox.calendarID, calendarID), scope ? eq(taskOutbox.externalCalendarLinkID, scope.sourceID) : undefined, scope ? eq(taskOutbox.providerAccessRevision, scope.providerAccessRevision) : undefined, sql`${taskOutbox.retiredGeneration} = coalesce(${tasks.providerReadRetiredGeneration}, 0)`, eq(taskOutbox.action, "create"), eq(taskOutbox.uncertain, true), sql`${taskOutbox.status} not in ('completed', 'not-needed', 'cancelled')`)).limit(1);
