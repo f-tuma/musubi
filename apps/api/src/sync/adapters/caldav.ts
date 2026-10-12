@@ -10,6 +10,8 @@ import { readCaldavRsvp, deliverCaldavRsvp } from "./caldav_rsvp_delivery";
 import { caldavEventState } from "./provider_event_state";
 import { caldavSeriesEvidence, caldavSeriesCreationEvidence, type CaldavSeriesSplit, caldavSeriesResolutionEvidence, caldavSeriesResourceURL, sameCaldavResource, type CaldavSeriesDeletion, type CaldavSeriesWrite, type CaldavSeriesEvidence, type CaldavSeriesIntent } from "./caldav_series";
 import ICAL from "ical.js";
+import { applyCaldavEventPlanV1, applyCaldavTaskPlanV1, restrictCaldavTaskPlanV1, type NativeWritePlanV1 } from "@musubi/sync-codec";
+import { pinnedCaldavPlanV1 } from "../pinned_write";
 import { caldavRdateEdit, caldavExdateRestoration, finiteSeriesFootprint, planEventScope } from "@musubi/calendar";
 import { randomUUID } from "crypto";
 import type { DAVCalendar, DAVCalendarObject, DAVResponse } from "tsdav";
@@ -707,6 +709,7 @@ async function taskCalendarObjectForUpdate(
   ref: { etag?: string | null; icalUid?: string | null } | undefined,
   value: Task,
   patch?: TaskProjection,
+  nativePlan?: NativeWritePlanV1,
 ) {
   if (!ref?.etag)
     throw new Error("CalDAV task has no ETag; refusing an unsafe update");
@@ -723,7 +726,9 @@ async function taskCalendarObjectForUpdate(
   return {
     calendarObject: {
       url: externalObjectId,
-      data: patchTaskIcal(object.data, value, uid, patch),
+      data: nativePlan
+        ? applyCaldavTaskPlanV1(object.data, restrictCaldavTaskPlanV1(pinnedCaldavPlanV1(nativePlan, "VTODO", uid), Object.keys(patch ?? {})))
+        : patchTaskIcal(object.data, value, uid, patch),
       etag: ref.etag,
     },
     uid,
@@ -1619,7 +1624,9 @@ export const caldavAdapter: CalendarAdapter = {
         );
         // Exercise the exact preserving path before any DB or provider mutation.
         if (operation.action === "update")
-          patchEventIcal(data, operation.event, uid, operation.patch);
+          operation.nativePlan
+            ? applyCaldavEventPlanV1(data, pinnedCaldavPlanV1(operation.nativePlan, "VEVENT", uid))
+            : patchEventIcal(data, operation.event, uid, operation.patch);
         if (
           operation.action === "update" &&
           (operation.patch?.recurrence !== undefined ||
@@ -1736,6 +1743,7 @@ export const caldavAdapter: CalendarAdapter = {
     externalCalendarId,
     event: Event,
     identity,
+    nativePlan,
   ) {
     if (identity) {
       const { url, uid } = caldavEventCreateIdentity(
@@ -1750,7 +1758,7 @@ export const caldavAdapter: CalendarAdapter = {
           "Content-Type": "text/calendar; charset=utf-8",
           "If-None-Match": "*",
         },
-        body: toIcal(event, uid),
+        body: nativePlan ? pinnedCaldavPlanV1(nativePlan, "VEVENT", uid).createResource : toIcal(event, uid),
       });
       assertProviderEventMutationResponse(response);
       return {
@@ -1789,6 +1797,7 @@ export const caldavAdapter: CalendarAdapter = {
     ref,
     patch,
     signal,
+    nativePlan,
   ) {
     requireEventPatch(patch);
     requireEventEtag(ref?.etag);
@@ -1799,7 +1808,9 @@ export const caldavAdapter: CalendarAdapter = {
       ref,
       signal,
     );
-    const data = patchEventIcal(current.data, event, current.uid, patch);
+    const data = nativePlan
+      ? applyCaldavEventPlanV1(current.data, pinnedCaldavPlanV1(nativePlan, "VEVENT", current.uid))
+      : patchEventIcal(current.data, event, current.uid, patch);
     if (data === current.data) return; // Known no-op; retain accepted validator.
     const res = await caldavFetch(externalEventId, {
       signal,
@@ -1863,7 +1874,7 @@ export const caldavAdapter: CalendarAdapter = {
     }
   },
 
-  async pushTaskCreate(_userID, accountId, externalCalendarId, task: Task, beforeMutation, signal) {
+  async pushTaskCreate(_userID, accountId, externalCalendarId, task: Task, beforeMutation, signal, nativePlan) {
     const client = await clientForAccount(accountId, signal);
     const authorization = await basicAuthForAccount(accountId);
     const filename = `${task.id}.ics`;
@@ -1871,7 +1882,7 @@ export const caldavAdapter: CalendarAdapter = {
       ? externalCalendarId
       : `${externalCalendarId}/`;
     const externalTaskId = `${base}${filename}`;
-    const body = toTaskIcal(task);
+    const body = nativePlan ? pinnedCaldavPlanV1(nativePlan, "VTODO", task.id).createResource : toTaskIcal(task);
     await beforeMutation?.();
     signal?.throwIfAborted();
     const res = await caldavFetch(externalTaskId, { signal, method: "PUT", headers: { authorization, "Content-Type": "text/calendar; charset=utf-8", "If-None-Match": "*" }, body, redirect: "error" });
@@ -1898,6 +1909,7 @@ export const caldavAdapter: CalendarAdapter = {
     ref,
     patch,
     signal,
+    nativePlan,
   ) {
     const client = await clientForAccount(accountId, signal);
     const { calendarObject, uid: icalUid } = await taskCalendarObjectForUpdate(
@@ -1907,6 +1919,7 @@ export const caldavAdapter: CalendarAdapter = {
       ref,
       task,
       patch,
+      nativePlan,
     );
     await ref?.beforeMutation?.();
     signal?.throwIfAborted();

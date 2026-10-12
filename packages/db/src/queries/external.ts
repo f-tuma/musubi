@@ -1,3 +1,5 @@
+import { assertPinnedOutboxSourceInTransaction } from "./operation-admission";
+import { decodeTaskOutboxOperation } from "./outbox-operation";
 import { isCancelledGraphMeeting } from "./graph-meeting-cancel";
 import { hasFullProviderReadAccess, microsoftPrivateAccess } from "./microsoft-access";
 import { googlePersonalReadRecovery, finishGooglePersonalReadRecovery } from "./google-personal-read-recovery";
@@ -12,7 +14,6 @@ import { assertLegacyEventTimePatch } from "./event-time-write";
 import { appendEventOutbox, reserveEventMutation, type EventOutboxIntent } from "./event-outbox";
 import { retainPendingEventPull, retainUnmappedCreatePull, retainUnsupportedEventPull } from "./event-outbox-pull";
 import { appendInboundEventFanout } from "./event-outbox-fanout";
-import { decodeTaskOutboxOperation } from "./outbox-operation";
 import { retainUnmappedEventDeletion, lockExternalEventAddress } from "./event-outbox-deletions";
 import { lockCalendarLifecycle, lockUserLifecycle } from "./calendar-lifecycle";
 import { retireExternalSourceReads } from "./source-read-lifecycle";
@@ -1338,10 +1339,10 @@ async function appendImportedTaskFanout(tx: DbTransaction, row: typeof tasks.$in
   await appendTaskOutbox(tx, snapshot, await prepareTaskOutboxInTransaction(tx, snapshot, actions, { actorID: row.creatorID, mutationID: randomUUID() }));
 }
 
-/** An unmapped native task cannot be correlated by interpreting an unknown
- * CREATE journal. Retain an explicitly uncorrelated observation under the
- * current source/privacy capture; never adopt a guessed legacy address. */
-async function retainUnmappedUnsupportedTaskCreate(
+/** An unmapped native task cannot identify an unknown journal or an active
+ * pinned CREATE before its response address is accepted. Defer this scoped
+ * full-read observation without adopting any guessed native identity. */
+async function retainUnmappedTaskCreateObservation(
   tx: DbTransaction, provider: string, userID: string, calendarID: string,
   externalCalendarID: string, externalTaskID: string, values: TaskValues,
   etag: string | null, icalUid: string | null, scope?: TaskSyncScope,
@@ -1363,7 +1364,12 @@ async function retainUnmappedUnsupportedTaskCreate(
   );
   const candidates = await tx.select({ row: taskOutbox }).from(taskOutbox)
     .innerJoin(tasks, eq(tasks.id, taskOutbox.taskID)).where(capture);
-  const ids = [...new Set(candidates.filter(({ row }) => decodeTaskOutboxOperation(row).kind === "blocked").map(({ row }) => row.taskID))];
+  const activeUnmapped = (row: TaskOutboxRow) => row.status === "attempting" &&
+    row.externalTaskID === null && row.resultRef === null;
+  const ids = [...new Set(candidates.filter(({ row }) => {
+    const decoded = decodeTaskOutboxOperation(row);
+    return decoded.kind === "blocked" || decoded.kind === "pinned-v1" && activeUnmapped(row);
+  }).map(({ row }) => row.taskID))];
   if (!ids.length) return false;
   // Match writer lock order: calendar/source, canonical tasks, then outbox.
   await tx.select({ id: tasks.id }).from(tasks).where(inArray(tasks.id, ids)).orderBy(tasks.id).for("update");
@@ -1373,6 +1379,20 @@ async function retainUnmappedUnsupportedTaskCreate(
   let retained = false;
   for (const { row } of rows) {
     const decoded = decodeTaskOutboxOperation(row);
+    if (decoded.kind === "pinned-v1" && activeUnmapped(row)) {
+      // No task ID/correlation key is promised by Google or Graph CREATE.
+      // Every unmapped item in this source read remains uncorrelated until the
+      // writer accepts its response. Keep its live lease and accepted payload.
+      // A retired connection cannot authorize retaining new private content.
+      if (await assertPinnedOutboxSourceInTransaction(tx, row))
+        await tx.update(taskOutbox).set({
+          remoteSnapshot: { unmapped: true, externalTaskId: externalTaskID, etag, icalUid,
+            observedAt: new Date().toISOString(), values: JSON.parse(JSON.stringify(values)) },
+          updatedAt: new Date(),
+        }).where(eq(taskOutbox.id, row.id));
+      retained = true;
+      continue;
+    }
     if (decoded.kind !== "blocked") continue;
     const terminal = ["completed", "not-needed", "cancelled"].includes(row.status);
     await tx.update(taskOutbox).set({
@@ -1468,7 +1488,7 @@ export async function upsertExternalTask(
         })
         .where(eq(externalTasks.id, mapping.id));
     } else {
-      if (await retainUnmappedUnsupportedTaskCreate(tx, provider, userID, calendarID,
+      if (await retainUnmappedTaskCreateObservation(tx, provider, userID, calendarID,
         externalCalendarID, externalTaskID, values, etag, icalUid, scope)) return false;
       // A lost CREATE response has no trustworthy identity on Google/Graph.
       // Do not import an unacknowledged copy as a second canonical task.
@@ -1749,8 +1769,14 @@ export async function acceptTaskOutboxDelivery(row: TaskOutboxRow, leaseToken: s
   return db.transaction(async tx => {
     await lockCalendarLifecycle(tx, [row.calendarID], "shared");
     const [task] = await tx.select().from(tasks).where(eq(tasks.id, row.taskID)).for("update");
-    const [claim] = await tx.select({ id: taskOutbox.id }).from(taskOutbox).where(taskOutboxLeaseGuard(row.id, leaseToken)).for("update");
+    const [claim] = await tx.select().from(taskOutbox).where(taskOutboxLeaseGuard(row.id, leaseToken)).for("update");
     if (!claim) return false;
+    const decoded = decodeTaskOutboxOperation(claim);
+    if (decoded.kind === "blocked" || decoded.kind === "pinned-v1" && !await assertPinnedOutboxSourceInTransaction(tx, claim, true)) {
+      await finishTaskOutboxInTransaction(tx, row.id, leaseToken, "blocked", decoded.kind === "blocked" ? decoded.code : "operation-source-changed",
+        { uncertain: true, resultRef: evidence?.ref ?? deletionRef ?? row.resultRef, remoteSnapshot: evidence?.projection ?? null });
+      return false;
+    }
     if (!await assertTaskOutboxSourceInTransaction(tx, row, { allowDeletedTask: true })) {
       await finishTaskOutboxInTransaction(tx, row.id, leaseToken, "blocked", "task-source-changed", { uncertain: !evidence && row.uncertain, resultRef: evidence?.ref ?? deletionRef ?? row.resultRef, remoteSnapshot: evidence?.projection ?? null });
       return false;

@@ -1,3 +1,5 @@
+import { assertPinnedOutboxSourceInTransaction } from "./operation-admission";
+import { decodeEventOutboxOperation } from "./outbox-operation";
 import { matchesRsvpEventProjection } from "./event-outbox-projection";
 import { hasCaldavRsvpBoundary, providerRsvpBaselineVersion } from "./provider-rsvp";
 import { matchesProviderReminderInstanceState } from "./provider-reminder-instance";
@@ -219,6 +221,14 @@ async function completeEventOutboxInternal(
         )
         .for("update");
       if (!row) return undefined;
+      const decoded = decodeEventOutboxOperation(row);
+      if (decoded.kind === "blocked") return undefined;
+      if (decoded.kind === "pinned-v1" && !await assertPinnedOutboxSourceInTransaction(tx, row, true)) {
+        await tx.update(eventOutbox).set({ status: "blocked", errorCode: "operation-source-changed", uncertain: true,
+          resultRef: resultRef ?? row.resultRef, ...(observation ? { remoteSnapshot: observation } : {}),
+          leaseToken: null, leaseUntil: null, updatedAt: new Date() }).where(eq(eventOutbox.id, row.id));
+        return undefined;
+      }
       const settings = row.payload.rsvp ?? row.payload.reminderInstance;
       const sourceChanged = row.payload.reminderInstance ? "reminder-source-changed" : "rsvp-source-changed";
       if (settings) {

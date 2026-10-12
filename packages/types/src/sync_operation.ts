@@ -110,7 +110,7 @@ export const SyncOperationEnvelopeSchema = z.object({
 }).strict();
 export type SyncOperationEnvelope = z.infer<typeof SyncOperationEnvelopeSchema>;
 
-/** Format recognition only. NONE of these IDs has a registered dispatch codec here. */
+/** Format recognition only. Dispatch availability belongs to an explicit host registry. */
 export const SYNC_OPERATION_SERIALIZER_FORMATS = [
   { id: "google-personal-event", version: 1, provider: "google", kind: "event" },
   { id: "microsoft-personal-event", version: 1, provider: "microsoft", kind: "event" },
@@ -168,6 +168,7 @@ export function isSyncOperationBlockCode(value: unknown): value is SyncOperation
 }
 export type SyncOperationDecodeResult =
   | { kind: "legacy-v0"; payload: Record<string, unknown> }
+  | { kind: "pinned-v1"; envelope: SyncOperationEnvelope }
   | { kind: "blocked"; code: SyncOperationBlockCode };
 
 function block(code: SyncOperationBlockCode): SyncOperationDecodeResult {
@@ -179,6 +180,13 @@ function own(value: object, key: string): boolean {
 function ownData(value: object, key: string): unknown {
   const descriptor = Object.getOwnPropertyDescriptor(value, key);
   return descriptor && "value" in descriptor ? descriptor.value : undefined;
+}
+function jsonEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (a === null || b === null || typeof a !== "object" || typeof b !== "object" || Array.isArray(a) !== Array.isArray(b)) return false;
+  const left = Object.entries(a), right = Object.entries(b);
+  return left.length === right.length && left.every(([key, value]) =>
+    Object.prototype.hasOwnProperty.call(b, key) && jsonEqual(value, (b as Record<string, unknown>)[key]));
 }
 function matchesRow(envelope: SyncOperationEnvelope, row: SyncOperationRowBinding): boolean {
   if (envelope.operation.kind !== row.kind || envelope.operation.action !== row.action ||
@@ -196,16 +204,23 @@ function matchesRow(envelope: SyncOperationEnvelope, row: SyncOperationRowBindin
   return row.privacyEpoch == null || envelope.privacyEpoch === row.privacyEpoch;
 }
 
-/** Decoder-before-encoder floor: every PRESENT envelope stays blocked/HOLD.
- * Call before any adapter preflight/GET or mutation. Never project or silently
- * downgrade unknown/present formats to the legacy path.
+/** Without an explicit registry, every PRESENT envelope stays blocked/HOLD.
+ * Call before any adapter preflight/GET or mutation. A registry may admit only
+ * its pinned format; unknown/present formats never fall back to legacy.
  */
-export function decodeSyncOperationPayload(payload: unknown, inputBinding: SyncOperationRowBinding): SyncOperationDecodeResult {
+export function decodeSyncOperationPayload(payload: unknown, inputBinding: SyncOperationRowBinding,
+  availability?: { supports: (envelope: SyncOperationEnvelope) => boolean }): SyncOperationDecodeResult {
   try {
     if (!isPlainRecord(payload)) return block("operation-payload-malformed");
-    // Legacy identities retain their existing storage/runtime limits. New v1
-    // bounds must not retroactively reject an otherwise unchanged legacy row.
+    // Retain legacy storage/runtime limits. Strict identity budgets belong
+    // only to a PRESENT v1 operation envelope.
     const binding = inputBinding;
+    if (binding.kind === "task" && own(payload, "dispatchProjection")) {
+      const projection = ownData(payload, "dispatchProjection");
+      if (!isPlainRecord(projection) || !own(projection, "version")) return block("task-dispatch-projection-malformed");
+      if (ownData(projection, "version") !== 1) return block("task-dispatch-projection-version-unsupported");
+      if (!SyncLegacyTaskDispatchProjectionSchema.safeParse(projection).success) return block("task-dispatch-projection-malformed");
+    }
     if (own(payload, "operationEnvelope")) {
       const parsedBinding = SyncOperationRowBindingSchema.safeParse(inputBinding);
       if (!parsedBinding.success) return block("operation-envelope-binding-mismatch");
@@ -219,19 +234,22 @@ export function decodeSyncOperationPayload(payload: unknown, inputBinding: SyncO
       if (!parsed.success) return block("operation-envelope-malformed");
       const envelope = parsed.data;
       if (!matchesRow(envelope, binding)) return block("operation-envelope-binding-mismatch");
+      if (binding.kind === "task" && own(payload, "dispatchProjection")) {
+        const saved = SyncLegacyTaskDispatchProjectionSchema.parse(ownData(payload, "dispatchProjection"));
+        const target = envelope.admittedProjection.data;
+        const expectedPatch = saved.baseline === null ? target : Object.fromEntries(
+          Object.entries(target).filter(([key, value]) => !jsonEqual(value, saved.baseline![key])));
+        if (saved.errorCode || !jsonEqual(saved.projection, target) || !jsonEqual(saved.patch, expectedPatch))
+          return block("task-dispatch-projection-malformed");
+      }
       const serializer = SYNC_OPERATION_SERIALIZER_FORMATS.find(format =>
         format.id === envelope.serializer.id && format.version === envelope.serializer.version);
       if (!serializer) return block("delivery-serializer-unavailable");
       if (serializer.provider !== envelope.locator.provider || serializer.kind !== envelope.operation.kind) {
         return block("operation-envelope-binding-mismatch");
       }
-      return block("operation-envelope-codec-unavailable");
-    }
-    if (binding.kind === "task" && own(payload, "dispatchProjection")) {
-      const projection = ownData(payload, "dispatchProjection");
-      if (!isPlainRecord(projection) || !own(projection, "version")) return block("task-dispatch-projection-malformed");
-      if (ownData(projection, "version") !== 1) return block("task-dispatch-projection-version-unsupported");
-      if (!SyncLegacyTaskDispatchProjectionSchema.safeParse(projection).success) return block("task-dispatch-projection-malformed");
+      if (!availability?.supports(envelope)) return block("operation-envelope-codec-unavailable");
+      return { kind: "pinned-v1", envelope };
     }
     // Return the original data, including native field order/values; no upgrade or sanitizing rewrite.
     return { kind: "legacy-v0", payload };
@@ -239,3 +257,15 @@ export function decodeSyncOperationPayload(payload: unknown, inputBinding: SyncO
     return block("operation-payload-malformed");
   }
 }
+
+/** Separate immutable host admission capture; never substitute current state
+ * for historical source or privacy evidence while decoding.
+ */
+export const SyncOperationCaptureSchema = z.object({
+  sourceId: OpaqueStringSchema,
+  writeGeneration: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+  connectionId: OpaqueStringSchema,
+  connectionGeneration: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+  privacyEpoch: OpaqueStringSchema,
+}).strict();
+export type SyncOperationCapture = z.infer<typeof SyncOperationCaptureSchema>;

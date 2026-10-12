@@ -26,6 +26,12 @@ function matchesPersonalSettingTime(row: EventOutboxRow, values: PullValues) {
   return matchesRsvpEventProjection(row.provider, { ...row.payload.event, timeModel: nativeTime.data }, values, (row.payload.rsvp ?? row.payload.reminderInstance)?.instance, row.payload.rsvp?.graphOccurrence);
 }
 function matchesProjection(row: EventOutboxRow, values: PullValues, providerState?: ProviderEventState) {
+  const decoded = decodeEventOutboxOperation(row);
+  if (decoded.kind === "pinned-v1") {
+    const target = decoded.envelope.admittedProjection.data;
+    const expected = { ...row.payload.event, ...target, start: new Date(String(target.start)), end: new Date(String(target.end)) } as Event;
+    return row.action !== "delete" && matchesEventProviderProjection(row.provider, expected, values);
+  }
   if (row.payload.organizer) return false; // Only full native organizer readback may ACK.
   if (row.payload.caldavAlarm) return false; // Component summaries cannot acknowledge a full alarm resource.
   if (row.payload.reminderInstance) return row.action === "update" && matchesPersonalSettingTime(row, values) && matchesProviderReminderInstanceState(row.payload.reminderInstance, providerState);

@@ -18,7 +18,8 @@
     "@musubi/calendar": "workspace:*",
     "@musubi/types": "workspace:*",
     "drizzle-orm": "^0.45.2",
-    "pg": "^8.23.0"
+    "pg": "^8.23.0",
+    "@musubi/sync-codec": "workspace:*"
   },
   "devDependencies": {
     "@types/pg": "^8.23.1",

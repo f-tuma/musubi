@@ -959,6 +959,7 @@ export const eventOutbox = pgTable(
         event: Event;
         // Decoder-first persistence seam. No admission encoder/backfill yet.
         operationEnvelope?: unknown;
+      operationCapture?: unknown;
         patch?: Record<string, unknown>;
         scopeEditValidated?: boolean;
         reminderEdit?: ProviderReminderEdit;
@@ -1089,6 +1090,7 @@ export const taskOutbox = pgTable("task_outbox", {
     task: Task;
     // Unknown persisted formats must be decoded before any provider action.
     operationEnvelope?: unknown;
+    operationCapture?: unknown;
     projectionBaseline?: Record<string, unknown> | null;
     providerProjection?: { version: 1; projection: Record<string, unknown>; patch: Record<string, unknown>; baseline: Record<string, unknown> | null; errorCode?: string };
     dispatchProjection?: { version: 1; projection: Record<string, unknown>; patch: Record<string, unknown>; baseline: Record<string, unknown> | null; errorCode?: string };
