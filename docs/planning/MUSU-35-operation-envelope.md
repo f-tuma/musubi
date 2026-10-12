@@ -40,7 +40,12 @@ k následující legacy operaci. Suite je zapojená do `test:db:operation-decode
 
 Pure schemas/decoder fixtures, API typecheck, původní event/task delivery,
 DB event-outbox a 32 Google personal privacy recovery scénářů prošly.
-Finální nezávislé review, celý PR CI a main merge se teprve provádějí.
+Po integraci s main coverage prošly také celé CalDAV scope a Google/CalDAV
+organizer/occurrence suites, všechny sdílené type/wire fixtures a consumer
+typecheck. Explicitní finální skeptické review schválilo zdrojový diff
+`2335e899e0bdd30a766a0010e462f9bf93af5b42` vůči main `b01813a` před PR.
+PR CI a main merge jsou následné důkazy. Legacy URL/JSON budgets zůstaly stejné;
+nové v1 limity se na historické journaly retroaktivně neuplatňují.
 
 ## Druhý slice a provozní hranice
 
