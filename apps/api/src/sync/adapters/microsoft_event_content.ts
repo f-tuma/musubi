@@ -24,17 +24,19 @@ function unsupported(action: "update" | "delete" = "update"): never {
   if (action === "delete") throw new EventWriteError("event-write", "unsupported", "Delete meetings, recurring events and shared-calendar events in Outlook. No changes were saved.");
   throw new EventWriteError("event-write", "unsupported", "Only the title, notes and location of personal, non-recurring Outlook events can be edited here. Make other changes in Outlook. No changes were saved.");
 }
-export function microsoftPersonalContentPatch(patch: EventContentPatch | undefined) {
+export function assertMicrosoftPersonalContentPatch(patch: EventContentPatch | undefined) {
   const diff = requireEventPatch(patch);
   if (Object.keys(diff).some(key => !["title", "description", "location", "color"].includes(key))) unsupported();
-  const payload: Record<string, unknown> = {};
-  if (diff.title !== undefined) {
-    if (typeof diff.title !== "string") unsupported();
-    payload.subject = diff.title;
-  }
+  if (diff.title !== undefined && typeof diff.title !== "string") unsupported();
   for (const key of ["description", "location"] as const) {
     if (diff[key] !== undefined && diff[key] !== null && typeof diff[key] !== "string") unsupported();
   }
+  return diff;
+}
+export function microsoftPersonalContentPatch(patch: EventContentPatch | undefined) {
+  const diff = assertMicrosoftPersonalContentPatch(patch);
+  const payload: Record<string, unknown> = {};
+  if (diff.title !== undefined) payload.subject = diff.title;
   if (diff.description !== undefined) payload.body = { contentType: "text", content: diff.description ?? "" };
   if (diff.location !== undefined) payload.location = { displayName: diff.location ?? "" };
   return payload;
@@ -69,8 +71,11 @@ export async function assertMicrosoftPersonalContent(session: MicrosoftContentSe
   if (current.type !== "singleInstance" || current.isCancelled !== false || current.isOrganizer !== true || current.isDraft !== false || current.recurrence !== null || current.seriesMasterId != null || !Array.isArray(current.attendees) || current.attendees.length || current.isOnlineMeeting !== false || current.onlineMeeting != null || current.onlineMeetingUrl != null || current["@removed"] || current["@odata.nextLink"] || current["attendees@odata.nextLink"]) unsupported(action);
   return current;
 }
-export async function updateMicrosoftPersonalContent(session: MicrosoftContentSession, patch: EventContentPatch | undefined) {
-  const payload = microsoftPersonalContentPatch(patch);
+export async function updateMicrosoftPersonalContent(session: MicrosoftContentSession, patch: EventContentPatch | undefined,
+  admittedBody?: Record<string, unknown>) {
+  // Current authority checks do not select a serializer for an admitted body.
+  if (admittedBody) assertMicrosoftPersonalContentPatch(patch);
+  const payload = admittedBody ?? microsoftPersonalContentPatch(patch);
   const etag = requireVersion(session.etag);
   await assertMicrosoftPersonalContent(session);
   if (!Object.keys(payload).length) return;

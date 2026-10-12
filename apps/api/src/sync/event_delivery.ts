@@ -27,6 +27,7 @@ import {
   matchesEventProviderProjection,
   claimEventOutbox,
   decodeEventOutboxOperation,
+  assertPinnedOutboxSource,
   completeEventOutbox,
   finishEventOutbox,
   getEventOutboxExpectedRef,
@@ -53,6 +54,7 @@ import {
 import { ProviderEventWriteError, strongEventEtag } from "./event_write";
 import { createDeliveryAttempt, deliveryNextAttemptAt, validateDeliveryAttemptOptions } from "./delivery_policy";
 import { withProviderCallMetrics } from "./provider_http_metrics";
+import { parseNativeWritePlanV1 } from "@musubi/sync-codec";
 
 export function matchesReminderIntent(intent: GoogleReminderWrite, state: ProviderEventState) {
   return matchesGoogleReminderIntent(intent, state);
@@ -120,6 +122,16 @@ export async function deliverEventOutbox(
     await finishEventOutbox(row.id, token, "blocked", decoded.code, { uncertain: row.reconciling });
     return getEventOutboxRow(row.id);
   }
+  const pinned = decoded.kind === "pinned-v1" ? decoded.envelope : undefined;
+  const nativePlan = pinned ? parseNativeWritePlanV1(pinned.serializer, row.action, "event", pinned.nativePlan.data) : undefined;
+  if (pinned && !nativePlan) {
+    await finishEventOutbox(row.id, token, "blocked", "delivery-serializer-unavailable", { uncertain: row.reconciling });
+    return getEventOutboxRow(row.id);
+  }
+  if (pinned && !await assertPinnedOutboxSource(row, true)) {
+    await finishEventOutbox(row.id, token, "blocked", "delivery-source-changed", { uncertain: row.reconciling });
+    return getEventOutboxRow(row.id);
+  }
   const adapter = adapterFor(row.provider);
   const attempt = createDeliveryAttempt(() => renewEventOutboxLease(row.id, token), options);
   const signal = attempt.signal;
@@ -134,6 +146,10 @@ export async function deliverEventOutbox(
       const event = EventSchema.parse(row.payload.event);
       const checkDestination = async () => {
         signal.throwIfAborted();
+        if (pinned && !await assertPinnedOutboxSource(row, row.action === "delete")) {
+          await finishEventOutbox(row.id, token, "blocked", "delivery-source-changed", { uncertain: row.reconciling || mutationStarted });
+          return false;
+        }
         const link = await getExternalLinkForCalendar(row.calendarID);
         if (
           !link ||
@@ -504,7 +520,10 @@ export async function deliverEventOutbox(
         throw new EventWriteError("event-write", "unsupported");
       if (!adapter?.assertEventWrite)
         throw new EventWriteError("event-write", "unsupported");
-      const projected = adapter.projectEvent?.(event);
+      const projected = pinned
+        ? EventSchema.pick({ title: true, start: true, end: true, isAllDay: true,
+            description: true, location: true, recurrence: true }).parse(pinned.admittedProjection.data)
+        : adapter.projectEvent?.(event);
       const expected = projected
         ? {
             ...event,
@@ -518,7 +537,7 @@ export async function deliverEventOutbox(
           }
         : event;
       if (
-        projected &&
+        !pinned && projected &&
         !(await setEventOutboxProjection(row.id, token, projected))
       )
         return;
@@ -533,7 +552,7 @@ export async function deliverEventOutbox(
         );
       expectedRef = await getEventOutboxExpectedRef(row);
       const identity =
-        row.payload.createIdentityVersion === 1
+        pinned || row.payload.createIdentityVersion === 1
           ? { operationID: row.id, signal }
           : undefined;
       if (identity && row.action === "create") {
@@ -654,6 +673,7 @@ export async function deliverEventOutbox(
             patch,
             external: expectedRef ?? undefined,
             scopeEditValidated: row.payload.scopeEditValidated,
+            nativePlan,
             signal,
           },
         );
@@ -667,6 +687,7 @@ export async function deliverEventOutbox(
             row.externalCalendarID,
             event,
             identity,
+            nativePlan,
           );
         } else if (row.action === "update") {
           const result = await adapter.pushUpdate(
@@ -678,6 +699,7 @@ export async function deliverEventOutbox(
             expectedRef!,
             patch,
             signal,
+            nativePlan,
           );
           resultRef = result
             ? {

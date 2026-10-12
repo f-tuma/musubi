@@ -113,6 +113,7 @@ export function parseExternalDeliveryRecoveryMode(
 
 type APIConfig = {
   // Opt-in until both editors and the release compatibility gate are ready.
+  syncOperationV1EncoderEnabled: boolean;
   eventTimeEditsEnabled: boolean;
   icloudPersonalContentWritesEnabled: boolean;
   providerReminderEditsEnabled: boolean;
@@ -282,6 +283,8 @@ export function parseMediaConfig(
 const mediaConfig = parseMediaConfig(process.env);
 
 const apiConfig: APIConfig = {
+  // Enable only after all consumers have the decoder-first HOLD floor.
+  syncOperationV1EncoderEnabled: process.env.SYNC_OPERATION_V1_ENCODER_ENABLED === "true",
   eventTimeEditsEnabled: process.env.EVENT_TIME_EDITS_ENABLED === "true",
   icloudPersonalContentWritesEnabled: process.env.ICLOUD_PERSONAL_CONTENT_WRITES_ENABLED === "true",
   providerReminderEditsEnabled: process.env.PROVIDER_REMINDER_EDITS_ENABLED === "true",

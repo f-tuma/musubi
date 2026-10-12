@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { admitEventOperationInTransaction } from "./operation-admission";
+import { retireKnownUnwrittenOutboxInTransaction } from "./outbox-causal-retirement";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import type { Event } from "@musubi/types";
 import { db } from "..";
@@ -103,6 +105,9 @@ export async function appendEventOutbox(
   for (const intent of intents.filter(
     (item) => item.eventID.toLowerCase() === event.id.toLowerCase(),
   )) {
+    const retired = await retireKnownUnwrittenOutboxInTransaction(tx, intent, {
+      kind: "event", id: event.id, privacyEpoch: `event:${event.providerReadRetiredRevision ?? 0}`,
+    });
     const [predecessor] = await tx
       .select({ id: eventOutbox.id })
       .from(eventOutbox)
@@ -111,6 +116,7 @@ export async function appendEventOutbox(
           eq(eventOutbox.eventID, event.id),
           eq(eventOutbox.calendarID, intent.calendarID),
           eq(eventOutbox.externalCalendarLinkID, intent.externalCalendarLinkID),
+          retired.length ? sql`${eventOutbox.id} <> all(${sql.param(retired.map(row => row.id))}::uuid[])` : undefined,
           // A request stopped before its permanent dispatch marker has no
           // remote dependency for a newly observed replacement.
           sql`not (${eventOutbox.status} = 'cancelled' and coalesce(${eventOutbox.errorCode} = 'organizer-not-dispatched', false) and ${eventOutbox.payload}->'graphMeetingCancellation' is not null and ${eventOutbox.payload}->'graphMeetingCancellation'->'dispatch' is null)`,
@@ -124,16 +130,19 @@ export async function appendEventOutbox(
         desc(eventOutbox.position),
       )
       .limit(1);
+    const admittedIntent = intent.action === "update" && !intent.externalEventID && !predecessor &&
+      retired.some(row => row.action === "create") ? { ...intent, action: "create" as const } : intent;
+    const payload = await admitEventOperationInTransaction(tx, event, admittedIntent, predecessor?.id ?? null);
     let inserted: { id: string } | undefined;
     try {
       [inserted] = await tx
         .insert(eventOutbox)
         .values({
-          ...intent,
+          ...admittedIntent,
           createdAt: eventOutboxCreatedAt(event.id, intent.externalCalendarLinkID),
           revision: event.revision!,
           predecessorID: predecessor?.id ?? null,
-          payload: { ...intent.payload, event },
+          payload,
         })
         .onConflictDoNothing()
         .returning({ id: eventOutbox.id });

@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { admitTaskOperationInTransaction } from "./operation-admission";
+import { retireKnownUnwrittenOutboxInTransaction } from "./outbox-causal-retirement";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { TaskSchema, ForbiddenError, type Task } from "@musubi/types";
 import { db } from "..";
@@ -20,9 +22,10 @@ export class TaskSourceChangedError extends Error {
 }
 
 /** A receipt without either response evidence or uncertainty is proven to have
- * no effect. Only a changed source/privacy capture permits superseding it. */
+ * no effect. This legacy-only shortcut requires a changed source/privacy
+ * capture. Present envelopes use known-format retirement and retain unknowns. */
 export function staleNotWrittenTaskOutbox(capture: { providerAccessRevision: number; retiredGeneration?: number }) {
-  return sql`(${taskOutbox.status} in ('blocked', 'not-written', 'retry')
+  return sql`not (${taskOutbox.payload} ? 'operationEnvelope') and (${taskOutbox.status} in ('blocked', 'not-written', 'retry')
       or (${taskOutbox.status} = 'pending' and ${taskOutbox.attempts} = 0)) and ${taskOutbox.uncertain} = false
     and ${taskOutbox.resultRef} is null and ${taskOutbox.remoteSnapshot} is null
     and (${taskOutbox.providerAccessRevision} <> ${capture.providerAccessRevision}
@@ -65,6 +68,9 @@ export async function prepareTaskOutboxInTransaction(
     )).for("update");
     if (maps.length > 1) throw new TaskSourceChangedError();
     const mapping = maps[0];
+    await retireKnownUnwrittenOutboxInTransaction(tx, { ...source, calendarID, externalCalendarLinkID: source.id }, {
+      kind: "task", id: task.id, privacyEpoch: `task:${task.providerReadRetiredGeneration ?? 0}`,
+    });
     const pending = await tx.select({ id: taskOutbox.id }).from(taskOutbox).where(and(
       eq(taskOutbox.taskID, task.id), eq(taskOutbox.externalCalendarLinkID, source.id),
       eq(taskOutbox.action, "create"), sql`${taskOutbox.status} not in ('completed', 'not-needed', 'cancelled')`,
@@ -97,6 +103,9 @@ export async function prepareTaskOutboxInTransaction(
 export async function appendTaskOutbox(tx: DbTransaction, task: Task, intents: readonly TaskOutboxIntent[]) {
   for (const intent of intents) {
     if (intent.taskID !== task.id) throw new Error("Task outbox identity does not match.");
+    await retireKnownUnwrittenOutboxInTransaction(tx, intent, {
+      kind: "task", id: task.id, privacyEpoch: `task:${intent.retiredGeneration ?? 0}`,
+    });
     // Fresh source/privacy admission can supersede a stale operation only when
     // it has explicit no-write evidence. Retain uncertain/observed effects and
     // their causal barrier; cancellation never masquerades as remote delivery.
@@ -107,12 +116,13 @@ export async function appendTaskOutbox(tx: DbTransaction, task: Task, intents: r
       eq(taskOutbox.taskID, task.id), eq(taskOutbox.externalCalendarLinkID, intent.externalCalendarLinkID),
       sql`${taskOutbox.status} not in ('not-needed', 'cancelled')`,
     )).orderBy(desc(taskOutbox.revision), desc(taskOutbox.createdAt), desc(taskOutbox.position)).limit(1);
+    const payload = await admitTaskOperationInTransaction(tx, task, intent, predecessor?.id ?? null);
     let inserted: { id: string } | undefined;
     try {
       [inserted] = await tx.insert(taskOutbox).values({
         ...intent, revision: task.revision!, predecessorID: predecessor?.id ?? null,
         createdAt: sql`greatest(clock_timestamp(), coalesce((select max(created_at) + interval '1 microsecond' from task_outbox where task_id = ${task.id} and external_calendar_link_id = ${intent.externalCalendarLinkID}), clock_timestamp()))`,
-        payload: { ...intent.payload, task },
+        payload,
       }).onConflictDoNothing().returning({ id: taskOutbox.id });
     } catch {
       // Driver errors include private bound task JSON. Expose only safe context.

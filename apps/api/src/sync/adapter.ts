@@ -1,4 +1,5 @@
 import type { CaldavPersonalContentOperation } from "./caldav_personal_content";
+import type { NativeWritePlanV1 } from "@musubi/sync-codec";
 import type { CaldavAlarmContext, CaldavAlarmIntent } from "@musubi/db";
 import type { CaldavAlarmEvidence } from "./adapters/caldav_alarms";
 import type { googleReminderInstanceTransport } from "./adapters/google_reminder_instance";
@@ -110,6 +111,7 @@ export type TaskWriteOperation = {
 };
 
 export type EventWriteOperation = {
+  nativePlan?: NativeWritePlanV1;
   signal?: AbortSignal;
   action: "create" | "update" | "delete";
   event: Event;
@@ -248,6 +250,7 @@ export type CalendarAdapter = {
     externalCalendarId: string,
     event: Event,
     identity?: EventCreateIdentity,
+    nativePlan?: NativeWritePlanV1,
   ): Promise<ExternalEventRef>;
   // Read-only recovery. null means no matching live object was observed, not
   // permission to repeat a POST (Graph does not promise an infinite dedup window).
@@ -274,6 +277,7 @@ export type CalendarAdapter = {
     ref?: ExternalEventRef,
     patch?: EventContentPatch,
     signal?: AbortSignal,
+    nativePlan?: NativeWritePlanV1,
   ): Promise<{ etag?: string | null; icalUid?: string | null } | void>;
   pushDelete(
     userID: string,
@@ -291,6 +295,7 @@ export type CalendarAdapter = {
     task: Task,
     beforeMutation?: () => Promise<void>,
     signal?: AbortSignal,
+    nativePlan?: NativeWritePlanV1,
   ): Promise<ExternalTaskRef>;
   projectTask?(task: Task): TaskProjection;
   readTask?(userID: string, accountID: string, externalCalendarID: string, ref: ExternalTaskRef, signal?: AbortSignal): Promise<TaskReadEvidence | null>;
@@ -304,6 +309,7 @@ export type CalendarAdapter = {
     ref?: ExternalTaskRef,
     patch?: TaskProjection,
     signal?: AbortSignal,
+    nativePlan?: NativeWritePlanV1,
   ): Promise<{ etag?: string | null; icalUid?: string | null } | void>;
   pushTaskDelete?(
     userID: string,

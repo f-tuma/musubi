@@ -37,8 +37,10 @@ import {
 import {
   eventOutboxCreatedAt,
   unresolvedEventOutbox,
+  type EventOutboxIntent,
   type EventOutboxRow,
 } from "./event-outbox";
+import { admitEventOperationInTransaction } from "./operation-admission";
 import { caldavSeriesDesired, caldavSeriesContext, sameCaldavScopeContext, type CaldavSeriesDeletionPrepared, type CaldavSeriesContext, type CaldavSeriesPrepared } from "./caldav-series-scope";
 import type { GoogleOccurrenceIntent } from "./google-occurrence-scope";
 import type { DbTransaction } from "./calendars";
@@ -700,18 +702,14 @@ export async function commitEventDeliveryResolution(
         })
         .where(inArray(eventOutbox.id, replaced));
       const id = randomUUID();
-      await tx.insert(eventOutbox).values({
+      const revision = current.localRevision ?? current.latest.revision;
+      const canonical = EventSchema.parse({ ...current.local, revision });
+      const intent: EventOutboxIntent = {
         id,
-        createdAt: eventOutboxCreatedAt(
-          row.eventID,
-          row.externalCalendarLinkID,
-        ),
         actorID: userID,
         mutationID: request.mutationId,
         position: 0,
         eventID: row.eventID,
-        revision: current.localRevision ?? current.latest.revision,
-        predecessorID: null,
         calendarID: row.calendarID,
         externalCalendarLinkID: row.externalCalendarLinkID,
         provider: row.provider,
@@ -723,9 +721,8 @@ export async function commitEventDeliveryResolution(
         expectedEtag: proof.action === "create" ? null : proof.ref?.etag,
         icalUid: proof.action === "create" ? null : proof.ref?.icalUid,
         action: proof.action,
-        uncertain: proof.action !== "create",
         payload: {
-          event: current.local,
+          event: canonical,
           patch: proof.patch,
           ...(proof.rsvp ? { rsvp: { ...proof.rsvp.intent, request: { ...proof.rsvp.intent.request, operationID: request.mutationId, expectedRevision: current.localRevision!, expectedStateVersion: providerStateVersion({ id: current.mapping!.id, etag: proof.ref!.etag ?? null, providerState: proof.rsvp.intent.baselineState })! } } } : {}),
           ...(proof.reminder?.instance ? { reminderInstance: { ...proof.reminder.instance, request: { ...proof.reminder.instance.request, operationID: request.mutationId, expectedRevision: current.localRevision!, expectedStateVersion: providerStateVersion({ id: current.mapping!.id, etag: proof.ref!.etag ?? null, providerState: proof.reminder.state })! } } } : {}),
@@ -751,6 +748,13 @@ export async function commitEventDeliveryResolution(
             expectedRsvpBaselineVersion: request.expectedRsvpBaselineVersion,
           },
         },
+      };
+      // Resolution is a freshly accepted operation with current proof. Capture
+      // its pinned plan under this transaction, never rewrite the old chain.
+      const payload = await admitEventOperationInTransaction(tx, canonical, intent, null);
+      await tx.insert(eventOutbox).values({
+        ...intent, revision, predecessorID: null, uncertain: proof.action !== "create", payload,
+        createdAt: eventOutboxCreatedAt(row.eventID, row.externalCalendarLinkID),
       });
       return id;
     });

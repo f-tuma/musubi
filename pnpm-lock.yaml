@@ -77,6 +77,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@musubi/sync-codec':
+        specifier: workspace:*
+        version: link:../../packages/sync-codec
       '@aws-sdk/client-s3':
         specifier: ^3.1116.0
         version: 3.1116.0
@@ -568,6 +571,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@musubi/sync-codec':
+        specifier: workspace:*
+        version: link:../sync-codec
       '@musubi/calendar':
         specifier: workspace:*
         version: link:../calendar
@@ -642,6 +648,19 @@ importers:
       '@types/nodemailer':
         specifier: ^8.0.1
         version: 8.0.1
+      tsx:
+        specifier: ^4.23.12
+        version: 4.23.12
+
+  packages/sync-codec:
+    dependencies:
+      '@musubi/types':
+        specifier: workspace:*
+        version: link:../types
+      ical.js:
+        specifier: ^2.2.1
+        version: 2.2.1
+    devDependencies:
       tsx:
         specifier: ^4.23.12
         version: 4.23.12

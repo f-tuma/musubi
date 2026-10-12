@@ -1,7 +1,9 @@
 import { observeGraphSeriesContent, prepareGraphSeriesContent } from "./microsoft_series_content";
+import type { NativeWritePlanV1 } from "@musubi/sync-codec";
+import { pinnedJsonBodyV1 } from "../pinned_write";
 import { observeGraphOccurrenceContent, prepareGraphOccurrenceContent, updateGraphOccurrenceContent } from "./microsoft_occurrence_content";
 import { prepareGraphSeriesDeletion, deleteGraphSeries } from "./microsoft_series_delete";
-import { assertMicrosoftPersonalContent, microsoftPersonalContentPatch, microsoftEventVersion, updateMicrosoftPersonalContent, deleteMicrosoftPersonalEvent } from "./microsoft_event_content";
+import { assertMicrosoftPersonalContent, assertMicrosoftPersonalContentPatch, microsoftEventVersion, updateMicrosoftPersonalContent, deleteMicrosoftPersonalEvent } from "./microsoft_event_content";
 import { getOrganizerTimeEventIDs } from "@musubi/db";
 import { observeGraphMeetingCancellation, prepareGraphMeetingCancellation, cancelGraphMeeting } from "./microsoft_meeting_cancel";
 import { microsoftOrganizerTransport } from "./microsoft_organizer";
@@ -286,6 +288,7 @@ export function toGraphTask(task: Task) {
 }
 
 type MicrosoftTaskRequestOptions = {
+  nativePlan?: NativeWritePlanV1;
   fetchImpl?: typeof fetch;
   graphBase?: string;
   beforeMutation?: () => Promise<void>;
@@ -391,7 +394,7 @@ export async function createMicrosoftTask(
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(toGraphTask(task)),
+    body: JSON.stringify(options.nativePlan ? pinnedJsonBodyV1(options.nativePlan) : toGraphTask(task)),
   });
   assertTaskMutationResponse(res);
   const created = await res.json();
@@ -427,7 +430,7 @@ export async function updateMicrosoftTask(
         "Content-Type": "application/json",
         "If-Match": etag,
       },
-      body: JSON.stringify(options.patch ?? toGraphTask(task)),
+      body: JSON.stringify(options.nativePlan ? pinnedJsonBodyV1(options.nativePlan, Object.keys(options.patch ?? {})) : options.patch ?? toGraphTask(task)),
     },
   );
   assertTaskMutationResponse(res);
@@ -1010,7 +1013,7 @@ export const microsoftAdapter: CalendarAdapter = {
         "Manage recurring events in Outlook. No changes were saved.",
       );
     }
-    if (operation.action === "update" && operation.external) microsoftPersonalContentPatch(operation.patch);
+    if (operation.action === "update" && operation.external) assertMicrosoftPersonalContentPatch(operation.patch);
     const accessToken = await getAccessToken(userID, accountId);
     await assertOAuthEventWriteGrant(userID, "microsoft", accountId);
     if (operation.action !== "create" && operation.external) {
@@ -1093,6 +1096,7 @@ export const microsoftAdapter: CalendarAdapter = {
     externalCalendarId,
     event: Event,
     identity,
+    nativePlan,
   ) {
     if (event.recurrence) {
       throw new EventWriteError(
@@ -1110,7 +1114,7 @@ export const microsoftAdapter: CalendarAdapter = {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
+        body: JSON.stringify(nativePlan ? pinnedJsonBodyV1(nativePlan) : {
           ...toGraphEvent(event),
           ...(identity
             ? { transactionId: eventCreateOperationID(identity) }
@@ -1148,12 +1152,13 @@ export const microsoftAdapter: CalendarAdapter = {
     return { event, ref: { externalEventId: data.id, etag: microsoftEventVersion(data["@odata.etag"]) } };
   },
 
-  async pushUpdate(userID, accountId, externalCalendarId, externalEventId, _event, ref, patch, signal) {
-    microsoftPersonalContentPatch(patch);
+  async pushUpdate(userID, accountId, externalCalendarId, externalEventId, _event, ref, patch, signal, nativePlan) {
+    assertMicrosoftPersonalContentPatch(patch);
     if (!ref || ref.externalEventId !== externalEventId || !microsoftEventVersion(ref.etag)) throw new ProviderEventWriteError("provider-version-unavailable");
     const token = await getAccessToken(userID, accountId);
     await assertOAuthEventWriteGrant(userID, "microsoft", accountId);
-    return updateMicrosoftPersonalContent({ token, calendarID: externalCalendarId, eventID: externalEventId, etag: ref.etag, signal }, patch);
+    return updateMicrosoftPersonalContent({ token, calendarID: externalCalendarId, eventID: externalEventId, etag: ref.etag, signal }, patch,
+      nativePlan ? pinnedJsonBodyV1(nativePlan) : undefined);
   },
 
   async pushDelete(userID, accountId, externalCalendarId, externalEventId, ref, signal) {
@@ -1196,7 +1201,7 @@ export const microsoftAdapter: CalendarAdapter = {
     }
   },
 
-  async pushTaskCreate(userID, accountId, externalCalendarId, task, beforeMutation, signal) {
+  async pushTaskCreate(userID, accountId, externalCalendarId, task, beforeMutation, signal, nativePlan) {
     const taskListId = microsoftTaskListId(externalCalendarId);
     if (!taskListId)
       throw new Error("Microsoft task write requires a task list");
@@ -1204,7 +1209,7 @@ export const microsoftAdapter: CalendarAdapter = {
       await getAccessToken(userID, accountId, true, signal),
       taskListId,
       task,
-      { beforeMutation, signal },
+      { beforeMutation, signal, nativePlan },
     );
   },
 
@@ -1217,6 +1222,7 @@ export const microsoftAdapter: CalendarAdapter = {
     ref,
     patch,
     signal,
+    nativePlan,
   ) {
     const taskListId = microsoftTaskListId(externalCalendarId);
     if (!taskListId)
@@ -1227,7 +1233,7 @@ export const microsoftAdapter: CalendarAdapter = {
       externalTaskId,
       task,
       ref?.etag,
-      { patch, beforeMutation: ref?.beforeMutation, signal },
+      { patch, beforeMutation: ref?.beforeMutation, signal, nativePlan },
     );
   },
 

@@ -1,0 +1,20 @@
+{
+  "name": "@musubi/sync-codec",
+  "private": true,
+  "type": "module",
+  "description": "Pinned pure provider write serializers, version 1.",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "tsx src/index.test.ts"
+  },
+  "dependencies": {
+    "@musubi/types": "workspace:*",
+    "ical.js": "^2.2.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.12"
+  }
+}

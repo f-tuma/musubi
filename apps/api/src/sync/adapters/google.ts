@@ -1,4 +1,6 @@
 import { googleOrganizerTransport } from "./google_organizer_delivery";
+import type { NativeWritePlanV1 } from "@musubi/sync-codec";
+import { pinnedJsonBodyV1 } from "../pinned_write";
 import { googleReminderInstanceTransport } from "./google_reminder_instance";
 import { googleRsvpMethods } from "./google_rsvp_delivery";
 import { googleOccurrenceMethods } from "./google_occurrence";
@@ -379,6 +381,7 @@ export function toGoogleTask(task: Task) {
 }
 
 type GoogleTaskRequestOptions = {
+  nativePlan?: NativeWritePlanV1;
   baseUrl?: string;
   fetchImpl?: typeof fetch;
   patch?: TaskProjection;
@@ -421,7 +424,7 @@ export async function createGoogleTask(
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(toGoogleTask(task)),
+      body: JSON.stringify(options.nativePlan ? pinnedJsonBodyV1(options.nativePlan) : toGoogleTask(task)),
     },
   );
   assertTaskMutationResponse(res);
@@ -449,7 +452,7 @@ export async function updateGoogleTask(
   const current = await readGoogleTask(accessToken, taskListId, externalTaskId, options);
   if (!current) throw new ProviderTaskWriteError("task-provider-conflict");
   assertTaskEtag(etag, current.ref.etag);
-  const patch = options.patch ?? toGoogleTask(task);
+  const patch = options.nativePlan ? pinnedJsonBodyV1(options.nativePlan, Object.keys(options.patch ?? {})) : options.patch ?? toGoogleTask(task);
   if (Object.keys(patch).some(key => !["title", "notes", "status", "due"].includes(key))) throw new ProviderTaskWriteError("task-projection-unavailable");
   if (!Object.keys(patch).length) return { etag, icalUid: null };
   await options.beforeMutation?.();
@@ -819,7 +822,7 @@ export const googleAdapter: CalendarAdapter = {
     // DELETE can cancel an organizer copy, but only removes an attendee copy.
     if (operation.action !== "create" && operation.external) {
       requireEventEtag(operation.external.etag);
-      if (operation.action === "update")
+      if (operation.action === "update" && !operation.nativePlan)
         toGoogleEventPatch(operation.event, operation.patch);
       const response = await observedProviderFetch(
         `${GCAL}/calendars/${encodeURIComponent(externalCalendarId)}/events/${encodeURIComponent(operation.external.externalEventId)}`,
@@ -941,6 +944,7 @@ export const googleAdapter: CalendarAdapter = {
     externalCalendarId,
     event: Event,
     identity,
+    nativePlan,
   ) {
     const accessToken = await getGoogleAccessToken(userID, accountId);
     const res = await observedProviderFetch(
@@ -951,7 +955,7 @@ export const googleAdapter: CalendarAdapter = {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
+        body: JSON.stringify(nativePlan ? pinnedJsonBodyV1(nativePlan) : {
           ...toGoogleEvent(event),
           ...(identity
             ? {
@@ -993,9 +997,10 @@ export const googleAdapter: CalendarAdapter = {
     ref,
     patch,
     signal,
+    nativePlan,
   ) {
     const etag = requireEventEtag(ref?.etag);
-    const payload = toGoogleEventPatch(event, patch);
+    const payload = nativePlan ? pinnedJsonBodyV1(nativePlan) : toGoogleEventPatch(event, patch);
     if (Object.keys(payload).length === 0) return; // Known local-only/no-op diff, no write.
     const accessToken = await getGoogleAccessToken(userID, accountId);
     const res = await observedProviderFetch(
@@ -1071,14 +1076,14 @@ export const googleAdapter: CalendarAdapter = {
     assertTaskEtag(operation.external.etag, current.ref.etag);
   },
 
-  async pushTaskCreate(userID, accountId, externalCalendarId, task, beforeMutation, signal) {
+  async pushTaskCreate(userID, accountId, externalCalendarId, task, beforeMutation, signal, nativePlan) {
     const taskListId = googleTaskListId(externalCalendarId);
     if (!taskListId) throw new Error("Google task write requires a task list");
     return createGoogleTask(
       await getGoogleAccessToken(userID, accountId, true, undefined, signal),
       taskListId,
       task,
-      { beforeMutation, signal },
+      { beforeMutation, signal, nativePlan },
     );
   },
 
@@ -1091,6 +1096,7 @@ export const googleAdapter: CalendarAdapter = {
     ref,
     patch,
     signal,
+    nativePlan,
   ) {
     const taskListId = googleTaskListId(externalCalendarId);
     if (!taskListId) throw new Error("Google task write requires a task list");
@@ -1100,7 +1106,7 @@ export const googleAdapter: CalendarAdapter = {
       externalTaskId,
       task,
       ref?.etag,
-      { patch, beforeMutation: ref?.beforeMutation, signal },
+      { patch, beforeMutation: ref?.beforeMutation, signal, nativePlan },
     );
   },
 

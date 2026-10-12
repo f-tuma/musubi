@@ -1,18 +1,20 @@
 import { TaskSchema } from "@musubi/types";
-import { claimTaskOutbox, decodeTaskOutboxOperation, getTaskOutbox, getTaskOutboxPredecessorEvidence, renewTaskOutboxLease, assertTaskOutboxDeliverySource, setTaskOutboxProjection, finishTaskOutbox, acceptTaskOutboxDelivery, type TaskOutboxRow } from "@musubi/db";
+import { claimTaskOutbox, decodeTaskOutboxOperation, assertPinnedOutboxSource, getTaskOutbox, getTaskOutboxPredecessorEvidence, renewTaskOutboxLease, assertTaskOutboxDeliverySource, setTaskOutboxProjection, finishTaskOutbox, acceptTaskOutboxDelivery, type TaskOutboxRow } from "@musubi/db";
 import type { CalendarAdapter, ExternalTaskRef, TaskProjection } from "./adapter";
 import { createDeliveryAttempt, deliveryNextAttemptAt, validateDeliveryAttemptOptions, type DeliveryAttemptOptions } from "./delivery_policy";
 import { withProviderCallMetrics } from "./provider_http_metrics";
 import { ProviderEventWriteError } from "./event_write";
 import { diffTaskProjection, jsonTaskProjection, sameTaskProjection, ProviderTaskWriteError } from "./task_write";
+import { parseNativeWritePlanV1 } from "@musubi/sync-codec";
 
 type AdapterFor = (provider: string) => CalendarAdapter | null;
 type Projection = NonNullable<TaskOutboxRow["payload"]["providerProjection"]>;
 
 /** Revalidate the captured source and privacy generation immediately before
  * dispatch. The lifecycle fence is never held across a network request. */
-async function admitted(row: TaskOutboxRow, allowDeletedTask = false) {
-  return assertTaskOutboxDeliverySource(row, allowDeletedTask);
+async function admitted(row: TaskOutboxRow, allowDeletedTask = false, pinned = false) {
+  return await assertTaskOutboxDeliverySource(row, allowDeletedTask) &&
+    (!pinned || await assertPinnedOutboxSource(row, allowDeletedTask));
 }
 
 function achieved(current: TaskProjection, patch: TaskProjection) {
@@ -31,6 +33,16 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
     await finishTaskOutbox(row.id, token, "blocked", decoded.code, { uncertain: row.reconciling });
     return getTaskOutbox(row.id);
   }
+  const pinned = decoded.kind === "pinned-v1" ? decoded.envelope : undefined;
+  const nativePlan = pinned ? parseNativeWritePlanV1(pinned.serializer, row.action, "task", pinned.nativePlan.data) : undefined;
+  if (pinned && !nativePlan) {
+    await finishTaskOutbox(row.id, token, "blocked", "delivery-serializer-unavailable", { uncertain: row.reconciling });
+    return getTaskOutbox(row.id);
+  }
+  if (pinned && !await assertPinnedOutboxSource(row, true)) {
+    await finishTaskOutbox(row.id, token, "blocked", "delivery-source-changed", { uncertain: row.reconciling });
+    return getTaskOutbox(row.id);
+  }
   let dispatched = false;
   let resultRef: ExternalTaskRef | undefined;
   let mutationAccepted = false;
@@ -38,23 +50,23 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
   const signal = attempt.signal;
   const mark = async () => {
     signal.throwIfAborted();
-    if (!await renewTaskOutboxLease(row.id, token) || !await admitted(row)) throw new ProviderTaskWriteError("task-source-read-only");
+    if (!await renewTaskOutboxLease(row.id, token) || !await admitted(row, false, !!pinned)) throw new ProviderTaskWriteError("task-source-read-only");
     signal.throwIfAborted();
     dispatched = true;
   };
   try {
     return await attempt.run(() => withProviderCallMetrics(row.provider, "task", async () => {
-      if (!await admitted(row, true)) {
+      if (!await admitted(row, true, !!pinned)) {
         await finishTaskOutbox(row.id, token, "blocked", "task-source-changed", { uncertain: row.reconciling });
         return getTaskOutbox(row.id);
       }
-      const canDispatch = await admitted(row);
+      const canDispatch = await admitted(row, false, !!pinned);
       if (!canDispatch && !row.reconciling) {
         await finishTaskOutbox(row.id, token, "not-needed", null, { uncertain: false });
         return getTaskOutbox(row.id);
       }
       const adapter = adapterFor(row.provider);
-      if (!adapter?.projectTask || !adapter.readTask || !adapter.assertTaskWrite || !adapter.pushTaskCreate || !adapter.pushTaskUpdate || !adapter.pushTaskDelete) throw new ProviderTaskWriteError("task-projection-unavailable");
+      if (!adapter || (!pinned && !adapter.projectTask) || !adapter.readTask || !adapter.assertTaskWrite || !adapter.pushTaskCreate || !adapter.pushTaskUpdate || !adapter.pushTaskDelete) throw new ProviderTaskWriteError("task-projection-unavailable");
       const task = TaskSchema.parse(row.payload.task);
       const secondary = row.calendarID !== (task.originCalendarID ?? task.calendarID);
       if (secondary && row.action !== "delete" && task.recurrence) throw new ProviderTaskWriteError("task-recurrence-projection-unsupported");
@@ -62,7 +74,8 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
       const expected = predecessor.ref;
       let ref: ExternalTaskRef | undefined = expected.externalTaskId ? { ...expected, externalTaskId: expected.externalTaskId } : undefined;
       let saved: Projection | undefined = row.payload.dispatchProjection;
-      const target = saved?.projection ?? jsonTaskProjection(adapter.projectTask(task));
+      const target = pinned ? pinned.admittedProjection.data : saved?.projection ?? jsonTaskProjection(adapter.projectTask!(task));
+      if (pinned && saved && !sameTaskProjection(saved.projection, target)) throw new ProviderTaskWriteError("task-projection-unavailable");
       // Preflight reports are diagnostic previews. A temporary network or OAuth
       // failure must be rechecked after recovery, not frozen as a perpetual error.
       if (saved?.errorCode) throw new ProviderTaskWriteError(saved.errorCode as ProviderTaskWriteError["code"]);
@@ -112,7 +125,7 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
         await acceptTaskOutboxDelivery(row, token, current);
         return getTaskOutbox(row.id);
       }
-      if (row.action === "create") resultRef = await adapter.pushTaskCreate(row.userID, row.accountID, row.externalCalendarID, task, mark, signal);
+      if (row.action === "create") resultRef = await adapter.pushTaskCreate(row.userID, row.accountID, row.externalCalendarID, task, mark, signal, nativePlan);
       else if (row.action === "delete") {
         await adapter.pushTaskDelete(row.userID, row.accountID, row.externalCalendarID, ref!.externalTaskId, { ...ref!, beforeMutation: mark }, signal);
         mutationAccepted = true;
@@ -120,7 +133,7 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
         await acceptTaskOutboxDelivery(row, token, null, ref);
         return getTaskOutbox(row.id);
       } else {
-        const result = await adapter.pushTaskUpdate(row.userID, row.accountID, row.externalCalendarID, ref!.externalTaskId, task, { ...ref!, beforeMutation: mark }, saved.patch, signal);
+        const result = await adapter.pushTaskUpdate(row.userID, row.accountID, row.externalCalendarID, ref!.externalTaskId, task, { ...ref!, beforeMutation: mark }, saved.patch, signal, nativePlan);
         resultRef = { ...ref!, ...result };
       }
       mutationAccepted = true;
