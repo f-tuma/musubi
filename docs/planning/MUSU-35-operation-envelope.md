@@ -165,6 +165,17 @@ Manifest s jednotlivými exit codes prvního běhu: `/tmp/musubi-c03-codec-legac
 DB byla syntetická, encoder default OFF. Druhý širší manifest se source SHA
 kontrolou: `/tmp/musubi-c03-codec-legacy-compatibility-final.json`. `db:generate` potvrdilo beze změny SQL
 schématu; peers check, DB schema/settings a docs build prošly.
+
+Finální cílený běh všech osmi delivery/handler/resolution/capability/CalDAV scope
+suites prošel po zmrazení runtime. SHA-256 všech 243 sledovaných runtime souborů
+je před/po shodný i přes commit/rebase; manifest je
+`/tmp/musubi-c03-codec-legacy-compatibility-targeted-final.json`. Všechny tři nové
+DB suites prošly společně, včetně explicitního cleanup fixture-owner journals.
+Finální skeptické review výslovně schválilo source+docs diff
+`38a8f3bfec314f570407d43b6c7674032c4480bc` vůči merged floor
+`1248ce285f29c61650bbb8570d329653b1bca460` před otevřením druhého PR. Pozdější
+commit doplnil pouze tyto ověřené facts; runtime ani testovací logika se nezměnily.
+
 Tyto lokální důkazy nepředstavují produkční deploy ani live provider acceptance.
 
 ## Provozní hranice a zbývající gate
