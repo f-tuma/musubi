@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { EventSchema, TaskSchema } from "@musubi/types";
 import {
-  db, user, calendarTasks, events, tasks, eventOutbox, taskOutbox,
+  db, user, calendarEvents, calendarTasks, events, tasks, eventOutbox, taskOutbox,
   externalCalendars, externalEvents, externalTasks, createCalendar, createEvent, getDueEventOutboxIDs, getDueTaskOutboxIDs,
   getEventOutboxRow, getTaskOutbox, finishEventOutbox, getEventDeliveryStatus, getTaskDeliveryStatus,
-  reconcileGoogleCalendarAccess, deleteExternalEvent,
+  reconcileGoogleCalendarAccess, deleteExternalEvent, upsertExternalEvent, upsertExternalTask,
   type EventOutboxRow, type TaskOutboxRow,
 } from "@musubi/db";
 import { retainPendingEventPull, retainUnmappedCreatePull } from "../../../../packages/db/src/queries/event-outbox-pull";
@@ -156,7 +156,8 @@ async function main() {
         ...(family === "organizer" ? { organizer: { request: { provider: "google" } } } : {}),
         ...(family === "rsvp" ? { rsvp: {} } : {}) } as EventOutboxRow["payload"];
       const row = await enqueueEvent(payload, { action: family === "delete" ? "delete" : "update",
-        attempts: 1, status: "attempting", uncertain: true, leaseToken: randomUUID(), leaseUntil: new Date(Date.now() + 120_000) });
+        attempts: 1, status: "attempting", uncertain: false,
+        resultRef: { externalEventId: "native", etag: '"v1"' }, leaseToken: randomUUID(), leaseUntil: new Date(Date.now() + 120_000) });
       const values = family === "delete" ? null : { ...value, description: null, location: null, recurrence: null };
       await db.transaction(async tx => {
         await tx.select({ id: events.id }).from(events).where(eq(events.id, value.id)).for("update");
@@ -165,7 +166,8 @@ async function main() {
       });
       const saved = await getEventOutboxRow(row.id);
       assert.equal(saved?.status, "blocked");
-      assert.equal(saved?.uncertain, true);
+      assert.equal(saved?.uncertain, true, "an older floor cannot prove a live unknown worker has not dispatched");
+      assert.deepEqual(saved?.resultRef, row.resultRef);
       assert.notEqual(saved?.remoteSnapshot?.isEcho, true);
       assert.equal(saved?.remoteSnapshot?.deleted, family === "delete");
       assert.equal(saved?.leaseToken, null);
@@ -175,17 +177,35 @@ async function main() {
     }
     const lateValue = event();
     await createEvent(lateValue, lateValue.calendars);
-    const terminalUnknown = await enqueueEvent({ event: lateValue, operationEnvelope: null, createIdentityVersion: 1 },
+    const terminalUnknown = await enqueueEvent({ event: lateValue, operationEnvelope: null },
       { status: "completed", attempts: 1 });
-    await db.transaction(async tx => {
-      const nativeID = `musubi${terminalUnknown.id.replace(/-/g, "")}`;
-      assert.equal(await retainUnmappedCreatePull(tx, "google", owner, calendar.id, source.externalCalendarID,
-        nativeID, { ...lateValue, description: null, location: null, recurrence: null }, '"v1"', null, terminalUnknown.id), true);
-    });
+    const futureNativeID = `future-native-${terminalUnknown.id}`;
+    const canonicalIDs = (await db.select({ id: events.id }).from(events).where(eq(events.creatorID, owner))).map(row => row.id).sort();
+    assert.equal(await upsertExternalEvent("google", owner, calendar.id, source.externalCalendarID,
+      futureNativeID, { ...lateValue, description: null, location: null, recurrence: null, url: lateValue.url ?? null },
+      '"v1"', null, terminalUnknown.id), false, "scoped future CREATE is retained before legacy identity checks");
+    assert.deepEqual((await db.select({ id: events.id }).from(events).where(eq(events.creatorID, owner))).map(row => row.id).sort(), canonicalIDs,
+      "a future address without the legacy marker cannot create a duplicate canonical event");
+    assert.equal((await db.select().from(externalEvents).where(eq(externalEvents.eventID, lateValue.id))).length, 0,
+      "the older floor cannot adopt a future CREATE native mapping");
     const terminalHeld = await getEventOutboxRow(terminalUnknown.id);
     assert.equal(terminalHeld?.status, "completed", "late unknown format does not reopen terminal history");
     assert.notEqual(terminalHeld?.remoteSnapshot?.isEcho, true, "terminal fallback cannot ACK by interpreting old event fields");
     assert.equal(hash(terminalHeld?.payload), hash(terminalUnknown.payload));
+
+    // Resolving a legacy head cannot supersede a newer unknown plan in the
+    // same causal chain into a new legacy intent.
+    const chainEvent = event();
+    await createEvent(chainEvent, chainEvent.calendars);
+    const legacyHead = await enqueueEvent({ event: chainEvent },
+      { action: "update", status: "conflict", externalEventID: "resolution-native" });
+    const unknownSuccessor = await enqueueEvent({ event: chainEvent, operationEnvelope: null },
+      { action: "update", status: "blocked", predecessorID: legacyHead.id, revision: 2, externalEventID: "resolution-native" });
+    await assert.rejects(() => prepareEventDeliveryResolution(owner, chainEvent.id, legacyHead.id, forbidden),
+      /cannot be resolved/, "legacy resolution checks the entire pending chain before provider access");
+    assert.equal((await getEventOutboxRow(unknownSuccessor.id))?.status, unknownSuccessor.status);
+    assert.equal(hash((await getEventOutboxRow(unknownSuccessor.id))?.payload), hash(unknownSuccessor.payload));
+    assert.equal(factories, 0);
 
     // The CalDAV family-removal shortcut lives before the ordinary pending-pull gate.
     const davCalendar = await createCalendar({ creatorID: owner, name: "DAV family HOLD", color: "#112233" });
@@ -207,6 +227,144 @@ async function main() {
     assert.notEqual(davHeld?.remoteSnapshot?.isEcho, true, "unknown full-family intent cannot ACK from a child removal");
     assert.equal((await db.select().from(events).where(eq(events.id, davEvent.id)))[0]?.deletedAt, null);
     assert.equal(hash(davHeld?.payload), hash(davRow.payload));
+
+    const destination = await createCalendar({ creatorID: owner, name: "Family derived destination", color: "#112233" });
+    const [destinationSource] = await db.insert(externalCalendars).values({ calendarID: destination.id,
+      provider: "google", userID: owner, accountID: owner, externalCalendarID: "family-destination", supportsEvents: true }).returning();
+    // Completed cancellation history must not be reinterpreted or rewritten by
+    // an older floor, even when the native resource resurfaces or disappears.
+    for (const provider of ["google", "caldav"] as const) {
+      const targetCalendar = provider === "google" ? calendar : davCalendar;
+      const targetSource = provider === "google" ? source : davSource;
+      const value = { ...event(), recurrence: "RRULE:FREQ=DAILY;COUNT=2", isCanceled: true, calendars: [targetCalendar.id], originCalendarID: targetCalendar.id };
+      await createEvent(value, value.calendars);
+      const child = EventSchema.parse({ ...event(), seriesID: value.id, recurrence: null,
+        start: "2026-10-02T09:00:00Z", end: "2026-10-02T10:00:00Z",
+        originalStart: { kind: "instant", value: "2026-10-02T09:00:00.000Z" },
+        calendars: [targetCalendar.id, destination.id], originCalendarID: targetCalendar.id });
+      await createEvent(child, child.calendars);
+      const nativeID = `terminal-cancel-${randomUUID()}`;
+      const [mapping] = await db.insert(externalEvents).values({ provider, calendarID: targetCalendar.id,
+        eventID: value.id, externalCalendarID: targetSource.externalCalendarID, externalEventID: nativeID,
+        etag: '"v1"' }).returning();
+      await db.insert(externalEvents).values([
+        { provider, calendarID: targetCalendar.id, eventID: child.id,
+          externalCalendarID: targetSource.externalCalendarID, externalEventID: `${nativeID}-child`,
+          externalSeriesID: nativeID, originalStart: child.originalStart, etag: '"child-v1"' },
+        { provider: "google", calendarID: destination.id, eventID: child.id,
+          externalCalendarID: destinationSource.externalCalendarID, externalEventID: `${nativeID}-derived-child`, etag: '"copy-v1"' },
+      ]);
+      const row = await enqueueEvent({ event: value, operationEnvelope: null,
+        organizer: { mappingID: mapping.id, sourceEvent: value,
+          dispatch: { startedAt: "2026-10-01T00:00:00Z", acceptedAt: "2026-10-01T00:00:01Z" } } as never },
+        { provider, calendarID: targetCalendar.id, externalCalendarLinkID: targetSource.id,
+          externalCalendarID: targetSource.externalCalendarID, externalEventID: nativeID,
+          action: "delete", status: "completed", attempts: 1, expectedEtag: '"v1"' });
+      const values = { ...value, title: "Native resurfaces", description: null, location: null, recurrence: null, url: value.url ?? null };
+      assert.equal(await upsertExternalEvent(provider, owner, targetCalendar.id, targetSource.externalCalendarID,
+        nativeID, values, '"v2"', null), false);
+      const activeHeld = (await getEventOutboxRow(row.id))!;
+      assert.equal(activeHeld.status, "completed", "unknown completed cancellation is not reopened as legacy conflict");
+      assert.equal(activeHeld.remoteSnapshot?.deleted, false);
+      assert.equal(hash(activeHeld.payload), hash(row.payload));
+      const familyIDs = [value.id, child.id];
+      const familySnapshot = async () => ({
+        events: await db.select().from(events).where(inArray(events.id, familyIDs)).orderBy(events.id),
+        maps: await db.select().from(externalEvents).where(inArray(externalEvents.eventID, familyIDs)).orderBy(externalEvents.id),
+        links: await db.select().from(calendarEvents).where(inArray(calendarEvents.eventID, familyIDs)).orderBy(calendarEvents.id),
+        outbox: (await db.select().from(eventOutbox).where(inArray(eventOutbox.eventID, familyIDs)).orderBy(eventOutbox.id))
+          .map(({ remoteSnapshot, updatedAt, ...retained }) => retained),
+      });
+      const before = await familySnapshot();
+      assert.equal(before.events.length, 2, "real cancelled master and visible native child");
+      assert.equal(before.maps.length, 3, "native child and a real derived destination binding");
+      assert.equal(before.outbox.length, 1, "only the completed root cancellation exists");
+      assert.equal(await deleteExternalEvent(provider, targetCalendar.id, nativeID), false);
+      assert.deepEqual(await familySnapshot(), before, "unknown root cancellation leaves children, mappings, links and all intents byte-equal");
+      const deletedHeld = (await getEventOutboxRow(row.id))!;
+      assert.equal(deletedHeld.status, "completed");
+      assert.equal(deletedHeld.remoteSnapshot?.deleted, true);
+      assert.equal(hash(deletedHeld.payload), hash(row.payload), "unknown format does not gain a legacy cancellation tombstone");
+      assert.equal((await db.select().from(events).where(eq(events.id, value.id)))[0]?.deletedAt, null);
+    }
+
+    // Real unaddressed task CREATEs cannot fall through to native task import,
+    // even before uncertainty is recorded or when the marker is merely present.
+    const taskValues = (value: ReturnType<typeof task>) => ({
+      title: value.title, description: value.description ?? null, status: value.status,
+      start: value.start ?? null, due: value.due ?? null, isAllDay: value.isAllDay,
+      completedAt: value.completedAt ?? null, percentComplete: value.percentComplete,
+      priority: value.priority, recurrence: value.recurrence ?? null,
+      relatedTo: value.relatedTo ?? null, sequence: value.sequence, url: value.url ?? null,
+    });
+    for (const mode of ["blocked", "attempting", "present-null"] as const) {
+      const target = await createCalendar({ creatorID: owner, name: `Unmapped task ${mode}`, color: "#112233" });
+      const [currentSource] = await db.insert(externalCalendars).values({ calendarID: target.id,
+        provider: "google", userID: owner, accountID: owner, externalCalendarID: `task-${mode}`,
+        providerAccessRole: "owner", providerAccessRevision: 1, supportsEvents: true, supportsTasks: true }).returning();
+      const value = TaskSchema.parse({ ...task(), calendarID: target.id, originCalendarID: target.id, calendarIDs: [target.id] });
+      await db.insert(tasks).values(value);
+      await db.insert(calendarTasks).values({ taskID: value.id, calendarID: target.id });
+      const row = await enqueueTask({ task: value, operationEnvelope: mode === "present-null" ? null : { schemaVersion: 99 } },
+        { calendarID: target.id, externalCalendarLinkID: currentSource.id, externalCalendarID: currentSource.externalCalendarID,
+          providerAccessRevision: currentSource.providerAccessRevision,
+          externalTaskID: null, uncertain: false, status: mode === "attempting" ? "attempting" : "blocked",
+          ...(mode === "attempting" ? { leaseToken: randomUUID(), leaseUntil: new Date(Date.now() + 120_000), attempts: 1 } : {}) });
+      const scope = { sourceID: currentSource.id, accountID: owner, providerAccessRevision: currentSource.providerAccessRevision, readStartedAt: new Date() };
+      const access = { provider: "google" as const, linkID: currentSource.id, revision: currentSource.providerAccessRevision,
+        userID: owner, accountID: owner, externalCalendarID: currentSource.externalCalendarID };
+      const beforeTasks = await db.select().from(tasks).where(eq(tasks.creatorID, owner)).orderBy(tasks.id);
+      const beforeMaps = await db.select().from(externalTasks).orderBy(externalTasks.id);
+      const beforeLinks = await db.select().from(calendarTasks).orderBy(calendarTasks.taskID, calendarTasks.calendarID);
+      const beforeRows = await db.select().from(taskOutbox).where(eq(taskOutbox.userID, owner)).orderBy(taskOutbox.id);
+      assert.equal(await upsertExternalTask("google", owner, target.id, currentSource.externalCalendarID,
+        `unmapped-native-${mode}`, { ...taskValues(value), title: "Native observation" }, '"native-v2"', null, access, scope), false);
+      assert.deepEqual(await db.select().from(tasks).where(eq(tasks.creatorID, owner)).orderBy(tasks.id), beforeTasks);
+      assert.deepEqual(await db.select().from(externalTasks).orderBy(externalTasks.id), beforeMaps, "no native address adoption");
+      assert.deepEqual(await db.select().from(calendarTasks).orderBy(calendarTasks.taskID, calendarTasks.calendarID), beforeLinks);
+      const afterRows = await db.select().from(taskOutbox).where(eq(taskOutbox.userID, owner)).orderBy(taskOutbox.id);
+      assert.equal(afterRows.length, beforeRows.length, "no duplicate intent or canonical task");
+      assert.deepEqual(afterRows.filter(item => item.id !== row.id), beforeRows.filter(item => item.id !== row.id));
+      const held = (await getTaskOutbox(row.id))!;
+      assert.equal(held.status, "blocked");
+      assert.equal(held.uncertain, mode === "attempting", "revoked attempting lease preserves possible dispatch");
+      assert.equal(held.leaseToken, null);
+      assert.equal(held.leaseUntil, null);
+      assert.equal(held.resultRef, null, "unproven correlation cannot supply a delivery receipt");
+      assert.equal(held.remoteSnapshot?.unmapped, true);
+      assert.equal(held.remoteSnapshot?.externalTaskId, `unmapped-native-${mode}`);
+      assert.equal(hash(held.payload), hash(row.payload));
+      assert.equal(factories, 0);
+      assert.equal(providerCalls, 0);
+    }
+
+    // A stale source/privacy capture is rejected before observing unknown work;
+    // an old CREATE from another privacy incarnation cannot claim the new task.
+    for (const stale of ["source", "retirement"] as const) {
+      const target = await createCalendar({ creatorID: owner, name: `Task old ${stale}`, color: "#112233" });
+      const [currentSource] = await db.insert(externalCalendars).values({ calendarID: target.id,
+        provider: "google", userID: owner, accountID: owner, externalCalendarID: `old-${stale}`,
+        providerAccessRole: "owner", providerAccessRevision: 2, supportsEvents: true, supportsTasks: true }).returning();
+      const value = TaskSchema.parse({ ...task(), calendarID: target.id, originCalendarID: target.id, calendarIDs: [target.id] });
+      await db.insert(tasks).values({ ...value, providerReadRetiredGeneration: stale === "retirement" ? 1 : 0 });
+      await db.insert(calendarTasks).values({ taskID: value.id, calendarID: target.id });
+      const row = await enqueueTask({ task: value, operationEnvelope: { schemaVersion: 99 } },
+        { calendarID: target.id, externalCalendarLinkID: currentSource.id, externalCalendarID: currentSource.externalCalendarID,
+          providerAccessRevision: stale === "source" ? 1 : 2, retiredGeneration: 0, status: "blocked" });
+      const access = { provider: "google" as const, linkID: currentSource.id, revision: 2,
+        userID: owner, accountID: owner, externalCalendarID: currentSource.externalCalendarID };
+      const scope = { sourceID: currentSource.id, accountID: owner, providerAccessRevision: 2 };
+      await assert.rejects(upsertExternalTask("google", owner, target.id, currentSource.externalCalendarID,
+        `new-native-${stale}`, taskValues(value), '"native-v1"', null, { ...access, revision: 1 }, { ...scope, providerAccessRevision: 1 }));
+      await assert.rejects(upsertExternalTask("google", owner, target.id, currentSource.externalCalendarID,
+        `new-native-${stale}`, taskValues(value), '"native-v1"', null, access, { ...scope, providerAccessRevision: 1 }));
+      assert.deepEqual(await getTaskOutbox(row.id), row);
+      assert.equal(await upsertExternalTask("google", owner, target.id, currentSource.externalCalendarID,
+        `new-native-${stale}`, taskValues(value), '"native-v1"', null, access, scope), true);
+      assert.deepEqual(await getTaskOutbox(row.id), row, "retired capture retains unknown bytes/status without claiming fresh identity");
+      assert.equal(factories, 0);
+      assert.equal(providerCalls, 0);
+    }
 
     // Actual privacy retirement and grant restoration keep the format marker.
     // Existing policy retains private owner outbox evidence rather than rewriting it.

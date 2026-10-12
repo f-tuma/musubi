@@ -108,6 +108,9 @@ async function resolutionContext(
       asc(eventOutbox.id),
     )
     .limit(1001);
+  if (decodeEventOutboxOperation(latest).kind === "blocked" ||
+      pending.some(item => decodeEventOutboxOperation(item).kind === "blocked"))
+    throw new EventDeliveryResolutionError("delivery-resolution-unavailable");
   const head = pending[0] ?? latest;
   if (
     row.id !== head.id ||

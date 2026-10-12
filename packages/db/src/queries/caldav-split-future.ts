@@ -8,6 +8,7 @@ import { lockCalendarLifecycle } from "./calendar-lifecycle";
 import { lockExternalEventIdentity } from "./event-outbox-deletions";
 import { eventOutboxCreatedAt } from "./event-outbox";
 import { caldavSplitAfter, caldavSplitCreationAddresses, type CaldavSplitJournal } from "./caldav-split";
+import { decodeEventOutboxOperation } from "./outbox-operation";
 import { sameCaldavScopeContext as same } from "./caldav-series-scope";
 
 type Ref = { externalEventId: string; etag?: string | null; icalUid?: string | null };
@@ -18,6 +19,7 @@ function refuse(): never { throw new EventWriteError("event-write", "unsupported
  * Read-only previews take no locks; commits/workers pass lock=true. */
 export async function readCaldavSplitFuture(tx: DbTransaction, userID: string, operationID: string, lock = false, attempting = false) {
   const [address] = await tx.select().from(eventOutbox).where(eq(eventOutbox.id, operationID));
+  if (address && decodeEventOutboxOperation(address).kind === "blocked") refuse();
   const journal = address?.payload.caldavSplit;
   if (!address || !journal || journal.creationOperationID !== operationID || address.userID !== userID || address.actorID !== userID ||
       !(attempting ? address.status === "attempting" : ["conflict", "blocked", "unconfirmed"].includes(address.status)) || attempting && address.remoteSnapshot && !address.remoteSnapshot.isEcho) refuse();
@@ -38,6 +40,7 @@ export async function readCaldavSplitFuture(tx: DbTransaction, userID: string, o
   const pairIDs = [...new Set([journal.sourceOperationID, originalID, operationID, ...replaced])];
   const pairQuery = tx.select().from(eventOutbox).where(inArray(eventOutbox.id, pairIDs)).orderBy(eventOutbox.id);
   const rows = lock ? await pairQuery.for("update") : await pairQuery;
+  if (rows.some(row => decodeEventOutboxOperation(row).kind === "blocked")) refuse();
   const source = rows.find(row => row.id === journal.sourceOperationID), original = rows.find(row => row.id === originalID), creation = rows.find(row => row.id === operationID);
   if (!source || !original || !creation || !same(address, creation) || source.status !== "completed" || !source.resultRef || !strong(source.resultRef.etag) ||
       source.resultRef.externalEventId !== split.source.baseline.ref.externalEventId || source.resultRef.icalUid !== split.source.baseline.ref.icalUid ||
@@ -70,6 +73,7 @@ export async function readCaldavSplitFuture(tx: DbTransaction, userID: string, o
   const maps = await tx.select({ id: externalEvents.id }).from(externalEvents).where(or(inArray(externalEvents.eventID, ids), and(eq(externalEvents.calendarID, address.calendarID), eq(externalEvents.provider, "caldav"), or(inArray(externalEvents.externalEventID, addresses), eq(externalEvents.externalSeriesID, split.creation.ref.externalEventId)))));
   if (maps.length) refuse();
   const pending = await tx.select().from(eventOutbox).where(and(inArray(eventOutbox.eventID, ids), sql`${eventOutbox.status} not in ('completed', 'not-needed')`));
+  if (pending.some(row => decodeEventOutboxOperation(row).kind === "blocked")) refuse();
   if (pending.some(row => row.id !== creation.id && !(replaced.includes(row.id) && row.status === "cancelled" && row.errorCode === "superseded-by-resolution" && row.userID === userID && row.externalCalendarLinkID === context.link.id && row.eventID === after.head.id && row.payload.caldavSplit && same(row.payload.caldavSplit.after, after) && same(row.payload.caldavSplit.prepared.split.creation.ref, split.creation.ref)))) refuse();
   const tombstones = await tx.select({ id: externalEventTombstones.id }).from(externalEventTombstones).where(and(eq(externalEventTombstones.externalCalendarLinkID, context.link.id), inArray(externalEventTombstones.externalEventID, addresses))).limit(1);
   if (tombstones.length) refuse();
@@ -88,6 +92,7 @@ export async function replaceCaldavSplitFuture(tx: DbTransaction, userID: string
   // Source ancestry stays completed/not-needed. Only future rows are superseded.
   const ancestors = (creation.payload.resolution?.replacedOperationIDs ?? []).filter(ancestor => ancestor !== journal.sourceOperationID);
   const rows = ancestors.length ? await tx.select().from(eventOutbox).where(inArray(eventOutbox.id, ancestors)) : [];
+  if (rows.some(row => decodeEventOutboxOperation(row).kind === "blocked")) refuse();
   const replaced = [...new Set([creation.id, ...rows.filter(row => row.eventID === after.head.id).map(row => row.id)])];
   const next: CaldavSplitJournal = { ...journal, creationOperationID: id, futureRecovery: { originalCreationOperationID: journal.futureRecovery?.originalCreationOperationID ?? creation.id, mutationID: request.mutationId } };
   await tx.update(eventOutbox).set({ status: "cancelled", errorCode: "superseded-by-resolution", leaseToken: null, leaseUntil: null, updatedAt: new Date() }).where(and(inArray(eventOutbox.id, replaced), eq(eventOutbox.eventID, after.head.id)));
@@ -104,6 +109,7 @@ export async function confirmCaldavSplitFuture(id: string, token: string, result
   try {
     return await db.transaction(async tx => {
       const [address] = await tx.select().from(eventOutbox).where(eq(eventOutbox.id, id));
+      if (address && decodeEventOutboxOperation(address).kind === "blocked") return false;
       if (!address?.payload.caldavSplit?.futureRecovery) return false;
       await lockCalendarLifecycle(tx, [address.calendarID], "shared");
       const { creation, journal } = await readCaldavSplitFuture(tx, address.userID, id, true, true);

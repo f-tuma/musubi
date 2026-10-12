@@ -76,6 +76,7 @@ export async function retainUnsupportedEventPull(
       observedAt: new Date().toISOString(), ...(providerState ? { providerState } : {}),
       ...(values ? { values: JSON.parse(JSON.stringify(values)) } : {}),
     },
+    uncertain: row.uncertain || row.status === "attempting",
     leaseToken: null, leaseUntil: null, updatedAt: new Date(),
   }).where(eq(eventOutbox.id, row.id));
   return true;
@@ -226,7 +227,7 @@ export async function retainUnmappedCreatePull(
         eq(eventOutbox.externalCalendarID, externalCalendarID),
       ),
     );
-  if (!row || row.payload.createIdentityVersion !== 1) return false;
+  if (!row) return false;
   const [target] = await tx
     .select()
     .from(externalCalendars)
@@ -236,10 +237,22 @@ export async function retainUnmappedCreatePull(
         eq(externalCalendars.calendarID, calendarID),
         eq(externalCalendars.accountID, row.accountID),
         eq(externalCalendars.userID, row.userID),
+        eq(externalCalendars.provider, row.provider),
+        eq(externalCalendars.externalCalendarID, row.externalCalendarID),
         eq(externalCalendars.disabled, false),
       ),
     );
   if (!target) return false;
+  await tx
+    .select()
+    .from(events)
+    .where(eq(events.id, row.eventID))
+    .for("update");
+  // The scoped operation marker can identify a future create even when its
+  // native address and legacy identity marker differ. An older floor must
+  // retain the observation before interpreting any legacy identity convention.
+  if (await retainUnsupportedEventPull(tx, row, externalEventID, values, etag, icalUid, providerState)) return true;
+  if (row.payload.createIdentityVersion !== 1) return false;
   if (
     provider === "google" &&
     externalEventID !== `musubi${row.id.replace(/-/g, "")}`
@@ -251,12 +264,6 @@ export async function retainUnmappedCreatePull(
       `${externalCalendarID.replace(/\/?$/, "/")}musubi-${row.id}.ics`
   )
     return false;
-  await tx
-    .select()
-    .from(events)
-    .where(eq(events.id, row.eventID))
-    .for("update");
-  if (await retainUnsupportedEventPull(tx, row, externalEventID, values, etag, icalUid, providerState)) return true;
   // Completed or removed local identities must not be resurrected by a late echo.
   const retained = await retainPendingEventPull(
     tx,

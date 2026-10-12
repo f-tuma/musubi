@@ -1,3 +1,4 @@
+import { decodeEventOutboxOperation } from "./outbox-operation";
 import { confirmCaldavSplitFuture } from "./caldav-split-future";
 import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { EventSchema, EventWriteError, can } from "@musubi/types";
@@ -15,14 +16,18 @@ class LeaseLost extends Error {}
 /** Phase-specific short transaction; no provider IO. A source ACK releases the
  * old family, while the new family remains owned by its dependent create row. */
 export async function confirmCaldavSplitOutbox(id: string, token: string, result?: Ref): Promise<boolean> {
-  const [candidate] = await db.select({ payload: eventOutbox.payload }).from(eventOutbox).where(eq(eventOutbox.id, id));
+  const [candidate] = await db.select().from(eventOutbox).where(eq(eventOutbox.id, id));
+  if (candidate && decodeEventOutboxOperation(candidate).kind === "blocked") return false;
   if (candidate?.payload.caldavSplit?.futureRecovery) return confirmCaldavSplitFuture(id, token, result);
   try {
     return await db.transaction(async tx => {
       const [address] = await tx.select().from(eventOutbox).where(eq(eventOutbox.id, id));
+      if (address && decodeEventOutboxOperation(address).kind === "blocked") return false;
       const journal = address?.payload.caldavSplit;
       if (!address || !journal || address.payload.caldavSeries || address.payload.caldavSeriesDeletion || address.payload.googleOccurrence || address.payload.rsvp || address.payload.reminderEdit) return false;
       const { prepared, after, sourceOperationID, creationOperationID } = journal;
+      const formatPair = await tx.select().from(eventOutbox).where(inArray(eventOutbox.id, [sourceOperationID, creationOperationID]));
+      if (formatPair.some(row => decodeEventOutboxOperation(row).kind === "blocked")) return false;
       const { context, split } = prepared;
       try { if (!sameCaldavScopeContext(caldavSplitAfter(prepared), after)) return false; } catch { return false; }
       const sourcePhase = id === sourceOperationID;
@@ -47,6 +52,11 @@ export async function confirmCaldavSplitOutbox(id: string, token: string, result
       const children = await tx.select().from(events).where(inArray(events.seriesID, roots)).orderBy(events.id).for("update");
       const expected = sourcePhase ? [after.source, ...after.retained, after.head, ...after.moved] : [after.head, ...after.moved];
       const ids = expected.map(event => event.id);
+      const pending = await tx.select().from(eventOutbox).where(and(inArray(eventOutbox.eventID, ids), sql`${eventOutbox.status} not in ('completed', 'not-needed')`));
+      const replaced = new Set(address.payload.resolution?.replacedOperationIDs ?? []);
+      const replacedRows = replaced.size ? await tx.select().from(eventOutbox).where(inArray(eventOutbox.id, [...replaced])) : [];
+      if (replacedRows.some(row => decodeEventOutboxOperation(row).kind === "blocked")) return false;
+      if (pending.some(row => decodeEventOutboxOperation(row).kind === "blocked")) return false;
       const links = await tx.select().from(calendarEvents).where(inArray(calendarEvents.eventID, ids));
       const actual = [...rootRows, ...children].filter(event => !event.deletedAt);
       if (actual.length !== expected.length || expected.some(event => {
@@ -69,10 +79,9 @@ export async function confirmCaldavSplitOutbox(id: string, token: string, result
         catch (error) { if (error instanceof EventWriteError) return false; throw error; }
         if (!sameCaldavScopeContext(current, context) || newMaps.some(item => !context.mappings.some(old => sameCaldavScopeContext(old, { id: item.id, provider: item.provider, eventID: item.eventID, calendarID: item.calendarID, externalCalendarID: item.externalCalendarID, externalEventID: item.externalEventID, icalUid: item.icalUid, externalSeriesID: item.externalSeriesID, originalStart: item.originalStart, etag: item.etag })))) return false;
       } else if (newMaps.length) return false;
-      const pending = await tx.select().from(eventOutbox).where(and(inArray(eventOutbox.eventID, ids), sql`${eventOutbox.status} not in ('completed', 'not-needed')`));
-      const replaced = new Set(address.payload.resolution?.replacedOperationIDs ?? []);
       if (pending.some(item => item.id !== sourceOperationID && item.id !== creationOperationID && !(replaced.has(item.id) && item.status === "cancelled" && item.errorCode === "superseded-by-resolution" && item.userID === address.userID && item.externalCalendarLinkID === address.externalCalendarLinkID && item.payload.caldavSplit?.after.source.id === after.source.id && item.payload.caldavSplit.after.head.id === after.head.id))) return false;
       const pair = await tx.select().from(eventOutbox).where(inArray(eventOutbox.id, [sourceOperationID, creationOperationID])).orderBy(eventOutbox.id).for("update");
+      if (pair.some(row => decodeEventOutboxOperation(row).kind === "blocked")) return false;
       const source = pair.find(item => item.id === sourceOperationID), creation = pair.find(item => item.id === creationOperationID);
       const row = pair.find(item => item.id === id);
       if (!source || !creation || !row || pair.length !== 2 || creation.predecessorID !== source.id || !sameCaldavScopeContext(source.payload.caldavSplit, journal) || !sameCaldavScopeContext(creation.payload.caldavSplit, journal) || !sameCaldavScopeContext(source.payload.resolution, creation.payload.resolution) || row.leaseToken !== token || row.status !== "attempting" || row.remoteSnapshot && !row.remoteSnapshot.isEcho) return false;
