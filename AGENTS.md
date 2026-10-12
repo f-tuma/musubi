@@ -1,5 +1,15 @@
 # Musubi agent instructions
 
+## Git workflow
+
+- Implement work on a `codex/` branch, commit it, and open a pull request to `main`.
+- Before opening each pull request, have an independent subagent skeptically
+  review the final changes and explicitly approve them. Fix findings and obtain
+  approval again when the reviewed changes materially change.
+- Squash merge only after the pull request's checks are green for its current
+  head commit. Do not bypass required checks or branch protection.
+- Keep implementation, publication, and production deployment evidence separate.
+
 ## Web UI
 
 For any UI, styling, interaction, or accessibility work under `apps/web`, load

@@ -1,0 +1,526 @@
+{
+  "recordRole": "Initial planning snapshot before MUSU-32 implementation; not live tracker state",
+  "projectKey": "frgtn.MUSU",
+  "plannedOn": "2026-10-12",
+  "fixedDates": false,
+  "representation": "numbered initiatives because native cycles require startDate/endDate",
+  "phases": {
+    "C01": {
+      "id": 15,
+      "title": "C01 · Delivery recovery a provozní baseline"
+    },
+    "C02": {
+      "id": 16,
+      "title": "C02 · Sync profil a provider capabilities"
+    },
+    "C03": {
+      "id": 17,
+      "title": "C03 · Coverage a neměnný přijatý zápis"
+    },
+    "C04": {
+      "id": 18,
+      "title": "C04 · Provider porty a Musubi bridge"
+    },
+    "C05": {
+      "id": 19,
+      "title": "C05 · Samostatný host a extrakční důkaz"
+    },
+    "C06": {
+      "id": 20,
+      "title": "C06 · Společný runner a lease fencing"
+    },
+    "C07": {
+      "id": 21,
+      "title": "C07 · Create a delete recovery"
+    },
+    "C08": {
+      "id": 22,
+      "title": "C08 · Tasks a specializované event operace"
+    },
+    "C09": {
+      "id": 23,
+      "title": "C09 · Férové plánování a provider budgets"
+    },
+    "C10": {
+      "id": 24,
+      "title": "C10 · Conformance a samostatná sync alpha"
+    }
+  },
+  "issues": {
+    "RF01": {
+      "id": 347,
+      "identifier": "MUSU-32",
+      "title": "Sjednotit delivery timeouty a retry; oddělit recovery od pollingu",
+      "initiativeId": 15,
+      "columnId": 2
+    },
+    "RF02": {
+      "id": 348,
+      "identifier": "MUSU-33",
+      "title": "Definovat sync profil, identity a capability kontrakt",
+      "initiativeId": 16,
+      "columnId": 1
+    },
+    "RF03": {
+      "id": 349,
+      "identifier": "MUSU-34",
+      "title": "Oddělit ztrátu read coverage od skutečného smazání",
+      "initiativeId": 17,
+      "columnId": 1
+    },
+    "RF04": {
+      "id": 350,
+      "identifier": "MUSU-35",
+      "title": "Zafixovat provider projekce a verzovat operation envelope",
+      "initiativeId": 17,
+      "columnId": 1
+    },
+    "RF05A": {
+      "id": 351,
+      "identifier": "MUSU-36",
+      "title": "Vyjmout provider porty a zachovat Musubi authority bridge",
+      "initiativeId": 18,
+      "columnId": 1
+    },
+    "RF05B": {
+      "id": 352,
+      "identifier": "MUSU-37",
+      "title": "Prokázat read/write/observe slice v samostatném hostu",
+      "initiativeId": 19,
+      "columnId": 1
+    },
+    "RF06": {
+      "id": 353,
+      "identifier": "MUSU-38",
+      "title": "Převést první event operaci na společný delivery runner",
+      "initiativeId": 20,
+      "columnId": 1
+    },
+    "RF07A": {
+      "id": 354,
+      "identifier": "MUSU-39",
+      "title": "Převést personal create/delete a jejich bezpečnou recovery",
+      "initiativeId": 21,
+      "columnId": 1
+    },
+    "RF07B": {
+      "id": 355,
+      "identifier": "MUSU-40",
+      "title": "Sjednotit task a specializované event delivery bez změny záruk",
+      "initiativeId": 22,
+      "columnId": 1
+    },
+    "RF08": {
+      "id": 356,
+      "identifier": "MUSU-41",
+      "title": "Zavést férový scheduler a rozpočty provider požadavků",
+      "initiativeId": 23,
+      "columnId": 1
+    },
+    "RF09": {
+      "id": 357,
+      "identifier": "MUSU-42",
+      "title": "Připravit standalone sync alpha a conformance sadu",
+      "initiativeId": 24,
+      "columnId": 1
+    },
+    "OP01": {
+      "id": 358,
+      "identifier": "MUSU-43",
+      "title": "Přidat volitelné Google/Graph push spouštění s durable inboxem",
+      "initiativeId": 4,
+      "columnId": 1
+    },
+    "RL01": {
+      "id": 359,
+      "identifier": "MUSU-44",
+      "title": "Ověřit sdílené jádro na samostatném DAV→Google relay PoC",
+      "initiativeId": 25,
+      "columnId": 1
+    },
+    "RL02": {
+      "id": 360,
+      "identifier": "MUSU-45",
+      "title": "Definovat směrovací pravidla a vlastnictví kalendářových kopií",
+      "initiativeId": 25,
+      "columnId": 1
+    },
+    "RL03": {
+      "id": 361,
+      "identifier": "MUSU-46",
+      "title": "Navrhnout bezpečný návrat vybraných editací z Google Calendar",
+      "initiativeId": 25,
+      "columnId": 1
+    },
+    "RL04": {
+      "id": 362,
+      "identifier": "MUSU-47",
+      "title": "Vymezit další relay profily a provoz samostatné služby",
+      "initiativeId": 25,
+      "columnId": 1
+    }
+  },
+  "documents": {
+    "current": {
+      "id": 2,
+      "version": 23,
+      "title": "Musubi · pořadí refactoru a budoucí Calendar Relay"
+    },
+    "relay": {
+      "id": 29,
+      "version": 1,
+      "title": "Calendar Relay · architektura a hranice budoucí služby"
+    },
+    "archived": {
+      "id": 28,
+      "version": 2
+    }
+  },
+  "changes": [
+    {
+      "kind": "initiative-rewrite",
+      "id": 1
+    },
+    {
+      "kind": "initiative-rewrite",
+      "id": 2
+    },
+    {
+      "kind": "initiative-rewrite",
+      "id": 3
+    },
+    {
+      "kind": "initiative-rewrite",
+      "id": 4
+    },
+    {
+      "kind": "issue-rewrite",
+      "id": 3,
+      "identifier": "MUSU-3",
+      "columnId": 3
+    },
+    {
+      "kind": "issue-rewrite",
+      "id": 4,
+      "identifier": "MUSU-4",
+      "columnId": 2
+    },
+    {
+      "kind": "issue-rewrite",
+      "id": 5,
+      "identifier": "MUSU-5",
+      "columnId": 2
+    },
+    {
+      "kind": "superseded-cancel",
+      "id": 6,
+      "identifier": "MUSU-6",
+      "columnId": 5
+    },
+    {
+      "kind": "issue-rewrite",
+      "id": 12,
+      "identifier": "MUSU-12",
+      "columnId": 2
+    },
+    {
+      "kind": "issue-rewrite",
+      "id": 13,
+      "identifier": "MUSU-13",
+      "columnId": 2
+    },
+    {
+      "kind": "issue-rewrite",
+      "id": 14,
+      "identifier": "MUSU-14",
+      "columnId": 2
+    },
+    {
+      "kind": "issue-rewrite",
+      "id": 15,
+      "identifier": "MUSU-15",
+      "columnId": 2
+    },
+    {
+      "kind": "issue-rewrite",
+      "id": 16,
+      "identifier": "MUSU-16",
+      "columnId": 2
+    },
+    {
+      "kind": "issue-rewrite",
+      "id": 17,
+      "identifier": "MUSU-17",
+      "columnId": 2
+    },
+    {
+      "kind": "issue-rewrite",
+      "id": 19,
+      "identifier": "MUSU-19",
+      "columnId": 2
+    },
+    {
+      "kind": "issue-rewrite",
+      "id": 20,
+      "identifier": "MUSU-20",
+      "columnId": 2
+    },
+    {
+      "kind": "issue-rewrite",
+      "id": 21,
+      "identifier": "MUSU-21",
+      "columnId": 2
+    },
+    {
+      "kind": "provider-qa-rehome",
+      "id": 27
+    },
+    {
+      "kind": "provider-qa-rehome",
+      "id": 28
+    },
+    {
+      "kind": "provider-qa-rehome",
+      "id": 29
+    },
+    {
+      "kind": "provider-qa-rehome",
+      "id": 31
+    },
+    {
+      "kind": "remove-obsolete-blocker",
+      "issueId": 4,
+      "linkId": 1
+    },
+    {
+      "kind": "remove-obsolete-blocker",
+      "issueId": 5,
+      "linkId": 2
+    },
+    {
+      "kind": "remove-obsolete-blocker",
+      "issueId": 14,
+      "linkId": 3
+    },
+    {
+      "kind": "remove-obsolete-blocker",
+      "issueId": 16,
+      "linkId": 17
+    },
+    {
+      "kind": "remove-obsolete-blocker",
+      "issueId": 18,
+      "linkId": 18
+    },
+    {
+      "kind": "remove-obsolete-blocker",
+      "issueId": 16,
+      "linkId": 19
+    },
+    {
+      "kind": "relates",
+      "from": 16,
+      "to": 15
+    },
+    {
+      "kind": "relates",
+      "from": 18,
+      "to": 15
+    },
+    {
+      "kind": "relates",
+      "from": 16,
+      "to": 18
+    },
+    {
+      "kind": "relates",
+      "from": 4,
+      "to": 15
+    },
+    {
+      "kind": "relates",
+      "from": 5,
+      "to": 15
+    },
+    {
+      "kind": "relates",
+      "from": 4,
+      "to": 19
+    },
+    {
+      "kind": "relates",
+      "from": 5,
+      "to": 19
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-33",
+      "to": "MUSU-34"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-33",
+      "to": "MUSU-35"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-33",
+      "to": "MUSU-36"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-34",
+      "to": "MUSU-36"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-35",
+      "to": "MUSU-36"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-36",
+      "to": "MUSU-37"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-32",
+      "to": "MUSU-38"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-34",
+      "to": "MUSU-38"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-35",
+      "to": "MUSU-38"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-37",
+      "to": "MUSU-38"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-38",
+      "to": "MUSU-39"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-39",
+      "to": "MUSU-40"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-32",
+      "to": "MUSU-41"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-38",
+      "to": "MUSU-41"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-40",
+      "to": "MUSU-41"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-34",
+      "to": "MUSU-42"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-35",
+      "to": "MUSU-42"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-37",
+      "to": "MUSU-42"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-40",
+      "to": "MUSU-42"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-41",
+      "to": "MUSU-42"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-41",
+      "to": "MUSU-43"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-42",
+      "to": "MUSU-44"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-45",
+      "to": "MUSU-44"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-37",
+      "to": "MUSU-45"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-44",
+      "to": "MUSU-46"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-45",
+      "to": "MUSU-46"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-44",
+      "to": "MUSU-47"
+    },
+    {
+      "kind": "blocks",
+      "from": "MUSU-45",
+      "to": "MUSU-47"
+    },
+    {
+      "kind": "context-relates",
+      "from": 19,
+      "to": "RF01"
+    },
+    {
+      "kind": "context-relates",
+      "from": 20,
+      "to": "RL02"
+    },
+    {
+      "kind": "context-relates",
+      "from": 14,
+      "to": "RF06"
+    },
+    {
+      "kind": "context-relates",
+      "from": 28,
+      "to": "RF03"
+    }
+  ],
+  "verification": {
+    "checkedOn": "2026-10-12",
+    "pass": true,
+    "errors": [],
+    "issueCount": 46,
+    "initiativeCount": 15,
+    "nativeCycles": 0,
+    "directedBlocks": 43,
+    "newAcceptanceItems": 49
+  }
+}

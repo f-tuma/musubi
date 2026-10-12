@@ -1,0 +1,661 @@
+{
+  "checked_on": "2026-10-12",
+  "method": "HEAD, six bounded concurrent workers, 15 second timeout",
+  "results": [
+    {
+      "url": "https://developer.nylas.com/docs/api/errors/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/api/errors/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/api/errors/500-response/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/api/errors/500-response/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/api/errors/event-codes/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/api/errors/event-codes/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/changelogs/2026-08-31-scheduler-and-ews-fixes/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/changelogs/2026-08-31-scheduler-and-ews-fixes/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/cookbook/calendar/caldav-vs-calendar-api/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/cookbook/calendar/caldav-vs-calendar-api/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/cookbook/calendar/create-recurring-events/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/cookbook/calendar/create-recurring-events/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/cookbook/calendar/cross-provider-calendar-sync/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/cookbook/calendar/cross-provider-calendar-sync/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/cookbook/calendar/events/create-events-icloud/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/cookbook/calendar/events/create-events-icloud/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/cookbook/calendar/events/list-events-ews/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/cookbook/calendar/events/list-events-ews/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/cookbook/calendar/events/list-events-icloud/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/cookbook/calendar/events/list-events-icloud/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/cookbook/email/backfill-historical-email/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/cookbook/email/backfill-historical-email/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/cookbook/email/messages/list-messages-imap/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/cookbook/email/messages/list-messages-imap/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/cookbook/email/scale-email-sync/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/cookbook/email/scale-email-sync/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/cookbook/email/threads/gmail-vs-outlook-threading/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/cookbook/email/threads/gmail-vs-outlook-threading/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/cookbook/email/threads/list-threads-imap/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/cookbook/email/threads/list-threads-imap/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/cookbook/scheduler/round-robin-scheduling/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/cookbook/scheduler/round-robin-scheduling/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/cookbook/use-cases/act/schedule-event-reminders/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/cookbook/use-cases/act/schedule-event-reminders/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/cookbook/use-cases/build/custom-oauth-connector/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/cookbook/use-cases/build/custom-oauth-connector/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/cookbook/use-cases/build/handle-duplicate-webhooks/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/cookbook/use-cases/build/handle-duplicate-webhooks/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/cookbook/use-cases/build/retry-failed-webhooks/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/cookbook/use-cases/build/retry-failed-webhooks/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/cookbook/use-cases/build/verify-webhook-signatures/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/cookbook/use-cases/build/verify-webhook-signatures/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/cookbook/use-cases/sync/two-way-calendar-sync/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/cookbook/use-cases/sync/two-way-calendar-sync/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/dev-guide/best-practices/error-handling/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/dev-guide/best-practices/error-handling/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/dev-guide/best-practices/grant-lifecycle/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/dev-guide/best-practices/grant-lifecycle/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/dev-guide/best-practices/webhook-best-practices/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/dev-guide/best-practices/webhook-best-practices/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/dev-guide/metadata/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/dev-guide/metadata/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/dev-guide/platform/data-residency/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/dev-guide/platform/data-residency/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/dev-guide/platform/privacy-mode/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/dev-guide/platform/privacy-mode/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/dev-guide/platform/rate-limits/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/dev-guide/platform/rate-limits/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/provider-guides/icloud/?redirect=reorg",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/provider-guides/icloud/?redirect=reorg"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/reference/api/configurations/post-configurations/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/reference/api/configurations/post-configurations/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/reference/api/events/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/reference/api/events/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/reference/api/events/get-all-events/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/reference/api/events/get-all-events/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/reference/api/events/get-events-id/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/reference/api/events/get-events-id/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/reference/api/events/import-events/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/reference/api/events/import-events/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/reference/api/events/put-events-id/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/reference/api/events/put-events-id/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/reference/api/events/send-rsvp/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/reference/api/events/send-rsvp/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/reference/api/manage-grants/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/reference/api/manage-grants/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/reference/api/webhook-notifications/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/reference/api/webhook-notifications/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/reference/api/webhook-notifications/post-webhook-destinations/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/reference/api/webhook-notifications/post-webhook-destinations/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/reference/notifications/events/event-updated/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/reference/notifications/events/event-updated/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/v3/auth/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/v3/auth/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/v3/auth/bring-your-own-authentication/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/v3/auth/bring-your-own-authentication/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/v3/auth/hosted-oauth-accesstoken/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/v3/auth/hosted-oauth-accesstoken/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/v3/auth/hosted-oauth-apikey/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/v3/auth/hosted-oauth-apikey/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/v3/auth/using-multiple-provider-applications/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/v3/auth/using-multiple-provider-applications/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/v3/calendar/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/v3/calendar/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/v3/calendar/check-free-busy/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/v3/calendar/check-free-busy/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/v3/calendar/recurring-events/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/v3/calendar/recurring-events/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/v3/calendar/using-the-events-api/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/v3/calendar/using-the-events-api/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/v3/email/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/v3/email/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/v3/email/contacts/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/v3/email/contacts/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/v3/email/messages/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/v3/email/messages/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/v3/notifications/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/v3/notifications/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/v3/notifications/pubsub-channel/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/v3/notifications/pubsub-channel/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/v3/notifications/sns-channel/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/v3/notifications/sns-channel/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/v3/scheduler/managing-availability/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/v3/scheduler/managing-availability/"
+    },
+    {
+      "url": "https://developer.nylas.com/docs/v3/sdks/python/manage-events/",
+      "status": 200,
+      "final_url": "https://developer.nylas.com/docs/v3/sdks/python/manage-events/"
+    },
+    {
+      "url": "https://developers.google.com/workspace/calendar/api/guides/recurringevents",
+      "status": 200,
+      "final_url": "https://developers.google.com/workspace/calendar/api/guides/recurringevents"
+    },
+    {
+      "url": "https://developers.google.com/workspace/calendar/api/guides/sync",
+      "status": 200,
+      "final_url": "https://developers.google.com/workspace/calendar/api/guides/sync"
+    },
+    {
+      "url": "https://docs.aurinko.io/",
+      "status": 200,
+      "final_url": "https://docs.aurinko.io/"
+    },
+    {
+      "url": "https://docs.aurinko.io/unified-apis/calendar-api",
+      "status": 200,
+      "final_url": "https://docs.aurinko.io/unified-apis/calendar-api"
+    },
+    {
+      "url": "https://docs.aurinko.io/unified-apis/tasks-api",
+      "status": 200,
+      "final_url": "https://docs.aurinko.io/unified-apis/tasks-api"
+    },
+    {
+      "url": "https://docs.aurinko.io/unified-apis/webhooks-api",
+      "status": 200,
+      "final_url": "https://docs.aurinko.io/unified-apis/webhooks-api"
+    },
+    {
+      "url": "https://docs.cronofy.com/developers/api-alpha/ics-push-notifications/",
+      "status": 200,
+      "final_url": "https://docs.cronofy.com/developers/api-alpha/ics-push-notifications/"
+    },
+    {
+      "url": "https://docs.cronofy.com/developers/api-alpha/recurring-events/",
+      "status": 200,
+      "final_url": "https://docs.cronofy.com/developers/api-alpha/recurring-events/"
+    },
+    {
+      "url": "https://docs.cronofy.com/developers/api/calendars/list-calendars/",
+      "status": 200,
+      "final_url": "https://docs.cronofy.com/developers/api/calendars/list-calendars/"
+    },
+    {
+      "url": "https://docs.cronofy.com/developers/api/events/edit-external-events/",
+      "status": 200,
+      "final_url": "https://docs.cronofy.com/developers/api/events/edit-external-events/"
+    },
+    {
+      "url": "https://docs.cronofy.com/developers/api/events/free-busy/",
+      "status": 200,
+      "final_url": "https://docs.cronofy.com/developers/api/events/free-busy/"
+    },
+    {
+      "url": "https://docs.cronofy.com/developers/api/events/participation-status/",
+      "status": 200,
+      "final_url": "https://docs.cronofy.com/developers/api/events/participation-status/"
+    },
+    {
+      "url": "https://docs.cronofy.com/developers/api/events/read-events/",
+      "status": 200,
+      "final_url": "https://docs.cronofy.com/developers/api/events/read-events/"
+    },
+    {
+      "url": "https://docs.cronofy.com/developers/api/events/upsert-event/",
+      "status": 200,
+      "final_url": "https://docs.cronofy.com/developers/api/events/upsert-event/"
+    },
+    {
+      "url": "https://docs.cronofy.com/developers/api/push-notifications/",
+      "status": 200,
+      "final_url": "https://docs.cronofy.com/developers/api/push-notifications/"
+    },
+    {
+      "url": "https://docs.cronofy.com/developers/calendars-events/editing-events/",
+      "status": 200,
+      "final_url": "https://docs.cronofy.com/developers/calendars-events/editing-events/"
+    },
+    {
+      "url": "https://docs.cronofy.com/developers/faqs/event-management/recommended-sync/",
+      "status": 200,
+      "final_url": "https://docs.cronofy.com/developers/faqs/event-management/recommended-sync/"
+    },
+    {
+      "url": "https://docs.cronofy.com/developers/getting-started/quick-start-guide/api-quick-start-guide/",
+      "status": 200,
+      "final_url": "https://docs.cronofy.com/developers/getting-started/quick-start-guide/api-quick-start-guide/"
+    },
+    {
+      "url": "https://docs.etebase.com/",
+      "status": 200,
+      "final_url": "https://docs.etebase.com/"
+    },
+    {
+      "url": "https://docs.etebase.com/guides/using_collections",
+      "status": 200,
+      "final_url": "https://docs.etebase.com/guides/using_collections"
+    },
+    {
+      "url": "https://docs.etebase.com/guides/using_items",
+      "status": 200,
+      "final_url": "https://docs.etebase.com/guides/using_items"
+    },
+    {
+      "url": "https://docs.etebase.com/overview",
+      "status": 200,
+      "final_url": "https://docs.etebase.com/overview"
+    },
+    {
+      "url": "https://docs.etebase.com/protocol-specs/collections",
+      "status": 200,
+      "final_url": "https://docs.etebase.com/protocol-specs/collections"
+    },
+    {
+      "url": "https://docs.etebase.com/protocol-specs/fetching-data",
+      "status": 200,
+      "final_url": "https://docs.etebase.com/protocol-specs/fetching-data"
+    },
+    {
+      "url": "https://docs.etebase.com/protocol-specs/items",
+      "status": 200,
+      "final_url": "https://docs.etebase.com/protocol-specs/items"
+    },
+    {
+      "url": "https://github.com/NangoHQ/nango",
+      "status": 200,
+      "final_url": "https://github.com/NangoHQ/nango"
+    },
+    {
+      "url": "https://github.com/bitfireAT/davx5-manual/blob/main/introduction.rst",
+      "status": 200,
+      "final_url": "https://github.com/bitfireAT/davx5-manual/blob/main/introduction.rst"
+    },
+    {
+      "url": "https://github.com/bitfireAT/davx5-ose/blob/0fc9500076c71f97eb1905e84106441df0a7c5da/core/src/main/kotlin/at/bitfire/davdroid/sync/SyncManager.kt",
+      "status": 200,
+      "final_url": "https://github.com/bitfireAT/davx5-ose/blob/0fc9500076c71f97eb1905e84106441df0a7c5da/core/src/main/kotlin/at/bitfire/davdroid/sync/SyncManager.kt"
+    },
+    {
+      "url": "https://github.com/bitfireAT/davx5-ose/blob/main/LICENSE",
+      "status": 200,
+      "final_url": "https://github.com/bitfireAT/davx5-ose/blob/main/LICENSE"
+    },
+    {
+      "url": "https://github.com/bitfireAT/webdav-push",
+      "status": 200,
+      "final_url": "https://github.com/bitfireAT/webdav-push"
+    },
+    {
+      "url": "https://github.com/etesync/etebase-rs/blob/master/Cargo.toml",
+      "status": 200,
+      "final_url": "https://github.com/etesync/etebase-rs/blob/master/Cargo.toml"
+    },
+    {
+      "url": "https://github.com/etesync/etebase-rs/blob/master/LICENSE",
+      "status": 200,
+      "final_url": "https://github.com/etesync/etebase-rs/blob/master/LICENSE"
+    },
+    {
+      "url": "https://github.com/etesync/etesync-dav",
+      "status": 200,
+      "final_url": "https://github.com/etesync/etesync-dav"
+    },
+    {
+      "url": "https://github.com/etesync/etesync-dav/blob/master/LICENSE",
+      "status": 200,
+      "final_url": "https://github.com/etesync/etesync-dav/blob/master/LICENSE"
+    },
+    {
+      "url": "https://github.com/etesync/server",
+      "status": 200,
+      "final_url": "https://github.com/etesync/server"
+    },
+    {
+      "url": "https://github.com/etesync/server/blob/master/LICENSE",
+      "status": 200,
+      "final_url": "https://github.com/etesync/server/blob/master/LICENSE"
+    },
+    {
+      "url": "https://github.com/nylas/nylas-nodejs/blob/fabe2d679baf20f45f941a7148544acb2434aafa/src/apiClient.ts",
+      "status": 200,
+      "final_url": "https://github.com/nylas/nylas-nodejs/blob/fabe2d679baf20f45f941a7148544acb2434aafa/src/apiClient.ts"
+    },
+    {
+      "url": "https://github.com/nylas/nylas-nodejs/blob/fabe2d679baf20f45f941a7148544acb2434aafa/src/models/error.ts",
+      "status": 200,
+      "final_url": "https://github.com/nylas/nylas-nodejs/blob/fabe2d679baf20f45f941a7148544acb2434aafa/src/models/error.ts"
+    },
+    {
+      "url": "https://github.com/nylas/nylas-nodejs/blob/fabe2d679baf20f45f941a7148544acb2434aafa/src/models/events.ts",
+      "status": 200,
+      "final_url": "https://github.com/nylas/nylas-nodejs/blob/fabe2d679baf20f45f941a7148544acb2434aafa/src/models/events.ts"
+    },
+    {
+      "url": "https://github.com/nylas/nylas-nodejs/blob/fabe2d679baf20f45f941a7148544acb2434aafa/src/resources/events.ts",
+      "status": 200,
+      "final_url": "https://github.com/nylas/nylas-nodejs/blob/fabe2d679baf20f45f941a7148544acb2434aafa/src/resources/events.ts"
+    },
+    {
+      "url": "https://github.com/nylas/nylas-nodejs/blob/fabe2d679baf20f45f941a7148544acb2434aafa/src/resources/resource.ts",
+      "status": 200,
+      "final_url": "https://github.com/nylas/nylas-nodejs/blob/fabe2d679baf20f45f941a7148544acb2434aafa/src/resources/resource.ts"
+    },
+    {
+      "url": "https://github.com/nylas/nylas-nodejs/blob/fabe2d679baf20f45f941a7148544acb2434aafa/src/utils.ts",
+      "status": 200,
+      "final_url": "https://github.com/nylas/nylas-nodejs/blob/fabe2d679baf20f45f941a7148544acb2434aafa/src/utils.ts"
+    },
+    {
+      "url": "https://github.com/nylas/sync-engine",
+      "status": 200,
+      "final_url": "https://github.com/nylas/sync-engine"
+    },
+    {
+      "url": "https://github.com/nylas/sync-engine/blob/50698996aef73102ead592e8d0948c1d2edfe123/inbox/events/google.py",
+      "status": 200,
+      "final_url": "https://github.com/nylas/sync-engine/blob/50698996aef73102ead592e8d0948c1d2edfe123/inbox/events/google.py"
+    },
+    {
+      "url": "https://github.com/nylas/sync-engine/blob/50698996aef73102ead592e8d0948c1d2edfe123/inbox/events/remote_sync.py",
+      "status": 200,
+      "final_url": "https://github.com/nylas/sync-engine/blob/50698996aef73102ead592e8d0948c1d2edfe123/inbox/events/remote_sync.py"
+    },
+    {
+      "url": "https://github.com/nylas/sync-engine/blob/50698996aef73102ead592e8d0948c1d2edfe123/inbox/models/action_log.py",
+      "status": 200,
+      "final_url": "https://github.com/nylas/sync-engine/blob/50698996aef73102ead592e8d0948c1d2edfe123/inbox/models/action_log.py"
+    },
+    {
+      "url": "https://github.com/nylas/sync-engine/blob/50698996aef73102ead592e8d0948c1d2edfe123/inbox/transactions/actions.py",
+      "status": 200,
+      "final_url": "https://github.com/nylas/sync-engine/blob/50698996aef73102ead592e8d0948c1d2edfe123/inbox/transactions/actions.py"
+    },
+    {
+      "url": "https://github.com/nylas/sync-engine/blob/50698996aef73102ead592e8d0948c1d2edfe123/inbox/transactions/delta_sync.py",
+      "status": 200,
+      "final_url": "https://github.com/nylas/sync-engine/blob/50698996aef73102ead592e8d0948c1d2edfe123/inbox/transactions/delta_sync.py"
+    },
+    {
+      "url": "https://github.com/nylas/sync-engine/blob/master/LICENSE",
+      "status": 200,
+      "final_url": "https://github.com/nylas/sync-engine/blob/master/LICENSE"
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/graph/api/resources/patternedrecurrence?view=graph-rest-1.0",
+      "status": 200,
+      "final_url": "https://learn.microsoft.com/en-us/graph/api/resources/patternedrecurrence?view=graph-rest-1.0"
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/graph/delta-query-overview",
+      "status": 200,
+      "final_url": "https://learn.microsoft.com/en-us/graph/delta-query-overview"
+    },
+    {
+      "url": "https://manual.davx5.com/technical_information.html",
+      "status": 200,
+      "final_url": "https://manual.davx5.com/technical_information.html"
+    },
+    {
+      "url": "https://manual.davx5.com/webdav_push.html",
+      "status": 200,
+      "final_url": "https://manual.davx5.com/webdav_push.html"
+    },
+    {
+      "url": "https://nango.dev/docs/guides/functions/syncs/checkpoints",
+      "status": 200,
+      "final_url": "https://nango.dev/docs/guides/functions/syncs/checkpoints"
+    },
+    {
+      "url": "https://nango.dev/docs/guides/functions/syncs/deletion-detection",
+      "status": 200,
+      "final_url": "https://nango.dev/docs/guides/functions/syncs/deletion-detection"
+    },
+    {
+      "url": "https://nango.dev/docs/guides/functions/syncs/sync-functions",
+      "status": 200,
+      "final_url": "https://nango.dev/docs/guides/functions/syncs/sync-functions"
+    },
+    {
+      "url": "https://nango.dev/docs/guides/functions/syncs/sync-partitioning",
+      "status": 200,
+      "final_url": "https://nango.dev/docs/guides/functions/syncs/sync-partitioning"
+    },
+    {
+      "url": "https://nango.dev/platform/data-sync",
+      "status": 200,
+      "final_url": "https://nango.dev/platform/data-sync"
+    },
+    {
+      "url": "https://support.nylas.com/hc/en-us/articles/18564132044957-Issues-and-Differences-During-Migration-from-V2-to-V3-Best-Practices",
+      "status": 200,
+      "final_url": "https://support.nylas.com/hc/en-us/articles/18564132044957-Issues-and-Differences-During-Migration-from-V2-to-V3-Best-Practices"
+    },
+    {
+      "url": "https://support.nylas.com/hc/en-us/articles/26826548737053-Why-do-I-need-to-handle-both-message-created-and-message-updated-webhooks-in-Nylas-v3",
+      "status": 200,
+      "final_url": "https://support.nylas.com/hc/en-us/articles/26826548737053-Why-do-I-need-to-handle-both-message-created-and-message-updated-webhooks-in-Nylas-v3"
+    },
+    {
+      "url": "https://vdirsyncer.pimutils.org/en/stable/config.html",
+      "status": 200,
+      "final_url": "https://vdirsyncer.pimutils.org/en/stable/config.html"
+    },
+    {
+      "url": "https://vdirsyncer.pimutils.org/en/stable/index.html",
+      "status": 200,
+      "final_url": "https://vdirsyncer.pimutils.org/en/stable/index.html"
+    },
+    {
+      "url": "https://vdirsyncer.pimutils.org/en/stable/tutorial.html",
+      "status": 200,
+      "final_url": "https://vdirsyncer.pimutils.org/en/stable/tutorial.html"
+    },
+    {
+      "url": "https://vdirsyncer.pimutils.org/en/stable/vdir.html",
+      "status": 200,
+      "final_url": "https://vdirsyncer.pimutils.org/en/stable/vdir.html"
+    },
+    {
+      "url": "https://www.nylas.com/blog/introducing-nylas-apiv3/",
+      "status": 200,
+      "final_url": "https://www.nylas.com/blog/introducing-nylas-apiv3/"
+    },
+    {
+      "url": "https://www.rfc-editor.org/rfc/rfc4791",
+      "status": 200,
+      "final_url": "https://www.rfc-editor.org/info/rfc4791/"
+    },
+    {
+      "url": "https://www.rfc-editor.org/rfc/rfc4791.html",
+      "status": 200,
+      "final_url": "https://www.rfc-editor.org/rfc/rfc4791.html"
+    },
+    {
+      "url": "https://www.rfc-editor.org/rfc/rfc5545.html",
+      "status": 200,
+      "final_url": "https://www.rfc-editor.org/rfc/rfc5545.html"
+    },
+    {
+      "url": "https://www.rfc-editor.org/rfc/rfc5546.html",
+      "status": 200,
+      "final_url": "https://www.rfc-editor.org/rfc/rfc5546.html"
+    },
+    {
+      "url": "https://www.rfc-editor.org/rfc/rfc6578.html",
+      "status": 200,
+      "final_url": "https://www.rfc-editor.org/rfc/rfc6578.html"
+    },
+    {
+      "url": "https://www.rfc-editor.org/rfc/rfc6638",
+      "status": 200,
+      "final_url": "https://www.rfc-editor.org/info/rfc6638/"
+    },
+    {
+      "url": "https://www.rfc-editor.org/rfc/rfc6638.html",
+      "status": 200,
+      "final_url": "https://www.rfc-editor.org/rfc/rfc6638.html"
+    },
+    {
+      "url": "https://www.rfc-editor.org/rfc/rfc8984.html",
+      "status": 200,
+      "final_url": "https://www.rfc-editor.org/rfc/rfc8984.html"
+    }
+  ]
+}
