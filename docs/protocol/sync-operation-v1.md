@@ -99,6 +99,10 @@ occurrence/series a ostatní specialized intents. Každý již známý explicitn
 admission přijímá pouze absent nebo `legacy-unknown` time model. Staré
 `isAllDay`/UTC konvence zůstávají bounded legacy časovým profilem. Pure codec
 samotný umí DATE shape, což ještě není host capability pro známý all-day model.
+Legacy all-day timestamps s nenulovou časovou složkou zůstávají explicitní
+legacy profil: dosavadní mapper je normalizuje na DATE, zatímco v1 přijímá pouze
+UTC midnight konce, které umí přesně zachovat. Chronologie uvnitř vybraného
+representable profilu se stále validuje a chybná admission se vrátí zpět.
 Zoned a floating event writes tento generic v1 profil nepřijímá. Host výslovně
 volí legacy také pro recurring Google/Graph tasky, recurring generic Graph eventy,
 Graph UPDATE mimo pinned content fields, cancelled non-DELETE eventy a recurrence
@@ -139,6 +143,11 @@ vyžaduje přesně stejný persisted predecessor ID a null native address. CREAT
 Graph eventu a Google/Graph tasku zachovává poctivý null target před odpovědí.
 Google event ID a DAV URL jsou plánované deterministic identity; registered
 codec ověří jejich přesný vztah k uloženému operation/task ID a native markeru.
+
+Musubi fyzické operation/command/object/source/predecessor UUIDs v nové envelope
+používají lowercase reprezentaci PostgreSQL, včetně validního uppercase vstupu.
+Opaque portable connection/collection/resource IDs se tím nenormalizují.
+Uložené historické envelopes se nepřepisují.
 
 JSONB `operationCapture` je host evidence mimo portable envelope:
 source UUID, `writeGeneration`, skutečný account row ID, connection generation
@@ -218,11 +227,34 @@ version 1 prochází s původní saved baseline, bez přepsání mapperem decode
 
 ## Compatibility a rollout gate
 
-`SYNC_OPERATION_V1_ENCODER_ENABLED=false` je výchozí hodnota. Flag řídí pouze
-admission nových podporovaných operací, nikoli dispatch již přijatých v1 rows.
-Zapnutí MUSÍ předcházet doložené nasazení decoder floor do **všech API procesů,
-delivery workers a dalších outbox consumers** a ověření skutečných image digestů.
-Merge do main ani zelené CI samy tento produkční gate nesplní.
+`SYNC_OPERATION_V1_ENCODER_ENABLED` má v této revizi výchozí hodnotu **true**.
+Nenastavený flag i literal `true` zapínají admission nových podporovaných operací;
+explicitní literal `false` zachovává legacy admission. Jiné hodnoty včetně prázdné
+hodnoty a whitespace odmítnou boot bez vypsání jejich obsahu. Flag neřídí dispatch
+již přijatých v1 rows. Source aktivace byla schválená po merge decoder floor,
+pinned codecs a provider/OAuth generation bridge v PR #346–348; dosavadní OFF
+bylo záměrné pořadí publikace. Toto je změna konfigurace zdrojů, nikoli tvrzení
+o skutečném nasazení či o přepsání nastavení existující instalace.
+
+Před produkční admission nových envelopes MUSÍ být doložený decoder floor a
+pinned codecs ve **všech API procesech, delivery workers a dalších outbox
+consumers**. Musubi nyní dodává event/task consumers uvnitř jediného API procesu:
+request wakeups i startup/15s recovery sdílejí stejné executory. Boot získává
+singleton DB advisory lock ještě před migracemi a listen. Při upgradu z předchozí
+revize zastavte všechny staré API procesy i případné vlastní consumers, nahraďte
+je kompatibilními images a teprve potom přijímejte nové operace. Pokud celý
+upgrade ještě není hotový, explicitní `false` uchová původní admission. Singleton
+lock chrání souběh dodávaného API; sám neprokazuje verzi externího vlastního workeru.
+
+Rollout evidence musí obsahovat deployment/environment, image digest a source
+revision každého skutečného consumeru, DB migration journal, stav singletonu a
+boot log `server.started` s `syncOperationV1EncoderEnabled` a
+`syncOperationProfileVersion`. Current pinned delivery vyžaduje codec/admission
+z PR #347 a connection generation bridge z PR #348; samotný decoder-only floor
+z PR #346 zaručuje HOLD. Zaznamenejte také obsahově anonymní queue baseline a
+zvolenou rollback revision. Merge do main, zelené CI ani log defaultu samy tento
+produkční gate nesplní. Při této source aktivaci nebyl k dispozici běžící Musubi
+API/worker runtime; skutečné runtime image digests a aktivace nejsou doložené.
 
 Decoder-only worker je rollback do HOLD pro v1 rows; doručování potřebuje přesně
 registrovaný pinned codec. Worker starší než decoder floor není bezpečný rollback

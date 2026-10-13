@@ -33,7 +33,7 @@ async function main() {
   }) as typeof fetch;
   await db.insert(user).values({ id: owner, name: owner, email: `${owner}@example.test` });
   try {
-    await db.insert(account).values({ id: randomUUID(), userId: owner, providerId: 'microsoft', accountId: owner, accessToken: 'fixture-token', scope: CALENDAR_SCOPE.microsoft, accessTokenExpiresAt: new Date(Date.now() + 3600_000) });
+    await db.insert(account).values({ id: randomUUID(), userId: owner, providerId: 'microsoft', accountId: owner, accessToken: 'fixture-token', refreshToken: 'fixture-refresh', scope: CALENDAR_SCOPE.microsoft, accessTokenExpiresAt: new Date(Date.now() + 3600_000) });
     const calendar = await importExternalCalendar('microsoft', owner, owner, 'fixture', { externalId: 'remote-calendar', name: 'Outlook fixture', color: '#123456' });
     const initial = EventSchema.parse({ id: randomUUID(), creatorID: owner, organizer: '', title: 'Before', description: 'Keep notes', location: 'Keep room', start: '2026-09-28T10:00:00Z', end: '2026-09-28T11:00:00Z', isAllDay: false, isCanceled: false, color: '#123456', originCalendarID: calendar.id, calendars: [calendar.id] });
     await createEvent(initial, initial.calendars);

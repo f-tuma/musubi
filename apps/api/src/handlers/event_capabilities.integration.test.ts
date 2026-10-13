@@ -152,8 +152,11 @@ async function main() {
           res.writeHead(201, { etag: davEtags.get(path)! });
           return res.end();
         }
-        const id = method === "POST" && path.startsWith("/calendar/v3/")
-          ? (JSON.parse(body).id ?? `created-${randomUUID()}`) : `created-${randomUUID()}`;
+        // Google PATCH returns the addressed native identity. POST may choose
+        // a new identity; a sparse update must not fabricate a second object.
+        const id = path.startsWith("/calendar/v3/")
+          ? method === "POST" ? (JSON.parse(body).id ?? `created-${randomUUID()}`) : decodeURIComponent(path.split("/").pop()!)
+          : `created-${randomUUID()}`;
         const eventPath = method === "POST" ? `${path}/${id}` : path;
         const etag = `"google-${++version}"`;
         googleEtags.set(`${req.headers.authorization}:${eventPath}`, etag);
@@ -167,7 +170,7 @@ async function main() {
       reads.push({ path, auth: req.headers.authorization });
       if (path === "/v1.0/me") return json({ mail: "owner@example.test" });
       if (path.includes("/calendarList/"))
-        return json({ accessRole: path.endsWith("/denied") ? "reader" : role });
+        return json({ id: decodeURIComponent(path.split("/").pop()!), accessRole: path.endsWith("/denied") ? "reader" : role });
       if (path.startsWith("/v1.0/me/calendars/") && !path.includes("/events/"))
         return json({ canEdit });
       if (path.includes("/events/")) {

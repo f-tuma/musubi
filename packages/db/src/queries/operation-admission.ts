@@ -20,14 +20,14 @@ const changed = (): never => { throw new Error("Operation admission source chang
 // table uses UUIDs; an old unavailable text alias has no provable incarnation.
 const physicalCaldavAccountKey = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
-async function connectionCapture(tx: DbTransaction, target: Target, requireActive = true) {
+async function connectionCapture(tx: DbTransaction, target: Target, requireActive = true, allowMissingAtAdmission = false) {
   if (target.provider === "caldav") {
     // Reject before SQL: a caught UUID cast error leaves an ACK transaction
     // aborted and cannot be converted into a safe HOLD by a later UPDATE.
-    if (!physicalCaldavAccountKey(target.accountID)) return changed();
+    if (!physicalCaldavAccountKey(target.accountID)) return allowMissingAtAdmission ? undefined : changed();
     const [row] = await tx.select({ id: caldavAccounts.id, updatedAt: caldavAccounts.updatedAt }).from(caldavAccounts)
       .where(and(eq(caldavAccounts.id, target.accountID), eq(caldavAccounts.userID, target.userID))).for("share");
-    if (!row) return changed();
+    if (!row) return allowMissingAtAdmission ? undefined : changed();
     // DAV has no OAuth grant generation. Capture the current host connection
     // revision timestamp in addition to the immutable account/source UUIDs.
     return { connectionId: row.id, connectionGeneration: row.updatedAt.getTime() };
@@ -35,11 +35,12 @@ async function connectionCapture(tx: DbTransaction, target: Target, requireActiv
   const [row] = await tx.select({ id: account.id, status: account.syncStatus, refreshToken: account.refreshToken,
     generation: sql<number>`sync_read_generation` }).from(account).where(and(eq(account.userId, target.userID),
       eq(account.providerId, target.provider), eq(account.accountId, target.accountID))).for("share");
-  if (!row || !Number.isSafeInteger(row.generation) || row.generation < 0 ||
+  if (!row) return allowMissingAtAdmission ? undefined : changed();
+  if (!Number.isSafeInteger(row.generation) || row.generation < 0 ||
       requireActive && (row.status !== "active" || !row.refreshToken)) return changed();
   return { connectionId: row.id, connectionGeneration: row.generation };
 }
-async function capture(tx: DbTransaction, target: Target, privacyEpoch: string): Promise<SyncOperationCapture> {
+async function capture(tx: DbTransaction, target: Target, privacyEpoch: string): Promise<SyncOperationCapture | undefined> {
   const [source] = await tx.select().from(externalCalendars).where(and(eq(externalCalendars.id, target.externalCalendarLinkID),
     eq(externalCalendars.calendarID, target.calendarID), eq(externalCalendars.provider, target.provider),
     eq(externalCalendars.userID, target.userID), eq(externalCalendars.accountID, target.accountID),
@@ -48,7 +49,12 @@ async function capture(tx: DbTransaction, target: Target, privacyEpoch: string):
   // Admission records a destination incarnation, not current write authority.
   // An inactive secondary grant must not roll back authoritative source data.
   // Dispatch and ACK separately require the same incarnation to be active.
-  const connection = await connectionCapture(tx, target, false);
+  // A historical/disconnected secondary target with no physical account has
+  // no provable v1 incarnation. Preserve explicit legacy admission rather than
+  // rolling back authoritative content. The exact source fence above still
+  // throws on missing/mismatching source, and SQL/codec errors never fall back.
+  const connection = await connectionCapture(tx, target, false, true);
+  if (!connection) return undefined;
   return SyncOperationCaptureSchema.parse({ sourceId: source.id, writeGeneration: source.providerAccessRevision,
     ...connection, privacyEpoch });
 }
@@ -68,16 +74,19 @@ async function nativeUid(tx: DbTransaction, target: Target, hostID: string, kind
     decoded.envelope.operation.kind, decoded.envelope.nativePlan.data);
   return plan?.planKind === "caldav-properties" ? plan.uid : undefined;
 }
+// These host columns are PostgreSQL UUIDs, whose stored representation is
+// lowercase. Portable/provider keys are opaque and MUST NOT use this helper.
+const physicalHostUuid = (value: string) => value.toLowerCase();
 function envelope(encoded: EncodedSyncWriteV1, input: { kind: "event" | "task"; action: "create" | "update" | "delete";
   id: string; mutationID: string; hostID: string; revision: number; target: Target; resourceID: string | null; predecessorID: string | null },
   captured: SyncOperationCapture) {
   return SyncOperationEnvelopeSchema.parse({ schemaVersion: 1, profileVersion: "sync-profile-v1",
     operation: { kind: input.kind, action: input.action, version: 1 }, serializer: encoded.serializer,
-    commandId: input.mutationID, operationId: input.id, hostObjectId: input.hostID,
+    commandId: physicalHostUuid(input.mutationID), operationId: physicalHostUuid(input.id), hostObjectId: physicalHostUuid(input.hostID),
     locator: { provider: input.target.provider, connectionId: input.target.accountID,
       collectionId: input.target.externalCalendarID, resourceId: input.resourceID },
-    ...(input.predecessorID ? { predecessorOperationId: input.predecessorID } : {}),
-    sourceEpoch: { sourceId: captured.sourceId, generation: captured.writeGeneration },
+    ...(input.predecessorID ? { predecessorOperationId: physicalHostUuid(input.predecessorID) } : {}),
+    sourceEpoch: { sourceId: physicalHostUuid(captured.sourceId), generation: captured.writeGeneration },
     acceptedRevision: input.revision, privacyEpoch: captured.privacyEpoch,
     allowedSideEffects: ["provider-content-write"], admittedProjection: encoded.admittedProjection, nativePlan: encoded.nativePlan });
 }
@@ -96,6 +105,11 @@ function pinnedRecurrenceSyntax(recurrence: string | null | undefined, isAllDay:
     isAllDay && /^(?:EXDATE|RDATE);VALUE=DATE:\d{8}(?:,\d{8})*$/.test(line));
 }
 function pinnedEventProfile(event: Event, intent: EventOutboxIntent) {
+  // Legacy all-day mappers normalize arbitrary timestamp components to DATE.
+  // V1 must preserve its input exactly, so only canonical UTC midnight values
+  // are representable; other valid legacy shapes retain their old profile.
+  if (event.isAllDay && ![event.start, event.end].every(date =>
+    date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0 && date.getUTCMilliseconds() === 0)) return false;
   if (event.isCanceled && intent.action !== "delete") return false;
   if (!pinnedRecurrenceSyntax(event.recurrence, event.isAllDay)) return false;
   if (intent.provider === "microsoft" && event.recurrence) return false;
@@ -143,17 +157,18 @@ export async function admitEventOperationInTransaction(tx: DbTransaction, event:
       oversizedV1Identity(intent.id, intent.mutationID, event.id, intent.externalCalendarLinkID, intent.accountID,
         intent.externalCalendarID, intent.externalEventID, predecessorID)) return payload;
   if (intent.action !== "create" && !intent.externalEventID && !predecessorID) return payload; // no native operation
+  const captured = await capture(tx, intent, `event:${event.providerReadRetiredRevision ?? 0}`);
+  if (!captured) return payload;
   const uid = intent.provider === "caldav" && intent.action !== "create"
     ? await nativeUid(tx, intent, event.id, "event", intent.icalUid, predecessorID) : intent.icalUid;
   if (intent.provider === "caldav" && intent.action !== "create" && !uid) return payload; // explicit unproven-UID legacy profile
   const encoded = encodeEventV1(intent.provider as SyncCodecProvider, event, payload.patch,
-    { action: intent.action, operationId: intent.id!, uid: intent.action === "create" ? undefined : uid ?? undefined, acceptedAt: new Date().toISOString() });
+    { action: intent.action, operationId: physicalHostUuid(intent.id!), uid: intent.action === "create" ? undefined : uid ?? undefined, acceptedAt: new Date().toISOString() });
   const resourceID = intent.externalEventID ?? (intent.action === "create" && intent.provider === "google"
     ? `musubi${intent.id!.toLowerCase().replace(/-/g, "")}`
     : intent.action === "create" && intent.provider === "caldav"
       ? `${intent.externalCalendarID.replace(/\/?$/, "/")}musubi-${intent.id!.toLowerCase()}.ics` : null);
   if (oversizedV1Identity(resourceID) || !boundedV1Plan(encoded)) return payload;
-  const captured = await capture(tx, intent, `event:${event.providerReadRetiredRevision ?? 0}`);
   return { ...payload, ...(intent.action === "create" ? { createIdentityVersion: 1 } : {}), operationCapture: captured, operationEnvelope: envelope(encoded,
     { kind: "event", action: intent.action, id: intent.id!, mutationID: intent.mutationID, hostID: event.id,
       revision: event.revision!, target: intent, resourceID, predecessorID }, captured) };
@@ -167,17 +182,18 @@ export async function admitTaskOperationInTransaction(tx: DbTransaction, task: T
       oversizedV1Identity(intent.id, intent.mutationID, task.id, intent.externalCalendarLinkID, intent.accountID,
         intent.externalCalendarID, intent.externalTaskID, predecessorID)) return payload;
   if (intent.action !== "create" && !intent.externalTaskID && !predecessorID) return payload;
+  const captured = await capture(tx, intent, `task:${intent.retiredGeneration ?? 0}`);
+  if (!captured) return payload;
   // Freeze the full target now. A predecessor/read may establish the baseline
   // later, but can never change this target or serialize it again.
   const uid = intent.provider === "caldav" && intent.action !== "create"
     ? await nativeUid(tx, intent, task.id, "task", intent.icalUid, predecessorID) : intent.icalUid;
   if (intent.provider === "caldav" && intent.action !== "create" && !uid) return payload;
   const encoded = encodeTaskV1(intent.provider as SyncCodecProvider, task, undefined,
-    { action: intent.action, operationId: intent.id!, uid: intent.action === "create" ? task.id : uid ?? undefined, acceptedAt: new Date().toISOString() });
+    { action: intent.action, operationId: physicalHostUuid(intent.id!), uid: intent.action === "create" ? task.id : uid ?? undefined, acceptedAt: new Date().toISOString() });
   const resourceID = intent.externalTaskID ?? (intent.action === "create" && intent.provider === "caldav"
     ? `${intent.externalCalendarID.replace(/\/?$/, "/")}${task.id}.ics` : null);
   if (oversizedV1Identity(resourceID) || !boundedV1Plan(encoded)) return payload;
-  const captured = await capture(tx, intent, `task:${intent.retiredGeneration ?? 0}`);
   return { ...payload, operationCapture: captured, operationEnvelope: envelope(encoded,
     { kind: "task", action: intent.action, id: intent.id!, mutationID: intent.mutationID, hostID: task.id,
       revision: task.revision!, target: intent, resourceID, predecessorID }, captured) };
@@ -205,7 +221,7 @@ export async function assertPinnedOutboxSourceInTransaction(tx: DbTransaction, r
       !("eventID" in row ? source.supportsEvents : source.supportsTasks)) return false;
   let connection: Awaited<ReturnType<typeof connectionCapture>>;
   try { connection = await connectionCapture(tx, row); } catch { return false; }
-  if (connection.connectionId !== captured.connectionId || connection.connectionGeneration !== captured.connectionGeneration) return false;
+  if (!connection || connection.connectionId !== captured.connectionId || connection.connectionGeneration !== captured.connectionGeneration) return false;
   if ("eventID" in row) {
     const [current] = await tx.select({ deletedAt: events.deletedAt, retired: events.providerReadRetiredRevision }).from(events).where(eq(events.id, row.eventID));
     if (!current) return row.action === "delete" || allowDeletedObject;

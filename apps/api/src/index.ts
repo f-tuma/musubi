@@ -721,6 +721,8 @@ async function start() {
       logLevel: config.api.logLevel,
       externalSyncIntervalMin: config.api.externalSyncIntervalMin,
       externalDeliveryRecoveryMode: config.api.externalDeliveryRecoveryMode,
+      syncOperationV1EncoderEnabled: config.api.syncOperationV1EncoderEnabled,
+      syncOperationProfileVersion: "sync-profile-v1",
     });
   });
 

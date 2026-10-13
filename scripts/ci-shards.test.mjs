@@ -37,13 +37,15 @@ test("rejects malformed shards, duplicate tests, and invalid weights", () => {
 test("expands nested root and workspace scripts without omitting a suite", () => {
   const manifests = {
     "": { scripts: {
-      "test:db": "pnpm test:db:one && pnpm --filter @musubi/api run test:extra",
+      "test:db": "pnpm test:db:one && pnpm --filter @musubi/api run test:extra && pnpm --filter @musubi/sync-reference run test:db",
       "test:db:one": "pnpm --filter @musubi/api exec tsx src/one.test.ts && pnpm --filter @musubi/db exec tsx src/two.test.ts",
     } },
     "apps/api": { scripts: { "test:extra": "tsx src/three.test.ts" } },
+    "apps/sync-reference": { scripts: { "test:db": "tsx src/store.integration.test.ts && tsx src/process.integration.test.ts" } },
   };
   assert.deepEqual(databaseTests(directory => manifests[directory]).map(item => item.id), [
     "apps/api/src/one.test.ts", "packages/db/src/two.test.ts", "apps/api/src/three.test.ts",
+    "apps/sync-reference/src/store.integration.test.ts", "apps/sync-reference/src/process.integration.test.ts",
   ]);
   for (const command of ["echo ignored", "pnpm test:missing", "pnpm test:db"]) {
     assert.throws(() => databaseTests(() => ({ scripts: { "test:db": command } })));
@@ -53,6 +55,9 @@ test("expands nested root and workspace scripts without omitting a suite", () =>
 test("the real database inventory has no duplicates or empty shards", () => {
   const inventory = databaseTests();
   assert.ok(inventory.length > 60);
+  for (const id of ["apps/sync-reference/src/store.integration.test.ts", "apps/sync-reference/src/process.integration.test.ts", "packages/db/src/queries/operation-admission-missing.integration.test.ts"]) {
+    assert.equal(inventory.filter(item => item.id === id).length, 1);
+  }
   const shards = partition(inventory, 4);
   assert.equal(shards.flatMap(shard => shard.items).length, inventory.length);
 });
