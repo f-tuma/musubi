@@ -26,7 +26,8 @@ credentials/content/identity před pool await, aby AAD odpovídalo uloženému
 connection ID. Skutečné blocked-PG/pool fixtures mění původní vstup a potvrzují
 uložení původního A. Evidence a ACK před prvním await kopírují také všechny
 validated receipt hodnoty, strong validator a bounded lossless projection;
-pozdější změna caller DTO nesmí předefinovat přijetí nebo binding ETag. SQL brání změně jejich identity a obsahu. Capture zahrnuje skutečné
+pozdější změna caller DTO nesmí předefinovat přijetí nebo binding ETag.
+Finish obdobně kopíruje retry metadata, včetně Infinity reconnect gate. SQL brání změně jejich identity a obsahu. Capture zahrnuje skutečné
 connection/source/privacy generace a accepted revision. Lifecycle triggery
 odlišují loss→regain ABA; běžná rotace přítomného tokenu sama nezmění generaci.
 Jedna neACKovaná operace na binding drží causal barrier.
@@ -101,7 +102,7 @@ je v [normativním protokolu](../protocol/sync-operation-v1.md).
 
 - 7 čistých admission a 26 runner scénářů, včetně immutable target, exact body,
   Retry-After, rejection/uncertainty/readback a deadline/cancellation.
-- 28 skutečných PostgreSQL ledger scénářů: CAS/intent rollback, command reuse,
+- 29 skutečných PostgreSQL ledger scénářů: CAS/intent rollback, command reuse,
   SQL immutability, causal barrier, lease/current authority a čtyři receipt osy.
 - 30 skutečných process crash/restart scénářů, včetně SIGKILL uvnitř admission
   před COMMIT a lost reply po aplikovaném PATCH; restart zachová intent hash a
@@ -112,7 +113,7 @@ je v [normativním protokolu](../protocol/sync-operation-v1.md).
   missing-credential corpus; všechny běží s unset encoder flag v izolovaných DB.
 - API unit corpus, workspace TypeScript, protocol/codec/provider/config testy,
   peer/contracts/release checks, frozen install a CI inventory.
-- Samostatný image `sha256:311477b455bea0364aa9918a41cec44c966bb19ae650218e79e04ee8bb0a32e2`:
+- Samostatný image `sha256:756228bfa68fbc0aa95bf78cd6de991a6104b8f500d9cc2822698d1d74446bb7`:
   44 runtime souborů odpovídá zdrojům; closure 22 packages neobsahuje
   Musubi DB/auth/config/API ani Express/Better Auth. Přímý CLI migrate/show,
   přerušení otevřeného stdin a skutečný lokální HTTP/PG UPDATE i lost-reply

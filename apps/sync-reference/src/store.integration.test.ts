@@ -385,3 +385,23 @@ test("protocol evidence axes, validator and parsed retry error stay stable while
     if (held) holder.release(); await pending.catch(() => undefined); await delayedPool.end();
   }
 });
+
+test("durable reconnect delay and finish code cannot change during blocked pool acquisition", async () => {
+  const f = await claimed();
+  const delayedPool = new Pool({ connectionString: database.href, max: 1 });
+  const delayedStore = new ReferenceStore(delayedPool, "ab".repeat(32));
+  const holder = await delayedPool.connect(); let held = true;
+  const delay = { retryAfterMs: Infinity, code: "reconnect-gate-a" };
+  const pending = delayedStore.finish(f.claim, "hold", delay);
+  try {
+    assert.equal(delayedPool.waitingCount, 1);
+    delay.retryAfterMs = 0; delay.retryAfterMs = -1; delay.code = "changed-gate-b";
+    holder.release(); held = false;
+    assert.equal(await pending, true);
+    assert.equal(await store.claim(f.input.operationId, randomUUID()), null);
+    assert.equal((await pool.query("SELECT not_before='infinity'::timestamptz AS indefinite FROM reference_operations WHERE id=$1", [f.input.operationId])).rows[0].indefinite, true);
+    assert.equal((await pool.query("SELECT code FROM reference_attempts WHERE id=$1", [f.claim.attemptId])).rows[0].code, "reconnect-gate-a");
+  } finally {
+    if (held) holder.release(); await pending.catch(() => undefined); await delayedPool.end();
+  }
+});

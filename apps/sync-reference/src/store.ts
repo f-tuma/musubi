@@ -240,14 +240,19 @@ export class ReferenceStore {
       return true;
     });
   }
-  async finish(claim: ReferenceClaim, status: "hold" | "conflict" = "hold", delay?: { retryAfterMs?: number; code?: string }): Promise<boolean> {
-    if (delay?.retryAfterMs !== undefined && (delay.retryAfterMs !== Infinity && (!Number.isSafeInteger(delay.retryAfterMs) || delay.retryAfterMs < 0))) throw new Error("Invalid reference retry delay");
+  async finish(claim: ReferenceClaim, status: "hold" | "conflict" = "hold", supplied?: { retryAfterMs?: number; code?: string }): Promise<boolean> {
+    const fields = supplied === undefined ? {} : copyDataFields(supplied, [], ["retryAfterMs", "code"]);
+    const retryAfterMs = fields.retryAfterMs;
+    const code = fields.code;
+    if (retryAfterMs !== undefined && (typeof retryAfterMs !== "number" ||
+      retryAfterMs !== Infinity && (!Number.isSafeInteger(retryAfterMs) || retryAfterMs < 0))) throw new Error("Invalid reference retry delay");
+    if (code !== undefined && typeof code !== "string") throw new Error("Invalid reference finish code");
     return this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId);
       if (!this.owned(locked, claim)) return false;
       await client.query("UPDATE reference_operations SET status=$3,lease_attempt_id=NULL,lease_until=NULL,not_before=CASE WHEN $4::double precision IS NULL THEN NULL WHEN $4::double precision='Infinity'::double precision THEN 'infinity'::timestamptz ELSE clock_timestamp()+$4*interval '1 millisecond' END WHERE id=$1 AND lease_attempt_id=$2",
-        [claim.operationId, claim.attemptId, status, delay?.retryAfterMs ?? null]);
-      if (delay?.code && /^[a-z][a-z0-9-]{0,63}$/.test(delay.code)) await client.query("UPDATE reference_attempts SET code=$2,updated_at=clock_timestamp() WHERE id=$1", [claim.attemptId, delay.code]);
+        [claim.operationId, claim.attemptId, status, retryAfterMs ?? null]);
+      if (code && /^[a-z][a-z0-9-]{0,63}$/.test(code)) await client.query("UPDATE reference_attempts SET code=$2,updated_at=clock_timestamp() WHERE id=$1", [claim.attemptId, code]);
       return true;
     });
   }
