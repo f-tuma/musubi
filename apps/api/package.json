@@ -34,7 +34,8 @@
     "web-push": "^3.6.7",
     "zod": "^4.4.3",
     "xml-js": "1.6.11",
-    "@musubi/sync-codec": "workspace:*"
+    "@musubi/sync-codec": "workspace:*",
+    "@musubi/provider-google": "workspace:*"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",

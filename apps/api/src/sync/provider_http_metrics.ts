@@ -37,6 +37,18 @@ export function withProviderCallMetrics<T>(
   return context.run({ provider: ["caldav", "google", "microsoft"].includes(provider) ? provider : "unknown", family }, run);
 }
 
+/** Explicit provider telemetry port; only the caller's delivery scope labels it. */
+export function recordProviderHttpRequest(method: string, status: number | "network-error" | "aborted", durationMs: number) {
+  const scope = context.getStore();
+  if (!scope) return;
+  const boundedStatus = typeof status === "number"
+    ? Number.isInteger(status) && status >= 100 && status <= 599 ? String(status) : "unknown"
+    : status;
+  const labels = { ...scope, method: methods.has(method) ? method : "OTHER", status: boundedStatus };
+  requests.inc(labels);
+  duration.observe(labels, Math.max(0, durationMs) / 1000);
+}
+
 /** Only wrap the leaf network dispatch, never an OAuth-retrying fetch helper. */
 export async function observedProviderRequest(
   fetchImpl: typeof fetch,
@@ -49,19 +61,16 @@ export async function observedProviderRequest(
   if (!scope || signal?.aborted) return fetchImpl(input, init);
   const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
   const startedAt = performance.now();
-  let status = "network-error";
+  let status: number | "network-error" | "aborted" = "network-error";
   try {
     const response = await fetchImpl(input, init);
-    status = Number.isInteger(response.status) && response.status >= 100 && response.status <= 599
-      ? String(response.status) : "unknown";
+    status = response.status;
     return response;
   } catch (error) {
     if (signal?.aborted || error instanceof Error && error.name === "AbortError") status = "aborted";
     throw error;
   } finally {
-    const labels = { ...scope, method: methods.has(method) ? method : "OTHER", status };
-    requests.inc(labels);
-    duration.observe(labels, Math.max(0, performance.now() - startedAt) / 1000);
+    recordProviderHttpRequest(methods.has(method) ? method : "OTHER", status, performance.now() - startedAt);
   }
 }
 

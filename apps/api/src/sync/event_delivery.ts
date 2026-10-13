@@ -13,7 +13,7 @@ import { googleEventState } from "./adapters/provider_event_state";
 import { isDeepStrictEqual } from "node:util";
 import { matchesGoogleOccurrence } from "./adapters/google_occurrence";
 import { config } from "@musubi/config";
-import { BadRequestError, ProviderRsvpEditSchema, providerRsvpDesiredState, ProviderReminderEditSchema, type GoogleReminderWrite, type ProviderEventState, hasKnownEventTime, EventSchema, EventWriteError, type Event } from "@musubi/types";
+import { BadRequestError, ProviderRsvpEditSchema, providerRsvpDesiredState, ProviderReminderEditSchema, type GoogleReminderWrite, type ProviderEventState, hasKnownEventTime, SyncOperationCaptureSchema, EventSchema, EventWriteError, type Event } from "@musubi/types";
 import {
   confirmCaldavSplitOutbox,
   confirmCaldavSeriesOutbox,
@@ -42,6 +42,7 @@ import {
 } from "@musubi/db";
 import type {
   CalendarAdapter,
+  AcceptedEventUpdateContext,
   CreatedEventEvidence,
   ExternalEventRef,
   NormalizedEvent,
@@ -135,6 +136,7 @@ export async function deliverEventOutbox(
   const adapter = adapterFor(row.provider);
   const attempt = createDeliveryAttempt(() => renewEventOutboxLease(row.id, token), options);
   const signal = attempt.signal;
+  let acceptedUpdate: AcceptedEventUpdateContext | undefined;
   let mutationStarted = false;
   let caldavDispatchPossible = row.payload.rsvp?.request.provider === "caldav" &&
     (row.payload.rsvp.caldavDelivery === undefined || row.payload.rsvp.caldavDelivery?.startedAt !== undefined);
@@ -551,6 +553,30 @@ export async function deliverEventOutbox(
           row.reconciling ? "unconfirmed" : "not-written",
         );
       expectedRef = await getEventOutboxExpectedRef(row);
+      // Select the bounded provider port from the accepted plan, never a current
+      // mapper. Other pinned/legacy operations keep their existing family route.
+      if (pinned && row.provider === "google" && row.action === "update" &&
+          pinned.serializer.id === "google-personal-event" && pinned.serializer.version === 1 &&
+          nativePlan?.planKind === "json-body" && nativePlan.body !== null &&
+          Object.keys(nativePlan.body).every(key => ["summary", "description", "location"].includes(key)) &&
+          !projected?.recurrence && !hasKnownEventTime(event)) {
+        const capture = SyncOperationCaptureSchema.parse(row.payload.operationCapture);
+        acceptedUpdate = {
+          operationId: row.id, attemptId: token,
+          serializer: { id: "google-personal-event", version: 1 },
+          connectionId: capture.connectionId, connectionGeneration: capture.connectionGeneration,
+          beforeMutation: async () => {
+            signal.throwIfAborted();
+            // Token refresh can suspend the caller after its earlier preflight.
+            // Re-prove the current lease and host authority after credentials.
+            if (!await renewEventOutboxLease(row.id, token))
+              throw new ProviderEventWriteError("provider-write-failed");
+            if (!await checkDestination()) throw new EventWriteError("event-write", "unknown");
+            signal.throwIfAborted();
+            mutationStarted = true;
+          },
+        };
+      }
       const identity =
         pinned || row.payload.createIdentityVersion === 1
           ? { operationID: row.id, signal }
@@ -613,6 +639,7 @@ export async function deliverEventOutbox(
             row.externalCalendarID,
             expectedRef,
             signal,
+            acceptedUpdate,
           );
           remoteSnapshot = snapshot(expectedRef, evidence);
           // A new operation created by an explicit, current comparison may send
@@ -674,12 +701,13 @@ export async function deliverEventOutbox(
             external: expectedRef ?? undefined,
             scopeEditValidated: row.payload.scopeEditValidated,
             nativePlan,
+            acceptedUpdate,
             signal,
           },
         );
         if (!(await checkDestination())) return;
         signal.throwIfAborted();
-        mutationStarted = true;
+        if (!acceptedUpdate) mutationStarted = true;
         if (row.action === "create") {
           resultRef = await adapter.pushCreate(
             row.userID,
@@ -700,6 +728,7 @@ export async function deliverEventOutbox(
             patch,
             signal,
             nativePlan,
+            acceptedUpdate,
           );
           resultRef = result
             ? {
@@ -739,6 +768,7 @@ export async function deliverEventOutbox(
               row.externalCalendarID,
               expectedRef,
               signal,
+              acceptedUpdate,
             );
             remoteSnapshot = snapshot(expectedRef, observed);
           } catch {

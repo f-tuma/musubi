@@ -77,6 +77,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@musubi/provider-google':
+        specifier: workspace:*
+        version: link:../../packages/provider-google
       '@musubi/sync-codec':
         specifier: workspace:*
         version: link:../../packages/sync-codec
@@ -648,6 +651,12 @@ importers:
       '@types/nodemailer':
         specifier: ^8.0.1
         version: 8.0.1
+      tsx:
+        specifier: ^4.23.12
+        version: 4.23.12
+
+  packages/provider-google:
+    devDependencies:
       tsx:
         specifier: ^4.23.12
         version: 4.23.12

@@ -15,7 +15,7 @@ async function main() {
     const select = /^select /i.test(configuration.text ?? "");
     if (select) reads++; else { assert.match(configuration.text ?? "", /^update "account" set /i); saved++; }
     return { command: select ? "SELECT" : "UPDATE", rowCount: 1, oid: 0, fields: [], rows: select ? [[
-      "fixture-account-row", "Tasks.ReadWrite,https://www.googleapis.com/auth/tasks", activeAccessToken, "fixture.refresh-token", validCredentials ? new Date(Date.now() + 3_600_000).toISOString().replace("T", " ").replace(/Z$/, "") : "2020-01-01 00:00:00", "active", null, null,
+      "fixture-account-row", "Tasks.ReadWrite,https://www.googleapis.com/auth/tasks", activeAccessToken, "fixture.refresh-token", validCredentials ? new Date(Date.now() + 3_600_000).toISOString().replace("T", " ").replace(/Z$/, "") : "2020-01-01 00:00:00", "active", null, null, 0,
     ]] : [["fixture-account-row"]] };
   }) as typeof db.$client.query;
   globalThis.fetch = async (_input, init) => {
