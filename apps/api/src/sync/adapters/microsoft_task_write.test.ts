@@ -29,7 +29,7 @@ async function main() {
     assert.deepEqual(values, [owner, "microsoft", accountID], "credential lookup stays scoped to actor/account");
     credentialsRead++;
     return { command: "SELECT", rowCount: 1, oid: 0, fields: [], rows: [[
-      "fixture-account-row", scope, "fixture.oauth-token", null, new Date(Date.now() + 3_600_000).toISOString().replace("T", " ").replace(/Z$/, ""), "active", null, null,
+      "fixture-account-row", scope, "fixture.oauth-token", null, new Date(Date.now() + 3_600_000).toISOString().replace("T", " ").replace(/Z$/, ""), "active", null, null, 0,
     ]] };
   }) as typeof db.$client.query;
   globalThis.fetch = (async (input: RequestInfo | URL, options: RequestInit = {}) => {

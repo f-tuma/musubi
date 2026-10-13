@@ -61,9 +61,10 @@ export async function getOAuthAccessToken(
   if (token) return token;
 
   // A new grant must not wait on a refresh of the old one, whose result can be
-  // unsuitable for the newer caller's rejected token. Keys never expose tokens.
+  // unsuitable for the newer caller's rejected token. The generation prevents
+  // an ABA-restored grant from joining the obsolete refresh. Keys never expose tokens.
   const key = createHash("sha256").update(JSON.stringify([
-    provider, userID, accountId, credentials.id, credentials.accessToken,
+    provider, userID, accountId, credentials.id, credentials.syncReadGeneration, credentials.accessToken,
     credentials.refreshToken, credentials.scope, credentials.accessTokenExpiresAt,
   ])).digest("hex");
   const pending = refreshes.get(key);

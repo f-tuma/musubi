@@ -18,6 +18,7 @@ COPY packages/db packages/db
 COPY packages/auth packages/auth
 COPY packages/types packages/types
 COPY packages/sync-codec packages/sync-codec
+COPY packages/provider-google packages/provider-google
 COPY packages/config packages/config
 COPY packages/emails packages/emails
 RUN pnpm --config.inject-workspace-packages=true --filter @musubi/api \

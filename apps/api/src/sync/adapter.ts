@@ -110,7 +110,18 @@ export type TaskWriteOperation = {
   secondary?: boolean;
 };
 
+/** Ephemeral bridge context for the selected admitted provider slice. Never persisted. */
+export type AcceptedEventUpdateContext = {
+  operationId: string;
+  attemptId: string;
+  serializer: { id: "google-personal-event"; version: 1 };
+  connectionId: string;
+  connectionGeneration: number;
+  beforeMutation: () => Promise<void>;
+};
+
 export type EventWriteOperation = {
+  acceptedUpdate?: AcceptedEventUpdateContext;
   nativePlan?: NativeWritePlanV1;
   signal?: AbortSignal;
   action: "create" | "update" | "delete";
@@ -267,6 +278,7 @@ export type CalendarAdapter = {
     externalCalendarId: string,
     ref: ExternalEventRef,
     signal?: AbortSignal,
+    acceptedUpdate?: AcceptedEventUpdateContext,
   ): Promise<CreatedEventEvidence | null>;
   pushUpdate(
     userID: string,
@@ -278,6 +290,7 @@ export type CalendarAdapter = {
     patch?: EventContentPatch,
     signal?: AbortSignal,
     nativePlan?: NativeWritePlanV1,
+    acceptedUpdate?: AcceptedEventUpdateContext,
   ): Promise<{ etag?: string | null; icalUid?: string | null } | void>;
   pushDelete(
     userID: string,

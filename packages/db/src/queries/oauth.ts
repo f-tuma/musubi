@@ -106,6 +106,7 @@ export async function getOAuthCredentials(userID: string, provider: string, acco
     syncStatus: account.syncStatus,
     syncErrorCode: account.syncErrorCode,
     syncErrorSubtype: account.syncErrorSubtype,
+    syncReadGeneration: account.syncReadGeneration,
   })
     .from(account)
     .where(and(
@@ -121,10 +122,13 @@ type OAuthCredentialSnapshot = NonNullable<Awaited<ReturnType<typeof getOAuthCre
 
 // Refresh HTTP runs without a row lock. Compare the exact grant it used before
 // saving its result: a disconnect, relink or another process's refresh wins.
+// The monotonic generation also detects a grant that loses and regains exactly
+// the same credential values while HTTP is in flight (scope/status/refresh-presence ABA).
 function unchangedOAuthCredentials(expected?: OAuthCredentialSnapshot) {
   if (!expected) return undefined;
   return and(
     eq(account.id, expected.id),
+    eq(account.syncReadGeneration, expected.syncReadGeneration),
     expected.accessToken === null ? isNull(account.accessToken) : eq(account.accessToken, expected.accessToken),
     expected.refreshToken === null ? isNull(account.refreshToken) : eq(account.refreshToken, expected.refreshToken),
     expected.accessTokenExpiresAt === null ? isNull(account.accessTokenExpiresAt) : eq(account.accessTokenExpiresAt, expected.accessTokenExpiresAt),

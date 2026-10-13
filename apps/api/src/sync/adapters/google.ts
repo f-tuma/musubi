@@ -1,3 +1,4 @@
+import { googlePersonalEventBridge } from "./google_provider_bridge";
 import { googleOrganizerTransport } from "./google_organizer_delivery";
 import type { NativeWritePlanV1 } from "@musubi/sync-codec";
 import { pinnedJsonBodyV1 } from "../pinned_write";
@@ -803,6 +804,15 @@ export const googleAdapter: CalendarAdapter = {
   },
 
   async assertEventWrite(userID, accountId, externalCalendarId, operation) {
+    if (operation.acceptedUpdate) {
+      if (operation.action !== "update" || !operation.nativePlan || !operation.external)
+        throw new ProviderEventWriteError("event-diff-unavailable");
+      await googlePersonalEventBridge(userID, accountId, externalCalendarId,
+        operation.external.externalEventId, operation.acceptedUpdate,
+        signal => getGoogleAccessToken(userID, accountId, false, undefined, signal))
+        .preflight(operation.nativePlan, operation.external.etag, operation.signal);
+      return;
+    }
     const accessToken = await getGoogleAccessToken(userID, accountId);
     await assertOAuthEventWriteGrant(userID, "google", accountId);
     const headers = { Authorization: `Bearer ${accessToken}` };
@@ -893,7 +903,15 @@ export const googleAdapter: CalendarAdapter = {
     }
   },
 
-  async readEvent(userID, accountId, externalCalendarId, ref, signal) {
+  async readEvent(userID, accountId, externalCalendarId, ref, signal, acceptedUpdate) {
+    if (acceptedUpdate) {
+      const evidence = await googlePersonalEventBridge(userID, accountId, externalCalendarId,
+        ref.externalEventId, acceptedUpdate,
+        signal => getGoogleAccessToken(userID, accountId, false, undefined, signal)).read(signal);
+      if (evidence.kind !== "present") return null;
+      const event = assertCreatedEventEvidence(toNormalized(evidence.event));
+      return { ref: { externalEventId: evidence.event.id, etag: evidence.etag }, event };
+    }
     const response = await observedProviderFetch(
       `${GCAL}/calendars/${encodeURIComponent(externalCalendarId)}/events/${encodeURIComponent(ref.externalEventId)}`,
       { headers: { Authorization: `Bearer ${await getGoogleAccessToken(userID, accountId)}`, "Cache-Control": "no-cache" }, redirect: "error", signal },
@@ -998,7 +1016,17 @@ export const googleAdapter: CalendarAdapter = {
     patch,
     signal,
     nativePlan,
+    acceptedUpdate,
   ) {
+    if (acceptedUpdate) {
+      if (!nativePlan || ref?.externalEventId !== externalEventId)
+        throw new ProviderEventWriteError("event-diff-unavailable");
+      const evidence = await googlePersonalEventBridge(userID, accountId, externalCalendarId,
+        externalEventId, acceptedUpdate,
+        signal => getGoogleAccessToken(userID, accountId, false, undefined, signal))
+        .update(nativePlan, ref.etag, signal);
+      return evidence.kind === "written" ? { etag: evidence.etag } : undefined;
+    }
     const etag = requireEventEtag(ref?.etag);
     const payload = nativePlan ? pinnedJsonBodyV1(nativePlan) : toGoogleEventPatch(event, patch);
     if (Object.keys(payload).length === 0) return; // Known local-only/no-op diff, no write.

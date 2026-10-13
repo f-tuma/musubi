@@ -27,6 +27,15 @@ async function main() {
   let delayedRefreshStarted: (() => void) | undefined;
   let releaseDelayedRefresh: (() => void) | undefined;
   let delayedResult = { status: 200, payload: { access_token: "concurrent-access", expires_in: 3600 } as unknown };
+  const abaRefreshes = new Map<string, {
+    started: () => void;
+    release?: () => void;
+    requests: number;
+    obsoleteStatus: number;
+    obsoletePayload: unknown;
+    acceptedAccess: string;
+    acceptedRefresh: string;
+  }>();
 
   const server = createServer((req, res) => {
     let body = "";
@@ -39,6 +48,22 @@ async function main() {
         res.writeHead(status, { "content-type": "application/json" });
         res.end(JSON.stringify(payload));
       };
+
+      const aba = abaRefreshes.get(refreshToken);
+      if (aba) {
+        aba.requests++;
+        if (aba.requests === 1) {
+          let released = false;
+          aba.release = () => {
+            if (released) return;
+            released = true;
+            json(aba.obsoleteStatus, aba.obsoletePayload);
+          };
+          aba.started();
+          return;
+        }
+        return json(200, { access_token: aba.acceptedAccess, refresh_token: aba.acceptedRefresh, expires_in: 3600 });
+      }
 
       if (refreshToken === "rotating-refresh") {
         return json(200, {
@@ -134,6 +159,7 @@ async function main() {
       subtypeKey: "error_subtype",
     };
 
+    const rotatingGeneration = (await getOAuthCredentials(userID, "google", rotatingID))!.syncReadGeneration;
     assert.equal(
       await getOAuthAccessToken("google", userID, rotatingID, config),
       "rotated-access",
@@ -145,6 +171,7 @@ async function main() {
     assert.equal(await decryptToken(rotated.accessToken), "rotated-access");
     assert.equal(await decryptToken(rotated.refreshToken), "rotated-refresh");
     assert.ok(rotated.accessTokenExpiresAt! > new Date());
+    assert.equal(rotated.syncReadGeneration, rotatingGeneration, "A routine non-null access/refresh token rotation preserves the grant generation");
 
     await assert.rejects(
       getOAuthAccessToken("google", userID, revokedID, config),
@@ -244,6 +271,117 @@ async function main() {
     assert.equal(await obsoleteRefresh, "renewed-relinked-access");
     assert.equal(receivedRefreshTokens.filter((token) => token === "new-relinked-refresh").length, 1);
 
+    // Values alone cannot distinguish a grant that loses authority and regains
+    // the identical tokens, expiry, scope and status before its HTTP reply.
+    // Exercise both stale-success and stale-invalid_grant for every trigger.
+    for (const dimension of ["scope", "status", "refresh-presence"] as const) {
+      for (const obsoleteStatus of [200, 400]) {
+        const abaID = `aba-${dimension}-${obsoleteStatus}-${suffix}`;
+        const refreshToken = `aba.refresh-${abaID}`;
+        await db.insert(account).values({
+          id: `row-${abaID}`, accountId: abaID, providerId: "google", userId: userID,
+          scope: "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/tasks",
+          accessToken: "aba.expired-access", accessTokenExpiresAt: new Date(0), refreshToken,
+        });
+        const before = (await getOAuthCredentials(userID, "google", abaID))!;
+        let startedABA!: () => void;
+        const started = new Promise<void>(resolve => { startedABA = resolve; });
+        const fixture = {
+          started: startedABA, requests: 0,
+          obsoleteStatus,
+          obsoletePayload: obsoleteStatus === 200
+            ? { access_token: "obsolete-aba-access", refresh_token: "obsolete-aba-refresh", expires_in: 3600, scope: "obsolete.scope" }
+            : { error: "invalid_grant", error_subtype: "invalid_rapt" },
+          acceptedAccess: `accepted.access-${abaID}`, acceptedRefresh: `accepted.refresh-${abaID}`,
+          release: undefined as (() => void) | undefined,
+        };
+        abaRefreshes.set(refreshToken, fixture);
+        const pending = getOAuthAccessToken("google", userID, abaID, config);
+        try {
+          await started;
+          const where = eq(account.id, before.id);
+          if (dimension === "scope") {
+            await db.update(account).set({ scope: "openid email" }).where(where);
+            await db.update(account).set({ scope: before.scope }).where(where);
+          } else if (dimension === "status") {
+            await db.update(account).set({ syncStatus: "reconnect_required" }).where(where);
+            await db.update(account).set({ syncStatus: before.syncStatus }).where(where);
+          } else {
+            await db.update(account).set({ refreshToken: null }).where(where);
+            await db.update(account).set({ refreshToken: before.refreshToken }).where(where);
+          }
+          const restored = (await getOAuthCredentials(userID, "google", abaID))!;
+          assert.deepEqual({ ...restored, syncReadGeneration: before.syncReadGeneration }, before,
+            `${dimension}: the original credential snapshot is restored byte-for-byte apart from its generation`);
+          assert.equal(restored.syncReadGeneration, before.syncReadGeneration + 2);
+          assert.equal(await updateOAuthTokens(userID, "google", abaID, {
+            accessToken: "forbidden-stale-save", accessTokenExpiresAt: new Date(Date.now() + 3600000),
+          }, before), false, `${dimension}: even identical restored values cannot authorize stale token persistence`);
+          assert.equal(await markOAuthAccountReconnectRequired(userID, "google", abaID,
+            "invalid_grant", "invalid_rapt", before), false,
+          `${dimension}: even identical restored values cannot authorize stale revocation`);
+          fixture.release!();
+          assert.equal(await pending, fixture.acceptedAccess,
+            `${dimension}/${obsoleteStatus}: only a refresh performed after the generation change can return a token`);
+          assert.equal(fixture.requests, 2, "The obsolete response is discarded and the current grant is refreshed once");
+          const after = (await getOAuthCredentials(userID, "google", abaID))!;
+          assert.equal(after.syncStatus, "active");
+          assert.equal(after.scope, before.scope);
+          assert.equal(await decryptToken(after.refreshToken), fixture.acceptedRefresh);
+          assert.equal(after.syncReadGeneration, restored.syncReadGeneration,
+            "An obsolete response neither revokes nor narrows the restored grant; its ordinary fresh rotation preserves the generation");
+        } finally {
+          fixture.release?.();
+          await pending.catch(() => undefined);
+          abaRefreshes.delete(refreshToken);
+        }
+      }
+    }
+
+    // A new caller must not coalesce with a pre-ABA request even when every
+    // credential value used by the old coalescing key is identical again.
+    const independentID = `aba-independent-${suffix}`, independentRefresh = `aba.refresh-${independentID}`;
+    await db.insert(account).values({
+      id: `row-${independentID}`, accountId: independentID, providerId: "google", userId: userID,
+      scope: "https://www.googleapis.com/auth/calendar.events", accessToken: "aba.expired-access",
+      accessTokenExpiresAt: new Date(0), refreshToken: independentRefresh,
+    });
+    let independentStarted!: () => void;
+    const independentReady = new Promise<void>(resolve => { independentStarted = resolve; });
+    const independentFixture = {
+      started: independentStarted, requests: 0, obsoleteStatus: 400,
+      obsoletePayload: { error: "invalid_grant" },
+      acceptedAccess: "independent-current-access", acceptedRefresh: "independent-current-refresh",
+      release: undefined as (() => void) | undefined,
+    };
+    abaRefreshes.set(independentRefresh, independentFixture);
+    const obsoletePending = getOAuthAccessToken("google", userID, independentID, config);
+    let currentPending: Promise<string> | undefined;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await independentReady;
+      const where = eq(account.id, `row-${independentID}`);
+      await db.update(account).set({ refreshToken: null }).where(where);
+      await db.update(account).set({ refreshToken: independentRefresh }).where(where);
+      currentPending = getOAuthAccessToken("google", userID, independentID, config);
+      const currentFinished = await Promise.race([
+        currentPending.then(() => true),
+        new Promise<boolean>(resolve => { timeout = setTimeout(() => resolve(false), 5000); }),
+      ]);
+      assert.equal(currentFinished, true, "A restored grant refreshes independently before the obsolete HTTP response is released");
+      assert.equal(await currentPending, independentFixture.acceptedAccess);
+      assert.equal(independentFixture.requests, 2);
+      independentFixture.release!();
+      assert.equal(await obsoletePending, independentFixture.acceptedAccess,
+        "An obsolete invalid_grant re-reads the current token without revoking the restored grant");
+      assert.equal((await getOAuthCredentials(userID, "google", independentID))?.syncStatus, "active");
+    } finally {
+      clearTimeout(timeout);
+      independentFixture.release?.();
+      await Promise.all([obsoletePending.catch(() => undefined), currentPending?.catch(() => undefined)]);
+      abaRefreshes.delete(independentRefresh);
+    }
+
     // Deleting and recreating the same provider identity is a different grant,
     // even when every credential value happens to be unchanged.
     const oldCredentials = (await getOAuthCredentials(userID, "google", raceID))!;
@@ -269,7 +407,7 @@ async function main() {
     );
   }
 
-  console.log("provider OAuth lifecycle integration self-check: OK");
+  console.log("provider OAuth lifecycle integration self-check: lifecycle, six delayed ABA races, generation-isolated refresh coalescing and routine rotation OK");
 }
 
 main().catch((error) => {
