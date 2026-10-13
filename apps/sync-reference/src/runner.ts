@@ -1,18 +1,19 @@
 import { randomUUID } from "node:crypto";
 import type { GoogleProviderPorts } from "@musubi/provider-google";
 import {
-  runClaimedGooglePersonalUpdate, supportsGooglePersonalUpdateEnvelope,
+  runClaimedGooglePersonalUpdate, supportsGooglePersonalUpdateEnvelope, runClaimedGooglePersonalDelete, supportsGooglePersonalDeleteEnvelope,
   SYNC_RUNTIME_TIMEOUT_MS, SYNC_RUNTIME_HEARTBEAT_MS, SyncRuntimeHostError,
   type GooglePersonalUpdatePolicy, type RuntimeNativeFacts, type RuntimeProviderFact,
+  type GooglePersonalDeletePolicy, type RuntimeDeleteNativeFacts, type RuntimeDeleteProviderFact,
 } from "@musubi/sync-runtime";
-import { ReferenceHoldError } from "./model.js";
+import { ReferenceHoldError, type ReferenceClaim } from "./model.js";
 import type { ReferenceStore } from "./store.js";
 
 export const REFERENCE_DEADLINE_MS = SYNC_RUNTIME_TIMEOUT_MS;
 export const REFERENCE_HEARTBEAT_MS = SYNC_RUNTIME_HEARTBEAT_MS;
 export type ReferenceCheckpoint = "claim" | "afterCredentials" | "beforeDispatch" | "afterAcceptance" | "afterUncertain" | "afterReadback" | "afterAck";
 export type ReferenceRunnerPorts = Pick<GoogleProviderPorts, "http" | "clock" | "telemetry">;
-export type ReferenceRunnerStore = Pick<ReferenceStore, "claim" | "renew" | "getSession" | "markDispatch" | "recordEvidence" | "complete" | "finish">;
+export type ReferenceRunnerStore = Pick<ReferenceStore, "claim" | "renew" | "getSession" | "markDispatch" | "recordEvidence" | "complete" | "completeDelete" | "finish">;
 export interface ReferenceRunnerOptions {
   attemptId?: string;
   deadlineMs?: number;
@@ -27,7 +28,11 @@ export type ReferenceRunResult = {
   code?: string;
 };
 type Evidence = Parameters<ReferenceStore["recordEvidence"]>[1];
-export const supportsReferenceEnvelope = supportsGooglePersonalUpdateEnvelope;
+export const supportsReferenceEnvelope = (envelope: Parameters<typeof supportsGooglePersonalUpdateEnvelope>[0]) =>
+  supportsGooglePersonalUpdateEnvelope(envelope) || supportsGooglePersonalDeleteEnvelope(envelope);
+export const REFERENCE_DELETE_POLICY: GooglePersonalDeletePolicy = Object.freeze({
+  completion: "exact-absence", ambiguousRecovery: "within-attempt", nativeProfile: "strict-reference", observeConflict: false,
+});
 export const REFERENCE_UPDATE_POLICY: GooglePersonalUpdatePolicy = Object.freeze({
   completion: "exact-readback", ambiguousRecovery: "within-attempt", compareContent: "literal",
   untouchedPreflight: true, nativeProfile: "strict-reference", observeConflict: false,
@@ -76,6 +81,7 @@ export async function deliverReferenceOperation(store: ReferenceRunnerStore, ope
   // These private authority identities never follow later caller DTO mutation.
   const claim = Object.freeze({ ...claimed, capture: Object.freeze({ ...claimed.capture }),
     locator: Object.freeze({ ...claimed.locator }), binding: Object.freeze({ ...claimed.binding }) });
+  if (claim.binding.action === "delete") return deliverClaimedDelete(store, claim, ports, options, bounds);
   const saved = claim.receipt.provider;
   const priorProvider: RuntimeProviderFact = saved.kind === "accepted"
     ? { kind: "accepted", validator: saved.validator?.kind === "etag" ? saved.validator.value : null }
@@ -120,5 +126,58 @@ export async function deliverReferenceOperation(store: ReferenceRunnerStore, ope
     checkpoint: phase => options.checkpoint?.(phase),
   }, ports, REFERENCE_UPDATE_POLICY, { timeoutMs: bounds.deadline, heartbeatMs: bounds.heartbeat, signal: options.signal });
   return { status: result.status, operationId, attemptId,
+    ...(result.error ? { code: referenceCode(result.error.code) } : {}) };
+}
+
+function deleteProtocolEvidence(facts: RuntimeDeleteNativeFacts): Evidence {
+  return { provider: facts.provider.kind,
+    ...(facts.provider.kind === "accepted" ? { acceptanceStatus: facts.provider.status } : {}),
+    ...(facts.provider.kind === "rejected" ? { error: facts.provider.error } : {}),
+    remote: facts.remote.kind === "absent" ? "confirmed" : facts.remote.kind,
+    ...(facts.remote.kind === "unobserved" ? {} : { observationId: facts.remote.observationId }),
+  };
+}
+/** DELETE shares the bounded attempt but keeps its absence completion distinct from UPDATE content/ETag ACK. */
+async function deliverClaimedDelete(store: ReferenceRunnerStore, claim: ReferenceClaim, ports: ReferenceRunnerPorts,
+  options: ReferenceRunnerOptions, bounds: { deadline: number; heartbeat: number }): Promise<ReferenceRunResult> {
+  const saved = claim.receipt.provider;
+  const priorProvider: RuntimeDeleteProviderFact = saved.kind === "accepted" && claim.deleteAcceptanceStatus != null
+    ? { kind: "accepted", status: claim.deleteAcceptanceStatus }
+    : saved.kind === "rejected" ? { kind: "rejected", error: saved.error }
+    : saved.kind === "uncertain" || claim.recovery ? { kind: "uncertain" } : { kind: "not-dispatched" };
+  let recorded: string | undefined;
+  const record = async (facts: RuntimeDeleteNativeFacts, signal?: AbortSignal) => {
+    const evidence = deleteProtocolEvidence(facts);
+    await hostCall(() => store.recordEvidence(claim, evidence, signal)); recorded = JSON.stringify(evidence);
+  };
+  const result = await runClaimedGooglePersonalDelete({
+    operationId: claim.operationId, attemptId: claim.attemptId, payload: claim.payload, binding: claim.binding,
+    nativeTarget: { connectionId: claim.locator.connectionId, connectionGeneration: String(claim.capture.connectionGeneration),
+      calendarId: claim.locator.calendarId, eventId: claim.locator.eventId },
+    acceptedEtag: claim.etag, recovery: { required: claim.recovery, possibleDispatch: claim.recovery }, priorProvider,
+  }, {
+    renew: () => store.renew(claim),
+    async prepare(signal) { signal.throwIfAborted(); await options.checkpoint?.("claim"); signal.throwIfAborted(); return { acceptedEtag: claim.etag }; },
+    accountSession: { open: (_connection, signal) => hostCall(() => store.getSession(claim, ports.clock.nowEpochMs(), signal)) },
+    async beforeMutation(_request, signal) {
+      if (!await hostCall(() => store.markDispatch(claim, signal))) throw new SyncRuntimeHostError({ code: "account-session-changed", outcome: "not-written" });
+    },
+    recordEvidence: record,
+    async ack(evidence, signal) {
+      if (evidence.kind !== "exact-absence") throw new SyncRuntimeHostError({ code: "reference-confirmation-missing", outcome: "not-written" });
+      return await hostCall(() => store.completeDelete(claim, { kind: "exact-absence", read: { ...evidence.read } }, signal))
+        ? { kind: "acknowledged" } : { kind: "authority-rejected" };
+    },
+    async finish(outcome) {
+      const evidence = deleteProtocolEvidence(outcome.facts);
+      if (outcome.error.phase !== "decode" && JSON.stringify(evidence) !== recorded) await record(outcome.facts);
+      const delay = outcome.retryAfterMs;
+      const retryAfterMs = delay === undefined ? undefined : delay > Number.MAX_SAFE_INTEGER ? Infinity : Math.ceil(delay);
+      await store.finish(claim, outcome.status, { code: referenceCode(outcome.error.code), ...(retryAfterMs === undefined ? {} : { retryAfterMs }) });
+    },
+    observationId: randomUUID,
+    checkpoint: phase => options.checkpoint?.(phase),
+  }, ports, REFERENCE_DELETE_POLICY, { timeoutMs: bounds.deadline, heartbeatMs: bounds.heartbeat, signal: options.signal });
+  return { status: result.status, operationId: claim.operationId, attemptId: claim.attemptId,
     ...(result.error ? { code: referenceCode(result.error.code) } : {}) };
 }

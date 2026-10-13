@@ -33,7 +33,7 @@ export interface GoogleAccountSession {
 export interface GoogleRequestMetric {
   readonly provider: "google";
   readonly family: "event";
-  readonly method: "GET" | "PATCH";
+  readonly method: "GET" | "PATCH" | "DELETE";
   readonly status: number | "network-error" | "aborted";
   readonly durationMs: number;
 }
@@ -124,3 +124,29 @@ export class GoogleProviderError extends Error {
     this.name = "GoogleProviderError";
   }
 }
+
+/** DELETE has no update body or acceptance validator. The accepted version is a dispatch guard. */
+export interface GooglePersonalDelete {
+  readonly target: GoogleEventTarget;
+  readonly acceptedEtag: string;
+  readonly operationId: string;
+  readonly attemptId: string;
+  readonly serializer: { readonly id: "google-personal-event"; readonly version: 1 };
+}
+export interface GoogleDeleteProviderPorts extends Omit<GoogleProviderPorts, "beforeMutation"> {
+  readonly beforeMutation: (request: GooglePersonalDelete, signal?: AbortSignal) => Promise<void>;
+}
+/** A complete exact read may establish absence without accepting any mutation or version. */
+export type GoogleNativeDeleteAbsence =
+  | { readonly kind: "absent"; readonly status: 404 | 410 }
+  | { readonly kind: "cancelled" };
+export type GoogleNativeDeleteReadEvidence =
+  | { readonly kind: "present"; readonly event: GoogleNativeEvent; readonly etag: string | null }
+  | GoogleNativeDeleteAbsence;
+export type GoogleNativeDeleteEvidence = {
+  readonly kind: "deleted";
+  readonly status: 200 | 201 | 204 | 404 | 410;
+};
+export type GoogleNativeDeletePreflight =
+  | { readonly kind: "allowed"; readonly event: GoogleNativeEvent; readonly etag: string }
+  | GoogleNativeDeleteAbsence;

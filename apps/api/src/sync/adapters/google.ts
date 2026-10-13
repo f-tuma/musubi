@@ -695,6 +695,17 @@ export const googleAdapter: CalendarAdapter = {
       },
     };
   },
+  googlePersonalDeleteV1(userID, accountID, capture) {
+    return {
+      ports: googlePersonalProviderPorts(userID, accountID, capture,
+        signal => getGoogleAccessToken(userID, accountID, false, undefined, signal)),
+      normalizeObservation(read) {
+        if (read.kind !== "present") return null;
+        return { ref: { externalEventId: read.event.id, etag: read.etag },
+          event: assertCreatedEventEvidence(toNormalized(read.event)) };
+      },
+    };
+  },
   organizer: googleOrganizerTransport(async (user, account) => { const token = await getGoogleAccessToken(user, account); await assertOAuthEventWriteGrant(user, "google", account); return token; }),
   ...googleOccurrenceMethods(getGoogleAccessToken, toNormalized),
   ...googleRsvpMethods(async (user, account) => {

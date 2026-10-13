@@ -37,6 +37,7 @@ function fixture(responses: (Response | Error)[], recovery = false) {
   const finishes: { status: string; delay: unknown }[] = [], observations: unknown[] = [];
   let sessions = 0, claims = 0, marks = 0, monotonic = 0;
   const store: ReferenceRunnerStore = {
+    async completeDelete(_claim, observation) { observations.push(observation); return true; },
     async claim() { claims++; return claim; }, async renew() { return true; },
     async getSession() { sessions++; return { connectionId: admitted.locator.connectionId, connectionGeneration: "1",
       accessToken: "private-token-never-in-diagnostics", scope: "https://www.googleapis.com/auth/calendar.events", eventWriteAllowed: true }; },

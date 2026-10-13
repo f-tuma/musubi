@@ -1,3 +1,4 @@
+import { deliverSharedGoogleDelete, usesSharedGoogleDelete } from "./google_shared_delete_delivery";
 import { deliverSharedGoogleEvent, usesSharedGoogleDelivery } from "./google_shared_delivery";
 import { stopGraphOccurrenceContent, confirmGraphOccurrenceContent, markGraphOccurrenceContent, completeGraphOccurrenceContent } from "@musubi/db";
 import { stopUndispatchedGraphMeetingCancellation, confirmGraphMeetingCancellation, markGraphMeetingCancellation, completeGraphMeetingCancellation } from "@musubi/db";
@@ -141,6 +142,11 @@ export async function deliverEventOutbox(
   if (pinned && parsedPersonal.success && !hasKnownEventTime(parsedPersonal.data) &&
     !specialized.some(key => Object.prototype.hasOwnProperty.call(row.payload, key)) && usesSharedGoogleDelivery(pinned, adapter))
     return deliverSharedGoogleEvent(row, pinned, adapter!.googlePersonalContentV1!.bind(adapter), options);
+  if (pinned && parsedPersonal.success && !hasKnownEventTime(parsedPersonal.data) &&
+    !parsedPersonal.data.seriesID && !parsedPersonal.data.originalStart &&
+    !specialized.some(key => Object.prototype.hasOwnProperty.call(row.payload, key)) &&
+    row.externalEventID && strongEventEtag(row.expectedEtag) && usesSharedGoogleDelete(pinned, adapter))
+    return deliverSharedGoogleDelete(row, pinned, adapter!.googlePersonalDeleteV1!.bind(adapter), options);
   const attempt = createDeliveryAttempt(() => renewEventOutboxLease(row.id, token), options);
   const signal = attempt.signal;
   let acceptedUpdate: AcceptedEventUpdateContext | undefined;

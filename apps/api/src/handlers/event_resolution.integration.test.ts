@@ -179,7 +179,12 @@ async function main() {
       ),
       "No live network outside provider fixture",
     );
-    return realFetch(fixtureOrigin + url.pathname + url.search, init);
+    return realFetch(fixtureOrigin + url.pathname + url.search, init).then(response => {
+      // Loopback is an owned transport substitute for the requested provider
+      // address. It is not a provider redirect or a change of scoped target.
+      Object.defineProperty(response, "url", { value: url.href });
+      return response;
+    });
   };
   await db.insert(user).values(
     [owner, stranger].map((id) => ({

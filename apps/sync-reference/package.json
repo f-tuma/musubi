@@ -2,12 +2,12 @@
   "name": "@musubi/sync-reference",
   "private": true,
   "type": "module",
-  "description": "Independent durable host for the bounded Google personal UPDATE profile.",
+  "description": "Independent durable host for bounded Google personal UPDATE and DELETE profiles.",
   "scripts": {
     "start": "tsx src/cli.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx src/admission.test.ts && tsx src/runner.test.ts",
-    "test:db": "tsx src/store.integration.test.ts && tsx src/process.integration.test.ts"
+    "test": "tsx src/admission.test.ts && tsx src/runner.test.ts && tsx src/delete.test.ts",
+    "test:db": "tsx src/store.integration.test.ts && tsx src/process.integration.test.ts && tsx src/delete.integration.test.ts && tsx src/delete-process.integration.test.ts"
   },
   "dependencies": {
     "@musubi/provider-google": "workspace:*",

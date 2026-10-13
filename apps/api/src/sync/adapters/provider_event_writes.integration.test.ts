@@ -293,7 +293,12 @@ async function main() {
       "https://www.googleapis.com",
       `No live provider calls: ${url}`,
     );
-    return realFetch(`${origin}${url.pathname}${url.search}`, init);
+    return realFetch(`${origin}${url.pathname}${url.search}`, init).then(response => {
+      // Loopback is an owned transport substitute for the requested provider
+      // address. It is not a provider redirect or a change of scoped target.
+      Object.defineProperty(response, "url", { value: url.href });
+      return response;
+    });
   };
   const mutationRequests = () =>
     requests.filter(({ method }) =>
