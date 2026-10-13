@@ -20,7 +20,13 @@ image obsahuje jen tento dependency closure. Seed vytváří explicitní nový
 fixture binding; není onboarding/discovery ani OAuth refresh.
 
 Canonical CAS, accepted projection, sparse native plan a intent vznikají v jedné
-transakci. SQL brání změně jejich identity a obsahu. Capture zahrnuje skutečné
+transakci. Validated admission identity a primitive patch se kopírují před prvním await;
+stejný snapshot řídí fingerprint i accepted obsah. Seed rovněž kopíruje
+credentials/content/identity před pool await, aby AAD odpovídalo uloženému
+connection ID. Skutečné blocked-PG/pool fixtures mění původní vstup a potvrzují
+uložení původního A. Evidence a ACK před prvním await kopírují také všechny
+validated receipt hodnoty, strong validator a bounded lossless projection;
+pozdější změna caller DTO nesmí předefinovat přijetí nebo binding ETag. SQL brání změně jejich identity a obsahu. Capture zahrnuje skutečné
 connection/source/privacy generace a accepted revision. Lifecycle triggery
 odlišují loss→regain ABA; běžná rotace přítomného tokenu sama nezmění generaci.
 Jedna neACKovaná operace na binding drží causal barrier.
@@ -72,6 +78,14 @@ row. Pro novou admission se v takovém případě volí explicitní legacy profi
 po ověření exact scoped source. SQL chyby, chybějící/mismatched source a chybný
 capture se neskrývají. Již přijatá v1 operace se nemění a nedostane legacy fallback.
 
+Legacy all-day timestamps mimo UTC midnight se volí na původní legacy profil
+před strict codec: jejich normalizace na DATE nesmí zablokovat validní starou
+CREATE/UPDATE/DELETE ani authoritative import. Midnight v1 a chybná vybraná
+chronologie mají samostatné pozitivní/negativní fixtures. Nová envelope rovněž
+normalizuje pouze fyzické Musubi UUIDs na PostgreSQL lowercase; opaque
+connection/calendar/resource keys zůstávají case-sensitive a historické payloady
+se nemění.
+
 Historický raw-journal fixture bez source rows výslovně testuje legacy profil;
 celá CI jinak nechává flag unset, tedy testuje default ON. Graph native fixtures
 obsahují synthetic refresh token, který dispatch guard již vyžadoval. Google
@@ -87,32 +101,35 @@ je v [normativním protokolu](../protocol/sync-operation-v1.md).
 
 - 7 čistých admission a 26 runner scénářů, včetně immutable target, exact body,
   Retry-After, rejection/uncertainty/readback a deadline/cancellation.
-- 24 skutečných PostgreSQL ledger scénářů: CAS/intent rollback, command reuse,
+- 28 skutečných PostgreSQL ledger scénářů: CAS/intent rollback, command reuse,
   SQL immutability, causal barrier, lease/current authority a čtyři receipt osy.
 - 30 skutečných process crash/restart scénářů, včetně SIGKILL uvnitř admission
   před COMMIT a lost reply po aplikovaném PATCH; restart zachová intent hash a
   neprovede druhý write při prokázaném accepted target.
-- 59 default-ON admission scénářů pro chybějící Google/Graph/DAV credentials,
+- 101 default-ON admission scénářů pro chybějící Google/Graph/DAV credentials,
   source fan-out, unchanged old envelope a negativní source/capture mismatch.
 - Full database CI inventory zahrnuje i obě samostatné host suites a encoder
   missing-credential corpus; všechny běží s unset encoder flag v izolovaných DB.
 - API unit corpus, workspace TypeScript, protocol/codec/provider/config testy,
   peer/contracts/release checks, frozen install a CI inventory.
-- Samostatný image `sha256:fa1f014a5695642c2413795de79f5d79c085d62d994f1590c28d6e3b8aed5462`:
+- Samostatný image `sha256:311477b455bea0364aa9918a41cec44c966bb19ae650218e79e04ee8bb0a32e2`:
   44 runtime souborů odpovídá zdrojům; closure 22 packages neobsahuje
   Musubi DB/auth/config/API ani Express/Better Auth. Přímý CLI migrate/show,
   přerušení otevřeného stdin a skutečný lokální HTTP/PG UPDATE i lost-reply
   SIGKILL/restart recovery prošly pouze s vlastní REFERENCE konfigurací.
-- API production image `sha256:986469f817c6804f434b6b5ee7de2da36d676fbcbda74822e9bfc590399160f2`
-  má shodné encoder/admission/provider zdroje; boot proti prázdné disposable DB
+- API production image `sha256:4523aff49abde9392db3b4ef717145f359da36f4fdcce0d083c27dbf6d4ee79d`
+  má shodné encoder/admission/provider zdroje; boot v ENVIRONMENT=prod proti prázdné disposable DB
   je healthy a startup uvádí encoder true bez override. Všechny image důkazy
   používají lokální syntetické credentials; živá acceptance je zvlášť.
 
 Final review a current-head CI jsou povinné před merge. Tento dokument je
 předpublikační snapshot; GitHub PR ponese skutečnou publication evidence.
-Its a Plan connector nebyl dostupný v root capabilities, ale read-only dotazy
-review agenta později uspěly. Tracker zatím stále uváděl C04/C05 planned; jeho
-synchronizace s publication evidence je samostatný krok po finálním review.
+Its a Plan nebyl dostupný v root capabilities, ale delegated connector uspěl.
+Ověřený tracker readback má C04 Done/completed včetně bounded checklistu a PR
+evidence; C05 je In Progress/active s checklistem dosud false před finálním
+review/publication. Projektový roadmap document 2 je version 35. C06 zůstává
+backlog/planned, datumová/cycle pole null a lidská přiřazení zachovaná. Dokončení
+C05 v trackeru čeká na skutečný merge evidence.
 
 ## Další gate C06 / MUSU-38
 

@@ -99,6 +99,10 @@ occurrence/series a ostatní specialized intents. Každý již známý explicitn
 admission přijímá pouze absent nebo `legacy-unknown` time model. Staré
 `isAllDay`/UTC konvence zůstávají bounded legacy časovým profilem. Pure codec
 samotný umí DATE shape, což ještě není host capability pro známý all-day model.
+Legacy all-day timestamps s nenulovou časovou složkou zůstávají explicitní
+legacy profil: dosavadní mapper je normalizuje na DATE, zatímco v1 přijímá pouze
+UTC midnight konce, které umí přesně zachovat. Chronologie uvnitř vybraného
+representable profilu se stále validuje a chybná admission se vrátí zpět.
 Zoned a floating event writes tento generic v1 profil nepřijímá. Host výslovně
 volí legacy také pro recurring Google/Graph tasky, recurring generic Graph eventy,
 Graph UPDATE mimo pinned content fields, cancelled non-DELETE eventy a recurrence
@@ -139,6 +143,11 @@ vyžaduje přesně stejný persisted predecessor ID a null native address. CREAT
 Graph eventu a Google/Graph tasku zachovává poctivý null target před odpovědí.
 Google event ID a DAV URL jsou plánované deterministic identity; registered
 codec ověří jejich přesný vztah k uloženému operation/task ID a native markeru.
+
+Musubi fyzické operation/command/object/source/predecessor UUIDs v nové envelope
+používají lowercase reprezentaci PostgreSQL, včetně validního uppercase vstupu.
+Opaque portable connection/collection/resource IDs se tím nenormalizují.
+Uložené historické envelopes se nepřepisují.
 
 JSONB `operationCapture` je host evidence mimo portable envelope:
 source UUID, `writeGeneration`, skutečný account row ID, connection generation

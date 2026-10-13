@@ -74,16 +74,19 @@ async function nativeUid(tx: DbTransaction, target: Target, hostID: string, kind
     decoded.envelope.operation.kind, decoded.envelope.nativePlan.data);
   return plan?.planKind === "caldav-properties" ? plan.uid : undefined;
 }
+// These host columns are PostgreSQL UUIDs, whose stored representation is
+// lowercase. Portable/provider keys are opaque and MUST NOT use this helper.
+const physicalHostUuid = (value: string) => value.toLowerCase();
 function envelope(encoded: EncodedSyncWriteV1, input: { kind: "event" | "task"; action: "create" | "update" | "delete";
   id: string; mutationID: string; hostID: string; revision: number; target: Target; resourceID: string | null; predecessorID: string | null },
   captured: SyncOperationCapture) {
   return SyncOperationEnvelopeSchema.parse({ schemaVersion: 1, profileVersion: "sync-profile-v1",
     operation: { kind: input.kind, action: input.action, version: 1 }, serializer: encoded.serializer,
-    commandId: input.mutationID, operationId: input.id, hostObjectId: input.hostID,
+    commandId: physicalHostUuid(input.mutationID), operationId: physicalHostUuid(input.id), hostObjectId: physicalHostUuid(input.hostID),
     locator: { provider: input.target.provider, connectionId: input.target.accountID,
       collectionId: input.target.externalCalendarID, resourceId: input.resourceID },
-    ...(input.predecessorID ? { predecessorOperationId: input.predecessorID } : {}),
-    sourceEpoch: { sourceId: captured.sourceId, generation: captured.writeGeneration },
+    ...(input.predecessorID ? { predecessorOperationId: physicalHostUuid(input.predecessorID) } : {}),
+    sourceEpoch: { sourceId: physicalHostUuid(captured.sourceId), generation: captured.writeGeneration },
     acceptedRevision: input.revision, privacyEpoch: captured.privacyEpoch,
     allowedSideEffects: ["provider-content-write"], admittedProjection: encoded.admittedProjection, nativePlan: encoded.nativePlan });
 }
@@ -102,6 +105,11 @@ function pinnedRecurrenceSyntax(recurrence: string | null | undefined, isAllDay:
     isAllDay && /^(?:EXDATE|RDATE);VALUE=DATE:\d{8}(?:,\d{8})*$/.test(line));
 }
 function pinnedEventProfile(event: Event, intent: EventOutboxIntent) {
+  // Legacy all-day mappers normalize arbitrary timestamp components to DATE.
+  // V1 must preserve its input exactly, so only canonical UTC midnight values
+  // are representable; other valid legacy shapes retain their old profile.
+  if (event.isAllDay && ![event.start, event.end].every(date =>
+    date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0 && date.getUTCMilliseconds() === 0)) return false;
   if (event.isCanceled && intent.action !== "delete") return false;
   if (!pinnedRecurrenceSyntax(event.recurrence, event.isAllDay)) return false;
   if (intent.provider === "microsoft" && event.recurrence) return false;
@@ -155,7 +163,7 @@ export async function admitEventOperationInTransaction(tx: DbTransaction, event:
     ? await nativeUid(tx, intent, event.id, "event", intent.icalUid, predecessorID) : intent.icalUid;
   if (intent.provider === "caldav" && intent.action !== "create" && !uid) return payload; // explicit unproven-UID legacy profile
   const encoded = encodeEventV1(intent.provider as SyncCodecProvider, event, payload.patch,
-    { action: intent.action, operationId: intent.id!, uid: intent.action === "create" ? undefined : uid ?? undefined, acceptedAt: new Date().toISOString() });
+    { action: intent.action, operationId: physicalHostUuid(intent.id!), uid: intent.action === "create" ? undefined : uid ?? undefined, acceptedAt: new Date().toISOString() });
   const resourceID = intent.externalEventID ?? (intent.action === "create" && intent.provider === "google"
     ? `musubi${intent.id!.toLowerCase().replace(/-/g, "")}`
     : intent.action === "create" && intent.provider === "caldav"
@@ -182,7 +190,7 @@ export async function admitTaskOperationInTransaction(tx: DbTransaction, task: T
     ? await nativeUid(tx, intent, task.id, "task", intent.icalUid, predecessorID) : intent.icalUid;
   if (intent.provider === "caldav" && intent.action !== "create" && !uid) return payload;
   const encoded = encodeTaskV1(intent.provider as SyncCodecProvider, task, undefined,
-    { action: intent.action, operationId: intent.id!, uid: intent.action === "create" ? task.id : uid ?? undefined, acceptedAt: new Date().toISOString() });
+    { action: intent.action, operationId: physicalHostUuid(intent.id!), uid: intent.action === "create" ? task.id : uid ?? undefined, acceptedAt: new Date().toISOString() });
   const resourceID = intent.externalTaskID ?? (intent.action === "create" && intent.provider === "caldav"
     ? `${intent.externalCalendarID.replace(/\/?$/, "/")}${task.id}.ics` : null);
   if (oversizedV1Identity(resourceID) || !boundedV1Plan(encoded)) return payload;

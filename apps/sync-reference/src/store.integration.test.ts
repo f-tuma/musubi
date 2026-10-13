@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import { randomUUID, createHash } from "node:crypto";
+import { setTimeout as pause } from "node:timers/promises";
 import test, { after, before } from "node:test";
 import { Pool } from "pg";
 import { ReferenceStore, ReferenceHoldError } from "./store.js";
 import { deliverReferenceOperation } from "./runner.js";
-import type { ReferenceAdmission, ReferenceClaim, ReferenceContent } from "./model.js";
+import { admissionFingerprint } from "./admission.js";
+import type { ReferenceAdmission, ReferenceClaim, ReferenceContent, ReferenceSeed } from "./model.js";
 const explicitUrl = process.env.REFERENCE_DATABASE_URL;
 const fallbackUrl = process.env.ENVIRONMENT === "test" ? process.env.DATABASE_URL : undefined;
 if (!explicitUrl && !fallbackUrl) throw new Error("An explicit reference database or disposable test database is required");
@@ -256,4 +258,130 @@ test("rejected confirmed target cannot ACK in a fresh attempt without recorded r
   await store.recordEvidence(f.claim, { provider: "rejected", remote: "confirmed", observationId: randomUUID(), error: { code: "rate-limited", retry: "after-delay", retryAfterMs: 0 } });
   await assert.rejects(store.complete(f.claim, { etag: '"external-fulfilled"', projection: savedProjection(f.claim) }), /confirmation-missing/);
   assert.equal((await store.inspectOperation(f.input.operationId)).binding.etag, '"original"');
+});
+
+test("admission snapshots immutable A before blocked PostgreSQL locks despite caller mutation", async () => {
+  const f = await fixture();
+  const original: ReferenceAdmission = { ...f.input, patch: { name: "Accepted A", notes: "Notes A", place: "Place A" } };
+  const supplied: ReferenceAdmission = { ...original, patch: { ...original.patch } };
+  const application = `reference_snapshot_${randomUUID().replace(/-/g, "")}`;
+  const delayedPool = new Pool({ connectionString: database.href, max: 1, application_name: application });
+  const delayedStore = new ReferenceStore(delayedPool, "ab".repeat(32));
+  const blocker = await pool.connect(); let blocked = true;
+  await blocker.query("BEGIN");
+  await blocker.query("SELECT id FROM reference_connections WHERE id=$1 FOR UPDATE", [f.connectionId]);
+  const pending = delayedStore.admitUpdate(supplied);
+  try {
+    const deadline = Date.now() + 5_000;
+    while (!(await pool.query("SELECT 1 FROM pg_stat_activity WHERE application_name=$1 AND wait_event_type='Lock'", [application])).rowCount) {
+      if (Date.now() >= deadline) assert.fail("Admission did not reach the owned PostgreSQL row lock");
+      await pause(10);
+    }
+    supplied.operationId = `changed:${randomUUID()}`;
+    supplied.commandId = `changed:${randomUUID()}`;
+    supplied.patch.name = "Caller B"; supplied.patch.notes = "Notes B"; supplied.patch.place = "Place B";
+    await blocker.query("COMMIT"); blocked = false;
+    const op = await pending;
+    assert.equal(op.operationId, original.operationId); assert.equal(op.commandId, original.commandId);
+    assert.deepEqual((op.payload as { operationEnvelope: { nativePlan: { data: { body: unknown } } } }).operationEnvelope.nativePlan.data.body,
+      { summary: "Accepted A", description: "Notes A", location: "Place A" });
+    assert.equal((await pool.query("SELECT fingerprint FROM reference_operations WHERE id=$1", [original.operationId])).rows[0].fingerprint, admissionFingerprint(original));
+    assert.equal((await store.admitUpdate(original)).operationId, original.operationId, "The accepted A command remains idempotent");
+    assert.equal((await pool.query("SELECT id FROM reference_operations WHERE id=$1", [supplied.operationId])).rowCount, 0);
+    assert.equal((await pool.query("SELECT content FROM reference_objects WHERE id=$1", [f.objectId])).rows[0].content.name, "Accepted A");
+  } finally {
+    if (blocked) await blocker.query("ROLLBACK"); blocker.release();
+    await pending.catch(() => undefined); await delayedPool.end();
+  }
+});
+test("seed snapshots content, identities and credential AAD before blocked pool acquisition", async () => {
+  const nonce = randomUUID();
+  const original: ReferenceSeed = { connectionId: `account:${nonce}`, objectId: `object:${nonce}`, bindingId: `binding:${nonce}`,
+    calendarId: `calendar:${nonce}`, eventId: `event:${nonce}`, accessToken: "seed-token-A", expiresAt: "2099-01-01T00:00:00.000Z",
+    scope, privacyLabel: "private", content: { ...content, name: "Seed A" }, etag: '"seed-A"' };
+  const supplied: ReferenceSeed = { ...original, content: { ...original.content } };
+  const delayedPool = new Pool({ connectionString: database.href, max: 1 });
+  const delayedStore = new ReferenceStore(delayedPool, "ab".repeat(32));
+  const holder = await delayedPool.connect(); let held = true;
+  const pending = delayedStore.seedBinding(supplied);
+  try {
+    assert.equal(delayedPool.waitingCount, 1, "Seed is waiting for the owned occupied pool connection");
+    supplied.connectionId = `changed-account:${nonce}`; supplied.objectId = `changed-object:${nonce}`; supplied.bindingId = `changed-binding:${nonce}`;
+    supplied.calendarId = "changed-calendar"; supplied.eventId = "changed-event"; supplied.accessToken = "seed-token-B";
+    supplied.expiresAt = "2000-01-01T00:00:00.000Z"; supplied.scope = "https://www.googleapis.com/auth/calendar.readonly";
+    supplied.privacyLabel = "shared"; supplied.etag = '"seed-B"'; supplied.content.name = "Seed B";
+    holder.release(); held = false;
+    await pending;
+    const binding = (await pool.query("SELECT * FROM reference_bindings WHERE id=$1", [original.bindingId])).rows[0];
+    assert.equal(binding.connection_id, original.connectionId); assert.equal(binding.object_id, original.objectId);
+    assert.equal(binding.calendar_id, original.calendarId); assert.equal(binding.event_id, original.eventId); assert.equal(binding.etag, original.etag);
+    assert.equal(binding.baseline.title, "Seed A");
+    assert.equal((await pool.query("SELECT id FROM reference_connections WHERE id=$1", [supplied.connectionId])).rowCount, 0);
+    const input: ReferenceAdmission = { bindingId: original.bindingId, expectedRevision: 1, commandId: randomUUID(), operationId: randomUUID(), patch: { name: "Updated A" } };
+    await store.admitUpdate(input); const claim = await store.claim(input.operationId, randomUUID()); assert(claim);
+    const session = await store.getSession(claim, Date.now());
+    assert.equal(session.accessToken, "seed-token-A", "Encrypted credential A decrypts with the persisted A connection identity");
+    assert.equal(session.scope, original.scope); assert.equal(session.eventWriteAllowed, true);
+    assert.equal((await pool.query("SELECT privacy_label FROM reference_objects WHERE id=$1", [original.objectId])).rows[0].privacy_label, "private");
+  } finally {
+    if (held) holder.release(); await pending.catch(() => undefined); await delayedPool.end();
+  }
+});
+
+test("strong observation validator and full target stay stable across blocked ACK locks", async () => {
+  const f = await claimed(); await acceptedAndConfirmed(f.claim);
+  const observation = { etag: '"native-v2"', projection: { ...savedProjection(f.claim) } };
+  const application = `reference_ack_${randomUUID().replace(/-/g, "")}`;
+  const delayedPool = new Pool({ connectionString: database.href, max: 1, application_name: application });
+  const delayedStore = new ReferenceStore(delayedPool, "ab".repeat(32));
+  const blocker = await pool.connect(); let blocked = true;
+  await blocker.query("BEGIN"); await blocker.query("SELECT id FROM reference_connections WHERE id=$1 FOR UPDATE", [f.connectionId]);
+  const pending = delayedStore.complete(f.claim, observation);
+  try {
+    const deadline = Date.now() + 5_000;
+    while (!(await pool.query("SELECT 1 FROM pg_stat_activity WHERE application_name=$1 AND wait_event_type='Lock'", [application])).rowCount) {
+      if (Date.now() >= deadline) assert.fail("ACK did not reach the owned PostgreSQL row lock");
+      await pause(10);
+    }
+    observation.etag = 'W/"caller-weak"';
+    observation.projection.title = "Caller B";
+    await blocker.query("COMMIT"); blocked = false;
+    assert.equal(await pending, true);
+    const op = await store.inspectOperation(f.input.operationId);
+    assert.equal(op.binding.etag, '"native-v2"'); assert.equal(op.binding.baseline.title, "Accepted A");
+  } finally {
+    if (blocked) await blocker.query("ROLLBACK"); blocker.release();
+    await pending.catch(() => undefined); await delayedPool.end();
+  }
+});
+test("protocol evidence axes, validator and parsed retry error stay stable while pool acquisition waits", async () => {
+  const f = await claimed(); await store.markDispatch(f.claim);
+  const delayedPool = new Pool({ connectionString: database.href, max: 1 });
+  const delayedStore = new ReferenceStore(delayedPool, "ab".repeat(32));
+  let holder = await delayedPool.connect(); let held = true;
+  const error = { code: "rate-limited" as const, retry: "after-delay" as const, retryAfterMs: 1000 };
+  const supplied: Parameters<ReferenceStore["recordEvidence"]>[1] = { provider: "rejected", remote: "unobserved", error };
+  let pending = delayedStore.recordEvidence(f.claim, supplied);
+  try {
+    assert.equal(delayedPool.waitingCount, 1);
+    supplied.provider = "accepted"; supplied.remote = "confirmed"; supplied.validator = 'W/"caller-weak"';
+    error.retryAfterMs = 9000;
+    holder.release(); held = false;
+    assert.equal(await pending, true);
+    let op = await store.inspectOperation(f.input.operationId);
+    assert.deepEqual(op.receipt.provider, { kind: "rejected", error: { code: "rate-limited", retry: "after-delay", retryAfterMs: 1000 } });
+    assert.equal(op.receipt.remote.kind, "unobserved");
+    holder = await delayedPool.connect(); held = true;
+    const accepted: Parameters<ReferenceStore["recordEvidence"]>[1] = { provider: "accepted", remote: "confirmed", validator: '"native-v2"', observationId: "observation-A" };
+    pending = delayedStore.recordEvidence(f.claim, accepted);
+    assert.equal(delayedPool.waitingCount, 1);
+    accepted.provider = "rejected"; accepted.remote = "conflict"; accepted.validator = 'W/"caller-weak"'; accepted.observationId = "observation-B";
+    holder.release(); held = false;
+    assert.equal(await pending, true);
+    op = await store.inspectOperation(f.input.operationId);
+    assert.deepEqual(op.receipt.provider, { kind: "accepted", validator: { kind: "etag", value: '"native-v2"' } });
+    assert.deepEqual(op.receipt.remote, { kind: "confirmed", observationId: "observation-A" });
+  } finally {
+    if (held) holder.release(); await pending.catch(() => undefined); await delayedPool.end();
+  }
 });

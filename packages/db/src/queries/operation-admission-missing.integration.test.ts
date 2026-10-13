@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { config } from "@musubi/config";
-import { EventSchema, type Event } from "@musubi/types";
+import { EventSchema, SyncOperationEnvelopeSchema, type Event } from "@musubi/types";
 import { db, user, account, caldavAccounts, events, tasks, eventOutbox, taskOutbox,
   externalCalendars, externalEvents, externalTasks,
   createCalendar, createEvent, patchEventAndCalendarLinks, createTask, updateTask,
@@ -29,9 +29,10 @@ async function main() {
   const taskRows = (id: string) => db.select().from(taskOutbox).where(eq(taskOutbox.taskID, id)).orderBy(taskOutbox.revision);
   try {
     for (const provider of ["google", "microsoft", "caldav"] as const) {
-      const accountID = randomUUID(), physicalID = provider === "caldav" ? accountID : randomUUID();
+      const accountID = provider === "caldav" ? randomUUID() : `Case-Sensitive-ACCOUNT-${randomUUID()}`;
+      const physicalID = provider === "caldav" ? accountID : randomUUID();
       const calendar = await createCalendar({ creatorID: owner, name: `Missing ${provider}`, color: "#112233" });
-      const collection = provider === "caldav" ? `https://dav.fixture.test/${randomUUID()}/` : `collection-${randomUUID()}`;
+      const collection = provider === "caldav" ? `https://dav.fixture.test/Mixed-CASE/${randomUUID()}/` : `Collection-CASE-${randomUUID()}`;
       const [source] = await db.insert(externalCalendars).values({ calendarID: calendar.id, provider, userID: owner,
         accountID, externalCalendarID: collection, providerAccessRole: provider === "caldav" ? "caldav:read=yes;write=yes" : "owner",
         providerAccessRevision: 1, supportsEvents: true, supportsTasks: true }).returning();
@@ -56,6 +57,88 @@ async function main() {
         provider, userID: owner, accountID, externalCalendarID: collection, providerAccessRevision: 1,
         retiredGeneration: 0, action: "create", payload: { task },
       });
+
+      // The host UUID columns canonicalize input case, while the connection,
+      // collection and native resource remain opaque and case-sensitive.
+      const upper = { ...value("Uppercase physical UUID create"), id: randomUUID().toUpperCase(),
+        calendars: [calendar.id.toUpperCase()], originCalendarID: calendar.id.toUpperCase() };
+      const upperJob = { ...intent(upper), id: randomUUID().toUpperCase(), mutationID: randomUUID().toUpperCase(),
+        calendarID: calendar.id.toUpperCase(), externalCalendarLinkID: source.id.toUpperCase() };
+      const upperCreated = await createEvent(upper, upper.calendars, [upperJob]);
+      const upperReceipt = await eventRow(upperJob.id!), upperEnvelope = SyncOperationEnvelopeSchema.parse(upperReceipt.payload.operationEnvelope);
+      assert.equal(decodeEventOutboxOperation(upperReceipt).kind, "pinned-v1");
+      assert.equal(upperEnvelope.commandId, upperJob.mutationID.toLowerCase()); assert.equal(upperEnvelope.operationId, upperJob.id.toLowerCase());
+      assert.equal(upperEnvelope.hostObjectId, upper.id.toLowerCase()); assert.equal(upperEnvelope.sourceEpoch.sourceId, source.id);
+      assert.equal(upperEnvelope.locator.connectionId, accountID); assert.equal(upperEnvelope.locator.collectionId, collection); cases++;
+      await assert.rejects(() => createEvent(upper, upper.calendars, [upperJob]));
+      assert.equal((await db.select().from(eventOutbox).where(eq(eventOutbox.eventID, upper.id))).length, 1);
+      assert.deepEqual((await db.select().from(events).where(eq(events.id, upper.id)))[0], upperCreated); cases++;
+      const upperEdit = { ...intent(upper, "update"), id: randomUUID().toUpperCase(), mutationID: randomUUID().toUpperCase(),
+        calendarID: calendar.id.toUpperCase(), externalCalendarLinkID: source.id.toUpperCase(), externalEventID: provider === "caldav" ? `${collection}Native-CASE.ics` : "Native-CASE",
+        payload: { event: upper, patch: { title: "Uppercase physical UUID edit" } } };
+      assert.equal((await patchEventAndCalendarLinks(upper.id, 1, upperEdit.payload.patch, false, [upperEdit])).status, "saved");
+      const upperEditReceipt = await eventRow(upperEdit.id!), upperEditEnvelope = SyncOperationEnvelopeSchema.parse(upperEditReceipt.payload.operationEnvelope);
+      assert.equal(decodeEventOutboxOperation(upperEditReceipt).kind, "pinned-v1"); assert.equal(upperEditEnvelope.commandId, upperEdit.mutationID.toLowerCase());
+      assert.equal(upperEditEnvelope.predecessorOperationId, upperReceipt.id); assert.equal(upperEditEnvelope.locator.resourceId, upperEdit.externalEventID); cases++;
+      await assert.rejects(() => patchEventAndCalendarLinks(upper.id, 1, upperEdit.payload.patch, false, [upperEdit]), /already been committed/);
+      assert.equal((await db.select().from(eventOutbox).where(eq(eventOutbox.eventID, upper.id))).length, 2); cases++;
+      const upperTaskID = randomUUID().toUpperCase(), upperTaskMutation = randomUUID().toUpperCase();
+      const upperTask = await createTask({ id: upperTaskID, creatorID: owner, calendarID: calendar.id, title: "Uppercase task create" },
+        { actorID: owner, mutationID: upperTaskMutation });
+      const [upperTaskReceipt] = await taskRows(upperTaskID), upperTaskEnvelope = SyncOperationEnvelopeSchema.parse(upperTaskReceipt.payload.operationEnvelope);
+      assert.equal(decodeTaskOutboxOperation(upperTaskReceipt).kind, "pinned-v1"); assert.equal(upperTaskEnvelope.commandId, upperTaskMutation.toLowerCase());
+      assert.equal(upperTaskEnvelope.hostObjectId, upperTaskID.toLowerCase()); assert.equal(upperTaskEnvelope.locator.collectionId, collection); cases++;
+      await assert.rejects(() => createTask({ id: upperTaskID, creatorID: owner, calendarID: calendar.id, title: "Duplicate" },
+        { actorID: owner, mutationID: upperTaskMutation }));
+      assert.equal((await taskRows(upperTaskID)).length, 1); cases++;
+      const upperTaskEditMutation = randomUUID().toUpperCase();
+      assert.ok(await updateTask(upperTaskID, { title: "Uppercase task edit" }, { actorID: owner, expectedRevision: 1, mutationID: upperTaskEditMutation }));
+      const upperTaskEditReceipt = (await taskRows(upperTaskID))[1];
+      assert.equal(decodeTaskOutboxOperation(upperTaskEditReceipt).kind, "pinned-v1");
+      assert.equal(SyncOperationEnvelopeSchema.parse(upperTaskEditReceipt.payload.operationEnvelope).commandId, upperTaskEditMutation.toLowerCase());
+      assert.equal(upperTask.revision, 1); cases++;
+
+      // Legacy all-day timestamp shapes deliberately normalize through the old
+      // mapper. Midnight DATE inputs remain in the exact bounded v1 profile.
+      for (const midnight of [true, false]) {
+        const date = { ...value("Legacy DATE profile"), isAllDay: true,
+          start: new Date(midnight ? "2026-10-13T00:00:00Z" : "2026-10-13T09:00:00.123Z"),
+          end: new Date(midnight ? "2026-10-13T00:00:00Z" : "2026-10-13T10:00:00.456Z") };
+        const dateJob = intent(date); await createEvent(date, date.calendars, [dateJob]);
+        const dateReceipt = await eventRow(dateJob.id!);
+        if (midnight) assert.equal(decodeEventOutboxOperation(dateReceipt).kind, "pinned-v1"); else assertLegacy(dateReceipt); cases++;
+        const dateEdit = { ...intent(date, "update"), payload: { event: date, patch: { title: "Edited DATE title" } } };
+        assert.equal((await patchEventAndCalendarLinks(date.id, 1, dateEdit.payload.patch, false, [dateEdit])).status, "saved");
+        const dateEditReceipt = await eventRow(dateEdit.id!);
+        if (midnight) assert.equal(decodeEventOutboxOperation(dateEditReceipt).kind, "pinned-v1"); else assertLegacy(dateEditReceipt); cases++;
+        if (!midnight) {
+          const dateDelete: EventOutboxIntent = { ...intent(date, "update"), action: "delete", payload: { event: date } };
+          assert.equal((await patchEventAndCalendarLinks(date.id, 2, { calendars: [] }, true, [dateDelete])).status, "saved");
+          assertLegacy(await eventRow(dateDelete.id!)); cases++;
+        }
+      }
+      const invalid = { ...value("Invalid selected chronology"), start: new Date("2026-10-13T11:00:00Z") }, invalidJob = intent(invalid);
+      await assert.rejects(() => createEvent(invalid, invalid.calendars, [invalidJob]));
+      assert.equal((await db.select().from(events).where(eq(events.id, invalid.id))).length, 0);
+      assert.equal(await eventRow(invalidJob.id!), undefined, "malformed selected codec input cannot fall back"); cases++;
+      const dateHome = await createCalendar({ creatorID: owner, name: "Legacy DATE native home", color: "#112233" });
+      const dateCollection = `https://dav.fixture.test/${randomUUID()}/`, dateAddress = `${dateCollection}Native-Date.ics`;
+      const nativeDate = { ...value("Before legacy DATE native pull", [dateHome.id, calendar.id]), isAllDay: true,
+        start: new Date("2026-10-13T09:00:00.123Z"), end: new Date("2026-10-13T10:00:00.456Z") };
+      await createEvent(nativeDate, nativeDate.calendars);
+      await db.insert(externalEvents).values([
+        { eventID: nativeDate.id, calendarID: dateHome.id, provider: "caldav", externalCalendarID: dateCollection,
+          externalEventID: dateAddress, etag: '"date-before"', icalUid: "Native-Date-UID" },
+        { eventID: nativeDate.id, calendarID: calendar.id, provider, externalCalendarID: collection,
+          externalEventID: provider === "caldav" ? `${collection}Native-Mirror.ics` : "Native-Mirror", etag: '"mirror-date-before"', icalUid: "Native-Mirror-UID" },
+      ]);
+      assert.equal(await upsertExternalEvent("caldav", owner, dateHome.id, dateCollection, dateAddress,
+        { title: "Legacy DATE authoritative native edit", color: nativeDate.color, start: nativeDate.start, end: nativeDate.end,
+          isAllDay: true, description: null, location: null, organizer: owner, recurrence: null, url: null }, '"date-after"', "Native-Date-UID"), true);
+      const [dateCanonical] = await db.select().from(events).where(eq(events.id, nativeDate.id));
+      assert.equal(dateCanonical.title, "Legacy DATE authoritative native edit"); assert.equal(dateCanonical.revision, 2);
+      const [dateFanout] = await db.select().from(eventOutbox).where(eq(eventOutbox.eventID, nativeDate.id));
+      assertLegacy(dateFanout); assert.equal(dateFanout.action, "update"); cases++;
 
       // An ordinary physical account exists first. Direct account deletion
       // models unlink paths that leave the TEXT source binding behind.
@@ -193,7 +276,7 @@ async function main() {
       assert.equal(decodeTaskOutboxOperation(storedFutureTask).kind, "blocked"); cases++;
     }
     assert.equal(config.api.syncOperationV1EncoderEnabled, true, "No global legacy opt-out masked the regression");
-    console.log(`Default-ON admission missing credentials: ${cases} Google/Graph/UUID-DAV persistence, native fanout, strict source/old-v1 fences and unknown-format cases passed`);
+    console.log(`Default-ON admission: ${cases} UUID-case, DATE profile, Google/Graph/UUID-DAV missing-credential persistence/native fanout, strict source/old-v1 fences and unknown-format cases passed`);
   } finally {
     await db.delete(eventOutbox).where(eq(eventOutbox.userID, owner));
     await db.delete(taskOutbox).where(eq(taskOutbox.userID, owner));

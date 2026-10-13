@@ -1,9 +1,9 @@
 import { readFile } from "node:fs/promises";
 import type { Pool, PoolClient } from "pg";
-import { SyncDeliveryReceiptSchema, SyncOperationEnvelopeSchema, SyncErrorSchema, type SyncDeliveryReceipt, type SyncOperationRowBinding } from "@musubi/types";
-import { acceptedEnvelope, admissionFingerprint, initialReceipt, jsonEqual, projection, strongEtag, validateContent } from "./admission.js";
+import { SyncDeliveryReceiptSchema, SyncOperationEnvelopeSchema, SyncErrorSchema, SyncJsonObjectSchema, type SyncDeliveryReceipt, type SyncOperationRowBinding } from "@musubi/types";
+import { acceptedEnvelope, admissionFingerprint, initialReceipt, jsonEqual, projection, strongEtag, validateContent, validatePatch } from "./admission.js";
 import { assertCredentialKey, decryptCredential, encryptCredential } from "./crypto.js";
-import { ReferenceHoldError, type ReferenceAdmission, type ReferenceCapture, type ReferenceClaim, type ReferenceEvidence, type ReferenceOperation, type ReferenceSeed } from "./model.js";
+import { ReferenceHoldError, type ReferenceAdmission, type ReferenceCapture, type ReferenceClaim, type ReferenceEvidence, type ReferenceOperation, type ReferenceSeed, type ReferenceContentPatch } from "./model.js";
 export { ReferenceHoldError } from "./model.js";
 export type { ReferenceClaim as Claim } from "./model.js";
 
@@ -14,6 +14,20 @@ const writeAllowed = (scope: string) => scope.split(/\s+/).some(value => [
   "https://www.googleapis.com/auth/calendar", "https://www.googleapis.com/auth/calendar.events",
   "https://www.googleapis.com/auth/calendar.events.owned",
 ].includes(value));
+/** Read sanctioned own data fields once, without evaluating accessors. The
+ * caller retains its objects; asynchronous persistence uses only our copy. */
+function copyDataFields(value: unknown, required: readonly string[], optional: readonly string[] = []): Record<string, unknown> {
+  if (value === null || typeof value !== "object" || Array.isArray(value) || Object.getPrototypeOf(value) !== Object.prototype)
+    throw new Error("Invalid reference input");
+  const copy: Record<string, unknown> = {};
+  for (const field of [...required, ...optional]) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, field);
+    if (!descriptor && optional.includes(field)) continue;
+    if (!descriptor || !("value" in descriptor)) throw new Error("Invalid reference input");
+    copy[field] = descriptor.value;
+  }
+  return copy;
+}
 const receipt = (value: unknown): SyncDeliveryReceipt => SyncDeliveryReceiptSchema.parse(value);
 const rawEnvelope = (payload: unknown) => payload !== null && typeof payload === "object" && !Array.isArray(payload)
   ? (payload as Record<string, unknown>).operationEnvelope : undefined;
@@ -57,9 +71,12 @@ export class ReferenceStore {
   private owned(locked: Locked, claim: ReferenceClaim): boolean {
     return locked.operation.lease_live === true && locked.operation.lease_attempt_id === claim.attemptId && locked.operation.status === "running";
   }
-  async seedBinding(input: ReferenceSeed): Promise<void> {
-    validateContent(input.content);
-    if (!strongEtag(input.etag) || !Number.isFinite(Date.parse(input.expiresAt)) ||
+  async seedBinding(supplied: ReferenceSeed): Promise<void> {
+    const fields = copyDataFields(supplied, ["connectionId", "objectId", "bindingId", "calendarId", "eventId", "accessToken", "expiresAt", "scope", "content", "etag"], ["privacyLabel"]);
+    const input = Object.freeze({ ...fields, content: Object.freeze({ ...validateContent(fields.content as ReferenceSeed["content"]) }) }) as unknown as ReferenceSeed;
+    if (typeof input.accessToken !== "string" || typeof input.scope !== "string" || typeof input.expiresAt !== "string" ||
+      input.privacyLabel !== undefined && typeof input.privacyLabel !== "string" ||
+      !strongEtag(input.etag) || !Number.isFinite(Date.parse(input.expiresAt)) ||
       ![input.connectionId, input.objectId, input.bindingId, input.calendarId, input.eventId].every(value => typeof value === "string" && value.length > 0 && value.length <= 2048))
       throw new Error("Invalid reference binding seed");
     const ciphertext = encryptCredential(this.credentialKey, input.connectionId, input.accessToken);
@@ -71,7 +88,9 @@ export class ReferenceStore {
         [input.bindingId, input.connectionId, input.objectId, input.calendarId, input.eventId, input.etag, projection(input.content)]);
     });
   }
-  async admitUpdate(input: ReferenceAdmission): Promise<ReferenceOperation> {
+  async admitUpdate(supplied: ReferenceAdmission): Promise<ReferenceOperation> {
+    const fields = copyDataFields(supplied, ["bindingId", "expectedRevision", "commandId", "operationId", "patch"]);
+    const input = Object.freeze({ ...fields, patch: Object.freeze({ ...validatePatch(fields.patch as ReferenceContentPatch) }) }) as unknown as ReferenceAdmission;
     const fingerprint = admissionFingerprint(input);
     await this.transaction(async client => {
       const initial = (await client.query("SELECT * FROM reference_bindings WHERE id=$1", [input.bindingId])).rows[0];
@@ -165,11 +184,17 @@ export class ReferenceStore {
       return true;
     });
   }
-  async recordEvidence(claim: ReferenceClaim, evidence: ReferenceEvidence): Promise<boolean> {
-    if (evidence.validator !== undefined && !strongEtag(evidence.validator)) throw new ReferenceHoldError("validator-unavailable");
-    const parsedError = evidence.error === undefined ? undefined : SyncErrorSchema.safeParse(evidence.error);
+  async recordEvidence(claim: ReferenceClaim, supplied: ReferenceEvidence): Promise<boolean> {
+    const fields = copyDataFields(supplied, ["provider", "remote"], ["validator", "observationId", "code", "error"]);
+    if (!["accepted", "uncertain", "rejected", "not-dispatched"].includes(fields.provider as string) ||
+      !["confirmed", "conflict", "unobserved"].includes(fields.remote as string) ||
+      ["validator", "observationId", "code"].some(field => fields[field] !== undefined && typeof fields[field] !== "string"))
+      throw new ReferenceHoldError("invalid-protocol-evidence");
+    const parsedError = fields.error === undefined ? undefined : SyncErrorSchema.safeParse(fields.error);
     if (parsedError && !parsedError.success) throw new ReferenceHoldError("invalid-protocol-error");
-    const protocolError = parsedError?.success ? parsedError.data : undefined;
+    const protocolError = parsedError?.success ? Object.freeze(parsedError.data) : undefined;
+    const evidence = Object.freeze({ ...fields, ...(protocolError ? { error: protocolError } : {}) }) as unknown as ReferenceEvidence;
+    if (evidence.validator !== undefined && !strongEtag(evidence.validator)) throw new ReferenceHoldError("validator-unavailable");
     return this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId);
       const attempt = (await client.query("SELECT receipt FROM reference_attempts WHERE id=$1 AND operation_id=$2 FOR UPDATE", [claim.attemptId, claim.operationId])).rows[0];
@@ -190,8 +215,14 @@ export class ReferenceStore {
       return true;
     });
   }
-  async complete(claim: ReferenceClaim, observation: { etag: string; projection: Record<string, unknown> }): Promise<boolean> {
-    if (!strongEtag(observation.etag)) throw new ReferenceHoldError("validator-unavailable");
+  async complete(claim: ReferenceClaim, supplied: { etag: string; projection: Record<string, unknown> }): Promise<boolean> {
+    const fields = copyDataFields(supplied, ["etag", "projection"]);
+    if (!strongEtag(fields.etag)) throw new ReferenceHoldError("validator-unavailable");
+    const parsedProjection = SyncJsonObjectSchema.safeParse(fields.projection);
+    if (!parsedProjection.success) throw new ReferenceHoldError("invalid-protocol-observation");
+    // The custom schema validates lossless plain JSON; clone it while synchronous
+    // so caller-owned nested values cannot change after the validator check.
+    const observation = Object.freeze({ etag: fields.etag, projection: Object.freeze(JSON.parse(JSON.stringify(parsedProjection.data)) as Record<string, unknown>) });
     return this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId);
       if (!this.owned(locked, claim) || !this.current(locked)) return false;

@@ -165,7 +165,7 @@ async function main() {
       };
       const stored = remote.get(key(auth, path));
       if (method === "GET" && path.includes("/calendarList/"))
-        return json({ accessRole: "owner" });
+        return json({ id: decodeURIComponent(path.split("/").pop()!), accessRole: "owner" });
       if (method === "GET" && path.endsWith("/events")) {
         return json({
           items: [...remote.entries()]
@@ -1348,7 +1348,8 @@ async function main() {
     ].entries()) {
       remote.set(key(auth, partialPath), {
         etag: '"partial-v1"',
-        json: { id: "http-partial", summary: partialEvent.title },
+        json: { id: "http-partial", summary: partialEvent.title,
+          start: { dateTime: partialEvent.start.toISOString() }, end: { dateTime: partialEvent.end.toISOString() } },
       });
       await importExternalEvent(
         "google",
@@ -1380,7 +1381,8 @@ async function main() {
       await createEvent(faultEvent, faultEvent.calendars);
       const resource = `fault-${mode}`;
       remote.set(key("Bearer primary-access", `/calendar/v3/calendars/same-calendar/events/${resource}`), {
-        etag: '"fault-v1"', json: { id: resource, summary: faultEvent.title },
+        etag: '"fault-v1"', json: { id: resource, summary: faultEvent.title,
+          start: { dateTime: faultEvent.start.toISOString() }, end: { dateTime: faultEvent.end.toISOString() } },
       });
       await importExternalEvent("google", faultEvent.id, mirrors[0].id, "same-calendar", resource, '"fault-v1"');
       const query = db.$client.query.bind(db.$client);
