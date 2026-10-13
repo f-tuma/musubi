@@ -2,14 +2,14 @@
 import { Pool } from "pg";
 import { ReferenceStore } from "./store.js";
 import { deliverReferenceOperation, type ReferenceCheckpoint } from "./runner.js";
-import type { ReferenceAdmission } from "./model.js";
+import type { ReferenceAdmission, ReferenceDeleteAdmission } from "./model.js";
 
 async function main() {
   if (process.env.REFERENCE_TEST_CHILD !== "true" || !process.send || !process.env.REFERENCE_DATABASE_URL || !process.env.REFERENCE_CREDENTIAL_KEY)
     throw new Error("Owned child fixture configuration required.");
   const databaseUrl = process.env.REFERENCE_DATABASE_URL, key = process.env.REFERENCE_CREDENTIAL_KEY;
   let data = ""; for await (const chunk of process.stdin) data += chunk;
-  const input = JSON.parse(data) as { action: "admit" | "deliver" | "show"; operationId: string; admission?: ReferenceAdmission; pause?: string; fixtureOrigin: string };
+  const input = JSON.parse(data) as { action: "admit" | "admit-delete" | "deliver" | "show"; operationId: string; admission?: ReferenceAdmission | ReferenceDeleteAdmission; pause?: string; fixtureOrigin: string };
   const fixture = new URL(input.fixtureOrigin);
   if (fixture.protocol !== "http:" || fixture.hostname !== "127.0.0.1" || fixture.pathname !== "/" || fixture.search || fixture.hash || fixture.username || fixture.password)
     throw new Error("Owned loopback HTTP fixture required.");
@@ -43,15 +43,19 @@ async function main() {
   try {
     const store = new ReferenceStore(pool, key);
     let result: unknown;
-    if (input.action === "admit") {
-      result = await store.admitUpdate(input.admission!);
+    if (input.action === "admit" || input.action === "admit-delete") {
+      result = input.action === "admit" ? await store.admitUpdate(input.admission! as ReferenceAdmission) : await store.admitDelete(input.admission!);
       await checkpoint("afterAdmission");
     } else if (input.action === "show") result = await store.inspectOperation(input.operationId);
     else result = await deliverReferenceOperation(store, input.operationId, {
-      http: { fetch: (url, init) => {
+      http: { fetch: async (url, init) => {
         const native = new URL(url);
         if (native.origin !== "https://www.googleapis.com") throw new Error("Live network forbidden in owned fixture.");
-        return globalThis.fetch(`${fixture.origin}${native.pathname}${native.search}`, init);
+        const response = await globalThis.fetch(`${fixture.origin}${native.pathname}${native.search}`, init);
+        // Owned loopback transport stands in for the requested native URL; retain
+        // that logical response identity while provider redirect guards stay active.
+        Object.defineProperty(response, "url", { value: native.href });
+        return response;
       } },
       clock: { nowEpochMs: () => Date.now(), nowMonotonicMs: () => performance.now() },
       telemetry: { record: metric => process.send!({ type: "metric", metric }) },

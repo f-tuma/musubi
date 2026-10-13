@@ -1,9 +1,9 @@
 import { readFile } from "node:fs/promises";
 import type { Pool, PoolClient } from "pg";
 import { SyncDeliveryReceiptSchema, SyncOperationEnvelopeSchema, SyncErrorSchema, SyncJsonObjectSchema, type SyncDeliveryReceipt, type SyncOperationRowBinding } from "@musubi/types";
-import { acceptedEnvelope, admissionFingerprint, initialReceipt, jsonEqual, projection, strongEtag, validateContent, validatePatch } from "./admission.js";
+import { acceptedEnvelope, acceptedDeleteEnvelope, admissionFingerprint, deleteAdmissionFingerprint, initialReceipt, jsonEqual, projection, strongEtag, validateContent, validatePatch } from "./admission.js";
 import { assertCredentialKey, decryptCredential, encryptCredential } from "./crypto.js";
-import { ReferenceHoldError, type ReferenceAdmission, type ReferenceCapture, type ReferenceClaim, type ReferenceEvidence, type ReferenceOperation, type ReferenceSeed, type ReferenceContentPatch } from "./model.js";
+import { ReferenceHoldError, type ReferenceAdmission, type ReferenceCapture, type ReferenceClaim, type ReferenceEvidence, type ReferenceOperation, type ReferenceSeed, type ReferenceContentPatch, type ReferenceDeleteAdmission, type ReferenceDeleteObservation } from "./model.js";
 export { ReferenceHoldError } from "./model.js";
 export type { ReferenceClaim as Claim } from "./model.js";
 
@@ -28,12 +28,19 @@ function copyDataFields(value: unknown, required: readonly string[], optional: r
   }
   return copy;
 }
+/** Only the durable lease identities are accepted from a caller's claim DTO. */
+function claimIdentity(value: ReferenceClaim): ReferenceClaim {
+  const fields = copyDataFields(value, ["operationId", "attemptId"]);
+  if (![fields.operationId, fields.attemptId].every(item => typeof item === "string" && item.length > 0 && item.length <= 2048))
+    throw new Error("Invalid reference claim identity");
+  return Object.freeze(fields) as unknown as ReferenceClaim;
+}
 const receipt = (value: unknown): SyncDeliveryReceipt => SyncDeliveryReceiptSchema.parse(value);
 const rawEnvelope = (payload: unknown) => payload !== null && typeof payload === "object" && !Array.isArray(payload)
   ? (payload as Record<string, unknown>).operationEnvelope : undefined;
 const capture = (row: Row): ReferenceCapture => ({ connectionGeneration: Number(row.connection_generation), sourceGeneration: Number(row.source_generation),
-  privacyGeneration: Number(row.privacy_generation), acceptedRevision: Number(row.accepted_revision) });
-const rowBinding = (row: Row): SyncOperationRowBinding => ({ kind: "event", action: "update", operationId: row.id, commandId: row.command_id,
+  privacyGeneration: Number(row.privacy_generation), acceptedRevision: Number(row.accepted_revision), canonicalGeneration: Number(row.canonical_generation) });
+const rowBinding = (row: Row): SyncOperationRowBinding => ({ kind: "event", action: row.action, operationId: row.id, commandId: row.command_id,
   hostObjectId: row.object_id, provider: "google", connectionId: row.connection_id, collectionId: row.calendar_id, resourceId: row.event_id,
   acceptedRevision: Number(row.accepted_revision), sourceEpoch: { sourceId: row.binding_id, generation: Number(row.source_generation) },
   privacyEpoch: String(row.privacy_generation) });
@@ -43,7 +50,8 @@ export class ReferenceStore {
   constructor(readonly pool: Pool, private readonly credentialKey: string) { assertCredentialKey(credentialKey); }
   async migrate(): Promise<void> {
     const sql = await readFile(new URL("./schema.sql", import.meta.url), "utf8");
-    await this.transaction(async client => { await client.query(sql); });
+    const forward = await readFile(new URL("./schema-delete.sql", import.meta.url), "utf8");
+    await this.transaction(async client => { await client.query(sql); await client.query(forward); });
   }
   private async transaction<T>(body: (client: PoolClient) => Promise<T>, signal?: AbortSignal): Promise<T> {
     signal?.throwIfAborted();
@@ -73,7 +81,8 @@ export class ReferenceStore {
   }
   private current(locked: Locked): boolean {
     const { operation: op, connection: conn, object, binding } = locked;
-    return !!conn && !!object && !!binding && conn.status === "active" && conn.credential_ciphertext != null && binding.active &&
+    return !!conn && !!object && !!binding && conn.status === "active" && conn.credential_ciphertext != null && binding.active && binding.destination_lifecycle === "present" &&
+      object.canonical_lifecycle === (op.action === "delete" ? "tombstoned" : "active") && Number(object.lifecycle_generation) === Number(op.canonical_generation) &&
       Number(conn.generation) === Number(op.connection_generation) && Number(object.revision) === Number(op.accepted_revision) &&
       Number(object.privacy_generation) === Number(op.privacy_generation) && Number(binding.source_generation) === Number(op.source_generation) &&
       binding.connection_id === op.connection_id && binding.object_id === op.object_id && binding.calendar_id === op.calendar_id && binding.event_id === op.event_id;
@@ -111,34 +120,71 @@ export class ReferenceStore {
       const existing = (await client.query("SELECT * FROM reference_operations WHERE connection_id=$1 AND command_id=$2 FOR UPDATE", [binding.connection_id, input.commandId])).rows[0];
       if (existing) { if (existing.fingerprint !== fingerprint) throw new ReferenceHoldError("command-reused"); return; }
       if (conn.status !== "active" || conn.credential_ciphertext == null || !writeAllowed(conn.scope) || !binding.active) throw new ReferenceHoldError("source-unavailable");
+      if (object.canonical_lifecycle !== "active" || binding.destination_lifecycle !== "present") throw new ReferenceHoldError("lifecycle-unavailable");
       if (Number(object.revision) !== input.expectedRevision) throw new ReferenceHoldError("revision-conflict");
       if ((await client.query("SELECT 1 FROM reference_operations WHERE binding_id=$1 AND status<>'acked'", [input.bindingId])).rowCount)
         throw new ReferenceHoldError("causal-barrier");
       if (!strongEtag(binding.etag)) throw new ReferenceHoldError("validator-unavailable");
       const content = validateContent({ ...object.content, ...input.patch });
       const acceptedRevision = input.expectedRevision + 1;
-      const epochs: ReferenceCapture = { acceptedRevision, connectionGeneration: Number(conn.generation), sourceGeneration: Number(binding.source_generation), privacyGeneration: Number(object.privacy_generation) };
+      const epochs: ReferenceCapture = { acceptedRevision, connectionGeneration: Number(conn.generation), sourceGeneration: Number(binding.source_generation), privacyGeneration: Number(object.privacy_generation), canonicalGeneration: Number(object.lifecycle_generation) };
       const envelope = acceptedEnvelope(input, content, { objectId: object.id, connectionId: conn.id, calendarId: binding.calendar_id, eventId: binding.event_id, capture: epochs });
       await client.query("UPDATE reference_objects SET revision=$2,content=$3 WHERE id=$1", [object.id, acceptedRevision, content]);
       await client.query(`INSERT INTO reference_operations(id,command_id,binding_id,object_id,connection_id,calendar_id,event_id,accepted_revision,
-        connection_generation,source_generation,privacy_generation,accepted_etag,fingerprint,payload,receipt)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+        connection_generation,source_generation,privacy_generation,accepted_etag,fingerprint,payload,receipt,canonical_generation)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
         [input.operationId, input.commandId, binding.id, object.id, conn.id, binding.calendar_id, binding.event_id, acceptedRevision,
           epochs.connectionGeneration, epochs.sourceGeneration, epochs.privacyGeneration, binding.etag, fingerprint,
-          { operationEnvelope: envelope }, initialReceipt(envelope)]);
+          { operationEnvelope: envelope }, initialReceipt(envelope), epochs.canonicalGeneration]);
     });
     // Idempotent command retry returns the original operation, including after ACK.
     const result = await this.pool.query("SELECT id FROM reference_operations WHERE command_id=$1 AND binding_id=$2", [input.commandId, input.bindingId]);
     return this.inspectOperation(result.rows[0].id);
   }
+  async admitDelete(supplied: ReferenceDeleteAdmission): Promise<ReferenceOperation> {
+    const input = Object.freeze(copyDataFields(supplied, ["bindingId", "expectedRevision", "commandId", "operationId"])) as unknown as ReferenceDeleteAdmission;
+    const fingerprint = deleteAdmissionFingerprint(input);
+    await this.transaction(async client => {
+      const initial = (await client.query("SELECT * FROM reference_bindings WHERE id=$1", [input.bindingId])).rows[0];
+      if (!initial) throw new ReferenceHoldError("binding-missing");
+      const conn = (await client.query("SELECT * FROM reference_connections WHERE id=$1 FOR UPDATE", [initial.connection_id])).rows[0];
+      const object = (await client.query("SELECT * FROM reference_objects WHERE id=$1 FOR UPDATE", [initial.object_id])).rows[0];
+      const binding = (await client.query("SELECT * FROM reference_bindings WHERE id=$1 FOR UPDATE", [input.bindingId])).rows[0];
+      const existing = (await client.query("SELECT * FROM reference_operations WHERE connection_id=$1 AND command_id=$2 FOR UPDATE", [binding.connection_id, input.commandId])).rows[0];
+      if (existing) { if (existing.fingerprint !== fingerprint) throw new ReferenceHoldError("command-reused"); return; }
+      if (conn.status !== "active" || conn.credential_ciphertext == null || !writeAllowed(conn.scope) || !binding.active) throw new ReferenceHoldError("source-unavailable");
+      if (object.canonical_lifecycle !== "active" || binding.destination_lifecycle !== "present") throw new ReferenceHoldError("lifecycle-unavailable");
+      if (Number(object.revision) !== input.expectedRevision) throw new ReferenceHoldError("revision-conflict");
+      if ((await client.query("SELECT 1 FROM reference_operations WHERE binding_id=$1 AND status<>'acked'", [input.bindingId])).rowCount)
+        throw new ReferenceHoldError("causal-barrier");
+      if (!strongEtag(binding.etag)) throw new ReferenceHoldError("validator-unavailable");
+      const content = validateContent(object.content);
+      // Capture the trigger's post-CAS tombstoned incarnation, never the prior active one.
+      const tombstone = (await client.query("UPDATE reference_objects SET revision=$2,canonical_lifecycle='tombstoned' WHERE id=$1 RETURNING revision,lifecycle_generation", [object.id, input.expectedRevision + 1])).rows[0];
+      const epochs: ReferenceCapture = { acceptedRevision: Number(tombstone.revision), canonicalGeneration: Number(tombstone.lifecycle_generation),
+        connectionGeneration: Number(conn.generation), sourceGeneration: Number(binding.source_generation), privacyGeneration: Number(object.privacy_generation) };
+      const envelope = acceptedDeleteEnvelope(input, content, { objectId: object.id, connectionId: conn.id, calendarId: binding.calendar_id, eventId: binding.event_id, capture: epochs });
+      await client.query(`INSERT INTO reference_operations(id,command_id,binding_id,object_id,connection_id,calendar_id,event_id,accepted_revision,
+        connection_generation,source_generation,privacy_generation,accepted_etag,fingerprint,payload,receipt,canonical_generation,action)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'delete')`,
+        [input.operationId, input.commandId, binding.id, object.id, conn.id, binding.calendar_id, binding.event_id, epochs.acceptedRevision,
+          epochs.connectionGeneration, epochs.sourceGeneration, epochs.privacyGeneration, binding.etag, fingerprint,
+          { operationEnvelope: envelope }, initialReceipt(envelope), epochs.canonicalGeneration]);
+    });
+    const result = await this.pool.query("SELECT id FROM reference_operations WHERE command_id=$1 AND binding_id=$2", [input.commandId, input.bindingId]);
+    return this.inspectOperation(result.rows[0].id);
+  }
   async inspectOperation(operationId: string): Promise<ReferenceOperation> {
-    const row = (await this.pool.query(`SELECT o.*,b.etag AS binding_etag,b.baseline,b.active,b.source_generation AS binding_generation
-      FROM reference_operations o JOIN reference_bindings b ON b.id=o.binding_id WHERE o.id=$1`, [operationId])).rows[0];
+    const row = (await this.pool.query(`SELECT o.*,b.etag AS binding_etag,b.baseline,b.active,b.source_generation AS binding_generation,b.destination_lifecycle,
+      c.canonical_lifecycle,c.lifecycle_generation,c.revision AS canonical_revision
+      FROM reference_operations o JOIN reference_bindings b ON b.id=o.binding_id JOIN reference_objects c ON c.id=o.object_id WHERE o.id=$1`, [operationId])).rows[0];
     if (!row) throw new ReferenceHoldError("operation-missing");
-    return { operationId: row.id, commandId: row.command_id, bindingId: row.binding_id, objectId: row.object_id, payload: row.payload,
+    return { operationId: row.id, commandId: row.command_id, bindingId: row.binding_id, objectId: row.object_id, action: row.action, payload: row.payload,
+      canonical: { lifecycle: row.canonical_lifecycle, generation: Number(row.lifecycle_generation), revision: Number(row.canonical_revision) },
+      deleteAcceptanceStatus: row.delete_acceptance_status,
       capture: capture(row), status: row.status, dispatchPossible: row.dispatch_possible, receipt: receipt(row.receipt),
       leaseAttemptId: row.lease_attempt_id, leaseUntil: row.lease_until?.toISOString() ?? null,
-      binding: { etag: row.binding_etag, baseline: row.baseline, active: row.active, sourceGeneration: Number(row.binding_generation) } };
+      binding: { etag: row.binding_etag, baseline: row.baseline, active: row.active, sourceGeneration: Number(row.binding_generation), destinationLifecycle: row.destination_lifecycle } };
   }
   async claim(operationId: string, attemptId: string): Promise<ReferenceClaim | null> {
     if (!attemptId || attemptId.length > 2048) throw new Error("Invalid reference attempt identity");
@@ -149,15 +195,16 @@ export class ReferenceStore {
       let saved = receipt(op.receipt);
       if (op.dispatch_possible && ["pending", "not-dispatched"].includes(saved.provider.kind)) saved = receipt({ ...saved, provider: { kind: "uncertain" } });
       saved = receipt({ ...saved, attemptId });
-      await client.query("INSERT INTO reference_attempts(id,operation_id,receipt,recovery) VALUES($1,$2,$3,$4)", [attemptId, operationId, saved, op.dispatch_possible]);
+      await client.query("INSERT INTO reference_attempts(id,operation_id,receipt,recovery,delete_acceptance_status) VALUES($1,$2,$3,$4,$5)", [attemptId, operationId, saved, op.dispatch_possible, op.delete_acceptance_status]);
       await client.query("UPDATE reference_operations SET status='running',lease_attempt_id=$2,lease_until=clock_timestamp()+interval '120 seconds',receipt=$3,not_before=NULL WHERE id=$1", [operationId, attemptId, saved]);
       const parsed = SyncOperationEnvelopeSchema.safeParse(rawEnvelope(op.payload));
       return { operationId, attemptId, payload: op.payload, envelope: parsed.success ? parsed.data : undefined,
         binding: rowBinding(op), capture: capture(op), locator: { connectionId: op.connection_id, calendarId: op.calendar_id, eventId: op.event_id },
-        etag: op.accepted_etag, receipt: saved, recovery: op.dispatch_possible };
+        etag: op.accepted_etag, receipt: saved, recovery: op.dispatch_possible, deleteAcceptanceStatus: op.delete_acceptance_status };
     });
   }
   async renew(claim: ReferenceClaim): Promise<boolean> {
+    claim = claimIdentity(claim);
     const result = await this.pool.query(`UPDATE reference_operations SET lease_until=clock_timestamp()+interval '120 seconds'
       WHERE id=$1 AND lease_attempt_id=$2 AND status='running' AND lease_until>clock_timestamp()`, [claim.operationId, claim.attemptId]);
     return result.rowCount === 1;
@@ -165,6 +212,7 @@ export class ReferenceStore {
   async getSession(claim: ReferenceClaim, _clockEpochMs: number, signal?: AbortSignal): Promise<{
     accessToken: string; connectionId: string; connectionGeneration: string; scope: string; eventWriteAllowed: boolean;
   }> {
+    claim = claimIdentity(claim);
     if (signal?.aborted) throw new ReferenceHoldError("cancelled");
     const session = await this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId);
@@ -184,6 +232,7 @@ export class ReferenceStore {
     return session;
   }
   async markDispatch(claim: ReferenceClaim, signal?: AbortSignal): Promise<boolean> {
+    claim = claimIdentity(claim);
     return this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId);
       signal?.throwIfAborted();
@@ -196,11 +245,13 @@ export class ReferenceStore {
     }, signal);
   }
   async recordEvidence(claim: ReferenceClaim, supplied: ReferenceEvidence, signal?: AbortSignal): Promise<boolean> {
-    const fields = copyDataFields(supplied, ["provider", "remote"], ["validator", "observationId", "code", "error"]);
+    claim = claimIdentity(claim);
+    const fields = copyDataFields(supplied, ["provider", "remote"], ["validator", "observationId", "code", "error", "acceptanceStatus"]);
     if (!["accepted", "uncertain", "rejected", "not-dispatched"].includes(fields.provider as string) ||
       !["confirmed", "conflict", "unobserved"].includes(fields.remote as string) ||
       ["validator", "observationId", "code"].some(field => fields[field] !== undefined && typeof fields[field] !== "string"))
       throw new ReferenceHoldError("invalid-protocol-evidence");
+    if (fields.acceptanceStatus !== undefined && (fields.provider !== "accepted" || ![200,201,204,404,410].includes(fields.acceptanceStatus as number))) throw new ReferenceHoldError("invalid-protocol-evidence");
     const parsedError = fields.error === undefined ? undefined : SyncErrorSchema.safeParse(fields.error);
     if (parsedError && !parsedError.success) throw new ReferenceHoldError("invalid-protocol-error");
     const protocolError = parsedError?.success ? Object.freeze(parsedError.data) : undefined;
@@ -209,25 +260,28 @@ export class ReferenceStore {
     return this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId);
       signal?.throwIfAborted();
-      const attempt = (await client.query("SELECT receipt FROM reference_attempts WHERE id=$1 AND operation_id=$2 FOR UPDATE", [claim.attemptId, claim.operationId])).rows[0];
+      if (locked.operation.action === "delete" && (evidence.validator !== undefined || evidence.provider === "accepted" && evidence.acceptanceStatus === undefined) ||
+        locked.operation.action === "update" && evidence.acceptanceStatus !== undefined) throw new ReferenceHoldError("invalid-protocol-evidence");
+      const attempt = (await client.query("SELECT receipt,delete_acceptance_status FROM reference_attempts WHERE id=$1 AND operation_id=$2 FOR UPDATE", [claim.attemptId, claim.operationId])).rows[0];
       if (!attempt) throw new ReferenceHoldError("attempt-missing");
       const make = (saved: SyncDeliveryReceipt) => {
         const provider = evidence.provider === "accepted" ? { kind: "accepted", ...(evidence.validator ? { validator: { kind: "etag", value: evidence.validator } } : {}) } :
           evidence.provider === "rejected" ? { kind: "rejected", error: protocolError ?? { code: ["conflict", "provider-conflict"].includes(evidence.code ?? "") ? "conflict" : "transport-failed", retry: "never" } } : { kind: evidence.provider };
         // Never erase a known native acceptance when observation subsequently fails.
-        const effectiveProvider = saved.provider.kind === "accepted" && evidence.provider !== "accepted" ? saved.provider : provider;
+        const effectiveProvider = (saved.provider.kind === "accepted" && evidence.provider !== "accepted" || saved.provider.kind === "rejected" && ["uncertain", "not-dispatched"].includes(evidence.provider)) ? saved.provider : provider;
         const remote = evidence.remote === "unobserved" ? saved.remote : { kind: evidence.remote, observationId: evidence.observationId ?? claim.attemptId };
         return receipt({ ...saved, attemptId: claim.attemptId, provider: effectiveProvider, remote });
       };
       const nextAttempt = make(receipt(attempt.receipt));
       const safeCode = evidence.code && /^[a-z][a-z0-9-]{0,63}$/.test(evidence.code) ? evidence.code : null;
-      await client.query("UPDATE reference_attempts SET receipt=$3,code=$4,updated_at=clock_timestamp() WHERE id=$1 AND operation_id=$2", [claim.attemptId, claim.operationId, nextAttempt, safeCode]);
+      await client.query("UPDATE reference_attempts SET receipt=$3,code=$4,delete_acceptance_status=COALESCE($5,delete_acceptance_status),updated_at=clock_timestamp() WHERE id=$1 AND operation_id=$2", [claim.attemptId, claim.operationId, nextAttempt, safeCode, evidence.acceptanceStatus ?? null]);
       if (!this.owned(locked, claim)) return false;
-      await client.query("UPDATE reference_operations SET receipt=$2 WHERE id=$1", [claim.operationId, make(receipt(locked.operation.receipt))]);
+      await client.query("UPDATE reference_operations SET receipt=$2,delete_acceptance_status=COALESCE($3,delete_acceptance_status) WHERE id=$1", [claim.operationId, make(receipt(locked.operation.receipt)), evidence.acceptanceStatus ?? null]);
       return true;
     }, signal);
   }
   async complete(claim: ReferenceClaim, supplied: { etag: string; projection: Record<string, unknown> }, signal?: AbortSignal): Promise<boolean> {
+    claim = claimIdentity(claim);
     const fields = copyDataFields(supplied, ["etag", "projection"]);
     if (!strongEtag(fields.etag)) throw new ReferenceHoldError("validator-unavailable");
     const parsedProjection = SyncJsonObjectSchema.safeParse(fields.projection);
@@ -238,7 +292,7 @@ export class ReferenceStore {
     return this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId);
       signal?.throwIfAborted();
-      if (!this.owned(locked, claim) || !this.current(locked)) return false;
+      if (!this.owned(locked, claim) || !this.current(locked) || locked.operation.action !== "update") return false;
       const parsed = SyncOperationEnvelopeSchema.safeParse(rawEnvelope(locked.operation.payload));
       if (!parsed.success || !jsonEqual(observation.projection, parsed.data.admittedProjection.data)) throw new ReferenceHoldError("observation-conflict");
       const saved = receipt(locked.operation.receipt);
@@ -253,7 +307,29 @@ export class ReferenceStore {
       return true;
     }, signal);
   }
+  async completeDelete(claim: ReferenceClaim, supplied: ReferenceDeleteObservation, signal?: AbortSignal): Promise<boolean> {
+    claim = claimIdentity(claim);
+    const fields = copyDataFields(supplied, ["kind", "read"]);
+    const read = copyDataFields(fields.read, ["kind"], ["status"]);
+    if (fields.kind !== "exact-absence" || !(read.kind === "cancelled" && read.status === undefined || read.kind === "absent" && [404, 410].includes(read.status as number)))
+      throw new ReferenceHoldError("invalid-protocol-absence");
+    return this.transaction(async client => {
+      const locked = await this.locked(client, claim.operationId);
+      signal?.throwIfAborted();
+      if (!this.owned(locked, claim) || !this.current(locked) || locked.operation.action !== "delete") return false;
+      const parsed = SyncOperationEnvelopeSchema.safeParse(rawEnvelope(locked.operation.payload));
+      if (!parsed.success || parsed.data.operation.action !== "delete") throw new ReferenceHoldError("invalid-delete-operation");
+      const saved = receipt(locked.operation.receipt);
+      // GET-only scoped absence confirms the destination. It never invents native acceptance.
+      if (saved.remote.kind !== "confirmed" || saved.provider.kind === "pending") throw new ReferenceHoldError("confirmation-missing");
+      await client.query("UPDATE reference_bindings SET destination_lifecycle='absent' WHERE id=$1", [locked.binding.id]);
+      await client.query("UPDATE reference_operations SET status='acked',lease_attempt_id=NULL,lease_until=NULL WHERE id=$1", [claim.operationId]);
+      return true;
+    }, signal);
+  }
   async finish(claim: ReferenceClaim, status: "hold" | "conflict" = "hold", supplied?: { retryAfterMs?: number; code?: string }): Promise<boolean> {
+    claim = claimIdentity(claim);
+    if (!["hold", "conflict"].includes(status)) throw new Error("Invalid reference finish status");
     const fields = supplied === undefined ? {} : copyDataFields(supplied, [], ["retryAfterMs", "code"]);
     const retryAfterMs = fields.retryAfterMs;
     const code = fields.code;
@@ -270,6 +346,10 @@ export class ReferenceStore {
     });
   }
   async changeConnection(connectionId: string, patch: { status?: "active" | "retired"; scope?: string; accessToken?: string | null; expiresAt?: string }): Promise<void> {
+    patch = Object.freeze(copyDataFields(patch, [], ["status", "scope", "accessToken", "expiresAt"])) as typeof patch;
+    if (patch.status !== undefined && !["active", "retired"].includes(patch.status) || patch.scope !== undefined && typeof patch.scope !== "string" ||
+      patch.accessToken !== undefined && patch.accessToken !== null && typeof patch.accessToken !== "string" ||
+      patch.expiresAt !== undefined && (typeof patch.expiresAt !== "string" || !Number.isFinite(Date.parse(patch.expiresAt)))) throw new Error("Invalid reference connection patch");
     await this.transaction(async client => {
       const row = (await client.query("SELECT * FROM reference_connections WHERE id=$1 FOR UPDATE", [connectionId])).rows[0];
       if (!row) throw new ReferenceHoldError("connection-missing");
@@ -279,6 +359,8 @@ export class ReferenceStore {
     });
   }
   async changeBinding(bindingId: string, patch: { active?: boolean; calendarId?: string; eventId?: string }): Promise<void> {
+    patch = Object.freeze(copyDataFields(patch, [], ["active", "calendarId", "eventId"])) as typeof patch;
+    if (patch.active !== undefined && typeof patch.active !== "boolean" || [patch.calendarId, patch.eventId].some(value => value !== undefined && (typeof value !== "string" || !value || value.length > 2048))) throw new Error("Invalid reference binding patch");
     await this.transaction(async client => {
       const initial = (await client.query("SELECT * FROM reference_bindings WHERE id=$1", [bindingId])).rows[0];
       if (!initial) throw new ReferenceHoldError("binding-missing");
@@ -289,6 +371,7 @@ export class ReferenceStore {
     });
   }
   async changePrivacy(objectId: string, privacyLabel: string): Promise<void> {
+    if (typeof objectId !== "string" || typeof privacyLabel !== "string") throw new Error("Invalid reference privacy input");
     // This locks only the object, never subsequently a connection, so it cannot invert the host lock order.
     await this.pool.query("UPDATE reference_objects SET privacy_label=$2 WHERE id=$1", [objectId, privacyLabel]);
   }

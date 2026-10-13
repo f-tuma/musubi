@@ -101,3 +101,12 @@ Publication gate zůstává nezávislé explicitní skeptical approval finální
 headu před PR a squash merge až po všech zelených current-head kontrolách.
 C07 je další gate pro personal CREATE/DELETE; meetings, recurrence, all-day/time
 write, tasks a veřejný Relay sem nepatří.
+
+## Publikace C06
+
+PR [#350](https://github.com/f-tuma/musubi/pull/350) byl po nezávislém explicitním
+skeptickém schválení headu `f05ce6f40c18e9cf8c7bd16fd8d04b011e30653d` a všech
+22 zelených current-head kontrolách squash merged jako
+`f9f7edc445108d4a82a6e2bb98343c45785f20a0`. MUSU-38 je Done a iniciativa C06
+completed. Neproběhlo externí produkční nasazení. Navazuje první
+[Google DELETE slice C07](./MUSU-39-google-delete.md).

@@ -1,8 +1,8 @@
 # Google personal event provider
 
-This package implements one bounded transport profile: Google personal event
-content UPDATE (`summary`, `description`, `location`) with a fresh ACL/organizer
-preflight, exact conditional PATCH, and exact native event read evidence. The
+This package implements bounded action-specific Google personal event profiles.
+The content UPDATE profile (`summary`, `description`, `location`) uses a fresh
+ACL/organizer preflight, exact conditional PATCH, and exact native event read evidence. The
 caller supplies an already admitted sparse native body and serializer identity.
 It does not serialize Musubi events, read storage, own OAuth refresh, acknowledge
 an outbox, or implement independent-host durability.
@@ -38,7 +38,7 @@ explicit legacy routes retain their previous optional-validator semantics.
 404/410 and cancellation are native observations, not global deletion proof.
 No hidden guest list, guest-notifying copy or recurring family is admitted to
 the personal UPDATE profile. Meeting, recurrence, time, task, CREATE and DELETE
-operations remain separate routes.
+operations retain separate action-specific routes.
 
 Telemetry records each actual dispatch once with only provider, event family,
 method, status and injected monotonic duration. It excludes resource/connection
@@ -47,3 +47,19 @@ or counted. Telemetry failure cannot alter provider evidence. Retry-After HTTP
 dates use the injected epoch clock. Runtime dependencies are package-local only;
 the test checks this boundary and exercises a fake HTTP/account-session host.
 This is a provider boundary, not the independent-host gate planned for C05.
+
+`createGooglePersonalEventDeleteProvider` keeps DELETE evidence and permissions
+separate from UPDATE. `readForDelete` requires the same exact ID, complete 200
+and native endpoint shape, but returns a nullable strong ETag for a present copy.
+This lets the runtime classify a weak/missing current version as conflict without
+weakening UPDATE's strong-present read contract. Exact 404/410 or cancellation
+may settle this destination without a mutation, acceptance, projection or ETag.
+DELETE preflight refreshes the ACL and event guard: a personal organizer copy
+without other guests or a known attendee copy is permitted. Explicit organizer
+`self: false` is sufficient; organizer email supplies the default only when
+`self` is absent.
+The existing omission behavior for hidden attendees is retained for DELETE.
+A conditional DELETE sends no body and accepts 200/201/204/404/410 as native
+HTTP success. It never retries or redirects. The shared runtime always performs
+its exact scoped GET before preflight and dispatch, while hosts independently
+own their provider-response or exact-absence ACK policy.

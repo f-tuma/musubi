@@ -1,13 +1,13 @@
 # Independent sync reference host
 
-C05 / MUSU-37 runs the bounded Google personal event UPDATE profile with its own
+C05–C07 / MUSU-37–39 runs bounded Google personal event UPDATE and DELETE profiles with its own
 PostgreSQL ledger. It uses the C04 native provider ports, the C06 shared `@musubi/sync-runtime`
 already-claimed runner and the published v1 schema/plan validator, with no dependency on Musubi DB, auth, app config or API.
 Its content model is `ReferenceContent`, not a Musubi Event or Task.
 
 This is an extraction fixture and CLI. It is not the future Calendar Relay
 service. It has no account onboarding, OAuth refresh, scheduler, public API,
-meeting/recurrence/task support, CREATE or DELETE. Only `name`, `notes` and
+meeting/recurrence/task support or CREATE. DELETE targets an existing exact native address with a strong accepted validator. Only `name`, `notes` and
 `place` can be changed on an existing personal nonrecurring timed event. The
 accepted time endpoints use canonical UTC instants and remain unchanged.
 
@@ -34,6 +34,7 @@ stdin return a safe error code.
 | `migrate` | none | Install the standalone schema |
 | `seed` | `ReferenceSeed` | Create a new connection/object/binding with an exact known native calendar/event ID, strong ETag, baseline, scoped token and expiry |
 | `admit` | `{bindingId, expectedRevision, commandId, operationId, patch}` | Atomically commit canonical CAS and immutable accepted operation |
+| `admit-delete` | `{bindingId, expectedRevision, commandId, operationId}` | Atomically CAS the canonical object to tombstoned and capture one conditional DELETE |
 | `deliver` | `{operationId}` | Claim and run one bounded attempt |
 | `show` | `{operationId}` | Inspect operation, capture, receipt and binding without credentials |
 
@@ -52,13 +53,23 @@ later changes to operation identity, payload or captured metadata. A command ID
 is idempotent only for the same input fingerprint. One unacknowledged operation
 per binding is a causal barrier; conflict resolution is outside this fixture.
 
+The forward `schema-delete.sql` migration adds canonical `active/tombstoned`
+lifecycle with a monotonic generation and native `present/absent` destination
+state. The original schema, table identities, FKs, accepted UPDATE payloads and
+attempt history survive. Repeating migration does not restore old authority.
+UPDATE admission/delivery requires active canonical content and a present native
+binding. DELETE requires the captured tombstoned incarnation and a present binding
+until the atomic absence ACK; it retains historical ETag/baseline without treating
+them as present. This fixture admits only one unfinished operation per binding:
+UPDATE→DELETE handoff is serial after UPDATE ACK.
+
 The database owns the 120-second lease. Each delivery has a 45-second deadline
 and a 20-second heartbeat owned by that shared runner. A transport ignoring
 cancellation is detached at the same deadline; late callbacks cannot begin new
 HTTP, evidence or ACK work. An ACK waiting on PostgreSQL locks checks the signal
 inside its transaction and rolls back if it was cancelled before COMMIT. An
 already committed ACK remains authoritative. Credentials and authority are checked before dispatch;
-possible dispatch is persisted before PATCH. ACK updates the ETag/baseline and
+possible dispatch is persisted before PATCH or DELETE. ACK updates the ETag/baseline and
 operation atomically under the current attempt and all authority fences. HTTP
 never runs inside a database transaction.
 
@@ -68,6 +79,21 @@ unchanged original ETag permits another fresh preflight and conditional PATCH;
 a changed validator or incomplete observation cannot authorize a resend.
 Successful PATCH is followed by an exact GET before ACK. This extra confirmation
 is an intentional difference from the current Musubi success path.
+
+DELETE always starts with an exact GET. Present evidence with a missing, weak or
+changed ETag conflicts; unchanged strong evidence permits fresh ACL/event
+preflight and conditional `If-Match` DELETE. This is action-specific: removing a
+known attendee copy is allowed, while an organizer with other guests needs the
+specialized organizer operation. 404/410 or cancelled exact observations can
+confirm this accepted scoped deletion without dispatch. Reference success and
+ambiguous replies require exact absence before ACK; Musubi may ACK an accepted
+DELETE response and defers ambiguous recovery to another claim.
+
+An absence receipt carries no ETag, content projection or invented provider
+acceptance. A lost reply recovered by exact absence preserves provider uncertain;
+a previous rejected mutation remains rejected. Atomic completion marks only the
+binding absent under current lifecycle/source/credential/privacy/lease fences.
+It is not a global provider tombstone or general pull/import implementation.
 
 Receipts keep local commit, native provider acceptance, remote confirmation and
 notification outcome separate. Lost reply plus matching readback remains

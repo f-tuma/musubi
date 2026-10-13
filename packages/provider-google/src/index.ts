@@ -3,7 +3,8 @@ import type {
   GoogleAccountSession, GoogleEventTarget, GoogleNativeAttendee, GoogleNativeEndpoint,
   GoogleNativeEvent, GoogleNativePerson, GoogleNativeReadEvidence,
   GoogleNativeUpdateEvidence, GooglePersonalContentBody, GooglePersonalUpdate,
-  GoogleProviderPorts,
+  GoogleProviderPorts, GoogleDeleteProviderPorts, GoogleNativeDeleteReadEvidence, GoogleNativeDeleteEvidence,
+  GoogleNativeDeletePreflight, GooglePersonalDelete,
 } from "./types";
 export * from "./types";
 
@@ -237,6 +238,117 @@ export function createGooglePersonalEventProvider(ports: GoogleProviderPorts) {
       const value = await response.json().catch(() => null);
       if (value && typeof value === "object" && "id" in value && value.id !== accepted.target.eventId) throw new GoogleProviderError("provider-write-failed", "unconfirmed", response.status);
       return { kind: "written", etag: strongGoogleEtag(value && typeof value === "object" ? (value as Record<string, unknown>).etag : null) };
+    },
+  };
+}
+
+function deleteInput(input: GooglePersonalDelete): GooglePersonalDelete {
+  const item = record(input), serializer = record(item.serializer);
+  if (serializer.id !== "google-personal-event" || serializer.version !== 1)
+    throw new GoogleProviderError("event-diff-unavailable");
+  return Object.freeze({ target: target(item.target as GoogleEventTarget), acceptedEtag: acceptedEtag(item.acceptedEtag),
+    operationId: identity(item.operationId), attemptId: identity(item.attemptId),
+    serializer: Object.freeze({ id: "google-personal-event" as const, version: 1 as const }) });
+}
+/** Native deletion ports are distinct from UPDATE: absence has no validator,
+ * projection, acceptance or authority beyond this exact scoped observation. */
+export function createGooglePersonalEventDeleteProvider(ports: GoogleDeleteProviderPorts) {
+  const eventURL = (scope: GoogleEventTarget) =>
+    `${GOOGLE_CALENDAR_ORIGIN}/calendars/${encodeURIComponent(scope.calendarId)}/events/${encodeURIComponent(scope.eventId)}`;
+  async function session(scope: GoogleEventTarget, signal?: AbortSignal): Promise<GoogleAccountSession> {
+    signal?.throwIfAborted();
+    const current = await ports.accountSession.open({ connectionId: scope.connectionId, connectionGeneration: scope.connectionGeneration }, signal);
+    signal?.throwIfAborted();
+    if (current.connectionId !== scope.connectionId || current.connectionGeneration !== scope.connectionGeneration)
+      throw new GoogleProviderError("account-session-changed");
+    if (typeof current.accessToken !== "string" || !current.accessToken) throw failed();
+    return current;
+  }
+  async function request(url: string, method: "GET" | "DELETE", current: GoogleAccountSession, signal?: AbortSignal, etag?: string): Promise<Response> {
+    signal?.throwIfAborted();
+    const started = ports.clock.nowMonotonicMs();
+    let status: number | "network-error" | "aborted" = "network-error";
+    try {
+      const response = await ports.http.fetch(url, { method, redirect: "error", signal,
+        headers: { Authorization: `Bearer ${current.accessToken}`, ...(method === "GET" ? { "Cache-Control": "no-cache" } : { "If-Match": etag! }) } });
+      status = response.status;
+      // A host transport must not silently convert exact reads or conditional
+      // mutations into redirected or differently scoped resources.
+      if (response.redirected || response.url && response.url !== url)
+        throw new GoogleProviderError("provider-write-failed", method === "DELETE" ? "unconfirmed" : "not-written", response.status);
+      signal?.throwIfAborted();
+      return response;
+    } catch (error) {
+      if (signal?.aborted || (error instanceof Error && error.name === "AbortError")) status = "aborted";
+      if (error instanceof GoogleProviderError) throw error;
+      throw new GoogleProviderError("provider-write-failed", method === "DELETE" ? "unconfirmed" : "not-written");
+    } finally {
+      const durationMs = Math.max(0, ports.clock.nowMonotonicMs() - started);
+      try { ports.telemetry.record({ provider: "google", family: "event", method, status, durationMs }); } catch { /* Diagnostics have no authority. */ }
+    }
+  }
+  function completeRead(response: Response) {
+    if (!response.ok) {
+      if (response.status === 429 || response.status === 408 || response.status >= 500)
+        throw new GoogleProviderError("provider-write-failed", "not-written", response.status, retryAfter(response, ports.clock.nowEpochMs()));
+      throw new GoogleProviderError("capability-evidence", "not-written", response.status, undefined, "event-write",
+        response.status === 401 || response.status === 403 ? "denied" : "unknown");
+    }
+    if (response.status !== 200 || response.headers.has("content-range"))
+      throw new GoogleProviderError("provider-write-failed", "not-written", response.status);
+  }
+  async function json(response: Response): Promise<unknown> {
+    try { return await response.json(); } catch { throw new GoogleProviderError("provider-write-failed", "not-written", response.status); }
+  }
+  async function read(scope: GoogleEventTarget, current: GoogleAccountSession, signal?: AbortSignal): Promise<GoogleNativeDeleteReadEvidence> {
+    const response = await request(eventURL(scope), "GET", current, signal);
+    if (response.status === 404 || response.status === 410) return { kind: "absent", status: response.status };
+    completeRead(response);
+    const value = record(await json(response));
+    signal?.throwIfAborted();
+    if (value.id !== scope.eventId) throw new GoogleProviderError("provider-conflict");
+    if (value.status === "cancelled") return { kind: "cancelled" };
+    const event = nativeEvent(value.etag === null ? { ...value, etag: undefined } : value, scope.eventId);
+    return { kind: "present", event, etag: strongGoogleEtag(value.etag) };
+  }
+  return {
+    async readForDelete(input: GoogleEventTarget, signal?: AbortSignal): Promise<GoogleNativeDeleteReadEvidence> {
+      const scope = target(input), current = await session(scope, signal);
+      return read(scope, current, signal);
+    },
+    async preflightDelete(input: GooglePersonalDelete, signal?: AbortSignal): Promise<GoogleNativeDeletePreflight> {
+      const accepted = deleteInput(input), current = await session(accepted.target, signal);
+      capability(current.eventWriteAllowed, "event-write");
+      const calendarResponse = await request(`${GOOGLE_CALENDAR_ORIGIN}/users/me/calendarList/${encodeURIComponent(accepted.target.calendarId)}`, "GET", current, signal);
+      completeRead(calendarResponse);
+      const calendar = record(await json(calendarResponse));
+      signal?.throwIfAborted();
+      if (calendar.id !== accepted.target.calendarId) throw new GoogleProviderError("provider-conflict");
+      capability(typeof calendar.accessRole === "string" ? ["owner", "writer"].includes(calendar.accessRole) : undefined, "event-write");
+      const observed = await read(accepted.target, current, signal);
+      if (observed.kind !== "present") return observed;
+      if (observed.etag === null || observed.etag !== accepted.acceptedEtag) throw new GoogleProviderError("provider-conflict");
+      const event = observed.event;
+      // The explicit organizer action owns guest notification. Removing an
+      // attendee's own copy is permitted by the existing native DELETE guard.
+      const email = event.organizer?.email;
+      const self = typeof event.organizer?.self === "boolean" ? event.organizer.self : email ? false : undefined;
+      if (self === true && event.attendees?.some(guest => !guest.self && !guest.organizer)) unsupported("organizer");
+      capability(self === undefined ? undefined : true, "organizer");
+      return { kind: "allowed", event, etag: observed.etag };
+    },
+    async delete(input: GooglePersonalDelete, signal?: AbortSignal): Promise<GoogleNativeDeleteEvidence> {
+      const accepted = deleteInput(input), current = await session(accepted.target, signal);
+      capability(current.eventWriteAllowed, "event-write");
+      await ports.beforeMutation(accepted, signal);
+      signal?.throwIfAborted();
+      const response = await request(eventURL(accepted.target), "DELETE", current, signal, accepted.acceptedEtag);
+      if ([200, 201, 204, 404, 410].includes(response.status))
+        return { kind: "deleted", status: response.status as GoogleNativeDeleteEvidence["status"] };
+      if (response.status === 412) throw new GoogleProviderError("provider-conflict", "not-written", response.status);
+      if (response.status === 401 || response.status === 403 || response.status === 429)
+        throw new GoogleProviderError("provider-write-failed", "not-written", response.status, retryAfter(response, ports.clock.nowEpochMs()));
+      throw new GoogleProviderError("provider-write-failed", "unconfirmed", response.status, retryAfter(response, ports.clock.nowEpochMs()));
     },
   };
 }
