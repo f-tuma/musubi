@@ -45,9 +45,19 @@ export class ReferenceStore {
     const sql = await readFile(new URL("./schema.sql", import.meta.url), "utf8");
     await this.transaction(async client => { await client.query(sql); });
   }
-  private async transaction<T>(body: (client: PoolClient) => Promise<T>): Promise<T> {
+  private async transaction<T>(body: (client: PoolClient) => Promise<T>, signal?: AbortSignal): Promise<T> {
+    signal?.throwIfAborted();
     const client = await this.pool.connect();
-    try { await client.query("BEGIN"); const result = await body(client); await client.query("COMMIT"); return result; }
+    try {
+      signal?.throwIfAborted();
+      await client.query("BEGIN");
+      const result = await body(client);
+      // Cancellation during an awaited pool/lock/query rolls back provisional
+      // writes. Cancellation after COMMIT is sent cannot undo a host ACK.
+      signal?.throwIfAborted();
+      await client.query("COMMIT");
+      return result;
+    }
     catch (error) { await client.query("ROLLBACK"); throw error; }
     finally { client.release(); }
   }
@@ -173,18 +183,19 @@ export class ReferenceStore {
     });
     return session;
   }
-  async markDispatch(claim: ReferenceClaim): Promise<boolean> {
+  async markDispatch(claim: ReferenceClaim, signal?: AbortSignal): Promise<boolean> {
     return this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId);
+      signal?.throwIfAborted();
       if (!this.owned(locked, claim) || !this.current(locked)) throw new ReferenceHoldError("authority-changed");
       const saved = receipt(locked.operation.receipt);
       const next = receipt({ ...saved, provider: saved.provider.kind === "accepted" ? saved.provider : { kind: "pending" } });
       await client.query("UPDATE reference_operations SET dispatch_possible=true,receipt=$3 WHERE id=$1 AND lease_attempt_id=$2", [claim.operationId, claim.attemptId, next]);
       await client.query("UPDATE reference_attempts SET dispatch_possible=true,receipt=$3,updated_at=clock_timestamp() WHERE id=$1 AND operation_id=$2", [claim.attemptId, claim.operationId, next]);
       return true;
-    });
+    }, signal);
   }
-  async recordEvidence(claim: ReferenceClaim, supplied: ReferenceEvidence): Promise<boolean> {
+  async recordEvidence(claim: ReferenceClaim, supplied: ReferenceEvidence, signal?: AbortSignal): Promise<boolean> {
     const fields = copyDataFields(supplied, ["provider", "remote"], ["validator", "observationId", "code", "error"]);
     if (!["accepted", "uncertain", "rejected", "not-dispatched"].includes(fields.provider as string) ||
       !["confirmed", "conflict", "unobserved"].includes(fields.remote as string) ||
@@ -197,6 +208,7 @@ export class ReferenceStore {
     if (evidence.validator !== undefined && !strongEtag(evidence.validator)) throw new ReferenceHoldError("validator-unavailable");
     return this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId);
+      signal?.throwIfAborted();
       const attempt = (await client.query("SELECT receipt FROM reference_attempts WHERE id=$1 AND operation_id=$2 FOR UPDATE", [claim.attemptId, claim.operationId])).rows[0];
       if (!attempt) throw new ReferenceHoldError("attempt-missing");
       const make = (saved: SyncDeliveryReceipt) => {
@@ -213,9 +225,9 @@ export class ReferenceStore {
       if (!this.owned(locked, claim)) return false;
       await client.query("UPDATE reference_operations SET receipt=$2 WHERE id=$1", [claim.operationId, make(receipt(locked.operation.receipt))]);
       return true;
-    });
+    }, signal);
   }
-  async complete(claim: ReferenceClaim, supplied: { etag: string; projection: Record<string, unknown> }): Promise<boolean> {
+  async complete(claim: ReferenceClaim, supplied: { etag: string; projection: Record<string, unknown> }, signal?: AbortSignal): Promise<boolean> {
     const fields = copyDataFields(supplied, ["etag", "projection"]);
     if (!strongEtag(fields.etag)) throw new ReferenceHoldError("validator-unavailable");
     const parsedProjection = SyncJsonObjectSchema.safeParse(fields.projection);
@@ -225,6 +237,7 @@ export class ReferenceStore {
     const observation = Object.freeze({ etag: fields.etag, projection: Object.freeze(JSON.parse(JSON.stringify(parsedProjection.data)) as Record<string, unknown>) });
     return this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId);
+      signal?.throwIfAborted();
       if (!this.owned(locked, claim) || !this.current(locked)) return false;
       const parsed = SyncOperationEnvelopeSchema.safeParse(rawEnvelope(locked.operation.payload));
       if (!parsed.success || !jsonEqual(observation.projection, parsed.data.admittedProjection.data)) throw new ReferenceHoldError("observation-conflict");
@@ -238,7 +251,7 @@ export class ReferenceStore {
       await client.query("UPDATE reference_bindings SET etag=$2,baseline=$3 WHERE id=$1", [locked.binding.id, observation.etag, parsed.data.admittedProjection.data]);
       await client.query("UPDATE reference_operations SET status='acked',lease_attempt_id=NULL,lease_until=NULL WHERE id=$1", [claim.operationId]);
       return true;
-    });
+    }, signal);
   }
   async finish(claim: ReferenceClaim, status: "hold" | "conflict" = "hold", supplied?: { retryAfterMs?: number; code?: string }): Promise<boolean> {
     const fields = supplied === undefined ? {} : copyDataFields(supplied, [], ["retryAfterMs", "code"]);

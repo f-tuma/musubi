@@ -1,3 +1,4 @@
+import type { GoogleNativeReadEvidence, GoogleProviderPorts } from "@musubi/provider-google";
 import type { CaldavPersonalContentOperation } from "./caldav_personal_content";
 import type { NativeWritePlanV1 } from "@musubi/sync-codec";
 import type { CaldavAlarmContext, CaldavAlarmIntent } from "@musubi/db";
@@ -169,7 +170,16 @@ export type FetchChangesResult = {
 
 // Everything provider-specific lives behind this. The generic core (sync engine)
 // never talks to Google/Graph/CalDAV directly — only through an adapter.
+/** Narrow optional native delivery registration. Product normalization stays
+ * at this host boundary; the shared runtime sees native DTOs only. */
+export type GooglePersonalContentV1Bridge = {
+  ports: Omit<GoogleProviderPorts, "beforeMutation">;
+  normalizeObservation(read: GoogleNativeReadEvidence): CreatedEventEvidence | null;
+};
+
 export type CalendarAdapter = {
+  googlePersonalContentV1?(userID: string, accountID: string,
+    capture: Pick<AcceptedEventUpdateContext, "connectionId" | "connectionGeneration">): GooglePersonalContentV1Bridge;
   caldavOrganizer?: ReturnType<typeof import("./adapters/caldav_organizer_delivery").caldavOrganizerTransport>;
   observeGraphSeriesContent?: (context: import("@musubi/db").GraphMeetingContext, signal?: AbortSignal) => ReturnType<typeof import("./adapters/microsoft_series_content").observeGraphSeriesContent>;
   prepareGraphSeriesContent?: (context: import("@musubi/db").GraphMeetingContext, request: import("@musubi/types").MicrosoftRecurringContentRequest, signal?: AbortSignal) => Promise<import("@musubi/db").GraphOccurrenceContent>;

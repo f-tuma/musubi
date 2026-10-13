@@ -1,4 +1,4 @@
-import { googlePersonalEventBridge } from "./google_provider_bridge";
+import { googlePersonalEventBridge, googlePersonalProviderPorts } from "./google_provider_bridge";
 import { googleOrganizerTransport } from "./google_organizer_delivery";
 import type { NativeWritePlanV1 } from "@musubi/sync-codec";
 import { pinnedJsonBodyV1 } from "../pinned_write";
@@ -684,6 +684,17 @@ export function googleReminderEventEvidence(data: any) {
 
 export const googleAdapter: CalendarAdapter = {
   provider: "google",
+  googlePersonalContentV1(userID, accountID, capture) {
+    return {
+      ports: googlePersonalProviderPorts(userID, accountID, capture,
+        signal => getGoogleAccessToken(userID, accountID, false, undefined, signal)),
+      normalizeObservation(read) {
+        if (read.kind !== "present") return null;
+        return { ref: { externalEventId: read.event.id, etag: read.etag },
+          event: assertCreatedEventEvidence(toNormalized(read.event)) };
+      },
+    };
+  },
   organizer: googleOrganizerTransport(async (user, account) => { const token = await getGoogleAccessToken(user, account); await assertOAuthEventWriteGrant(user, "google", account); return token; }),
   ...googleOccurrenceMethods(getGoogleAccessToken, toNormalized),
   ...googleRsvpMethods(async (user, account) => {

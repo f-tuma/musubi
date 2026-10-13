@@ -12,6 +12,7 @@
   "dependencies": {
     "@musubi/provider-google": "workspace:*",
     "@musubi/sync-codec": "workspace:*",
+    "@musubi/sync-runtime": "workspace:*",
     "@musubi/types": "workspace:*",
     "pg": "^8.23.0",
     "tsx": "^4.23.12"
