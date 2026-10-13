@@ -1,3 +1,4 @@
+import { deliverSharedGoogleEvent, usesSharedGoogleDelivery } from "./google_shared_delivery";
 import { stopGraphOccurrenceContent, confirmGraphOccurrenceContent, markGraphOccurrenceContent, completeGraphOccurrenceContent } from "@musubi/db";
 import { stopUndispatchedGraphMeetingCancellation, confirmGraphMeetingCancellation, markGraphMeetingCancellation, completeGraphMeetingCancellation } from "@musubi/db";
 import { confirmGraphSeriesDeletionOutbox, completeGraphSeriesDeletionOutbox } from "@musubi/db";
@@ -134,6 +135,12 @@ export async function deliverEventOutbox(
     return getEventOutboxRow(row.id);
   }
   const adapter = adapterFor(row.provider);
+  const parsedPersonal = EventSchema.safeParse(row.payload.event);
+  const specialized = ["organizer", "rsvp", "reminderEdit", "reminderInstance", "googleOccurrence", "caldavAlarm",
+    "caldavSplit", "caldavSeries", "caldavSeriesDeletion", "graphSeriesCreate", "graphSeriesDeletion", "graphMeetingCancellation", "graphOccurrenceContent"];
+  if (pinned && parsedPersonal.success && !hasKnownEventTime(parsedPersonal.data) &&
+    !specialized.some(key => Object.prototype.hasOwnProperty.call(row.payload, key)) && usesSharedGoogleDelivery(pinned, adapter))
+    return deliverSharedGoogleEvent(row, pinned, adapter!.googlePersonalContentV1!.bind(adapter), options);
   const attempt = createDeliveryAttempt(() => renewEventOutboxLease(row.id, token), options);
   const signal = attempt.signal;
   let acceptedUpdate: AcceptedEventUpdateContext | undefined;

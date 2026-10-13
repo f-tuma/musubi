@@ -449,7 +449,7 @@ async function main() {
       let waiting = false;
       for (let attempt = 0; attempt < 100 && !waiting; attempt++) {
         const result = await db.execute<{ waiting: boolean }>(sql`select exists(select 1 from pg_stat_activity
-          where wait_event_type = 'Lock' and query like '%"events"%for update%') as waiting`);
+          where datname = current_database() and wait_event_type = 'Lock' and query like '%"events"%for update%') as waiting`);
         waiting = result.rows[0].waiting;
         if (!waiting) await new Promise((resolve) => setTimeout(resolve, 10));
       }
@@ -460,6 +460,43 @@ async function main() {
     await holder;
     assert.equal(await delayedAck, undefined, "transaction start time cannot extend a lease while waiting for a lock");
     assert.deepEqual(await db.select().from(externalEvents).where(eq(externalEvents.eventID, delayed.id)), []);
+    // The runtime deadline can expire before the longer durable lease. A
+    // waiting ACK must then roll back, even though that lease remains live.
+    const abandoned = value();
+    const abandonedIntent = intent(abandoned);
+    await createEvent(abandoned, [home.id], [abandonedIntent]);
+    const abandonedClaim = (await claimEventOutbox(abandonedIntent.id!))!;
+    let acquired!: () => void, unlock!: () => void;
+    const acquisition = new Promise<void>(resolve => { acquired = resolve; });
+    const unblocked = new Promise<void>(resolve => { unlock = resolve; });
+    const blocking = db.transaction(async tx => {
+      await tx.select().from(events).where(eq(events.id, abandoned.id)).for("update");
+      acquired(); await unblocked;
+    });
+    await acquisition;
+    const cancellation = new AbortController();
+    const reason = new Error("Owned C06 attempt cancelled");
+    const acknowledgement = completeEventOutbox(abandonedClaim.id, abandonedClaim.leaseToken!,
+      { externalEventId: "abandoned-resource", etag: '\"late\"' }, null, undefined, cancellation.signal);
+    // Observe rejection immediately to avoid an unhandled promise when aborting.
+    const cancellationRejected = assert.rejects(acknowledgement, error => error === reason);
+    try {
+      let waiting = false;
+      for (let attempt = 0; attempt < 100 && !waiting; attempt++) {
+        const result = await db.execute<{ waiting: boolean }>(sql`select exists(select 1 from pg_stat_activity
+          where datname = current_database() and wait_event_type = 'Lock' and query like '%"events"%for update%') as waiting`);
+        waiting = result.rows[0].waiting;
+        if (!waiting) await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      assert.ok(waiting, "Cancelled ACK is waiting inside its own transaction");
+      cancellation.abort(reason);
+    } finally { unlock(); }
+    await blocking; await cancellationRejected;
+    const [unchanged] = await rows(abandoned.id);
+    assert.equal(unchanged.status, "attempting");
+    assert.equal(unchanged.leaseToken, abandonedClaim.leaseToken);
+    assert.equal(unchanged.resultRef, null);
+    assert.deepEqual(await db.select().from(externalEvents).where(eq(externalEvents.eventID, abandoned.id)), []);
     console.log(
       "K07 transactional outbox rollback, revision, unlink/delete retention, duplicate fork and single-attempt claim: OK",
     );

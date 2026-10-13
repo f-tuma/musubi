@@ -37,6 +37,8 @@ async function main() {
   const remoteTasks = new Map<string, TaskReadEvidence>();
   const adapter: CalendarAdapter = {
     ...googleAdapter,
+    // This fixture supplies a pinned transport itself; it does not register native HTTP ports.
+    googlePersonalContentV1: undefined,
     projectEvent() { projectors++; throw new Error("Current event mapper B must never run"); },
     projectTask() { projectors++; throw new Error("Current task mapper B must never run"); },
     async assertEventWrite() {},

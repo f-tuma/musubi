@@ -405,3 +405,33 @@ test("durable reconnect delay and finish code cannot change during blocked pool 
     if (held) holder.release(); await pending.catch(() => undefined); await delayedPool.end();
   }
 });
+
+
+test("cancelled ACK waiting on PostgreSQL authority lock rolls back despite a live lease", async () => {
+  const f = await claimed(); await acceptedAndConfirmed(f.claim);
+  const application = `reference_cancelled_ack_${randomUUID().replace(/-/g, "")}`;
+  const delayedPool = new Pool({ connectionString: database.href, max: 1, application_name: application });
+  const delayedStore = new ReferenceStore(delayedPool, "ab".repeat(32));
+  const blocker = await pool.connect(); let blocked = true;
+  await blocker.query("BEGIN"); await blocker.query("SELECT id FROM reference_connections WHERE id=$1 FOR UPDATE", [f.connectionId]);
+  const cancellation = new AbortController(); const reason = new Error("Owned C06 cancellation");
+  const pending = delayedStore.complete(f.claim, { etag: '\"not-accepted\"', projection: savedProjection(f.claim) }, cancellation.signal);
+  const rejection = assert.rejects(pending, error => error === reason);
+  try {
+    const deadline = Date.now() + 5_000;
+    while (!(await pool.query("SELECT 1 FROM pg_stat_activity WHERE application_name=$1 AND wait_event_type='Lock'", [application])).rowCount) {
+      if (Date.now() >= deadline) assert.fail("ACK did not reach its owned PostgreSQL lock");
+      await pause(10);
+    }
+    cancellation.abort(reason);
+    await blocker.query("COMMIT"); blocked = false;
+    await rejection;
+    const op = await store.inspectOperation(f.input.operationId);
+    assert.equal(op.status, "running"); assert.equal(op.leaseAttemptId, f.claim.attemptId);
+    assert.equal(op.binding.etag, '"original"');
+    assert.equal(op.binding.baseline.title, "Original");
+  } finally {
+    if (blocked) await blocker.query("ROLLBACK"); blocker.release();
+    await pending.catch(() => undefined); await delayedPool.end();
+  }
+});

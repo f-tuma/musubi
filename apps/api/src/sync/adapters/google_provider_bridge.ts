@@ -1,4 +1,4 @@
-import { createGooglePersonalEventProvider, GoogleProviderError, type GooglePersonalUpdate } from "@musubi/provider-google";
+import { createGooglePersonalEventProvider, GoogleProviderError, type GooglePersonalUpdate, type GoogleProviderPorts } from "@musubi/provider-google";
 import { getOAuthCredentials, hasProviderSyncScopes } from "@musubi/db";
 import { EventWriteError } from "@musubi/types";
 import type { NativeWritePlanV1 } from "@musubi/sync-codec";
@@ -7,18 +7,14 @@ import { ProviderEventWriteError, requireEventEtag } from "../event_write";
 import { pinnedJsonBodyV1 } from "../pinned_write";
 import { recordProviderHttpRequest } from "../provider_http_metrics";
 
-/** Musubi owns credential storage, authority and cancellation; the provider
- * receives only a native target and the immutable accepted JSON properties. */
-export function googlePersonalEventBridge(
+/** Native ports remain owned by the registered adapter, including its token
+ * resolver. A shared runner supplies the final mutation/lease fence separately. */
+export function googlePersonalProviderPorts(
   userID: string,
   accountID: string,
-  calendarId: string,
-  eventId: string,
-  accepted: AcceptedEventUpdateContext,
+  accepted: Pick<AcceptedEventUpdateContext, "connectionId" | "connectionGeneration">,
   accessToken: (signal?: AbortSignal) => Promise<string>,
-) {
-  const target = { connectionId: accepted.connectionId,
-    connectionGeneration: String(accepted.connectionGeneration), calendarId, eventId };
+): Omit<GoogleProviderPorts, "beforeMutation"> {
   const currentCredentials = async () => {
     const credentials = await getOAuthCredentials(userID, "google", accountID);
     if (!credentials || credentials.id !== accepted.connectionId ||
@@ -27,7 +23,7 @@ export function googlePersonalEventBridge(
       throw new GoogleProviderError("account-session-changed");
     return credentials;
   };
-  const provider = createGooglePersonalEventProvider({
+  return {
     accountSession: { async open(_connection, signal) {
       signal?.throwIfAborted();
       await currentCredentials();
@@ -43,6 +39,23 @@ export function googlePersonalEventBridge(
     http: { fetch: (url, init) => globalThis.fetch(url, init) },
     clock: { nowEpochMs: () => Date.now(), nowMonotonicMs: () => performance.now() },
     telemetry: { record: metric => recordProviderHttpRequest(metric.method, metric.status, metric.durationMs) },
+  };
+}
+
+/** Musubi owns credential storage, authority and cancellation; the provider
+ * receives only a native target and the immutable accepted JSON properties. */
+export function googlePersonalEventBridge(
+  userID: string,
+  accountID: string,
+  calendarId: string,
+  eventId: string,
+  accepted: AcceptedEventUpdateContext,
+  accessToken: (signal?: AbortSignal) => Promise<string>,
+) {
+  const target = { connectionId: accepted.connectionId,
+    connectionGeneration: String(accepted.connectionGeneration), calendarId, eventId };
+  const provider = createGooglePersonalEventProvider({
+    ...googlePersonalProviderPorts(userID, accountID, accepted, accessToken),
     beforeMutation: () => accepted.beforeMutation(),
   });
   const input = (plan: NativeWritePlanV1, etag: unknown): GooglePersonalUpdate => ({

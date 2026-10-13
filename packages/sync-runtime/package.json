@@ -1,0 +1,24 @@
+{
+  "name": "@musubi/sync-runtime",
+  "private": true,
+  "type": "module",
+  "description": "Storage-free bounded runtime for an already claimed Google personal content UPDATE.",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "tsx src/index.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@musubi/provider-google": "workspace:*",
+    "@musubi/types": "workspace:*",
+    "@musubi/sync-codec": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.12",
+    "typescript": "~6.0.3",
+    "@types/node": "^25.9.5"
+  }
+}

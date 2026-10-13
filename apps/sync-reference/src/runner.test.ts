@@ -325,3 +325,52 @@ test("429 recovery can ACK an externally fulfilled target while preserving nativ
     remote: "confirmed", observationId: f.evidence[0]!.observationId });
   assert.deepEqual(f.observations, [{ etag: '"externally-fulfilled"', projection }]);
 });
+
+test("noncooperative transport returns at the deadline and cannot dispatch or ACK after late resolution", async () => {
+  const f = fixture([]);
+  let release!: (response: Response) => void;
+  let started!: () => void;
+  const entered = new Promise<void>(resolve => { started = resolve; });
+  f.ports.http.fetch = async (url, init) => {
+    f.calls.push({ url, init }); started();
+    // Deliberately ignore init.signal, as a faulty host transport can.
+    return new Promise<Response>(resolve => { release = resolve; });
+  };
+  const pending = deliverReferenceOperation(f.store, operationId, f.ports,
+    { attemptId: "attempt:one", deadlineMs: 20, heartbeatMs: 5 });
+  await entered;
+  assert.equal((await pending).code, "reference-attempt-aborted");
+  assert.equal(f.finishes.length, 1);
+  const evidenceCount = f.evidence.length;
+  release(calendar());
+  await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal(f.calls.length, 1, "Late calendar read cannot begin the next HTTP request");
+  assert.equal(f.counts().marks, 0); assert.equal(f.observations.length, 0);
+  assert.equal(f.finishes.length, 1); assert.equal(f.evidence.length, evidenceCount);
+});
+
+test("saved admission, native address and private authority capture remain stable across suspended credentials", async () => {
+  const f = fixture([calendar(), response(native()), response({ etag: '"written"' }), response(native("New", '"written"'))]);
+  const original = f.store.getSession;
+  let release!: () => void, entered!: () => void;
+  const started = new Promise<void>(resolve => { entered = resolve; });
+  const paused = new Promise<void>(resolve => { release = resolve; });
+  let first = true;
+  f.store.getSession = async (...args) => {
+    if (first) { first = false; entered(); await paused; }
+    assert.equal(args[0].capture.connectionGeneration, 1);
+    assert.equal(args[0].locator.eventId, eventId);
+    return original(...args);
+  };
+  const pending = f.run(); await started;
+  (f.claim.payload as any).operationEnvelope.nativePlan.data.body.summary = "Caller B";
+  (f.claim.payload as any).operationEnvelope.admittedProjection.data.title = "Caller B";
+  (f.claim.binding as any).resourceId = "other-event";
+  (f.claim.locator as any).eventId = "other-event";
+  (f.claim.capture as any).connectionGeneration = 99;
+  release();
+  assert.equal((await pending).status, "acked");
+  assert.deepEqual(JSON.parse(f.calls[2]!.init.body as string), { summary: "New" });
+  assert.ok(f.calls.every(call => !call.url.includes("other-event")));
+  assert.deepEqual(f.observations, [{ etag: '"written"', projection }]);
+});

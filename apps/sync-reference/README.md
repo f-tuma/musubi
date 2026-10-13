@@ -1,8 +1,8 @@
 # Independent sync reference host
 
 C05 / MUSU-37 runs the bounded Google personal event UPDATE profile with its own
-PostgreSQL ledger. It uses the C04 native provider ports and the published v1
-schema/plan validator, with no dependency on Musubi DB, auth, app config or API.
+PostgreSQL ledger. It uses the C04 native provider ports, the C06 shared `@musubi/sync-runtime`
+already-claimed runner and the published v1 schema/plan validator, with no dependency on Musubi DB, auth, app config or API.
 Its content model is `ReferenceContent`, not a Musubi Event or Task.
 
 This is an extraction fixture and CLI. It is not the future Calendar Relay
@@ -53,7 +53,11 @@ is idempotent only for the same input fingerprint. One unacknowledged operation
 per binding is a causal barrier; conflict resolution is outside this fixture.
 
 The database owns the 120-second lease. Each delivery has a 45-second deadline
-and a 20-second heartbeat. Credentials and authority are checked before dispatch;
+and a 20-second heartbeat owned by that shared runner. A transport ignoring
+cancellation is detached at the same deadline; late callbacks cannot begin new
+HTTP, evidence or ACK work. An ACK waiting on PostgreSQL locks checks the signal
+inside its transaction and rolls back if it was cancelled before COMMIT. An
+already committed ACK remains authoritative. Credentials and authority are checked before dispatch;
 possible dispatch is persisted before PATCH. ACK updates the ETag/baseline and
 operation atomically under the current attempt and all authority fences. HTTP
 never runs inside a database transaction.

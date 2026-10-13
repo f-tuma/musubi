@@ -163,8 +163,8 @@ export async function hasEventOutboxRevisionCoverage(row: EventOutboxRow) {
 
 /** Acknowledgement and mapping acceptance are one transaction. Preserve lock
  * order lifecycle -> event -> mapping/outbox, and fence completion by live lease. */
-export async function completeEventOutbox(id: string, leaseToken: string, resultRef: EventDeliveryRef | null, expectedRef: EventDeliveryRef | null, observation?: EventOutboxRow["remoteSnapshot"]) {
-  return completeEventOutboxInternal(id, leaseToken, resultRef, expectedRef, observation, "ordinary");
+export async function completeEventOutbox(id: string, leaseToken: string, resultRef: EventDeliveryRef | null, expectedRef: EventDeliveryRef | null, observation?: EventOutboxRow["remoteSnapshot"], signal?: AbortSignal) {
+  return completeEventOutboxInternal(id, leaseToken, resultRef, expectedRef, observation, "ordinary", undefined, undefined, signal);
 }
 export async function completeProviderRsvpOutbox(id: string, leaseToken: string, resultRef: EventDeliveryRef, expectedRef: EventDeliveryRef, observation: EventOutboxRow["remoteSnapshot"], caldavConfirmation?: CaldavRsvpConfirmation, graphConfirmation?: MicrosoftRsvpConfirmation) {
   return completeEventOutboxInternal(id, leaseToken, resultRef, expectedRef, observation, "rsvp", caldavConfirmation, graphConfirmation);
@@ -180,9 +180,15 @@ async function completeEventOutboxInternal(
   observation: EventOutboxRow["remoteSnapshot"] | undefined,
   confirmation: "ordinary" | "rsvp" | "reminder-instance",
   caldavConfirmation?: CaldavRsvpConfirmation, graphConfirmation?: MicrosoftRsvpConfirmation,
+  signal?: AbortSignal,
 ) {
+  signal?.throwIfAborted();
   try {
     return await db.transaction(async (tx) => {
+      signal?.throwIfAborted();
+      // Roll back every provisional write if cancellation happened during a
+      // pool/row-lock wait. A COMMIT already sent remains the host authority.
+      const result = await (async () => {
       const [address] = await tx
         .select()
         .from(eventOutbox)
@@ -220,6 +226,7 @@ async function completeEventOutboxInternal(
           ),
         )
         .for("update");
+      signal?.throwIfAborted();
       if (!row) return undefined;
       const decoded = decodeEventOutboxOperation(row);
       if (decoded.kind === "blocked") return undefined;
@@ -490,8 +497,12 @@ async function completeEventOutboxInternal(
         null,
         resultRef,
       );
+      })();
+      signal?.throwIfAborted();
+      return result;
     });
   } catch (error) {
+    signal?.throwIfAborted();
     if (error instanceof DeliveryLeaseExpired) return undefined;
     throw new Error("Event delivery acknowledgement could not be persisted.");
   }
