@@ -34,7 +34,7 @@ async function main() {
   }) as typeof fetch;
   await db.insert(user).values({ id: owner, name: owner, email: `${owner}@example.test` });
   try {
-    await db.insert(account).values({ id: randomUUID(), userId: owner, providerId: 'microsoft', accountId: owner, accessToken: 'fixture-token', scope: CALENDAR_SCOPE.microsoft, accessTokenExpiresAt: new Date(Date.now() + 3600_000) });
+    await db.insert(account).values({ id: randomUUID(), userId: owner, providerId: 'microsoft', accountId: owner, accessToken: 'fixture-token', refreshToken: 'fixture-refresh', scope: CALENDAR_SCOPE.microsoft, accessTokenExpiresAt: new Date(Date.now() + 3600_000) });
     const calendar = await importExternalCalendar('microsoft', owner, owner, 'fixture', { externalId: 'remote-calendar', name: 'Outlook fixture', color: '#123456' });
     async function seed() {
       const native = nativeEvent(randomUUID()); remote.set(native.id, native);

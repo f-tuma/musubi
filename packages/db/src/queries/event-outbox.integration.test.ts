@@ -26,6 +26,12 @@ import {
   type EventOutboxIntent,
 } from "..";
 import { EventSchema } from "@musubi/types";
+import { config } from "@musubi/config";
+
+// This historical raw-journal fixture intentionally has no provider source rows.
+// Exercise its legacy profile; real default-on admission is covered separately.
+config.api.syncOperationV1EncoderEnabled = false;
+process.env.SYNC_OPERATION_V1_ENCODER_ENABLED = "false";
 
 async function main() {
   assert.equal(process.env.ENVIRONMENT, "test");

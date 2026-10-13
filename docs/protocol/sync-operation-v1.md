@@ -218,11 +218,34 @@ version 1 prochází s původní saved baseline, bez přepsání mapperem decode
 
 ## Compatibility a rollout gate
 
-`SYNC_OPERATION_V1_ENCODER_ENABLED=false` je výchozí hodnota. Flag řídí pouze
-admission nových podporovaných operací, nikoli dispatch již přijatých v1 rows.
-Zapnutí MUSÍ předcházet doložené nasazení decoder floor do **všech API procesů,
-delivery workers a dalších outbox consumers** a ověření skutečných image digestů.
-Merge do main ani zelené CI samy tento produkční gate nesplní.
+`SYNC_OPERATION_V1_ENCODER_ENABLED` má v této revizi výchozí hodnotu **true**.
+Nenastavený flag i literal `true` zapínají admission nových podporovaných operací;
+explicitní literal `false` zachovává legacy admission. Jiné hodnoty včetně prázdné
+hodnoty a whitespace odmítnou boot bez vypsání jejich obsahu. Flag neřídí dispatch
+již přijatých v1 rows. Source aktivace byla schválená po merge decoder floor,
+pinned codecs a provider/OAuth generation bridge v PR #346–348; dosavadní OFF
+bylo záměrné pořadí publikace. Toto je změna konfigurace zdrojů, nikoli tvrzení
+o skutečném nasazení či o přepsání nastavení existující instalace.
+
+Před produkční admission nových envelopes MUSÍ být doložený decoder floor a
+pinned codecs ve **všech API procesech, delivery workers a dalších outbox
+consumers**. Musubi nyní dodává event/task consumers uvnitř jediného API procesu:
+request wakeups i startup/15s recovery sdílejí stejné executory. Boot získává
+singleton DB advisory lock ještě před migracemi a listen. Při upgradu z předchozí
+revize zastavte všechny staré API procesy i případné vlastní consumers, nahraďte
+je kompatibilními images a teprve potom přijímejte nové operace. Pokud celý
+upgrade ještě není hotový, explicitní `false` uchová původní admission. Singleton
+lock chrání souběh dodávaného API; sám neprokazuje verzi externího vlastního workeru.
+
+Rollout evidence musí obsahovat deployment/environment, image digest a source
+revision každého skutečného consumeru, DB migration journal, stav singletonu a
+boot log `server.started` s `syncOperationV1EncoderEnabled` a
+`syncOperationProfileVersion`. Current pinned delivery vyžaduje codec/admission
+z PR #347 a connection generation bridge z PR #348; samotný decoder-only floor
+z PR #346 zaručuje HOLD. Zaznamenejte také obsahově anonymní queue baseline a
+zvolenou rollback revision. Merge do main, zelené CI ani log defaultu samy tento
+produkční gate nesplní. Při této source aktivaci nebyl k dispozici běžící Musubi
+API/worker runtime; skutečné runtime image digests a aktivace nejsou doložené.
 
 Decoder-only worker je rollback do HOLD pro v1 rows; doručování potřebuje přesně
 registrovaný pinned codec. Worker starší než decoder floor není bezpečný rollback

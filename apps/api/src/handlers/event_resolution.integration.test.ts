@@ -110,7 +110,7 @@ async function main() {
       return res.end();
     }
     if (req.method === "GET" && path.includes("/calendarList/"))
-      return reply({ accessRole: writable ? "owner" : "reader" });
+      return reply({ id: decodeURIComponent(path.split("/").pop()!), accessRole: writable ? "owner" : "reader" });
     if (req.method === "GET")
       return remote.has(path) ? reply(remote.get(path)) : reply({}, 404);
     const body = raw ? JSON.parse(raw) : {};

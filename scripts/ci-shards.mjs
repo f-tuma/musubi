@@ -45,7 +45,7 @@ export function partition(items, total, timings = {}, fallback = 1) {
 // Expand the existing test:db script instead of maintaining a second file list.
 // Reject unknown shell syntax: a newly added command must never silently vanish.
 export function databaseTests(loadPackage = directory => readJson(join(root, directory, "package.json"))) {
-  const packages = { "@musubi/api": "apps/api", "@musubi/db": "packages/db" };
+  const packages = { "@musubi/api": "apps/api", "@musubi/db": "packages/db", "@musubi/sync-reference": "apps/sync-reference" };
   function expand(directory, script, ancestors = []) {
     const identity = `${directory}:${script}`;
     if (ancestors.includes(identity)) throw new Error(`Recursive script: ${identity}`);
@@ -54,7 +54,7 @@ export function databaseTests(loadPackage = directory => readJson(join(root, dir
     return command.split(/\s*&&\s*/).flatMap(part => {
       let match = /^pnpm (?:run )?(test:[\w:-]+)$/.exec(part);
       if (match) return expand(directory, match[1], [...ancestors, identity]);
-      match = /^pnpm --filter (@musubi\/(?:api|db)) (.+)$/.exec(part);
+      match = /^pnpm --filter (@musubi\/(?:api|db|sync-reference)) (.+)$/.exec(part);
       let target = directory;
       let leaf = part;
       if (match) {

@@ -111,9 +111,18 @@ export function parseExternalDeliveryRecoveryMode(
   return value as ExternalDeliveryRecoveryMode;
 }
 
+/** Only an explicit false disables new immutable v1 admission. Reject typos
+ * rather than silently selecting a different persisted operation format. */
+export function parseSyncOperationV1EncoderEnabled(value: string | undefined): boolean {
+  if (value === undefined || value === "true") return true;
+  if (value === "false") return false;
+  throw new Error("Invalid SYNC_OPERATION_V1_ENCODER_ENABLED. Expected true or false.");
+}
+
 type APIConfig = {
-  // Opt-in until both editors and the release compatibility gate are ready.
+  // Default-on immutable admission; explicit false retains legacy admission.
   syncOperationV1EncoderEnabled: boolean;
+  // Opt-in until both editors and the release compatibility gate are ready.
   eventTimeEditsEnabled: boolean;
   icloudPersonalContentWritesEnabled: boolean;
   providerReminderEditsEnabled: boolean;
@@ -283,8 +292,8 @@ export function parseMediaConfig(
 const mediaConfig = parseMediaConfig(process.env);
 
 const apiConfig: APIConfig = {
-  // Enable only after all consumers have the decoder-first HOLD floor.
-  syncOperationV1EncoderEnabled: process.env.SYNC_OPERATION_V1_ENCODER_ENABLED === "true",
+  // Upgrade every deployed consumer before accepting the new v1 format.
+  syncOperationV1EncoderEnabled: parseSyncOperationV1EncoderEnabled(process.env.SYNC_OPERATION_V1_ENCODER_ENABLED),
   eventTimeEditsEnabled: process.env.EVENT_TIME_EDITS_ENABLED === "true",
   icloudPersonalContentWritesEnabled: process.env.ICLOUD_PERSONAL_CONTENT_WRITES_ENABLED === "true",
   providerReminderEditsEnabled: process.env.PROVIDER_REMINDER_EDITS_ENABLED === "true",
