@@ -10,14 +10,19 @@ remaining acceptance. Provider support has its own
 [capability matrix](/docs/operations/capabilities/); an API version or a green
 build does not certify every provider operation.
 
-## 0.2.3 — API/web release preparation, 13 October 2026
+## 0.2.3 — API/web release preparation, updated 14 October 2026
 
 The functional source is frozen at
 `601836b4f3ecd78a2cd86acf6719e9c7127cac38`, the first C07 Google DELETE merge
 from [PR #351](https://github.com/f-tuma/musubi/pull/351). Its main
 [Quality run](https://github.com/f-tuma/musubi/actions/runs/38433116916) completed
-successfully with all 21 jobs. The final reviewed docs-only publication revision
-and operator evidence belong in the
+successfully with all 21 jobs. Documentation preparation
+[PR #352](https://github.com/f-tuma/musubi/pull/352), source
+`ce7b751ff0b618541d773a342e114006b3ccf893`, also has
+[all 21 main Quality jobs green](https://github.com/f-tuma/musubi/actions/runs/38444284238).
+A subsequent publication-control audit changes the workflow/guard tests and
+release documentation without adding product features. The final reviewed,
+green release-control publication revision and operator evidence belong in the
 [release readiness record](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.3-readiness.md).
 No 0.2.3 publication, production switch or native distribution is recorded by
 this source preparation. Review the
@@ -65,10 +70,25 @@ writes blocked and all API/consumer processes stopped. An older Graph reader
 can resume destructive window sweeps; an image switch is not sufficient rollback
 evidence for coverage or persisted v1 operations.
 
-The unchanged publication workflow updates both API/web version tags **and
-`latest`** before creating the release tag. Publication is on hold while the
-actual Dokploy trigger, automatic-deploy controls, verified backup/restore and
-maintenance window are UNKNOWN. Record those operator inputs before dispatch.
+The operator confirmed on 14 October that a new GitHub tag automatically
+deploys API and Musubi/apps/web; a `latest` image change alone does not deploy.
+The publication workflow takes the full approved `expected_source_sha` alongside
+version, requires `refs/heads/main` and matching captured/checkout SHA, reruns
+Quality and updates both API/web version tags **and `latest`** before creating
+a fresh, verified non-force tag. It rejects existing tags/releases and unknown
+API results before builds and again before tag creation, including visible
+drafts from a paginated release list. The release command requires the owned
+source output, rechecks the remote tag, then makes one strict create-only POST
+with source/generated notes. Only HTTP 201 succeeds; existing-release conflicts
+are HOLD, never edit or automatic retry. See the
+[workflow audit](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.3-workflow-audit.md).
+
+Tag creation may already start deployment before the release body succeeds.
+After a push or release-step failure, reconcile actual state with the operator;
+do not delete/recreate/force the tag or automatically rerun publication.
+Publication remains on hold for unknown deployment coordination, actual DB/
+consumer baseline, verified production backup/restore and maintenance decision.
+The GitHub workflow does not enforce Dokploy's stop-first or API→web sequence.
 
 The API/web pilot does not require full C07, native store distribution or new
 artwork. Native widget/layout changes still require separately signed,
