@@ -577,15 +577,164 @@ function assertDeltaLink(
   const hasFragment = link.includes("#");
   if (!sameOrigin || !sameProtocol || !["https:", "http:"].includes(expected.protocol) ||
     hasCredentials || hasFragment || !pathUnmodified || !calendarIdMatches) {
+    const route = sameOrigin && sameProtocol && ["https:", "http:"].includes(expected.protocol) &&
+      !hasCredentials && !hasFragment && pathUnmodified
+      ? graphRejectedDeltaRoute(link, calendarID, graphBase)
+      : { canonicalCandidateRoute: "unknown", canonicalCandidateOwnerKind: "unknown" };
     throw Object.assign(new Error("Outlook returned a delta link outside the calendar read scope."), {
       // Fixed fields only: no URL, token, calendar/account ID or caught error.
       cause: { code: "graph-delta-link-scope-invalid", linkKind, sameOrigin, sameProtocol,
         pathPrefixMatches, pathSuffixMatches, calendarSegmentCount, calendarEncodingValid,
         calendarIdMatches, rawPathEqual: parsed.pathname === expected.pathname,
-        pathUnmodified, hasCredentials, hasFragment },
+        pathUnmodified, hasCredentials, hasFragment, ...route },
     });
   }
   return link;
+}
+
+type GraphCanonicalCalendarBinding = {
+  prefix: string;
+  suffix: string;
+  owner: string;
+  ownerKind: "me" | "users-segment" | "users-odata";
+  keyStyle: "segment" | "odata";
+};
+
+class GraphCalendarIdentityError extends Error {
+  readonly cause: {
+    code: "graph-calendar-identity-unverified";
+    reason: "request" | "response" | "body" | "canonical-resource";
+    status?: number;
+  };
+  constructor(reason: GraphCalendarIdentityError["cause"]["reason"], status?: number) {
+    super("Outlook delta link identity could not be verified.");
+    this.name = "GraphCalendarIdentityError";
+    // Provider errors, malformed JSON and URI errors can contain private input.
+    // Retain only this fixed classification, never the caught error or body.
+    this.cause = { code: "graph-calendar-identity-unverified", reason,
+      ...(status === undefined ? {} : { status }) };
+  }
+}
+
+function graphCanonicalCalendarBinding(
+  link: unknown,
+  calendarID: string,
+  graphBase: string,
+  kind: "resource" | "delta",
+): GraphCanonicalCalendarBinding | null {
+  if (typeof link !== "string" || !link || link.trim() !== link || /[\u0000-\u001f\u007f]/.test(link)) return null;
+  try {
+    const parsed = new URL(link);
+    const base = new URL(`${graphBase}/`);
+    const raw = /^[A-Za-z][A-Za-z\d+.-]*:\/\/([^/?#]*)(\/[^?#]*)?/.exec(link);
+    if (parsed.origin !== base.origin || parsed.protocol !== base.protocol ||
+      !["https:", "http:"].includes(base.protocol) || !raw || raw[2] !== parsed.pathname ||
+      parsed.username || parsed.password || raw[1]!.includes("@") || link.includes("#") ||
+      (kind === "resource" && link.includes("?"))) return null;
+    const deltaSuffix = "/calendarView/delta";
+    if (kind === "delta" && !parsed.pathname.endsWith(deltaSuffix)) return null;
+    const path = kind === "delta" ? parsed.pathname.slice(0, -deltaSuffix.length) : parsed.pathname;
+    if (!path.startsWith(base.pathname)) return null;
+    const parts = path.slice(base.pathname.length).split("/");
+    const decodeKey = (value: string, odata = false): string | null => {
+      const decoded = decodeURIComponent(value);
+      // OData string keys escape one quote as two, after URI decoding once.
+      if (odata && !/^(?:[^']|'')*$/.test(decoded)) return null;
+      const key = odata ? decoded.replace(/''/g, "'") : decoded;
+      return validGraphId(key) ? key : null;
+    };
+    const odataKey = (segment: string, collection: string) => {
+      const prefix = `${collection}('`;
+      return segment.startsWith(prefix) && segment.endsWith("')")
+        ? decodeKey(segment.slice(prefix.length, -2), true) : null;
+    };
+    let ownerParts: number;
+    let ownerKind: GraphCanonicalCalendarBinding["ownerKind"];
+    if (parts[0] === "me") { ownerParts = 1; ownerKind = "me"; }
+    else if (parts[0] === "users" && parts[1] && decodeKey(parts[1]) !== null) {
+      ownerParts = 2; ownerKind = "users-segment";
+    }
+    else if (parts[0] && odataKey(parts[0], "users") !== null) {
+      ownerParts = 1; ownerKind = "users-odata";
+    }
+    else return null;
+    const owner = `${base.pathname}${parts.slice(0, ownerParts).join("/")}/`;
+    const calendar = parts.slice(ownerParts);
+    if (calendar.length === 2 && calendar[0] === "calendars" && calendar[1] &&
+      decodeKey(calendar[1]) === calendarID) {
+      return { prefix: `${owner}calendars/`, suffix: "", owner, ownerKind, keyStyle: "segment" };
+    }
+    if (calendar.length === 1 && calendar[0] && odataKey(calendar[0], "calendars") === calendarID) {
+      return { prefix: `${owner}calendars('`, suffix: "')", owner, ownerKind, keyStyle: "odata" };
+    }
+    // Default-calendar paths and unknown aliases have no explicit native key.
+    return null;
+  } catch { return null; }
+}
+
+// Rejection-only diagnostics. A default-calendar route lacks the bound native
+// key and remains unauthorized; this classification never decides acceptance.
+function graphRejectedDeltaRoute(link: string, calendarID: string, graphBase: string): {
+  canonicalCandidateRoute: "explicit-calendar" | "default-calendar" | "unknown";
+  canonicalCandidateOwnerKind: GraphCanonicalCalendarBinding["ownerKind"] | "unknown";
+} {
+  const unknown = { canonicalCandidateRoute: "unknown", canonicalCandidateOwnerKind: "unknown" } as const;
+  const explicit = graphCanonicalCalendarBinding(link, calendarID, graphBase, "delta");
+  if (explicit) return { canonicalCandidateRoute: "explicit-calendar", canonicalCandidateOwnerKind: explicit.ownerKind };
+  try {
+    const path = new URL(link).pathname;
+    const prefix = new URL(`${graphBase}/`).pathname;
+    const suffix = "/calendarView/delta";
+    if (!path.startsWith(prefix) || !path.endsWith(suffix)) return unknown;
+    let owner = path.slice(prefix.length, -suffix.length);
+    if (owner.endsWith("/calendar")) owner = owner.slice(0, -"/calendar".length);
+    if (owner === "me") return { canonicalCandidateRoute: "default-calendar", canonicalCandidateOwnerKind: "me" };
+    const parts = owner.split("/");
+    if (parts.length === 2 && parts[0] === "users" && validGraphId(decodeURIComponent(parts[1]!))) {
+      return { canonicalCandidateRoute: "default-calendar", canonicalCandidateOwnerKind: "users-segment" };
+    }
+    if (parts.length === 1 && owner.startsWith("users('") && owner.endsWith("')")) {
+      const key = decodeURIComponent(owner.slice("users('".length, -2));
+      if (/^(?:[^']|'')*$/.test(key) && validGraphId(key.replace(/''/g, "'"))) {
+        return { canonicalCandidateRoute: "default-calendar", canonicalCandidateOwnerKind: "users-odata" };
+      }
+    }
+    return unknown;
+  } catch { return unknown; }
+}
+
+async function readGraphCanonicalCalendarBinding(
+  accessToken: string,
+  calendarID: string,
+  graphBase: string,
+  fetchImpl: typeof fetch,
+): Promise<GraphCanonicalCalendarBinding> {
+  let response: Response;
+  try {
+    // Only this constructed, bound-calendar address can supply identity proof.
+    // Never probe a rejected continuation or derive a user key from OAuth sub.
+    response = await observedProviderRequest(fetchImpl,
+      `${graphBase}/me/calendars/${encodeURIComponent(calendarID)}`, {
+        method: "GET", redirect: "error",
+        headers: { Authorization: `Bearer ${accessToken}`, Prefer: PREFER,
+          Accept: "application/json;odata.metadata=full", "Cache-Control": "no-cache" },
+      });
+  } catch { throw new GraphCalendarIdentityError("request"); }
+  if (response.status !== 200 || response.redirected) throw new GraphCalendarIdentityError("response", response.status);
+  try { assertCompleteEventReadResponse(response); }
+  catch { throw new GraphCalendarIdentityError("response", response.status); }
+  let data: any;
+  try { data = await response.json(); }
+  catch { throw new GraphCalendarIdentityError("body", response.status); }
+  if (!data || typeof data !== "object" || Array.isArray(data) || data.id !== calendarID ||
+    data.value !== undefined || data["@removed"] !== undefined || data["@odata.nextLink"] !== undefined ||
+    data["@odata.deltaLink"] !== undefined ||
+    (data["@odata.type"] !== undefined && data["@odata.type"] !== "#microsoft.graph.calendar")) {
+    throw new GraphCalendarIdentityError("body", response.status);
+  }
+  const binding = graphCanonicalCalendarBinding(data["@odata.id"], calendarID, graphBase, "resource");
+  if (!binding) throw new GraphCalendarIdentityError("canonical-resource", response.status);
+  return binding;
 }
 
 function assertActiveGraphItem(item: any, expectedID?: string) {
@@ -693,13 +842,49 @@ export async function fetchMicrosoftChanges(
   const excludedEvents = new Set(options.excludedEventIDs ?? []);
   const excludedSeries = new Set(options.excludedSeriesIDs ?? []);
   const knownEvents = new Set(options.knownEventIDs ?? []);
+  let canonicalBinding: Promise<GraphCanonicalCalendarBinding> | undefined;
+  const assertReadDeltaLink = async (link: unknown, kind: "cursor" | "request" | "next" | "delta") => {
+    try { return assertDeltaLink(link, externalCalendarId, graphBase, kind); }
+    catch (error) {
+      const candidate = graphCanonicalCalendarBinding(link, externalCalendarId, graphBase, "delta");
+      if (!candidate) throw error;
+      // Fresh for each reader invocation and the same token/source generation.
+      // This binds only the calendar address, never private-read/deletion rights.
+      const proven = await (canonicalBinding ??= readGraphCanonicalCalendarBinding(
+        accessToken, externalCalendarId, graphBase, fetchImpl));
+      const ownerMatches = candidate.owner === proven.owner;
+      const keyStyleMatches = candidate.keyStyle === proven.keyStyle;
+      // The same token's /me collection is already bound by the constructed
+      // GET. An unnamed OData string primary key addresses that same explicit
+      // calendar; it does not infer any /users identity from token claims.
+      const mePrimaryKey = candidate.ownerKind === "me" && candidate.keyStyle === "odata";
+      if (!mePrimaryKey && (candidate.prefix !== proven.prefix || candidate.suffix !== proven.suffix)) {
+        const cause = error instanceof Error ? (error as Error & { cause?: unknown }).cause : undefined;
+        if (cause && typeof cause === "object") {
+          Object.assign(cause, {
+            canonicalCandidateOwnerKind: candidate.ownerKind, canonicalProofOwnerKind: proven.ownerKind,
+            canonicalCandidateKeyStyle: candidate.keyStyle, canonicalProofKeyStyle: proven.keyStyle,
+            canonicalOwnerMatches: ownerMatches, canonicalKeyStyleMatches: keyStyleMatches,
+          });
+        }
+        throw error;
+      }
+      return link as string;
+    }
+  };
 
   let parsed = parseCursor(cursor);
   if (parsed && parsed.calendarId !== externalCalendarId) parsed = null;
   if (parsed && parsed.windowEnd - now < WINDOW_RENEW_MARGIN_DAYS * DAY_MS) parsed = null;
-  // Invalid/out-of-scope cursor links are renewed without sending credentials.
+  // Unsafe cursors are never fetched. Canonical cursors require a fresh proof
+  // from the constructed bound-calendar endpoint before sending credentials.
   if (parsed) {
-    try { assertDeltaLink(parsed.link, externalCalendarId, graphBase, "cursor"); } catch { parsed = null; }
+    try { await assertReadDeltaLink(parsed.link, "cursor"); }
+    catch (error) {
+      // Unavailable proof is a failed read, not permission to replace a window.
+      if (error instanceof GraphCalendarIdentityError) throw error;
+      parsed = null;
+    }
   }
   let reset = !parsed;
   let windowStart = parsed?.windowStart ?? now - WINDOW_PAST_DAYS * DAY_MS;
@@ -785,7 +970,7 @@ export async function fetchMicrosoftChanges(
   };
 
   while (!deltaLink) {
-    assertDeltaLink(url, externalCalendarId, graphBase, "request");
+    await assertReadDeltaLink(url, "request");
     const key = new URL(url).href;
     if (visited.has(key) || ++pages > 1000) throw new Error("Outlook returned a cyclic or excessive delta page set.");
     visited.add(key);
@@ -809,8 +994,8 @@ export async function fetchMicrosoftChanges(
     const hasNext = data["@odata.nextLink"] !== undefined;
     const hasDelta = data["@odata.deltaLink"] !== undefined;
     if (hasNext === hasDelta) throw new Error("Outlook returned an unfinished or ambiguous delta page.");
-    const continuation = assertDeltaLink(data[hasNext ? "@odata.nextLink" : "@odata.deltaLink"],
-      externalCalendarId, graphBase, hasNext ? "next" : "delta");
+    const continuation = await assertReadDeltaLink(data[hasNext ? "@odata.nextLink" : "@odata.deltaLink"],
+      hasNext ? "next" : "delta");
     for (const item of data.value) {
       if (!item || typeof item !== "object" || Array.isArray(item) || !validGraphId(item.id))
         throw new Error("Outlook returned an invalid delta event address.");
