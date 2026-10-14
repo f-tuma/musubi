@@ -10,6 +10,11 @@ on:
       version:
         description: "Release version, no leading v (e.g. 0.1.2)"
         required: true
+        type: string
+      expected_source_sha:
+        description: "Approved full 40-character main commit SHA"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -27,35 +32,21 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.ver.outputs.version }}
-      release_notes_path: ${{ steps.ver.outputs.release_notes_path }}
     steps:
       - uses: >-
           actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.sha }}
       - id: ver
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_VERSION: ${{ inputs.version }}
+          EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
         run: |
-          test "$GITHUB_REF_NAME" = "main" || {
-            echo "::error::Releases must run from main"
-            exit 1
-          }
+          node scripts/release-guard.mjs check
           V="$RELEASE_VERSION"
-          [[ "$V" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
-            echo "::error::version must be X.Y.Z (no leading v)"
-            exit 1
-          }
           node scripts/verify-release.mjs "$V"
-          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v$V" \
-            >/dev/null 2>&1; then
-            echo "::error::v$V already exists and cannot be overwritten"
-            exit 1
-          fi
           echo "version=$V" >> "$GITHUB_OUTPUT"
-          notes_path="docs/releases/$V-notes.md"
-          if [ -f "$notes_path" ]; then
-            echo "release_notes_path=$notes_path" >> "$GITHUB_OUTPUT"
-          fi
 
   build:
     name: Build ${{ matrix.image.scope }} (${{ matrix.platform.arch }})
@@ -82,6 +73,8 @@ jobs:
     steps:
       - uses: >-
           actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.sha }}
       # Native runners avoid QEMU's illegal-instruction crash during pnpm deploy.
       - uses: >-
           docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
@@ -171,16 +164,31 @@ jobs:
   release:
     needs: [prepare, publish]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
       - uses: >-
           actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-      - uses: >-
-          softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
         with:
-          tag_name: v${{ needs.prepare.outputs.version }}
-          target_commitish: ${{ github.sha }}
-          name: Musubi v${{ needs.prepare.outputs.version }}
-          body_path: ${{ needs.prepare.outputs.release_notes_path }}
-          generate_release_notes: true
+          ref: ${{ github.sha }}
+      # This fresh, non-force tag push may start Dokploy immediately. Every
+      # production backup/maintenance prerequisite must already be satisfied.
+      # A later release-body failure requires operator reconciliation; never
+      # delete/recreate the tag or silently edit a pre-existing release.
+      - name: Create the deployment tag at the approved source
+        id: deployment_tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+          EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
+        run: |
+          node scripts/release-guard.mjs tag
+          echo "source_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+      - name: Create the GitHub release without updating an existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+          EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
+          OWNED_TAG_SOURCE_SHA: ${{ steps.deployment_tag.outputs.source_sha }}
+        run: node scripts/release-guard.mjs release
