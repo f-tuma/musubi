@@ -535,17 +535,55 @@ async function assertCompleteGraphRead(response: Response) {
   }
 }
 
-function assertDeltaLink(link: unknown, calendarID: string, graphBase: string): string {
-  if (typeof link !== "string" || !link || link.trim() !== link) {
-    throw new Error("Outlook returned an invalid delta link.");
+function assertDeltaLink(
+  link: unknown,
+  calendarID: string,
+  graphBase: string,
+  linkKind: "cursor" | "request" | "next" | "delta",
+): string {
+  const invalid = () => Object.assign(new Error("Outlook returned an invalid delta link."), {
+    cause: { code: "graph-delta-link-invalid", linkKind },
+  });
+  if (typeof link !== "string" || !link || link.trim() !== link || /[\u0000-\u001f\u007f]/.test(link)) {
+    throw invalid();
   }
   const expected = new URL(`${graphBase}/me/calendars/${encodeURIComponent(calendarID)}/calendarView/delta`);
   let parsed: URL;
-  try { parsed = new URL(link); } catch { throw new Error("Outlook returned an invalid delta link."); }
-  if (parsed.origin !== expected.origin || parsed.pathname !== expected.pathname ||
-    parsed.username || parsed.password || parsed.hash || parsed.protocol !== expected.protocol ||
-    !["https:", "http:"].includes(expected.protocol)) {
-    throw new Error("Outlook returned a delta link outside the calendar read scope.");
+  try { parsed = new URL(link); } catch { throw invalid(); }
+  const prefix = new URL(`${graphBase}/me/calendars/`).pathname;
+  const suffix = "/calendarView/delta";
+  const pathPrefixMatches = parsed.pathname.startsWith(prefix);
+  const pathSuffixMatches = parsed.pathname.endsWith(suffix);
+  const segment = pathPrefixMatches && pathSuffixMatches
+    ? parsed.pathname.slice(prefix.length, -suffix.length) : null;
+  const calendarSegmentCount = segment === null ? null : segment ? segment.split("/").length : 0;
+  let calendarEncodingValid = false;
+  let calendarIdMatches = false;
+  if (calendarSegmentCount === 1) {
+    try {
+      // Only this opaque ID segment has equivalent spellings (e.g. =/%3D).
+      // Static routes and other identities cannot be authorized by decoding.
+      calendarIdMatches = decodeURIComponent(segment!) === calendarID;
+      calendarEncodingValid = true;
+    } catch { /* Never retain a URI error or its potentially private input. */ }
+  }
+  // URL parsing repairs dot segments, backslashes and malformed authorities.
+  // Reject repaired paths; do not rebuild the opaque continuation or its query.
+  const raw = /^[A-Za-z][A-Za-z\d+.-]*:\/\/([^/?#]*)(\/[^?#]*)?/.exec(link);
+  const pathUnmodified = raw !== null && raw[2] === parsed.pathname;
+  const sameOrigin = parsed.origin === expected.origin;
+  const sameProtocol = parsed.protocol === expected.protocol;
+  const hasCredentials = Boolean(parsed.username || parsed.password || raw?.[1]?.includes("@"));
+  const hasFragment = link.includes("#");
+  if (!sameOrigin || !sameProtocol || !["https:", "http:"].includes(expected.protocol) ||
+    hasCredentials || hasFragment || !pathUnmodified || !calendarIdMatches) {
+    throw Object.assign(new Error("Outlook returned a delta link outside the calendar read scope."), {
+      // Fixed fields only: no URL, token, calendar/account ID or caught error.
+      cause: { code: "graph-delta-link-scope-invalid", linkKind, sameOrigin, sameProtocol,
+        pathPrefixMatches, pathSuffixMatches, calendarSegmentCount, calendarEncodingValid,
+        calendarIdMatches, rawPathEqual: parsed.pathname === expected.pathname,
+        pathUnmodified, hasCredentials, hasFragment },
+    });
   }
   return link;
 }
@@ -661,7 +699,7 @@ export async function fetchMicrosoftChanges(
   if (parsed && parsed.windowEnd - now < WINDOW_RENEW_MARGIN_DAYS * DAY_MS) parsed = null;
   // Invalid/out-of-scope cursor links are renewed without sending credentials.
   if (parsed) {
-    try { assertDeltaLink(parsed.link, externalCalendarId, graphBase); } catch { parsed = null; }
+    try { assertDeltaLink(parsed.link, externalCalendarId, graphBase, "cursor"); } catch { parsed = null; }
   }
   let reset = !parsed;
   let windowStart = parsed?.windowStart ?? now - WINDOW_PAST_DAYS * DAY_MS;
@@ -747,7 +785,7 @@ export async function fetchMicrosoftChanges(
   };
 
   while (!deltaLink) {
-    assertDeltaLink(url, externalCalendarId, graphBase);
+    assertDeltaLink(url, externalCalendarId, graphBase, "request");
     const key = new URL(url).href;
     if (visited.has(key) || ++pages > 1000) throw new Error("Outlook returned a cyclic or excessive delta page set.");
     visited.add(key);
@@ -771,7 +809,8 @@ export async function fetchMicrosoftChanges(
     const hasNext = data["@odata.nextLink"] !== undefined;
     const hasDelta = data["@odata.deltaLink"] !== undefined;
     if (hasNext === hasDelta) throw new Error("Outlook returned an unfinished or ambiguous delta page.");
-    const continuation = assertDeltaLink(data[hasNext ? "@odata.nextLink" : "@odata.deltaLink"], externalCalendarId, graphBase);
+    const continuation = assertDeltaLink(data[hasNext ? "@odata.nextLink" : "@odata.deltaLink"],
+      externalCalendarId, graphBase, hasNext ? "next" : "delta");
     for (const item of data.value) {
       if (!item || typeof item !== "object" || Array.isArray(item) || !validGraphId(item.id))
         throw new Error("Outlook returned an invalid delta event address.");
