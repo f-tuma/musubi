@@ -7,7 +7,7 @@
  * it now prevents is real, this file's predecessor sat two releases behind the
  * product it claimed to be.
  */
-export const PRODUCT_VERSION = "0.2.5";
+export const PRODUCT_VERSION = "0.2.6";
 
 /**
  * The oldest web/native requester this server will serve.

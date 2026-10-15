@@ -596,14 +596,28 @@ type GraphCanonicalCalendarBinding = {
   prefix: string;
   suffix: string;
   owner: string;
+  ownerKey: string | null;
+  calendarKey: string;
   ownerKind: "me" | "users-segment" | "users-odata";
   keyStyle: "segment" | "odata";
+};
+
+type GraphIdentityDiagnostics = {
+  canonicalMetadataState: "not-evaluated" | "absent" | "null" | "non-string" | "empty" | "present";
+  canonicalMetadataFailure: "not-evaluated" | "none" | "not-absolute" | "unsafe-url" | "origin" | "protocol" | "version" | "unsupported-route" | "calendar-key-mismatch";
+  canonicalProofOwnerKind: GraphCanonicalCalendarBinding["ownerKind"] | "unknown";
+  canonicalProofKeyStyle: GraphCanonicalCalendarBinding["keyStyle"] | "unknown";
+};
+type GraphCalendarIdentityProof = {
+  binding: GraphCanonicalCalendarBinding | null;
+  diagnostics: GraphIdentityDiagnostics;
+  contradictory: boolean;
 };
 
 class GraphCalendarIdentityError extends Error {
   readonly cause: {
     code: "graph-calendar-identity-unverified";
-    reason: "request" | "response" | "body" | "canonical-resource";
+    reason: "request" | "response" | "body" | "canonical-resource" | "principal-request" | "principal-response" | "principal-body";
     status?: number;
   };
   constructor(reason: GraphCalendarIdentityError["cause"]["reason"], status?: number) {
@@ -618,7 +632,7 @@ class GraphCalendarIdentityError extends Error {
 
 function graphCanonicalCalendarBinding(
   link: unknown,
-  calendarID: string,
+  calendarID: string | null,
   graphBase: string,
   kind: "resource" | "delta",
 ): GraphCanonicalCalendarBinding | null {
@@ -650,26 +664,65 @@ function graphCanonicalCalendarBinding(
     };
     let ownerParts: number;
     let ownerKind: GraphCanonicalCalendarBinding["ownerKind"];
-    if (parts[0] === "me") { ownerParts = 1; ownerKind = "me"; }
+    let ownerKey: string | null;
+    if (parts[0] === "me") { ownerParts = 1; ownerKind = "me"; ownerKey = null; }
     else if (parts[0] === "users" && parts[1] && decodeKey(parts[1]) !== null) {
-      ownerParts = 2; ownerKind = "users-segment";
+      ownerParts = 2; ownerKind = "users-segment"; ownerKey = decodeKey(parts[1]);
     }
     else if (parts[0] && odataKey(parts[0], "users") !== null) {
-      ownerParts = 1; ownerKind = "users-odata";
+      ownerParts = 1; ownerKind = "users-odata"; ownerKey = odataKey(parts[0], "users");
     }
     else return null;
     const owner = `${base.pathname}${parts.slice(0, ownerParts).join("/")}/`;
     const calendar = parts.slice(ownerParts);
-    if (calendar.length === 2 && calendar[0] === "calendars" && calendar[1] &&
-      decodeKey(calendar[1]) === calendarID) {
-      return { prefix: `${owner}calendars/`, suffix: "", owner, ownerKind, keyStyle: "segment" };
+    if (calendar.length === 2 && calendar[0] === "calendars" && calendar[1]) {
+      const calendarKey = decodeKey(calendar[1]);
+      if (calendarKey !== null && (calendarID === null || calendarKey === calendarID)) {
+        return { prefix: `${owner}calendars/`, suffix: "", owner, ownerKey, calendarKey, ownerKind, keyStyle: "segment" };
+      }
     }
-    if (calendar.length === 1 && calendar[0] && odataKey(calendar[0], "calendars") === calendarID) {
-      return { prefix: `${owner}calendars('`, suffix: "')", owner, ownerKind, keyStyle: "odata" };
+    if (calendar.length === 1 && calendar[0]) {
+      const calendarKey = odataKey(calendar[0], "calendars");
+      if (calendarKey !== null && (calendarID === null || calendarKey === calendarID)) {
+        return { prefix: `${owner}calendars('`, suffix: "')", owner, ownerKey, calendarKey, ownerKind, keyStyle: "odata" };
+      }
     }
     // Default-calendar paths and unknown aliases have no explicit native key.
     return null;
   } catch { return null; }
+}
+
+function graphCalendarMetadataProof(value: unknown, calendarID: string, graphBase: string): GraphCalendarIdentityProof {
+  const diagnostics: GraphIdentityDiagnostics = {
+    canonicalMetadataState: value === undefined ? "absent" : value === null ? "null" :
+      typeof value !== "string" ? "non-string" : value.length === 0 ? "empty" : "present",
+    canonicalMetadataFailure: "none", canonicalProofOwnerKind: "unknown", canonicalProofKeyStyle: "unknown",
+  };
+  const result: GraphCalendarIdentityProof = { binding: null, diagnostics, contradictory: false };
+  if (typeof value !== "string" || !value) return result;
+  try {
+    let parsed: URL;
+    try { parsed = new URL(value); }
+    catch { diagnostics.canonicalMetadataFailure = "not-absolute"; return result; }
+    const base = new URL(`${graphBase}/`);
+    const raw = /^[A-Za-z][A-Za-z\d+.-]*:\/\/([^/?#]*)(\/[^?#]*)?/.exec(value);
+    if (value.trim() !== value || /[\u0000-\u001f\u007f]/.test(value) || !raw || raw[2] !== parsed.pathname ||
+      parsed.username || parsed.password || raw[1]!.includes("@") || value.includes("#") || value.includes("?")) {
+      diagnostics.canonicalMetadataFailure = "unsafe-url"; return result;
+    }
+    if (parsed.protocol !== base.protocol) { diagnostics.canonicalMetadataFailure = "protocol"; return result; }
+    if (parsed.origin !== base.origin) { diagnostics.canonicalMetadataFailure = "origin"; return result; }
+    if (!parsed.pathname.startsWith(base.pathname)) { diagnostics.canonicalMetadataFailure = "version"; return result; }
+    const binding = graphCanonicalCalendarBinding(value, null, graphBase, "resource");
+    if (!binding) { diagnostics.canonicalMetadataFailure = "unsupported-route"; return result; }
+    diagnostics.canonicalProofOwnerKind = binding.ownerKind;
+    diagnostics.canonicalProofKeyStyle = binding.keyStyle;
+    if (binding.calendarKey !== calendarID) {
+      diagnostics.canonicalMetadataFailure = "calendar-key-mismatch";
+      result.contradictory = true;
+    } else result.binding = binding;
+    return result;
+  } catch { diagnostics.canonicalMetadataFailure = "unsupported-route"; return result; }
 }
 
 // Rejection-only diagnostics. A default-calendar route lacks the bound native
@@ -703,12 +756,12 @@ function graphRejectedDeltaRoute(link: string, calendarID: string, graphBase: st
   } catch { return unknown; }
 }
 
-async function readGraphCanonicalCalendarBinding(
+async function readGraphCalendarIdentityProof(
   accessToken: string,
   calendarID: string,
   graphBase: string,
   fetchImpl: typeof fetch,
-): Promise<GraphCanonicalCalendarBinding> {
+): Promise<GraphCalendarIdentityProof> {
   let response: Response;
   try {
     // Only this constructed, bound-calendar address can supply identity proof.
@@ -732,9 +785,38 @@ async function readGraphCanonicalCalendarBinding(
     (data["@odata.type"] !== undefined && data["@odata.type"] !== "#microsoft.graph.calendar")) {
     throw new GraphCalendarIdentityError("body", response.status);
   }
-  const binding = graphCanonicalCalendarBinding(data["@odata.id"], calendarID, graphBase, "resource");
-  if (!binding) throw new GraphCalendarIdentityError("canonical-resource", response.status);
-  return binding;
+  const proof = graphCalendarMetadataProof(data["@odata.id"], calendarID, graphBase);
+  if (proof.contradictory) {
+    const error = new GraphCalendarIdentityError("canonical-resource", response.status);
+    Object.assign(error.cause, proof.diagnostics);
+    throw error;
+  }
+  return proof;
+}
+
+async function readGraphPrincipalID(accessToken: string, graphBase: string, fetchImpl: typeof fetch): Promise<string> {
+  let response: Response;
+  try {
+    // A fresh authenticated /me response supplies the Graph key. OAuth sub,
+    // tenant guesses, email labels and rejected user URLs are never probes.
+    response = await observedProviderRequest(fetchImpl, `${graphBase}/me?$select=id`, {
+      method: "GET", redirect: "error",
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json", "Cache-Control": "no-cache" },
+    });
+  } catch { throw new GraphCalendarIdentityError("principal-request"); }
+  if (response.status !== 200 || response.redirected) throw new GraphCalendarIdentityError("principal-response", response.status);
+  try { assertCompleteEventReadResponse(response); }
+  catch { throw new GraphCalendarIdentityError("principal-response", response.status); }
+  let data: any;
+  try { data = await response.json(); }
+  catch { throw new GraphCalendarIdentityError("principal-body", response.status); }
+  if (!data || typeof data !== "object" || Array.isArray(data) || !validGraphId(data.id) ||
+    data.value !== undefined || data["@removed"] !== undefined || data["@odata.nextLink"] !== undefined ||
+    data["@odata.deltaLink"] !== undefined ||
+    (data["@odata.type"] !== undefined && data["@odata.type"] !== "#microsoft.graph.user")) {
+    throw new GraphCalendarIdentityError("principal-body", response.status);
+  }
+  return data.id;
 }
 
 function assertActiveGraphItem(item: any, expectedID?: string) {
@@ -842,7 +924,8 @@ export async function fetchMicrosoftChanges(
   const excludedEvents = new Set(options.excludedEventIDs ?? []);
   const excludedSeries = new Set(options.excludedSeriesIDs ?? []);
   const knownEvents = new Set(options.knownEventIDs ?? []);
-  let canonicalBinding: Promise<GraphCanonicalCalendarBinding> | undefined;
+  let calendarIdentityProof: Promise<GraphCalendarIdentityProof> | undefined;
+  let principalIdentity: Promise<string> | undefined;
   const assertReadDeltaLink = async (link: unknown, kind: "cursor" | "request" | "next" | "delta") => {
     try { return assertDeltaLink(link, externalCalendarId, graphBase, kind); }
     catch (error) {
@@ -850,26 +933,40 @@ export async function fetchMicrosoftChanges(
       if (!candidate) throw error;
       // Fresh for each reader invocation and the same token/source generation.
       // This binds only the calendar address, never private-read/deletion rights.
-      const proven = await (canonicalBinding ??= readGraphCanonicalCalendarBinding(
-        accessToken, externalCalendarId, graphBase, fetchImpl));
-      const ownerMatches = candidate.owner === proven.owner;
-      const keyStyleMatches = candidate.keyStyle === proven.keyStyle;
-      // The same token's /me collection is already bound by the constructed
-      // GET. An unnamed OData string primary key addresses that same explicit
-      // calendar; it does not infer any /users identity from token claims.
-      const mePrimaryKey = candidate.ownerKind === "me" && candidate.keyStyle === "odata";
-      if (!mePrimaryKey && (candidate.prefix !== proven.prefix || candidate.suffix !== proven.suffix)) {
+      let proof: GraphCalendarIdentityProof | undefined;
+      let principalMatches: boolean | null = null;
+      try {
+        proof = await (calendarIdentityProof ??= readGraphCalendarIdentityProof(
+          accessToken, externalCalendarId, graphBase, fetchImpl));
+        // This constructed read directly proves the same token's /me key.
+        // Optional canonical metadata contributes no authority to this rule.
+        if (candidate.ownerKind === "me") return link as string;
+        const proven = proof.binding;
+        if (proven && candidate.prefix === proven.prefix && candidate.suffix === proven.suffix) return link as string;
+        const principal = await (principalIdentity ??= readGraphPrincipalID(accessToken, graphBase, fetchImpl));
+        principalMatches = candidate.ownerKey === principal;
+        if (principalMatches) return link as string;
         const cause = error instanceof Error ? (error as Error & { cause?: unknown }).cause : undefined;
-        if (cause && typeof cause === "object") {
-          Object.assign(cause, {
-            canonicalCandidateOwnerKind: candidate.ownerKind, canonicalProofOwnerKind: proven.ownerKind,
-            canonicalCandidateKeyStyle: candidate.keyStyle, canonicalProofKeyStyle: proven.keyStyle,
-            canonicalOwnerMatches: ownerMatches, canonicalKeyStyleMatches: keyStyleMatches,
-          });
-        }
+        if (cause && typeof cause === "object") Object.assign(cause, {
+          ...proof.diagnostics, canonicalCandidateOwnerKind: candidate.ownerKind,
+          canonicalCandidateKeyStyle: candidate.keyStyle, principalMatches,
+          canonicalOwnerMatches: proven ? candidate.owner === proven.owner : null,
+          canonicalKeyStyleMatches: proven ? candidate.keyStyle === proven.keyStyle : null,
+        });
         throw error;
+      } catch (identityError) {
+        if (identityError instanceof GraphCalendarIdentityError) {
+          // Fixed classifications survive every failed proof, including before
+          // optional metadata is available. Never attach the URI or provider ID.
+          Object.assign(identityError.cause, proof?.diagnostics ?? {
+            canonicalMetadataState: "not-evaluated", canonicalMetadataFailure: "not-evaluated",
+            canonicalProofOwnerKind: "unknown", canonicalProofKeyStyle: "unknown",
+            ...identityError.cause,
+          }, { canonicalCandidateRoute: "explicit-calendar", canonicalCandidateOwnerKind: candidate.ownerKind,
+            canonicalCandidateKeyStyle: candidate.keyStyle, principalMatches });
+        }
+        throw identityError;
       }
-      return link as string;
     }
   };
 

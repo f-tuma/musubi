@@ -124,6 +124,7 @@ async function main() {
     "https://fixture:synthetic@graph.microsoft.com/v1.0/me/calendars/work%2Fteam/calendarView/delta?token=opaque",
   ];
   const boundCalendarURL = `${base}/me/calendars/${encodeURIComponent(calendar)}`;
+  const principalURL = `${base}/me?$select=id`;
   const eligibleUnprovenAliases = new Set([
     `${base}/users/someone/calendars/work%2Fteam/calendarView/delta?token=opaque`,
   ]);
@@ -136,11 +137,15 @@ async function main() {
           assert.ok(eligibleUnprovenAliases.has(link), "Unsafe shapes cannot initiate calendar identity probes");
           return json({ id: calendar, "@odata.id": boundCalendarURL });
         }
+        if (String(input) === principalURL) {
+          assert.ok(eligibleUnprovenAliases.has(link));
+          return json({ id: "different-current-principal" });
+        }
         assert.equal(String(input), JSON.parse(cursor).link);
         assert.equal(requests, 1, "A rejected continuation must never be followed");
         return json({ value: [item("uncommitted-page")], [property]: link });
       }), /delta link/, `A foreign or malformed ${property} must be rejected`);
-      assert.equal(requests, eligibleUnprovenAliases.has(link) ? 2 : 1);
+      assert.equal(requests, eligibleUnprovenAliases.has(link) ? 3 : 1);
     }
     let renewedRequests = 0;
     const unsafeCursor = JSON.stringify({ ...JSON.parse(cursor), link });
@@ -150,6 +155,10 @@ async function main() {
         assert.ok(eligibleUnprovenAliases.has(link));
         return json({ id: calendar, "@odata.id": boundCalendarURL });
       }
+      if (String(input) === principalURL) {
+        assert.ok(eligibleUnprovenAliases.has(link));
+        return json({ id: "different-current-principal" });
+      }
       const requested = new URL(String(input));
       assert.equal(requested.origin, "https://graph.microsoft.com");
       assert.equal(requested.pathname, new URL(view).pathname);
@@ -157,7 +166,7 @@ async function main() {
       assert.equal(requested.searchParams.get("endDateTime"), new Date(now + 730 * day).toISOString());
       return page();
     }, unsafeCursor);
-    assert.equal(renewedRequests, eligibleUnprovenAliases.has(link) ? 2 : 1,
+    assert.equal(renewedRequests, eligibleUnprovenAliases.has(link) ? 3 : 1,
       "An unsafe saved cursor must be renewed without fetching its link");
     assert.equal(renewed.cursorRestarted, true);
     assert.equal(renewed.reset, false);
@@ -218,6 +227,10 @@ async function main() {
             assert.equal(fixture.bindingMismatch, true);
             return json({ id: privateCalendar, "@odata.id": privateView.replace("/calendarView/delta", "") });
           }
+          if (String(input) === principalURL) {
+            assert.equal(fixture.bindingMismatch, true);
+            return json({ id: privateUser });
+          }
           assert.equal(String(input), JSON.parse(privateCursor).link);
           assert.equal(requests, 1);
           return json({ value: [], [property]: fixture.link });
@@ -231,7 +244,8 @@ async function main() {
           assert.equal(cause.code, "graph-delta-link-invalid");
         } else {
           const bindingKeys = fixture.bindingMismatch ? ["canonicalProofOwnerKind",
-            "canonicalCandidateKeyStyle", "canonicalProofKeyStyle", "canonicalOwnerMatches", "canonicalKeyStyleMatches"] : [];
+            "canonicalCandidateKeyStyle", "canonicalProofKeyStyle", "canonicalOwnerMatches", "canonicalKeyStyleMatches",
+            "canonicalMetadataState", "canonicalMetadataFailure", "principalMatches"] : [];
           assert.deepEqual(Object.keys(cause).sort(), [...scopeBooleanKeys, ...bindingKeys,
             "canonicalCandidateRoute", "canonicalCandidateOwnerKind", "code", "linkKind", "calendarSegmentCount"].sort());
           assert.equal(cause.code, "graph-delta-link-scope-invalid");
@@ -247,6 +261,9 @@ async function main() {
             assert.equal(cause.canonicalProofKeyStyle, "segment");
             assert.equal(cause.canonicalOwnerMatches, false);
             assert.equal(cause.canonicalKeyStyleMatches, false);
+            assert.equal(cause.canonicalMetadataState, "present");
+            assert.equal(cause.canonicalMetadataFailure, "none");
+            assert.equal(cause.principalMatches, false);
           }
         }
 
@@ -265,7 +282,7 @@ async function main() {
         }
         return true;
       });
-      assert.equal(requests, fixture.bindingMismatch ? 2 : 1);
+      assert.equal(requests, fixture.bindingMismatch ? 3 : 1);
     }
   }
   for (const route of defaultRoutes) {
@@ -408,8 +425,8 @@ async function main() {
     assert.equal(parseCursor(terminalOnly.nextCursor)?.link, meODataTerminal);
   }
 
-  // A valid proof authorizes one exact owner/static resource prefix and key
-  // style. Similar-looking owners, encodings or REST/OData styles do not match.
+  // A canonical owner/style mismatch needs an independent exact principal
+  // proof. An unrelated current principal cannot authorize a similar alias.
   const mismatchedCanonicalIdentity = [
     canonicalDelta.replace(ownerKey, "another-owner@another-tenant"),
     canonicalDelta.replace(ownerKey, encodeURIComponent(ownerKey)),
@@ -435,10 +452,11 @@ async function main() {
     canonicalDelta.replace("https://", "https://fixture:synthetic@"),
   ];
   for (const link of unprovenCanonicalLinks) {
-    let continuationReads = 0, proofReads = 0;
+    let continuationReads = 0, proofReads = 0, principalReads = 0;
     await assert.rejects(read(async input => {
       const url = String(input);
       if (url === boundCalendarURL) { proofReads++; assert.equal(proofReads, 1); return canonicalProof(); }
+      if (url === principalURL) { principalReads++; assert.equal(principalReads, 1); return json({ id: "different-current-principal" }); }
       assert.equal(url, JSON.parse(cursor).link, "A candidate cannot be fetched before its exact binding is proven");
       continuationReads++;
       return json({ value: [item("uncommitted-alias")], "@odata.nextLink": link });
@@ -446,6 +464,7 @@ async function main() {
     assert.equal(continuationReads, 1);
     assert.equal(proofReads, mismatchedCanonicalIdentity.includes(link) ? 1 : 0,
       "Only a syntactically safe explicit binding candidate may request identity proof");
+    assert.equal(principalReads, mismatchedCanonicalIdentity.includes(link) ? 1 : 0);
   }
 
   // A stale saved owner alias can renew only after a valid proof disagrees;
@@ -455,19 +474,20 @@ async function main() {
   const renewedAlias = await read(async input => {
     const url = String(input); staleRequests.push(url);
     if (url === boundCalendarURL) return canonicalProof();
+    if (url === principalURL) return json({ id: ownerKey });
     const requested = new URL(url);
     assert.equal(requested.pathname, new URL(view).pathname);
     assert.equal(requested.searchParams.get("startDateTime"), new Date(now - 180 * day).toISOString());
     return json({ value: [], "@odata.deltaLink": canonicalDelta });
   }, JSON.stringify({ ...JSON.parse(cursor), link: staleAlias }));
-  assert.equal(staleRequests.length, 2);
+  assert.equal(staleRequests.length, 3);
   assert.equal(staleRequests[0], boundCalendarURL);
   assert.equal(renewedAlias.cursorRestarted, true);
   assert.equal(parseCursor(renewedAlias.nextCursor)?.link, canonicalDelta);
 
   const proofSecret = "PRIVATE-Proof-Body-Identity-And-DeltaToken";
   const invalidCanonicalResources = [
-    undefined, null, 3, "", "/v1.0/me/calendars/work%2Fteam", "not an absolute URL",
+    undefined, null, 3, true, {}, [], "", "  ", "/v1.0/me/calendars/work%2Fteam", "not an absolute URL",
     canonicalResource.replace("graph.microsoft.com", "foreign.example"),
     canonicalResource.replace("https://", "http://"),
     canonicalResource.replace("/v1.0/", "/beta/"),
@@ -484,6 +504,83 @@ async function main() {
     canonicalResource.replace("/calendars(", "\\calendars("),
     canonicalResource.replace("/calendars(", "/cale\nndars("),
   ];
+  const contradictoryCanonicalResources = [
+    canonicalResource.replace("work%2Fteam", "another-calendar"),
+    canonicalResource.replace("work%2Fteam", "work%252Fteam"),
+  ];
+  const unusableCanonicalResources = invalidCanonicalResources.filter(resource =>
+    !contradictoryCanonicalResources.includes(resource as string));
+  const identityDiagnosticKeys = ["canonicalCandidateRoute", "canonicalCandidateOwnerKind", "canonicalCandidateKeyStyle",
+    "canonicalMetadataState", "canonicalMetadataFailure", "canonicalProofOwnerKind", "canonicalProofKeyStyle", "principalMatches"];
+  const assertIdentityFailure = (error: unknown, reason: string, privateValues: string[] = []) => {
+    assert.ok(error instanceof Error);
+    assert.match(error.message, /delta link/);
+    const cause = (error as Error & { cause: Record<string, unknown> }).cause;
+    assert.equal(cause?.code, "graph-calendar-identity-unverified");
+    assert.equal(cause.reason, reason);
+    assert.deepEqual(Object.keys(cause).sort(), ["code", "reason", ...identityDiagnosticKeys,
+      ...(cause.status === undefined ? [] : ["status"])].sort());
+    if (cause.status !== undefined) assert.equal(typeof cause.status, "number");
+    assert.equal(cause.canonicalCandidateRoute, "explicit-calendar");
+    assert.ok(["me", "users-segment", "users-odata"].includes(String(cause.canonicalCandidateOwnerKind)));
+    assert.ok(["segment", "odata"].includes(String(cause.canonicalCandidateKeyStyle)));
+    assert.ok(["not-evaluated", "absent", "null", "non-string", "empty", "present"].includes(String(cause.canonicalMetadataState)));
+    assert.ok(["not-evaluated", "none", "not-absolute", "unsafe-url", "origin", "protocol", "version", "unsupported-route", "calendar-key-mismatch"]
+      .includes(String(cause.canonicalMetadataFailure)));
+    assert.ok(["unknown", "me", "users-segment", "users-odata"].includes(String(cause.canonicalProofOwnerKind)));
+    assert.ok(["unknown", "segment", "odata"].includes(String(cause.canonicalProofKeyStyle)));
+    assert.ok(cause.principalMatches === null || typeof cause.principalMatches === "boolean");
+    const lines: string[] = [];
+    const originalWrite = process.stderr.write;
+    process.stderr.write = ((chunk: string) => { lines.push(String(chunk)); return true; }) as typeof process.stderr.write;
+    try { new StructuredLogger("error").error("sync.failed", { error }); }
+    finally { process.stderr.write = originalWrite; }
+    assert.equal(lines.length, 1);
+    assert.deepEqual(JSON.parse(lines[0]!).error.cause, cause);
+    for (const sensitive of [proofSecret, canonicalDelta, canonicalResource, ownerKey, calendar, "one%2btwo%3D", ...privateValues]) {
+      assert.equal(lines[0]!.includes(sensitive), false, "Proof failures cannot expose addresses or private response bodies");
+    }
+    return true;
+  };
+
+  // A successful scoped body read proves /me's explicit calendar primary key
+  // without relying on an optional, missing or unusable metadata annotation.
+  for (const resource of unusableCanonicalResources) {
+    const requests: string[] = [];
+    const accepted = await read(async input => {
+      const url = String(input); requests.push(url);
+      if (url === boundCalendarURL) return json({ id: calendar, "@odata.id": resource, canViewPrivateItems: false });
+      if (url === JSON.parse(cursor).link) return json({ value: [], "@odata.nextLink": meODataNext });
+      assert.equal(url, meODataNext, "Unusable metadata cannot authorize another URL or change the opaque token");
+      return json({ value: [item("body-proven-me")], "@odata.deltaLink": meODataTerminal });
+    });
+    assert.deepEqual(requests, [JSON.parse(cursor).link, boundCalendarURL, meODataNext]);
+    assert.equal(accepted.cursorRestarted, false);
+    assert.ok(accepted.nextCursor);
+    const savedRequests: string[] = [];
+    const saved = await read(async input => {
+      const url = String(input); savedRequests.push(url);
+      if (url === boundCalendarURL) return json({ id: calendar, "@odata.id": resource });
+      assert.equal(url, meODataTerminal);
+      return json({ value: [], "@odata.deltaLink": meODataTerminal });
+    }, accepted.nextCursor);
+    assert.deepEqual(savedRequests, [boundCalendarURL, meODataTerminal]);
+    assert.equal(saved.cursorRestarted, false);
+    assert.deepEqual(parseCursor(saved.nextCursor), parseCursor(accepted.nextCursor));
+    assert.deepEqual(saved.coverage, accepted.coverage);
+    const bodyProvenUser = "BodyProvenCurrentPrincipal";
+    const userLink = `${base}/users/${bodyProvenUser}/calendars/work%2Fteam/calendarView/delta${opaqueQuery}`;
+    const userRequests: string[] = [];
+    const userAccepted = await read(async input => {
+      const url = String(input); userRequests.push(url);
+      if (url === boundCalendarURL) return json({ id: calendar, "@odata.id": resource });
+      if (url === principalURL) return json({ id: bodyProvenUser });
+      assert.equal(url, JSON.parse(cursor).link);
+      return json({ value: [], "@odata.deltaLink": userLink });
+    });
+    assert.deepEqual(userRequests, [JSON.parse(cursor).link, boundCalendarURL, principalURL]);
+    assert.equal(parseCursor(userAccepted.nextCursor)?.link, userLink);
+  }
   const invalidProofs: { name: string; reason: string; response: () => Response | Promise<Response> }[] = [
     ...[null, [], {}, { id: "different", "@odata.id": canonicalResource },
       { id: calendar, "@odata.id": canonicalResource, "@removed": null },
@@ -492,7 +589,7 @@ async function main() {
       { id: calendar, "@odata.id": canonicalResource, value: [] },
       { id: calendar, "@odata.id": canonicalResource, "@odata.type": "#microsoft.graph.event" }]
       .map((body, index) => ({ name: `body-${index}`, reason: "body", response: () => json(body) })),
-    ...invalidCanonicalResources.map((resource, index) => ({ name: `canonical-resource-${index}`,
+    ...contradictoryCanonicalResources.map((resource, index) => ({ name: `canonical-resource-${index}`,
       reason: "canonical-resource", response: () => json({ id: calendar, "@odata.id": resource }) })),
     ...[202, 204, 206, 301, 302, 403, 404, 410, 429, 500, 503].map(status => ({ name: `status-${status}`,
       reason: "response", response: () => status === 204 ? new Response(null, { status })
@@ -513,28 +610,174 @@ async function main() {
         assert.equal(url, JSON.parse(cursor).link);
         return json({ value: [item("uncommitted-proof")], "@odata.deltaLink": canonicalDelta });
       }, saved ? canonicalCursor : cursor), (error: unknown) => {
-        assert.ok(error instanceof Error, fixture.name);
-        assert.match(error.message, /delta link/);
-        const cause = (error as Error & { cause: Record<string, unknown> }).cause;
-        assert.equal(cause?.code, "graph-calendar-identity-unverified", fixture.name);
-        assert.equal(cause.reason, fixture.reason, fixture.name);
-        assert.ok(Object.keys(cause).every(key => ["code", "reason", "status"].includes(key)));
-        if (cause.status !== undefined) assert.equal(typeof cause.status, "number");
-        const lines: string[] = [];
-        const originalWrite = process.stderr.write;
-        process.stderr.write = ((chunk: string) => { lines.push(String(chunk)); return true; }) as typeof process.stderr.write;
-        try { new StructuredLogger("error").error("sync.failed", { error }); }
-        finally { process.stderr.write = originalWrite; }
-        assert.equal(lines.length, 1);
-        assert.deepEqual(JSON.parse(lines[0]!).error.cause, cause);
-        for (const sensitive of [proofSecret, canonicalDelta, canonicalResource, ownerKey, calendar, "one%2btwo%3D"]) {
-          assert.equal(lines[0]!.includes(sensitive), false, "Proof failures cannot expose addresses or private response bodies");
-        }
-        return true;
+        return assertIdentityFailure(error, fixture.reason);
       });
       assert.deepEqual(requests, saved ? [boundCalendarURL] : [JSON.parse(cursor).link, boundCalendarURL], fixture.name);
     }
   }
+
+  // A safe canonical URI naming a different native calendar contradicts even
+  // the independent /me body proof; neither an alias nor a profile can rescue it.
+  for (const resource of contradictoryCanonicalResources) {
+    for (const saved of [false, true]) {
+      const requests: string[] = [];
+      await assert.rejects(read(async input => {
+        const url = String(input); requests.push(url);
+        if (url === boundCalendarURL) return json({ id: calendar, "@odata.id": resource });
+        assert.equal(saved, false);
+        assert.equal(url, JSON.parse(cursor).link);
+        return json({ value: [], "@odata.deltaLink": meODataTerminal });
+      }, saved ? JSON.stringify({ ...JSON.parse(cursor), link: meODataTerminal }) : cursor), error => {
+        assertIdentityFailure(error, "canonical-resource");
+        assert.equal((error as Error & { cause: Record<string, unknown> }).cause.canonicalMetadataFailure, "calendar-key-mismatch");
+        return true;
+      });
+      assert.deepEqual(requests, saved ? [boundCalendarURL] : [JSON.parse(cursor).link, boundCalendarURL]);
+    }
+  }
+
+  // Metadata-independent /users bindings use only the exact Graph principal
+  // returned by fresh /me. Both key syntaxes decode once; profile.id stays raw.
+  const principalIDs = ["GraphPrincipal", "GraphPrincipal@Tenant", "Graph'Principal", "Graph/Principal+%", "Graph%2FPrincipal"];
+  for (const profileID of principalIDs) {
+    for (const ownerStyle of ["segment", "odata", "odata-encoded-quotes"] as const) {
+      for (const keyStyle of ["segment", "odata"] as const) {
+        const escapedOwner = encodeURIComponent(profileID.replace(/'/g, "''"));
+        const owner = ownerStyle === "segment" ? `users/${encodeURIComponent(profileID)}`
+          : `users('${ownerStyle === "odata-encoded-quotes" ? escapedOwner.replace(/'/g, "%27") : escapedOwner}')`;
+        const key = keyStyle === "segment" ? "calendars/work%2fteam" : "calendars('work%2fteam')";
+        const profileNext = `${base}/${owner}/${key}/calendarView/delta${opaqueQuery}`;
+        const profileTerminal = `${profileNext}&terminal=true`;
+        const requests: string[] = [];
+        const profileRead = await read(async (input, init) => {
+          const url = String(input); requests.push(url);
+          assert.equal(init?.method ?? "GET", "GET");
+          assert.equal(init?.redirect, "error");
+          assert.equal(new Headers(init?.headers).get("Authorization"), "Bearer fixture");
+          if (url === boundCalendarURL) return json({ id: calendar,
+            ...(ownerStyle === "segment" ? {} : { "@odata.id": canonicalResource }) });
+          if (url === principalURL) {
+            assert.equal(new Headers(init?.headers).get("Accept"), "application/json");
+            assert.equal(new Headers(init?.headers).get("Cache-Control"), "no-cache");
+            return json({ id: profileID, "@odata.type": "#microsoft.graph.user" });
+          }
+          if (url === JSON.parse(cursor).link) return json({ value: [item("before-profile")], "@odata.nextLink": profileNext });
+          assert.equal(url, profileNext);
+          return json({ value: [item("after-profile")], "@odata.deltaLink": profileTerminal });
+        });
+        assert.deepEqual(requests, [JSON.parse(cursor).link, boundCalendarURL, principalURL, profileNext]);
+        assert.equal(profileRead.cursorRestarted, false);
+        assert.ok(profileRead.nextCursor);
+        assert.deepEqual(parseCursor(profileRead.nextCursor), { ...JSON.parse(cursor), link: profileTerminal });
+        const savedRequests: string[] = [];
+        const profileSaved = await read(async input => {
+          const url = String(input); savedRequests.push(url);
+          if (url === boundCalendarURL) return json({ id: calendar });
+          if (url === principalURL) return json({ id: profileID });
+          assert.equal(url, profileTerminal);
+          return json({ value: [], "@odata.deltaLink": profileTerminal });
+        }, profileRead.nextCursor);
+        assert.deepEqual(savedRequests, [boundCalendarURL, principalURL, profileTerminal]);
+        assert.equal(profileSaved.cursorRestarted, false);
+        assert.deepEqual(parseCursor(profileSaved.nextCursor), parseCursor(profileRead.nextCursor));
+        assert.deepEqual(profileSaved.coverage, profileRead.coverage);
+      }
+    }
+  }
+
+  const profileOwner = "PRIVATE-Expected-Graph-Principal";
+  const profileDelta = `${base}/users('${profileOwner}')/calendars('work%2Fteam')/calendarView/delta${opaqueQuery}`;
+  const profileCursor = JSON.stringify({ ...JSON.parse(cursor), link: profileDelta });
+  const invalidPrincipalProofs: { name: string; reason: string; response: () => Response | Promise<Response> }[] = [
+    ...[null, [], {}, { id: "" }, { id: " padded " }, { id: "." }, { id: ".." }, { id: "control\nkey" }, { id: 3 },
+      { id: profileOwner, value: [] }, { id: profileOwner, "@removed": null },
+      { id: profileOwner, "@odata.nextLink": null }, { id: profileOwner, "@odata.deltaLink": null },
+      { id: profileOwner, "@odata.type": "#microsoft.graph.calendar" }, { id: profileOwner, "@odata.type": null }]
+      .map((body, index) => ({ name: `principal-body-${index}`, reason: "principal-body", response: () => json(body) })),
+    ...[202, 204, 206, 301, 302, 403, 404, 410, 429, 500, 503].map(status => ({ name: `principal-status-${status}`,
+      reason: "principal-response", response: () => status === 204 ? new Response(null, { status })
+        : json({ error: { message: proofSecret } }, status) })),
+    { name: "principal-partial", reason: "principal-response", response: () => json({ id: profileOwner }, 200, { "content-range": "items 0-0/1" }) },
+    { name: "principal-redirect", reason: "principal-response", response: () => Object.defineProperty(json({ id: profileOwner }), "redirected", { value: true }) },
+    { name: "principal-malformed-json", reason: "principal-body", response: () => new Response(`${proofSecret} is not JSON`, { status: 200 }) },
+    { name: "principal-transport", reason: "principal-request", response: async () => { throw new Error(`${proofSecret} ${profileDelta}`); } },
+  ];
+  for (const fixture of invalidPrincipalProofs) {
+    for (const saved of [false, true]) {
+      const requests: string[] = [];
+      await assert.rejects(read(async input => {
+        const url = String(input); requests.push(url);
+        if (url === boundCalendarURL) return json({ id: calendar });
+        if (url === principalURL) return fixture.response();
+        assert.equal(saved, false, "Failed saved-cursor principal proof must fail the read, not renew or follow");
+        assert.equal(url, JSON.parse(cursor).link);
+        return json({ value: [item("uncommitted-principal")], "@odata.deltaLink": profileDelta });
+      }, saved ? profileCursor : cursor), error => assertIdentityFailure(error, fixture.reason, [profileOwner, profileDelta]));
+      assert.deepEqual(requests, saved ? [boundCalendarURL, principalURL]
+        : [JSON.parse(cursor).link, boundCalendarURL, principalURL], fixture.name);
+    }
+  }
+
+  // A valid but different principal cannot be repaired by case folding,
+  // percent-decoding profile.id, guessing tenant suffixes, OAuth sub or email.
+  const mismatchedPrincipals = [
+    { owner: "GraphPrincipal", profile: "graphprincipal" },
+    { owner: "GraphPrincipal@ForeignTenant", profile: "GraphPrincipal" },
+    { owner: "GraphPrincipal=", profile: "GraphPrincipal%3D" },
+    { owner: "GraphPrincipal%2F", profile: "GraphPrincipal/" },
+    { owner: "person@example.test", profile: "GraphPrincipal" },
+    { owner: "OAuthSubject", profile: "GraphPrincipal" },
+  ];
+  for (const fixture of mismatchedPrincipals) {
+    const rejectedLink = `${base}/users/${encodeURIComponent(fixture.owner)}/calendars/work%2Fteam/calendarView/delta${opaqueQuery}`;
+    for (const property of ["@odata.nextLink", "@odata.deltaLink"] as const) {
+      const requests: string[] = [];
+      await assert.rejects(read(async input => {
+        const url = String(input); requests.push(url);
+        if (url === boundCalendarURL) return json({ id: calendar });
+        if (url === principalURL) return json({ id: fixture.profile });
+        assert.equal(url, JSON.parse(cursor).link);
+        return json({ value: [item("uncommitted-mismatched-owner")], [property]: rejectedLink });
+      }), (error: unknown) => {
+        assert.ok(error instanceof Error);
+        const cause = (error as Error & { cause: Record<string, unknown> }).cause;
+        assert.equal(cause.code, "graph-delta-link-scope-invalid");
+        assert.equal(cause.principalMatches, false);
+        assert.equal(cause.canonicalMetadataState, "absent");
+        assert.equal(cause.canonicalProofOwnerKind, "unknown");
+        assert.equal(cause.canonicalOwnerMatches, null);
+        assert.equal(cause.canonicalKeyStyleMatches, null);
+        return true;
+      });
+      assert.deepEqual(requests, [JSON.parse(cursor).link, boundCalendarURL, principalURL]);
+    }
+    const renewedRequests: string[] = [];
+    const renewed = await read(async input => {
+      const url = String(input); renewedRequests.push(url);
+      if (url === boundCalendarURL) return json({ id: calendar });
+      if (url === principalURL) return json({ id: fixture.profile });
+      assert.equal(new URL(url).pathname, new URL(view).pathname);
+      assert.ok(url.includes("startDateTime"));
+      return page();
+    }, JSON.stringify({ ...JSON.parse(cursor), link: rejectedLink }));
+    assert.equal(renewedRequests.length, 3);
+    assert.deepEqual(renewedRequests.slice(0, 2), [boundCalendarURL, principalURL]);
+    assert.equal(renewed.cursorRestarted, true);
+  }
+
+  const principalExpiredRequests: string[] = [];
+  const principalRestart = await read(async input => {
+    const url = String(input); principalExpiredRequests.push(url);
+    if (url === boundCalendarURL) return json({ id: calendar });
+    if (url === principalURL) return json({ id: profileOwner });
+    if (url === profileDelta) return json({ error: { code: "SyncStateNotFound" } }, 410);
+    assert.ok(url.includes("startDateTime"));
+    return json({ value: [item("fresh-after-principal-expiry")], "@odata.deltaLink": profileDelta });
+  }, profileCursor);
+  assert.equal(principalExpiredRequests.length, 4);
+  assert.equal(principalExpiredRequests.filter(url => url === boundCalendarURL).length, 1);
+  assert.equal(principalExpiredRequests.filter(url => url === principalURL).length, 1);
+  assert.equal(principalRestart.cursorRestarted, true);
 
   // A failed later proof cannot turn earlier buffered pages into a checkpoint.
   const failedLaterRequests: string[] = [];
