@@ -37,6 +37,7 @@ import type {
 } from "../adapter";
 import { getOAuthAccessToken } from "../oauth";
 import { isOptionalTaskError, TaskScopeMissingError } from "../errors";
+import { graphCalendarDiscoveryHttpError, type GraphCalendarDiscoveryPhase } from "./microsoft_calendar_discovery_error";
 import { graphTaskReadFailureKind, graphTaskReadHttpError, type GraphTaskReadPhase } from "./microsoft_task_read_error";
 import { GraphTaskReadResponseError, graphTaskReadPage, graphTaskReadTraversal } from "./microsoft_task_read_page";
 import { assertEventWriteEvidence, assertEventWriteResponse, assertOAuthEventWriteGrant, assertProviderEventMutationResponse, ProviderEventWriteError } from "../event_write";
@@ -1172,6 +1173,26 @@ export function toExternalCalendar(c: GraphCalendar): ExternalCalendarInfo {
   };
 }
 
+/** Calendar discovery keeps its existing paging and inventory semantics. */
+export async function fetchMicrosoftCalendars(
+  accessToken: string,
+  fetchImpl?: typeof fetch,
+): Promise<ExternalCalendarInfo[]> {
+  const calendars: ExternalCalendarInfo[] = [];
+  let url: string | null =
+    `${GRAPH}/me/calendars?$select=id,name,hexColor,canEdit,canViewPrivateItems,isDefaultCalendar&$top=${PAGE_SIZE}`;
+  let requestPhase: GraphCalendarDiscoveryPhase = "initial";
+  while (url) {
+    const res = await graphGet(accessToken, url, fetchImpl);
+    if (!res.ok) throw await graphCalendarDiscoveryHttpError(res, requestPhase);
+    const data = await res.json();
+    for (const c of data.value ?? []) calendars.push(toExternalCalendar(c));
+    url = data["@odata.nextLink"] ?? null;
+    requestPhase = "next-page";
+  }
+  return calendars;
+}
+
 export const microsoftAdapter: CalendarAdapter = {
   microsoftOrganizer: microsoftOrganizerTransport(getAccessToken),
   async observeGraphSeriesContent(context, signal) { return observeGraphSeriesContent(await getAccessToken(context.address.actorID, context.link.accountID), context, signal); },
@@ -1215,16 +1236,7 @@ export const microsoftAdapter: CalendarAdapter = {
     accountId: string,
   ): Promise<CalendarDiscoveryResult> {
     const accessToken = await getAccessToken(userID, accountId);
-    const calendars: ExternalCalendarInfo[] = [];
-    let url: string | null =
-      `${GRAPH}/me/calendars?$select=id,name,hexColor,canEdit,canViewPrivateItems,isDefaultCalendar&$top=${PAGE_SIZE}`;
-    while (url) {
-      const res = await graphGet(accessToken, url);
-      if (!res.ok) throw await graphError(res);
-      const data = await res.json();
-      for (const c of data.value ?? []) calendars.push(toExternalCalendar(c));
-      url = data["@odata.nextLink"] ?? null;
-    }
+    const calendars = await fetchMicrosoftCalendars(accessToken);
     if (!(await hasOAuthTaskScope(userID, "microsoft", accountId))) {
       return { calendars, taskListsComplete: false };
     }
