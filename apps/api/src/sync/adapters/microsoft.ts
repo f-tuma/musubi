@@ -38,6 +38,7 @@ import type {
 import { getOAuthAccessToken } from "../oauth";
 import { isOptionalTaskError, TaskScopeMissingError } from "../errors";
 import { graphTaskReadHttpError, type GraphTaskReadPhase } from "./microsoft_task_read_error";
+import { GraphTaskReadResponseError, graphTaskReadPage, graphTaskReadTraversal } from "./microsoft_task_read_page";
 import { assertEventWriteEvidence, assertEventWriteResponse, assertOAuthEventWriteGrant, assertProviderEventMutationResponse, ProviderEventWriteError } from "../event_write";
 import { assertCompleteEventReadResponse, assertCreatedEventEvidence, eventCreateOperationID } from "../event_create_identity";
 
@@ -309,27 +310,23 @@ async function fetchMicrosoftTaskSnapshot(
   accessToken: string,
   initialUrl: string,
   fetchImpl: typeof fetch,
+  graphBase: string,
+  traversal: ReturnType<typeof graphTaskReadTraversal>,
 ): Promise<FetchChangesResult> {
   const changes: NormalizedChange[] = [];
-  const visited = new Set<string>();
   let url: string | null = initialUrl;
   let requestPhase: GraphTaskReadPhase = "initial";
   while (url) {
-    if (visited.has(url)) throw new Error("Outlook task pagination repeated a page");
-    visited.add(url);
+    traversal.visit(url, "snapshot");
     const res = await graphGet(accessToken, url, fetchImpl);
     if (!res.ok) throw await graphTaskReadHttpError(res, { readKind: "snapshot", requestPhase, url });
-    const data = await res.json();
-    if (!Array.isArray(data.value) || data.value.some((item: any) => !item || typeof item.id !== "string" || !item.id)) {
-      throw new Error("Outlook task snapshot is incomplete");
+    const page = await graphTaskReadPage(res, "snapshot", graphBase);
+    try {
+      for (const item of page.items) changes.push({ kind: "task", data: toNormalizedMicrosoftTask(item) });
+    } catch {
+      throw new GraphTaskReadResponseError("snapshot", "normalization", res.status);
     }
-    if (data["@odata.nextLink"] != null && (typeof data["@odata.nextLink"] !== "string" || !data["@odata.nextLink"])) {
-      throw new Error("Outlook task pagination is invalid");
-    }
-    for (const item of data.value) {
-      changes.push({ kind: "task", data: toNormalizedMicrosoftTask(item) });
-    }
-    url = data["@odata.nextLink"] ?? null;
+    url = page.nextLink;
     requestPhase = "next-page";
   }
   return { changes, nextCursor: null, reset: true };
@@ -345,15 +342,18 @@ export async function fetchMicrosoftTaskChanges(
   const graphBase = options.graphBase ?? GRAPH;
   const initialUrl = `${graphBase}${microsoftTaskPath(taskListId)}/delta?$top=${PAGE_SIZE}`;
   const changes: NormalizedChange[] = [];
-  let reset = !cursor;
+  const traversal = graphTaskReadTraversal(graphBase);
+  let reset = cursor === null;
   let url = cursor ?? initialUrl;
   let requestPhase: GraphTaskReadPhase = cursor == null ? "initial" : "saved-cursor";
   let deltaLink: string | null = null;
 
   while (!deltaLink) {
+    traversal.visit(url, "delta");
     const res = await graphGet(accessToken, url, fetchImpl);
     if (res.status === 410 && url !== initialUrl) {
       changes.length = 0;
+      traversal.clearVisited();
       reset = true;
       url = initialUrl;
       requestPhase = "recovery-initial";
@@ -366,18 +366,22 @@ export async function fetchMicrosoftTaskChanges(
           accessToken,
           `${graphBase}${microsoftTaskPath(taskListId)}?$top=${PAGE_SIZE}`,
           fetchImpl,
+          graphBase,
+          traversal,
         );
       }
     }
     if (!res.ok) throw await graphTaskReadHttpError(res, { readKind: "delta", requestPhase, url });
-    const data = await res.json();
-    for (const item of data.value ?? []) {
-      changes.push({ kind: "task", data: toNormalizedMicrosoftTask(item) });
+    const page = await graphTaskReadPage(res, "delta", graphBase);
+    try {
+      for (const item of page.items) changes.push({ kind: "task", data: toNormalizedMicrosoftTask(item) });
+    } catch {
+      throw new GraphTaskReadResponseError("delta", "normalization", res.status);
     }
-    if (data["@odata.nextLink"]) {
-      url = data["@odata.nextLink"];
+    if (page.nextLink !== null) {
+      url = page.nextLink;
       requestPhase = "next-page";
-    } else deltaLink = data["@odata.deltaLink"] ?? url;
+    } else deltaLink = page.deltaLink;
   }
 
   return { changes, nextCursor: deltaLink, reset };

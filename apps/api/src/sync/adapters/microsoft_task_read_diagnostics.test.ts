@@ -6,7 +6,8 @@ process.env.BETTER_AUTH_URL ??= "http://127.0.0.1:7531";
 
 async function main() {
   const { fetchMicrosoftTaskChanges } = await import("./microsoft");
-  const { GraphTaskReadHttpError } = await import("./microsoft_task_read_error");
+  const { GraphTaskReadHttpError, graphTaskReadHttpError } = await import("./microsoft_task_read_error");
+  const { GraphTaskReadResponseError } = await import("./microsoft_task_read_page");
   const { StructuredLogger } = await import("@musubi/config");
   const { isOptionalTaskError, isTransientSyncError } = await import("../errors");
   const graph = "https://graph.microsoft.com/v1.0";
@@ -38,8 +39,8 @@ async function main() {
   const changeIDs = (result: Awaited<ReturnType<typeof read>>) =>
     result.changes.map(change => change.kind === "task" && change.data.externalId);
 
-  // Diagnostics cannot change successful paging, the original opaque URL
-  // bytes, or the legacy terminal fallback when Graph omits both link fields.
+  // Successful paging retains the original opaque URL bytes. A delta without
+  // terminal evidence now fails closed rather than checkpointing its page URL.
   for (const previous of [null, saved]) {
     const requests: string[] = [];
     const result = await read(async (input, init) => {
@@ -57,23 +58,19 @@ async function main() {
     assert.equal(result.reset, previous === null);
 
     let terminalRequests = 0;
-    const withoutLink = await read(async (input, init) => {
+    await assert.rejects(read(async (input, init) => {
       terminalRequests++; assertRequest(init); assert.equal(String(input), previous ?? initial);
       return json({ value: [item("legacy-terminal")] });
-    }, previous);
+    }, previous), error => error instanceof GraphTaskReadResponseError);
     assert.equal(terminalRequests, 1);
-    assert.equal(withoutLink.nextCursor, previous ?? initial);
-    assert.equal(withoutLink.reset, previous === null);
     const terminalPageRequests: string[] = [];
-    const withoutTerminalLink = await read(async input => {
+    await assert.rejects(read(async input => {
       const url = String(input); terminalPageRequests.push(url);
       if (terminalPageRequests.length === 1) return json({ value: [], "@odata.nextLink": next });
       assert.equal(url, next);
       return json({ value: [item("legacy-last-page")] });
-    }, previous);
+    }, previous), error => error instanceof GraphTaskReadResponseError);
     assert.deepEqual(terminalPageRequests, [previous ?? initial, next]);
-    assert.equal(withoutTerminalLink.nextCursor, next, "The legacy no-deltaLink fallback retains the actual terminal page URL");
-    assert.equal(withoutTerminalLink.reset, previous === null);
   }
 
   // The existing unsupported-delta branch still discards any buffered delta
@@ -222,12 +219,20 @@ async function main() {
     { url: `${collection}/delta?DeltaToken=${privateValue}`, queryState: "delta", skipState: "absent", deltaState: "present" },
     { url: `${collection}/delta?$deltaToken=${privateValue}&DELTATOKEN=${privateValue}`, queryState: "delta", skipState: "absent", deltaState: "multiple" },
     { url: `${collection}/delta?$SKIPTOKEN=${privateValue}&deltaToken=${privateValue}`, queryState: "both", skipState: "present", deltaState: "present" },
-    { url: `not-an-absolute-url-${privateValue}`, queryState: "invalid", skipState: "unknown", deltaState: "unknown" },
   ];
   for (const { url, ...shape } of queryShapes) {
     const error = await failure([{ url, response: denied400 }], url);
     assertDiagnostic(error, expectedCause(400, { requestPhase: "saved-cursor", ...shape }));
   }
+  const invalidCursor = `not-an-absolute-url-${privateValue}`;
+  let invalidCursorRequests = 0;
+  await assert.rejects(read(async () => { invalidCursorRequests++; return denied400(); }, invalidCursor),
+    error => error instanceof GraphTaskReadResponseError && error.cause.reason === "link");
+  assert.equal(invalidCursorRequests, 0, "Invalid saved links now fail before a provider request");
+  // Keep the low-level HTTP diagnostic helper's invalid-query classification
+  // covered even though the actual reader will no longer dispatch that URL.
+  assertDiagnostic(await graphTaskReadHttpError(denied400(), { readKind: "delta", requestPhase: "saved-cursor", url: invalidCursor }),
+    expectedCause(400, { requestPhase: "saved-cursor", queryState: "invalid", skipState: "unknown", deltaState: "unknown" }));
 
   for (const [status, optional, transient] of [[400, false, false], [401, false, false], [403, true, false],
     [404, false, false], [408, true, true], [410, false, false], [429, true, true], [500, true, true], [503, true, true]] as const) {
