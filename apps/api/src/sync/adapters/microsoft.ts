@@ -37,6 +37,7 @@ import type {
 } from "../adapter";
 import { getOAuthAccessToken } from "../oauth";
 import { isOptionalTaskError, TaskScopeMissingError } from "../errors";
+import { graphTaskReadHttpError, type GraphTaskReadPhase } from "./microsoft_task_read_error";
 import { assertEventWriteEvidence, assertEventWriteResponse, assertOAuthEventWriteGrant, assertProviderEventMutationResponse, ProviderEventWriteError } from "../event_write";
 import { assertCompleteEventReadResponse, assertCreatedEventEvidence, eventCreateOperationID } from "../event_create_identity";
 
@@ -312,11 +313,12 @@ async function fetchMicrosoftTaskSnapshot(
   const changes: NormalizedChange[] = [];
   const visited = new Set<string>();
   let url: string | null = initialUrl;
+  let requestPhase: GraphTaskReadPhase = "initial";
   while (url) {
     if (visited.has(url)) throw new Error("Outlook task pagination repeated a page");
     visited.add(url);
     const res = await graphGet(accessToken, url, fetchImpl);
-    if (!res.ok) throw await graphError(res);
+    if (!res.ok) throw await graphTaskReadHttpError(res, { readKind: "snapshot", requestPhase, url });
     const data = await res.json();
     if (!Array.isArray(data.value) || data.value.some((item: any) => !item || typeof item.id !== "string" || !item.id)) {
       throw new Error("Outlook task snapshot is incomplete");
@@ -328,6 +330,7 @@ async function fetchMicrosoftTaskSnapshot(
       changes.push({ kind: "task", data: toNormalizedMicrosoftTask(item) });
     }
     url = data["@odata.nextLink"] ?? null;
+    requestPhase = "next-page";
   }
   return { changes, nextCursor: null, reset: true };
 }
@@ -344,6 +347,7 @@ export async function fetchMicrosoftTaskChanges(
   const changes: NormalizedChange[] = [];
   let reset = !cursor;
   let url = cursor ?? initialUrl;
+  let requestPhase: GraphTaskReadPhase = cursor == null ? "initial" : "saved-cursor";
   let deltaLink: string | null = null;
 
   while (!deltaLink) {
@@ -352,6 +356,7 @@ export async function fetchMicrosoftTaskChanges(
       changes.length = 0;
       reset = true;
       url = initialUrl;
+      requestPhase = "recovery-initial";
       continue;
     }
     if (res.status === 400) {
@@ -364,13 +369,15 @@ export async function fetchMicrosoftTaskChanges(
         );
       }
     }
-    if (!res.ok) throw await graphError(res);
+    if (!res.ok) throw await graphTaskReadHttpError(res, { readKind: "delta", requestPhase, url });
     const data = await res.json();
     for (const item of data.value ?? []) {
       changes.push({ kind: "task", data: toNormalizedMicrosoftTask(item) });
     }
-    if (data["@odata.nextLink"]) url = data["@odata.nextLink"];
-    else deltaLink = data["@odata.deltaLink"] ?? url;
+    if (data["@odata.nextLink"]) {
+      url = data["@odata.nextLink"];
+      requestPhase = "next-page";
+    } else deltaLink = data["@odata.deltaLink"] ?? url;
   }
 
   return { changes, nextCursor: deltaLink, reset };
