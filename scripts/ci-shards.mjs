@@ -75,18 +75,23 @@ export function databaseTests(loadPackage = directory => readJson(join(root, dir
 
 // Playwright's JSON inventory includes generated tests and describe groups.
 // Qualified test-list entries distinguish cases sharing the same source line.
-export function webTests(report) {
+export function webTestCases(report) {
   if (report.errors?.length) throw new Error(`Playwright collection failed: ${JSON.stringify(report.errors)}`);
   function visit(suite, groups = []) {
     const titles = suite.line ? [...groups, suite.title] : groups;
     return [
       ...(suite.specs ?? []).flatMap(spec => spec.tests.map(test => ({
         id: `[${test.projectName}] › ${spec.file} › ${[...titles, spec.title].join(" › ")}`,
+        test,
       }))),
       ...(suite.suites ?? []).flatMap(child => visit(child, titles)),
     ];
   }
   return report.suites.flatMap(suite => visit(suite));
+}
+
+export function webTests(report) {
+  return webTestCases(report).map(({ id }) => ({ id }));
 }
 
 export function assertSelection(planned, actual) {
@@ -102,6 +107,19 @@ function run(command, args, options = {}) {
   return result;
 }
 
+export function collectWebTests(extra = []) {
+  const webDirectory = join(root, "apps/web");
+  // .npmrc uses node-linker=hoisted, so workspace tools live at the root.
+  const playwright = join(root, "node_modules/.bin/playwright");
+  const result = run(playwright, ["test", "--list", "--reporter=json", ...extra], {
+    cwd: webDirectory, encoding: "utf8", stdio: ["ignore", "pipe", "inherit"],
+    maxBuffer: 32 * 1024 * 1024,
+    env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_NAME: "", PLAYWRIGHT_JSON_OUTPUT_FILE: "" },
+  });
+  if (result.status !== 0) throw new Error("Playwright test collection failed");
+  return webTests(JSON.parse(result.stdout));
+}
+
 function main() {
   const [kind, shardArg, mode] = process.argv.slice(2);
   if (!["db", "web"].includes(kind) || (mode && mode !== "--list")) {
@@ -109,26 +127,15 @@ function main() {
   }
   const { current, total } = parseShard(shardArg);
   const webDirectory = join(root, "apps/web");
-  // .npmrc uses node-linker=hoisted, so workspace tools live at the root.
   const playwright = join(root, "node_modules/.bin/playwright");
-  function collectWeb(extra = []) {
-    const result = run(playwright, ["test", "--list", "--reporter=json", ...extra], {
-      cwd: webDirectory, encoding: "utf8", stdio: ["ignore", "pipe", "inherit"],
-      maxBuffer: 32 * 1024 * 1024,
-      env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_NAME: "", PLAYWRIGHT_JSON_OUTPUT_FILE: "" },
-    });
-    if (result.status !== 0) throw new Error("Playwright test collection failed");
-    return webTests(JSON.parse(result.stdout));
-  }
   let inventory;
-  let timings = {};
+  const timings = readJson(join(root, `scripts/ci-${kind}-timings.json`)).durationsMs;
   if (kind === "db") {
     inventory = databaseTests();
   } else {
-    inventory = collectWeb();
-    timings = readJson(join(root, "scripts/ci-web-timings.json")).durationsMs;
+    inventory = collectWebTests();
   }
-  const shards = partition(inventory, total, timings, kind === "web" ? 6000 : 1);
+  const shards = partition(inventory, total, timings, kind === "web" ? 6000 : 15000);
   const selected = shards[current - 1].items;
   console.log(`${kind}: ${inventory.length} total suites/tests; shard ${shardArg}: ${selected.length}`);
   console.log(`Shard weights: ${shards.map(shard => Math.round(shard.duration)).join(", ")}`);
@@ -143,7 +150,7 @@ function main() {
     const testList = `--test-list=${join(output, "selected-tests.txt")}`;
     // Playwright accepts an empty --test-list match as success. Verify the
     // selected inventory before execution, so path/title changes cannot hide tests.
-    assertSelection(selected, collectWeb([testList]));
+    assertSelection(selected, collectWebTests([testList]));
     const result = run(playwright, ["test", testList, "--reporter=list,json"], {
       cwd: webDirectory,
       env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_NAME: join(output, "web-results.json") },
