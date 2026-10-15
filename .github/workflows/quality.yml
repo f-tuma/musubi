@@ -30,20 +30,106 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Verify artifact scanner and native cutout compatibility
-        run: python3 -m unittest discover -s scripts -p test_android_system_bars.py
+        run: |
+          python3 -m unittest discover -s scripts -p test_android_system_bars.py
+          python3 -m unittest discover -s scripts -p test_android_ci_report.py
       - name: Generate Android project
         run: pnpm --filter @musubi/client exec expo prebuild --platform android --no-install
+      # Hash only public source/native configuration after prebuild. Do not hash
+      # .env, signing files, local.properties, or the whole generated directory.
+      - name: Prepare Gradle cache key and timing evidence
+        id: gradle-cache-key
+        env:
+          NATIVE_CONTRACT: ${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', 'apps/client/package.json', 'apps/client/app.config.ts', 'apps/client/plugins/**', 'apps/client/modules/**', 'apps/client/android/*.gradle', 'apps/client/android/gradle.properties', 'apps/client/android/gradle/wrapper/gradle-wrapper.properties', 'apps/client/android/gradlew*', 'apps/client/android/app/*.gradle', 'apps/client/android/app/src/**') }}
+          CACHE_COMPATIBILITY: ${{ hashFiles('apps/client/android/gradle/wrapper/gradle-wrapper.properties', 'apps/client/plugins/android-system-bars.gradle') }}
+          RUNNER_PLATFORM: ${{ runner.os }}-${{ runner.arch }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/android-ci"
+          jdk_hash=$(sha256sum "$JAVA_HOME_17_X64/release" | cut -d ' ' -f 1)
+          compatibility="android-gradle-v1-$RUNNER_PLATFORM-$ImageOS-$ImageVersion-$jdk_hash-$CACHE_COMPATIBILITY-"
+          prefix="$compatibility$NATIVE_CONTRACT-"
+          echo "compatibility=$compatibility" >> "$GITHUB_OUTPUT"
+          echo "prefix=$prefix" >> "$GITHUB_OUTPUT"
+          echo "key=$prefix$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          date +%s%3N > "$RUNNER_TEMP/android-ci/restore.start"
+      - name: Restore Gradle dependencies and task cache
+        id: gradle-cache-restore
+        continue-on-error: true
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ steps.gradle-cache-key.outputs.key }}
+          restore-keys: |
+            ${{ steps.gradle-cache-key.outputs.prefix }}
+            ${{ steps.gradle-cache-key.outputs.compatibility }}
+      - name: Record Gradle cache restore duration
+        run: date +%s%3N > "$RUNNER_TEMP/android-ci/restore.end"
       - name: Build native APK and AAB with system bar verification
+        id: android-build
+        shell: bash
         working-directory: apps/client/android
         # Exercise device and emulator ABIs within the runner's memory budget.
         # Store builds retain the full production ABI set.
-        run: >-
-          JAVA_HOME="$JAVA_HOME_17_X64" ./gradlew :app:assembleRelease :app:bundleRelease
-          -PreactNativeArchitectures=arm64-v8a,x86_64 --max-workers=2 --no-daemon --console=plain
+        run: |
+          date +%s%3N > "$RUNNER_TEMP/android-ci/build.start"
+          trap 'date +%s%3N > "$RUNNER_TEMP/android-ci/build.end"' EXIT
+          JAVA_HOME="$JAVA_HOME_17_X64" ./gradlew :app:assembleRelease :app:bundleRelease \
+            -PreactNativeArchitectures=arm64-v8a,x86_64 --max-workers=2 --no-daemon --console=plain \
+            --build-cache --profile 2>&1 | tee "$RUNNER_TEMP/android-ci/gradle.log"
       - name: Verify shipped DEX
+        id: android-dex
         run: |
           python3 scripts/verify-android-system-bars.py apps/client/android/app/build/outputs/apk/release/app-release.apk --dexdump "$ANDROID_HOME/build-tools/36.0.0/dexdump"
           python3 scripts/verify-android-system-bars.py apps/client/android/app/build/outputs/bundle/release/app-release.aab --dexdump "$ANDROID_HOME/build-tools/36.0.0/dexdump"
+      # PRs only restore. GitHub also isolates PR merge-ref caches from main.
+      # A successful trusted main build may seed the next immutable entry only
+      # after both real APK/AAB DEX scans have passed. Reusable Quality called
+      # by the workflow_dispatch release workflow only restores this cache.
+      - name: Start trusted Gradle cache save
+        id: gradle-cache-save-start
+        if: >-
+          success() && steps.android-dex.outcome == 'success' &&
+          steps.gradle-cache-restore.outputs.cache-hit != 'true' &&
+          github.repository == 'f-tuma/musubi' && github.ref == 'refs/heads/main' &&
+          github.event_name == 'push'
+        run: date +%s%3N > "$RUNNER_TEMP/android-ci/save.start"
+      - name: Save trusted Gradle dependencies and task cache
+        id: gradle-cache-save
+        if: success() && steps.gradle-cache-save-start.outcome == 'success'
+        continue-on-error: true
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ steps.gradle-cache-key.outputs.key }}
+      - name: Android build and cache summary
+        if: always()
+        env:
+          GRADLE_CACHE_HIT: ${{ steps.gradle-cache-restore.outputs.cache-hit }}
+          GRADLE_CACHE_MATCHED_KEY: ${{ steps.gradle-cache-restore.outputs.cache-matched-key }}
+          GRADLE_CACHE_RESTORE_OUTCOME: ${{ steps.gradle-cache-restore.outcome }}
+          GRADLE_CACHE_SAVE_OUTCOME: ${{ steps.gradle-cache-save.outcome }}
+          ANDROID_BUILD_OUTCOME: ${{ steps.android-build.outcome }}
+          ANDROID_DEX_OUTCOME: ${{ steps.android-dex.outcome }}
+        run: |
+          if [ -f "$RUNNER_TEMP/android-ci/save.start" ]; then
+            date +%s%3N > "$RUNNER_TEMP/android-ci/save.end"
+          fi
+          python3 scripts/android_ci_report.py --directory "$RUNNER_TEMP/android-ci" --summary "$GITHUB_STEP_SUMMARY"
+      - name: Android build timing evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: android-build-timings
+          path: |
+            ${{ runner.temp }}/android-ci
+            apps/client/android/build/reports/profile
+          retention-days: 7
       - name: Native verification evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
