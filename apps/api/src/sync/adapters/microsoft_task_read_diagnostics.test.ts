@@ -107,10 +107,10 @@ async function main() {
   assert.equal(recovered.reset, true);
   assert.equal(recovered.nextCursor, terminal);
 
-  const causeKeys = ["code", "readKind", "requestPhase", "httpStatus", "graphCode", "graphInnerCode", "queryState", "skipState", "deltaState"];
+  const causeKeys = ["code", "readKind", "requestPhase", "httpStatus", "graphCode", "graphInnerCode", "failureKind", "queryState", "skipState", "deltaState"];
   const expectedCause = (status: number, extra: Record<string, unknown> = {}) => ({
     code: "graph-task-read-http-failed", readKind: "delta", requestPhase: "initial", httpStatus: status,
-    graphCode: "BadRequest", graphInnerCode: "missing", queryState: "other", skipState: "absent", deltaState: "absent", ...extra,
+    graphCode: "BadRequest", graphInnerCode: "missing", failureKind: "other", queryState: "other", skipState: "absent", deltaState: "absent", ...extra,
   });
   const assertDiagnostic = (error: unknown, expected: Record<string, unknown>) => {
     assert.ok(error instanceof GraphTaskReadHttpError, "The actual task reader must attach its typed bounded diagnostic");
@@ -188,24 +188,25 @@ async function main() {
     assertDiagnostic(error, expectedCause(400, { graphCode: code, graphInnerCode: "ErrorInvalidUrlQuery" }));
     assert.equal(isOptionalTaskError(error), false, "A machine code alone must not turn HTTP 400 into an optional task failure");
   }
-  const bodies: { body?: unknown; raw?: string; graphCode: string; graphInnerCode: string }[] = [
-    { body: {}, graphCode: "missing", graphInnerCode: "missing" },
+  const bodies: { body?: unknown; raw?: string; graphCode: string; graphInnerCode: string; failureKind?: string }[] = [
+    { body: {}, graphCode: "missing", graphInnerCode: "missing", failureKind: "unparseable" },
     { body: { error: {} }, graphCode: "missing", graphInnerCode: "missing" },
     { body: { error: { code: privateValue, innerError: { code: privateValue, message: privateValue } } }, graphCode: "other", graphInnerCode: "other" },
     { body: { error: { code: "badrequest", innerError: { code: "serviceunavailable" } } }, graphCode: "other", graphInnerCode: "other" },
     { body: { error: { code: "BadRequest", innererror: { code: "SyncStateNotFound", message: privateValue } } }, graphCode: "BadRequest", graphInnerCode: "SyncStateNotFound" },
     { body: { error: { code: "BadRequest", innerError: {} } }, graphCode: "BadRequest", graphInnerCode: "missing" },
-    ...[null, [], privateValue, 3].map(body => ({ body, graphCode: "malformed", graphInnerCode: "malformed" })),
-    ...[null, [], privateValue, 3].map(error => ({ body: { error }, graphCode: "malformed", graphInnerCode: "malformed" })),
+    ...[null, [], privateValue, 3].map(body => ({ body, graphCode: "malformed", graphInnerCode: "malformed", failureKind: "unparseable" })),
+    ...[null, [], privateValue, 3].map(error => ({ body: { error }, graphCode: "malformed", graphInnerCode: "malformed", failureKind: "unparseable" })),
     ...["", " ", 3, null, [], {}].map(code => ({ body: { error: { code, message: privateValue } }, graphCode: "malformed", graphInnerCode: "missing" })),
     ...[null, [], privateValue, 3].map(innerError => ({ body: { error: { code: "BadRequest", innerError } }, graphCode: "BadRequest", graphInnerCode: "malformed" })),
     ...["", " ", 3, null, [], {}].map(code => ({ body: { error: { code: "BadRequest", innerError: { code, message: privateValue } } }, graphCode: "BadRequest", graphInnerCode: "malformed" })),
-    { raw: `${privateValue} is not JSON`, graphCode: "malformed", graphInnerCode: "malformed" },
+    { raw: `${privateValue} is not JSON`, graphCode: "malformed", graphInnerCode: "malformed", failureKind: "unparseable" },
   ];
   for (const fixture of bodies) {
     const error = await failure([{ url: initial, response: () => fixture.raw === undefined
       ? json(fixture.body, 400) : new Response(fixture.raw, { status: 400 }) }]);
-    assertDiagnostic(error, expectedCause(400, { graphCode: fixture.graphCode, graphInnerCode: fixture.graphInnerCode }));
+    assertDiagnostic(error, expectedCause(400, { graphCode: fixture.graphCode, graphInnerCode: fixture.graphInnerCode,
+      failureKind: fixture.failureKind ?? "other" }));
   }
 
   const queryShapes = [

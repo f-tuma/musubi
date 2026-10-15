@@ -37,7 +37,7 @@ import type {
 } from "../adapter";
 import { getOAuthAccessToken } from "../oauth";
 import { isOptionalTaskError, TaskScopeMissingError } from "../errors";
-import { graphTaskReadHttpError, type GraphTaskReadPhase } from "./microsoft_task_read_error";
+import { graphTaskReadFailureKind, graphTaskReadHttpError, type GraphTaskReadPhase } from "./microsoft_task_read_error";
 import { GraphTaskReadResponseError, graphTaskReadPage, graphTaskReadTraversal } from "./microsoft_task_read_page";
 import { assertEventWriteEvidence, assertEventWriteResponse, assertOAuthEventWriteGrant, assertProviderEventMutationResponse, ProviderEventWriteError } from "../event_write";
 import { assertCompleteEventReadResponse, assertCreatedEventEvidence, eventCreateOperationID } from "../event_create_identity";
@@ -361,14 +361,23 @@ export async function fetchMicrosoftTaskChanges(
     }
     if (res.status === 400) {
       const detail = await res.clone().json().catch(() => null);
-      if (typeof detail?.error?.message === "string" && /delta query is not supported by this resource/i.test(detail.error.message)) {
-        return fetchMicrosoftTaskSnapshot(
+      const reason = graphTaskReadFailureKind(detail);
+      const missingInitialPageState = reason === "missing-page-state" &&
+        (requestPhase === "initial" || requestPhase === "recovery-initial") && url === initialUrl;
+      if (reason === "delta-unsupported" || missingInitialPageState) {
+        const fields = { provider: "microsoft", mode: "snapshot", requestPhase, reason };
+        logger.info("sync.tasks.snapshot_fallback_selected", fields);
+        const result = await fetchMicrosoftTaskSnapshot(
           accessToken,
           `${graphBase}${microsoftTaskPath(taskListId)}?$top=${PAGE_SIZE}`,
           fetchImpl,
           graphBase,
           traversal,
         );
+        // This proves a complete adapter read only. Persistence and checkpoint
+        // commit remain the host's independently fenced responsibility.
+        logger.info("sync.tasks.snapshot_read_completed", { ...fields, taskCount: result.changes.length });
+        return result;
       }
     }
     if (!res.ok) throw await graphTaskReadHttpError(res, { readKind: "delta", requestPhase, url });

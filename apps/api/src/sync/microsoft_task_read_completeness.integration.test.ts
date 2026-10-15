@@ -14,7 +14,11 @@ const graph = "https://graph.microsoft.com/v1.0";
 const label = "Task completeness fixture";
 type ReadMode = "missing-envelope" | "missing-terminal" | "partial" | "late-invalid"
   | "late-removal-invalid" | "late-conflicting-links" | "snapshot-invalid"
-  | "snapshot-late-invalid" | "empty" | "snapshot-empty" | "removal";
+  | "snapshot-late-invalid" | "empty" | "snapshot-empty" | "removal"
+  | "bootstrap-complete" | "bootstrap-invalid" | "bootstrap-late-invalid"
+  | "bootstrap-partial" | "bootstrap-saved-error" | "bootstrap-saved-initial-error"
+  | "bootstrap-next-error" | "bootstrap-wrong-code" | "bootstrap-message-newline"
+  | "bootstrap-message-suffix";
 
 /** This suite uses real adapter HTTP, the engine, and seeded PostgreSQL rows.
  * It never substitutes a recording adapter or contacts a provider account. */
@@ -27,9 +31,11 @@ async function scenario(mode: ReadMode, renewal = false, copy = false, fence?: "
   const selectedList = copy ? "copy" : "home";
   const listURL = (list: string) => `${graph}/me/todo/lists/${list}/tasks`;
   const saved = `${listURL(selectedList)}/delta?fixture=saved`;
+  const initial = `${listURL(selectedList)}/delta?$top=100`;
   const terminal = `${listURL(selectedList)}/delta?fixture=terminal%2Bopaque`;
+  const bootstrap = mode.startsWith("bootstrap-");
   let failure: unknown;
-  let taskRequests = 0, expiredRequests = 0;
+  let taskRequests = 0, expiredRequests = 0, snapshotRequests = 0;
   let beforeTaskResponse: (() => Promise<void>) | undefined;
   const fixture = createServer((req, res) => {
     void (async () => {
@@ -53,6 +59,24 @@ async function scenario(mode: ReadMode, renewal = false, copy = false, fence?: "
         return json({ error: { code: "SyncStateNotFound" } }, 410);
       }
       await beforeTaskResponse?.();
+      if (bootstrap) {
+        if (url.pathname.endsWith("/delta")) {
+          if (mode === "bootstrap-next-error" && !url.searchParams.has("page"))
+            return json({ value: [{ id: "primary", title: "Buffered delta edit must not commit", status: "completed", "@odata.etag": '"buffered-delta-v2"' }], "@odata.nextLink": `${listURL(list)}/delta?page=second` });
+          return json({ error: {
+            code: mode === "bootstrap-wrong-code" ? "InvalidRequest" : "BadRequest",
+            message: mode === "bootstrap-message-newline" ? "Skip token is not provided\n"
+              : mode === "bootstrap-message-suffix" ? "Skip token is not provided for another resource"
+                : renewal ? "SKIP TOKEN IS NOT PROVIDED." : "Skip token is not provided",
+          } }, 400);
+        }
+        snapshotRequests++;
+        if (mode === "bootstrap-invalid") return json({});
+        if (mode === "bootstrap-partial") return json({ value: [] }, 206, { "content-range": "items 0-0/2" });
+        if (url.searchParams.get("page") === "second")
+          return json(mode === "bootstrap-late-invalid" ? {} : { value: [] });
+        return json({ value: [{ id: "primary", title: "Recovered native task", status: "inProgress", body: { contentType: "text", content: "Canonical content must survive a rejected read" }, startDateTime: null, dueDateTime: { dateTime: "2026-10-01T14:45:00", timeZone: "UTC" }, importance: "high", "@odata.etag": '"recovered-v2"' }], "@odata.nextLink": `${listURL(list)}?page=second` });
+      }
       const snapshot = mode.startsWith("snapshot-");
       if (snapshot && url.pathname.endsWith("/delta"))
         return json({ error: { code: "BadRequest", message: "Delta query is not supported by this resource" } }, 400);
@@ -93,19 +117,22 @@ async function scenario(mode: ReadMode, renewal = false, copy = false, fence?: "
     ]);
     await db.insert(calendars).values([{ id: home, creatorID: owner, name: "Home", color: "#7A8BA3" }, { id: target, creatorID: owner, name: "Copy", color: "#7A8BA3" }]);
     await db.insert(calendarMembers).values([{ calendarID: home, userID: owner, role: "owner" }, { calendarID: target, userID: owner, role: "owner" }]);
+    const initialCursor = mode === "bootstrap-saved-initial-error" ? initial
+      : renewal || fence === "incremental" || mode === "bootstrap-saved-error" ? saved : null;
     const sources = await db.insert(externalCalendars).values([
-      { calendarID: home, provider: "microsoft", userID: owner, accountID: homeAccount, accountLabel: label, externalCalendarID: microsoftTaskListExternalId("home"), supportsEvents: false, supportsTasks: true, cursor: selectedCalendar === home && (renewal || fence === "incremental") ? saved : null },
-      { calendarID: target, provider: "microsoft", userID: owner, accountID: copyAccount, accountLabel: label, externalCalendarID: microsoftTaskListExternalId("copy"), supportsEvents: false, supportsTasks: true, cursor: selectedCalendar === target && (renewal || fence === "incremental") ? saved : null },
+      { calendarID: home, provider: "microsoft", userID: owner, accountID: homeAccount, accountLabel: label, externalCalendarID: microsoftTaskListExternalId("home"), supportsEvents: false, supportsTasks: true, cursor: selectedCalendar === home ? initialCursor : null },
+      { calendarID: target, provider: "microsoft", userID: owner, accountID: copyAccount, accountLabel: label, externalCalendarID: microsoftTaskListExternalId("copy"), supportsEvents: false, supportsTasks: true, cursor: selectedCalendar === target ? initialCursor : null },
     ]).returning();
     const source = (calendarID: string) => sources.find((item) => item.calendarID === calendarID)!;
-    const seeded = await db.insert(tasks).values(["primary", "protected"].map((name) => ({ id: randomUUID(), creatorID: owner, calendarID: home, originCalendarID: home, title: `Seeded ${name}`, description: "Canonical content must survive a rejected read", status: "in-process" as const, revision: 4, due: new Date("2026-10-01T14:45:00Z"), priority: 2 }))).returning();
+    const taskNames = mode === "bootstrap-complete" ? ["primary", "protected", "missing"] : ["primary", "protected"];
+    const seeded = await db.insert(tasks).values(taskNames.map((name) => ({ id: randomUUID(), creatorID: owner, calendarID: home, originCalendarID: home, title: `Seeded ${name}`, description: "Canonical content must survive a rejected read", status: "in-process" as const, revision: 4, due: new Date("2026-10-01T14:45:00Z"), priority: 2 }))).returning();
     const primary = seeded[0]!, protectedTask = seeded[1]!;
     for (const [index, task] of seeded.entries()) {
       await db.insert(calendarTasks).values([{ taskID: task.id, calendarID: home }, { taskID: task.id, calendarID: target }]);
       for (const calendarID of [home, target]) {
         const selected = source(calendarID);
         const projection = microsoftAdapter.projectTask!(TaskSchema.parse({ ...task, calendarIDs: [home, target] }));
-        await db.insert(externalTasks).values({ provider: "microsoft", taskID: task.id, calendarID, externalCalendarID: selected.externalCalendarID, externalTaskID: index === 0 ? "primary" : "protected", externalCalendarLinkID: selected.id, accountID: selected.accountID, etag: `"${calendarID}-v1"`, projectionBaseline: projection, acceptedRevision: task.revision });
+        await db.insert(externalTasks).values({ provider: "microsoft", taskID: task.id, calendarID, externalCalendarID: selected.externalCalendarID, externalTaskID: taskNames[index]!, externalCalendarLinkID: selected.id, accountID: selected.accountID, etag: `"${calendarID}-v1"`, projectionBaseline: projection, acceptedRevision: task.revision });
       }
     }
     const intent = async (calendarID: string, status: "pending" | "unconfirmed", task = protectedTask) => {
@@ -144,7 +171,42 @@ async function scenario(mode: ReadMode, renewal = false, copy = false, fence?: "
       };
     }
     const before = await snapshot();
-    if (fence === "source-changed") {
+    if (mode === "bootstrap-complete") {
+      await run();
+      assert.equal(failure, undefined);
+      const after = await snapshot();
+      const recovered = after.tasks.find((row) => row.id === primary.id)!;
+      assert.equal(recovered.title, "Recovered native task", "A complete fallback imports actual native content");
+      assert.equal(recovered.revision, primary.revision + 1);
+      assert.equal(recovered.deletedAt, null, "A present native task is never treated as missing");
+      assert.equal(recovered.description, primary.description);
+      assert.equal(recovered.due?.toISOString(), primary.due?.toISOString());
+      const missing = seeded[2]!;
+      const missingAfter = after.tasks.find((row) => row.id === missing.id)!;
+      assert.ok(missingAfter.deletedAt, "Complete snapshot absence preserves existing origin missing-task handling");
+      assert.equal(missingAfter.revision, missing.revision + 1);
+      assert.deepEqual(after.tasks.find((row) => row.id === protectedTask.id), protectedTask, "Pending local writes remain authoritative during bootstrap fallback");
+      assert.deepEqual(after.links, before.links);
+      assert.deepEqual(after.mappings.filter((row) => row.calendarID === target || row.taskID === protectedTask.id), before.mappings.filter((row) => row.calendarID === target || row.taskID === protectedTask.id), "Secondary and pending/uncertain mapping evidence stays intact");
+      const accepted = after.mappings.find((row) => row.taskID === primary.id && row.calendarID === home)!;
+      assert.equal(accepted.etag, '"recovered-v2"');
+      assert.equal(accepted.projectionBaseline?.title, "Recovered native task");
+      assert.equal(accepted.acceptedRevision, recovered.revision);
+      const retired = after.mappings.find((row) => row.taskID === missing.id && row.calendarID === home)!;
+      assert.equal(retired.etag, null);
+      assert.equal(retired.projectionBaseline, null);
+      assert.deepEqual(after.outbox.filter((row) => before.outbox.some((old) => old.id === row.id)), before.outbox, "Fallback never rewrites existing durable pending/uncertain intents");
+      const fanout = after.outbox.filter((row) => !before.outbox.some((old) => old.id === row.id));
+      assert.equal(fanout.length, 2);
+      assert.deepEqual(fanout.map((row) => ({ taskID: row.taskID, action: row.action, calendarID: row.calendarID, status: row.status })).sort((a, b) => a.taskID.localeCompare(b.taskID)), [
+        { taskID: primary.id, action: "update", calendarID: target, status: "pending" },
+        { taskID: missing.id, action: "delete", calendarID: target, status: "pending" },
+      ].sort((a, b) => a.taskID.localeCompare(b.taskID)), "These are durable fanout intents, never dispatched provider mutations");
+      const checkpoint = after.sources.find((row) => row.calendarID === selectedCalendar)!;
+      assert.equal(checkpoint.cursor, null, "A complete list snapshot cannot manufacture a delta checkpoint");
+      assert.equal(checkpoint.checkpointRevision, source(selectedCalendar).checkpointRevision + 1);
+      assert.equal(snapshotRequests, 2, "Both snapshot pages must complete before any import/checkpoint");
+    } else if (fence === "source-changed") {
       await assert.rejects(run(), /Task source access changed during sync/);
       assert.equal(failure, undefined);
       assert.ok(concurrentState, "Access revision actually changed while the real GET was in flight");
@@ -165,8 +227,17 @@ async function scenario(mode: ReadMode, renewal = false, copy = false, fence?: "
     } else if (!["empty", "snapshot-empty", "removal"].includes(mode)) {
       const error: unknown = await run().then(() => null, (value: unknown) => value);
       assert.equal(failure, undefined, "Owned HTTP fixture completed without an unexpected request");
-      assert.deepEqual(await snapshot(), before, `${mode}/${renewal ? "saved-410-renewal" : "initial"}: rejected read cannot mutate seeded canonical rows/revisions/tombstones, copies, mappings/baselines, attachments, durable writes or checkpoint`);
-      assert.equal((error as { cause?: { code?: string } } | null)?.cause?.code, "graph-task-read-response-invalid", `${mode}: fail closed before applying any buffered observations`);
+      assert.deepEqual(await snapshot(), before, `${mode}/${renewal ? "saved-410-renewal" : initialCursor !== null ? "saved-cursor" : "initial"}: rejected read cannot mutate seeded canonical rows/revisions/tombstones, copies, mappings/baselines, attachments, durable writes or checkpoint`);
+      const noFallback = ["bootstrap-saved-error", "bootstrap-saved-initial-error", "bootstrap-next-error", "bootstrap-wrong-code", "bootstrap-message-newline", "bootstrap-message-suffix"].includes(mode);
+      const cause = (error as { cause?: { code?: string; requestPhase?: string; httpStatus?: number; failureKind?: string } } | null)?.cause;
+      assert.equal(cause?.code, noFallback ? "graph-task-read-http-failed" : "graph-task-read-response-invalid", `${mode}: fail closed before applying any buffered observations`);
+      if (noFallback) {
+        assert.equal(snapshotRequests, 0, "The exact bootstrap repair must not widen to another status/code/message/phase or saved URL");
+        assert.equal(cause?.httpStatus, 400);
+        assert.equal(cause?.requestPhase, mode.startsWith("bootstrap-saved-") ? "saved-cursor" : mode === "bootstrap-next-error" ? "next-page" : renewal ? "recovery-initial" : "initial");
+        assert.equal(cause?.failureKind, mode.startsWith("bootstrap-saved-") || mode === "bootstrap-next-error" ? "missing-page-state" : "other");
+      }
+      if (bootstrap && !noFallback) assert.ok(snapshotRequests > 0, "The failure is an actual rejected fallback snapshot, not the original delta HTTP 400");
     } else {
       await run();
       assert.equal(failure, undefined);
@@ -198,7 +269,7 @@ async function scenario(mode: ReadMode, renewal = false, copy = false, fence?: "
     }
     if (renewal) assert.equal(expiredRequests, 1, "Fixture exercised the saved cursor 410 before a new initial read");
     assert.ok(taskRequests > 0, "Real Microsoft task transport was exercised");
-    console.log(`Microsoft task completeness DB: ${mode}, ${renewal ? "saved-410-renewal" : fence === "incremental" ? "saved-incremental" : "initial"}, ${copy ? "secondary" : "origin"}${fence ? `, ${fence}` : ""}: OK`);
+    console.log(`Microsoft task completeness DB: ${mode}, ${renewal ? "saved-410-renewal" : initialCursor !== null ? "saved-cursor" : "initial"}, ${copy ? "secondary" : "origin"}${fence ? `, ${fence}` : ""}: OK`);
   } finally {
     globalThis.fetch = originalFetch;
     await db.delete(user).where(eq(user.id, owner));
@@ -221,6 +292,12 @@ async function main() {
   await scenario("empty", false, false, "incremental");
   await scenario("removal", false, false, "completed-after-read");
   await scenario("empty", false, false, "source-changed");
+  for (const renewal of [false, true]) {
+    await scenario("bootstrap-complete", renewal);
+    for (const mode of ["bootstrap-invalid", "bootstrap-late-invalid", "bootstrap-partial", "bootstrap-next-error", "bootstrap-wrong-code", "bootstrap-message-newline", "bootstrap-message-suffix"] as const) await scenario(mode, renewal);
+  }
+  await scenario("bootstrap-saved-error");
+  await scenario("bootstrap-saved-initial-error");
 }
 
 main().then(() => process.exit(0), (error) => { console.error(error); process.exit(1); });
