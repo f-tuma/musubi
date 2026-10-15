@@ -2,6 +2,7 @@
  * messages nor request addresses become part of the error or its cause. */
 export type GraphTaskReadKind = "delta" | "snapshot";
 export type GraphTaskReadPhase = "initial" | "saved-cursor" | "next-page" | "recovery-initial";
+export type GraphTaskReadFailureKind = "missing-page-state" | "delta-unsupported" | "other" | "unparseable";
 
 const GRAPH_CODES = [
   "BadRequest", "InvalidRequest", "ErrorInvalidRequest", "ErrorInvalidUrlQuery", "SyncStateNotFound", "syncStateNotFound",
@@ -20,6 +21,7 @@ export type GraphTaskReadHttpCause = {
   httpStatus: number;
   graphCode: GraphCode;
   graphInnerCode: GraphCode;
+  failureKind: GraphTaskReadFailureKind;
   queryState: QueryState;
   skipState: ParameterState;
   deltaState: ParameterState;
@@ -35,6 +37,7 @@ export class GraphTaskReadHttpError extends Error {
     this.cause = Object.freeze({
       code: "graph-task-read-http-failed", readKind: cause.readKind, requestPhase: cause.requestPhase,
       httpStatus: cause.httpStatus, graphCode: cause.graphCode, graphInnerCode: cause.graphInnerCode,
+      failureKind: cause.failureKind,
       queryState: cause.queryState, skipState: cause.skipState, deltaState: cause.deltaState,
     });
   }
@@ -50,17 +53,33 @@ function graphCode(value: unknown): GraphCode {
   return GRAPH_CODES.find(allowed => allowed === value) ?? "other";
 }
 
-async function graphCodes(response: Response): Promise<Pick<GraphTaskReadHttpCause, "graphCode" | "graphInnerCode">> {
+/** This classification contains no provider-controlled values. The exact
+ * bootstrap signature is deliberately narrower than the legacy unsupported
+ * delta message; the caller must separately prove status, phase and URL. */
+export function graphTaskReadFailureKind(body: unknown): GraphTaskReadFailureKind {
+  if (!record(body) || !record(body.error)) return "unparseable";
+  const message = body.error.message;
+  if (typeof message !== "string") return "other";
+  const normalized = message.toLowerCase();
+  if (body.error.code === "BadRequest" &&
+    (normalized === "skip token is not provided" || normalized === "skip token is not provided.")) return "missing-page-state";
+  if (/delta query is not supported by this resource/i.test(message)) return "delta-unsupported";
+  return "other";
+}
+
+async function graphCodes(response: Response): Promise<Pick<GraphTaskReadHttpCause, "graphCode" | "graphInnerCode" | "failureKind">> {
   let body: unknown;
   try { body = await response.json(); }
-  catch { return { graphCode: "malformed", graphInnerCode: "malformed" }; }
-  if (!record(body)) return { graphCode: "malformed", graphInnerCode: "malformed" };
-  if (body.error === undefined) return { graphCode: "missing", graphInnerCode: "missing" };
-  if (!record(body.error)) return { graphCode: "malformed", graphInnerCode: "malformed" };
+  catch { return { graphCode: "malformed", graphInnerCode: "malformed", failureKind: "unparseable" }; }
+  const failureKind = graphTaskReadFailureKind(body);
+  if (!record(body)) return { graphCode: "malformed", graphInnerCode: "malformed", failureKind };
+  if (body.error === undefined) return { graphCode: "missing", graphInnerCode: "missing", failureKind };
+  if (!record(body.error)) return { graphCode: "malformed", graphInnerCode: "malformed", failureKind };
   const inner = body.error.innerError === undefined ? body.error.innererror : body.error.innerError;
   return {
     graphCode: graphCode(body.error.code),
     graphInnerCode: inner === undefined ? "missing" : record(inner) ? graphCode(inner.code) : "malformed",
+    failureKind,
   };
 }
 
