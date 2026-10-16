@@ -36,6 +36,16 @@ assert.equal(isTransientSyncError(new Error("Google 404 Not Found")), false);
 assert.equal(isTransientSyncError(new Error("cannot find homeUrl")), false);
 assert.equal(isTransientSyncError(undefined), false);
 
+// A provider read class may supply its own trusted HTTP status prefix. A plain
+// object's claimed status/code never authorizes a new transient classification.
+for (const status of [408, 429, 500, 503, 504, 599]) {
+  const forged = Object.assign(new Error("Outlook delta link identity could not be verified."), {
+    cause: { code: "graph-calendar-identity-unverified", reason: "response", status },
+  });
+  assert.equal(isTransientSyncError(forged), false);
+  assert.equal(isOptionalTaskError(forged), false);
+}
+
 assert.equal(isOptionalTaskError(new TaskScopeMissingError()), true);
 for (const message of ["Google 403: Forbidden", "Google Tasks 403 Forbidden", "Outlook 503: Unavailable"]) {
   assert.equal(isOptionalTaskError(new Error(message)), true);

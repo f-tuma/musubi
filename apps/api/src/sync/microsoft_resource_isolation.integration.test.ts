@@ -18,12 +18,14 @@ import { syncProvider, syncUser } from "./engine";
 import { metricsRegistry } from "../metrics";
 import { handlerStream } from "../handlers/stream";
 import type { CalendarDiscoveryResult } from "./adapter";
+import { GraphTaskListDiscoveryHttpError } from "./adapters/microsoft_task_list_discovery_error";
+import { GraphCalendarDiscoveryHttpError, isMicrosoftEventMailboxUnavailable } from "./adapters/microsoft_calendar_discovery_error";
 
 const graph = "https://graph.microsoft.com/v1.0";
 const label = "Resource isolation fixture";
 type Mode = "mailbox" | "inner-mailbox" | "unsupported-mailbox" | "no-scope" | "unknown404" | "bare404"
   | "late404" | "event-invalid" | "event-partial" | "event-late-invalid" | "event-reserved-late"
-  | "tasks-invalid" | "tasks-late-invalid" | "tasks403" | "tasks401" | "tasks404" | "tasks-empty"
+  | "tasks-invalid" | "tasks-late-invalid" | "tasks403" | "tasks401" | "tasks404" | "tasks-late404" | "tasks-empty"
   | "fetch401" | "fetch403" | "healthy" | "recovered" | "invalid-contract" | "missing-failure-contract";
 
 async function scenario(mode: Mode) {
@@ -64,6 +66,9 @@ async function scenario(mode: Mode) {
       }
       if (url.pathname === "/v1.0/me/todo/lists") {
         taskListCalls++;
+        if (mode === "tasks-late404") return json(url.searchParams.has("second")
+          ? { error: { code: "ErrorItemNotFound", innerError: { code: "MailboxNotEnabledForRESTAPI" } } }
+          : { value: [{ id: "tasks", displayName: "Tasks", isOwner: true }], "@odata.nextLink": `${graph}/me/todo/lists?second=true` }, url.searchParams.has("second") ? 404 : 200);
         if (mode === "tasks-empty") return json({ value: [] });
         if (mode === "tasks-invalid" || mode === "tasks-late-invalid" && url.searchParams.has("second")) return json({});
         if (["tasks403", "tasks401", "tasks404"].includes(mode)) return json({ error: { code: "ErrorItemNotFound" } }, Number(mode.slice(5)));
@@ -168,7 +173,19 @@ async function scenario(mode: Mode) {
       await run();
       assert.equal((await getUserExternalCalendars("microsoft", owner, accountID)).some(link => link.calendarID === eventCalendar.id), false, "A complete empty event inventory still removes a deleted event mirror");
     } else {
-      await assert.rejects(run());
+      let observedFailure: unknown;
+      await assert.rejects(run(), error => { observedFailure = error; return true; });
+      if (["tasks401", "tasks404", "tasks-late404"].includes(mode)) {
+        assert.ok(observedFailure instanceof GraphTaskListDiscoveryHttpError, "The actual Tasks inventory failure reaches the account boundary before the deferred Events error");
+        assert.equal(observedFailure.cause.httpStatus, mode === "tasks401" ? 401 : 404);
+        assert.equal(observedFailure.cause.requestPhase, mode === "tasks-late404" ? "next-page" : "initial");
+        assert.equal(observedFailure.cause.graphCode, "ErrorItemNotFound");
+        assert.equal(observedFailure.cause.graphInnerCode, mode === "tasks-late404" ? "MailboxNotEnabledForRESTAPI" : "missing");
+        assert.equal(isMicrosoftEventMailboxUnavailable(observedFailure), false, "Task-list failure cannot become Events recovery evidence");
+        assert.equal(taskReadCalls, 0, "Incomplete list discovery never authorizes a partial task collection read");
+      } else if (mode === "tasks403") {
+        assert.ok(observedFailure instanceof GraphCalendarDiscoveryHttpError, "Optional Tasks403 preserves the original deferred typed Events404");
+      }
       assert.equal(observedDebug.includes("sync.account.completed"), false, "Partial or failed account must not be logged as fully completed");
       if (["mailbox", "inner-mailbox", "unsupported-mailbox", "recovered"].includes(mode)) {
         assert.equal(taskListCalls, 1, "Mailbox-unavailable events cannot prevent granted To Do discovery");
@@ -228,7 +245,7 @@ async function main() {
   const database = new URL(process.env.DATABASE_URL!);
   assert.ok(["localhost", "127.0.0.1", "[::1]"].includes(database.hostname), "Refuse a non-local test database");
   for (const mode of ["mailbox", "inner-mailbox", "unsupported-mailbox", "no-scope", "unknown404", "bare404", "late404",
-    "event-invalid", "event-partial", "event-late-invalid", "event-reserved-late", "tasks-invalid", "tasks-late-invalid", "tasks403", "tasks401", "tasks404", "fetch401", "fetch403", "tasks-empty", "healthy", "recovered", "invalid-contract", "missing-failure-contract"] as const) await scenario(mode);
+    "event-invalid", "event-partial", "event-late-invalid", "event-reserved-late", "tasks-invalid", "tasks-late-invalid", "tasks403", "tasks401", "tasks404", "tasks-late404", "fetch401", "fetch403", "tasks-empty", "healthy", "recovered", "invalid-contract", "missing-failure-contract"] as const) await scenario(mode);
 }
 
 main().then(() => process.exit(0), error => { console.error(error); process.exit(1); });

@@ -7,6 +7,7 @@ process.env.BETTER_AUTH_URL ??= "http://localhost:7531";
 async function main() {
   const { fetchMicrosoftChanges, parseCursor } = await import("./microsoft");
   const { StructuredLogger } = await import("@musubi/config");
+  const { isOptionalTaskError, isTransientSyncError } = await import("../errors");
   const base = "https://graph.microsoft.com/v1.0";
   const calendar = "work/team";
   const view = `${base}/me/calendars/work%2Fteam/calendarView/delta`;
@@ -512,7 +513,7 @@ async function main() {
     !contradictoryCanonicalResources.includes(resource as string));
   const identityDiagnosticKeys = ["canonicalCandidateRoute", "canonicalCandidateOwnerKind", "canonicalCandidateKeyStyle",
     "canonicalMetadataState", "canonicalMetadataFailure", "canonicalProofOwnerKind", "canonicalProofKeyStyle", "principalMatches"];
-  const assertIdentityFailure = (error: unknown, reason: string, privateValues: string[] = []) => {
+  const assertIdentityFailure = (error: unknown, reason: string, privateValues: string[] = [], transient = false) => {
     assert.ok(error instanceof Error);
     assert.match(error.message, /delta link/);
     const cause = (error as Error & { cause: Record<string, unknown> }).cause;
@@ -530,18 +531,60 @@ async function main() {
     assert.ok(["unknown", "me", "users-segment", "users-odata"].includes(String(cause.canonicalProofOwnerKind)));
     assert.ok(["unknown", "segment", "odata"].includes(String(cause.canonicalProofKeyStyle)));
     assert.ok(cause.principalMatches === null || typeof cause.principalMatches === "boolean");
+    assert.equal(isTransientSyncError(error), transient, "Only failed HTTP proof requests may be classified as retryable");
+    if (cause.status === 401 || cause.status === 403) {
+      assert.equal(isOptionalTaskError(error), false, "An identity proof denial cannot become an optional Tasks failure");
+    }
     const lines: string[] = [];
     const originalWrite = process.stderr.write;
     process.stderr.write = ((chunk: string) => { lines.push(String(chunk)); return true; }) as typeof process.stderr.write;
-    try { new StructuredLogger("error").error("sync.failed", { error }); }
+    try { new StructuredLogger("warn")[isTransientSyncError(error) ? "warn" : "error"]("sync.account.failed", { error }); }
     finally { process.stderr.write = originalWrite; }
     assert.equal(lines.length, 1);
+    assert.equal(JSON.parse(lines[0]!).level, transient ? "warn" : "error");
     assert.deepEqual(JSON.parse(lines[0]!).error.cause, cause);
     for (const sensitive of [proofSecret, canonicalDelta, canonicalResource, ownerKey, calendar, "one%2btwo%3D", ...privateValues]) {
       assert.equal(lines[0]!.includes(sensitive), false, "Proof failures cannot expose addresses or private response bodies");
     }
     return true;
   };
+
+  // Production returned HTTP 504 while proving a /me OData calendar alias.
+  // The read must still fail without following the alias or returning buffered
+  // changes. Only its failure classification is transient.
+  for (const property of [null, "@odata.nextLink", "@odata.deltaLink"] as const) {
+    const saved = property === null;
+    const link = property === "@odata.nextLink" ? meODataNext : meODataTerminal;
+    const previous = saved ? JSON.stringify({ ...JSON.parse(cursor), link }) : cursor;
+    const requests: string[] = [];
+    await assert.rejects(read(async (input, init) => {
+      const url = String(input); requests.push(url);
+      assert.equal(init?.method ?? "GET", "GET");
+      assert.equal(init?.redirect, "error");
+      if (url === boundCalendarURL) {
+        return new Response(JSON.stringify({ error: { message: proofSecret } }), {
+          status: 504, statusText: proofSecret, headers: { "content-type": "application/json" },
+        });
+      }
+      assert.equal(saved, false, "A saved alias must obtain identity proof before its delta GET");
+      assert.equal(url, JSON.parse(cursor).link, "A failed proof cannot follow the unverified alias");
+      return json({ value: [item("uncommitted-me-proof-timeout")], [property!]: link });
+    }, previous), error => {
+      assertIdentityFailure(error, "response", [], true);
+      const cause = (error as Error & { cause: Record<string, unknown> }).cause;
+      assert.equal(cause.status, 504);
+      assert.equal(cause.canonicalCandidateRoute, "explicit-calendar");
+      assert.equal(cause.canonicalCandidateOwnerKind, "me");
+      assert.equal(cause.canonicalCandidateKeyStyle, "odata");
+      assert.equal(cause.canonicalMetadataState, "not-evaluated");
+      assert.equal(cause.canonicalMetadataFailure, "not-evaluated");
+      assert.equal(cause.canonicalProofOwnerKind, "unknown");
+      assert.equal(cause.canonicalProofKeyStyle, "unknown");
+      assert.equal(cause.principalMatches, null);
+      return true;
+    });
+    assert.deepEqual(requests, saved ? [boundCalendarURL] : [JSON.parse(cursor).link, boundCalendarURL]);
+  }
 
   // A successful scoped body read proves /me's explicit calendar primary key
   // without relying on an optional, missing or unusable metadata annotation.
@@ -581,7 +624,8 @@ async function main() {
     assert.deepEqual(userRequests, [JSON.parse(cursor).link, boundCalendarURL, principalURL]);
     assert.equal(parseCursor(userAccepted.nextCursor)?.link, userLink);
   }
-  const invalidProofs: { name: string; reason: string; response: () => Response | Promise<Response> }[] = [
+  const transientIdentityStatuses = new Set([408, 429, 500, 503, 504, 599]);
+  const invalidProofs: { name: string; reason: string; transient?: boolean; response: () => Response | Promise<Response> }[] = [
     ...[null, [], {}, { id: "different", "@odata.id": canonicalResource },
       { id: calendar, "@odata.id": canonicalResource, "@removed": null },
       { id: calendar, "@odata.id": canonicalResource, "@odata.nextLink": null },
@@ -591,9 +635,10 @@ async function main() {
       .map((body, index) => ({ name: `body-${index}`, reason: "body", response: () => json(body) })),
     ...contradictoryCanonicalResources.map((resource, index) => ({ name: `canonical-resource-${index}`,
       reason: "canonical-resource", response: () => json({ id: calendar, "@odata.id": resource }) })),
-    ...[202, 204, 206, 301, 302, 403, 404, 410, 429, 500, 503].map(status => ({ name: `status-${status}`,
-      reason: "response", response: () => status === 204 ? new Response(null, { status })
-        : json({ error: { message: proofSecret } }, status) })),
+    ...[202, 204, 206, 301, 302, 401, 403, 404, 408, 410, 429, 500, 503, 504, 599].map(status => ({ name: `status-${status}`,
+      reason: "response", transient: transientIdentityStatuses.has(status),
+      response: () => new Response(status === 204 ? null : JSON.stringify({ error: { message: `${proofSecret} 504 Gateway Timeout` } }),
+        { status, statusText: proofSecret, headers: { "content-type": "application/json" } }) })),
     { name: "content-range", reason: "response", response: () => json({ id: calendar, "@odata.id": canonicalResource }, 200,
       { "content-range": "items 0-0/1" }) },
     { name: "redirected", reason: "response", response: () => Object.defineProperty(canonicalProof(), "redirected", { value: true }) },
@@ -610,7 +655,7 @@ async function main() {
         assert.equal(url, JSON.parse(cursor).link);
         return json({ value: [item("uncommitted-proof")], "@odata.deltaLink": canonicalDelta });
       }, saved ? canonicalCursor : cursor), (error: unknown) => {
-        return assertIdentityFailure(error, fixture.reason);
+        return assertIdentityFailure(error, fixture.reason, [], fixture.transient ?? false);
       });
       assert.deepEqual(requests, saved ? [boundCalendarURL] : [JSON.parse(cursor).link, boundCalendarURL], fixture.name);
     }
@@ -688,15 +733,16 @@ async function main() {
   const profileOwner = "PRIVATE-Expected-Graph-Principal";
   const profileDelta = `${base}/users('${profileOwner}')/calendars('work%2Fteam')/calendarView/delta${opaqueQuery}`;
   const profileCursor = JSON.stringify({ ...JSON.parse(cursor), link: profileDelta });
-  const invalidPrincipalProofs: { name: string; reason: string; response: () => Response | Promise<Response> }[] = [
+  const invalidPrincipalProofs: { name: string; reason: string; transient?: boolean; response: () => Response | Promise<Response> }[] = [
     ...[null, [], {}, { id: "" }, { id: " padded " }, { id: "." }, { id: ".." }, { id: "control\nkey" }, { id: 3 },
       { id: profileOwner, value: [] }, { id: profileOwner, "@removed": null },
       { id: profileOwner, "@odata.nextLink": null }, { id: profileOwner, "@odata.deltaLink": null },
       { id: profileOwner, "@odata.type": "#microsoft.graph.calendar" }, { id: profileOwner, "@odata.type": null }]
       .map((body, index) => ({ name: `principal-body-${index}`, reason: "principal-body", response: () => json(body) })),
-    ...[202, 204, 206, 301, 302, 403, 404, 410, 429, 500, 503].map(status => ({ name: `principal-status-${status}`,
-      reason: "principal-response", response: () => status === 204 ? new Response(null, { status })
-        : json({ error: { message: proofSecret } }, status) })),
+    ...[202, 204, 206, 301, 302, 401, 403, 404, 408, 410, 429, 500, 503, 504, 599].map(status => ({ name: `principal-status-${status}`,
+      reason: "principal-response", transient: transientIdentityStatuses.has(status),
+      response: () => new Response(status === 204 ? null : JSON.stringify({ error: { message: `${proofSecret} 504 Gateway Timeout` } }),
+        { status, statusText: proofSecret, headers: { "content-type": "application/json" } }) })),
     { name: "principal-partial", reason: "principal-response", response: () => json({ id: profileOwner }, 200, { "content-range": "items 0-0/1" }) },
     { name: "principal-redirect", reason: "principal-response", response: () => Object.defineProperty(json({ id: profileOwner }), "redirected", { value: true }) },
     { name: "principal-malformed-json", reason: "principal-body", response: () => new Response(`${proofSecret} is not JSON`, { status: 200 }) },
@@ -712,7 +758,7 @@ async function main() {
         assert.equal(saved, false, "Failed saved-cursor principal proof must fail the read, not renew or follow");
         assert.equal(url, JSON.parse(cursor).link);
         return json({ value: [item("uncommitted-principal")], "@odata.deltaLink": profileDelta });
-      }, saved ? profileCursor : cursor), error => assertIdentityFailure(error, fixture.reason, [profileOwner, profileDelta]));
+      }, saved ? profileCursor : cursor), error => assertIdentityFailure(error, fixture.reason, [profileOwner, profileDelta], fixture.transient ?? false));
       assert.deepEqual(requests, saved ? [boundCalendarURL, principalURL]
         : [JSON.parse(cursor).link, boundCalendarURL, principalURL], fixture.name);
     }
