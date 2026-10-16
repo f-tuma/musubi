@@ -169,6 +169,7 @@ export function createCaldavClient(
   signal?.throwIfAborted();
   const guarded = createGuardedCaldavFetch();
   const resourceReads = new AsyncLocalStorage<Map<string, string>>();
+  const syncReads = new AsyncLocalStorage<{ expectedURL: string; token?: string }>();
   let discoveryFailure: unknown;
   const verified: typeof globalThis.fetch = async (input, init) => {
     signal?.throwIfAborted();
@@ -177,7 +178,7 @@ export function createCaldavClient(
     const body = typeof init?.body === "string" ? init.body : "";
     const kind = method === "PROPFIND" && body.includes("current-user-principal") ? "principal" : method === "PROPFIND" && body.includes("calendar-home-set") ? "home" : method === "PROPFIND" && headers.get("depth") === "1" ? (body.includes("resourcetype") ? "discovery" : body.includes("getetag") ? "listing" : undefined) : method === "REPORT" && body.includes("calendar-multiget") ? "multiget" : method === "REPORT" && body.includes("sync-collection") ? "sync" : undefined;
     let response: Response;
-    const options = { ...init, ...(signal ? { signal: init?.signal ? AbortSignal.any([signal, init.signal]) : signal } : {}), ...(kind === "multiget" ? { redirect: "error" as const } : {}) };
+    const options = { ...init, ...(signal ? { signal: init?.signal ? AbortSignal.any([signal, init.signal]) : signal } : {}), ...(kind === "multiget" || kind === "sync" ? { redirect: "error" as const } : {}) };
     try { response = await guarded(input, options); } catch (error) {
       if (kind === "principal" || kind === "home") discoveryFailure = error;
       throw error;
@@ -190,7 +191,17 @@ export function createCaldavClient(
       if (response.headers.has("content-range")) throw new DavReadResponseError("http-partial", { readKind: kind, httpStatus: response.status });
       if (!/^(?:application|text)\/(?:[a-z0-9!#$&^_.+-]+\+)?xml(?:\s*;|$)/i.test(response.headers.get("content-type") ?? "")) throw new DavReadResponseError("http-content-type", { readKind: kind, httpStatus: response.status });
       const xml = await response.text();
-      assertDavReadResponse(xml, response.url || String(input), kind, kind === "multiget" ? requestedDavHrefs(body) : undefined, response.headers.get("content-location") ?? undefined);
+      const syncToken = assertDavReadResponse(xml, response.url || String(input), kind, kind === "multiget" ? requestedDavHrefs(body) : undefined, response.headers.get("content-location") ?? undefined);
+      const syncRead = kind === "sync" ? syncReads.getStore() : undefined;
+      if (syncRead) {
+        // A token-only REPORT has no resource href that could bind its scope.
+        // Keep root metadata only after complete validation of this exact call.
+        if (response.redirected || syncRead.token !== undefined || !syncToken ||
+          new URL(String(input)).href !== syncRead.expectedURL ||
+          new URL(response.url || String(input)).href !== syncRead.expectedURL)
+          throw new DavReadResponseError("invalid-structure", { readKind: "sync" });
+        syncRead.token = syncToken;
+      }
       if (kind === "multiget") {
         const resources = resourceReads.getStore();
         for (const row of davMultistatus(xml, response.url || String(input))) {
@@ -230,6 +241,24 @@ export function createCaldavClient(
         return { ...object, data };
       });
     });
-    return client;
+    const syncCollection = client.syncCollection.bind(client);
+    // tsdav drops raw root metadata when a valid REPORT has no response rows.
+    // The token belongs to this request, never the earlier calendar discovery
+    // or another concurrent call. Do not fabricate a DAV resource to carry it.
+    const syncCollectionWithToken = async (parameters: Parameters<typeof syncCollection>[0]) => {
+      // This result promises guarded response evidence; a caller-supplied fetch
+      // could otherwise pair an unrelated nested read with unvalidated rows.
+      if (parameters.fetch !== undefined) throw new DavReadResponseError("invalid-structure", { readKind: "sync" });
+      let expectedURL: string;
+      try { expectedURL = new URL(parameters.url).href; }
+      catch { throw new DavReadResponseError("invalid-structure", { readKind: "sync" }); }
+      const context: { expectedURL: string; token?: string } = { expectedURL };
+      return syncReads.run(context, async () => {
+        const responses = await syncCollection(parameters);
+        if (context.token === undefined) throw new DavReadResponseError("invalid-structure", { readKind: "sync" });
+        return { responses, syncToken: context.token };
+      });
+    };
+    return Object.assign(client, { syncCollectionWithToken });
   });
 }
