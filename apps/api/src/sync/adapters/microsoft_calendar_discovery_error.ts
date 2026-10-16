@@ -49,7 +49,8 @@ function graphCode(value: unknown): GraphCode {
   return GRAPH_CODES.find(allowed => allowed === value) ?? "other";
 }
 
-async function graphCodes(response: Response): Promise<Pick<GraphCalendarDiscoveryHttpCause, "graphCode" | "graphInnerCode">> {
+/** Shared bounded parser for calendar and task-list discovery HTTP failures. */
+export async function graphDiscoveryHttpCodes(response: Response): Promise<Pick<GraphCalendarDiscoveryHttpCause, "graphCode" | "graphInnerCode">> {
   let body: unknown;
   try { body = await response.json(); }
   catch { return { graphCode: "unparseable", graphInnerCode: "unparseable" }; }
@@ -71,6 +72,6 @@ export async function graphCalendarDiscoveryHttpError(
 ): Promise<GraphCalendarDiscoveryHttpError> {
   return new GraphCalendarDiscoveryHttpError({
     code: "graph-calendar-discovery-http-failed", requestPhase,
-    httpStatus: response.status, ...await graphCodes(response),
+    httpStatus: response.status, ...await graphDiscoveryHttpCodes(response),
   });
 }

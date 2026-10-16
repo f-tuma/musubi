@@ -38,6 +38,7 @@ import type {
 import { getOAuthAccessToken } from "../oauth";
 import { isOptionalTaskError, TaskScopeMissingError } from "../errors";
 import { graphCalendarDiscoveryHttpError, isMicrosoftEventMailboxUnavailable, type GraphCalendarDiscoveryPhase } from "./microsoft_calendar_discovery_error";
+import { graphTaskListDiscoveryHttpError, type GraphTaskListDiscoveryPhase } from "./microsoft_task_list_discovery_error";
 import { graphDiscoveryInventory, MICROSOFT_TASK_LIST_PREFIX as TASK_LIST_PREFIX, type TaskListItem } from "./microsoft_discovery_inventory";
 import { graphTaskReadFailureKind, graphTaskReadHttpError, type GraphTaskReadPhase } from "./microsoft_task_read_error";
 import { GraphTaskReadResponseError, graphTaskReadPage, graphTaskReadTraversal } from "./microsoft_task_read_page";
@@ -501,12 +502,14 @@ export async function fetchMicrosoftTaskLists(accessToken: string, fetchImpl?: t
   const lists: TaskListItem[] = [];
   let url: string | null = `${GRAPH}/me/todo/lists?$top=${PAGE_SIZE}`;
   const inventory = graphDiscoveryInventory("tasks", url);
+  let requestPhase: GraphTaskListDiscoveryPhase = "initial";
   while (url) {
     const res = await graphGet(accessToken, inventory.visit(url), fetchImpl);
-    if (!res.ok) throw await graphError(res);
+    if (!res.ok) throw await graphTaskListDiscoveryHttpError(res, requestPhase);
     const page = await inventory.page(res);
     lists.push(...page.items);
     url = page.nextLink;
+    requestPhase = "next-page";
   }
   return lists;
 }
@@ -643,7 +646,14 @@ class GraphCalendarIdentityError extends Error {
     status?: number;
   };
   constructor(reason: GraphCalendarIdentityError["cause"]["reason"], status?: number) {
-    super("Outlook delta link identity could not be verified.");
+    // Only a real failed proof HTTP response supplies this fixed status prefix
+    // to the transient classifier. Keep denials and identity/body failures out
+    // of its optional-Tasks status handling; never retain provider error text.
+    const transientResponse = (reason === "response" || reason === "principal-response") &&
+      typeof status === "number" && Number.isInteger(status) &&
+      (status === 408 || status === 429 || (status >= 500 && status <= 599));
+    super(transientResponse ? `Outlook ${status}: delta link identity could not be verified.`
+      : "Outlook delta link identity could not be verified.");
     this.name = "GraphCalendarIdentityError";
     // Provider errors, malformed JSON and URI errors can contain private input.
     // Retain only this fixed classification, never the caught error or body.
