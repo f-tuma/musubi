@@ -319,10 +319,13 @@ async function syncProviderImpl(
 
   // 1. reconcile the calendar list
   const availabilityContext = provider === "google" && config.api.googleAvailabilityEnabled ? await beginAvailabilityDiscovery(userID, accountId) : undefined;
-  const { calendars: remote, taskListsComplete, availabilityCalendars } = await adapter.listCalendars(
+  const { calendars: remote, taskListsComplete, availabilityCalendars, eventCalendarsComplete = true, eventCalendarDiscoveryError } = await adapter.listCalendars(
     userID,
     accountId,
   );
+  if (!eventCalendarsComplete && (!(eventCalendarDiscoveryError instanceof Error) ||
+    remote.some(calendar => calendar.supportsTasks !== true || calendar.supportsEvents !== false)))
+    throw new Error("Incomplete event discovery requires failure evidence and Tasks-only observations.");
   const remoteIDs = new Set(remote.map((c) => c.externalId));
   logger.debug("sync.account.calendars_discovered", {
     provider,
@@ -335,7 +338,9 @@ async function syncProviderImpl(
   // grants are excluded from its authoritative detail-calendar set.
   const absent = (await getUserExternalCalendars(provider, userID, accountId)).filter(link =>
     !remoteIDs.has(link.externalCalendarID) &&
-    (taskListsComplete || link.supportsEvents || !link.supportsTasks));
+    (!link.supportsEvents || eventCalendarsComplete) &&
+    (!link.supportsTasks || taskListsComplete) &&
+    (link.supportsEvents || link.supportsTasks || eventCalendarsComplete));
   const changedCalendarIDs: string[] = [];
   if (provider === "google" || provider === "microsoft" || provider === "caldav") {
     const removed = await removeGoogleCalendarMirrors(userID, accountId, absent.filter(link => provider === "caldav" || link.supportsEvents), provider as "google" | "microsoft" | "caldav");
@@ -405,6 +410,9 @@ async function syncProviderImpl(
     userID,
     accountId,
   )) {
+    // An unavailable event inventory retains source/cursor/coverage/authority
+    // and pending writes. Skip before any access admission or family read.
+    if (!eventCalendarsComplete && !(link.supportsTasks && !link.supportsEvents)) continue;
     const accessContext = (provider === "caldav" || ["google", "microsoft"].includes(provider) && link.providerAccessRole !== null) && (link.supportsEvents || provider === "caldav" && link.supportsTasks) ? { provider: provider as "google" | "caldav" | "microsoft", linkID: link.sourceID, revision: link.providerAccessRevision, userID, accountID: accountId, externalCalendarID: link.externalCalendarID } : undefined;
     if (provider === "caldav" && caldavHasRead(link.providerAccessRole) === false) continue;
     const taskOnly = link.supportsTasks && !link.supportsEvents;
@@ -634,6 +642,9 @@ async function syncProviderImpl(
       durationMs: Math.round((performance.now() - calendarStartedAt) * 10) / 10,
     });
   }
+  // Tasks can commit independently, including their direct SSE invalidations,
+  // while an unavailable Events resource remains a failed account/alert.
+  if (eventCalendarDiscoveryError) throw eventCalendarDiscoveryError;
   logger.debug("sync.account.completed", {
     provider,
     userId: userID,

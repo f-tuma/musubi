@@ -32,6 +32,13 @@ export class GraphCalendarDiscoveryHttpError extends Error {
   }
 }
 
+/** A mailbox code is resource eligibility evidence only on the initial GET.
+ * Message text, a generic 404, or a failed continuation never qualify. */
+export function isMicrosoftEventMailboxUnavailable(error: unknown): error is GraphCalendarDiscoveryHttpError {
+  return error instanceof GraphCalendarDiscoveryHttpError && error.cause.httpStatus === 404 && error.cause.requestPhase === "initial" &&
+    [error.cause.graphCode, error.cause.graphInnerCode].some(code => code === "MailboxNotEnabledForRESTAPI" || code === "MailboxNotSupportedForRESTAPI");
+}
+
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

@@ -1,7 +1,7 @@
 {
   "name": "musubi",
   "private": true,
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "Musubi monorepo \u2014 open, self-hostable shared calendar.",
   "workspaces": [
     "apps/*",
@@ -42,7 +42,7 @@
     "db:migrate": "pnpm -F @musubi/db exec drizzle-kit migrate",
     "wire:snapshot": "tsx scripts/snapshot-wire.mjs",
     "test:query-runtime": "node scripts/test-query-string-runtime.mjs",
-    "test:db:tasks": "pnpm --filter @musubi/db exec tsx src/queries/task-migration.integration.test.ts && pnpm --filter @musubi/db exec tsx src/queries/tasks.integration.test.ts && pnpm --filter @musubi/db exec tsx src/queries/task-delivery-status.integration.test.ts && pnpm --filter @musubi/api exec tsx src/handlers/tasks.integration.test.ts && pnpm --filter @musubi/api exec tsx src/task_compatibility.integration.test.ts && pnpm --filter @musubi/api exec tsx src/handlers/task_link_capabilities.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/task_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/shared_tasks.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/microsoft_task_read_completeness.integration.test.ts",
+    "test:db:tasks": "pnpm --filter @musubi/db exec tsx src/queries/task-migration.integration.test.ts && pnpm --filter @musubi/db exec tsx src/queries/tasks.integration.test.ts && pnpm --filter @musubi/db exec tsx src/queries/task-delivery-status.integration.test.ts && pnpm --filter @musubi/api exec tsx src/handlers/tasks.integration.test.ts && pnpm --filter @musubi/api exec tsx src/task_compatibility.integration.test.ts && pnpm --filter @musubi/api exec tsx src/handlers/task_link_capabilities.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/task_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/shared_tasks.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/microsoft_task_read_completeness.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/microsoft_resource_isolation.integration.test.ts",
     "test:db:operation-admission": "pnpm --filter @musubi/api exec tsx src/sync/operation_admission.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/pinned_transport.integration.test.ts && pnpm --filter @musubi/db exec tsx src/queries/outbox_causal_retirement.integration.test.ts",
     "test:db:provider-bridge": "pnpm --filter @musubi/api exec tsx src/sync/google_provider_bridge.integration.test.ts",
     "test:db:reference": "pnpm --filter @musubi/sync-reference run test:db",
