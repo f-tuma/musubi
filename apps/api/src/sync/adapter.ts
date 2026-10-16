@@ -157,7 +157,12 @@ export type CalendarDiscoveryResult = {
   // False means optional task-list discovery was omitted or failed. Its absent
   // mirrors are not evidence of deletion and must not be fetched or swept.
   taskListsComplete: boolean;
-};
+} & ({ eventCalendarsComplete?: true; eventCalendarDiscoveryError?: never } | {
+  // Unavailable Events are neither an empty inventory nor permission to pull
+  // stored mirrors. The account remains failed after independent Tasks apply.
+  eventCalendarsComplete: false;
+  eventCalendarDiscoveryError: Error;
+});
 
 export type FetchChangesResult = {
   changes: NormalizedChange[];

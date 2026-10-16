@@ -37,14 +37,14 @@ import type {
 } from "../adapter";
 import { getOAuthAccessToken } from "../oauth";
 import { isOptionalTaskError, TaskScopeMissingError } from "../errors";
-import { graphCalendarDiscoveryHttpError, type GraphCalendarDiscoveryPhase } from "./microsoft_calendar_discovery_error";
+import { graphCalendarDiscoveryHttpError, isMicrosoftEventMailboxUnavailable, type GraphCalendarDiscoveryPhase } from "./microsoft_calendar_discovery_error";
+import { graphDiscoveryInventory, MICROSOFT_TASK_LIST_PREFIX as TASK_LIST_PREFIX, type TaskListItem } from "./microsoft_discovery_inventory";
 import { graphTaskReadFailureKind, graphTaskReadHttpError, type GraphTaskReadPhase } from "./microsoft_task_read_error";
 import { GraphTaskReadResponseError, graphTaskReadPage, graphTaskReadTraversal } from "./microsoft_task_read_page";
 import { assertEventWriteEvidence, assertEventWriteResponse, assertOAuthEventWriteGrant, assertProviderEventMutationResponse, ProviderEventWriteError } from "../event_write";
 import { assertCompleteEventReadResponse, assertCreatedEventEvidence, eventCreateOperationID } from "../event_create_identity";
 
 const GRAPH = "https://graph.microsoft.com/v1.0";
-const TASK_LIST_PREFIX = "musubi-microsoft-task-list:";
 
 export function microsoftTaskListExternalId(taskListId: string) {
   return `${TASK_LIST_PREFIX}${taskListId}`;
@@ -497,15 +497,16 @@ export function toExternalMicrosoftTaskList(list: any): ExternalCalendarInfo {
   };
 }
 
-async function listMicrosoftTaskLists(accessToken: string) {
-  const lists: any[] = [];
+export async function fetchMicrosoftTaskLists(accessToken: string, fetchImpl?: typeof fetch) {
+  const lists: TaskListItem[] = [];
   let url: string | null = `${GRAPH}/me/todo/lists?$top=${PAGE_SIZE}`;
+  const inventory = graphDiscoveryInventory("tasks", url);
   while (url) {
-    const res = await graphGet(accessToken, url);
+    const res = await graphGet(accessToken, inventory.visit(url), fetchImpl);
     if (!res.ok) throw await graphError(res);
-    const data = await res.json();
-    lists.push(...(data.value ?? []));
-    url = data["@odata.nextLink"] ?? null;
+    const page = await inventory.page(res);
+    lists.push(...page.items);
+    url = page.nextLink;
   }
   return lists;
 }
@@ -1142,12 +1143,12 @@ export async function fetchMicrosoftChanges(
 }
 
 type GraphCalendar = {
-  isDefaultCalendar?: boolean;
+  isDefaultCalendar?: boolean | null;
   id: string;
   name: string;
   hexColor?: string | null;
-  canEdit?: boolean;
-  canViewPrivateItems?: boolean;
+  canEdit?: boolean | null;
+  canViewPrivateItems?: boolean | null;
 };
 
 export function microsoftEventPath(
@@ -1173,7 +1174,7 @@ export function toExternalCalendar(c: GraphCalendar): ExternalCalendarInfo {
   };
 }
 
-/** Calendar discovery keeps its existing paging and inventory semantics. */
+/** No inventory authority escapes until every page has completed validation. */
 export async function fetchMicrosoftCalendars(
   accessToken: string,
   fetchImpl?: typeof fetch,
@@ -1182,12 +1183,13 @@ export async function fetchMicrosoftCalendars(
   let url: string | null =
     `${GRAPH}/me/calendars?$select=id,name,hexColor,canEdit,canViewPrivateItems,isDefaultCalendar&$top=${PAGE_SIZE}`;
   let requestPhase: GraphCalendarDiscoveryPhase = "initial";
+  const inventory = graphDiscoveryInventory("events", url);
   while (url) {
-    const res = await graphGet(accessToken, url, fetchImpl);
+    const res = await graphGet(accessToken, inventory.visit(url), fetchImpl);
     if (!res.ok) throw await graphCalendarDiscoveryHttpError(res, requestPhase);
-    const data = await res.json();
-    for (const c of data.value ?? []) calendars.push(toExternalCalendar(c));
-    url = data["@odata.nextLink"] ?? null;
+    const page = await inventory.page(res);
+    for (const c of page.items) calendars.push(toExternalCalendar(c));
+    url = page.nextLink;
     requestPhase = "next-page";
   }
   return calendars;
@@ -1236,18 +1238,27 @@ export const microsoftAdapter: CalendarAdapter = {
     accountId: string,
   ): Promise<CalendarDiscoveryResult> {
     const accessToken = await getAccessToken(userID, accountId);
-    const calendars = await fetchMicrosoftCalendars(accessToken);
+    let calendars: ExternalCalendarInfo[];
+    let eventDiscovery: { eventCalendarsComplete: true } | { eventCalendarsComplete: false; eventCalendarDiscoveryError: Error } = { eventCalendarsComplete: true };
+    try { calendars = await fetchMicrosoftCalendars(accessToken); }
+    catch (error) {
+      if (!isMicrosoftEventMailboxUnavailable(error)) throw error;
+      calendars = [];
+      eventDiscovery = { eventCalendarsComplete: false, eventCalendarDiscoveryError: error };
+      logger.warn("sync.events.discovery_unavailable", { provider: "microsoft", userId: userID, accountId, error });
+    }
     if (!(await hasOAuthTaskScope(userID, "microsoft", accountId))) {
-      return { calendars, taskListsComplete: false };
+      return { calendars, taskListsComplete: false, ...eventDiscovery };
     }
     try {
-      const taskLists = await listMicrosoftTaskLists(accessToken);
+      const taskLists = await fetchMicrosoftTaskLists(accessToken);
       return {
         calendars: [
           ...calendars,
           ...taskLists.map(toExternalMicrosoftTaskList),
         ],
         taskListsComplete: true,
+        ...eventDiscovery,
       };
     } catch (error) {
       if (!isOptionalTaskError(error)) throw error;
@@ -1256,7 +1267,7 @@ export const microsoftAdapter: CalendarAdapter = {
         userId: userID,
         accountId,
       });
-      return { calendars, taskListsComplete: false };
+      return { calendars, taskListsComplete: false, ...eventDiscovery };
     }
   },
 

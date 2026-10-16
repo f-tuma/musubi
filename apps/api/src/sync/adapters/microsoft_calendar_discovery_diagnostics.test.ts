@@ -118,9 +118,8 @@ async function main() {
   await failure(() => new Response(privateValue, { status: 404, statusText: "PRIVATE-provider-status-text" }), expected(404, "initial", "unparseable", "unparseable"));
   await failure(() => Object.assign(json({}, 404), { json: async () => { throw Object.assign(new Error(privateValue), { cause: new Error(token) }); } }), expected(404, "initial", "unparseable", "unparseable"));
 
-  // This diagnostic slice preserves the existing collection semantics, including
-  // empty intermediate pages and the original metadata mapper. It adds no new
-  // inventory completeness authority or validator; that is a separate change.
+  // Empty intermediate pages and the metadata mapper remain valid. The separate
+  // inventory validator now rejects missing envelopes before absence authority.
   const first = calendar("PRIVATE-calendar-one"), last = { ...calendar("PRIVATE-calendar-two"), canEdit: false, isDefaultCalendar: true };
   const pages = read([
     { url: initial, response: () => json({ value: [first], "@odata.nextLink": next }) },
@@ -134,11 +133,14 @@ async function main() {
   ]);
   assert.deepEqual(await emptyIntermediate.result, [toExternalCalendar(last)]);
   assert.deepEqual(emptyIntermediate.requests, [initial, next]); cases++;
-  for (const body of [{ value: [] }, {}]) {
+  for (const body of [{ value: [] }]) {
     const empty = read([{ url: initial, response: () => json(body) }]);
     assert.deepEqual(await empty.result, []);
     assert.deepEqual(empty.requests, [initial]); cases++;
   }
+  const invalidEmpty = read([{ url: initial, response: () => json({}) }]);
+  await assert.rejects(invalidEmpty.result, error => error instanceof Error && error.name === "GraphDiscoveryInventoryError");
+  assert.deepEqual(invalidEmpty.requests, [initial]); cases++;
   let transportCalls = 0;
   const transportError = new TypeError("Synthetic network failure");
   await assert.rejects(fetchMicrosoftCalendars(token, async () => { transportCalls++; throw transportError; }), error => error === transportError);
