@@ -14,7 +14,7 @@ import { applyCaldavEventPlanV1, applyCaldavTaskPlanV1, restrictCaldavTaskPlanV1
 import { pinnedCaldavPlanV1 } from "../pinned_write";
 import { caldavRdateEdit, caldavExdateRestoration, finiteSeriesFootprint, planEventScope } from "@musubi/calendar";
 import { randomUUID } from "crypto";
-import type { DAVCalendar, DAVCalendarObject, DAVResponse } from "tsdav";
+import type { DAVCalendar, DAVCalendarObject } from "tsdav";
 import {
   EventWriteError,
   EventScopeRequestSchema,
@@ -845,19 +845,13 @@ export function normalizedObjectChanges(
   return changes;
 }
 
-function syncTokenFrom(responses: DAVResponse[]) {
-  const token = responses.find((response) => response.raw)?.raw?.multistatus
-    ?.syncToken;
-  return token == null ? null : String(token);
-}
-
 async function incrementalChanges(
   client: Awaited<ReturnType<typeof clientForAccount>>,
   calendar: DAVCalendar,
   cursor: string | null,
   organizerEventIDs: ReadonlySet<string>,
 ): Promise<FetchChangesResult> {
-  const responses = await client.syncCollection({
+  const { responses, syncToken: nextCursor } = await client.syncCollectionWithToken({
     props: { "d:getetag": {} },
     syncLevel: 1,
     syncToken: cursor ?? undefined,
@@ -903,8 +897,6 @@ async function incrementalChanges(
     }
   }
 
-  const nextCursor = syncTokenFrom(responses);
-  if (!nextCursor) throw new Error("CalDAV sync-collection returned no token");
   return { changes, nextCursor, reset: cursor === null };
 }
 
