@@ -99,9 +99,13 @@ Smaller device sizes are optional — Apple scales them from the largest given.
 | Manifest maskable | 512 × 512 | PNG | Yes | **410 px circle, centred.** 51 px band on every side is background only |
 | `og.png` | 1200 × 630 | PNG or JPEG | No | None published. Keep near 1.91:1 or feeds crop it. Under 8 MB ([Meta](https://developers.facebook.com/docs/sharing/webmasters/images)) |
 
-Web app update (2026-10-11): the existing production 180×180 opaque Apple PNG
+Web app update (2026-10-20): the existing production 180×180 opaque Apple PNG
 is adopted at `brand/web-app/apple-touch-icon`, also used for notifications.
-The app's existing 1200×630 OG remains separate from marketing. Theme-aware
+The app and marketing share the composed 1200×630 `brand/web-app/og`. The app's
+favicon uses `brand/web-app/favicon-linked`, an Original linked use of the
+transparent cream/red `brand/website/logo` SVG. Marketing's adaptive favicon
+remains separate. The first app favicon URL switch requires an app release.
+Theme-aware
 logo silhouettes live at `brand/web-app/logo-ink` and `logo-accent`: each is a
 transparent 48×48 SVG with viewBox `0 0 48 48`, carrying one arm only. Matching
 canvases and alpha are required; the app applies colours locally. See

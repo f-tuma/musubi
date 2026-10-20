@@ -7,7 +7,8 @@ take ownership of.
 Covers two repositories: **Musubi** (this one) and **musubi-website** (the
 marketing site at musubi.pro). Paths in the second are marked `website:`.
 
-Web app verified: 2026-10-11. Other inventories below retain their 2026-08-16 audit date.
+Web app adoption updated: 2026-10-20. Other inventories below retain their
+2026-08-16 audit date unless a newer note says otherwise.
 
 The format, pixel size and safe area each of these has to be produced at is in
 [`brand-asset-spec.md`](./brand-asset-spec.md).
@@ -44,14 +45,17 @@ each themed variant is a separate file and both must exist.
 ## Web app — musubi.pro/app
 
 The app uses public stable Vardum URLs from `apps/web/src/brand.ts`, under
-`https://vardum.com/w/musubi/brand/web-app/`. These are separate from the
-marketing site's `brand/website/` and the private, frozen mobile pilot.
+`https://vardum.com/w/musubi/brand/web-app/`. The favicon is an Original linked
+use of the public `brand/website/logo` source, also used by marketing's
+navigation and footer. It has its own library item and path, but shares the
+source's ready version, history and visibility. The private, frozen mobile
+pilot remains separate.
 
-| Key | Consumer | Original adopted on 2026-10-11 |
+| Key | Consumer | Current source |
 | --- | --- | --- |
-| `favicon` | Root favicon link | Existing app SVG, 48×48 viewBox |
+| `favicon-linked` | Root favicon link | Original linked use of `brand/website/logo`, transparent cream/red SVG, 48×48 viewBox |
 | `apple-touch-icon` | Root Apple icon and push notification icon | Existing opaque 180×180 PNG |
-| `og` | Root `og:image` | Existing app 1200×630 PNG; deliberately different from marketing OG |
+| `og` | Root `og:image` | Shared app/marketing default, composed 1200×630 PNG |
 | `logo-ink` | BrandMark's foreground arm | Exact original first path, transparent 48×48 SVG |
 | `logo-accent` | BrandMark's accent arm | Exact original second path, transparent 48×48 SVG |
 
@@ -68,15 +72,31 @@ fallback intentionally remains the old artwork until a later app release.
 
 To update artwork:
 
-1. In the Musubi workspace, open **Assets → brand → web-app**.
-2. Upload a new version to the existing asset, preserving its key and public
-   visibility. Do not replace the app OG with the marketing OG accidentally.
+1. For the shared mark, open **Assets → brand → website → logo** in Musubi's
+   Vardum workspace. Upload a compatible transparent cream/red SVG with a
+   `0 0 48 48` viewBox. This updates marketing's mark and the app's linked
+   favicon together. Keep the source public and SVG; an incompatible MIME
+   change can make the Original use unavailable. Check both consumers.
+2. Other app artwork remains under **Assets → brand → web-app**. Upload a new
+   version to the existing source, preserving its key and public visibility.
+   The old standalone `brand/web-app/favicon` and its historical versions are
+   retained for rollback; it is no longer the app favicon's update target.
 3. For logo arms, upload/restore matching revisions together. Each SVG must
    have a `0 0 48 48` viewBox, a transparent canvas and only the appropriate
    silhouette. Opaque plates, empty images and mismatched canvases break masks.
    Two stable pointers are independent; publication is not atomic.
 4. Check the app in both themes and a coloured calendar. The app does not need
    a build for compatible artwork updates; an open page needs a reload.
+
+The first favicon URL switch requires the normal app release. The linked use
+was verified against the master's current immutable SVG, not by publishing a
+test version of the production logo. The old app SVG differs only in an
+unrendered group attribute; rendered RGBA pixels match at 16, 32, 48 and 180 px.
+Marketing's adaptive `brand/website/favicon`, the two app logo-arm masks,
+Apple icon and mobile icons retain their own artwork. Resizing or adding a
+solid background alone does not preserve their adaptive colours, separate
+silhouettes or safe areas. The default marketing and app OG already share
+`brand/web-app/og`; it is a composition, not a resized logo.
 
 Stable redirects currently cache for 60 seconds with stale-while-revalidate up
 to 300 seconds. Original version URLs are immutable. Browser favicons and social

@@ -2,7 +2,7 @@
 const base = "https://vardum.com/w/musubi/brand/web-app";
 
 export const BRAND_ASSETS = {
-  favicon: `${base}/favicon`,
+  favicon: `${base}/favicon-linked`,
   appleTouchIcon: `${base}/apple-touch-icon`,
   social: `${base}/og`,
   logoInk: `${base}/logo-ink`,
