@@ -13,9 +13,11 @@ import { config, logger } from "@musubi/config";
 /** Referenced as `cid:musubi-logo` in the markup; `sendEmail` attaches it. */
 export const LOGO_CID = "musubi-logo";
 
-// Rendered from apps/web/public/favicon.svg at 128px, shown at 44 so it stays
-// sharp on a retina screen. PNG, not SVG: Gmail drops SVG entirely and Outlook
-// never supported it, so the whole header would silently vanish.
+// Frozen Vardum export of brand/logo/light: 128px PNG, 3.91% padding and alpha,
+// shown at 44px so it stays sharp on a retina screen. The committed asset and
+// assets/.vardum.lock refresh together; mail never fetches Vardum at runtime.
+// PNG, not SVG: Gmail drops SVG entirely and Outlook never supported it, so
+// the whole header would silently vanish.
 const LOGO_PATH = join(__dirname, "..", "assets", "logo.png");
 
 let logo: Buffer | null | undefined;
