@@ -8,11 +8,11 @@ permissions:
 
 jobs:
   frozen-restore:
-    name: Restore committed mobile assets
+    name: Restore committed mobile and email assets
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Store VARDUM_API_KEY here; restrict this environment to the main branch.
+    # Store a read-only Musubi workspace VARDUM_API_KEY here; restrict to main.
     environment: vardum-private-ci
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
@@ -28,9 +28,77 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Download frozen snapshot and verify committed bytes
+      - name: Validate and stage committed snapshots without credentials
+        id: snapshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { createHash } from "node:crypto";
+          import { appendFile, copyFile, lstat, mkdir, mkdtemp, readFile } from "node:fs/promises";
+          import { createRequire } from "node:module";
+          import { dirname, join, posix, resolve } from "node:path";
+
+          const requireClient = createRequire(resolve("apps/client/package.json"));
+          const client = JSON.parse(await readFile("apps/client/package.json", "utf8"));
+          assert.equal(client.devDependencies["@vardum/cli"], "0.8.0", "Expected pinned client CLI 0.8.0");
+          const cliPackage = requireClient.resolve("@vardum/cli/package.json");
+          const cli = JSON.parse(await readFile(cliPackage, "utf8"));
+          assert.equal(cli.version, "0.8.0", "Expected installed CLI 0.8.0");
+          const cliEntry = resolve(dirname(cliPackage), cli.bin.vardum);
+
+          const staging = await mkdtemp(join(process.env.RUNNER_TEMP, "musubi-vardum."));
+          await appendFile(process.env.GITHUB_OUTPUT, `root=${staging}\ncli=${cliEntry}\n`);
+
+          for (const [name, source] of [["client", "apps/client/assets"], ["emails", "packages/emails/assets"]]) {
+            const config = JSON.parse(await readFile(join(source, "vardum.json"), "utf8"));
+            const lock = JSON.parse(await readFile(join(source, ".vardum.lock"), "utf8"));
+            assert.equal(config.schema, 1, `${source}: expected config schema 1`);
+            assert.equal(config.server, "https://vardum.com", `${source}: unexpected server`);
+            assert.equal(config.workspace, "90473c38-68d7-407a-b7f1-41fcd7fdd2f2", `${source}: unexpected workspace`);
+            assert.equal(typeof config.vard, "string", `${source}: missing Vard`);
+            assert.ok(config.vard.trim(), `${source}: missing Vard`);
+            assert.equal(lock.schema, 2, `${source}: expected frozen schema 2 snapshot`);
+            for (const key of ["server", "workspace", "vard"]) {
+              assert.equal(lock[key], config[key], `${source}: lock ${key} differs from config`);
+            }
+            assert.ok(lock.items && typeof lock.items === "object" && !Array.isArray(lock.items), `${source}: missing lock items`);
+            const items = Object.values(lock.items);
+            assert.ok(items.length > 0, `${source}: snapshot has no outputs`);
+            if (name === "emails") {
+              assert.deepEqual(items.map(item => item.path), ["logo.png"], "Email snapshot must contain exactly logo.png");
+            }
+            const paths = new Set();
+            for (const item of items) {
+              assert.equal(typeof item.path, "string", `${source}: missing output path`);
+              assert.ok(item.path && !item.path.includes("\\") && !posix.isAbsolute(item.path)
+                && posix.normalize(item.path) === item.path && !item.path.startsWith("../")
+                && ![".", "vardum.json", ".vardum.lock", "cli-config"].includes(item.path.split("/")[0]), `${source}: unsafe output path`);
+              assert.ok(!paths.has(item.path), `${source}: duplicate output path`);
+              paths.add(item.path);
+              assert.match(item.checksum, /^[a-f0-9]{64}$/, `${source}: invalid output checksum`);
+              assert.equal(new URL(item.downloadUrl).origin, config.server, `${source}: unexpected download origin`);
+              const asset = join(source, item.path);
+              assert.ok((await lstat(asset)).isFile(), `${asset}: expected a regular committed file`);
+              const bytes = await readFile(asset);
+              assert.equal(createHash("sha256").update(bytes).digest("hex"), item.checksum, `${asset}: committed checksum differs from lock`);
+            }
+
+            const destination = join(staging, name);
+            await mkdir(destination);
+            await mkdir(join(destination, "cli-config"), { mode: 0o700 });
+            for (const file of ["vardum.json", ".vardum.lock"]) {
+              await copyFile(join(source, file), join(destination, file));
+            }
+          }
+          NODE
+
+      - name: Download both frozen snapshots with the read-only workspace key
         env:
           VARDUM_API_KEY: ${{ secrets.VARDUM_API_KEY }}
+          SNAPSHOT_ROOT: ${{ steps.snapshots.outputs.root }}
+          VARDUM_CLI: ${{ steps.snapshots.outputs.cli }}
         shell: bash
         run: |
           set -euo pipefail
@@ -39,41 +107,50 @@ jobs:
             exit 1
           fi
 
-          cli_package="$(cd apps/client && node -p 'require.resolve("@vardum/cli/package.json")')"
-          cli_entry="$(node -e 'const fs = require("node:fs"); const path = require("node:path"); const file = process.argv[1]; const pkg = JSON.parse(fs.readFileSync(file, "utf8")); if (pkg.version !== "0.8.0") throw new Error("Expected CLI 0.8.0"); console.log(path.resolve(path.dirname(file), pkg.bin.vardum));' "$cli_package")"
+          for snapshot in client emails; do
+            (
+              cd "$SNAPSHOT_ROOT/$snapshot"
+              VARDUM_CONFIG_HOME="$PWD/cli-config" node "$VARDUM_CLI" pull --frozen --json
+            )
+          done
 
-          staging="$(mktemp -d "$RUNNER_TEMP/musubi-vardum.XXXXXX")"
-          trap 'rm -rf -- "$staging"' EXIT
-          cp apps/client/assets/vardum.json apps/client/assets/.vardum.lock "$staging/"
-
-          (
-            cd "$staging"
-            export VARDUM_CONFIG_HOME="$staging/cli-config"
-            node "$cli_entry" pull --frozen --json
-          )
-
-          cmp apps/client/assets/vardum.json "$staging/vardum.json"
-          cmp apps/client/assets/.vardum.lock "$staging/.vardum.lock"
-
-          VARDUM_RESTORE_DIR="$staging" node --input-type=module <<'NODE'
+      - name: Verify frozen metadata, checksums and committed bytes without credentials
+        env:
+          SNAPSHOT_ROOT: ${{ steps.snapshots.outputs.root }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
           import assert from "node:assert/strict";
           import { createHash } from "node:crypto";
-          import { readFile } from "node:fs/promises";
+          import { lstat, readFile } from "node:fs/promises";
           import { resolve } from "node:path";
 
-          const source = resolve("apps/client/assets");
-          const restored = process.env.VARDUM_RESTORE_DIR;
-          const lock = JSON.parse(await readFile(resolve(source, ".vardum.lock"), "utf8"));
-          assert.equal(lock.schema, 2, "Expected a schema 2 frozen snapshot");
-          const items = Object.values(lock.items);
-          assert.ok(items.length > 0, "Snapshot must contain at least one output");
+          for (const [name, source] of [["client", "apps/client/assets"], ["emails", "packages/emails/assets"]]) {
+            const restored = resolve(process.env.SNAPSHOT_ROOT, name);
+            for (const file of ["vardum.json", ".vardum.lock"]) {
+              const committed = await readFile(resolve(source, file));
+              assert.ok(committed.equals(await readFile(resolve(restored, file))), `${source}/${file}: frozen pull changed metadata`);
+            }
+            const lock = JSON.parse(await readFile(resolve(source, ".vardum.lock"), "utf8"));
+            const items = Object.values(lock.items);
 
-          for (const item of items) {
-            const bytes = await readFile(resolve(restored, item.path));
-            const hash = createHash("sha256").update(bytes).digest("hex");
-            assert.equal(hash, item.checksum, "Restored output checksum differs from lock");
-            const committed = await readFile(resolve(source, item.path));
-            assert.ok(bytes.equals(committed), "Restored output differs from committed asset");
+            for (const item of items) {
+              const path = resolve(restored, item.path);
+              assert.ok((await lstat(path)).isFile(), `${path}: expected a regular restored file`);
+              const bytes = await readFile(path);
+              const hash = createHash("sha256").update(bytes).digest("hex");
+              assert.equal(hash, item.checksum, `${source}/${item.path}: restored checksum differs from lock`);
+              const committed = await readFile(resolve(source, item.path));
+              assert.ok(bytes.equals(committed), `${source}/${item.path}: restored bytes differ from committed asset`);
+            }
+            console.log(`Verified frozen restoration of ${items.length} committed ${name} output(s).`);
           }
-          console.log("Verified frozen restoration of " + items.length + " committed output(s).");
           NODE
+
+      - name: Remove isolated snapshots and credential directories
+        if: always() && steps.snapshots.outputs.root != ''
+        env:
+          SNAPSHOT_ROOT: ${{ steps.snapshots.outputs.root }}
+        shell: bash
+        run: rm -rf -- "$SNAPSHOT_ROOT"

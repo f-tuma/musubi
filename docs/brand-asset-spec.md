@@ -21,11 +21,14 @@ SVG, square canvas, artwork converted to outlines, no embedded rasters.
 
 | Master | Canvas | Safe area | Notes |
 | --- | --- | --- | --- |
-| `mark` | 1:1 | No reserved area | The knot alone, transparent |
-| `mark-on-dark` / `mark-on-light` | 1:1 | No reserved area | Colour-adjusted per ground |
-| `mark-plated-dark` / `mark-plated-light` | 1:1 | No reserved area | With an opaque background plate |
-| `mark-mono` | 1:1 | No reserved area | **One flat colour, shape carried by alpha.** Android tints it |
-| `lockup-wide-dark` / `-light` | ~2:1 | No reserved area | Mark + "Musubi" wordmark |
+| `brand/logo/light` | 48 × 48 | No reserved area | Transparent cream/red knot for dark backgrounds |
+| `brand/logo/dark` | 48 × 48 | No reserved area | Transparent ink/red knot for light backgrounds |
+| `brand/logo/mono` | 48 × 48 | No reserved area | Original phone greys `#070707` and `#929292`, transparent canvas |
+
+Background plates, output size and extra margin are per-use recipes, not
+additional masters. Each source retains `neutral-arm` and `accent-arm` groups.
+The current `mark-wide` role is also the square knot; it is not a wordmark lockup.
+See [shared masters and consumers](./brand-assets.md).
 
 ## Mobile app — the files `app.config.ts` reads
 
@@ -38,9 +41,9 @@ SVG, square canvas, artwork converted to outlines, no embedded rasters.
 | `icon-light.png` | 1024 × 1024 | PNG | No | **Cover the canvas** |
 | `android-icon-foreground.png` | 1024 × 1024 | PNG | Yes | **626 × 626 centred.** 171 px cut on every side. Mark 455–626 px |
 | `android-icon-background.png` | 1024 × 1024 | PNG | No | **Cover the canvas.** No shadow around the mark |
-| `android-icon-monochrome.png` | 1024 × 1024 | PNG | Yes | **626 × 626 centred.** 171 px cut on every side. Flat silhouette only |
+| `android-icon-monochrome.png` | 1024 × 1024 | PNG | Yes | **626 × 626 centred.** 171 px cut on every side. Original two-grey artwork; platform tint uses its alpha silhouette |
 | `splash-icon.png` | 1024 × 1024 | PNG | Yes | Centred; scaled by `imageWidth`, so leave margin |
-| `splash-icon-light.png` | 1024 × 1024 | PNG | Yes | Same. **Currently 1024 × 512** — normalise it |
+| `splash-icon-light.png` | 1024 × 1024 | PNG | Yes | Same centred canvas and margin |
 | `favicon.png` (Expo web) | 48 × 48 | PNG | Yes | No reserved area |
 
 The 626/171 figures are Android's 66 dp visible area inside a 108 dp canvas,
@@ -99,17 +102,17 @@ Smaller device sizes are optional — Apple scales them from the largest given.
 | Manifest maskable | 512 × 512 | PNG | Yes | **410 px circle, centred.** 51 px band on every side is background only |
 | `og.png` | 1200 × 630 | PNG or JPEG | No | None published. Keep near 1.91:1 or feeds crop it. Under 8 MB ([Meta](https://developers.facebook.com/docs/sharing/webmasters/images)) |
 
-Web app update (2026-10-20): the existing production 180×180 opaque Apple PNG
-is adopted at `brand/web-app/apple-touch-icon`, also used for notifications.
-The app and marketing share the composed 1200×630 `brand/web-app/og`. The app's
-favicon uses `brand/web-app/favicon-linked`, an Original linked use of the
-transparent cream/red `brand/website/logo` SVG. Marketing's adaptive favicon
-remains separate. The first app favicon URL switch requires an app release.
-Theme-aware
-logo silhouettes live at `brand/web-app/logo-ink` and `logo-accent`: each is a
-transparent 48×48 SVG with viewBox `0 0 48 48`, carrying one arm only. Matching
-canvases and alpha are required; the app applies colours locally. See
-[update and fallback behavior](./brand-assets.md#web-app--musubiproapp).
+The app's `brand/web-app/touch-icon` is a derived opaque 180×180 PNG, also used
+for notifications. Adaptive SVG favicons use `brand/web-app/tab-icon` and
+`brand/website/tab-icon`; both select the appropriate neutral arm colour from
+the browser's light/dark preference. The first URL switch requires the normal
+consumer release.
+
+Theme-aware arm masks use `brand/web-app/mark-neutral` and `mark-accent`,
+derived from the shared light master. Each is a transparent 48×48 SVG carrying
+one arm on the full `0 0 48 48` canvas; the app applies colours locally.
+The app and marketing keep the separate composed 1200×630 `brand/web-app/og`.
+See [update and fallback behavior](./brand-assets.md#live-web-roles).
 A web manifest remains outside this migration.
 
 ## Email
@@ -118,11 +121,11 @@ A web manifest remains outside this migration.
 | --- | --- | --- | --- | --- |
 | `logo.png` | 128 × 128 | PNG | Yes | No reserved area. Shown at 44 px, so ~3× for retina |
 
-PNG and not SVG because Gmail drops SVG. Derived — re-render on every change:
-
-```sh
-rsvg-convert -w 128 -h 128 <mark-plated-dark>.svg -o packages/emails/assets/logo.png
-```
+The email package keeps a bundled PNG CID attachment. Its dedicated Vard
+exports `brand/logo/light` at 128×128 with 3.91% extra margin and transparency;
+refresh the checked-in file and frozen lock deliberately. Email delivery
+does not depend on a public image fetch. See
+[email snapshot workflow](./brand-assets.md).
 
 ## README and GitHub
 
@@ -133,7 +136,11 @@ rsvg-convert -w 128 -h 128 <mark-plated-dark>.svg -o packages/emails/assets/logo
 
 ---
 
-## Historical DAM gaps (2026-08-16; web Apple icon resolved above)
+## Historical DAM gap inventory (2026-08-16)
+
+This is the original inventory, not the current migration status. The three
+masters, mobile recipes and touch icons above now cover logo-only variants;
+manifest/store artwork and compositions are separate follow-up work.
 
 | # | Asset | Size | Safe area |
 | --- | --- | --- | --- |

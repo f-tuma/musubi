@@ -1,0 +1,15 @@
+{
+  "schema": 2,
+  "server": "https://vardum.com",
+  "workspace": "90473c38-68d7-407a-b7f1-41fcd7fdd2f2",
+  "vard": "888da5c5-8946-4ef4-b46b-97d7c9cf12eb",
+  "items": {
+    "995bc5f5-9ec5-45ee-9bd5-753456afc05d": {
+      "path": "logo.png",
+      "versionId": "f537a6c3-ff45-4c4f-8b2f-b93cadd77497",
+      "fingerprint": "f537a6c3-ff45-4c4f-8b2f-b93cadd77497:w=128&h=128&fit=contain&format=png&q=100&pad=3.91",
+      "downloadUrl": "https://vardum.com/w/musubi/__v/f537a6c3-ff45-4c4f-8b2f-b93cadd77497/brand/logo/light?w=128&h=128&fit=contain&format=png&q=100&pad=3.91&sig=NLEyT7_MoXP4_j2UW-qlYSq42H1Y6Evvo46CE3wFLkA",
+      "checksum": "58f38ab060ace30dec4bfadd3b81b2347cad4c46ea5c936cfd76e1bab23e5de2"
+    }
+  }
+}

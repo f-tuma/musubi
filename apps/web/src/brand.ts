@@ -1,11 +1,11 @@
-/** Public stable URLs follow current artwork; mobile snapshots remain private and frozen. */
+/** Public role URLs follow shared masters; native assets are bundled frozen snapshots. */
 const base = "https://vardum.com/w/musubi/brand/web-app";
 
 export const BRAND_ASSETS = {
-  favicon: `${base}/favicon-linked`,
-  appleTouchIcon: `${base}/apple-touch-icon`,
+  favicon: `${base}/tab-icon`,
+  appleTouchIcon: `${base}/touch-icon`,
   social: `${base}/og`,
-  logoInk: `${base}/logo-ink`,
-  logoAccent: `${base}/logo-accent`,
-  notificationIcon: `${base}/apple-touch-icon`,
+  logoInk: `${base}/mark-neutral`,
+  logoAccent: `${base}/mark-accent`,
+  notificationIcon: `${base}/touch-icon`,
 } as const;
