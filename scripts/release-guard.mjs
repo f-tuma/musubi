@@ -1,7 +1,8 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { recheckQualityProof } from "./quality-proof.mjs";
 
 const shaPattern = /^[a-f0-9]{40}$/;
 const httpTimeoutMs = 15_000;
@@ -195,6 +196,7 @@ export async function runReleaseGuard({
   cwd = process.cwd(),
   fetchImpl = fetch,
   git = runGit,
+  qualityCheck = recheckQualityProof,
 }) {
   const release = checkedInputs(mode, env);
   const head = gitOutput(git, ["rev-parse", "--verify", "HEAD^{commit}"], cwd,
@@ -204,7 +206,31 @@ export async function runReleaseGuard({
   }
   if (mode === "release") return createRelease(env, cwd, release, git, fetchImpl);
   await requireMissingTag(env, release.tag, fetchImpl);
+  // The proof's externally pinned bytes and the latest exact main attempt must
+  // still agree after all absence checks, immediately before the deployment
+  // signal. Never adopt a newer attempt or retarget a moving main branch.
+  await qualityCheck({ env, cwd, fetchImpl, git });
   if (mode === "check") return release;
+
+  if (env.QUALITY_RECHECK_PATH !== undefined) {
+    try {
+      writeFileSync(env.QUALITY_RECHECK_PATH, JSON.stringify({
+        schemaVersion: 1,
+        kind: "pre-deployment-tag-quality-revalidation",
+        sampledAtUtc: new Date().toISOString(),
+        sourceSha: release.sourceSha,
+        publicationRunId: env.GITHUB_RUN_ID,
+        publicationAttempt: env.GITHUB_RUN_ATTEMPT,
+        qualityRunId: env.QUALITY_RUN_ID,
+        qualityAttempt: env.QUALITY_RUN_ATTEMPT,
+        proofSha256: env.QUALITY_PROOF_SHA256,
+        validated: true,
+        limit: "Read-only final snapshot; cannot atomically lock a later GitHub rerun.",
+      }, null, 2) + "\n", { flag: "wx", mode: 0o600 });
+    } catch {
+      throw new Error("Cannot retain the final Quality revalidation; deployment tag was not attempted");
+    }
+  }
 
   // This is the deployment signal, not preparation. No retry, force, deletion,
   // or adoption of another publisher's tag is safe after a push is attempted.
