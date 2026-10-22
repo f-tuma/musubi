@@ -24,12 +24,47 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  quality:
-    uses: ./.github/workflows/quality.yml
+  quality-proof:
+    name: Quality provenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      run_id: ${{ steps.proof.outputs.run_id }}
+      run_attempt: ${{ steps.proof.outputs.run_attempt }}
+      proof_sha256: ${{ steps.proof.outputs.proof_sha256 }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+      - name: Verify all 21 jobs from the exact trusted main push
+        id: proof
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
+          QUALITY_PROOF_PATH: ${{ runner.temp }}/quality-proof.json
+        run: node scripts/quality-proof.mjs record
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: quality-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/quality-proof.json
+          if-no-files-found: error
+          retention-days: 30
+          overwrite: false
 
   prepare:
-    needs: quality
+    needs: quality-proof
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
     outputs:
       version: ${{ steps.ver.outputs.version }}
     steps:
@@ -37,11 +72,22 @@ jobs:
           actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           ref: ${{ github.sha }}
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: quality-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/quality-proof
       - id: ver
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_VERSION: ${{ inputs.version }}
           EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
+          QUALITY_PROOF_PATH: ${{ runner.temp }}/quality-proof/quality-proof.json
+          QUALITY_PROOF_SHA256: ${{ needs.quality-proof.outputs.proof_sha256 }}
+          QUALITY_RUN_ID: ${{ needs.quality-proof.outputs.run_id }}
+          QUALITY_RUN_ATTEMPT: ${{ needs.quality-proof.outputs.run_attempt }}
         run: |
           node scripts/release-guard.mjs check
           V="$RELEASE_VERSION"
@@ -162,16 +208,24 @@ jobs:
             --tag "$IMAGE:$VERSION" --tag "$IMAGE:latest" "${sources[@]}"
 
   release:
-    needs: [prepare, publish]
+    needs: [quality-proof, prepare, publish]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
+      actions: read
     steps:
       - uses: >-
           actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           ref: ${{ github.sha }}
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: quality-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/quality-proof
       # This fresh, non-force tag push may start Dokploy immediately. Every
       # production backup/maintenance prerequisite must already be satisfied.
       # A later release-body failure requires operator reconciliation; never
@@ -182,9 +236,23 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
           EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
+          QUALITY_PROOF_PATH: ${{ runner.temp }}/quality-proof/quality-proof.json
+          QUALITY_PROOF_SHA256: ${{ needs.quality-proof.outputs.proof_sha256 }}
+          QUALITY_RUN_ID: ${{ needs.quality-proof.outputs.run_id }}
+          QUALITY_RUN_ATTEMPT: ${{ needs.quality-proof.outputs.run_attempt }}
+          QUALITY_RECHECK_PATH: ${{ runner.temp }}/quality-recheck.json
         run: |
           node scripts/release-guard.mjs tag
           echo "source_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+      - name: Retain the final sampled Quality revalidation
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: quality-recheck-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/quality-recheck.json
+          if-no-files-found: warn
+          retention-days: 30
+          overwrite: false
       - name: Create the GitHub release without updating an existing release
         env:
           GH_TOKEN: ${{ github.token }}

@@ -87,8 +87,8 @@ jobs:
           python3 scripts/verify-android-system-bars.py apps/client/android/app/build/outputs/bundle/release/app-release.aab --dexdump "$ANDROID_HOME/build-tools/36.0.0/dexdump"
       # PRs only restore. GitHub also isolates PR merge-ref caches from main.
       # A successful trusted main build may seed the next immutable entry only
-      # after both real APK/AAB DEX scans have passed. Reusable Quality called
-      # by the workflow_dispatch release workflow only restores this cache.
+      # after both real APK/AAB DEX scans have passed. Publication verifies the
+      # completed main run; reusable/non-push callers cannot seed this cache.
       - name: Start trusted Gradle cache save
         id: gradle-cache-save-start
         if: >-

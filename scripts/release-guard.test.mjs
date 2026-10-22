@@ -57,7 +57,7 @@ function fixture(t) {
   };
   const guard = ({ fetchImpl = missing, mainFetchImpl = mainRef, releaseFetchImpl = missing,
     pageFetchImpl = () => pageResponse(), createFetchImpl, ...overrides } = {}) => runReleaseGuard({
-    mode: "check", cwd, env, git, ...overrides,
+    mode: "check", cwd, env, git, qualityCheck: async () => {}, ...overrides,
     fetchImpl: (url, options) => options.method === "POST"
       ? (createFetchImpl ?? (() => assert.fail("unexpected HTTP mutation")))(url, options)
       : url.includes("/releases?") ? pageFetchImpl(url, options) : url.endsWith("/heads/main")
@@ -409,4 +409,97 @@ test("remote proof failing after release creation leaves publication for operato
   }), /HOLD/);
   assert.equal(writes, 1);
   assert.equal(f.ok(["rev-parse", "refs/tags/v0.2.3"], f.origin), f.sourceSha);
+});
+
+test("prepare checks the pinned Quality only after authenticated tag and draft absence", async (t) => {
+  const f = fixture(t);
+  const order = [];
+  await f.guard({
+    mainFetchImpl: () => { order.push("main"); return mainRef(); },
+    fetchImpl: () => { order.push("tag"); return missing(); },
+    releaseFetchImpl: () => { order.push("release"); return missing(); },
+    pageFetchImpl: () => { order.push("drafts"); return pageResponse(); },
+    qualityCheck: async ({ env, cwd, git, fetchImpl }) => {
+      order.push("quality");
+      assert.equal(env.EXPECTED_SOURCE_SHA, f.sourceSha);
+      assert.equal(cwd, f.cwd);
+      assert.equal(git(["rev-parse", "HEAD"], cwd).stdout.trim(), f.sourceSha);
+      assert.equal(typeof fetchImpl, "function");
+    },
+  });
+  assert.deepEqual(order, ["main", "tag", "release", "drafts", "quality"]);
+  assert.equal(f.refs(), "");
+});
+
+test("a failed fresh Quality check prevents the deployment push without retry or fallback", async (t) => {
+  const f = fixture(t);
+  let qualityReads = 0;
+  const gitCalls = [];
+  await assert.rejects(f.guard({ mode: "tag",
+    git: (args, cwd) => { gitCalls.push(args); return f.git(args, cwd); },
+    qualityCheck: async () => { qualityReads++; throw new Error("Quality attempt changed"); },
+  }), /Quality attempt changed/);
+  assert.equal(qualityReads, 1);
+  assert.ok(gitCalls.every((args) => args[0] !== "push"));
+  assert.equal(f.refs(), "");
+});
+
+test("the production default cannot tag with only the old release inputs and no Quality proof", async (t) => {
+  const f = fixture(t);
+  await assert.rejects(f.guard({ mode: "tag", qualityCheck: undefined }), /Quality proof:/);
+  assert.equal(f.refs(), "");
+});
+
+test("the final sampled receipt is exclusive and exists before the non-force deployment push", async (t) => {
+  const f = fixture(t);
+  const path = join(f.root, "quality-recheck.json");
+  let checked = false;
+  let pushed = false;
+  const env = { ...f.env, GITHUB_RUN_ID: "900", GITHUB_RUN_ATTEMPT: "1",
+    QUALITY_RUN_ID: "800", QUALITY_RUN_ATTEMPT: "2", QUALITY_PROOF_SHA256: "c".repeat(64),
+    QUALITY_RECHECK_PATH: path };
+  await f.guard({ mode: "tag", env,
+    qualityCheck: async () => { checked = true; },
+    git: (args, cwd) => {
+      if (args[0] === "push") {
+        pushed = true;
+        assert.equal(checked, true);
+        const record = JSON.parse(readFileSync(path, "utf8"));
+        assert.equal(record.kind, "pre-deployment-tag-quality-revalidation");
+        assert.equal(record.sourceSha, f.sourceSha);
+        assert.equal(record.publicationRunId, "900");
+        assert.equal(record.publicationAttempt, "1");
+        assert.equal(record.qualityRunId, "800");
+        assert.equal(record.qualityAttempt, "2");
+        assert.equal(record.proofSha256, "c".repeat(64));
+        assert.equal(record.validated, true);
+        assert.ok(Number.isFinite(Date.parse(record.sampledAtUtc)));
+        assert.match(record.limit, /cannot atomically lock/);
+        assert.ok(args.every((arg) => !["--force", "-f", "--delete"].includes(arg)));
+      }
+      return f.git(args, cwd);
+    },
+  });
+  assert.equal(pushed, true);
+  assert.equal(f.ok(["rev-parse", "refs/tags/v0.2.3"], f.origin), f.sourceSha);
+});
+
+test("a retained revalidation receipt is never overwritten and blocks any deployment push", async (t) => {
+  const f = fixture(t);
+  const path = join(f.root, "quality-recheck.json");
+  writeFileSync(path, "retained prior evidence\n");
+  await assert.rejects(f.guard({ mode: "tag", env: { ...f.env, QUALITY_RECHECK_PATH: path },
+    qualityCheck: async () => {},
+  }), /Cannot retain the final Quality revalidation/);
+  assert.equal(readFileSync(path, "utf8"), "retained prior evidence\n");
+  assert.equal(f.refs(), "");
+});
+
+test("an already-owned deployment tag uses strict release reconciliation without a new Quality claim", async (t) => {
+  const f = fixture(t);
+  f.createRemote();
+  await f.guard({ mode: "release", env: { ...f.env, OWNED_TAG_SOURCE_SHA: f.sourceSha },
+    qualityCheck: async () => assert.fail("owned tag release was reinterpreted as a new deployment"),
+    createFetchImpl: () => createdResponse(f.sourceSha),
+  });
 });
