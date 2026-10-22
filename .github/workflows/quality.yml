@@ -33,6 +33,7 @@ jobs:
         run: |
           python3 -m unittest discover -s scripts -p test_android_system_bars.py
           python3 -m unittest discover -s scripts -p test_android_ci_report.py
+          python3 -m unittest discover -s scripts -p test_android_ci_workflow_metadata.py
       - name: Generate Android project
         run: pnpm --filter @musubi/client exec expo prebuild --platform android --no-install
       # Hash only public source/native configuration after prebuild. Do not hash
@@ -51,6 +52,18 @@ jobs:
           echo "compatibility=$compatibility" >> "$GITHUB_OUTPUT"
           echo "prefix=$prefix" >> "$GITHUB_OUTPUT"
           echo "key=$prefix$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo "requested_key=$prefix$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo "jdk_hash=$jdk_hash" >> "$GITHUB_OUTPUT"
+          echo "compatibility_hash=$CACHE_COMPATIBILITY" >> "$GITHUB_OUTPUT"
+          echo "native_contract_hash=$NATIVE_CONTRACT" >> "$GITHUB_OUTPUT"
+          echo "runner_platform=$RUNNER_PLATFORM" >> "$GITHUB_OUTPUT"
+          echo "image_os=$ImageOS" >> "$GITHUB_OUTPUT"
+          echo "image_version=$ImageVersion" >> "$GITHUB_OUTPUT"
+          checkout_sha=$(git rev-parse HEAD)
+          echo "checkout_sha=$checkout_sha" >> "$GITHUB_OUTPUT"
+          ccache_available=false
+          if command -v ccache >/dev/null 2>&1; then ccache_available=true; fi
+          echo "ccache_available=$ccache_available" >> "$GITHUB_OUTPUT"
           date +%s%3N > "$RUNNER_TEMP/android-ci/restore.start"
       - name: Restore Gradle dependencies and task cache
         id: gradle-cache-restore
@@ -112,6 +125,25 @@ jobs:
         env:
           GRADLE_CACHE_HIT: ${{ steps.gradle-cache-restore.outputs.cache-hit }}
           GRADLE_CACHE_MATCHED_KEY: ${{ steps.gradle-cache-restore.outputs.cache-matched-key }}
+          GRADLE_CACHE_REQUESTED_KEY: ${{ steps.gradle-cache-key.outputs.requested_key }}
+          GRADLE_CACHE_PREFIX: ${{ steps.gradle-cache-key.outputs.prefix }}
+          GRADLE_CACHE_COMPATIBILITY_PREFIX: ${{ steps.gradle-cache-key.outputs.compatibility }}
+          GRADLE_CACHE_PRIMARY_KEY: ${{ steps.gradle-cache-restore.outputs.cache-primary-key }}
+          GRADLE_CACHE_JDK_HASH: ${{ steps.gradle-cache-key.outputs.jdk_hash }}
+          GRADLE_CACHE_COMPATIBILITY_HASH: ${{ steps.gradle-cache-key.outputs.compatibility_hash }}
+          GRADLE_CACHE_NATIVE_HASH: ${{ steps.gradle-cache-key.outputs.native_contract_hash }}
+          ANDROID_CI_RUNNER_PLATFORM: ${{ steps.gradle-cache-key.outputs.runner_platform }}
+          ANDROID_CI_IMAGE_OS: ${{ steps.gradle-cache-key.outputs.image_os }}
+          ANDROID_CI_IMAGE_VERSION: ${{ steps.gradle-cache-key.outputs.image_version }}
+          ANDROID_CI_CHECKOUT_SHA: ${{ steps.gradle-cache-key.outputs.checkout_sha }}
+          ANDROID_CI_CCACHE_AVAILABLE: ${{ steps.gradle-cache-key.outputs.ccache_available }}
+          ANDROID_CI_REPOSITORY: ${{ github.repository }}
+          ANDROID_CI_RUN_ID: ${{ github.run_id }}
+          ANDROID_CI_RUN_ATTEMPT: ${{ github.run_attempt }}
+          ANDROID_CI_EVENT_NAME: ${{ github.event_name }}
+          ANDROID_CI_REF: ${{ github.ref }}
+          ANDROID_CI_GITHUB_SHA: ${{ github.sha }}
+          ANDROID_CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           GRADLE_CACHE_RESTORE_OUTCOME: ${{ steps.gradle-cache-restore.outcome }}
           GRADLE_CACHE_SAVE_OUTCOME: ${{ steps.gradle-cache-save.outcome }}
           ANDROID_BUILD_OUTCOME: ${{ steps.android-build.outcome }}
