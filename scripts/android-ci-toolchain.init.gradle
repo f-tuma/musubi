@@ -1,0 +1,93 @@
+// CI observer for the same invocation that builds both native artifacts.
+// Private paths stay outside the uploaded directory; Python emits the public report.
+import groovy.json.JsonOutput
+import java.security.MessageDigest
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+
+def workspace = System.getenv('GITHUB_WORKSPACE')
+def destination = System.getenv('MUSUBI_ANDROID_TOOLCHAIN_INPUT')
+def runnerTemp = System.getenv('RUNNER_TEMP')
+if (!workspace || !destination || !runnerTemp) return
+
+gradle.settingsEvaluated { settings ->
+    // Init scripts also apply to included builds. Only the app build owns this file.
+    if (settings.settingsDir.canonicalFile != new File(workspace, 'apps/client/android').canonicalFile) return
+
+    def records = []
+    def agpVersions = new TreeSet<String>()
+    boolean truncated = false
+    boolean complete = true
+    def readSmall = { File file -> file.isFile() && file.length() <= 65536 ? file.text.trim() : null }
+    def release = new File(System.getProperty('java.home'), 'release')
+    def releaseBytes = release.isFile() && release.length() <= 65536 ? release.bytes : null
+    def runtime = [
+        schema_version: 1,
+        build_start_ms: readSmall(new File(runnerTemp, 'android-ci/build.start')),
+        run_id: System.getenv('GITHUB_RUN_ID'),
+        run_attempt: System.getenv('GITHUB_RUN_ATTEMPT'),
+        github_sha: System.getenv('GITHUB_SHA'),
+        gradle_version: gradle.gradleVersion,
+        jdk_version: System.getProperty('java.version'),
+        jdk_release_sha256: releaseBytes == null ? null : MessageDigest.getInstance('SHA-256').digest(releaseBytes).encodeHex().toString(),
+    ]
+
+    gradle.taskGraph.afterTask { task, state ->
+        def match = task.name =~ /^(build|configure)CMake[A-Za-z]+\[(arm64-v8a|x86_64)\](?:\[[A-Za-z0-9_.+,-]+\])?$/
+        if (!match.matches()) return
+        if (task.project.rootProject.projectDir.canonicalFile != new File(workspace, 'apps/client/android').canonicalFile) return
+        // Parallel project execution may notify this listener from multiple workers.
+        synchronized (records) {
+            if (records.size() >= 256) { truncated = true; return }
+            def phase = match.group(1)
+            def abi = match.group(2)
+            def buildDir = null
+            if (phase == 'configure') {
+                try {
+                    // AGP's actual task model selects a single configuration/ABI folder.
+                    // An unsupported AGP shape remains unknown; never guess a newest folder.
+                    def model = task.class.getField('abi').get(task)
+                    buildDir = model.getCxxBuildFolder().canonicalPath
+                } catch (Exception ignored) {
+                    buildDir = null
+                }
+            }
+            def projectDir = task.project.projectDir.canonicalPath
+            if (projectDir.length() > 4096 || (buildDir != null && buildDir.length() > 4096)) {
+                truncated = true
+                return
+            }
+            records.add([
+                project_dir: projectDir, abi: abi, phase: phase,
+                outcome: state.failure != null ? 'failure' : state.skipped ? 'skipped' : 'success',
+                build_dir: buildDir,
+            ])
+            def plugin = task.project.plugins.findPlugin('com.android.application') ?: task.project.plugins.findPlugin('com.android.library')
+            if (plugin != null) {
+                try {
+                    def version = plugin.class.classLoader.loadClass('com.android.Version').getField('ANDROID_GRADLE_PLUGIN_VERSION').get(null)
+                    if (version instanceof String && version.length() <= 64 && agpVersions.size() < 16) agpVersions.add(version)
+                    else { truncated = true; complete = false }
+                } catch (Exception ignored) {
+                    complete = false
+                }
+            } else complete = false
+        }
+    }
+
+    gradle.buildFinished { result ->
+        def observation = runtime + [
+            observer_complete: complete, records_truncated: truncated,
+            agp_versions: agpVersions.toList(), records: records,
+        ]
+        def output = new File(destination)
+        // No exception messages or private paths are printed to the shared build log.
+        try {
+            def temporary = new File(output.parentFile, output.name + '.tmp')
+            temporary.text = JsonOutput.toJson(observation) + '\n'
+            Files.move(temporary.toPath(), output.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        } catch (IOException ignored) {
+            // Absence/stale context is explicit unknown evidence, never compatibility.
+        }
+    }
+}
