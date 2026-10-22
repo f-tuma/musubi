@@ -263,6 +263,30 @@ class AndroidCiReportTests(unittest.TestCase):
         self.assertFalse(report["cmake"]["complete_build_log"])
         self.assertEqual(report["cmake"]["observed_task_count"], 256)
 
+    def test_cmake_target_groups_keep_task_identity_without_exporting_targets(self):
+        (self.directory / "gradle.log").write_text(
+            "> Task :native:buildCMakeRelWithDebInfo[arm64-v8a][privateTarget]\n"
+            "> Task :native:buildCMakeRelWithDebInfo[arm64-v8a][privateTarget]\n"
+            "> Task :native:buildCMakeRelWithDebInfo[arm64-v8a][otherTarget,second-target] FROM-CACHE\n"
+            "> Task :native:buildCMakeRelWithDebInfo[x86_64][privateTarget] UP-TO-DATE\n"
+            "> Task :native:configureCMakeRelWithDebInfo[x86_64]\n"
+            "4 actionable tasks: 2 executed, 1 from cache, 1 up-to-date\n")
+        report = build_report(self.directory, cache_environment())
+        native = report["cmake"]
+        self.assertTrue(native["complete_build_log"])
+        self.assertEqual(native["observed_task_count"], 4)
+        self.assertEqual(native["observed_outcomes"]["build"]["arm64-v8a"]["executed"], 1)
+        self.assertEqual(native["observed_outcomes"]["build"]["arm64-v8a"]["FROM-CACHE"], 1)
+        self.assertEqual(native["observed_outcomes"]["build"]["x86_64"]["UP-TO-DATE"], 1)
+        for name in ("privateTarget", "otherTarget", "second-target"):
+            self.assertNotIn(name, json.dumps(report))
+        for suffix in ("[]", "[bad target]", "[bad/target]", "[" + "a" * 129 + "]",
+                       "[" + ",".join(["target"] * 17) + "]"):
+            with self.subTest(suffix=suffix):
+                (self.directory / "gradle.log").write_text(
+                    "> Task :native:buildCMakeRelWithDebInfo[arm64-v8a]" + suffix + "\n")
+                self.assertEqual(build_report(self.directory, cache_environment())["cmake"]["observed_task_count"], 0)
+
     def test_missing_malformed_and_reversed_markers_stay_unknown(self):
         self.assertIsNone(elapsed_seconds(self.directory, "restore"))
         (self.directory / "restore.start").write_text("bad")

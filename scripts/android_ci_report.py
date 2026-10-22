@@ -138,8 +138,11 @@ def metadata(env):
 def cmake_tasks(log, build_complete):
     # Only aggregate fixed phase/ABI/outcome labels; never export task paths.
     observed = {}
-    pattern = (r"^> Task (:(?:[^\s:]+:)+(build|configure)CMake[A-Za-z]+\[(arm64-v8a|x86_64)\])"
-               r"(?: (FROM-CACHE|UP-TO-DATE|SKIPPED|NO-SOURCE|FAILED))?$")
+    targets = r"(?:\[[A-Za-z0-9_.+-]{1,128}(?:,[A-Za-z0-9_.+-]{1,128}){0,15}\])?"
+    # AGP includes selected native targets in a second bracket group. Include it
+    # in the task identity so separate tasks stay distinct.
+    pattern = (r"^> Task (:(?:[^\s:]+:)+(build|configure)CMake[A-Za-z]+\[(arm64-v8a|x86_64)\]"
+               + targets + r")(?: (FROM-CACHE|UP-TO-DATE|SKIPPED|NO-SOURCE|FAILED))?$")
     truncated = False
     for match in re.finditer(pattern, log, re.MULTILINE):
         if len(observed) >= 256 and match[1] not in observed:
