@@ -370,16 +370,21 @@ jobs:
 
       # Balance individual tests using recorded durations, rather than adjacent
       # quarters of the large Month suite. New tests receive a default weight.
-      - name: Exclude unused preinstalled Chrome package feeds
+      - name: Prepare Playwright system package sources
         # Playwright downloads its own pinned Chromium. Runner-provided Chrome
         # feeds can have inconsistent indexes and are not OS dependency sources.
+        # Keep signed Ubuntu packages; avoid the observed stalled Azure route
+        # and bound acquisition retries on this disposable runner.
         run: |
           sudo rm -f /etc/apt/sources.list.d/google-chrome*.list \
             /etc/apt/sources.list.d/google-chrome*.sources
+          sudo "$(command -v node)" scripts/prepare-playwright-apt.mjs
 
-      - name: Install Playwright browser
+      - name: Install Playwright system dependencies
         run: >-
-          pnpm --filter @musubi/web exec playwright install --with-deps chromium
+          pnpm --filter @musubi/web exec playwright install-deps chromium
+      - name: Install pinned Playwright Chromium
+        run: pnpm --filter @musubi/web exec playwright install chromium
 
       - run: node --test scripts/ci-shards.test.mjs
       - run: node scripts/ci-shards.mjs web ${{ matrix.shard }}/4
@@ -416,15 +421,18 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Exclude unused preinstalled Chrome package feeds
+      - name: Prepare Playwright system package sources
         # Keep OS package signatures/checksums and all browser tests unchanged.
         run: |
           sudo rm -f /etc/apt/sources.list.d/google-chrome*.list \
             /etc/apt/sources.list.d/google-chrome*.sources
+          sudo "$(command -v node)" scripts/prepare-playwright-apt.mjs
 
-      - name: Install Playwright browser
+      - name: Install Playwright system dependencies
         run: >-
-          pnpm --filter @musubi/web exec playwright install --with-deps chromium
+          pnpm --filter @musubi/web exec playwright install-deps chromium
+      - name: Install pinned Playwright Chromium
+        run: pnpm --filter @musubi/web exec playwright install chromium
 
       # Every story rendered in a real browser, with its play function run and
       # the a11y addon asserting against it. CLAUDE.md requires keyboard
@@ -520,12 +528,15 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Exclude unused preinstalled Chrome package feeds
+      - name: Prepare Playwright system package sources
         run: |
           sudo rm -f /etc/apt/sources.list.d/google-chrome*.list \
             /etc/apt/sources.list.d/google-chrome*.sources
-      - name: Install Playwright browser
-        run: pnpm --filter @musubi/web exec playwright install --with-deps chromium
+          sudo "$(command -v node)" scripts/prepare-playwright-apt.mjs
+      - name: Install Playwright system dependencies
+        run: pnpm --filter @musubi/web exec playwright install-deps chromium
+      - name: Install pinned Playwright Chromium
+        run: pnpm --filter @musubi/web exec playwright install chromium
       - uses: >-
           docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
       - uses: >-
