@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const archive = "https://archive.ubuntu.com/ubuntu";
-const azureToken = /(^|\s)https?:\/\/azure\.archive\.ubuntu\.com\/ubuntu\/?(?=\s|$)/g;
+const runnerArchiveToken = /(^|\s)(?:https?:\/\/azure\.archive\.ubuntu\.com\/ubuntu\/?|mirror\+file:\/etc\/apt\/apt-mirrors\.txt)(?=\s|$)/g;
 
 // Only acquisition limits: no trust, signature, checksum, TLS, suite or package
 // selection option is changed. This file lives on an ephemeral browser runner.
@@ -25,17 +25,19 @@ export function rewriteUbuntuArchive(source, format) {
     if (format === "list") {
       // Match the URI position of an active deb/deb-src line, never comments,
       // option values, another host, a path suffix, credentials, or query text.
-      return line.replace(/^(\s*deb(?:-src)?\s+(?:\[[^\]\r\n]*\]\s+)?)(https?:\/\/azure\.archive\.ubuntu\.com\/ubuntu\/?)(?=\s|$)/,
+      // The exact runner mirrorlist selects Azure first; replace that URI,
+      // without opening or changing any mirror file or unrelated source.
+      return line.replace(/^(\s*deb(?:-src)?\s+(?:\[[^\]\r\n]*\]\s+)?)(?:https?:\/\/azure\.archive\.ubuntu\.com\/ubuntu\/?|mirror\+file:\/etc\/apt\/apt-mirrors\.txt)(?=\s|$)/,
         (_match, prefix) => `${prefix}${archive}`) + ending;
     }
     if (/^\s*#/.test(line)) return raw;
     const field = line.match(/^(URIs:[ \t]*)(.*)$/i);
     if (field) {
       inUris = true;
-      return field[1] + field[2].replace(azureToken, (_match, space) => space + archive) + ending;
+      return field[1] + field[2].replace(runnerArchiveToken, (_match, space) => space + archive) + ending;
     }
     if (/^[ \t]/.test(line) && inUris) {
-      return line.replace(azureToken, (_match, space) => space + archive) + ending;
+      return line.replace(runnerArchiveToken, (_match, space) => space + archive) + ending;
     }
     inUris = false;
     return raw;
