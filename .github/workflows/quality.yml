@@ -34,6 +34,8 @@ jobs:
           python3 -m unittest discover -s scripts -p test_android_system_bars.py
           python3 -m unittest discover -s scripts -p test_android_ci_report.py
           python3 -m unittest discover -s scripts -p test_android_ci_workflow_metadata.py
+          python3 -m unittest discover -s scripts -p test_android_ci_toolchain.py
+          python3 -m unittest discover -s scripts -p test_android_ci_toolchain_observer.py
       - name: Generate Android project
         run: pnpm --filter @musubi/client exec expo prebuild --platform android --no-install
       # Hash only public source/native configuration after prebuild. Do not hash
@@ -85,6 +87,8 @@ jobs:
         id: android-build
         shell: bash
         working-directory: apps/client/android
+        env:
+          MUSUBI_ANDROID_TOOLCHAIN_INPUT: ${{ runner.temp }}/android-toolchain-input.json
         # Exercise device and emulator ABIs within the runner's memory budget.
         # Store builds retain the full production ABI set.
         run: |
@@ -92,7 +96,8 @@ jobs:
           trap 'date +%s%3N > "$RUNNER_TEMP/android-ci/build.end"' EXIT
           JAVA_HOME="$JAVA_HOME_17_X64" ./gradlew :app:assembleRelease :app:bundleRelease \
             -PreactNativeArchitectures=arm64-v8a,x86_64 --max-workers=2 --no-daemon --console=plain \
-            --build-cache --profile 2>&1 | tee "$RUNNER_TEMP/android-ci/gradle.log"
+            --build-cache --profile --init-script "$GITHUB_WORKSPACE/scripts/android-ci-toolchain.init.gradle" \
+            2>&1 | tee "$RUNNER_TEMP/android-ci/gradle.log"
       - name: Verify shipped DEX
         id: android-dex
         run: |
@@ -153,6 +158,9 @@ jobs:
             date +%s%3N > "$RUNNER_TEMP/android-ci/save.end"
           fi
           python3 scripts/android_ci_report.py --directory "$RUNNER_TEMP/android-ci" --summary "$GITHUB_STEP_SUMMARY"
+          python3 scripts/android_ci_toolchain.py --directory "$RUNNER_TEMP/android-ci" \
+            --private-input "$RUNNER_TEMP/android-toolchain-input.json" \
+            --workspace "$GITHUB_WORKSPACE" --sdk-root "$ANDROID_HOME" --summary "$GITHUB_STEP_SUMMARY"
       - name: Android build timing evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
