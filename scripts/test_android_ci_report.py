@@ -19,21 +19,47 @@ class AndroidCiReportTests(unittest.TestCase):
         step = workflow.split("        id: android-build\n", 1)[1].split("      - name:", 1)[0]
         self.assertIn("        shell: bash\n", step)
         script = "\n".join(line[10:] for line in step.split("        run: |\n", 1)[1].splitlines())
-        evidence = self.directory / "android-ci"
-        evidence.mkdir()
-        gradlew = self.directory / "gradlew"
-        environment = {**os.environ, "RUNNER_TEMP": str(self.directory), "JAVA_HOME_17_X64": str(self.directory)}
         for exit_code in (0, 23):
             with self.subTest(exit_code=exit_code):
+                case = self.directory / f"exit-{exit_code}"
+                case.mkdir()
+                evidence = case / "android-ci"
+                evidence.mkdir()
+                tools = case / "bin"
+                tools.mkdir()
+                clock_log = case / "clock-calls"
+                clock = tools / "date"
+                # Exercise the actual workflow shell, pipefail and EXIT trap
+                # without relying on the runner wall clock during a tiny build.
+                clock.write_text(
+                    "#!/bin/sh\n"
+                    "if [ \"$#\" -ne 1 ] || [ \"$1\" != '+%s%3N' ]; then exit 97; fi\n"
+                    "if [ -f \"$MUSUBI_FIXTURE_CLOCK_LOG\" ]; then\n"
+                    "  printf '%s\\n' \"$1\" >> \"$MUSUBI_FIXTURE_CLOCK_LOG\"\n"
+                    "  printf '1250\\n'\n"
+                    "else\n"
+                    "  printf '%s\\n' \"$1\" > \"$MUSUBI_FIXTURE_CLOCK_LOG\"\n"
+                    "  printf '1000\\n'\n"
+                    "fi\n")
+                clock.chmod(0o755)
+                gradlew = case / "gradlew"
                 gradlew.write_text(f"#!/bin/sh\nprintf 'fixture Gradle output\\n'\ntouch app-release.apk app-release.aab\nexit {exit_code}\n")
                 gradlew.chmod(0o755)
+                environment = {**os.environ, "RUNNER_TEMP": str(case), "JAVA_HOME_17_X64": str(case),
+                               "PATH": str(tools) + os.pathsep + os.environ["PATH"],
+                               "MUSUBI_FIXTURE_CLOCK_LOG": str(clock_log)}
+                self.assertFalse((evidence / "build.start").exists())
+                self.assertFalse((evidence / "build.end").exists())
                 result = subprocess.run(["bash", "--noprofile", "--norc", "-eo", "pipefail", "-c", script],
-                                        cwd=self.directory, env=environment, capture_output=True, text=True)
+                                        cwd=case, env=environment, capture_output=True, text=True)
                 self.assertEqual(result.returncode, exit_code, result.stderr)
                 self.assertIn("fixture Gradle output", (evidence / "gradle.log").read_text())
-                self.assertIsNotNone(elapsed_seconds(evidence, "build"))
-                self.assertTrue((self.directory / "app-release.apk").exists())
-                self.assertTrue((self.directory / "app-release.aab").exists())
+                self.assertEqual(clock_log.read_text().splitlines(), ["+%s%3N", "+%s%3N"])
+                self.assertEqual((evidence / "build.start").read_text().strip(), "1000")
+                self.assertEqual((evidence / "build.end").read_text().strip(), "1250")
+                self.assertEqual(elapsed_seconds(evidence, "build"), 0.25)
+                self.assertTrue((case / "app-release.apk").exists())
+                self.assertTrue((case / "app-release.aab").exists())
 
     def test_partial_failed_build_does_not_invent_zero_task_totals(self):
         (self.directory / "gradle.log").write_text("> Task :app:compileReleaseKotlin FROM-CACHE\nFAILURE: Build failed\n")
