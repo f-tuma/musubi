@@ -10,7 +10,8 @@ import re
 OUTCOMES = {"success", "failure", "cancelled", "skipped"}
 HASH = r"[a-f0-9]{64}"
 SHA = r"[a-f0-9]{40}"
-IMAGE = r"ubuntu[0-9]{2}-[0-9]{8}\.[0-9]+(?:\.[0-9]+)?"
+IMAGE_VERSION = r"[0-9]{8}\.[0-9]{1,9}(?:\.[0-9]{1,9})?"
+IMAGE = rf"ubuntu[0-9]{{2}}-{IMAGE_VERSION}"
 COMPATIBILITY = rf"android-gradle-v1-Linux-(?:X64|ARM64)-{IMAGE}-{HASH}-{HASH}-"
 PREFIX = rf"{COMPATIBILITY}{HASH}-"
 KEY = rf"{PREFIX}{SHA}"
@@ -20,11 +21,11 @@ def metadata(env):
     """Read only allowlisted public build metadata; never copy arbitrary env."""
     invalid = []
 
-    def value(name, pattern):
+    def value(name, pattern, max_length=512):
         raw = env.get(name, "")
         if not raw:
             return None
-        if not isinstance(raw, str) or not re.fullmatch(pattern, raw):
+        if not isinstance(raw, str) or len(raw) > max_length or not re.fullmatch(pattern, raw):
             invalid.append(name)
             return None
         return raw
@@ -53,7 +54,7 @@ def metadata(env):
         "run_id": number("ANDROID_CI_RUN_ID"),
         "run_attempt": number("ANDROID_CI_RUN_ATTEMPT"),
         "event": value("ANDROID_CI_EVENT_NAME", r"push|pull_request|workflow_call"),
-        "ref": value("ANDROID_CI_REF", r"refs/heads/main|refs/pull/[1-9][0-9]*/merge"),
+        "ref": value("ANDROID_CI_REF", r"refs/heads/main|refs/pull/[1-9][0-9]{0,14}/merge", 64),
         "checkout_sha": sha("ANDROID_CI_CHECKOUT_SHA"),
         "github_sha": sha("ANDROID_CI_GITHUB_SHA"),
         "head_sha": sha("ANDROID_CI_HEAD_SHA"),
@@ -69,7 +70,7 @@ def metadata(env):
     components = {
         "runner_platform": value("ANDROID_CI_RUNNER_PLATFORM", r"Linux-(?:X64|ARM64)"),
         "image_os": value("ANDROID_CI_IMAGE_OS", r"ubuntu[0-9]{2}"),
-        "image_version": value("ANDROID_CI_IMAGE_VERSION", r"[0-9]{8}\.[0-9]+(?:\.[0-9]+)?"),
+        "image_version": value("ANDROID_CI_IMAGE_VERSION", IMAGE_VERSION, 32),
         "jdk_release_hash": value("GRADLE_CACHE_JDK_HASH", HASH),
         "compatibility_hash": value("GRADLE_CACHE_COMPATIBILITY_HASH", HASH),
         "native_contract_hash": value("GRADLE_CACHE_NATIVE_HASH", HASH),
@@ -104,7 +105,8 @@ def metadata(env):
     elif restore in {"skipped", "failure", "cancelled"}:
         state = restore
     elif restore == "success":
-        if coherent is False or invalid or (primary and primary != request["key"]):
+        if (coherent is False or invalid or (primary and primary != request["key"])
+                or (matched and not primary) or (hit == "true" and (not primary or not matched))):
             state = "inconsistent"
         elif coherent is True and primary == request["key"]:
             if hit == "true" and matched == primary:

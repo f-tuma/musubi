@@ -167,6 +167,42 @@ class AndroidCiReportTests(unittest.TestCase):
         self.assertTrue(report["cache"]["request"]["coherent"])
         self.assertIs(report["ccache"]["executable_on_path"], False)
 
+    def test_matched_without_primary_and_true_without_outputs_are_inconsistent(self):
+        for hit in ("true", "false", ""):
+            with self.subTest(hit=hit):
+                report = build_report(self.directory, cache_environment(
+                    GRADLE_CACHE_PRIMARY_KEY="", GRADLE_CACHE_HIT=hit))
+                self.assertEqual(report["cache"]["restore_state"], "inconsistent")
+                self.assertIsNone(report["cache"]["exact_hit"])
+        report = build_report(self.directory, cache_environment(
+            GRADLE_CACHE_PRIMARY_KEY="", GRADLE_CACHE_MATCHED_KEY="", GRADLE_CACHE_HIT="true"))
+        self.assertEqual(report["cache"]["restore_state"], "inconsistent")
+
+    def test_structured_oversized_metadata_is_rejected_without_export(self):
+        env = cache_environment()
+        old_version = env["ANDROID_CI_IMAGE_VERSION"]
+        oversized_version = "20261012." + "7" * 1000
+        fields = ("GRADLE_CACHE_REQUESTED_KEY", "GRADLE_CACHE_PREFIX", "GRADLE_CACHE_COMPATIBILITY_PREFIX",
+                  "GRADLE_CACHE_PRIMARY_KEY", "GRADLE_CACHE_MATCHED_KEY", "ANDROID_CI_IMAGE_VERSION")
+        for field in fields:
+            env[field] = env[field].replace(old_version, oversized_version)
+        env["GRADLE_CACHE_HIT"] = "true"
+        env["GRADLE_CACHE_MATCHED_KEY"] = env["GRADLE_CACHE_REQUESTED_KEY"]
+        env["ANDROID_CI_REF"] = "refs/pull/" + "8" * 1000 + "/merge"
+        summary = self.directory / "summary.md"
+        report = write_report(self.directory, summary, env)
+        self.assertEqual(report["cache"]["restore_state"], "inconsistent")
+        self.assertIsNone(report["cache"]["exact_hit"])
+        self.assertIsNone(report["cache"]["action_primary_key"])
+        self.assertIsNone(report["cache"]["request"]["key"])
+        self.assertIsNone(report["cache"]["request"]["prefix"])
+        self.assertIsNone(report["cache"]["request"]["compatibility_prefix"])
+        self.assertIsNone(report["cache"]["request"]["components"]["image_version"])
+        self.assertIsNone(report["context"]["ref"])
+        self.assertTrue(set(fields + ("ANDROID_CI_REF",)).issubset(report["invalid_metadata_fields"]))
+        self.assertNotIn("7" * 1000, json.dumps(report) + summary.read_text())
+        self.assertNotIn("8" * 1000, json.dumps(report) + summary.read_text())
+
     def test_save_action_success_never_claims_persistence(self):
         report = build_report(self.directory, cache_environment(GRADLE_CACHE_SAVE_OUTCOME="success"))
         self.assertEqual(report["cache"]["save_state"], "attempted_unverified")
