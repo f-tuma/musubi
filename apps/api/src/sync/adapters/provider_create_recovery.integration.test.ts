@@ -62,7 +62,7 @@ async function main() {
         res.end(JSON.stringify(value));
       };
       if (req.method === "GET" && url.pathname.includes("/users/me/calendarList/"))
-        return json({ accessRole: "owner" });
+        return json({ id: decodeURIComponent(url.pathname.split("/calendarList/")[1]!), accessRole: "owner" });
       if (
         req.method === "GET" &&
         url.pathname.startsWith("/v1.0/") &&
@@ -168,7 +168,11 @@ async function main() {
       ),
       "no live or untrusted destination",
     );
-    return realFetch(`${origin}${url.pathname}${url.search}`, init);
+    return realFetch(`${origin}${url.pathname}${url.search}`, init).then(response => {
+      // Loopback routing is a fixture transport, not a provider redirect.
+      Object.defineProperty(response, "url", { value: url.href });
+      return response;
+    });
   };
   await db
     .insert(user)

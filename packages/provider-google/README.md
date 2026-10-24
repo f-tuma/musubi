@@ -63,3 +63,20 @@ A conditional DELETE sends no body and accepts 200/201/204/404/410 as native
 HTTP success. It never retries or redirects. The shared runtime always performs
 its exact scoped GET before preflight and dispatch, while hosts independently
 own their provider-response or exact-absence ACK policy.
+
+`createGooglePersonalEventCreateProvider` accepts only an already admitted
+personal timed, nonrecurring CREATE body. The canonical lowercase operation
+UUID must equal the private `musubiOperationID` marker and derive both the body
+ID and exact native target. Validation and an owned frozen snapshot precede
+credentials; POST preserves the saved JSON values and property order. Fresh ACL
+preflight checks the concrete calendar ID and owner/writer access. The mutation
+opens a fresh account session and calls the host authority fence immediately
+before dispatch. No implicit event GET, POST retry or collision adoption occurs.
+
+CREATE recovery is separate from UPDATE's strong-validator read: an exact
+complete GET requires the planned ID and marker, returns a nullable ETag, treats
+404 as absence, and treats 410 or cancellation as conflict. The host decides
+whether the observed content matches admission, whether a scoped 404 permits a
+same-identity retry, and whether retained tombstones or current authority block
+it. A POST acceptance with an unusable validator retains null; malformed or
+misidentified successful responses and transport failures remain uncertain.

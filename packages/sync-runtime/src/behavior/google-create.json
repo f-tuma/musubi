@@ -1,0 +1,751 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    {
+      "id": "fresh-create",
+      "title": "A fresh admitted CREATE sends one exact saved body after ACL preflight",
+      "policy": "musubi",
+      "recovery": { "required": false, "possibleDispatch": false },
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        { "method": "GET", "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar", "status": 200, "body": { "id": "native/calendar", "accessRole": "owner" } },
+        { "method": "POST", "path": "/calendar/v3/calendars/native%2Fcalendar/events", "status": 201, "body": { "id": "musubiabcdef01abcd40008000abcdefabcdef", "etag": "\"created\"" } }
+      ],
+      "expected": {
+        "status": "acked", "methods": ["GET", "POST"], "bodyIds": [null, "musubiabcdef01abcd40008000abcdefabcdef"], "markers": [null, "abcdef01-abcd-4000-8000-abcdefabcdef"],
+        "ackKinds": ["provider-response"], "finishStatuses": [],
+        "provider": { "kind": "accepted", "validator": "\"created\"", "errorCode": null, "retry": null, "retryAfterMs": null },
+        "remoteKind": "unobserved", "possibleDispatch": true, "mutationMarks": 1, "retryAfterMs": null, "errorCode": null
+      }
+    },
+    {
+      "id": "nullable-create-etag",
+      "title": "Musubi accepts a CREATE response without inventing a missing validator",
+      "policy": "musubi",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events",
+          "status": 201,
+          "body": {
+            "id": "musubiabcdef01abcd40008000abcdefabcdef"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "bodyIds": [
+          null,
+          "musubiabcdef01abcd40008000abcdefabcdef"
+        ],
+        "markers": [
+          null,
+          "abcdef01-abcd-4000-8000-abcdefabcdef"
+        ],
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "provider": {
+          "kind": "accepted",
+          "validator": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": null
+      }
+    },
+    {
+      "id": "recover-matching-create",
+      "title": "A matching owned recovery read acknowledges without another POST",
+      "policy": "musubi",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": "uncertain",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/musubiabcdef01abcd40008000abcdefabcdef",
+          "status": 200,
+          "body": {
+            "id": "musubiabcdef01abcd40008000abcdefabcdef",
+            "etag": "\"created\"",
+            "status": "confirmed",
+            "eventType": "default",
+            "summary": "Synthetic event",
+            "description": null,
+            "location": null,
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.000Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00.000Z"
+            },
+            "extendedProperties": {
+              "private": {
+                "musubiOperationID": "abcdef01-abcd-4000-8000-abcdefabcdef"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET"
+        ],
+        "bodyIds": [
+          null
+        ],
+        "markers": [
+          null
+        ],
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "finishStatuses": [],
+        "provider": {
+          "kind": "uncertain",
+          "validator": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": null
+      }
+    },
+    {
+      "id": "recover-absent-same-id",
+      "title": "Exact recovery 404 retries only the same admitted ID and body",
+      "policy": "musubi",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": "uncertain",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/musubiabcdef01abcd40008000abcdefabcdef",
+          "status": 404,
+          "body": {}
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events",
+          "status": 201,
+          "body": {
+            "id": "musubiabcdef01abcd40008000abcdefabcdef",
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "POST"
+        ],
+        "bodyIds": [
+          null,
+          null,
+          "musubiabcdef01abcd40008000abcdefabcdef"
+        ],
+        "markers": [
+          null,
+          null,
+          "abcdef01-abcd-4000-8000-abcdefabcdef"
+        ],
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "provider": {
+          "kind": "accepted",
+          "validator": "\"created\"",
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": null
+      }
+    },
+    {
+      "id": "recover-gone-conflicts",
+      "title": "A retained native 410 cannot authorize another CREATE",
+      "policy": "musubi",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": "uncertain",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/musubiabcdef01abcd40008000abcdefabcdef",
+          "status": 410,
+          "body": {}
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "bodyIds": [
+          null
+        ],
+        "markers": [
+          null
+        ],
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "validator": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": "provider-conflict"
+      }
+    },
+    {
+      "id": "recover-cancelled-conflicts",
+      "title": "A cancelled owned event cannot be resurrected by CREATE recovery",
+      "policy": "musubi",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": "uncertain",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/musubiabcdef01abcd40008000abcdefabcdef",
+          "status": 200,
+          "body": {
+            "id": "musubiabcdef01abcd40008000abcdefabcdef",
+            "etag": "\"created\"",
+            "status": "cancelled",
+            "eventType": "default",
+            "summary": "Synthetic event",
+            "description": null,
+            "location": null,
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.000Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00.000Z"
+            },
+            "extendedProperties": {
+              "private": {
+                "musubiOperationID": "abcdef01-abcd-4000-8000-abcdefabcdef"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "bodyIds": [
+          null
+        ],
+        "markers": [
+          null
+        ],
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "validator": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": "provider-conflict"
+      }
+    },
+    {
+      "id": "recover-marker-conflicts",
+      "title": "An occupied ID with another operation marker cannot be adopted",
+      "policy": "musubi",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": "uncertain",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/musubiabcdef01abcd40008000abcdefabcdef",
+          "status": 200,
+          "body": {
+            "id": "musubiabcdef01abcd40008000abcdefabcdef",
+            "etag": "\"created\"",
+            "status": "confirmed",
+            "eventType": "default",
+            "summary": "Synthetic event",
+            "description": null,
+            "location": null,
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.000Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00.000Z"
+            },
+            "extendedProperties": {
+              "private": {
+                "musubiOperationID": "00000000-0000-4000-8000-000000000072"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "bodyIds": [
+          null
+        ],
+        "markers": [
+          null
+        ],
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "validator": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": "provider-conflict"
+      }
+    },
+    {
+      "id": "recover-content-conflicts",
+      "title": "An owned event whose content diverged is a conflict without POST",
+      "policy": "musubi",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": "uncertain",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/musubiabcdef01abcd40008000abcdefabcdef",
+          "status": 200,
+          "body": {
+            "id": "musubiabcdef01abcd40008000abcdefabcdef",
+            "etag": "\"created\"",
+            "status": "confirmed",
+            "eventType": "default",
+            "summary": "Foreign change",
+            "description": null,
+            "location": null,
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.000Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00.000Z"
+            },
+            "extendedProperties": {
+              "private": {
+                "musubiOperationID": "abcdef01-abcd-4000-8000-abcdefabcdef"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "bodyIds": [
+          null
+        ],
+        "markers": [
+          null
+        ],
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "validator": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "conflict",
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": "runtime-readback-differs"
+      }
+    },
+    {
+      "id": "post-conflict-no-recovery",
+      "title": "POST 409 remains a refusal without an automatic lookup or retry",
+      "policy": "musubi",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events",
+          "status": 409,
+          "body": {}
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "bodyIds": [
+          null,
+          "musubiabcdef01abcd40008000abcdefabcdef"
+        ],
+        "markers": [
+          null,
+          "abcdef01-abcd-4000-8000-abcdefabcdef"
+        ],
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "provider": {
+          "kind": "rejected",
+          "validator": null,
+          "errorCode": "transport-failed",
+          "retry": "never",
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": "provider-write-failed"
+      }
+    },
+    {
+      "id": "rate-limited-create",
+      "title": "CREATE rate limiting preserves Retry-After and sends no second POST",
+      "policy": "musubi",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events",
+          "status": 429,
+          "body": {},
+          "headers": {
+            "retry-after": "9"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "bodyIds": [
+          null,
+          "musubiabcdef01abcd40008000abcdefabcdef"
+        ],
+        "markers": [
+          null,
+          "abcdef01-abcd-4000-8000-abcdefabcdef"
+        ],
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "provider": {
+          "kind": "rejected",
+          "validator": null,
+          "errorCode": "rate-limited",
+          "retry": "after-delay",
+          "retryAfterMs": 9000
+        },
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": 9000,
+        "errorCode": "provider-write-failed"
+      }
+    },
+    {
+      "id": "lost-reply-reference",
+      "title": "Reference recovery observes an applied CREATE after a lost reply without repeating POST",
+      "policy": "reference",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events",
+          "error": "lost-reply"
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/musubiabcdef01abcd40008000abcdefabcdef",
+          "status": 200,
+          "body": {
+            "id": "musubiabcdef01abcd40008000abcdefabcdef",
+            "etag": "\"created\"",
+            "status": "confirmed",
+            "eventType": "default",
+            "summary": "Synthetic event",
+            "description": null,
+            "location": null,
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.000Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00.000Z"
+            },
+            "extendedProperties": {
+              "private": {
+                "musubiOperationID": "abcdef01-abcd-4000-8000-abcdefabcdef"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "POST",
+          "GET"
+        ],
+        "bodyIds": [
+          null,
+          "musubiabcdef01abcd40008000abcdefabcdef",
+          null
+        ],
+        "markers": [
+          null,
+          "abcdef01-abcd-4000-8000-abcdefabcdef",
+          null
+        ],
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "finishStatuses": [],
+        "provider": {
+          "kind": "uncertain",
+          "validator": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": null
+      }
+    },
+    {
+      "id": "reference-readback",
+      "title": "Reference CREATE requires exact owned content readback after native acceptance",
+      "policy": "reference",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events",
+          "status": 201,
+          "body": {
+            "id": "musubiabcdef01abcd40008000abcdefabcdef",
+            "etag": "\"created\""
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/musubiabcdef01abcd40008000abcdefabcdef",
+          "status": 200,
+          "body": {
+            "id": "musubiabcdef01abcd40008000abcdefabcdef",
+            "etag": "\"created\"",
+            "status": "confirmed",
+            "eventType": "default",
+            "summary": "Synthetic event",
+            "description": null,
+            "location": null,
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.000Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00.000Z"
+            },
+            "extendedProperties": {
+              "private": {
+                "musubiOperationID": "abcdef01-abcd-4000-8000-abcdefabcdef"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "POST",
+          "GET"
+        ],
+        "bodyIds": [
+          null,
+          "musubiabcdef01abcd40008000abcdefabcdef",
+          null
+        ],
+        "markers": [
+          null,
+          "abcdef01-abcd-4000-8000-abcdefabcdef",
+          null
+        ],
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "finishStatuses": [],
+        "provider": {
+          "kind": "accepted",
+          "validator": "\"created\"",
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": null
+      }
+    }
+  ]
+}
