@@ -1,0 +1,393 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    {
+      "id": "conditional-delete",
+      "title": "A matching strong ETag permits exactly one conditional DELETE",
+      "policy": "musubi",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "etag": "\"before\"",
+            "status": "confirmed",
+            "eventType": "default",
+            "summary": "Synthetic event",
+            "start": {
+              "dateTime": "2026-10-13T08:00:00Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00Z"
+            },
+            "organizer": {
+              "self": true,
+              "email": "owner@example.invalid"
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "writer"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "etag": "\"before\"",
+            "status": "confirmed",
+            "eventType": "default",
+            "summary": "Synthetic event",
+            "start": {
+              "dateTime": "2026-10-13T08:00:00Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00Z"
+            },
+            "organizer": {
+              "self": true,
+              "email": "owner@example.invalid"
+            }
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 204,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"before\""
+        ],
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "provider": {
+          "kind": "accepted",
+          "status": 204,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "already-absent",
+      "title": "Exact native absence settles without issuing a DELETE",
+      "policy": "musubi",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 404,
+          "body": {}
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET"
+        ],
+        "ifMatch": [
+          null
+        ],
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "finishStatuses": [],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "absent",
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "changed-etag",
+      "title": "A changed native ETag conflicts before any mutation",
+      "policy": "musubi",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "etag": "\"changed\"",
+            "status": "confirmed",
+            "eventType": "default",
+            "summary": "Synthetic event",
+            "start": {
+              "dateTime": "2026-10-13T08:00:00Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00Z"
+            },
+            "organizer": {
+              "self": true,
+              "email": "owner@example.invalid"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "ifMatch": [
+          null
+        ],
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "conflict",
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "lost-reply-observe",
+      "title": "A lost DELETE reply is observed without repeating the mutation",
+      "policy": "reference",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "etag": "\"before\"",
+            "status": "confirmed",
+            "eventType": "default",
+            "summary": "Synthetic event",
+            "start": {
+              "dateTime": "2026-10-13T08:00:00Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00Z"
+            },
+            "organizer": {
+              "self": true,
+              "email": "owner@example.invalid"
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "writer"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "etag": "\"before\"",
+            "status": "confirmed",
+            "eventType": "default",
+            "summary": "Synthetic event",
+            "start": {
+              "dateTime": "2026-10-13T08:00:00Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00Z"
+            },
+            "organizer": {
+              "self": true,
+              "email": "owner@example.invalid"
+            }
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "error": "lost-reply"
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 404,
+          "body": {}
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE",
+          "GET"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"before\"",
+          null
+        ],
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "finishStatuses": [],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "absent",
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "rate-limited-delete",
+      "title": "Rate limiting holds delivery and preserves Retry-After",
+      "policy": "reference",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "etag": "\"before\"",
+            "status": "confirmed",
+            "eventType": "default",
+            "summary": "Synthetic event",
+            "start": {
+              "dateTime": "2026-10-13T08:00:00Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00Z"
+            },
+            "organizer": {
+              "self": true,
+              "email": "owner@example.invalid"
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "writer"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "etag": "\"before\"",
+            "status": "confirmed",
+            "eventType": "default",
+            "summary": "Synthetic event",
+            "start": {
+              "dateTime": "2026-10-13T08:00:00Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00Z"
+            },
+            "organizer": {
+              "self": true,
+              "email": "owner@example.invalid"
+            }
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 429,
+          "body": {},
+          "headers": {
+            "retry-after": "9"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"before\""
+        ],
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "provider": {
+          "kind": "rejected",
+          "status": null,
+          "errorCode": "rate-limited",
+          "retry": "after-delay",
+          "retryAfterMs": 9000
+        },
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": 9000
+      }
+    }
+  ]
+}

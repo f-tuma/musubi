@@ -8,7 +8,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "tsx src/index.test.ts",
+    "test": "tsx src/index.test.ts && node --import tsx src/behavior/harness.test.ts && pnpm test:scenarios",
+    "test:scenarios": "node --import tsx src/behavior/cli.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
