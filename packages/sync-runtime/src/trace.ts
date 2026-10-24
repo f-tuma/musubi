@@ -4,7 +4,7 @@ import type {
   RuntimeEvaluatedDecision, RuntimeRecordedFrame,
 } from "./ports";
 
-export function projectGoogleTimedEvent(event: GoogleNativeEvent, policy: GooglePersonalUpdatePolicy): GoogleTimedProjection | null {
+export function projectGoogleTimedEvent(event: GoogleNativeEvent, policy: Pick<GooglePersonalUpdatePolicy, "nativeProfile">): GoogleTimedProjection | null {
   try {
     if (policy.nativeProfile === "strict-reference" &&
         (event.status !== undefined && !["confirmed", "tentative"].includes(event.status) ||
@@ -17,13 +17,13 @@ export function projectGoogleTimedEvent(event: GoogleNativeEvent, policy: Google
       start, end, isAllDay: false, recurrence: null };
   } catch { return null; }
 }
-function fieldEqual(key: string, left: unknown, right: unknown, policy: GooglePersonalUpdatePolicy) {
+function fieldEqual(key: string, left: unknown, right: unknown, policy: Pick<GooglePersonalUpdatePolicy, "compareContent">) {
   if (policy.compareContent === "nullable-empty" && ["description", "location"].includes(key))
     return (left ?? "") === (right ?? "");
   return left === right;
 }
 export function matchesGoogleTimedProjection(expected: GoogleTimedProjection, observed: GoogleTimedProjection,
-  policy: GooglePersonalUpdatePolicy): boolean {
+  policy: Pick<GooglePersonalUpdatePolicy, "compareContent">): boolean {
   return Object.entries(expected).every(([key, value]) => fieldEqual(key, value, observed[key as keyof GoogleTimedProjection], policy));
 }
 /** A capability-free decision over saved admission and observed native facts. */

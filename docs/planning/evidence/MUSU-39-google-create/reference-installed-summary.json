@@ -1,0 +1,68 @@
+{
+  "status": "passed",
+  "oldImageId": "sha256:63340082526ecc11ce95d4165e8ae734a785e14050d586f5c9f681d68dc28404",
+  "newImageId": "sha256:f019aa6b428f518c7b98c64747b3798161ea5aa161c08c1f8978aff33fd2eb28",
+  "sourceFileCount": 91,
+  "sourceManifestSha256": "539dcbcd7f625e824bd5e5ef9c186f56ddf794eaceb126befed5b212d59c0543",
+  "closurePackages": 24,
+  "forbiddenDependencies": [],
+  "localOnly": true,
+  "noSourceMounts": true,
+  "noLiveProvider": true,
+  "cases": [
+    {
+      "case": "old-image-pending-update-new-image-upgrade",
+      "status": "passed"
+    },
+    {
+      "case": "installed-create-lost-reply-kill-restart",
+      "status": "passed"
+    },
+    {
+      "case": "installed-serial-create-update-delete",
+      "status": "passed"
+    }
+  ],
+  "tableCountsBeforeUpgrade": {
+    "reference_connections": "1",
+    "reference_objects": "1",
+    "reference_bindings": "1",
+    "reference_operations": "1",
+    "reference_attempts": "0"
+  },
+  "oldPayloadHash": "e607c0088c0229c8b0a2b4f47a66b724746a0bbbb780921cfcf6d15b1338251d",
+  "lostReply": {
+    "case": "installed-create-lost-reply-kill-restart",
+    "status": "passed",
+    "postCount": 1,
+    "restartMethods": [
+      "GET"
+    ],
+    "provider": "uncertain",
+    "remote": "confirmed",
+    "payloadHash": "78f38cb267237d5347f66705a1287d11591f0f67ae118ee2e56b04f68ba7e64b",
+    "binding": {
+      "destination_lifecycle": "present",
+      "source_generation": "2",
+      "etag": "\"created\""
+    }
+  },
+  "serial": {
+    "case": "installed-serial-create-update-delete",
+    "status": "passed",
+    "postCount": 1,
+    "patchCountIncludingLegacy": 2,
+    "deleteCount": 1,
+    "finalBinding": {
+      "destination_lifecycle": "absent",
+      "source_generation": "3",
+      "etag": "\"updated\""
+    }
+  },
+  "currentSourceChangesSinceBuild": [],
+  "closureInventory": "All named installed package.json files, including unversioned workspaces and optional platform packages",
+  "cleanup": {
+    "dropped": true,
+    "remainingOwnedContainers": []
+  }
+}

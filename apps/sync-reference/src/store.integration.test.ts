@@ -348,7 +348,7 @@ test("strong observation validator and full target stay stable across blocked AC
     await blocker.query("COMMIT"); blocked = false;
     assert.equal(await pending, true);
     const op = await store.inspectOperation(f.input.operationId);
-    assert.equal(op.binding.etag, '"native-v2"'); assert.equal(op.binding.baseline.title, "Accepted A");
+    assert.equal(op.binding.etag, '"native-v2"'); assert(op.binding.baseline); assert.equal(op.binding.baseline.title, "Accepted A");
   } finally {
     if (blocked) await blocker.query("ROLLBACK"); blocker.release();
     await pending.catch(() => undefined); await delayedPool.end();
@@ -429,7 +429,7 @@ test("cancelled ACK waiting on PostgreSQL authority lock rolls back despite a li
     const op = await store.inspectOperation(f.input.operationId);
     assert.equal(op.status, "running"); assert.equal(op.leaseAttemptId, f.claim.attemptId);
     assert.equal(op.binding.etag, '"original"');
-    assert.equal(op.binding.baseline.title, "Original");
+    assert(op.binding.baseline); assert.equal(op.binding.baseline.title, "Original");
   } finally {
     if (blocked) await blocker.query("ROLLBACK"); blocker.release();
     await pending.catch(() => undefined); await delayedPool.end();

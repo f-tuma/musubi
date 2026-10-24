@@ -57,7 +57,7 @@ async function main() {
         }
         if (url.pathname === "/v1.0/me") return json({ id: "me", mail: "self@example.test" });
         if (url.pathname === "/v1.0/me/calendars/calendar") return json({ id: "calendar", canEdit: true, owner: { address: "self@example.test" } });
-        if (url.pathname.includes("calendarList")) return json({ accessRole: "owner" });
+        if (url.pathname.includes("calendarList")) return json({ id: decodeURIComponent(url.pathname.split("/calendarList/")[1]!), accessRole: "owner" });
         if (url.pathname.endsWith("/events/native")) return json(beforeEvent);
         if (url.pathname.endsWith("/events")) return json({ value: [...events.values()] });
         const stored = events.get(url.pathname); if (stored) return json(stored);
@@ -91,7 +91,12 @@ async function main() {
   globalThis.fetch = (input, init) => {
     const url = new URL(String(input));
     assert.ok([origin, "https://www.googleapis.com", "https://tasks.googleapis.com", "https://graph.microsoft.com"].includes(url.origin), "no live provider or token endpoint");
-    return originalFetch(url.origin === origin ? input : `${origin}${url.pathname}${url.search}`, init);
+    return originalFetch(url.origin === origin ? input : `${origin}${url.pathname}${url.search}`, init).then(response => {
+      // Preserve the logical provider address when this owned transport routes
+      // it to loopback; actual redirected/status checks remain unchanged.
+      Object.defineProperty(response, "url", { value: url.href });
+      return response;
+    });
   };
   const mutations = () => requests.filter(value => ["POST", "PATCH", "PUT", "DELETE"].includes(value.method));
   const lastMutation = () => { const values = mutations(); return values[values.length - 1]!; };

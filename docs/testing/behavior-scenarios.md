@@ -7,6 +7,7 @@ fixtures supply its dependencies at the existing boundaries.
 ```sh
 pnpm test:behavior --list
 pnpm test:behavior --suite google-delete --scenario already-absent --json
+pnpm test:behavior --suite google-create --scenario fresh-create --json
 pnpm test:behavior --suite task-inspector --scenario conflict-keeps-draft
 pnpm test:behavior --json
 # Last: real routing, components, HTTP client, query cache and browser layout.
@@ -25,6 +26,7 @@ not committed. The root runner can also be called as
 | Suite | Production code exercised | Replaced boundary | Services needed |
 | --- | --- | --- | --- |
 | `google-delete` | Claimed delivery runtime, Google provider preflight/conditional DELETE/recovery | Host persistence/lease/credential ports, HTTP responses and clock | None |
+| `google-create` | Admitted codec identity/body, CREATE delivery runtime and provider preflight/write/recovery | Host persistence/lease/credential ports, ordered HTTP responses and clock | None |
 | `task-inspector` | React inspector/editor, capability checks, task serializer and HTTP client | Seeded context and HTTP receipts | None; Vitest/jsdom |
 | Browser confirmation | Running web app, router, task queries/cache and inspector/editor; same JSON commands and receipts | Auth/API responses at the browser HTTP boundary | Web dev server and Chromium |
 
@@ -32,6 +34,12 @@ The sync suite covers a conditional write, exact absence without mutation,
 version conflict before mutation, lost response followed by read-only observation,
 and `Retry-After` without immediate replay. Its bounded summary asserts every
 request method and validator, completion evidence and dispatch uncertainty.
+
+The CREATE suite covers frozen planned IDs and bodies, nullable ETag handling,
+matching GET-only adoption, exact 404 same-ID retry, 410/cancelled/marker/content
+conflicts, 409 rejection, 429 delay and lost-reply observation. All POST bytes
+must equal the admitted native plan. These tests do not establish host SQL
+adoption, source authorization or live Google semantics.
 
 The UI suite covers editing a title while retaining richer data and revision
 fences, preserving a draft after a rejected write, read-only capability controls,
@@ -48,6 +56,11 @@ unexpected console and page errors still fail.
   Driver/validator: `google-delete.ts` in the same directory. Each case declares
   ordered HTTP exchanges and a complete expected observable summary. A transport
   mismatch remains a test failure even if production recovery catches the error.
+- CREATE data: `packages/sync-runtime/src/behavior/google-create.json`.
+  Its adjacent driver builds admission through the real codec, then invokes the
+  same already-claimed runtime used by Musubi and the reference host. Use
+  `pnpm --filter @musubi/sync-runtime test:scenarios:create --json` for its native
+  bounded wire/outcome summary.
 - UI data: `apps/web/src/tests/behavior/task-inspector.json`.
   Contract/receipts: adjacent `task-inspector.ts`; headless driver:
   `task-inspector.scenarios.test.tsx`; browser adapter: `apps/web/e2e/behavior.spec.ts`.
@@ -63,7 +76,7 @@ with their own assumptions. Do not import the API bootstrap or add test routes,
 backdoors, production flags, dynamic code evaluation or real-network fallback.
 Use synthetic data, never saved tokens or private provider payloads.
 
-Both headless suites and their harness regression tests run in the existing unit
+All headless suites and their harness regression tests run in the existing unit
 checks. Browser cases are discovered by the existing Playwright CI shards. No
 required check is removed or renamed, and no dependency is added.
 

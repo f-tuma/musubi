@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 import { ReferenceStore } from "./store.js";
-import { ReferenceHoldError, type ReferenceAdmission, type ReferenceDeleteAdmission, type ReferenceSeed } from "./model.js";
+import { ReferenceHoldError, type ReferenceAdmission, type ReferenceDeleteAdmission, type ReferenceSeed, type ReferenceCreateAdmission, type ReferenceCreateSeed } from "./model.js";
 import { deliverReferenceOperation, type ReferenceRunnerPorts } from "./runner.js";
 
 /** The reference executable reads only its own configuration; never Musubi env/auth. */
@@ -27,7 +27,7 @@ function ownObject(value: unknown): Record<string, unknown> {
 }
 async function main() {
   const command = process.argv[2];
-  if (!["migrate", "seed", "admit", "admit-delete", "deliver", "show"].includes(command)) throw new Error("Invalid reference command.");
+  if (!["migrate", "seed", "seed-create", "admit", "admit-delete", "admit-create", "deliver", "show"].includes(command)) throw new Error("Invalid reference command.");
   const databaseUrl = process.env.REFERENCE_DATABASE_URL;
   const credentialKey = process.env.REFERENCE_CREDENTIAL_KEY;
   if (!databaseUrl || !credentialKey) throw new Error("Missing reference configuration.");
@@ -46,7 +46,11 @@ async function main() {
       if (command === "seed") {
         await store.seedBinding(value as unknown as ReferenceSeed);
         result = { status: "seeded", bindingId: value.bindingId };
-      } else if (command === "admit") result = await store.admitUpdate(value as unknown as ReferenceAdmission);
+      } else if (command === "seed-create") {
+        await store.seedCreateBinding(value as unknown as ReferenceCreateSeed);
+        result = { status: "reserved", bindingId: value.bindingId };
+      } else if (command === "admit-create") result = await store.admitCreate(value as unknown as ReferenceCreateAdmission);
+      else if (command === "admit") result = await store.admitUpdate(value as unknown as ReferenceAdmission);
       else if (command === "admit-delete") result = await store.admitDelete(value as unknown as ReferenceDeleteAdmission);
       else {
         if (typeof value.operationId !== "string" || !value.operationId || value.operationId.length > 2048)

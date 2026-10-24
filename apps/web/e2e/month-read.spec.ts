@@ -4347,18 +4347,19 @@ test("blocks the phone web app with a full-screen app download", async ({
 	await expect(blocker).toBeVisible();
 });
 
+// Each route has its own bounded test budget. A sequence of five full Vite
+// navigations exhausted the shared 30s budget before the final axe audit in CI.
 for (const width of [320, 390]) {
   for (const theme of ["light", "dark"]) {
-    test(`keeps narrow toolbar date and actions legible at ${width}px ${theme}`, async ({ page }) => {
-      await page.setViewportSize({ width, height: 844 });
-      await setTestTheme(page, theme);
-      await mockAuthenticatedReads(page);
-
-      for (const [view, date] of [
-        ["month", "2026-09-23"], ["week", "2026-09-23"],
-        ["day", "2026-09-23"], ["agenda", "2026-09-23"],
-        ["week", "2026-12-30"],
-      ] as const) {
+    for (const [view, date] of [
+      ["month", "2026-09-23"], ["week", "2026-09-23"],
+      ["day", "2026-09-23"], ["agenda", "2026-09-23"],
+      ["week", "2026-12-30"],
+    ] as const) {
+      test(`keeps narrow toolbar date and actions legible at ${width}px ${theme} ${view} ${date}`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 844 });
+        await setTestTheme(page, theme);
+        await mockAuthenticatedReads(page);
         await page.goto(`/app/p/${DEFAULT_PAGE_ID}/${view}?date=${date}`);
         const today = page.getByRole("button", { name: "Today", exact: true });
         const dateControls = today.locator("..");
@@ -4378,15 +4379,15 @@ for (const width of [320, 390]) {
         expect(dateBox.y + dateBox.height).toBeLessThanOrEqual(pickerBox.y);
         expect(pickerBox.y + pickerBox.height / 2).toBe(searchBox.y + searchBox.height / 2);
         expect(pickerBox.x).toBeLessThan(searchBox.x);
-      }
 
-      await page.getByRole("button", { name: "Search events and actions" }).click();
-      const searchDialog = page.getByRole("dialog", { name: "Search Musubi" });
-      await expect(searchDialog.getByRole("searchbox")).toBeFocused();
-      await searchDialog.press("Escape");
-      await expect(page.getByRole("button", { name: "Search events and actions" })).toBeFocused();
-      await expectNoAccessibilityViolations(page);
-    });
+        await search.click();
+        const searchDialog = page.getByRole("dialog", { name: "Search Musubi" });
+        await expect(searchDialog.getByRole("searchbox")).toBeFocused();
+        await searchDialog.press("Escape");
+        await expect(search).toBeFocused();
+        await expectNoAccessibilityViolations(page);
+      });
+    }
   }
 }
 
