@@ -2,15 +2,16 @@
   "name": "@musubi/sync-reference",
   "private": true,
   "type": "module",
-  "description": "Independent durable host for bounded Google personal CREATE, UPDATE and DELETE profiles.",
+  "description": "Independent durable host for bounded Google personal operations and Microsoft guarded DELETE.",
   "scripts": {
     "start": "tsx src/cli.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx src/admission.test.ts && tsx src/runner.test.ts && tsx src/delete.test.ts && tsx src/create.test.ts",
-    "test:db": "tsx src/store.integration.test.ts && tsx src/process.integration.test.ts && tsx src/delete.integration.test.ts && tsx src/delete-process.integration.test.ts && tsx src/create.integration.test.ts && tsx src/create-process.integration.test.ts"
+    "test": "tsx src/admission.test.ts && tsx src/runner.test.ts && tsx src/delete.test.ts && tsx src/create.test.ts && tsx src/graph-delete.test.ts",
+    "test:db": "tsx src/store.integration.test.ts && tsx src/process.integration.test.ts && tsx src/delete.integration.test.ts && tsx src/delete-process.integration.test.ts && tsx src/create.integration.test.ts && tsx src/create-process.integration.test.ts && tsx src/graph-delete.integration.test.ts && tsx src/graph-delete-process.integration.test.ts"
   },
   "dependencies": {
     "@musubi/provider-google": "workspace:*",
+    "@musubi/provider-microsoft": "workspace:*",
     "@musubi/sync-codec": "workspace:*",
     "@musubi/sync-runtime": "workspace:*",
     "@musubi/types": "workspace:*",

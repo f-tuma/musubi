@@ -1,4 +1,5 @@
 import type { GoogleNativeReadEvidence, GoogleNativeDeleteReadEvidence, GoogleNativeCreateReadEvidence, GoogleProviderPorts, GoogleDeleteProviderPorts, GoogleCreateProviderPorts } from "@musubi/provider-google";
+import type { MicrosoftDeleteProviderPorts, MicrosoftNativeDeleteReadEvidence } from "@musubi/provider-microsoft";
 import type { CaldavPersonalContentOperation } from "./caldav_personal_content";
 import type { NativeWritePlanV1 } from "@musubi/sync-codec";
 import type { CaldavAlarmContext, CaldavAlarmIntent } from "@musubi/db";
@@ -192,7 +193,14 @@ export type GooglePersonalCreateV1Bridge = {
   normalizeObservation(read: GoogleNativeCreateReadEvidence): CreatedEventEvidence | null;
 };
 
+export type MicrosoftPersonalDeleteV1Bridge = {
+  ports: Omit<MicrosoftDeleteProviderPorts, "beforeMutation">;
+  normalizeObservation(read: MicrosoftNativeDeleteReadEvidence): CreatedEventEvidence | null;
+};
+
 export type CalendarAdapter = {
+  microsoftPersonalDeleteV1?(userID: string, accountID: string,
+    capture: Pick<AcceptedEventUpdateContext, "connectionId" | "connectionGeneration">): MicrosoftPersonalDeleteV1Bridge;
   googlePersonalCreateV1?(userID: string, accountID: string,
     capture: Pick<AcceptedEventUpdateContext, "connectionId" | "connectionGeneration">): GooglePersonalCreateV1Bridge;
   googlePersonalDeleteV1?(userID: string, accountID: string,

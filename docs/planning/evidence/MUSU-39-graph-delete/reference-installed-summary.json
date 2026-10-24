@@ -1,0 +1,301 @@
+{
+  "schemaVersion": 1,
+  "scope": "local installed reference upgrade/crash QA only; no publication, production deployment or live provider acceptance",
+  "status": "passed",
+  "artifactAttestation": {
+    "oldDockerIndexId": "sha256:f019aa6b428f518c7b98c64747b3798161ea5aa161c08c1f8978aff33fd2eb28",
+    "newDockerIndexId": "sha256:528b899fe815b37bbc065090a156dcf936222074a20c0f34e6af02746c00d7d4",
+    "newPlatformManifestDigest": "sha256:d0bb1cb743b02c1f410368a1fa0a1fa3ba68527507c6b0c51b18b7639ac1d46a",
+    "newImageConfigDigest": "sha256:9eab31ad4b7383937f0b19ea06a7d33b82b2ffc43ba5ff6c8487fcc5045ffa5e",
+    "newManifestListDigest": "sha256:528b899fe815b37bbc065090a156dcf936222074a20c0f34e6af02746c00d7d4",
+    "allSourceCount": 105,
+    "runtimeSourceCount": 63,
+    "allSourceManifestSha256": "c31993f39b193fcf144f5bff409a5541cec2580c88c9731556da55c7fcaa15e9",
+    "runtimeSourceManifestSha256": "330c4f9126eca7cfb4eb2576a1351b78c9571837862bbd3d6057985952905c58",
+    "installedSourcesMatchFrozen": true,
+    "currentSourcesMatchFrozen": true,
+    "namedInstalledPackageCount": 25,
+    "forbiddenDependencies": [],
+    "published": false,
+    "productionDeployed": false,
+    "sourceMounted": false,
+    "liveProvidersUsed": false,
+    "allSourceManifestFileSha256": "664ad20673c664599289ac52ba392dea2a7f09b8736dcfaf1859af63731e76e9",
+    "runtimeSourceManifestFileSha256": "13e7220cd15b5b7d78492217fb8087c75ec9af1640cd8ed1f5fbc2d037cf2a25"
+  },
+  "packageInventory": [
+    {
+      "name": "@esbuild/linux-x64",
+      "version": "0.28.2"
+    },
+    {
+      "name": "@musubi/provider-google",
+      "version": null
+    },
+    {
+      "name": "@musubi/provider-microsoft",
+      "version": null
+    },
+    {
+      "name": "@musubi/sync-codec",
+      "version": null
+    },
+    {
+      "name": "@musubi/sync-reference",
+      "version": null
+    },
+    {
+      "name": "@musubi/sync-runtime",
+      "version": null
+    },
+    {
+      "name": "@musubi/types",
+      "version": null
+    },
+    {
+      "name": "esbuild",
+      "version": "0.28.2"
+    },
+    {
+      "name": "ical.js",
+      "version": "2.2.1"
+    },
+    {
+      "name": "pg",
+      "version": "8.23.0"
+    },
+    {
+      "name": "pg-cloudflare",
+      "version": "1.4.0"
+    },
+    {
+      "name": "pg-connection-string",
+      "version": "2.14.0"
+    },
+    {
+      "name": "pg-int8",
+      "version": "1.0.1"
+    },
+    {
+      "name": "pg-pool",
+      "version": "3.14.0"
+    },
+    {
+      "name": "pg-protocol",
+      "version": "1.16.0"
+    },
+    {
+      "name": "pg-types",
+      "version": "2.2.0"
+    },
+    {
+      "name": "pgpass",
+      "version": "1.0.5"
+    },
+    {
+      "name": "postgres-array",
+      "version": "2.0.0"
+    },
+    {
+      "name": "postgres-bytea",
+      "version": "1.0.1"
+    },
+    {
+      "name": "postgres-date",
+      "version": "1.0.7"
+    },
+    {
+      "name": "postgres-interval",
+      "version": "1.2.0"
+    },
+    {
+      "name": "split2",
+      "version": "4.2.0"
+    },
+    {
+      "name": "tsx",
+      "version": "4.23.12"
+    },
+    {
+      "name": "xtend",
+      "version": "4.0.2"
+    },
+    {
+      "name": "zod",
+      "version": "4.4.3"
+    }
+  ],
+  "cases": [
+    {
+      "case": "old-installed-pending-Google-CREATE-UPDATE-DELETE-additive-upgrade",
+      "status": "passed",
+      "preservedTableAndIndexCount": 15,
+      "preservedRowCounts": {
+        "reference_connections": 3,
+        "reference_objects": 3,
+        "reference_bindings": 3,
+        "reference_operations": 3,
+        "reference_attempts": 3
+      },
+      "preservedInterruptedAttemptCount": 3,
+      "deliveredActions": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "allRowsPayloadsEpochsAttemptsAndReceiptsPreserved": true
+    },
+    {
+      "case": "installed-SIGKILL-after-durable-beforeDispatch",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "deleteCount": 0,
+      "restartPresentMethods": [
+        "GET"
+      ],
+      "restartAbsentMethods": [
+        "GET"
+      ],
+      "final": {
+        "provider": {
+          "kind": "uncertain"
+        },
+        "deleteAcceptanceStatus": null,
+        "remote": "confirmed",
+        "dispatchPossible": true,
+        "destinationLifecycle": "absent",
+        "retainedNativeWeakEtag": true
+      }
+    },
+    {
+      "case": "installed-accepted-DELETE-SIGKILL-during-verification",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "deleteCount": 1,
+      "restartMethods": [
+        "GET"
+      ],
+      "final": {
+        "provider": {
+          "kind": "accepted"
+        },
+        "deleteAcceptanceStatus": 204,
+        "remote": "confirmed",
+        "dispatchPossible": true,
+        "destinationLifecycle": "absent",
+        "retainedNativeWeakEtag": true
+      }
+    },
+    {
+      "case": "installed-lost-DELETE-SIGKILL-during-verification",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "deleteCount": 1,
+      "restartMethods": [
+        "GET"
+      ],
+      "final": {
+        "provider": {
+          "kind": "uncertain"
+        },
+        "deleteAcceptanceStatus": null,
+        "remote": "confirmed",
+        "dispatchPossible": true,
+        "destinationLifecycle": "absent",
+        "retainedNativeWeakEtag": true
+      }
+    },
+    {
+      "case": "installed-reference-known429-retains-one-shot-marker",
+      "status": "passed",
+      "deleteCount": 1,
+      "retryDelayEnforced": true,
+      "presentRestartMethods": [
+        "GET"
+      ],
+      "policy": "Reference has no explicit resolution/supersession; known rejection remains observe-only. Separate Musubi known-not-written retry policy is not inferred from this proof.",
+      "final": {
+        "provider": {
+          "kind": "rejected",
+          "error": {
+            "code": "rate-limited",
+            "retry": "after-delay",
+            "retryAfterMs": 9000
+          }
+        },
+        "deleteAcceptanceStatus": null,
+        "remote": "confirmed",
+        "dispatchPossible": true,
+        "destinationLifecycle": "absent",
+        "retainedNativeWeakEtag": true
+      }
+    }
+  ],
+  "nativeFixtureRequestCount": 40,
+  "cleanup": {
+    "nonceDatabaseAbsent": true,
+    "remainingOwnedContainers": [],
+    "checkedAt": "2026-10-24T11:32:12.791Z"
+  },
+  "artifacts": [
+    {
+      "path": "/tmp/musu39-graph-reference-evidence/installed-reference-proof.json",
+      "sha256": "bd5b6c8c16be1117df4960d84d3421fabd2b1a7d90b59dacdc19deeedf21f055",
+      "bytes": 26184
+    },
+    {
+      "path": "/tmp/musu39-graph-reference-evidence/artifact-attestation.json",
+      "sha256": "a314a44e415318db54a9f6b69b8541418a6b25e460ed384e8ea1239e17872c27",
+      "bytes": 1215
+    },
+    {
+      "path": "/tmp/musu39-graph-reference-evidence/installed-source-manifest.json",
+      "sha256": "408925920f5bf5d48fd19a8269721f3ab5016d8397acac62efbc5daa03040b63",
+      "bytes": 11542
+    },
+    {
+      "path": "/tmp/musu39-graph-reference-evidence/installed-runtime-source-manifest.json",
+      "sha256": "330c4f9126eca7cfb4eb2576a1351b78c9571837862bbd3d6057985952905c58",
+      "bytes": 6695
+    },
+    {
+      "path": "/tmp/musu39-graph-reference-evidence/installed-package-map.json",
+      "sha256": "10291a642240831b7e75b6c2bb54ef1a316ac43c39774c9c3f8cffcf33ca6dfc",
+      "bytes": 1496
+    },
+    {
+      "path": "/tmp/musu39-graph-reference-evidence/old-ledger-before-upgrade.json",
+      "sha256": "9d835a022d5a57a753bb837b1659da8b95fb8f5f1ee5f0ba98081793f45f6f9b",
+      "bytes": 4417
+    },
+    {
+      "path": "/tmp/musu39-graph-reference-evidence/new-ledger-after-upgrade.json",
+      "sha256": "9d835a022d5a57a753bb837b1659da8b95fb8f5f1ee5f0ba98081793f45f6f9b",
+      "bytes": 4417
+    },
+    {
+      "path": "/tmp/musu39-graph-reference-evidence/http-requests.json",
+      "sha256": "b13592e03e5185bd8ad14d2e9c29f7e4e6eb82a89420a4f99744bb26bf014fcf",
+      "bytes": 7282
+    },
+    {
+      "path": "/tmp/musu39-graph-reference-evidence/cleanup-verified.json",
+      "sha256": "a0d04780a16ac60fca48e85d2b73701ca8d72fbd31dcdbcf9eb9322aa933580a",
+      "bytes": 186
+    },
+    {
+      "path": "/tmp/musu39-graph-reference-evidence/build.log",
+      "sha256": "2686c9273bdeac3e13d1948f72549b1b451e4cd626c8da6e282241613641e5fa",
+      "bytes": 3311
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { SyncOperationEnvelopeSchema, SyncDeliveryReceiptSchema, type SyncOperationEnvelope, type SyncDeliveryReceipt } from "@musubi/types";
 import { parseNativeWritePlanV1, matchesPinnedProjectionV1 } from "@musubi/sync-codec";
-import type { ReferenceAdmission, ReferenceCapture, ReferenceContent, ReferenceContentPatch, ReferenceDeleteAdmission, ReferenceCreateAdmission } from "./model.js";
+import type { ReferenceAdmission, ReferenceCapture, ReferenceContent, ReferenceContentPatch, ReferenceDeleteAdmission, ReferenceCreateAdmission, ReferenceGraphDeleteAdmission } from "./model.js";
 
 function ownRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype &&
@@ -64,6 +64,9 @@ export function jsonEqual(a: unknown, b: unknown): boolean {
   return ownRecord(a) && ownRecord(b) && Object.keys(a).length === Object.keys(b).length && Object.entries(a).every(([key, value]) => Object.hasOwn(b, key) && jsonEqual(value, b[key]));
 }
 export function strongEtag(value: unknown): value is string { return typeof value === "string" && /^"[\x21\x23-\x7e\x80-\xff]*"$/.test(value); }
+/** Graph's original weak validator is a preflight comparison, never strong CAS. */
+export function graphDeleteEtag(value: unknown): value is string { return typeof value === "string" && /^W\/"[\x21\x23-\x7e\x80-\xff]+"$/.test(value); }
+export const REFERENCE_GRAPH_DELETE_PROFILE = "microsoft-personal-event-delete-v1";
 
 /** Action-prefixed fingerprint cannot alias an UPDATE command. */
 export function deleteAdmissionFingerprint(input: ReferenceDeleteAdmission): string {
@@ -116,5 +119,24 @@ export function acceptedCreateEnvelope(input: ReferenceCreateAdmission, content:
     admittedProjection: { data: saved }, nativePlan: { kind: "codec-data", data: { planKind: "json-body", body } } });
   if (!parseNativeWritePlanV1(envelope.serializer, "create", "event", envelope.nativePlan.data) ||
     !matchesPinnedProjectionV1(envelope.serializer, "create", saved, envelope.nativePlan.data)) throw new Error("Reference CREATE admission codec disagreement");
+  return envelope;
+}
+export function graphDeleteAdmissionFingerprint(input: ReferenceGraphDeleteAdmission): string {
+  // Prefix distinguishes this admitted guarded profile from conditional Google DELETE.
+  deleteAdmissionFingerprint(input);
+  return createHash("sha256").update(JSON.stringify([REFERENCE_GRAPH_DELETE_PROFILE, input.bindingId, input.expectedRevision, input.operationId])).digest("hex");
+}
+export function acceptedGraphDeleteEnvelope(input: ReferenceGraphDeleteAdmission, content: ReferenceContent, host: {
+  objectId: string; connectionId: string; calendarId: string; eventId: string; capture: ReferenceCapture;
+}): SyncOperationEnvelope {
+  const envelope = SyncOperationEnvelopeSchema.parse({ schemaVersion: 1, profileVersion: "sync-profile-v1",
+    operation: { kind: "event", action: "delete", version: 1 }, serializer: { id: "microsoft-personal-event", version: 1 },
+    commandId: input.commandId, operationId: input.operationId, hostObjectId: host.objectId,
+    locator: { provider: "microsoft", connectionId: host.connectionId, collectionId: host.calendarId, resourceId: host.eventId },
+    sourceEpoch: { sourceId: input.bindingId, generation: host.capture.sourceGeneration }, acceptedRevision: host.capture.acceptedRevision,
+    privacyEpoch: String(host.capture.privacyGeneration), allowedSideEffects: ["provider-content-write"],
+    admittedProjection: { data: projection(content) }, nativePlan: { kind: "codec-data", data: { planKind: "json-body", body: null } } });
+  if (!parseNativeWritePlanV1(envelope.serializer, "delete", "event", envelope.nativePlan.data) ||
+    !matchesPinnedProjectionV1(envelope.serializer, "delete", envelope.admittedProjection.data, envelope.nativePlan.data)) throw new Error("Reference Graph DELETE admission codec disagreement");
   return envelope;
 }

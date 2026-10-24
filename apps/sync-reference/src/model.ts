@@ -16,10 +16,14 @@ export interface ReferenceClaim {
   readonly receipt: SyncDeliveryReceipt;
   readonly recovery: boolean;
   readonly deleteAcceptanceStatus?: ReferenceDeleteAcceptanceStatus | null;
+  /** Absent only on older Google-only injected fixtures. Graph requires its exact profile. */
+  readonly endpointProfile?: string;
+  readonly attemptNumber?: number;
 }
 export type ReferenceStatus = "pending" | "running" | "hold" | "conflict" | "acked";
 export interface ReferenceOperation {
   operationId: string; commandId: string; bindingId: string; objectId: string;
+  provider: "google" | "microsoft"; endpointProfile: string;
   action: "create" | "update" | "delete"; payload: unknown; capture: ReferenceCapture; status: ReferenceStatus;
   canonical: { lifecycle: "active" | "tombstoned"; generation: number; revision: number };
   deleteAcceptanceStatus: ReferenceDeleteAcceptanceStatus | null;
@@ -38,6 +42,12 @@ export interface ReferenceAdmission {
 export interface ReferenceDeleteAdmission {
   bindingId: string; expectedRevision: number; commandId: string; operationId: string;
 }
+export interface ReferenceGraphDeleteSeed extends ReferenceSeed {
+  provider: "microsoft";
+  endpointProfile: "microsoft-personal-event-delete-v1";
+}
+export type ReferenceGraphDeleteAdmission = ReferenceDeleteAdmission;
+export interface ReferenceGraphDeleteObservation { kind: "exact-absence"; read: { kind: "absent"; status: 404 } }
 export type ReferenceCreateAdmission = ReferenceDeleteAdmission;
 /** Bootstrap a new destination reservation; never pretend it has a native validator. */
 export interface ReferenceCreateSeed extends Omit<ReferenceSeed, "eventId" | "etag"> { operationId: string }

@@ -2,14 +2,14 @@
 import { Pool } from "pg";
 import { ReferenceStore } from "./store.js";
 import { deliverReferenceOperation, type ReferenceCheckpoint } from "./runner.js";
-import type { ReferenceAdmission, ReferenceDeleteAdmission, ReferenceCreateAdmission } from "./model.js";
+import type { ReferenceAdmission, ReferenceDeleteAdmission, ReferenceCreateAdmission, ReferenceGraphDeleteAdmission } from "./model.js";
 
 async function main() {
   if (process.env.REFERENCE_TEST_CHILD !== "true" || !process.send || !process.env.REFERENCE_DATABASE_URL || !process.env.REFERENCE_CREDENTIAL_KEY)
     throw new Error("Owned child fixture configuration required.");
   const databaseUrl = process.env.REFERENCE_DATABASE_URL, key = process.env.REFERENCE_CREDENTIAL_KEY;
   let data = ""; for await (const chunk of process.stdin) data += chunk;
-  const input = JSON.parse(data) as { action: "admit" | "admit-delete" | "admit-create" | "deliver" | "show"; operationId: string; admission?: ReferenceAdmission | ReferenceDeleteAdmission | ReferenceCreateAdmission; pause?: string; fixtureOrigin: string };
+  const input = JSON.parse(data) as { action: "admit" | "admit-delete" | "admit-create" | "admit-graph-delete" | "deliver" | "show"; operationId: string; admission?: ReferenceAdmission | ReferenceDeleteAdmission | ReferenceCreateAdmission | ReferenceGraphDeleteAdmission; pause?: string; fixtureOrigin: string };
   const fixture = new URL(input.fixtureOrigin);
   if (fixture.protocol !== "http:" || fixture.hostname !== "127.0.0.1" || fixture.pathname !== "/" || fixture.search || fixture.hash || fixture.username || fixture.password)
     throw new Error("Owned loopback HTTP fixture required.");
@@ -43,15 +43,15 @@ async function main() {
   try {
     const store = new ReferenceStore(pool, key);
     let result: unknown;
-    if (input.action === "admit" || input.action === "admit-delete" || input.action === "admit-create") {
+    if (input.action === "admit" || input.action === "admit-delete" || input.action === "admit-create" || input.action === "admit-graph-delete") {
       result = input.action === "admit" ? await store.admitUpdate(input.admission! as ReferenceAdmission) : input.action === "admit-create"
-        ? await store.admitCreate(input.admission!) : await store.admitDelete(input.admission!);
+        ? await store.admitCreate(input.admission!) : input.action === "admit-graph-delete" ? await store.admitGraphDelete(input.admission!) : await store.admitDelete(input.admission!);
       await checkpoint("afterAdmission");
     } else if (input.action === "show") result = await store.inspectOperation(input.operationId);
     else result = await deliverReferenceOperation(store, input.operationId, {
       http: { fetch: async (url, init) => {
         const native = new URL(url);
-        if (native.origin !== "https://www.googleapis.com") throw new Error("Live network forbidden in owned fixture.");
+        if (!["https://www.googleapis.com", "https://graph.microsoft.com"].includes(native.origin)) throw new Error("Live network forbidden in owned fixture.");
         const response = await globalThis.fetch(`${fixture.origin}${native.pathname}${native.search}`, init);
         // Owned loopback transport stands in for the requested native URL; retain
         // that logical response identity while provider redirect guards stay active.

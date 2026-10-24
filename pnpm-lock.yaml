@@ -80,6 +80,9 @@ importers:
       '@musubi/provider-google':
         specifier: workspace:*
         version: link:../../packages/provider-google
+      '@musubi/provider-microsoft':
+        specifier: workspace:*
+        version: link:../../packages/provider-microsoft
       '@musubi/sync-codec':
         specifier: workspace:*
         version: link:../../packages/sync-codec
@@ -394,6 +397,9 @@ importers:
       '@musubi/provider-google':
         specifier: workspace:*
         version: link:../../packages/provider-google
+      '@musubi/provider-microsoft':
+        specifier: workspace:*
+        version: link:../../packages/provider-microsoft
       '@musubi/sync-codec':
         specifier: workspace:*
         version: link:../../packages/sync-codec
@@ -705,11 +711,24 @@ importers:
         specifier: ^4.23.12
         version: 4.23.12
 
+  packages/provider-microsoft:
+    dependencies:
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      tsx:
+        specifier: ^4.23.12
+        version: 4.23.12
+
   packages/sync-runtime:
     dependencies:
       '@musubi/provider-google':
         specifier: workspace:*
         version: link:../provider-google
+      '@musubi/provider-microsoft':
+        specifier: workspace:*
+        version: link:../provider-microsoft
       '@musubi/sync-codec':
         specifier: workspace:*
         version: link:../sync-codec

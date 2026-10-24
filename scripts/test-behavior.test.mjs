@@ -8,6 +8,7 @@ import { parseArguments, runBehavior, runCli } from "./test-behavior.mjs";
 const manifests = {
   "google-delete": "packages/sync-runtime/src/behavior/google-delete.json",
   "google-create": "packages/sync-runtime/src/behavior/google-create.json",
+  "microsoft-delete": "packages/sync-runtime/src/behavior/microsoft-delete.json",
   "task-inspector": "apps/web/src/tests/behavior/task-inspector.json",
 };
 const scenarios = [{ id: "first", title: "First behavior" }, { id: "second", title: "Second behavior" }];
@@ -100,6 +101,19 @@ test("CREATE selection launches only its fixed CLI and refuses DELETE evidence o
   await assert.rejects(runBehavior(["--suite", "google-create", "--scenario", "missing"], {
     root, execute: async () => { throw new Error("Unknown id must not launch a process"); },
   }), /Unknown scenario/);
+});
+
+test("Graph selection uses its fixed CLI and rejects another provider's report", async t => {
+  const root = await fixture(t);
+  const args = ["--suite", "microsoft-delete", "--scenario", "second"];
+  const report = await runBehavior(args, { root, execute: async (command, childArgs) => {
+    assert.equal(command, process.execPath);
+    assert.deepEqual(childArgs, ["--import", "tsx", join(root, "packages/sync-runtime/src/behavior/microsoft-delete-cli.ts"), "--json", "--scenario", "second"]);
+    return runtime([scenarios[1]], { suite: "microsoft-delete" });
+  } });
+  assert.equal(report.passed, 1); assert.equal(report.errors, 0);
+  const wrong = await runBehavior(args, { root, execute: async () => runtime([scenarios[1]]) });
+  assert.equal(wrong.failed, 1); assert.equal(wrong.suites[0].results[0].status, "failed");
 });
 
 test("missing, duplicated, skipped, malformed or wrong-scope runtime evidence fails closed", async t => {
@@ -272,16 +286,17 @@ test("default runs every fixed suite and emits one clean aggregate JSON document
   const output = [];
   const code = await runCli(["--json"], line => output.push(line), { root, execute: async (_command, args) => {
     launches++;
-    if (args.includes("--import")) return runtime(scenarios, { suite: args.some(arg => arg.endsWith("/create-cli.ts")) ? "google-create" : "google-delete" });
+    if (args.includes("--import")) return runtime(scenarios, { suite: args.some(arg => arg.endsWith("/microsoft-delete-cli.ts")) ? "microsoft-delete" :
+      args.some(arg => arg.endsWith("/create-cli.ts")) ? "google-create" : "google-delete" });
     await writeFile(args.at(-1).slice("--outputFile=".length), JSON.stringify(uiReport()));
     return { code: 0, stdout: "NOISY CHILD STDOUT", stderr: "NOISY CHILD STDERR" };
   } });
   assert.equal(code, 0);
-  assert.equal(launches, 3);
+  assert.equal(launches, 4);
   assert.equal(output.length, 1);
   const report = JSON.parse(output[0]);
   assert.equal(report.schemaVersion, 1);
-  assert.equal(report.passed, 6);
+  assert.equal(report.passed, 8);
   assert.equal(report.failed, 0);
   assert.deepEqual(report.suites.map(item => item.suite), Object.keys(manifests));
   assert.ok(!output[0].includes("NOISY"));

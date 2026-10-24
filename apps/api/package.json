@@ -36,6 +36,7 @@
     "xml-js": "1.6.11",
     "@musubi/sync-codec": "workspace:*",
     "@musubi/provider-google": "workspace:*",
+    "@musubi/provider-microsoft": "workspace:*",
     "@musubi/sync-runtime": "workspace:*"
   },
   "devDependencies": {

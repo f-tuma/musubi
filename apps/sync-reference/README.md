@@ -1,13 +1,13 @@
 # Independent sync reference host
 
-C05–C07 / MUSU-37–39 runs bounded Google personal event CREATE, UPDATE and DELETE profiles with its own
+C05–C07 / MUSU-37–39 runs bounded Google personal event CREATE, UPDATE and DELETE profiles and a separate Microsoft guarded personal DELETE profile with its own
 PostgreSQL ledger. It uses the C04 native provider ports, the C06 shared `@musubi/sync-runtime`
 already-claimed runner and the published v1 schema/plan validator, with no dependency on Musubi DB, auth, app config or API.
 Its content model is `ReferenceContent`, not a Musubi Event or Task.
 
 This is an extraction fixture and CLI. It is not the future Calendar Relay
 service. It has no account onboarding, OAuth refresh, scheduler, public API,
-meeting/recurrence/task support. CREATE reserves a new personal, nonrecurring timed event using an immutable operation UUID and exact UTC time endpoints. DELETE targets an existing exact native address with a strong accepted validator. Only `name`, `notes` and
+meeting/recurrence/task support. Google CREATE reserves a new personal, nonrecurring timed event using an immutable operation UUID and exact UTC time endpoints. Google DELETE targets an existing exact native address with a strong accepted validator. Microsoft DELETE uses its original native weak ETag for a guarded preflight, with observe-only recovery and no CAS guarantee. Only `name`, `notes` and
 `place` can be changed on an existing personal nonrecurring timed event. The
 accepted time endpoints use canonical UTC instants and remain unchanged.
 
@@ -37,6 +37,8 @@ stdin return a safe error code.
 | `admit-create` | `{bindingId, expectedRevision, commandId, operationId}` | Atomically commit canonical CAS and one full immutable CREATE plan for that exact reservation |
 | `admit` | `{bindingId, expectedRevision, commandId, operationId, patch}` | Atomically commit canonical CAS and immutable accepted operation |
 | `admit-delete` | `{bindingId, expectedRevision, commandId, operationId}` | Atomically CAS the canonical object to tombstoned and capture one conditional DELETE |
+| `seed-graph-delete` | `ReferenceGraphDeleteSeed` | Bootstrap an existing Microsoft target with explicit provider/profile, original native weak ETag, scoped token and expiry |
+| `admit-graph-delete` | `{bindingId, expectedRevision, commandId, operationId}` | Atomically CAS the canonical object to tombstoned and capture one guarded Microsoft DELETE |
 | `deliver` | `{operationId}` | Claim and run one bounded attempt |
 | `show` | `{operationId}` | Inspect operation, capture, receipt and binding without credentials |
 
@@ -143,6 +145,50 @@ merely because an owned matching resource appears later; the host retains HOLD.
 After 429 and its Retry-After, an exact 404 can permit a fresh same-ID POST whose
 new acceptance may complete. These restrictions are reference host policy;
 Musubi's separately accepted success and recovery policy remains distinct.
+
+## Microsoft guarded DELETE
+
+The Microsoft slice accepts only an owned, writable calendar and a complete
+personal timed `singleInstance`: not cancelled/draft, no attendees, recurrence,
+parent or online meeting. `seed-graph-delete` takes the normal seed fields plus
+`provider: "microsoft"` and
+`endpointProfile: "microsoft-personal-event-delete-v1"`. Its `etag` is the exact
+native weak `W/"…"` value; a strong tag or `changeKey` is not a substitute.
+The current credential must grant the exact `Calendars.ReadWrite` scope token.
+Bootstrap is not fresh provider evidence; delivery verifies the current identity,
+calendar ownership/access and native personal shape before sending.
+
+The forward `schema-graph-delete.sql` migration adds immutable connection and
+operation providers and an immutable operation endpoint profile. Existing rows
+are explicitly stamped with their original Google provider/action profile
+without rewriting payloads, validators, epochs or receipts. An INSERT trigger
+preserves existing Google SQL and CLI defaults; Microsoft requires explicit
+metadata. Invalid explicit metadata cannot select a Google fallback. Existing
+Google CREATE/UPDATE/DELETE admissions remain Google-only.
+
+This profile is `guarded-preflight`, with an acknowledged GET-to-DELETE race.
+The native weak ETag is compared immediately before dispatch, and `If-Match`
+is retained only as best effort. It does not make DELETE conditional CAS.
+One already-owned claim uses the shared finite deadline/heartbeat and one native
+guard pass. A 204 or 404 DELETE response is recorded independently; ACK always
+requires a later exact scoped GET 404. HTTP 410 and a cancelled native object
+do not stand in for that absence proof. The confirmed binding becomes absent
+while retaining its historical weak ETag and baseline.
+
+Possible dispatch is persisted before DELETE. After that marker, every later
+claim only observes: even a still-present event at the identical native version
+does not authorize another DELETE. This includes a killed process before HTTP,
+lost replies, rejected 429 responses and unavailable readback. The store's
+locked `markDispatch` also refuses a second send for the operation. Verified
+absence can finish with prior accepted, uncertain or rejected evidence intact;
+it never fabricates provider acceptance or an ETag.
+
+Reference has no explicit resolution/supersession feature in this slice. A
+present target stays HOLD, its canonical object remains tombstoned, and the
+existing pending-binding barrier prevents a new intent. There is no force/retry
+flag, marker reset or admitted-validator rewrite. Musubi's separately admitted
+first-attempt resolution flow remains a host-owned policy and is not exposed
+by this reference CLI. Google conditional recovery remains unchanged.
 
 ## Verification
 

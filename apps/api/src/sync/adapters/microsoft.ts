@@ -1,4 +1,5 @@
 import { observeGraphSeriesContent, prepareGraphSeriesContent } from "./microsoft_series_content";
+import { MicrosoftProviderError } from "@musubi/provider-microsoft";
 import type { NativeWritePlanV1 } from "@musubi/sync-codec";
 import { pinnedJsonBodyV1 } from "../pinned_write";
 import { observeGraphOccurrenceContent, prepareGraphOccurrenceContent, updateGraphOccurrenceContent } from "./microsoft_occurrence_content";
@@ -14,9 +15,9 @@ import { createGraphSeries } from "./microsoft_series_delivery";
 import { readGraphSeriesFamily, readGraphSeriesFamilyOrMissing } from "./microsoft_series_family";
 import { microsoftEventState } from "./provider_event_state";
 import { config, logger } from "@musubi/config";
-import { getOAuthAccountIDs, hasOAuthTaskScope } from "@musubi/db";
+import { getOAuthAccountIDs, getOAuthCredentials, hasOAuthTaskScope, hasProviderSyncScopes } from "@musubi/db";
 import { assertTaskMutationResponse, assertTaskReadResponse, ProviderTaskWriteError } from "../task_write";
-import { observedProviderFetch, observedProviderRequest } from "../provider_http_metrics";
+import { observedProviderFetch, observedProviderRequest, recordProviderHttpRequest } from "../provider_http_metrics";
 import {
   DEFAULT_CALENDAR_COLOR,
   EventWriteError,
@@ -1206,6 +1207,32 @@ export async function fetchMicrosoftCalendars(
 }
 
 export const microsoftAdapter: CalendarAdapter = {
+  microsoftPersonalDeleteV1(userID, accountID, capture) {
+    const currentCredentials = async () => {
+      const credentials = await getOAuthCredentials(userID, "microsoft", accountID);
+      if (!credentials || credentials.id !== capture.connectionId || credentials.syncReadGeneration !== capture.connectionGeneration ||
+          credentials.syncStatus !== "active" || !credentials.refreshToken) throw new MicrosoftProviderError("account-session-changed");
+      return credentials;
+    };
+    return {
+      ports: {
+        accountSession: { async open(_connection, signal) {
+          signal?.throwIfAborted(); await currentCredentials();
+          const accessToken = await getAccessToken(userID, accountID, false, signal);
+          signal?.throwIfAborted(); const credentials = await currentCredentials();
+          return { connectionId: credentials.id, connectionGeneration: String(credentials.syncReadGeneration), accessToken,
+            eventWriteAllowed: credentials.scope == null ? undefined : hasProviderSyncScopes("microsoft", credentials.scope) };
+        } },
+        http: { fetch: (url, init) => globalThis.fetch(url, init) },
+        clock: { nowEpochMs: () => Date.now(), nowMonotonicMs: () => performance.now() },
+        telemetry: { record: metric => recordProviderHttpRequest(metric.method, metric.status, metric.durationMs) },
+      },
+      normalizeObservation(read) {
+        return read.kind === "present" ? { ref: { externalEventId: read.event.id, etag: read.etag },
+          event: assertCreatedEventEvidence(toNormalized(read.event)) } : null;
+      },
+    };
+  },
   microsoftOrganizer: microsoftOrganizerTransport(getAccessToken),
   async observeGraphSeriesContent(context, signal) { return observeGraphSeriesContent(await getAccessToken(context.address.actorID, context.link.accountID), context, signal); },
   async prepareGraphSeriesContent(context, request, signal) { return prepareGraphSeriesContent(await getAccessToken(context.address.actorID, context.link.accountID), context, request, signal); },
