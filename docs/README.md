@@ -18,6 +18,9 @@ working OAuth review tracker.
 
 Current entry points:
 
+- [Fast JSON behavior scenarios](./testing/behavior-scenarios.md), service-free
+  development checks followed by verification through the running web app.
+
 - [Sync profile v1](./protocol/sync-profile-v1.md), the internal host-independent
   identity, time, capability, coverage and delivery evidence contract.
 

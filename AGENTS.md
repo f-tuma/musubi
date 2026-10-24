@@ -10,6 +10,22 @@
   head commit. Do not bypass required checks or branch protection.
 - Keep implementation, publication, and production deployment evidence separate.
 
+## Behavior testing
+
+- During development, start with the smallest relevant JSON scenario using
+  `pnpm test:behavior --suite <suite> --scenario <id>`; `--list` shows the inventory
+  and `--json` produces a machine-readable report. See `docs/testing/behavior-scenarios.md`.
+- Exercise production functions/components and replace dependencies at their
+  existing ports. Add a scenario driver for a new boundary instead of copying
+  business logic into a simulated implementation.
+- After implementation and fast checks pass, confirm the changed flow through
+  the running application. `pnpm test:behavior:browser` replays the task-inspector
+  JSON scenarios against the web app. Its API fixtures do not prove real DB,
+  authentication or provider behavior; run the relevant integration/live checks
+  when those boundaries change.
+- Keep all required CI checks and applicable UI verification. Fast scenarios
+  shorten the edit loop; they do not replace final checks or deployment evidence.
+
 ## Web UI
 
 For any UI, styling, interaction, or accessibility work under `apps/web`, load

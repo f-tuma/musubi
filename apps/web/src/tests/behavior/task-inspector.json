@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "driver": "task-inspector",
+  "seed": {
+    "id": "behavior-task",
+    "creatorID": "behavior-user",
+    "calendarID": "personal",
+    "originCalendarID": "personal",
+    "calendarIDs": ["personal"],
+    "revision": 7,
+    "providerReadRetiredGeneration": 2,
+    "title": "Release checklist",
+    "description": "Keep these notes",
+    "status": "in-process",
+    "percentComplete": 50,
+    "priority": 1,
+    "recurrence": "FREQ=WEEKLY;COUNT=3",
+    "url": "https://example.invalid/checklist",
+    "capabilities": { "edit": true, "delete": true, "link": false, "fork": false, "unlinkCalendarIDs": [] }
+  },
+  "scenarios": [
+    {
+      "id": "edit-preserves-content",
+      "title": "Editing a title preserves notes, recurrence, progress and revision fences",
+      "steps": [
+        { "action": "click", "role": "button", "name": "Edit" },
+        { "action": "fill", "name": "Title", "value": "Ready to ship" },
+        { "action": "click", "role": "button", "name": "Save task" },
+        { "action": "expect", "role": "dialog", "name": "Ready to ship", "state": "visible" }
+      ],
+      "exchanges": [{
+        "method": "PATCH",
+        "body": { "expectedRevision": 7, "expectedProviderReadRetiredGeneration": 2, "patch": {
+          "title": "Ready to ship", "description": "Keep these notes", "recurrence": "FREQ=WEEKLY;COUNT=3",
+          "percentComplete": 50, "priority": 1, "status": "in-process", "url": "https://example.invalid/checklist"
+        } },
+        "response": { "kind": "saved", "title": "Ready to ship", "revision": 8 }
+      }]
+    },
+    {
+      "id": "conflict-keeps-draft",
+      "title": "A rejected save retains the user's draft for reconciliation",
+      "steps": [
+        { "action": "click", "role": "button", "name": "Edit" },
+        { "action": "fill", "name": "Title", "value": "My unsaved draft" },
+        { "action": "click", "role": "button", "name": "Save task" },
+        { "action": "expect", "role": "alert", "name": "", "state": "visible" },
+        { "action": "expect-value", "name": "Title", "value": "My unsaved draft" },
+        { "action": "expect", "role": "button", "name": "Save task", "state": "enabled" }
+      ],
+      "exchanges": [{
+        "method": "PATCH", "body": { "expectedRevision": 7, "patch": { "title": "My unsaved draft" } },
+        "response": { "kind": "rejected", "status": 409, "error": "This task changed. Refresh before saving again." }
+      }]
+    },
+    {
+      "id": "mirror-is-readonly",
+      "title": "A shared mirror cannot edit canonical content or completion",
+      "capabilities": { "edit": false, "delete": false, "link": false, "fork": false, "unlinkCalendarIDs": [] },
+      "steps": [
+        { "action": "expect", "role": "dialog", "name": "Release checklist", "state": "visible" },
+        { "action": "expect", "role": "button", "name": "Edit", "state": "absent" },
+        { "action": "expect", "role": "combobox", "name": "Task status", "state": "disabled" },
+        { "action": "expect", "role": "combobox", "name": "Task priority", "state": "disabled" }
+      ],
+      "exchanges": []
+    },
+    {
+      "id": "cancel-delete-keeps-task",
+      "title": "Canceling deletion sends no mutation and returns to the task",
+      "steps": [
+        { "action": "click", "role": "button", "name": "More task actions" },
+        { "action": "click", "role": "menuitem", "name": "Delete" },
+        { "action": "expect", "role": "dialog", "name": "Delete task", "state": "visible" },
+        { "action": "click", "role": "button", "name": "Cancel" },
+        { "action": "expect", "role": "dialog", "name": "Release checklist", "state": "visible" }
+      ],
+      "exchanges": []
+    }
+  ]
+}
