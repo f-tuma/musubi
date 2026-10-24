@@ -7,6 +7,7 @@ import { parseArguments, runBehavior, runCli } from "./test-behavior.mjs";
 
 const manifests = {
   "google-delete": "packages/sync-runtime/src/behavior/google-delete.json",
+  "google-create": "packages/sync-runtime/src/behavior/google-create.json",
   "task-inspector": "apps/web/src/tests/behavior/task-inspector.json",
 };
 const scenarios = [{ id: "first", title: "First behavior" }, { id: "second", title: "Second behavior" }];
@@ -80,6 +81,25 @@ test("runtime filtering uses a fixed executable and arguments, and strips arbitr
   assert.equal(report.failed, 0);
   assert.deepEqual(report.suites[0].results, [{ ...scenarios[1], status: "passed", durationMs: 1 }]);
   assert.ok(!JSON.stringify(report).includes("privateDebug"));
+});
+
+test("CREATE selection launches only its fixed CLI and refuses DELETE evidence or unknown ids", async t => {
+  const root = await fixture(t);
+  let launches = 0;
+  const args = ["--suite", "google-create", "--scenario", "second"];
+  const report = await runBehavior(args, { root, execute: async (command, childArgs, options) => {
+    launches++;
+    assert.equal(command, process.execPath);
+    assert.deepEqual(childArgs, ["--import", "tsx", join(root, "packages/sync-runtime/src/behavior/create-cli.ts"), "--json", "--scenario", "second"]);
+    assert.equal(options.cwd, root);
+    return runtime([scenarios[1]], { suite: "google-create" });
+  } });
+  assert.equal(launches, 1); assert.equal(report.passed, 1); assert.equal(report.suites[0].suite, "google-create");
+  const wrongSuite = await runBehavior(args, { root, execute: async () => runtime([scenarios[1]]) });
+  assert.equal(wrongSuite.failed, 1);
+  await assert.rejects(runBehavior(["--suite", "google-create", "--scenario", "missing"], {
+    root, execute: async () => { throw new Error("Unknown id must not launch a process"); },
+  }), /Unknown scenario/);
 });
 
 test("missing, duplicated, skipped, malformed or wrong-scope runtime evidence fails closed", async t => {
@@ -246,22 +266,22 @@ test("skipped, missing and false-green UI reports fail and still clean up", asyn
   }
 });
 
-test("default runs both suites and emits one clean aggregate JSON document", async t => {
+test("default runs every fixed suite and emits one clean aggregate JSON document", async t => {
   const root = await fixture(t);
   let launches = 0;
   const output = [];
   const code = await runCli(["--json"], line => output.push(line), { root, execute: async (_command, args) => {
     launches++;
-    if (args.includes("--import")) return runtime();
+    if (args.includes("--import")) return runtime(scenarios, { suite: args.some(arg => arg.endsWith("/create-cli.ts")) ? "google-create" : "google-delete" });
     await writeFile(args.at(-1).slice("--outputFile=".length), JSON.stringify(uiReport()));
     return { code: 0, stdout: "NOISY CHILD STDOUT", stderr: "NOISY CHILD STDERR" };
   } });
   assert.equal(code, 0);
-  assert.equal(launches, 2);
+  assert.equal(launches, 3);
   assert.equal(output.length, 1);
   const report = JSON.parse(output[0]);
   assert.equal(report.schemaVersion, 1);
-  assert.equal(report.passed, 4);
+  assert.equal(report.passed, 6);
   assert.equal(report.failed, 0);
   assert.deepEqual(report.suites.map(item => item.suite), Object.keys(manifests));
   assert.ok(!output[0].includes("NOISY"));

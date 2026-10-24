@@ -1,13 +1,13 @@
 # Independent sync reference host
 
-C05–C07 / MUSU-37–39 runs bounded Google personal event UPDATE and DELETE profiles with its own
+C05–C07 / MUSU-37–39 runs bounded Google personal event CREATE, UPDATE and DELETE profiles with its own
 PostgreSQL ledger. It uses the C04 native provider ports, the C06 shared `@musubi/sync-runtime`
 already-claimed runner and the published v1 schema/plan validator, with no dependency on Musubi DB, auth, app config or API.
 Its content model is `ReferenceContent`, not a Musubi Event or Task.
 
 This is an extraction fixture and CLI. It is not the future Calendar Relay
 service. It has no account onboarding, OAuth refresh, scheduler, public API,
-meeting/recurrence/task support or CREATE. DELETE targets an existing exact native address with a strong accepted validator. Only `name`, `notes` and
+meeting/recurrence/task support. CREATE reserves a new personal, nonrecurring timed event using an immutable operation UUID and exact UTC time endpoints. DELETE targets an existing exact native address with a strong accepted validator. Only `name`, `notes` and
 `place` can be changed on an existing personal nonrecurring timed event. The
 accepted time endpoints use canonical UTC instants and remain unchanged.
 
@@ -33,6 +33,8 @@ stdin return a safe error code.
 | --- | --- | --- |
 | `migrate` | none | Install the standalone schema |
 | `seed` | `ReferenceSeed` | Create a new connection/object/binding with an exact known native calendar/event ID, strong ETag, baseline, scoped token and expiry |
+| `seed-create` | `ReferenceCreateSeed` | Bootstrap a new connection/object and reserve the deterministic native ID for one lowercase UUID `operationId`; no native ETag or baseline is asserted |
+| `admit-create` | `{bindingId, expectedRevision, commandId, operationId}` | Atomically commit canonical CAS and one full immutable CREATE plan for that exact reservation |
 | `admit` | `{bindingId, expectedRevision, commandId, operationId, patch}` | Atomically commit canonical CAS and immutable accepted operation |
 | `admit-delete` | `{bindingId, expectedRevision, commandId, operationId}` | Atomically CAS the canonical object to tombstoned and capture one conditional DELETE |
 | `deliver` | `{operationId}` | Claim and run one bounded attempt |
@@ -63,13 +65,30 @@ until the atomic absence ACK; it retains historical ETag/baseline without treati
 them as present. This fixture admits only one unfinished operation per binding:
 UPDATE→DELETE handoff is serial after UPDATE ACK.
 
+The forward `schema-create.sql` migration adds a distinct `reserved` destination
+state and a write-once `create_operation_id`. A reservation has a null ETag and
+baseline. Existing `present/absent` bindings retain their real or historical
+values; UPDATE/DELETE operations retain non-null accepted validators. Only a
+CREATE operation accepts a null `accepted_etag`. Repeating all migrations
+preserves this distinction, accepted payloads, attempts and table identities.
+
+`seed-create` is bootstrap, with the same private credential input boundary as
+`seed`; it does not dispatch or admit an operation. Its input contains the seed
+fields except `eventId` and `etag`, plus a canonical lowercase UUID
+`operationId`. `admit-create` must use that same UUID. The immutable native ID is
+`musubi` followed by its 32 hexadecimal UUID digits; its private
+`musubiOperationID` marker, envelope, row binding and target must agree before
+credentials or HTTP. A new reservation cannot reuse an `absent` destination
+after DELETE. CREATE→UPDATE→DELETE is supported only serially after each ACK;
+there is no pending CREATE cancellation/supersession or general causal graph.
+
 The database owns the 120-second lease. Each delivery has a 45-second deadline
 and a 20-second heartbeat owned by that shared runner. A transport ignoring
 cancellation is detached at the same deadline; late callbacks cannot begin new
 HTTP, evidence or ACK work. An ACK waiting on PostgreSQL locks checks the signal
 inside its transaction and rolls back if it was cancelled before COMMIT. An
 already committed ACK remains authoritative. Credentials and authority are checked before dispatch;
-possible dispatch is persisted before PATCH or DELETE. ACK updates the ETag/baseline and
+possible dispatch is persisted before POST, PATCH or DELETE. ACK updates the ETag/baseline and
 operation atomically under the current attempt and all authority fences. HTTP
 never runs inside a database transaction.
 
@@ -104,6 +123,27 @@ binding target is confirmed; it does not fabricate native HTTP acceptance.
 412 stays terminal conflict, 429 honors Retry-After, and 401/403 require reconnect.
 Unknown, malformed and legacy payloads are immutable HOLD before HTTP.
 
+CREATE uses the full saved native JSON body and stable operation identity on
+every permitted retry. A fresh attempt performs exact calendar ACL preflight,
+one POST and exact readback. Reference adoption requires complete owned marker
+and content equality, a real strong ETag, durable possible-dispatch evidence,
+active canonical incarnation and all current authority/lease captures. It
+atomically changes `reserved→present`, stores that baseline/ETag and ACKs the
+operation. The transition advances source generation, so a later UPDATE captures
+the newly confirmed binding. A stale CREATE cannot ACK twice.
+
+A lost POST reply is observed within the same bounded attempt when time remains;
+after restart it begins with exact GET. A matching owned target confirms delivery
+without another POST while preserving `provider=uncertain`. Exact 404 may permit
+another POST only with the same immutable ID/body after fresh guards. 410,
+cancelled resources, foreign markers, changed content and weak/missing validators
+do not authorize adoption or another write. HTTP 409 remains a rejected CREATE,
+without automatic GET/adoption. A rejected receipt is not promoted to adoption
+merely because an owned matching resource appears later; the host retains HOLD.
+After 429 and its Retry-After, an exact 404 can permit a fresh same-ID POST whose
+new acceptance may complete. These restrictions are reference host policy;
+Musubi's separately accepted success and recovery policy remains distinct.
+
 ## Verification
 
 `pnpm --filter @musubi/sync-reference test` runs pure admission and injected-port
@@ -115,6 +155,12 @@ independent database; the runtime CLI does not accept those aliases.
 The process corpus kills real child processes, including inside admission before
 COMMIT, then restarts from the same database. It covers lost reply, exact readback
 failures, connection/source/privacy ABA, lease takeover and unknown payloads.
+The CREATE storage corpus starts with populated C05/C07 UPDATE/DELETE rows and
+attempt history, then verifies forward migration and an existing UPDATE ACK.
+It also covers reserved-target constraints, serial handoff, stale ACK, rejected
+adoption, caller mutation and cancellation while waiting for a PostgreSQL lock.
+CREATE process fixtures kill admission and delivery at actual checkpoints,
+verify one POST across lost-reply recovery and preserve pinned body hashes.
 Provider metrics count requests whose dispatch reaches the telemetry boundary.
 They are not a durable exactly-once audit across a process kill inside HTTP.
 

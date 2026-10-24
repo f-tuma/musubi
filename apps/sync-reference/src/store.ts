@@ -1,9 +1,10 @@
 import { readFile } from "node:fs/promises";
 import type { Pool, PoolClient } from "pg";
 import { SyncDeliveryReceiptSchema, SyncOperationEnvelopeSchema, SyncErrorSchema, SyncJsonObjectSchema, type SyncDeliveryReceipt, type SyncOperationRowBinding } from "@musubi/types";
-import { acceptedEnvelope, acceptedDeleteEnvelope, admissionFingerprint, deleteAdmissionFingerprint, initialReceipt, jsonEqual, projection, strongEtag, validateContent, validatePatch } from "./admission.js";
+import { parseNativeWritePlanV1, matchesPinnedProjectionV1 } from "@musubi/sync-codec";
+import { acceptedEnvelope, acceptedDeleteEnvelope, acceptedCreateEnvelope, admissionFingerprint, deleteAdmissionFingerprint, createAdmissionFingerprint, referenceCreateEventID, initialReceipt, jsonEqual, projection, strongEtag, validateContent, validatePatch } from "./admission.js";
 import { assertCredentialKey, decryptCredential, encryptCredential } from "./crypto.js";
-import { ReferenceHoldError, type ReferenceAdmission, type ReferenceCapture, type ReferenceClaim, type ReferenceEvidence, type ReferenceOperation, type ReferenceSeed, type ReferenceContentPatch, type ReferenceDeleteAdmission, type ReferenceDeleteObservation } from "./model.js";
+import { ReferenceHoldError, type ReferenceAdmission, type ReferenceCapture, type ReferenceClaim, type ReferenceEvidence, type ReferenceOperation, type ReferenceSeed, type ReferenceContentPatch, type ReferenceDeleteAdmission, type ReferenceDeleteObservation, type ReferenceCreateAdmission, type ReferenceCreateSeed, type ReferenceCreateObservation } from "./model.js";
 export { ReferenceHoldError } from "./model.js";
 export type { ReferenceClaim as Claim } from "./model.js";
 
@@ -51,7 +52,8 @@ export class ReferenceStore {
   async migrate(): Promise<void> {
     const sql = await readFile(new URL("./schema.sql", import.meta.url), "utf8");
     const forward = await readFile(new URL("./schema-delete.sql", import.meta.url), "utf8");
-    await this.transaction(async client => { await client.query(sql); await client.query(forward); });
+    const create = await readFile(new URL("./schema-create.sql", import.meta.url), "utf8");
+    await this.transaction(async client => { await client.query(sql); await client.query(forward); await client.query(create); });
   }
   private async transaction<T>(body: (client: PoolClient) => Promise<T>, signal?: AbortSignal): Promise<T> {
     signal?.throwIfAborted();
@@ -81,7 +83,8 @@ export class ReferenceStore {
   }
   private current(locked: Locked): boolean {
     const { operation: op, connection: conn, object, binding } = locked;
-    return !!conn && !!object && !!binding && conn.status === "active" && conn.credential_ciphertext != null && binding.active && binding.destination_lifecycle === "present" &&
+    return !!conn && !!object && !!binding && conn.status === "active" && conn.credential_ciphertext != null && binding.active &&
+      (op.action === "create" ? binding.destination_lifecycle === "reserved" && binding.create_operation_id === op.id : binding.destination_lifecycle === "present") &&
       object.canonical_lifecycle === (op.action === "delete" ? "tombstoned" : "active") && Number(object.lifecycle_generation) === Number(op.canonical_generation) &&
       Number(conn.generation) === Number(op.connection_generation) && Number(object.revision) === Number(op.accepted_revision) &&
       Number(object.privacy_generation) === Number(op.privacy_generation) && Number(binding.source_generation) === Number(op.source_generation) &&
@@ -106,6 +109,54 @@ export class ReferenceStore {
       await client.query("INSERT INTO reference_bindings(id,connection_id,object_id,calendar_id,event_id,etag,baseline) VALUES($1,$2,$3,$4,$5,$6,$7)",
         [input.bindingId, input.connectionId, input.objectId, input.calendarId, input.eventId, input.etag, projection(input.content)]);
     });
+  }
+  async seedCreateBinding(supplied: ReferenceCreateSeed): Promise<void> {
+    const fields = copyDataFields(supplied, ["connectionId", "objectId", "bindingId", "calendarId", "operationId", "accessToken", "expiresAt", "scope", "content"], ["privacyLabel"]);
+    const input = Object.freeze({ ...fields, content: Object.freeze({ ...validateContent(fields.content as ReferenceCreateSeed["content"]) }) }) as unknown as ReferenceCreateSeed;
+    const eventId = referenceCreateEventID(input.operationId);
+    if (typeof input.accessToken !== "string" || typeof input.scope !== "string" || typeof input.expiresAt !== "string" ||
+      input.privacyLabel !== undefined && typeof input.privacyLabel !== "string" || !Number.isFinite(Date.parse(input.expiresAt)) || input.calendarId === "primary" ||
+      ![input.connectionId, input.objectId, input.bindingId, input.calendarId].every(value => typeof value === "string" && value.length > 0 && value.length <= 2048))
+      throw new Error("Invalid reference CREATE seed");
+    const ciphertext = encryptCredential(this.credentialKey, input.connectionId, input.accessToken);
+    await this.transaction(async client => {
+      await client.query("INSERT INTO reference_connections(id,scope,credential_ciphertext,expires_at) VALUES($1,$2,$3,$4)",
+        [input.connectionId, scopeValue(input.scope), ciphertext, input.expiresAt]);
+      await client.query("INSERT INTO reference_objects(id,privacy_label,content) VALUES($1,$2,$3)", [input.objectId, input.privacyLabel ?? "private", input.content]);
+      await client.query(`INSERT INTO reference_bindings(id,connection_id,object_id,calendar_id,event_id,etag,baseline,destination_lifecycle,create_operation_id)
+        VALUES($1,$2,$3,$4,$5,NULL,NULL,'reserved',$6)`, [input.bindingId, input.connectionId, input.objectId, input.calendarId, eventId, input.operationId]);
+    });
+  }
+  async admitCreate(supplied: ReferenceCreateAdmission): Promise<ReferenceOperation> {
+    const input = Object.freeze(copyDataFields(supplied, ["bindingId", "expectedRevision", "commandId", "operationId"])) as unknown as ReferenceCreateAdmission;
+    const fingerprint = createAdmissionFingerprint(input);
+    const eventId = referenceCreateEventID(input.operationId);
+    await this.transaction(async client => {
+      const initial = (await client.query("SELECT * FROM reference_bindings WHERE id=$1", [input.bindingId])).rows[0];
+      if (!initial) throw new ReferenceHoldError("binding-missing");
+      const conn = (await client.query("SELECT * FROM reference_connections WHERE id=$1 FOR UPDATE", [initial.connection_id])).rows[0];
+      const object = (await client.query("SELECT * FROM reference_objects WHERE id=$1 FOR UPDATE", [initial.object_id])).rows[0];
+      const binding = (await client.query("SELECT * FROM reference_bindings WHERE id=$1 FOR UPDATE", [input.bindingId])).rows[0];
+      const existing = (await client.query("SELECT * FROM reference_operations WHERE connection_id=$1 AND command_id=$2 FOR UPDATE", [binding.connection_id, input.commandId])).rows[0];
+      if (existing) { if (existing.fingerprint !== fingerprint) throw new ReferenceHoldError("command-reused"); return; }
+      if (conn.status !== "active" || conn.credential_ciphertext == null || !writeAllowed(conn.scope) || !binding.active) throw new ReferenceHoldError("source-unavailable");
+      if (object.canonical_lifecycle !== "active" || binding.destination_lifecycle !== "reserved" || binding.create_operation_id !== input.operationId ||
+          binding.event_id !== eventId || binding.etag !== null || binding.baseline !== null) throw new ReferenceHoldError("lifecycle-unavailable");
+      if (Number(object.revision) !== input.expectedRevision) throw new ReferenceHoldError("revision-conflict");
+      if ((await client.query("SELECT 1 FROM reference_operations WHERE binding_id=$1 AND status<>'acked'", [input.bindingId])).rowCount)
+        throw new ReferenceHoldError("causal-barrier");
+      const epochs: ReferenceCapture = { acceptedRevision: input.expectedRevision + 1, connectionGeneration: Number(conn.generation),
+        sourceGeneration: Number(binding.source_generation), privacyGeneration: Number(object.privacy_generation), canonicalGeneration: Number(object.lifecycle_generation) };
+      const envelope = acceptedCreateEnvelope(input, validateContent(object.content), { objectId: object.id, connectionId: conn.id, calendarId: binding.calendar_id, eventId, capture: epochs });
+      await client.query("UPDATE reference_objects SET revision=$2 WHERE id=$1", [object.id, epochs.acceptedRevision]);
+      await client.query(`INSERT INTO reference_operations(id,command_id,binding_id,object_id,connection_id,calendar_id,event_id,accepted_revision,
+        connection_generation,source_generation,privacy_generation,accepted_etag,fingerprint,payload,receipt,canonical_generation,action)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NULL,$12,$13,$14,$15,'create')`,
+        [input.operationId, input.commandId, binding.id, object.id, conn.id, binding.calendar_id, eventId, epochs.acceptedRevision,
+          epochs.connectionGeneration, epochs.sourceGeneration, epochs.privacyGeneration, fingerprint, { operationEnvelope: envelope }, initialReceipt(envelope), epochs.canonicalGeneration]);
+    });
+    const result = await this.pool.query("SELECT id FROM reference_operations WHERE command_id=$1 AND binding_id=$2", [input.commandId, input.bindingId]);
+    return this.inspectOperation(result.rows[0].id);
   }
   async admitUpdate(supplied: ReferenceAdmission): Promise<ReferenceOperation> {
     const fields = copyDataFields(supplied, ["bindingId", "expectedRevision", "commandId", "operationId", "patch"]);
@@ -261,7 +312,7 @@ export class ReferenceStore {
       const locked = await this.locked(client, claim.operationId);
       signal?.throwIfAborted();
       if (locked.operation.action === "delete" && (evidence.validator !== undefined || evidence.provider === "accepted" && evidence.acceptanceStatus === undefined) ||
-        locked.operation.action === "update" && evidence.acceptanceStatus !== undefined) throw new ReferenceHoldError("invalid-protocol-evidence");
+        locked.operation.action !== "delete" && evidence.acceptanceStatus !== undefined) throw new ReferenceHoldError("invalid-protocol-evidence");
       const attempt = (await client.query("SELECT receipt,delete_acceptance_status FROM reference_attempts WHERE id=$1 AND operation_id=$2 FOR UPDATE", [claim.attemptId, claim.operationId])).rows[0];
       if (!attempt) throw new ReferenceHoldError("attempt-missing");
       const make = (saved: SyncDeliveryReceipt) => {
@@ -323,6 +374,38 @@ export class ReferenceStore {
       // GET-only scoped absence confirms the destination. It never invents native acceptance.
       if (saved.remote.kind !== "confirmed" || saved.provider.kind === "pending") throw new ReferenceHoldError("confirmation-missing");
       await client.query("UPDATE reference_bindings SET destination_lifecycle='absent' WHERE id=$1", [locked.binding.id]);
+      await client.query("UPDATE reference_operations SET status='acked',lease_attempt_id=NULL,lease_until=NULL WHERE id=$1", [claim.operationId]);
+      return true;
+    }, signal);
+  }
+  async completeCreate(claim: ReferenceClaim, supplied: ReferenceCreateObservation, signal?: AbortSignal): Promise<boolean> {
+    claim = claimIdentity(claim);
+    const fields = copyDataFields(supplied, ["eventId", "etag", "projection"]);
+    const parsedProjection = SyncJsonObjectSchema.safeParse(fields.projection);
+    if (typeof fields.eventId !== "string" || !strongEtag(fields.etag) || !parsedProjection.success)
+      throw new ReferenceHoldError("invalid-create-observation");
+    const observation = Object.freeze({ eventId: fields.eventId, etag: fields.etag,
+      projection: Object.freeze(JSON.parse(JSON.stringify(parsedProjection.data)) as Record<string, unknown>) });
+    return this.transaction(async client => {
+      const locked = await this.locked(client, claim.operationId);
+      signal?.throwIfAborted();
+      if (!this.owned(locked, claim) || !this.current(locked) || locked.operation.action !== "create") return false;
+      const parsed = SyncOperationEnvelopeSchema.safeParse(rawEnvelope(locked.operation.payload));
+      if (!parsed.success || parsed.data.operation.action !== "create" || parsed.data.operationId !== locked.operation.id ||
+        parsed.data.locator.resourceId !== locked.operation.event_id || referenceCreateEventID(locked.operation.id) !== observation.eventId ||
+        observation.eventId !== locked.operation.event_id || !jsonEqual(observation.projection, parsed.data.admittedProjection.data))
+        throw new ReferenceHoldError("observation-conflict");
+      const plan = parseNativeWritePlanV1(parsed.data.serializer, "create", "event", parsed.data.nativePlan.data);
+      if (!plan || plan.planKind !== "json-body" || plan.body?.id !== observation.eventId ||
+        (plan.body.extendedProperties as { private?: { musubiOperationID?: unknown } })?.private?.musubiOperationID !== locked.operation.id ||
+        !matchesPinnedProjectionV1(parsed.data.serializer, "create", observation.projection, parsed.data.nativePlan.data))
+        throw new ReferenceHoldError("invalid-create-operation");
+      const saved = receipt(locked.operation.receipt);
+      // Remote confirmation does not manufacture a provider response; accepted
+      // or uncertain dispatch must have been durably recorded before adoption.
+      if (!locked.operation.dispatch_possible || saved.remote.kind !== "confirmed" || !["accepted", "uncertain"].includes(saved.provider.kind))
+        throw new ReferenceHoldError("confirmation-missing");
+      await client.query("UPDATE reference_bindings SET destination_lifecycle='present',etag=$2,baseline=$3 WHERE id=$1", [locked.binding.id, observation.etag, parsed.data.admittedProjection.data]);
       await client.query("UPDATE reference_operations SET status='acked',lease_attempt_id=NULL,lease_until=NULL WHERE id=$1", [claim.operationId]);
       return true;
     }, signal);

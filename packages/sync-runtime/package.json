@@ -2,14 +2,15 @@
   "name": "@musubi/sync-runtime",
   "private": true,
   "type": "module",
-  "description": "Storage-free bounded runtime for an already claimed Google personal content UPDATE.",
+  "description": "Storage-free bounded runtime for already claimed Google personal CREATE, UPDATE and DELETE operations.",
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "tsx src/index.test.ts && node --import tsx src/behavior/harness.test.ts && pnpm test:scenarios",
+    "test": "tsx src/index.test.ts && node --import tsx src/behavior/harness.test.ts && pnpm test:scenarios && node --import tsx src/behavior/create-harness.test.ts && pnpm test:scenarios:create",
     "test:scenarios": "node --import tsx src/behavior/cli.ts",
+    "test:scenarios:create": "node --import tsx src/behavior/create-cli.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

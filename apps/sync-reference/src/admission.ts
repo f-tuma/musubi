@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { SyncOperationEnvelopeSchema, SyncDeliveryReceiptSchema, type SyncOperationEnvelope, type SyncDeliveryReceipt } from "@musubi/types";
 import { parseNativeWritePlanV1, matchesPinnedProjectionV1 } from "@musubi/sync-codec";
-import type { ReferenceAdmission, ReferenceCapture, ReferenceContent, ReferenceContentPatch, ReferenceDeleteAdmission } from "./model.js";
+import type { ReferenceAdmission, ReferenceCapture, ReferenceContent, ReferenceContentPatch, ReferenceDeleteAdmission, ReferenceCreateAdmission } from "./model.js";
 
 function ownRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype &&
@@ -83,5 +83,38 @@ export function acceptedDeleteEnvelope(input: ReferenceDeleteAdmission, content:
     admittedProjection: { data: projection(content) }, nativePlan: { kind: "codec-data", data: { planKind: "json-body", body: null } } });
   if (!parseNativeWritePlanV1(envelope.serializer, "delete", "event", envelope.nativePlan.data) ||
     !matchesPinnedProjectionV1(envelope.serializer, "delete", envelope.admittedProjection.data, envelope.nativePlan.data)) throw new Error("Reference DELETE admission codec disagreement");
+  return envelope;
+}
+
+/** The existing v1 identity is tied to the operation, never the attempt or a clock. */
+export function referenceCreateEventID(operationId: string): string {
+  if (typeof operationId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(operationId))
+    throw new Error("Invalid reference CREATE identity");
+  return `musubi${operationId.replace(/-/g, "")}`;
+}
+export function createAdmissionFingerprint(input: ReferenceCreateAdmission): string {
+  referenceCreateEventID(input.operationId);
+  if (![input.bindingId, input.commandId].every(value => typeof value === "string" && value.length > 0 && value.length <= 2048) ||
+    !Number.isSafeInteger(input.expectedRevision) || input.expectedRevision < 1) throw new Error("Invalid reference CREATE admission identity");
+  return createHash("sha256").update(JSON.stringify(["create", input.bindingId, input.expectedRevision, input.operationId])).digest("hex");
+}
+export function acceptedCreateEnvelope(input: ReferenceCreateAdmission, content: ReferenceContent, host: {
+  objectId: string; connectionId: string; calendarId: string; eventId: string; capture: ReferenceCapture;
+}): SyncOperationEnvelope {
+  const eventId = referenceCreateEventID(input.operationId);
+  if (eventId !== host.eventId) throw new Error("Reference CREATE reservation disagrees with operation identity");
+  const saved = projection(content);
+  const body = { id: eventId, summary: content.name, description: content.notes, location: content.place,
+    start: { dateTime: content.beginsAt }, end: { dateTime: content.endsAt }, recurrence: null,
+    extendedProperties: { private: { musubiOperationID: input.operationId } } };
+  const envelope = SyncOperationEnvelopeSchema.parse({ schemaVersion: 1, profileVersion: "sync-profile-v1",
+    operation: { kind: "event", action: "create", version: 1 }, serializer: { id: "google-personal-event", version: 1 },
+    commandId: input.commandId, operationId: input.operationId, hostObjectId: host.objectId,
+    locator: { provider: "google", connectionId: host.connectionId, collectionId: host.calendarId, resourceId: host.eventId },
+    sourceEpoch: { sourceId: input.bindingId, generation: host.capture.sourceGeneration }, acceptedRevision: host.capture.acceptedRevision,
+    privacyEpoch: String(host.capture.privacyGeneration), allowedSideEffects: ["provider-content-write"],
+    admittedProjection: { data: saved }, nativePlan: { kind: "codec-data", data: { planKind: "json-body", body } } });
+  if (!parseNativeWritePlanV1(envelope.serializer, "create", "event", envelope.nativePlan.data) ||
+    !matchesPinnedProjectionV1(envelope.serializer, "create", saved, envelope.nativePlan.data)) throw new Error("Reference CREATE admission codec disagreement");
   return envelope;
 }

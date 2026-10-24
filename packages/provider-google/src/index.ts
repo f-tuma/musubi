@@ -5,6 +5,8 @@ import type {
   GoogleNativeUpdateEvidence, GooglePersonalContentBody, GooglePersonalUpdate,
   GoogleProviderPorts, GoogleDeleteProviderPorts, GoogleNativeDeleteReadEvidence, GoogleNativeDeleteEvidence,
   GoogleNativeDeletePreflight, GooglePersonalDelete,
+  GoogleCreateProviderPorts, GooglePersonalCreate, GooglePersonalCreateBody,
+  GoogleNativeCreateEvidence, GoogleNativeCreateReadEvidence,
 } from "./types";
 export * from "./types";
 
@@ -349,6 +351,139 @@ export function createGooglePersonalEventDeleteProvider(ports: GoogleDeleteProvi
       if (response.status === 401 || response.status === 403 || response.status === 429)
         throw new GoogleProviderError("provider-write-failed", "not-written", response.status, retryAfter(response, ports.clock.nowEpochMs()));
       throw new GoogleProviderError("provider-write-failed", "unconfirmed", response.status, retryAfter(response, ports.clock.nowEpochMs()));
+    },
+  };
+}
+
+function createRecord(value: unknown, allowed: readonly string[], required: readonly string[] = allowed) {
+  const item = record(value);
+  if (Reflect.ownKeys(item).some(key => !allowed.includes(key as string) || !Object.getOwnPropertyDescriptor(item, key)?.enumerable) ||
+      required.some(key => !Object.prototype.hasOwnProperty.call(item, key))) throw new GoogleProviderError("event-diff-unavailable");
+  return item;
+}
+function createInput(input: GooglePersonalCreate): GooglePersonalCreate {
+  const item = createRecord(input, ["target", "body", "operationId", "attemptId", "serializer"]);
+  const serializer = createRecord(item.serializer, ["id", "version"]);
+  if (serializer.id !== "google-personal-event" || serializer.version !== 1)
+    throw new GoogleProviderError("event-diff-unavailable");
+  const operationId = identity(item.operationId), attemptId = identity(item.attemptId);
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(operationId))
+    throw new GoogleProviderError("event-diff-unavailable");
+  const scope = target(createRecord(item.target, ["connectionId", "connectionGeneration", "calendarId", "eventId"]) as unknown as GoogleEventTarget);
+  const value = createRecord(item.body, ["id", "summary", "description", "location", "recurrence", "start", "end", "extendedProperties"],
+    ["id", "summary", "recurrence", "start", "end", "extendedProperties"]);
+  const properties = createRecord(value.extendedProperties, ["private"]), marker = createRecord(properties.private, ["musubiOperationID"]);
+  if (value.id !== `musubi${operationId.replace(/-/g, "")}` || scope.eventId !== value.id || marker.musubiOperationID !== operationId || value.recurrence !== null)
+    throw new GoogleProviderError("event-diff-unavailable");
+  const start = endpoint(createRecord(value.start, ["dateTime"])), end = endpoint(createRecord(value.end, ["dateTime"]));
+  if (Date.parse(start.dateTime!) > Date.parse(end.dateTime!)) throw new GoogleProviderError("event-diff-unavailable");
+  const content: { summary: string; description?: string | null; location?: string | null } = { summary: text(value.summary) };
+  for (const key of ["description", "location"] as const) {
+    if (Object.prototype.hasOwnProperty.call(value, key)) content[key] = value[key] === null ? null : text(value[key]);
+  }
+  if ([content.summary, content.description, content.location].reduce<number>((sum, part) => sum + (part?.length ?? 0), 0) > MAX_STRING)
+    throw new GoogleProviderError("event-diff-unavailable");
+  // Preserve the saved JSON property order as well as its exact values. Only
+  // nested containers are replaced with owned immutable snapshots.
+  const body = Object.freeze(Object.fromEntries(Object.entries(value).map(([key, entry]) => [key,
+    key === "start" ? Object.freeze({ dateTime: start.dateTime! }) :
+    key === "end" ? Object.freeze({ dateTime: end.dateTime! }) :
+    key === "extendedProperties" ? Object.freeze({ private: Object.freeze({ musubiOperationID: operationId }) }) : entry,
+  ]))) as unknown as GooglePersonalCreateBody;
+  return Object.freeze({ target: scope, body, operationId, attemptId,
+    serializer: Object.freeze({ id: "google-personal-event" as const, version: 1 as const }) });
+}
+
+/** Action-specific creation transport. Recovery observes one owned native ID;
+ * the host alone decides whether matching content may be adopted or 404 retried. */
+export function createGooglePersonalEventCreateProvider(ports: GoogleCreateProviderPorts) {
+  const eventURL = (scope: GoogleEventTarget) =>
+    `${GOOGLE_CALENDAR_ORIGIN}/calendars/${encodeURIComponent(scope.calendarId)}/events/${encodeURIComponent(scope.eventId)}`;
+  async function session(scope: GoogleEventTarget, signal?: AbortSignal): Promise<GoogleAccountSession> {
+    signal?.throwIfAborted();
+    const current = await ports.accountSession.open({ connectionId: scope.connectionId, connectionGeneration: scope.connectionGeneration }, signal);
+    signal?.throwIfAborted();
+    if (current.connectionId !== scope.connectionId || current.connectionGeneration !== scope.connectionGeneration)
+      throw new GoogleProviderError("account-session-changed");
+    if (typeof current.accessToken !== "string" || !current.accessToken) throw failed();
+    return { connectionId: current.connectionId, connectionGeneration: current.connectionGeneration,
+      accessToken: current.accessToken, eventWriteAllowed: current.eventWriteAllowed };
+  }
+  async function request(url: string, method: "GET" | "POST", current: GoogleAccountSession, signal?: AbortSignal, body?: GooglePersonalCreateBody): Promise<Response> {
+    signal?.throwIfAborted();
+    const started = ports.clock.nowMonotonicMs();
+    let status: number | "network-error" | "aborted" = "network-error";
+    try {
+      const response = await ports.http.fetch(url, { method, redirect: "error", signal,
+        headers: { Authorization: `Bearer ${current.accessToken}`, ...(method === "GET" ? { "Cache-Control": "no-cache" } : { "Content-Type": "application/json" }) },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+      status = response.status;
+      if (response.redirected || response.url && response.url !== url)
+        throw new GoogleProviderError("provider-write-failed", method === "POST" ? "unconfirmed" : "not-written", response.status);
+      signal?.throwIfAborted();
+      return response;
+    } catch (error) {
+      if (signal?.aborted || error instanceof Error && error.name === "AbortError") status = "aborted";
+      if (error instanceof GoogleProviderError) throw error;
+      throw new GoogleProviderError("provider-write-failed", method === "POST" ? "unconfirmed" : "not-written");
+    } finally {
+      try { ports.telemetry.record({ provider: "google", family: "event", method, status,
+        durationMs: Math.max(0, ports.clock.nowMonotonicMs() - started) }); } catch { /* Diagnostics have no authority. */ }
+    }
+  }
+  function completeRead(response: Response) {
+    if (!response.ok) {
+      if (response.status === 429 || response.status === 408 || response.status >= 500)
+        throw new GoogleProviderError("provider-write-failed", "not-written", response.status, retryAfter(response, ports.clock.nowEpochMs()));
+      throw new GoogleProviderError("capability-evidence", "not-written", response.status, undefined, "event-write",
+        response.status === 401 || response.status === 403 ? "denied" : "unknown");
+    }
+    if (response.status !== 200 || response.headers.has("content-range"))
+      throw new GoogleProviderError("provider-write-failed", "not-written", response.status);
+  }
+  async function json(response: Response, outcome: "not-written" | "unconfirmed", signal?: AbortSignal) {
+    try { const value = record(await response.json()); signal?.throwIfAborted(); return value; }
+    catch { throw new GoogleProviderError("provider-write-failed", outcome, response.status); }
+  }
+  return {
+    async preflightCreate(input: GooglePersonalCreate, signal?: AbortSignal): Promise<{ kind: "allowed" }> {
+      const accepted = createInput(input), current = await session(accepted.target, signal);
+      capability(current.eventWriteAllowed, "event-write");
+      const response = await request(`${GOOGLE_CALENDAR_ORIGIN}/users/me/calendarList/${encodeURIComponent(accepted.target.calendarId)}`, "GET", current, signal);
+      completeRead(response);
+      const calendar = await json(response, "not-written", signal);
+      if (calendar.id !== accepted.target.calendarId) throw new GoogleProviderError("provider-conflict");
+      capability(typeof calendar.accessRole === "string" ? ["owner", "writer"].includes(calendar.accessRole) : undefined, "event-write");
+      return { kind: "allowed" };
+    },
+    async create(input: GooglePersonalCreate, signal?: AbortSignal): Promise<GoogleNativeCreateEvidence> {
+      const accepted = createInput(input), current = await session(accepted.target, signal);
+      capability(current.eventWriteAllowed, "event-write");
+      await ports.beforeMutation(accepted, signal);
+      signal?.throwIfAborted();
+      const response = await request(`${GOOGLE_CALENDAR_ORIGIN}/calendars/${encodeURIComponent(accepted.target.calendarId)}/events`, "POST", current, signal, accepted.body);
+      if (![200, 201, 204].includes(response.status))
+        throw new GoogleProviderError(response.status === 412 ? "provider-conflict" : "provider-write-failed",
+          response.ok || response.status >= 500 ? "unconfirmed" : "not-written", response.status, retryAfter(response, ports.clock.nowEpochMs()));
+      if (response.headers.has("content-range")) throw new GoogleProviderError("provider-write-failed", "unconfirmed", response.status);
+      const value = await json(response, "unconfirmed", signal);
+      if (value.id !== accepted.target.eventId) throw new GoogleProviderError("provider-write-failed", "unconfirmed", response.status);
+      return { kind: "created", eventId: accepted.target.eventId, etag: strongGoogleEtag(value.etag) };
+    },
+    async readCreated(input: GooglePersonalCreate, signal?: AbortSignal): Promise<GoogleNativeCreateReadEvidence> {
+      const accepted = createInput(input), current = await session(accepted.target, signal);
+      const response = await request(eventURL(accepted.target), "GET", current, signal);
+      if (response.status === 404) return { kind: "absent", status: 404 };
+      if (response.status === 410) throw new GoogleProviderError("provider-conflict");
+      completeRead(response);
+      const value = await json(response, "not-written", signal);
+      let marker: unknown;
+      try { marker = record(record(value.extendedProperties).private).musubiOperationID; }
+      catch { throw new GoogleProviderError("provider-conflict"); }
+      if (value.id !== accepted.target.eventId || value.status === "cancelled" || marker !== accepted.operationId)
+        throw new GoogleProviderError("provider-conflict");
+      const event = nativeEvent(value.etag === null ? { ...value, etag: undefined } : value, accepted.target.eventId);
+      return { kind: "present", event, etag: strongGoogleEtag(value.etag) };
     },
   };
 }

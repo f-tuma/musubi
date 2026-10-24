@@ -6,3 +6,7 @@ export { runClaimedGooglePersonalUpdate, supportsGooglePersonalUpdateEnvelope } 
 export * from "./delete-ports";
 export * from "./delete-trace";
 export { runClaimedGooglePersonalDelete, supportsGooglePersonalDeleteEnvelope } from "./google-personal-delete";
+
+export * from "./create-ports";
+export * from "./create-trace";
+export { runClaimedGooglePersonalCreate, supportsGooglePersonalCreateEnvelope } from "./google-personal-create";

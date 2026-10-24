@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "imageId": "sha256:4c6a03696f27504c096f6cbd26ab281278c04ea43c53a7fdf1cc37ad98b652bc",
+  "sourceFingerprint": "2ca00183b501204fb342f566dbd63a530f2724cb900527990cdca5a338dd18be",
+  "localOnly": true,
+  "noRegistryPublication": true,
+  "checks": {
+    "installedSourceHashes": {
+      "checkedFiles": 401,
+      "mismatches": []
+    },
+    "emptyDatabaseBeforeBoot": {
+      "tables": 0
+    },
+    "installedContainer": {
+      "imageId": "sha256:4c6a03696f27504c096f6cbd26ab281278c04ea43c53a7fdf1cc37ad98b652bc",
+      "sourceBindMounts": 0,
+      "user": "node",
+      "apiPort": "127.0.0.1:7549",
+      "metricsPort": "127.0.0.1:9469"
+    },
+    "emptyDatabaseMigrations": {
+      "applied": 86,
+      "sourceJournalEntries": 86,
+      "lastTag": "0085_graph_read_coverage",
+      "lastHashMatchesSource": true
+    },
+    "effectiveConfiguration": {
+      "encoder": true,
+      "encoderOverridePresent": false,
+      "environment": "test",
+      "nodeEnvironment": "production",
+      "externalSyncIntervalMin": 0,
+      "deliveryRecoveryMode": "disabled"
+    },
+    "providerIsolation": {
+      "externalAccounts": 0,
+      "eventOutboxRows": 0,
+      "smtpConfigured": false,
+      "pushConfigured": false
+    }
+  },
+  "http": {
+    "status": "passed",
+    "scope": "installed API, real Better Auth, real disposable PostgreSQL, canonical calendar/event routes",
+    "steps": [
+      {
+        "name": "public-health",
+        "method": "GET",
+        "path": "/api/v1/server/ok",
+        "status": 200,
+        "durationMs": 22
+      },
+      {
+        "name": "public-capabilities",
+        "method": "GET",
+        "path": "/api/v1/server",
+        "status": 200,
+        "durationMs": 2
+      },
+      {
+        "name": "unauthenticated-calendar-denied",
+        "method": "GET",
+        "path": "/api/v1/calendars",
+        "status": 401,
+        "durationMs": 10
+      },
+      {
+        "name": "real-sign-up",
+        "method": "POST",
+        "path": "/api/auth/sign-up/email",
+        "status": 200,
+        "durationMs": 107
+      },
+      {
+        "name": "real-sign-in",
+        "method": "POST",
+        "path": "/api/auth/sign-in/email",
+        "status": 200,
+        "durationMs": 67
+      },
+      {
+        "name": "real-cookie-session",
+        "method": "GET",
+        "path": "/api/auth/get-session",
+        "status": 200,
+        "durationMs": 8
+      },
+      {
+        "name": "signup-default-calendar",
+        "method": "GET",
+        "path": "/api/v1/calendars",
+        "status": 200,
+        "durationMs": 11
+      },
+      {
+        "name": "canonical-calendar-create",
+        "method": "POST",
+        "path": "/api/v1/calendars",
+        "status": 201,
+        "durationMs": 10
+      },
+      {
+        "name": "canonical-calendar-read",
+        "method": "GET",
+        "path": "/api/v1/calendars/b07d9481-bc94-4b60-ab86-f77af1deb57e",
+        "status": 200,
+        "durationMs": 7
+      },
+      {
+        "name": "canonical-event-create",
+        "method": "POST",
+        "path": "/api/v1/events",
+        "status": 201,
+        "durationMs": 16
+      },
+      {
+        "name": "canonical-create-idempotent-replay",
+        "method": "POST",
+        "path": "/api/v1/events",
+        "status": 202,
+        "durationMs": 11
+      },
+      {
+        "name": "canonical-event-read",
+        "method": "GET",
+        "path": "/api/v1/events?start=2026-10-24T10%3A00%3A00.000Z&end=2026-10-26T11%3A00%3A00.000Z",
+        "status": 200,
+        "durationMs": 7
+      },
+      {
+        "name": "canonical-event-update",
+        "method": "PATCH",
+        "path": "/api/v1/events",
+        "status": 200,
+        "durationMs": 14
+      },
+      {
+        "name": "stale-revision-rejected",
+        "method": "PATCH",
+        "path": "/api/v1/events",
+        "status": 409,
+        "durationMs": 6
+      },
+      {
+        "name": "canonical-update-readback",
+        "method": "GET",
+        "path": "/api/v1/events?start=2026-10-24T10%3A00%3A00.000Z&end=2026-10-26T11%3A00%3A00.000Z",
+        "status": 200,
+        "durationMs": 5
+      },
+      {
+        "name": "canonical-event-delete",
+        "method": "DELETE",
+        "path": "/api/v1/events",
+        "status": 200,
+        "durationMs": 13
+      },
+      {
+        "name": "canonical-delete-readback",
+        "method": "GET",
+        "path": "/api/v1/events?start=2026-10-24T10%3A00%3A00.000Z&end=2026-10-26T11%3A00%3A00.000Z",
+        "status": 200,
+        "durationMs": 4
+      }
+    ]
+  },
+  "cleanup": {
+    "containerRemoved": true,
+    "nonceDatabaseDropped": true
+  },
+  "evidenceIndexSha256": "2ad8cd97c50e73156d2bd3049268d39aa575b75f233aa561c83b690e49702322"
+}

@@ -684,6 +684,17 @@ export function googleReminderEventEvidence(data: any) {
 
 export const googleAdapter: CalendarAdapter = {
   provider: "google",
+  googlePersonalCreateV1(userID, accountID, capture) {
+    return {
+      ports: googlePersonalProviderPorts(userID, accountID, capture,
+        signal => getGoogleAccessToken(userID, accountID, false, undefined, signal)),
+      normalizeObservation(read) {
+        if (read.kind !== "present") return null;
+        return { ref: { externalEventId: read.event.id, etag: read.etag },
+          event: assertCreatedEventEvidence(toNormalized(read.event)) };
+      },
+    };
+  },
   googlePersonalContentV1(userID, accountID, capture) {
     return {
       ports: googlePersonalProviderPorts(userID, accountID, capture,

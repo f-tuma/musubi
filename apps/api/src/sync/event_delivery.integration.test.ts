@@ -73,6 +73,7 @@ async function main() {
   const adapter: CalendarAdapter = {
     ...googleAdapter,
     // This fixture supplies a pinned transport itself; it does not register native HTTP ports.
+    googlePersonalCreateV1: undefined,
     googlePersonalContentV1: undefined,
     async assertEventWrite() {
       if (mode === "403") throw new EventWriteError("event-write", "denied");

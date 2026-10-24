@@ -2,9 +2,11 @@ import { randomUUID } from "node:crypto";
 import type { GoogleProviderPorts } from "@musubi/provider-google";
 import {
   runClaimedGooglePersonalUpdate, supportsGooglePersonalUpdateEnvelope, runClaimedGooglePersonalDelete, supportsGooglePersonalDeleteEnvelope,
+  runClaimedGooglePersonalCreate, supportsGooglePersonalCreateEnvelope,
   SYNC_RUNTIME_TIMEOUT_MS, SYNC_RUNTIME_HEARTBEAT_MS, SyncRuntimeHostError,
   type GooglePersonalUpdatePolicy, type RuntimeNativeFacts, type RuntimeProviderFact,
   type GooglePersonalDeletePolicy, type RuntimeDeleteNativeFacts, type RuntimeDeleteProviderFact,
+  type GooglePersonalCreatePolicy, type RuntimeCreateNativeFacts, type RuntimeCreateProviderFact,
 } from "@musubi/sync-runtime";
 import { ReferenceHoldError, type ReferenceClaim } from "./model.js";
 import type { ReferenceStore } from "./store.js";
@@ -13,7 +15,7 @@ export const REFERENCE_DEADLINE_MS = SYNC_RUNTIME_TIMEOUT_MS;
 export const REFERENCE_HEARTBEAT_MS = SYNC_RUNTIME_HEARTBEAT_MS;
 export type ReferenceCheckpoint = "claim" | "afterCredentials" | "beforeDispatch" | "afterAcceptance" | "afterUncertain" | "afterReadback" | "afterAck";
 export type ReferenceRunnerPorts = Pick<GoogleProviderPorts, "http" | "clock" | "telemetry">;
-export type ReferenceRunnerStore = Pick<ReferenceStore, "claim" | "renew" | "getSession" | "markDispatch" | "recordEvidence" | "complete" | "completeDelete" | "finish">;
+export type ReferenceRunnerStore = Pick<ReferenceStore, "claim" | "renew" | "getSession" | "markDispatch" | "recordEvidence" | "complete" | "completeDelete" | "finish"> & Partial<Pick<ReferenceStore, "completeCreate">>;
 export interface ReferenceRunnerOptions {
   attemptId?: string;
   deadlineMs?: number;
@@ -29,7 +31,10 @@ export type ReferenceRunResult = {
 };
 type Evidence = Parameters<ReferenceStore["recordEvidence"]>[1];
 export const supportsReferenceEnvelope = (envelope: Parameters<typeof supportsGooglePersonalUpdateEnvelope>[0]) =>
-  supportsGooglePersonalUpdateEnvelope(envelope) || supportsGooglePersonalDeleteEnvelope(envelope);
+  supportsGooglePersonalUpdateEnvelope(envelope) || supportsGooglePersonalDeleteEnvelope(envelope) || supportsGooglePersonalCreateEnvelope(envelope);
+export const REFERENCE_CREATE_POLICY: GooglePersonalCreatePolicy = Object.freeze({
+  completion: "exact-readback", ambiguousRecovery: "within-attempt", compareContent: "literal", nativeProfile: "strict-reference", requireStrongReadback: true,
+});
 export const REFERENCE_DELETE_POLICY: GooglePersonalDeletePolicy = Object.freeze({
   completion: "exact-absence", ambiguousRecovery: "within-attempt", nativeProfile: "strict-reference", observeConflict: false,
 });
@@ -82,6 +87,7 @@ export async function deliverReferenceOperation(store: ReferenceRunnerStore, ope
   const claim = Object.freeze({ ...claimed, capture: Object.freeze({ ...claimed.capture }),
     locator: Object.freeze({ ...claimed.locator }), binding: Object.freeze({ ...claimed.binding }) });
   if (claim.binding.action === "delete") return deliverClaimedDelete(store, claim, ports, options, bounds);
+  if (claim.binding.action === "create") return deliverClaimedCreate(store, claim, ports, options, bounds);
   const saved = claim.receipt.provider;
   const priorProvider: RuntimeProviderFact = saved.kind === "accepted"
     ? { kind: "accepted", validator: saved.validator?.kind === "etag" ? saved.validator.value : null }
@@ -178,6 +184,62 @@ async function deliverClaimedDelete(store: ReferenceRunnerStore, claim: Referenc
     observationId: randomUUID,
     checkpoint: phase => options.checkpoint?.(phase),
   }, ports, REFERENCE_DELETE_POLICY, { timeoutMs: bounds.deadline, heartbeatMs: bounds.heartbeat, signal: options.signal });
+  return { status: result.status, operationId: claim.operationId, attemptId: claim.attemptId,
+    ...(result.error ? { code: referenceCode(result.error.code) } : {}) };
+}
+
+function createProtocolEvidence(facts: RuntimeCreateNativeFacts): Evidence {
+  return { provider: facts.provider.kind,
+    ...(facts.provider.kind === "accepted" && facts.provider.validator ? { validator: facts.provider.validator } : {}),
+    ...(facts.provider.kind === "rejected" ? { error: facts.provider.error } : {}),
+    remote: facts.remote.kind,
+    ...(facts.remote.kind === "unobserved" ? {} : { observationId: facts.remote.observationId }),
+  };
+}
+async function deliverClaimedCreate(store: ReferenceRunnerStore, claim: ReferenceClaim, ports: ReferenceRunnerPorts,
+  options: ReferenceRunnerOptions, bounds: { deadline: number; heartbeat: number }): Promise<ReferenceRunResult> {
+  const saved = claim.receipt.provider;
+  const priorProvider: RuntimeCreateProviderFact = saved.kind === "accepted"
+    ? { kind: "accepted", validator: saved.validator?.kind === "etag" ? saved.validator.value : null }
+    : saved.kind === "rejected" ? { kind: "rejected", error: saved.error }
+    : saved.kind === "uncertain" || claim.recovery ? { kind: "uncertain" } : { kind: "not-dispatched" };
+  let recorded: string | undefined;
+  const record = async (facts: RuntimeCreateNativeFacts, signal?: AbortSignal) => {
+    const evidence = createProtocolEvidence(facts);
+    await hostCall(() => store.recordEvidence(claim, evidence, signal)); recorded = JSON.stringify(evidence);
+  };
+  const result = await runClaimedGooglePersonalCreate({
+    operationId: claim.operationId, attemptId: claim.attemptId, payload: claim.payload, binding: claim.binding,
+    nativeTarget: { connectionId: claim.locator.connectionId, connectionGeneration: String(claim.capture.connectionGeneration), calendarId: claim.locator.calendarId, eventId: claim.locator.eventId },
+    recovery: { required: claim.recovery, possibleDispatch: claim.recovery }, priorProvider,
+  }, {
+    renew: () => store.renew(claim),
+    async prepare(signal) {
+      signal.throwIfAborted();
+      if (!store.completeCreate) throw new SyncRuntimeHostError({ code: "reference-create-completion-unavailable", outcome: "not-written" });
+      await options.checkpoint?.("claim"); signal.throwIfAborted();
+    },
+    accountSession: { open: (_connection, signal) => hostCall(() => store.getSession(claim, ports.clock.nowEpochMs(), signal)) },
+    async beforeMutation(_request, signal) {
+      if (!await hostCall(() => store.markDispatch(claim, signal))) throw new SyncRuntimeHostError({ code: "account-session-changed", outcome: "not-written" });
+    },
+    recordEvidence: record,
+    async ack(evidence, signal) {
+      if (evidence.kind !== "exact-readback" || !evidence.validator || !store.completeCreate)
+        throw new SyncRuntimeHostError({ code: "reference-confirmation-missing", outcome: "not-written" });
+      return await hostCall(() => store.completeCreate!(claim, { eventId: evidence.eventId, etag: evidence.validator!, projection: { ...evidence.projection } }, signal))
+        ? { kind: "acknowledged" } : { kind: "authority-rejected" };
+    },
+    async finish(outcome) {
+      const evidence = createProtocolEvidence(outcome.facts);
+      if (outcome.error.phase !== "decode" && JSON.stringify(evidence) !== recorded) await record(outcome.facts);
+      const delay = outcome.retryAfterMs;
+      const retryAfterMs = delay === undefined ? undefined : delay > Number.MAX_SAFE_INTEGER ? Infinity : Math.ceil(delay);
+      await store.finish(claim, outcome.status, { code: referenceCode(outcome.error.code), ...(retryAfterMs === undefined ? {} : { retryAfterMs }) });
+    },
+    observationId: randomUUID,
+    checkpoint: phase => options.checkpoint?.(phase),
+  }, ports, REFERENCE_CREATE_POLICY, { timeoutMs: bounds.deadline, heartbeatMs: bounds.heartbeat, signal: options.signal });
   return { status: result.status, operationId: claim.operationId, attemptId: claim.attemptId,
     ...(result.error ? { code: referenceCode(result.error.code) } : {}) };
 }

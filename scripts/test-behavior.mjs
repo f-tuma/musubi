@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const REPOSITORY = fileURLToPath(new URL("../", import.meta.url));
 const SUITES = {
   "google-delete": "packages/sync-runtime/src/behavior/google-delete.json",
+  "google-create": "packages/sync-runtime/src/behavior/google-create.json",
   "task-inspector": "apps/web/src/tests/behavior/task-inspector.json",
 };
 const validDuration = value => typeof value === "number" && Number.isFinite(value) && value >= 0;
@@ -35,7 +36,7 @@ export function parseArguments(args) {
     }
   }
   if (options.suite && !Object.hasOwn(SUITES, options.suite)) {
-    throw new BehaviorError("Unknown suite. Choose google-delete or task-inspector.");
+    throw new BehaviorError("Unknown suite. Choose google-delete, google-create or task-inspector.");
   }
   if (options.scenario && !options.suite) throw new BehaviorError("--scenario requires --suite.");
   if (options.list && options.scenario) throw new BehaviorError("Choose either --list or --scenario.");
@@ -147,8 +148,9 @@ async function runSuite(selection, options, { root, execute, env }) {
   let directory;
   try {
     let child, results, ancillaryFailed = false, uiFailed = false;
-    if (selection.name === "google-delete") {
-      child = await execute(process.execPath, ["--import", "tsx", join(root, "packages/sync-runtime/src/behavior/cli.ts"), "--json",
+    if (selection.name === "google-delete" || selection.name === "google-create") {
+      const entry = selection.name === "google-create" ? "create-cli.ts" : "cli.ts";
+      child = await execute(process.execPath, ["--import", "tsx", join(root, "packages/sync-runtime/src/behavior", entry), "--json",
         ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });
       results = runtimeResults(child.stdout, selection);
     } else {

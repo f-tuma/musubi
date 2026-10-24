@@ -33,7 +33,7 @@ export interface GoogleAccountSession {
 export interface GoogleRequestMetric {
   readonly provider: "google";
   readonly family: "event";
-  readonly method: "GET" | "PATCH" | "DELETE";
+  readonly method: "GET" | "POST" | "PATCH" | "DELETE";
   readonly status: number | "network-error" | "aborted";
   readonly durationMs: number;
 }
@@ -150,3 +150,34 @@ export type GoogleNativeDeleteEvidence = {
 export type GoogleNativeDeletePreflight =
   | { readonly kind: "allowed"; readonly event: GoogleNativeEvent; readonly etag: string }
   | GoogleNativeDeleteAbsence;
+
+/** Frozen personal timed CREATE data. The admitted operation UUID owns its ID and marker. */
+export interface GooglePersonalCreateBody {
+  readonly id: string;
+  readonly summary: string;
+  readonly description?: string | null;
+  readonly location?: string | null;
+  readonly recurrence: null;
+  readonly start: { readonly dateTime: string };
+  readonly end: { readonly dateTime: string };
+  readonly extendedProperties: { readonly private: { readonly musubiOperationID: string } };
+}
+export interface GooglePersonalCreate {
+  readonly target: GoogleEventTarget;
+  readonly body: GooglePersonalCreateBody;
+  readonly operationId: string;
+  readonly attemptId: string;
+  readonly serializer: { readonly id: "google-personal-event"; readonly version: 1 };
+}
+export interface GoogleCreateProviderPorts extends Omit<GoogleProviderPorts, "beforeMutation"> {
+  readonly beforeMutation: (request: GooglePersonalCreate, signal?: AbortSignal) => Promise<void>;
+}
+export type GoogleNativeCreateEvidence = {
+  readonly kind: "created";
+  readonly eventId: string;
+  readonly etag: string | null;
+};
+/** A CREATE recovery distinguishes exact 404 from a retained/deleted resource. */
+export type GoogleNativeCreateReadEvidence =
+  | { readonly kind: "present"; readonly event: GoogleNativeEvent; readonly etag: string | null }
+  | { readonly kind: "absent"; readonly status: 404 };
