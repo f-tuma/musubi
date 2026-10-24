@@ -117,14 +117,9 @@ for (const viewport of [{ name: "desktop", width: 1280, height: 900 }, { name: "
       await expect(page.locator("html")).toHaveAttribute("data-theme", viewport.name === "desktop" ? "light" : "dark");
       expect(await page.locator("vite-error-overlay").count()).toBe(0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-      await page.evaluate(async () => {
-        await document.fonts.ready;
-        await Promise.all(document.getAnimations()
-          .filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity)
-          .map(animation => animation.finished.catch(() => undefined)));
-      });
+      await page.evaluate(() => document.fonts.ready.then(() => undefined));
       const screenshot = join(tmpdir(), `musubi-behavior-${scenario.id}-${viewport.name}.png`);
-      await page.screenshot({ path: screenshot });
+      await page.screenshot({ path: screenshot, animations: "disabled" });
       await testInfo.attach("running-app", { path: screenshot, contentType: "image/png" });
     });
   }
