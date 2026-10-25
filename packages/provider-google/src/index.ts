@@ -1,3 +1,8 @@
+export { createGoogleTaskUpdateProvider } from "./task-update";
+import { strongGoogleEtag } from "./etag";
+export { strongGoogleEtag } from "./etag";
+export * from "./task-types";
+export { parseGoogleTaskProjection, parseGoogleTaskPatch, googleTaskProjectionFromNative, diffGoogleTaskProjection, sameGoogleTaskProjection, achievesGoogleTaskPatch, isStrictGoogleNativeTask } from "./task-projection";
 import { GoogleProviderError } from "./types";
 import type {
   GoogleAccountSession, GoogleEventTarget, GoogleNativeAttendee, GoogleNativeEndpoint,
@@ -45,10 +50,6 @@ function list(value: unknown): unknown[] {
   return value;
 }
 
-/** RFC 9110 strong entity-tag comparison, without repairing a native value. */
-export function strongGoogleEtag(value: unknown): string | null {
-  return typeof value === "string" && /^"[\x21\x23-\x7e\x80-\xff]*"$/.test(value) ? value : null;
-}
 function acceptedEtag(value: unknown): string {
   const tag = strongGoogleEtag(value);
   if (tag === null) throw new GoogleProviderError("provider-version-unavailable");

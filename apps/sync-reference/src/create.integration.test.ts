@@ -18,7 +18,7 @@ const key = "ab".repeat(32), store = new ReferenceStore(pool, key);
 const content: ReferenceContent = { name: "A synthetic CREATE", notes: null, place: "Room", beginsAt: "2026-10-24T08:00:00.000Z", endsAt: "2026-10-24T09:00:00.000Z" };
 const scope = "https://www.googleapis.com/auth/calendar.events";
 const rows = async () => (await pool.query(`SELECT c.relname,c.oid FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-  WHERE n.nspname='public' AND c.relname LIKE 'reference_%' AND c.relkind IN ('r','i') ORDER BY c.relname`)).rows;
+  WHERE n.nspname='public' AND c.relname LIKE 'reference_%' AND c.relname NOT LIKE 'reference_task_%' AND c.relkind IN ('r','i') ORDER BY c.relname`)).rows;
 let oldOids: unknown, oldPayloads: unknown, oldAttempts: unknown;
 let legacyUpdate: { operationId: string; claim: ReferenceClaim; content: ReferenceContent };
 async function legacyFixture() {

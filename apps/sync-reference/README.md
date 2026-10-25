@@ -3,11 +3,12 @@
 C05–C07 / MUSU-37–39 runs bounded Google personal event CREATE, UPDATE and DELETE profiles, separate Microsoft guarded personal DELETE and one-shot personal CREATE profiles, and CalDAV conditional personal CREATE/DELETE profiles with their own
 PostgreSQL ledger. It uses the C04 native provider ports, the C06 shared `@musubi/sync-runtime`
 already-claimed runner and the published v1 schema/plan validator, with no dependency on Musubi DB, auth, app config or API.
-Its content model is `ReferenceContent`, not a Musubi Event or Task.
+Its event content model is `ReferenceContent`; bounded Google Task UPDATE uses
+the independent richer `ReferenceTaskContent` and four separate task ledger tables.
 
 This is an extraction fixture and CLI. It is not the future Calendar Relay
 service. It has no account onboarding, OAuth refresh, scheduler, public API,
-meeting/recurrence/task support. Google CREATE reserves a new personal, nonrecurring timed event using an immutable operation UUID and exact UTC time endpoints. Google DELETE targets an existing exact native address with a strong accepted validator. Microsoft DELETE uses its original native weak ETag for a guarded preflight, with observe-only recovery and no CAS guarantee. Only `name`, `notes` and
+meeting/recurrence support or task CREATE/DELETE. Google CREATE reserves a new personal, nonrecurring timed event using an immutable operation UUID and exact UTC time endpoints. Google DELETE targets an existing exact native address with a strong accepted validator. Microsoft DELETE uses its original native weak ETag for a guarded preflight, with observe-only recovery and no CAS guarantee. Only `name`, `notes` and
 `place` can be changed on an existing personal nonrecurring timed event. The
 accepted time endpoints use canonical UTC instants and remain unchanged.
 
@@ -17,7 +18,7 @@ The executable reads only `REFERENCE_DATABASE_URL`,
 `REFERENCE_CREDENTIAL_KEY` (64 hexadecimal characters), and optional
 `REFERENCE_ALLOW_PRIVATE_NETWORK` (`true` or `false`, default `false`) for its
 CalDAV network policy. Use its own database;
-`migrate` applies only the five reference tables, never Musubi migrations.
+`migrate` applies the five event tables and four task ledger tables, never Musubi migrations.
 The key protects stored access tokens and strict Basic credential envelopes with AES-256-GCM and connection identity
 as authenticated data. Changing the key requires an explicit credential migration.
 Credentials are never written into operation envelopes or delivery receipts.
@@ -49,6 +50,10 @@ stdin return a safe error code.
 | `admit-caldav-create` | `{bindingId, expectedRevision, commandId, operationId}` | Commit the canonical revision and original full codec ICS for that exact reserved URL/UID |
 | `deliver` | `{operationId}` | Claim and run one bounded attempt |
 | `show` | `{operationId}` | Inspect operation, capture, receipt and binding without credentials |
+| `seed-task` | `ReferenceTaskSeed` | Bootstrap an existing exact native Google task list/task, strong ETag and full native baseline, with explicit Tasks grant and independent rich content |
+| `admit-task-update` | `{bindingId, expectedRevision, commandId, operationId, patch}` | Commit task canonical CAS, full original codec target, baseline and sorted field mask; this reference helper requires a lowercase UUID operation ID |
+| `deliver-task` | `{operationId}` | Claim and run only the bounded Google Task UPDATE family |
+| `show-task` | `{operationId}` | Inspect task content, capture, native baseline and receipt without credentials |
 
 `seed` is an explicit fixture/bootstrap input, not provider discovery or proof
 that an arbitrary baseline is current. Delivery performs fresh native preflight
@@ -408,3 +413,75 @@ Provider metrics count requests whose dispatch reaches the telemetry boundary.
 They are not a durable exactly-once audit across a process kill inside HTTP.
 
 [Milestone evidence and next gate](../../docs/planning/MUSU-37-independent-host.md)
+
+## Google Task UPDATE
+
+This separate C08 host gate updates an already addressed, nonrecurring,
+unassigned Google Task. It has its own `reference_task_objects`,
+`reference_task_bindings`, `reference_task_operations` and
+`reference_task_attempts`; the only shared storage is the private encrypted
+connection record. No task is represented as an event with invented times.
+The seven event profiles and their admitted payloads, histories, source epochs,
+Graph unknown-ID reservations and adopted nullable validators retain their
+existing schema and behavior. The additive task migration runs last and is
+repeatable over populated event and task histories.
+
+`ReferenceTaskContent` stores `name`, nullable `notes`, `state` (`todo`, `doing`,
+`done`), a full nullable UTC `dueAt`, and `importance` (`low`, `normal`, `high`).
+Admission adapts that content through the real `encodeTaskV1` serializer. Its
+Google target has exactly `title`, `notes`, two-state `status`, and day-only
+`due`; the richer canonical values remain unchanged by a native ACK. The
+original complete baseline, full target and sorted changed-field mask are
+frozen together. A title-only change sends only title. A rich-only change may
+have an empty mask and confirm through reads with no PATCH or invented native
+acceptance. The original strong ETag and baseline are never rebased from a new
+remote version. There is one unfinished operation per binding, including HOLD
+and conflict; no predecessor graph or resolution/supersession feature is added.
+
+The reference policy deliberately requires **all four target fields** to match
+an exact strong-tagged readback. If a concurrent actor changes untouched notes
+after a title PATCH, reference refuses ACK and retains the real accepted native
+fact and original binding baseline. It does not write a fictional desired
+baseline. Musubi's separately accepted saved-patch readback and lossy home/secondary
+semantics remain its own host policy. This reference gate does not claim those
+policies are interchangeable.
+
+`seed-task` requires explicit `provider: "google"` and
+`endpointProfile: "google-task-update-v1"`, a physical task-list/task ID, the
+four-field native baseline, token, expiry and exact
+`https://www.googleapis.com/auth/tasks` scope token. Calendar or readonly Tasks
+grants do not authorize this family. Bootstrap is an input assertion, not fresh
+provider evidence. Credentials are rechecked before native dispatch and ACK,
+with the independent integer connection/source/privacy/lifecycle generations.
+A new physical credential identity needs a new connection or explicit retirement/
+reconnection; replacing a non-null encrypted token alone is not an incarnation
+change. There is no reference OAuth refresh. The real codec requires a UUID
+context, so this new reference admission command requires a lowercase UUID;
+portable UPDATE operation identities remain opaque. Commands/idempotency keys
+are task-scoped, separate from event commands.
+
+Fresh nonempty delivery uses native GET, fresh preflight GET, final writer GET,
+one original-validator conditional PATCH and exact readback GET. A possible
+dispatch is durable before PATCH. After a lost reply, recovery can ACK a full
+matching target through GET only while retaining `provider=uncertain`. Otherwise
+only the unchanged original baseline and original strong ETag allow another
+conditional attempt, with the same immutable body. 404/410 never confirm UPDATE.
+412 is terminal conflict; Retry-After delays the next claim. A known rejected
+response stays rejected if a later recorded recovery read fully confirms the
+target; no acceptance is fabricated. An earlier accepted/uncertain fact survives
+a later failed or rejected retry.
+
+Task-specific `native_acceptance_status` columns record actual 200/201/204
+before success-body parsing, independently of a usable response validator.
+A malformed body, missing tag or failed verification cannot revoke that fact.
+An interrupted process can restore it without guessing from a result ref.
+An empty-mask GET-only ACK retains `provider=not-dispatched`. Task ACK updates
+only the real native baseline/ETag and operation atomically under the owned
+DB-clock lease and all current authority fences; waiting cancellation or lease
+expiry rolls back provisional writes. Canonical content is not reconstructed
+from the lossy provider projection. Native HTTP never runs inside those locks.
+
+Old event executables cannot process task commands/rows; there is no automatic
+event fallback. Only serial forward migration/worker replacement is covered,
+not downgrade or mixed-version task workers. This local extraction fixture is
+not production activation, deployment, or full C08 acceptance.

@@ -1,0 +1,871 @@
+{
+  "schemaVersion": 1,
+  "scope": "local installed independent reference Google Task UPDATE gate only; no registry publication or production deployment",
+  "status": "passed",
+  "createdAt": "2026-10-25T16:21:57.189270+00:00",
+  "gitHeadAtBuild": "1e5b83ab23d1235a960a312f70e15982a39824db",
+  "approvedStagedTreeAtBuild": "f5933ec65f32698d46952b3ba7a70b3fa923f48e",
+  "imageTag": "musubi-c08-google-task-update-reference:proof",
+  "oldDockerImageInspectId": "sha256:f1feebbff7813eb9f23f278f7665e197bd19bc24933ef2b14b5216c8ee907417",
+  "dockerImageInspectId": "sha256:a0b3ccccd624ddc0d37608b1626d8e5a80a411190d9eb320bdaa753f4deba771",
+  "localBuildIndexDigest": "sha256:a0b3ccccd624ddc0d37608b1626d8e5a80a411190d9eb320bdaa753f4deba771",
+  "platformManifestDigest": "sha256:9e77751d8875d5fbbdc6272865493d4c5e7337a21e4e87c37e6e5fd6b9b081c4",
+  "imageConfigDigest": "sha256:85443af193866e218fabb2e5874c14372600fc2e2e11b19ff0212b5fc6af1718",
+  "platform": {
+    "os": "linux",
+    "architecture": "amd64"
+  },
+  "dockerIdentityNote": "Docker image inspect Id identifies the local OCI index here. Platform manifest and image config digests are recorded separately. Local daemon metadata does not establish registry publication.",
+  "sourceContextFiles": 200,
+  "sourceContextFingerprint": "7cb450a4b5a28386d6ce78b1e531d8a8164814226b6493d7acac0a950c97f517",
+  "sourceContextScope": "Approved frozen tracked source COPY closure; .env, data, node_modules, build outputs and source symlinks excluded. No source bind mounts.",
+  "allSourceFiles": 172,
+  "allSourceFingerprint": "7f20ff9bdef9f0f0efd2bfbc30e56cb026df7c60cd9985b997242a32e1c7cd03",
+  "productionSourceFiles": 96,
+  "productionSourceFingerprint": "7eabb2600094c4017749dc474cf17b0b6f8bceea7d4b7bcb763f85d33f86e3a2",
+  "productionSourceFingerprintScope": "Reference, types, sync-codec, Google/Microsoft/CalDAV providers and shared runtime TS/SQL; excludes tests, process fixtures and behavior harnesses.",
+  "installedSourceHashParity": {
+    "checkedFiles": 172,
+    "productionFiles": 96,
+    "mismatches": []
+  },
+  "sourceInventoryAfterProof": {
+    "frozenFiles": 172,
+    "currentFiles": 172,
+    "byteEqual": true,
+    "addedRemovedOrModified": []
+  },
+  "fullContextInventoryAfterProof": {
+    "checkedFiles": 200,
+    "byteEqual": true,
+    "addedRemovedOrModified": []
+  },
+  "installedDependencies": {
+    "namedPackages": 30,
+    "packages": [
+      {
+        "name": "@esbuild/linux-x64",
+        "version": "0.28.2"
+      },
+      {
+        "name": "@musubi/provider-caldav",
+        "version": null
+      },
+      {
+        "name": "@musubi/provider-google",
+        "version": null
+      },
+      {
+        "name": "@musubi/provider-microsoft",
+        "version": null
+      },
+      {
+        "name": "@musubi/sync-codec",
+        "version": null
+      },
+      {
+        "name": "@musubi/sync-reference",
+        "version": null
+      },
+      {
+        "name": "@musubi/sync-runtime",
+        "version": null
+      },
+      {
+        "name": "@musubi/types",
+        "version": null
+      },
+      {
+        "name": "esbuild",
+        "version": "0.28.2"
+      },
+      {
+        "name": "ical.js",
+        "version": "2.2.1"
+      },
+      {
+        "name": "ipaddr.js",
+        "version": "1.9.1"
+      },
+      {
+        "name": "pg",
+        "version": "8.23.0"
+      },
+      {
+        "name": "pg-cloudflare",
+        "version": "1.4.0"
+      },
+      {
+        "name": "pg-connection-string",
+        "version": "2.14.0"
+      },
+      {
+        "name": "pg-int8",
+        "version": "1.0.1"
+      },
+      {
+        "name": "pg-pool",
+        "version": "3.14.0"
+      },
+      {
+        "name": "pg-protocol",
+        "version": "1.16.0"
+      },
+      {
+        "name": "pg-types",
+        "version": "2.2.0"
+      },
+      {
+        "name": "pgpass",
+        "version": "1.0.5"
+      },
+      {
+        "name": "postgres-array",
+        "version": "2.0.0"
+      },
+      {
+        "name": "postgres-bytea",
+        "version": "1.0.1"
+      },
+      {
+        "name": "postgres-date",
+        "version": "1.0.7"
+      },
+      {
+        "name": "postgres-interval",
+        "version": "1.2.0"
+      },
+      {
+        "name": "sax",
+        "version": "1.6.1"
+      },
+      {
+        "name": "split2",
+        "version": "4.2.0"
+      },
+      {
+        "name": "tsx",
+        "version": "4.23.12"
+      },
+      {
+        "name": "undici",
+        "version": "7.29.0"
+      },
+      {
+        "name": "xml-js",
+        "version": "1.6.11"
+      },
+      {
+        "name": "xtend",
+        "version": "4.0.2"
+      },
+      {
+        "name": "zod",
+        "version": "4.4.3"
+      }
+    ],
+    "forbiddenNamesChecked": [
+      "@musubi/db",
+      "@musubi/auth",
+      "@musubi/config",
+      "@musubi/mobile",
+      "better-auth",
+      "expo",
+      "react-native"
+    ],
+    "forbiddenNamesPresent": []
+  },
+  "execution": {
+    "customUpgradeNativeProbe": {
+      "cases": 24,
+      "installedCliInvocations": 121,
+      "nativeFixtureRequests": 122,
+      "durationMs": 93089,
+      "nativeRequestCounts": {
+        "microsoft": {
+          "GET": 11,
+          "POST": 2,
+          "DELETE": 1
+        },
+        "caldav": {
+          "PROPFIND": 2,
+          "PUT": 1,
+          "GET": 4,
+          "DELETE": 1
+        },
+        "google": {
+          "GET": 9,
+          "POST": 1,
+          "PATCH": 1,
+          "DELETE": 1
+        },
+        "google-task": {
+          "GET": 72,
+          "PATCH": 16
+        }
+      },
+      "realSigkillCases": 7,
+      "sigkillExitCodes": [
+        137
+      ]
+    },
+    "fullInstalledCorpus": {
+      "pureCases": 138,
+      "storageCases": 137,
+      "nativeProcessCases": 213,
+      "nativeProcessFamilyCounts": {
+        "Reference process fixture": 30,
+        "Reference DELETE process fixture": 18,
+        "Reference CREATE process fixture": 22,
+        "Reference Graph guarded DELETE process": 17,
+        "Reference CalDAV conditional DELETE process": 28,
+        "Reference Graph CREATE process": 31,
+        "Reference CalDAV conditional CREATE process": 42,
+        "Reference Task process": 25
+      },
+      "runs": [
+        {
+          "script": "test",
+          "log": "installed-pure.log",
+          "name": "musu40-task-corpus-9272696a-36de-48e3-8fae-02696a629578",
+          "code": 0,
+          "signal": null,
+          "durationMs": 5391,
+          "image": "musubi-c08-google-task-update-reference:proof",
+          "sourceMounts": 0,
+          "readOnlyFilesystem": true,
+          "configuration": [
+            "REFERENCE_DATABASE_URL",
+            "REFERENCE_CREDENTIAL_KEY",
+            "npm_config_cache"
+          ],
+          "scope": "all test functions installed in production image; synthetic owned database and native HTTP ports only"
+        },
+        {
+          "script": "test:db",
+          "log": "installed-db-process.log",
+          "name": "musu40-task-corpus-3b18f873-260c-4620-94dc-118bd7e3b00a",
+          "code": 0,
+          "signal": null,
+          "durationMs": 241417,
+          "image": "musubi-c08-google-task-update-reference:proof",
+          "sourceMounts": 0,
+          "readOnlyFilesystem": true,
+          "configuration": [
+            "REFERENCE_DATABASE_URL",
+            "REFERENCE_CREDENTIAL_KEY",
+            "ENVIRONMENT=test (test harness only)",
+            "npm_config_cache"
+          ],
+          "parentNonceDatabase": "reference_installed_task_corpus_ddc33f6082384b0dacbcd2c81e539420",
+          "scope": "all test functions installed in production image; isolated owned parent nonce plus per-fixture nonce databases and native HTTP ports only"
+        }
+      ],
+      "harnessNote": "The oldest process harness requires ENVIRONMENT=test. Final installed corpus runs in its own parent nonce database; each child fixture keeps its own nonce. A first harness configuration attempt stopped before that process suite and was corrected without source/image changes."
+    },
+    "runtimeUser": "node",
+    "sourceBindMounts": 0,
+    "readOnlyContainerFilesystem": true,
+    "temporaryFilesystem": "/tmp only",
+    "productionCliConfigurationNames": [
+      "REFERENCE_DATABASE_URL",
+      "REFERENCE_CREDENTIAL_KEY",
+      "REFERENCE_ALLOW_PRIVATE_NETWORK"
+    ],
+    "oldAndNewDeploymentsSerial": true
+  },
+  "upgrade": {
+    "preservedOldFamilies": [
+      "google/event/create",
+      "google/event/update",
+      "google/event/delete",
+      "microsoft/event/create",
+      "microsoft/event/delete",
+      "caldav/event/create",
+      "caldav/event/delete"
+    ],
+    "oldRowCounts": {
+      "reference_connections": 8,
+      "reference_objects": 8,
+      "reference_bindings": 8,
+      "reference_operations": 8,
+      "reference_attempts": 8
+    },
+    "oldTableAndIndexOidsPreserved": 15,
+    "oldPayloadFingerprints": [
+      {
+        "provider": "google",
+        "action": "create",
+        "sha256": "15a75f10d49824e1fcb2a58bed0b582f8801c2a5f70ad0d4897411265173c220"
+      },
+      {
+        "provider": "google",
+        "action": "update",
+        "sha256": "625934f104f0f3c06e63a49a71f711c320c4b30e7573e66e2e2033a80cb9596a"
+      },
+      {
+        "provider": "google",
+        "action": "delete",
+        "sha256": "225ff50f4c44fd56a73cd8aa17258334ddab8a018044678463f07867926b1228"
+      },
+      {
+        "provider": "microsoft",
+        "action": "delete",
+        "sha256": "c03e4f9e9c350a38393e4af1c1d5b60007737d19d7ad805dfaba10acfe869275"
+      },
+      {
+        "provider": "caldav",
+        "action": "delete",
+        "sha256": "a9cfba8ca543f11bb4c4a6c924597e387e61705a93ca06b2aa2faf3d79c36d31"
+      },
+      {
+        "provider": "microsoft",
+        "action": "create",
+        "sha256": "79dc85a5fe0f14578c9bc3cc98c544e1823d0a919250340801b343753c921e3d"
+      },
+      {
+        "provider": "caldav",
+        "action": "create",
+        "sha256": "25038f210addd2a296b38c9cee5a77192526b158ffb987acc429849a6812d9c8"
+      }
+    ],
+    "oldPendingOperationsDelivered": 7,
+    "fullOldHistoryRowsEpochsAndNativeSidecarsPreserved": true,
+    "graphUnknownAdmittedIdAndAdoptedNullValidatorPreserved": true,
+    "combinedEventTaskRowCountsAfterProbe": {
+      "reference_connections": 28,
+      "reference_objects": 8,
+      "reference_bindings": 8,
+      "reference_operations": 8,
+      "reference_attempts": 15,
+      "reference_task_objects": 20,
+      "reference_task_bindings": 20,
+      "reference_task_operations": 20,
+      "reference_task_attempts": 30
+    },
+    "combinedTableAndIndexOidsPreserved": 28,
+    "populatedFullChainMigrationRepeats": 2
+  },
+  "taskPolicy": {
+    "family": "google/task/update/google-task@1",
+    "referenceProfile": "google-task-update-v1",
+    "readback": "full-target",
+    "nativeProfile": "strict-reference",
+    "ambiguousRecovery": "within-attempt",
+    "canonicalRichStateTimeImportanceRetained": true,
+    "originalFullTargetBaselineAndSortedMaskImmutable": true,
+    "acceptedHttpStatusDurableBeforeResponseBodyParse": true,
+    "tasksGrantSeparateFromCalendar": true,
+    "eventFallback": false,
+    "helperOperationIds": "Reference CLI lowercase UUID requirement comes from the real codec context; portable claimed UPDATE IDs remain opaque."
+  },
+  "cases": [
+    {
+      "case": "old-installed-all-seven-profiles-DAV-sidecars-Graph-unknown-adopted-null-forward-upgrade",
+      "status": "passed"
+    },
+    {
+      "case": "old-installed-task-command-refused-before-upgrade-no-fallback",
+      "status": "passed",
+      "exitCode": 1
+    },
+    {
+      "case": "all-seven-profile-history-repeat-migrate-preserves-full-ledger",
+      "status": "passed"
+    },
+    {
+      "case": "Task-title-only-five-native-calls-original-condition-rich-canonical",
+      "status": "passed",
+      "final": {
+        "provider": "accepted",
+        "remote": "confirmed",
+        "nativeAcceptanceStatus": 200,
+        "originalTargetAndMaskPreserved": true,
+        "exactNativeAddress": true,
+        "strongReadback": true,
+        "richCanonicalPreserved": true,
+        "bodyHashes": [
+          "eb7a1cb78ff0ac07214a9fe3bcd5229b17640ecff5006a31ae58f589886456ee"
+        ],
+        "patchCount": 1
+      }
+    },
+    {
+      "case": "Task-empty-mask-native-readonly-no-fabricated-acceptance",
+      "status": "passed",
+      "final": {
+        "provider": "not-dispatched",
+        "remote": "confirmed",
+        "nativeAcceptanceStatus": null,
+        "originalTargetAndMaskPreserved": true,
+        "exactNativeAddress": true,
+        "strongReadback": true,
+        "richCanonicalPreserved": true,
+        "bodyHashes": [],
+        "patchCount": 0
+      }
+    },
+    {
+      "case": "Task-SIGKILL-after-durable-marker-before-PATCH-same-original-conditional-body",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "final": {
+        "provider": "accepted",
+        "remote": "confirmed",
+        "nativeAcceptanceStatus": 200,
+        "originalTargetAndMaskPreserved": true,
+        "exactNativeAddress": true,
+        "strongReadback": true,
+        "richCanonicalPreserved": true,
+        "bodyHashes": [
+          "eb7a1cb78ff0ac07214a9fe3bcd5229b17640ecff5006a31ae58f589886456ee"
+        ],
+        "patchCount": 1
+      }
+    },
+    {
+      "case": "Task-SIGKILL-accepted200-before-bodyparse-native-status-durable-GETonly",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "final": {
+        "provider": "accepted",
+        "remote": "confirmed",
+        "nativeAcceptanceStatus": 200,
+        "originalTargetAndMaskPreserved": true,
+        "exactNativeAddress": true,
+        "strongReadback": true,
+        "richCanonicalPreserved": true,
+        "bodyHashes": [
+          "eb7a1cb78ff0ac07214a9fe3bcd5229b17640ecff5006a31ae58f589886456ee"
+        ],
+        "patchCount": 1
+      }
+    },
+    {
+      "case": "Task-SIGKILL-lost-applied-response-readonly-ACK-retains-uncertain",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "final": {
+        "provider": "uncertain",
+        "remote": "confirmed",
+        "nativeAcceptanceStatus": null,
+        "originalTargetAndMaskPreserved": true,
+        "exactNativeAddress": true,
+        "strongReadback": true,
+        "richCanonicalPreserved": true,
+        "bodyHashes": [
+          "eb7a1cb78ff0ac07214a9fe3bcd5229b17640ecff5006a31ae58f589886456ee"
+        ],
+        "patchCount": 1
+      }
+    },
+    {
+      "case": "Task-SIGKILL-unapplied-response-original-baseline-conditional-retry-no-rebase",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "final": {
+        "provider": "accepted",
+        "remote": "confirmed",
+        "nativeAcceptanceStatus": 200,
+        "originalTargetAndMaskPreserved": true,
+        "exactNativeAddress": true,
+        "strongReadback": true,
+        "richCanonicalPreserved": true,
+        "bodyHashes": [
+          "eb7a1cb78ff0ac07214a9fe3bcd5229b17640ecff5006a31ae58f589886456ee",
+          "eb7a1cb78ff0ac07214a9fe3bcd5229b17640ecff5006a31ae58f589886456ee"
+        ],
+        "patchCount": 2
+      }
+    },
+    {
+      "case": "Task-SIGKILL-after-confirmed-readback-before-ACK-restarts-GETonly",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "final": {
+        "provider": "accepted",
+        "remote": "confirmed",
+        "nativeAcceptanceStatus": 200,
+        "originalTargetAndMaskPreserved": true,
+        "exactNativeAddress": true,
+        "strongReadback": true,
+        "richCanonicalPreserved": true,
+        "bodyHashes": [
+          "eb7a1cb78ff0ac07214a9fe3bcd5229b17640ecff5006a31ae58f589886456ee"
+        ],
+        "patchCount": 1
+      }
+    },
+    {
+      "case": "Task-malformed-json-accepted-native-fact-then-strong-full-readback",
+      "status": "passed",
+      "final": {
+        "provider": "accepted",
+        "remote": "confirmed",
+        "nativeAcceptanceStatus": 200,
+        "originalTargetAndMaskPreserved": true,
+        "exactNativeAddress": true,
+        "strongReadback": true,
+        "richCanonicalPreserved": true,
+        "bodyHashes": [
+          "eb7a1cb78ff0ac07214a9fe3bcd5229b17640ecff5006a31ae58f589886456ee"
+        ],
+        "patchCount": 1
+      }
+    },
+    {
+      "case": "Task-missing-tag-accepted-native-fact-then-strong-full-readback",
+      "status": "passed",
+      "final": {
+        "provider": "accepted",
+        "remote": "confirmed",
+        "nativeAcceptanceStatus": 200,
+        "originalTargetAndMaskPreserved": true,
+        "exactNativeAddress": true,
+        "strongReadback": true,
+        "richCanonicalPreserved": true,
+        "bodyHashes": [
+          "eb7a1cb78ff0ac07214a9fe3bcd5229b17640ecff5006a31ae58f589886456ee"
+        ],
+        "patchCount": 1
+      }
+    },
+    {
+      "case": "Task-204-accepted-native-fact-then-strong-full-readback",
+      "status": "passed",
+      "final": {
+        "provider": "accepted",
+        "remote": "confirmed",
+        "nativeAcceptanceStatus": 204,
+        "originalTargetAndMaskPreserved": true,
+        "exactNativeAddress": true,
+        "strongReadback": true,
+        "richCanonicalPreserved": true,
+        "bodyHashes": [
+          "eb7a1cb78ff0ac07214a9fe3bcd5229b17640ecff5006a31ae58f589886456ee"
+        ],
+        "patchCount": 1
+      }
+    },
+    {
+      "case": "Task-prior-uncertain-current429-sticky-truth-later-GETonly-ACK",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "final": {
+        "provider": "uncertain",
+        "remote": "confirmed",
+        "nativeAcceptanceStatus": null,
+        "originalTargetAndMaskPreserved": true,
+        "exactNativeAddress": true,
+        "strongReadback": true,
+        "richCanonicalPreserved": true,
+        "bodyHashes": [
+          "eb7a1cb78ff0ac07214a9fe3bcd5229b17640ecff5006a31ae58f589886456ee",
+          "eb7a1cb78ff0ac07214a9fe3bcd5229b17640ecff5006a31ae58f589886456ee"
+        ],
+        "patchCount": 2
+      }
+    },
+    {
+      "case": "Task-known429-next-conditional-PATCH-lost-reply-retains-new-uncertainty",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "final": {
+        "provider": "uncertain",
+        "remote": "confirmed",
+        "nativeAcceptanceStatus": null,
+        "originalTargetAndMaskPreserved": true,
+        "exactNativeAddress": true,
+        "strongReadback": true,
+        "richCanonicalPreserved": true,
+        "bodyHashes": [
+          "eb7a1cb78ff0ac07214a9fe3bcd5229b17640ecff5006a31ae58f589886456ee",
+          "eb7a1cb78ff0ac07214a9fe3bcd5229b17640ecff5006a31ae58f589886456ee"
+        ],
+        "patchCount": 2
+      }
+    },
+    {
+      "case": "Task-concurrent-untouched-notes-refuses-FULLtarget-ACK-no-fake-baseline",
+      "status": "passed",
+      "providerFact": "accepted",
+      "patchCount": 1,
+      "baselineUnchanged": true
+    },
+    {
+      "case": "Task-native-404-refusal-no-ACK-no-extra-write",
+      "status": "passed",
+      "patchCount": 0,
+      "originalBaselineRetained": true
+    },
+    {
+      "case": "Task-native-410-refusal-no-ACK-no-extra-write",
+      "status": "passed",
+      "patchCount": 0,
+      "originalBaselineRetained": true
+    },
+    {
+      "case": "Task-native-assigned-refusal-no-ACK-no-extra-write",
+      "status": "passed",
+      "patchCount": 0,
+      "originalBaselineRetained": true
+    },
+    {
+      "case": "Task-native-deleted-refusal-no-ACK-no-extra-write",
+      "status": "passed",
+      "patchCount": 0,
+      "originalBaselineRetained": true
+    },
+    {
+      "case": "Task-native-weak-refusal-no-ACK-no-extra-write",
+      "status": "passed",
+      "patchCount": 0,
+      "originalBaselineRetained": true
+    },
+    {
+      "case": "Task-native-412-refusal-no-ACK-no-extra-write",
+      "status": "passed",
+      "patchCount": 1,
+      "originalBaselineRetained": true
+    },
+    {
+      "case": "Task-Calendar-grant-does-not-authorize-Tasks-zero-native-HTTP",
+      "status": "passed",
+      "requests": 0
+    },
+    {
+      "case": "combined-seven-event-profiles-and-task-ledger-populated-repeat-migrate-preserves-history-OIDs",
+      "status": "passed"
+    }
+  ],
+  "cleanup": {
+    "databaseName": "reference_installed_c08_task_4491a5f0bb6a4f3884611d371936c6a5",
+    "dropped": true,
+    "parentCorpusDatabase": "reference_installed_task_corpus_ddc33f6082384b0dacbcd2c81e539420",
+    "parentCorpusDropped": true,
+    "remainingOwnedNonceDatabases": [],
+    "remainingOwnedContainers": [],
+    "rootOwnedQaPgRunning": true,
+    "rootOwnedQaPgDisposition": "left running for parent/API author; do not remove another author container",
+    "earlierSourceHarnessAdminSchema": "synthetic reference fixtures in parent-owned QA postgres admin are left for parent container cleanup; final installed gates used own nonce databases",
+    "verifiedAt": "2026-10-25T16:20:57.680Z"
+  },
+  "evidenceDistinctions": {
+    "implementation": "Exact approved frozen source and its locally installed image verified.",
+    "publication": "No registry publication established by this proof.",
+    "productionDeployment": "Not performed or established by this proof.",
+    "acceptance": "Bounded independent reference host gate; not full C08 completion or live provider acceptance."
+  },
+  "limits": [
+    "All provider resources/tokens are synthetic and served by owned loopback fixtures; external DNS, TLS, provider endpoints and real OAuth are not exercised.",
+    "Production CLI/native provider/runtime/credential ports/PostgreSQL and physical container SIGKILL are real installed code. A test-only bounded preload preserves logical native URLs and rejects nonfixture fetches; there is no production fixture URL switch or source mount.",
+    "Reference full-target readback intentionally refuses concurrent untouched-field changes. Musubi saved-patch readback and lossy home/secondary authority remain a separate host policy and separate API evidence.",
+    "Only already-addressed nonrecurring unassigned Google Task UPDATE is adopted. Task CREATE/DELETE, unknown-address predecessor adoption, hierarchy/move/assignment/reorder, source import, OAuth refresh, resolution/supersession and fanout are outside this gate.",
+    "An original-validator conditional PATCH is exercised, without claiming a new provider CAS guarantee. Historical provider accepted/uncertain/rejected facts remain separate from current outcome/error and readback confirmation.",
+    "Old image migration/seed/admission and all pending delivery upgrade transitions are serial. Unsupported old task commands refuse before upgrade. No downgrade or mixed-version task-worker contract is claimed.",
+    "All final installed gate databases and containers are removed. The parent-owned QA PostgreSQL container, including earlier synthetic source-harness admin fixtures, remains for parent/API author cleanup."
+  ],
+  "commands": {
+    "build": "docker build -f apps/sync-reference/Dockerfile -t musubi-c08-google-task-update-reference:proof /tmp/musu40-task-reference-context",
+    "customProbe": "node /tmp/musu40-task-installed-reference.mjs",
+    "fullInstalledCorpus": "node /tmp/musu40-run-installed-reference-corpus.mjs"
+  },
+  "artifacts": [
+    {
+      "path": "/tmp/musu40-task-reference-evidence/installed-reference-proof.json",
+      "sha256": "618531ecc73ac0e0876750254b5bef4577f91849495c83a44eb4dd1281fa2db2",
+      "bytes": 98736
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/artifact-attestation.json",
+      "sha256": "f80440b90c554f63336232a268403494bed8561596b9d07553b89a3e8db3d6d8",
+      "bytes": 1016
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/source-manifest.json",
+      "sha256": "e0553493eaa51758ab28c3611bb52ac3749bd931abe8f34567971f6fc5acdc28",
+      "bytes": 19553
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/runtime-source-manifest.json",
+      "sha256": "be741ca040205a75217d2aba46ae2dfdf6e5018553ce088b38dc6692496c082c",
+      "bytes": 10490
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/installed-source-manifest.json",
+      "sha256": "ea35a77feca95f78bfb42dbd03a529d68301816e272844f834992ff47d81e0dd",
+      "bytes": 19553
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/installed-runtime-source-manifest.json",
+      "sha256": "be741ca040205a75217d2aba46ae2dfdf6e5018553ce088b38dc6692496c082c",
+      "bytes": 10490
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/installed-package-map.json",
+      "sha256": "bce1b58a6a46296755dce1bb5f77a0eae396225271919d074ec52727bfc7a0ac",
+      "bytes": 1782
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/current-source-inventory.json",
+      "sha256": "4b832a74f64da34dd5ee084406447e6891b72d962c755433354d612ad77039a6",
+      "bytes": 101
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/current-context-inventory.json",
+      "sha256": "e28d306e5156e2ae58a7203d02963e60d3f58d3e5541310e498db481c3a175fa",
+      "bytes": 79
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/old-ledger-before-upgrade.json",
+      "sha256": "237bac4f88360301d6a34c8dbb5cf571348d335cf41e7c1f256040440b028ead",
+      "bytes": 9175
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/new-ledger-after-upgrade.json",
+      "sha256": "237bac4f88360301d6a34c8dbb5cf571348d335cf41e7c1f256040440b028ead",
+      "bytes": 9175
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/combined-event-task-ledger-repeat-migrate.json",
+      "sha256": "8965b042bedfe0b3f1f38ece5bb52633bc4574dc41fbd74901f3c1d55ecd746f",
+      "bytes": 3541
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/http-requests.json",
+      "sha256": "33627bdaeaa13f6002cb1bfc90de21fcc31e82c0649e756494c10fcb1971bd26",
+      "bytes": 27971
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/image-inventory.json",
+      "sha256": "2b8983d14c89597ce6af5508162e132612ee741c3db33154845892b5034bc63e",
+      "bytes": 1123
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/build-context.json",
+      "sha256": "979aec28b604687740e60e970ba84d12d279c0c48ebf5d28f06ba3034d4d34e3",
+      "bytes": 486
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/build-context-manifest.json",
+      "sha256": "00154343fca8ac4c2722b9316e80ea413c04092ddd316bf0f4d85b435304391a",
+      "bytes": 22516
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/build.log",
+      "sha256": "f62e4faf5c7a67f420561cb2e1a7e969ec489b85e3c412223cb5680827411404",
+      "bytes": 3396
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/cleanup.json",
+      "sha256": "376bb6d7c983799a1f7b68eeaa6937b9dc9c53e73795b3b15d2d47529ba8cfa5",
+      "bytes": 165
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/cleanup-verified.json",
+      "sha256": "eade05a8b052b4b9fbc084e4430a19b87e7774543ecbf8df629da88102bc0043",
+      "bytes": 675
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/installed-reference-probe.mjs",
+      "sha256": "a748b10fcd41f0b38c47043ca512fe96125bc15a0516804416ff6e941c3a2f6d",
+      "bytes": 63842
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/installed-corpus.json",
+      "sha256": "13b89ab35ba95ff4ed41d809830d79165425c1eae62b8e989fb60b655fc4c58b",
+      "bytes": 1289
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/installed-corpus-runner.mjs",
+      "sha256": "1055a8c0d6ab87bea31a10ca3584d801c1f86662492f63e926933b85afae75b9",
+      "bytes": 2535
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/installed-pure.log",
+      "sha256": "ebfd2023a20a2545bf28ce789478782b6d11a89c588c27e5946a347b32b6cdfb",
+      "bytes": 34142
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/installed-db-process.log",
+      "sha256": "22c27b5ff0781ddab92d1c8e7c54fb8164b7db83d654bddf6e0db9c6b93f7b51",
+      "bytes": 55075
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/installed-corpus-cleanup.json",
+      "sha256": "4c8f64e9c8998be2ec0132cb581b3db8c74de849c3e58f805f50c8202c328f34",
+      "bytes": 219
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/installed-command-artifact-manifest.json",
+      "sha256": "4be636071cd18d92472f098aa2e23591c0606be095bf735c819d83d7f8169857",
+      "bytes": 14655
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/installed-corpus-first-attempt.json",
+      "sha256": "314e3832f147358ee0c816d69706ea39fbfd58b038739715f9f32c81d416db44",
+      "bytes": 1110
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/installed-db-process-first-attempt.log",
+      "sha256": "b930b7b77e8fa80a2a09ac56154e99cc00fd8cfe665aa6f267711d1504eb4d61",
+      "bytes": 8569
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/checkpoint-task-accepted-before-parse.json",
+      "sha256": "ce87ba76070bb92affd93e32006536c8c2d232c4c1dc8d47f720ec675779dc11",
+      "bytes": 1884
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/checkpoint-task-before-patch.json",
+      "sha256": "a467d4fab2ffe0fff02cac02a2eb102316fc4b2d3e539f5585aadefaa0a19250",
+      "bytes": 1884
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/checkpoint-task-confirmed-before-ack.json",
+      "sha256": "3d1b3c12ec208403d4e1ab7f365b5ae6937dd8c90a1f9e199b6c22012c0d6b45",
+      "bytes": 2204
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/checkpoint-task-known429-new-unknown.json",
+      "sha256": "4a3fe5adc5400b61a2053e7d075ba58c6178e77ad3f7dafe4ff3c84328debf0d",
+      "bytes": 2747
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/checkpoint-task-lost-applied.json",
+      "sha256": "d87800e58d68cfb84ee6a3fe21fd491137970abb337a3241ad19a14a96ff0786",
+      "bytes": 1888
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/checkpoint-task-lost-unapplied.json",
+      "sha256": "a4d26788f3379ba75aab58d37d5c14f8211979e1950289d0af1cd7aa2df90cbd",
+      "bytes": 1888
+    },
+    {
+      "path": "/tmp/musu40-task-reference-evidence/checkpoint-task-uncertain-429.json",
+      "sha256": "50710893a4e0efd93cbc41a71f3e3773ed9afae66fac6b8b454ca3c43d412bf4",
+      "bytes": 1888
+    }
+  ]
+}

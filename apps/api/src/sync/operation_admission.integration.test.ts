@@ -40,6 +40,7 @@ async function main() {
     // This fixture supplies a pinned transport itself; it does not register native HTTP ports.
     googlePersonalCreateV1: undefined,
     googlePersonalContentV1: undefined,
+    googleTaskUpdateV1: undefined,
     projectEvent() { projectors++; throw new Error("Current event mapper B must never run"); },
     projectTask() { projectors++; throw new Error("Current task mapper B must never run"); },
     async assertEventWrite() {},

@@ -1,4 +1,6 @@
 export * from "./ports";
+export * from "./google-task-update-ports";
+export { runClaimedGoogleTaskUpdate, supportsGoogleTaskUpdateEnvelope } from "./google-task-update";
 export * from "./attempt";
 export * from "./trace";
 export { runClaimedGooglePersonalUpdate, supportsGooglePersonalUpdateEnvelope } from "./google-personal-update";

@@ -24,7 +24,7 @@ async function confirmed(claim: ReferenceClaim, provider: "accepted" | "uncertai
   if (provider !== "not-dispatched") await store.markDispatch(claim);
   await store.recordEvidence(claim, { provider, ...(provider === "accepted" ? { acceptanceStatus: 204 as const } : {}), ...(provider === "rejected" ? { error: { code: "rate-limited", retry: "after-delay" as const, retryAfterMs: 9000 } } : {}), remote: "confirmed", observationId: randomUUID() });
 }
-const oids = async () => (await pool.query("SELECT relname,oid FROM pg_class WHERE relname LIKE 'reference_%' AND relkind IN ('r','i') ORDER BY relname")).rows;
+const oids = async () => (await pool.query("SELECT relname,oid FROM pg_class WHERE relname LIKE 'reference_%' AND relname NOT LIKE 'reference_task_%' AND relkind IN ('r','i') ORDER BY relname")).rows;
 const old: { action: string; id: string; claim: ReferenceClaim; eventId: string }[] = [];
 let beforeOids: unknown, beforeRows: unknown, beforeAttempts: unknown;
 const oldRows = () => pool.query("SELECT id,payload,receipt,accepted_etag,connection_generation,source_generation,privacy_generation,canonical_generation,provider,endpoint_profile FROM reference_operations ORDER BY id").then(r => r.rows);

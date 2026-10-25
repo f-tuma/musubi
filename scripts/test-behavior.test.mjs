@@ -8,6 +8,7 @@ import { parseArguments, runBehavior, runCli } from "./test-behavior.mjs";
 const manifests = {
   "google-delete": "packages/sync-runtime/src/behavior/google-delete.json",
   "google-create": "packages/sync-runtime/src/behavior/google-create.json",
+  "google-task-update": "packages/sync-runtime/src/behavior/google-task-update.json",
   "microsoft-delete": "packages/sync-runtime/src/behavior/microsoft-delete.json",
   "microsoft-create": "packages/sync-runtime/src/behavior/microsoft-create.json",
   "caldav-delete": "packages/sync-runtime/src/behavior/caldav-delete.json",
@@ -122,6 +123,18 @@ test("task delivery runs only its fixed module-port CLI and rejects another boun
     stdout: JSON.stringify({ schemaVersion: 1, suite: "task-delivery", error: { code: "unexpected-port", scenarioId: "second", message: "PRIVATE PORT DETAIL" } }) }) });
   assert.equal(portFailure.suites[0].errorCode, "unexpected-port"); assert.equal(portFailure.suites[0].scenarioId, "second");
   assert.ok(!JSON.stringify(portFailure).includes("PRIVATE"));
+});
+
+test("Google task UPDATE uses its fixed shared-kernel CLI and rejects an event suite report", async t => {
+  const root = await fixture(t), args = ["--suite", "google-task-update", "--scenario", "second"];
+  const report = await runBehavior(args, { root, execute: async (command, childArgs) => {
+    assert.equal(command, process.execPath);
+    assert.deepEqual(childArgs, ["--import", "tsx", join(root, "packages/sync-runtime/src/behavior/google-task-update-cli.ts"), "--json", "--scenario", "second"]);
+    return runtime([scenarios[1]], { suite: "google-task-update" });
+  } });
+  assert.equal(report.passed, 1); assert.equal(report.errors, 0);
+  const wrong = await runBehavior(args, { root, execute: async () => runtime([scenarios[1]], { suite: "google-create" }) });
+  assert.equal(wrong.failed, 1); assert.equal(wrong.suites[0].results[0].status, "failed");
 });
 
 test("Graph selection uses its fixed CLI and rejects another provider's report", async t => {
@@ -345,6 +358,7 @@ test("default runs every fixed suite and emits one clean aggregate JSON document
   const code = await runCli(["--json"], line => output.push(line), { root, execute: async (_command, args) => {
     launches++;
     if (args.includes("--import")) return runtime(scenarios, { suite: args.some(arg => arg.endsWith("/task-delivery-cli.ts")) ? "task-delivery" :
+      args.some(arg => arg.endsWith("/google-task-update-cli.ts")) ? "google-task-update" :
       args.some(arg => arg.endsWith("/caldav-create-cli.ts")) ? "caldav-create" :
       args.some(arg => arg.endsWith("/microsoft-create-cli.ts")) ? "microsoft-create" :
       args.some(arg => arg.endsWith("/caldav-delete-cli.ts")) ? "caldav-delete" :
@@ -354,11 +368,11 @@ test("default runs every fixed suite and emits one clean aggregate JSON document
     return { code: 0, stdout: "NOISY CHILD STDOUT", stderr: "NOISY CHILD STDERR" };
   } });
   assert.equal(code, 0);
-  assert.equal(launches, 8);
+  assert.equal(launches, 9);
   assert.equal(output.length, 1);
   const report = JSON.parse(output[0]);
   assert.equal(report.schemaVersion, 1);
-  assert.equal(report.passed, 16);
+  assert.equal(report.passed, 18);
   assert.equal(report.failed, 0);
   assert.deepEqual(report.suites.map(item => item.suite), Object.keys(manifests));
   assert.ok(!output[0].includes("NOISY"));

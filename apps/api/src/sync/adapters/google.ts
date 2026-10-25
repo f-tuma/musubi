@@ -1,4 +1,6 @@
 import { googlePersonalEventBridge, googlePersonalProviderPorts } from "./google_provider_bridge";
+import { googleTaskProviderPorts } from "./google_task_provider_bridge";
+import { googleTaskProjectionFromNative } from "@musubi/provider-google";
 import { googleOrganizerTransport } from "./google_organizer_delivery";
 import type { NativeWritePlanV1 } from "@musubi/sync-codec";
 import { pinnedJsonBodyV1 } from "../pinned_write";
@@ -402,7 +404,7 @@ export async function readGoogleTask(accessToken: string, taskListId: string, ex
   // Assigned Docs/Spaces tasks have different writable fields and deletion
   // semantics. They are readable, but not general Musubi write destinations.
   if (value.assignmentInfo) throw new ProviderTaskWriteError("task-source-read-only");
-  return { ref: { externalTaskId: value.id, etag: requireTaskEtag(value.etag), icalUid: null }, projection: { title: value.title, notes: value.notes ?? null, status: value.status, due: value.due ? `${String(value.due).slice(0, 10)}T00:00:00.000Z` : null } };
+  return { ref: { externalTaskId: value.id, etag: requireTaskEtag(value.etag), icalUid: null }, projection: googleTaskProjectionFromNative(value) };
 }
 
 export async function createGoogleTask(
@@ -684,6 +686,16 @@ export function googleReminderEventEvidence(data: any) {
 
 export const googleAdapter: CalendarAdapter = {
   provider: "google",
+  googleTaskUpdateV1(userID, accountID, capture) {
+    return {
+      ports: googleTaskProviderPorts(userID, accountID, capture,
+        (signal, rejected) => getGoogleAccessToken(userID, accountID, true, rejected, signal)),
+      normalizeObservation(read) {
+        if (read.kind !== "present") return null;
+        return { ref: { externalTaskId: read.task.id, etag: read.etag, icalUid: null }, projection: googleTaskProjectionFromNative(read.task) };
+      },
+    };
+  },
   googlePersonalCreateV1(userID, accountID, capture) {
     return {
       ports: googlePersonalProviderPorts(userID, accountID, capture,

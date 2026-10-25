@@ -6,6 +6,7 @@ import { withProviderCallMetrics } from "./provider_http_metrics";
 import { ProviderEventWriteError } from "./event_write";
 import { diffTaskProjection, jsonTaskProjection, sameTaskProjection, ProviderTaskWriteError } from "./task_write";
 import { parseNativeWritePlanV1 } from "@musubi/sync-codec";
+import { deliverSharedGoogleTaskUpdate, usesSharedGoogleTaskUpdate } from "./google_shared_task_update_delivery";
 
 type AdapterFor = (provider: string) => CalendarAdapter | null;
 type Projection = NonNullable<TaskOutboxRow["payload"]["providerProjection"]>;
@@ -42,6 +43,11 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
   if (pinned && !await assertPinnedOutboxSource(row, true)) {
     await finishTaskOutbox(row.id, token, "blocked", "delivery-source-changed", { uncertain: row.reconciling });
     return getTaskOutbox(row.id);
+  }
+  if (pinned && row.provider === "google" && row.action === "update" && row.externalTaskID) {
+    const adapter = adapterFor(row.provider);
+    if (usesSharedGoogleTaskUpdate(pinned, adapter))
+      return deliverSharedGoogleTaskUpdate(row, pinned, adapter!.googleTaskUpdateV1!, options);
   }
   let dispatched = false;
   let resultRef: ExternalTaskRef | undefined;
