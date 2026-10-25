@@ -1,0 +1,68 @@
+{
+  "createdAt": "2026-10-25T18:33:28.841438+00:00",
+  "status": "passed",
+  "cases": 8,
+  "durationSeconds": 13.1,
+  "attempts": 1,
+  "scope": "Actual web app/router/components in Chromium with JSON HTTP/auth fixtures; not real authentication, database atomicity or live native-provider proof.",
+  "browserTool": "Existing Playwright suite; Browser plugin unavailable.",
+  "viewports": [
+    {
+      "width": 1280,
+      "height": 900,
+      "theme": "light"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "theme": "dark"
+    }
+  ],
+  "cleanupBeforeBrowser": "/tmp/musu40-task-delete-cleanup.json",
+  "log": "/tmp/musu40-task-delete-final-browser.log",
+  "screenshots": {
+    "desktop": {
+      "path": "/tmp/musu40-task-delete-final-browser/evidence-desktop.png",
+      "sha256": "f3e401ede5aec1861292ae360cf91ed63835193f355c221e2d732d17b5dfcac3",
+      "bytes": 70763
+    },
+    "narrow": {
+      "path": "/tmp/musu40-task-delete-final-browser/evidence-narrow.png",
+      "sha256": "bc42b9e4aa1ea5891a3fd76cbc9806ac7ae28b0ebc9db7d7bd303fa4579fe757",
+      "bytes": 22504
+    }
+  },
+  "sourceFreezeTree": "f626fb646711922ca8efbff181a5e85bce676d68",
+  "screenshotsVisuallyInspected": true,
+  "cleanup": {
+    "checkedAt": "2026-10-25T18:32:56.403463+00:00",
+    "ownedPostgresContainerAbsent": true,
+    "ownedPostgresPort55443Absent": true,
+    "remainingOwnedDatabaseNamesBeforeRemoval": [],
+    "userQaContainerRetained": true,
+    "allAuthorsReleasedDatabaseAndBehaviorUse": true,
+    "cleanupCompletedBeforeFinalBrowser": true
+  },
+  "artifacts": [
+    {
+      "path": "/tmp/musu40-task-delete-final-browser.log",
+      "sha256": "b8ed35cb3264b756bacd52432389f1d582bbd5fd227dcb401b1595cc6222d7de",
+      "bytes": 5622
+    },
+    {
+      "path": "/tmp/musu40-task-delete-cleanup.json",
+      "sha256": "de4a7c24a473f33aedbe64167beaeff833962cb7598e85de3f38800b4527384f",
+      "bytes": 317
+    },
+    {
+      "path": "/tmp/musu40-task-delete-final-browser/evidence-desktop.png",
+      "sha256": "f3e401ede5aec1861292ae360cf91ed63835193f355c221e2d732d17b5dfcac3",
+      "bytes": 70763
+    },
+    {
+      "path": "/tmp/musu40-task-delete-final-browser/evidence-narrow.png",
+      "sha256": "bc42b9e4aa1ea5891a3fd76cbc9806ac7ae28b0ebc9db7d7bd303fa4579fe757",
+      "bytes": 22504
+    }
+  ]
+}

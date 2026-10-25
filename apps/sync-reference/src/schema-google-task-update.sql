@@ -71,7 +71,8 @@ BEGIN
     NEW.fingerprint,NEW.payload,NEW.saved_projection,NEW.field_mask,NEW.created_at)
     IS DISTINCT FROM ROW(OLD.id,OLD.command_id,OLD.binding_id,OLD.object_id,OLD.connection_id,OLD.provider,OLD.endpoint_profile,OLD.action,OLD.task_list_id,OLD.task_id,
     OLD.accepted_revision,OLD.connection_generation,OLD.source_generation,OLD.privacy_generation,OLD.canonical_generation,OLD.accepted_etag,
-    OLD.fingerprint,OLD.payload,OLD.saved_projection,OLD.field_mask,OLD.created_at)
+    OLD.fingerprint,OLD.payload,OLD.saved_projection,OLD.field_mask,OLD.created_at) OR
+    (to_jsonb(NEW)->'delete_accepted_baseline') IS DISTINCT FROM (to_jsonb(OLD)->'delete_accepted_baseline')
   THEN RAISE EXCEPTION 'Reference task admitted operation is immutable'; END IF;
   IF OLD.dispatch_possible AND NOT NEW.dispatch_possible THEN RAISE EXCEPTION 'Reference task dispatch evidence is immutable'; END IF;
   RETURN NEW;

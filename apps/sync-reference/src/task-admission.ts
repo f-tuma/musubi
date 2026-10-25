@@ -39,23 +39,26 @@ export function validateTaskPatch(value: unknown): ReferenceTaskPatch {
   validateTaskContent({ name: "", notes: null, state: "todo", dueAt: null, importance: "normal", ...fields });
   return fields as ReferenceTaskPatch;
 }
-export function taskAdmissionFingerprint(input: ReferenceTaskAdmission): string {
+export function validateTaskAdmissionIdentity(input: Pick<ReferenceTaskAdmission, "bindingId" | "commandId" | "operationId" | "expectedRevision">): void {
   if (![input.bindingId, input.commandId, input.operationId].every(taskIdentity) || !Number.isSafeInteger(input.expectedRevision) || input.expectedRevision < 1)
     throw new Error("Invalid reference task admission identity");
   // The real existing codec requires this context. Only this new reference
   // helper/CLI narrows IDs; portable claimed UPDATE identities remain opaque.
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(input.operationId)) throw new Error("Invalid reference task operation UUID");
+}
+export function taskAdmissionFingerprint(input: ReferenceTaskAdmission): string {
+  validateTaskAdmissionIdentity(input);
   const patch = validateTaskPatch(input.patch);
   return createHash("sha256").update(JSON.stringify([REFERENCE_TASK_UPDATE_PROFILE, input.bindingId, input.expectedRevision, input.operationId,
     Object.entries(patch).sort(([a], [b]) => a.localeCompare(b))])).digest("hex");
 }
 /** This is the actual portable Task codec adapter, with no event times or DB. */
-export function encodeReferenceTask(content: ReferenceTaskContent, objectId: string, operationId: string) {
+export function encodeReferenceTask(content: ReferenceTaskContent, objectId: string, operationId: string, action: "update" | "delete" = "update") {
   const value = validateTaskContent(content);
   const task = TaskSchema.parse({ id: objectId, creatorID: "reference", calendarID: "reference-task-home", title: value.name,
     description: value.notes, status: value.state === "done" ? "completed" : value.state === "doing" ? "in-process" : "needs-action",
     due: value.dueAt, priority: value.importance === "high" ? 1 : value.importance === "low" ? 9 : 5 });
-  return encodeTaskV1("google", task, undefined, { action: "update", operationId, acceptedAt: "2026-01-01T00:00:00.000Z" });
+  return encodeTaskV1("google", task, undefined, { action, operationId, acceptedAt: "2026-01-01T00:00:00.000Z" });
 }
 export function taskSavedProjection(target: unknown, baseline: unknown): GoogleTaskSavedProjection {
   const projection = parseGoogleTaskProjection(target), accepted = parseGoogleTaskProjection(baseline);

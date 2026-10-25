@@ -1,5 +1,5 @@
 import { googlePersonalEventBridge, googlePersonalProviderPorts } from "./google_provider_bridge";
-import { googleTaskProviderPorts } from "./google_task_provider_bridge";
+import { googleTaskProviderPorts, googleTaskDeleteProviderPorts } from "./google_task_provider_bridge";
 import { googleTaskProjectionFromNative } from "@musubi/provider-google";
 import { googleOrganizerTransport } from "./google_organizer_delivery";
 import type { NativeWritePlanV1 } from "@musubi/sync-codec";
@@ -686,6 +686,16 @@ export function googleReminderEventEvidence(data: any) {
 
 export const googleAdapter: CalendarAdapter = {
   provider: "google",
+  googleTaskDeleteV1(userID, accountID, capture) {
+    return {
+      ports: googleTaskDeleteProviderPorts(userID, accountID, capture,
+        (signal, rejected) => getGoogleAccessToken(userID, accountID, true, rejected, signal)),
+      normalizeObservation(read) {
+        if (read.kind !== "present") return null;
+        return { ref: { externalTaskId: read.task.id, etag: read.etag, icalUid: null }, projection: googleTaskProjectionFromNative(read.task) };
+      },
+    };
+  },
   googleTaskUpdateV1(userID, accountID, capture) {
     return {
       ports: googleTaskProviderPorts(userID, accountID, capture,

@@ -5,10 +5,12 @@ PostgreSQL ledger. It uses the C04 native provider ports, the C06 shared `@musub
 already-claimed runner and the published v1 schema/plan validator, with no dependency on Musubi DB, auth, app config or API.
 Its event content model is `ReferenceContent`; bounded Google Task UPDATE uses
 the independent richer `ReferenceTaskContent` and four separate task ledger tables.
+Addressed Google Task DELETE uses that task namespace with its own canonical
+tombstone, response evidence and scoped absence ACK.
 
 This is an extraction fixture and CLI. It is not the future Calendar Relay
 service. It has no account onboarding, OAuth refresh, scheduler, public API,
-meeting/recurrence support or task CREATE/DELETE. Google CREATE reserves a new personal, nonrecurring timed event using an immutable operation UUID and exact UTC time endpoints. Google DELETE targets an existing exact native address with a strong accepted validator. Microsoft DELETE uses its original native weak ETag for a guarded preflight, with observe-only recovery and no CAS guarantee. Only `name`, `notes` and
+meeting/recurrence support or task CREATE. Google CREATE reserves a new personal, nonrecurring timed event using an immutable operation UUID and exact UTC time endpoints. Google DELETE targets an existing exact native address with a strong accepted validator. Microsoft DELETE uses its original native weak ETag for a guarded preflight, with observe-only recovery and no CAS guarantee. Only `name`, `notes` and
 `place` can be changed on an existing personal nonrecurring timed event. The
 accepted time endpoints use canonical UTC instants and remain unchanged.
 
@@ -52,7 +54,8 @@ stdin return a safe error code.
 | `show` | `{operationId}` | Inspect operation, capture, receipt and binding without credentials |
 | `seed-task` | `ReferenceTaskSeed` | Bootstrap an existing exact native Google task list/task, strong ETag and full native baseline, with explicit Tasks grant and independent rich content |
 | `admit-task-update` | `{bindingId, expectedRevision, commandId, operationId, patch}` | Commit task canonical CAS, full original codec target, baseline and sorted field mask; this reference helper requires a lowercase UUID operation ID |
-| `deliver-task` | `{operationId}` | Claim and run only the bounded Google Task UPDATE family |
+| `admit-task-delete` | `{bindingId, expectedRevision, commandId, operationId}` | Tombstone canonical content and capture one original-address DELETE with a null body and separate baseline; lowercase UUID required |
+| `deliver-task` | `{operationId}` | Claim and run the registered Google Task UPDATE or DELETE profile |
 | `show-task` | `{operationId}` | Inspect task content, capture, native baseline and receipt without credentials |
 
 `seed` is an explicit fixture/bootstrap input, not provider discovery or proof
@@ -485,3 +488,59 @@ Old event executables cannot process task commands/rows; there is no automatic
 event fallback. Only serial forward migration/worker replacement is covered,
 not downgrade or mixed-version task workers. This local extraction fixture is
 not production activation, deployment, or full C08 acceptance.
+
+## Addressed Google Task DELETE
+
+Use `seed-task` to bootstrap an existing native task with its original strong
+validator/full baseline, then `admit-task-delete` to commit the canonical
+`tombstoned` incarnation and one `google-task-delete-v1` operation. Bootstrap
+keeps its existing `google-task-update-v1` input shape; it does not admit UPDATE
+or prove fresh native evidence. An ACKed UPDATE can be followed serially by
+DELETE. CREATE, missing-address dependencies, hierarchy, assignment, resolution
+and supersession remain outside this gate. The one-unfinished-operation barrier
+includes HOLD/conflict, with no implicit resurrection after absence.
+
+The real Task codec produces a DELETE plan with `body:null`. DELETE has no fake
+UPDATE projection/mask: those fields are null only for this action. Its original
+native baseline is captured separately and immutably alongside the physical task
+list/task ID, ETag and source/private/connection/canonical generations. Rich
+canonical content stays unchanged. The additive final migration preserves all
+eight preceding event/Task UPDATE profiles, sidecars, payloads, epochs/history
+and table/index identities. Repeating the full chain over DELETE rows does not
+narrow action/profile constraints or remove baseline immutability.
+
+Two DELETE-only op/attempt sidecars distinguish actual `200..299` HTTP responses
+from absence-only DELETE `404/410` responses. UPDATE's response contract stays
+`200|201|204`. Generic provider receipt `accepted` for DELETE means a successful
+request response/fulfillment: only `delete_acceptance_status` attests actual2xx
+HTTP acceptance. `delete_response_absence_status` attests raw DELETE404/410,
+without claiming accepted HTTP or an applied mutation. Earlier2xx remains known
+across a later absence-only response. GET absence creates neither response
+sidecar nor dispatch marker.
+
+Reference requires an actual scoped GET404 or410 before ACK, even after DELETE
+returned2xx/404/410. The strict provider checks exact logical URL, redirects and
+partial responses before classifying absence. Initial or writer-final GET can
+prove absence without sending DELETE; typed completion identifies its initial/writer/
+readback source. A200 `deleted:true` task is outside this strict profile, as are
+assigned native tasks. Musubi's direct ACK after its original successful DELETE
+response remains a separate API policy.
+
+Fresh delivery uses initial GET, preflight GET, writer-final GET, at most one
+original-validator conditional DELETE and a confirmation GET. After an unknown
+reply, only the unchanged original baseline and strong ETag permit conditional
+replay; the native address is never rebased. Any known response fulfillment,
+whether actual2xx or DELETE404/410, makes reference recovery observe-only while
+the task is still present. Lost reply plus GET absence retains uncertain; a
+known rejection stays rejected when a later GET confirms absence. Earlier
+uncertainty/acceptance survives later retry failures.412 is terminal;429 honors
+Retry-After. No provider CAS guarantee is added.
+
+Absence ACK atomically changes only binding presence to `absent` and ACKs the
+operation. Historical ETag/baseline, `active` grant and source generation remain:
+deleting a native task is not source retirement. UPDATE requires a present
+binding and active canonical task. Dispatch/evidence/finish/ACK check DB-clock
+lease ownership after awaited locks, with final credential validity on dispatch
+and ACK. Cancellation or false final settlement rolls back provisional writes;
+HTTP never runs under these locks. Only the bounded independent host gate is
+proven; production activation/deployment and full C08 acceptance remain separate.

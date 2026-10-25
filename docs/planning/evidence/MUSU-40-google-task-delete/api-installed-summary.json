@@ -1,0 +1,302 @@
+{
+  "schemaVersion": 1,
+  "scope": "Local installed API bounded Google Task DELETE extraction, retained UPDATE and task ACK regression proof; no registry publication, production deployment or live-provider certification.",
+  "status": "passed",
+  "createdAt": "2026-10-25T18:29:28.542149+00:00",
+  "gitHeadAtBuild": "14d694f922b27fdfe0faf4743b77c94ece2da3bf",
+  "imageTag": "musubi-c08-google-task-delete-api:proof",
+  "dockerImageInspectId": "sha256:c5e77c0282d288c12a0b0dae5ed4925dee1c0b4286bdf1f3e9adb50cc28238c5",
+  "localBuildIndexDigest": "sha256:c5e77c0282d288c12a0b0dae5ed4925dee1c0b4286bdf1f3e9adb50cc28238c5",
+  "platformManifestDigest": "sha256:6a3d5d48a48ea361b239edc85fa8580ac72317da6bcae4fbc3f46f2b13390cbb",
+  "imageConfigDigest": "sha256:929e0577e054ab6b9486d6573eb8cb1b69b5650ce7be78fa3aad62efbc9ad075",
+  "platform": {
+    "os": "linux",
+    "architecture": "amd64"
+  },
+  "dockerIdentityNote": "The local OCI index, platform manifest and image config digests identify different layers and are recorded separately. No daemon RepoDigest is treated as registry publication.",
+  "sourceFingerprint": "6153ea742c2c44c2c433ea13e92484059d15554ba27821246519a4e32214e6d6",
+  "sourceContextFiles": 875,
+  "sourceFingerprintScope": "Frozen 875-file credential-free Docker context; excludes workspace .env, node_modules and data. Production TS/SQL parity excludes tests, fixtures and behavior harnesses.",
+  "productionSourceFingerprint": "66f345ab91ecd894fe6282ae1626105aa50b45bd8bd1512aa3fbf08d4fa223b9",
+  "productionSourceHashParity": {
+    "checkedFiles": 444,
+    "mismatches": []
+  },
+  "productionSourceInventoryAfterProof": {
+    "frozenFiles": 444,
+    "currentFiles": 444,
+    "byteEqual": true,
+    "addedRemovedOrModified": []
+  },
+  "contextChangesAfterBuild": [],
+  "startup": {
+    "port": 7531,
+    "environment": "test",
+    "deploymentMode": "single-replica",
+    "logLevel": "info",
+    "externalSyncIntervalMin": 0,
+    "externalDeliveryRecoveryMode": "disabled",
+    "syncOperationV1EncoderEnabled": true,
+    "syncOperationProfileVersion": "sync-profile-v1",
+    "timestamp": "2026-10-25T18:27:18.682Z",
+    "level": "info",
+    "message": "server.started"
+  },
+  "emptyDatabaseBeforeBoot": {
+    "tables": 0
+  },
+  "emptyDatabaseMigrations": {
+    "applied": 86,
+    "sourceJournalEntries": 86,
+    "lastTag": "0085_graph_read_coverage",
+    "lastHashMatchesSource": true
+  },
+  "effectiveConfiguration": {
+    "encoder": true,
+    "encoderOverridePresent": false,
+    "environment": "test",
+    "nodeEnvironment": "production",
+    "externalSyncIntervalMin": 0,
+    "deliveryRecoveryMode": "disabled",
+    "smtpConfigured": false,
+    "pushConfigured": false
+  },
+  "runtime": {
+    "user": "node",
+    "sourceBindMounts": 0
+  },
+  "providerIsolation": {
+    "externalAccounts": 0,
+    "caldavAccounts": 0,
+    "externalCalendars": 0,
+    "eventOutboxRows": 0,
+    "taskOutboxRows": 0,
+    "smtpConfigured": false,
+    "pushConfigured": false
+  },
+  "cleanup": {
+    "containerRemoved": true,
+    "nonceDatabaseDropped": true,
+    "containerAbsentVerified": true,
+    "nonceDatabaseAbsentVerified": true,
+    "rootPostgresStillRunning": true
+  },
+  "httpChecks": {
+    "status": "passed",
+    "checks": 17,
+    "categories": {
+      "publicHealthAndCapabilities": 2,
+      "unauthenticatedAccessDenied": 1,
+      "realSignUpLoginAndCookieSession": 3,
+      "authenticatedCanonicalCalendarAndEventChecks": 11
+    },
+    "auth": {
+      "syntheticEmailDomain": "example.invalid",
+      "signup": true,
+      "passwordLogin": true,
+      "cookieSession": true,
+      "authBypass": false,
+      "dbSeedChanges": false
+    },
+    "providerScope": {
+      "configuredExternalAccounts": 0,
+      "liveProviderRequests": false,
+      "externalCaldavCreateNotExercised": true
+    },
+    "scopeNote": "Canonical 17-HTTP smoke uses the unchanged production image layout, real Better Auth signup/login/session and disposable PostgreSQL. It does not exercise task ACK or native task HTTP."
+  },
+  "installedTaskRegressionCorpus": {
+    "scope": "Separate installed-source test containers execute real task DB/API flows against disposable PostgreSQL and existing adapter/owned HTTP fixtures. Their test-only /packages path aliases do not affect the canonical production-layout HTTP smoke.",
+    "status": "passed",
+    "numberedCaseGroups": {
+      "google_shared_task_delete_delivery.integration.test.ts": 46,
+      "google_shared_task_update_delivery.integration.test.ts": 29,
+      "task-ack.integration.test.ts": 15,
+      "task_ack_delivery.integration.test.ts": 4
+    },
+    "numberedNewCases": 94,
+    "existingSuiteGates": 4,
+    "migrations": 86,
+    "suites": [
+      {
+        "file": "apps/api/src/sync/google_shared_task_delete_delivery.integration.test.ts",
+        "numberedCases": 46,
+        "legacySuiteGate": false,
+        "exitCode": 0
+      },
+      {
+        "file": "apps/api/src/sync/google_shared_task_update_delivery.integration.test.ts",
+        "numberedCases": 29,
+        "legacySuiteGate": false,
+        "exitCode": 0
+      },
+      {
+        "file": "packages/db/src/queries/task-ack.integration.test.ts",
+        "numberedCases": 15,
+        "legacySuiteGate": false,
+        "exitCode": 0
+      },
+      {
+        "file": "apps/api/src/sync/task_ack_delivery.integration.test.ts",
+        "numberedCases": 4,
+        "legacySuiteGate": false,
+        "exitCode": 0
+      },
+      {
+        "file": "packages/db/src/queries/tasks.integration.test.ts",
+        "numberedCases": null,
+        "legacySuiteGate": true,
+        "exitCode": 0
+      },
+      {
+        "file": "apps/api/src/sync/shared_tasks.integration.test.ts",
+        "numberedCases": null,
+        "legacySuiteGate": true,
+        "exitCode": 0
+      },
+      {
+        "file": "apps/api/src/sync/task_delivery.integration.test.ts",
+        "numberedCases": null,
+        "legacySuiteGate": true,
+        "exitCode": 0
+      },
+      {
+        "file": "apps/api/src/sync/optional_tasks.integration.test.ts",
+        "numberedCases": null,
+        "legacySuiteGate": true,
+        "exitCode": 0
+      }
+    ],
+    "testSourceHashParity": {
+      "checkedFiles": 25,
+      "mismatches": []
+    },
+    "testCreatedNonceDatabaseCleanup": {
+      "unretiredNewDatabaseCount": 0,
+      "scope": "New databases using the four executed task test nonce prefixes; unrelated reference host databases are outside this check."
+    },
+    "testWiring": {
+      "workspaceEnvRead": false,
+      "sourceBindMounts": 0,
+      "privateNetworkPolicy": "Explicit fixture-only loopback policy for existing CalDAV/HTTP tests",
+      "socialCredentialsConfigured": false,
+      "smtpConfigured": false,
+      "pushConfigured": false,
+      "testPathAliases": "A test-only tmpfs /packages contains symlinks to installed @musubi packages for existing private relative imports; no source or production behavior override."
+    },
+    "cleanup": {
+      "ownedContainersAbsentVerified": true,
+      "nonceDatabaseDropped": true,
+      "nonceDatabaseAbsentVerified": true,
+      "rootPostgresStillRunning": true
+    }
+  },
+  "limits": [
+    "No live provider or real external account was used. Google Task DELETE/UPDATE and existing optional-task tests own all Google/Graph HTTP and token fixtures.",
+    "The task-delivery and Google Task UPDATE/DELETE JSON suites use actual production orchestration/codec/kernel/provider with replaced dependency ports; their sources are hash-checked here. Actual PostgreSQL, native HTTP fixture parity and ACK atomicity are proved by separate installed integration suites.",
+    "Independent reference-host task adoption has separate installed evidence; this API image does not establish reference-host durability or live Google If-Match enforcement.",
+    "No source bind mount, real SMTP/push, publication or production rollout was used."
+  ],
+  "artifacts": [
+    {
+      "path": "/tmp/musu40-google-task-delete-api-proof-20261025182611_b8b9eb.json",
+      "sha256": "2570fc69c8d7dc42cf823f0c3c34779b1b0f5bfc3ae71219edd092d246476ac5",
+      "bytes": 6628
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-http-20261025182611_b8b9eb.json",
+      "sha256": "fe8394594b302f53ed15497ade5b421e167ba708f691788768bd3eb2e0a3b0cf",
+      "bytes": 3406
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-runtime-20261025182611_b8b9eb.log",
+      "sha256": "549c99701e9006c30275371ce3aa649ebc5f17fd4bc2535a35637df86998530c",
+      "bytes": 6180
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-source-20261025182611.json",
+      "sha256": "cd2442e513d0c3e07ddceb5324e90ae1ac2649297f4ffd98af3fedce81d2f7e1",
+      "bytes": 107479
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-build-20261025182611.log",
+      "sha256": "26f0917f8a9b30e5472baaba7887bac6382222ba3966aa6f2e9abf424975eb02",
+      "bytes": 4056
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499.json",
+      "sha256": "9bb637a7fffcd05bc15650ee98f4579c4d5ff49ac79299eea0189706f933129c",
+      "bytes": 4244
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499-migrate.log",
+      "sha256": "52607390f6013e5fa3831e2bde93e5a9fe6cc3b9934e46329f513a8c7416ed49",
+      "bytes": 61
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-build.py",
+      "sha256": "040e58cffa5556d1a0fcbe6bc6080a824379b89457ff0afc7617f54ad70b20d4",
+      "bytes": 3386
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-probe.py",
+      "sha256": "1060e0fac71a0490976ad413404bc6bc45bf363a5e60308a502ca740bbd0d7c0",
+      "bytes": 10897
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-http-smoke.mjs",
+      "sha256": "bc66861a4dc9fe9bdad8f268b6075bd73c93e82b60b75a71c1a9ac20afffb731",
+      "bytes": 7279
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-corpus.py",
+      "sha256": "bd9989248ef3d761571f4e7987b5663593fef40ee893285f07ffb64440dd940d",
+      "bytes": 11988
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-summarize.py",
+      "sha256": "6ab7bcb2d0dbb90df7ecf8a990c1e8e46fd586a685220bd1919af2bf1151735f",
+      "bytes": 8681
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499-google_shared_task_delete_delivery.log",
+      "sha256": "462a41a5e21a009a5e0c50d36e4e40c74dfab1fa119351d7223755c9a1e04d13",
+      "bytes": 3194
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499-google_shared_task_update_delivery.log",
+      "sha256": "f56ef6d30635cc7eb333338c3ec3ede7cc3556030545cced7b758231627e722e",
+      "bytes": 2126
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499-task-ack.log",
+      "sha256": "bf1637da55528a39cb452b2b645c0b5b00dd754550e65242fc6610fd90ec75b5",
+      "bytes": 825
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499-task_ack_delivery.log",
+      "sha256": "c24938baf4fb1b5c165e5c4c5ced65f3436b11e3a18833b8bb9d5a8d4b80fc69",
+      "bytes": 640
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499-tasks.log",
+      "sha256": "86ab190809122f36df2345a242e5606ca036f2398f01b62f0354b857b9dcca54",
+      "bytes": 93
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499-shared_tasks.log",
+      "sha256": "173925df8eee5e69984bcb1aea280e5c2ca2b27608e58e27f8dbd7cd8852cc0d",
+      "bytes": 341
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499-task_delivery.log",
+      "sha256": "493b9be77fc9979adc653ecd0e40bea2cade8a9959ab769e5d9b8df97bc9f086",
+      "bytes": 354
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499-optional_tasks.log",
+      "sha256": "ad2ca61e4bac37d4ab7ab919e992bc38585a7db9e8bbc3d358ce9d42e6c490fd",
+      "bytes": 3479
+    }
+  ]
+}

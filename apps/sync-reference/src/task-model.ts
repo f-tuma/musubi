@@ -31,6 +31,6 @@ export interface ReferenceTaskOperation {
   status: ReferenceStatus; payload: unknown; capture: ReferenceCapture; saved: GoogleTaskSavedProjection;
   dispatchPossible: boolean; acceptedStatus: RuntimeTaskAcceptedStatus | null; receipt: SyncDeliveryReceipt;
   canonical: { content: ReferenceTaskContent; lifecycle: "active" | "tombstoned"; revision: number; generation: number };
-  binding: { taskListId: string; taskId: string; active: boolean; sourceGeneration: number; etag: string; baseline: GoogleTaskProjection };
+  binding: { taskListId: string; taskId: string; active: boolean; sourceGeneration: number; etag: string; baseline: GoogleTaskProjection; destinationLifecycle?: "present" | "absent" };
   leaseAttemptId: string | null; leaseUntil: string | null;
 }

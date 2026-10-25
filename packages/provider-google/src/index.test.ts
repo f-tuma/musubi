@@ -1,3 +1,4 @@
+import "./task-delete.test";
 import "./task-update.test";
 import "./delete.test";
 import "./create.test";
@@ -281,7 +282,7 @@ test("actual aborted HTTP is counted once; telemetry failure does not replace na
 test("provider runtime imports no product/storage/auth/config package or ambient HTTP/clock", () => {
   const sourceDir = fileURLToPath(new URL(".", import.meta.url));
   const files = readdirSync(sourceDir).filter(name => name.endsWith(".ts") && !name.endsWith(".test.ts"));
-  assert.deepEqual(files.sort(), ["etag.ts", "index.ts", "task-projection.ts", "task-types.ts", "task-update.ts", "types.ts"]);
+  assert.deepEqual(files.sort(), ["etag.ts", "index.ts", "task-delete-types.ts", "task-delete.ts", "task-projection.ts", "task-transport.ts", "task-types.ts", "task-update.ts", "types.ts"]);
   for (const file of files) {
     const code = readFileSync(`${sourceDir}/${file}`, "utf8");
     const imports = [...code.matchAll(/(?:from\s*|import\s*)["']([^"']+)["']/g)].map(match => match[1]);

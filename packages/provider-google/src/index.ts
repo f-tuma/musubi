@@ -1,3 +1,5 @@
+export { createGoogleTaskDeleteProvider } from "./task-delete";
+export * from "./task-delete-types";
 export { createGoogleTaskUpdateProvider } from "./task-update";
 import { strongGoogleEtag } from "./etag";
 export { strongGoogleEtag } from "./etag";
