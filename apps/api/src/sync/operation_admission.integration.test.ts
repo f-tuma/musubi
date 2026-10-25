@@ -41,6 +41,7 @@ async function main() {
     googlePersonalCreateV1: undefined,
     googlePersonalContentV1: undefined,
     googleTaskUpdateV1: undefined,
+    googleTaskDeleteV1: undefined,
     projectEvent() { projectors++; throw new Error("Current event mapper B must never run"); },
     projectTask() { projectors++; throw new Error("Current task mapper B must never run"); },
     async assertEventWrite() {},

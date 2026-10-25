@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-25T19:04:53.413484+00:00",
+  "status": "passed",
+  "cases": 8,
+  "durationSeconds": 13.9,
+  "attempts": 1,
+  "sourceFreezeTree": "4e718d9c19775354e29a7ba80b6bd69f23358f70",
+  "scope": "Actual web app/router/components in Chromium with JSON HTTP/auth fixtures; not real authentication, database atomicity or live native-provider proof.",
+  "browserTool": "Existing Playwright suite; Browser plugin unavailable.",
+  "viewports": [
+    {
+      "width": 1280,
+      "height": 900,
+      "theme": "light"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "theme": "dark"
+    }
+  ],
+  "cleanupBeforeBrowser": "/tmp/musu40-task-delete-cleanup-final-ack-fix.json",
+  "cleanup": {
+    "checkedAt": "2026-10-25T19:04:05.196637+00:00",
+    "ownedPostgresContainerAbsent": true,
+    "ownedPostgresPort55443Absent": true,
+    "remainingOwnedDatabaseNamesBeforeRemoval": [],
+    "userQaContainerRetained": true,
+    "allAuthorsReleasedDatabaseAndBehaviorUse": true,
+    "cleanupCompletedBeforeFinalBrowser": true,
+    "phase": "after-third-API-proof-including-ACK-cleanup-fix",
+    "postStopAbsencePolls": 2
+  },
+  "log": "/tmp/musu40-task-delete-final-browser-ack-fix.log",
+  "screenshots": {
+    "desktop": {
+      "path": "/tmp/musu40-task-delete-final-browser-ack-fix/evidence-desktop.png",
+      "sha256": "f3e401ede5aec1861292ae360cf91ed63835193f355c221e2d732d17b5dfcac3",
+      "bytes": 70763
+    },
+    "narrow": {
+      "path": "/tmp/musu40-task-delete-final-browser-ack-fix/evidence-narrow.png",
+      "sha256": "bc42b9e4aa1ea5891a3fd76cbc9806ac7ae28b0ebc9db7d7bd303fa4579fe757",
+      "bytes": 22504
+    }
+  },
+  "screenshotsVisuallyInspected": true,
+  "priorRuns": [
+    {
+      "cases": 8,
+      "durationSeconds": 13.1,
+      "status": "passed",
+      "log": "/tmp/musu40-task-delete-final-browser.log",
+      "acceptance": "Historical run before CI cleanup revision."
+    },
+    {
+      "cases": 8,
+      "durationSeconds": 14.0,
+      "status": "passed",
+      "log": "/tmp/musu40-task-delete-final-browser-after-ci-fix.log",
+      "acceptance": "Excluded from final proof because browser started before root confirmed container removal; replaced by the separate final run above."
+    },
+    {
+      "cases": 8,
+      "durationSeconds": 13.7,
+      "status": "passed",
+      "log": "/tmp/musu40-task-delete-final-browser-verified.log",
+      "acceptance": "Historical verified run before the final ACK test cleanup revision; replaced by the separate final run above."
+    }
+  ],
+  "ciInitialFailures": {
+    "head": "ef571a1d48400ec2f87f62c27476dbfe84e95a28",
+    "runUrl": "https://github.com/f-tuma/musubi/actions/runs/40221975531",
+    "passedJobs": 19,
+    "failedJobs": 2,
+    "functionalAssertionsPassedBeforeCleanup": {
+      "DELETE": 46,
+      "UPDATE": 29
+    },
+    "failure": "Unhandled idle BoundPool 57P01 during forced nonce database removal.",
+    "fix": "Test-only tracking and closure of all connected pools, zero-session assertion, DROP without FORCE. No functional assertion or production code changed."
+  },
+  "artifacts": [
+    {
+      "path": "/tmp/musu40-task-delete-final-browser-ack-fix.log",
+      "sha256": "609c4527df99ce34ee93ec06a2639fe75b06e0910d95a8f06266468a1f34e5f7",
+      "bytes": 5622
+    },
+    {
+      "path": "/tmp/musu40-task-delete-cleanup-final-ack-fix.json",
+      "sha256": "cf85c041e2b911cfab7c4baca00417d22163c1bf532fc689692bf5cd69506614",
+      "bytes": 408
+    },
+    {
+      "path": "/tmp/musu40-task-delete-final-browser-ack-fix/evidence-desktop.png",
+      "sha256": "f3e401ede5aec1861292ae360cf91ed63835193f355c221e2d732d17b5dfcac3",
+      "bytes": 70763
+    },
+    {
+      "path": "/tmp/musu40-task-delete-final-browser-ack-fix/evidence-narrow.png",
+      "sha256": "bc42b9e4aa1ea5891a3fd76cbc9806ac7ae28b0ebc9db7d7bd303fa4579fe757",
+      "bytes": 22504
+    },
+    {
+      "path": "/tmp/musu40-task-delete-final-browser.log",
+      "sha256": "b8ed35cb3264b756bacd52432389f1d582bbd5fd227dcb401b1595cc6222d7de",
+      "bytes": 5622
+    },
+    {
+      "path": "/tmp/musu40-task-delete-final-browser-after-ci-fix.log",
+      "sha256": "9e7d78e474d898bc297e331bf619dfe42a9d5f7e8b7cdd4e028054d249da426f",
+      "bytes": 5622
+    },
+    {
+      "path": "/tmp/musu40-task-delete-final-browser-verified.log",
+      "sha256": "d0a5f2a85f900e2ad30de7239b1d54fe2f1296f95fac1eed5b724de1fae79dbe",
+      "bytes": 5622
+    },
+    {
+      "path": "/tmp/musu40-task-delete-ci-initial-cleanup-failure.json",
+      "sha256": "9d9f2250415aa6f9c5b8e279fe2c07cf00a537b8056fd6bcfc7c8dc79cfb1f52",
+      "bytes": 10475
+    },
+    {
+      "path": "/tmp/musu40-task-update-ci-initial-cleanup-failure.json",
+      "sha256": "52ecdb3d0172a97b3aa6b5ba6d6535f4c10e06fd1239b05e21b8191d540e00fa",
+      "bytes": 3516
+    },
+    {
+      "path": "/tmp/musu40-task-ack-ci-cleanup-failure.json",
+      "sha256": "b97cc6a1a9b884b46de28a3aabd60e019cc3d6d6e7f010397f8c4d23f6f32fd4",
+      "bytes": 3483
+    },
+    {
+      "path": "/tmp/musu40-task-delete-api-cleanup-fix-final.log",
+      "sha256": "a29d03e85349606fe64857bed3ced16495931918f4513f0d19161bdbfd43c47d",
+      "bytes": 3313
+    },
+    {
+      "path": "/tmp/musu40-task-update-api-cleanup-fix-final.log",
+      "sha256": "bcc16f65e22eb3806560530828ab0b2f527c9e61cf85fe1f0a2ef63e5777a789",
+      "bytes": 2245
+    },
+    {
+      "path": "/tmp/musu40-task-ack-cleanup-source.log",
+      "sha256": "c9c2b4f1f013f0aa6d6f895e69fd608709d1af00fc7cefa822cb0d2c95519c0d",
+      "bytes": 758
+    },
+    {
+      "path": "/tmp/musu40-task-ack-cleanup-types.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-ack-cleanup-verified.json",
+      "sha256": "551b85aed6f5ffc1a939d512444a1e6fa7d631b7e0faaaba8927603cd7afbdf4",
+      "bytes": 392
+    }
+  ],
+  "ciAdditionalCleanupFailure": {
+    "head": "da8f402b1ebc8c0a77cc7a5f8e7da7c0df2daff0",
+    "runUrl": "https://github.com/f-tuma/musubi/actions/runs/40223375969",
+    "jobId": 121259548474,
+    "functionalAckCasesPassedBeforeCleanup": 4,
+    "failure": "Same unhandled BoundPool 57P01 during forced nonce database removal in the last remaining API/DB forced-DROP fixture.",
+    "fix": "Same actual pool ownership, zero-session assertion and plain DROP, including cleanup on import failure. All functional assertions and production sources unchanged."
+  }
+}

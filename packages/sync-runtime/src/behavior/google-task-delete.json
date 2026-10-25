@@ -1,0 +1,6976 @@
+{
+  "schemaVersion": 1,
+  "driver": "google-task-delete",
+  "scenarios": [
+    {
+      "id": "fresh-delete",
+      "title": "Addressed conditional DELETE preserves the three reads and no API readback",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 204,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          204
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "provider-response"
+        ],
+        "ackStatuses": [
+          204
+        ],
+        "ackResponseKinds": [
+          "accepted"
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 204,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 204
+      }
+    },
+    {
+      "id": "initial-404",
+      "title": "Initial scoped 404 needs no accepted tag or native task body",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": null,
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 404,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          404
+        ],
+        "preparedPatch": null,
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "ackStatuses": [
+          404
+        ],
+        "ackResponseKinds": [
+          null
+        ],
+        "ackSources": [
+          "initial-read"
+        ],
+        "finishStatuses": [],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "absent",
+        "remoteSource": "initial-read",
+        "possibleDispatch": false,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "initial-410",
+      "title": "Initial scoped 410 needs no accepted tag or native task body",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": null,
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 410,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          410
+        ],
+        "preparedPatch": null,
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "ackStatuses": [
+          410
+        ],
+        "ackResponseKinds": [
+          null
+        ],
+        "ackSources": [
+          "initial-read"
+        ],
+        "finishStatuses": [],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "absent",
+        "remoteSource": "initial-read",
+        "possibleDispatch": false,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "preflight-404-then-reappears",
+      "title": "Preflight absence still performs writer GET before conditional DELETE",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 404,
+          "body": null
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 204,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          404,
+          200,
+          204
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "provider-response"
+        ],
+        "ackStatuses": [
+          204
+        ],
+        "ackResponseKinds": [
+          "accepted"
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 204,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 204
+      }
+    },
+    {
+      "id": "preflight-404-then-absent",
+      "title": "Preflight absence followed by writer absence never dispatches DELETE",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 404,
+          "body": null
+        },
+        {
+          "method": "GET",
+          "status": 404,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error"
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200,
+          404,
+          404
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "ackStatuses": [
+          404
+        ],
+        "ackResponseKinds": [
+          null
+        ],
+        "ackSources": [
+          "writer-read"
+        ],
+        "finishStatuses": [],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "absent",
+        "remoteSource": "writer-read",
+        "possibleDispatch": false,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "absent",
+        "writerResultSource": "writer-read",
+        "writerResultStatus": 404
+      }
+    },
+    {
+      "id": "writer-404-skips-delete",
+      "title": "Only the writer final GET finds absence and no DELETE response is invented",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 404,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error"
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200,
+          200,
+          404
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "ackStatuses": [
+          404
+        ],
+        "ackResponseKinds": [
+          null
+        ],
+        "ackSources": [
+          "writer-read"
+        ],
+        "finishStatuses": [],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "absent",
+        "remoteSource": "writer-read",
+        "possibleDispatch": false,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "absent",
+        "writerResultSource": "writer-read",
+        "writerResultStatus": 404
+      }
+    },
+    {
+      "id": "delete-response-404",
+      "title": "A DELETE 404 receipt is fulfillment without accepted HTTP or observed GET absence",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 404,
+          "body": {
+            "ignored": "not parsed"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          404
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "provider-response"
+        ],
+        "ackStatuses": [
+          404
+        ],
+        "ackResponseKinds": [
+          "absent"
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": 404,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "absent",
+        "writerResultSource": "delete-response",
+        "writerResultStatus": 404
+      }
+    },
+    {
+      "id": "preflight-410-then-reappears",
+      "title": "Preflight absence still performs writer GET before conditional DELETE",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 410,
+          "body": null
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 204,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          410,
+          200,
+          204
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "provider-response"
+        ],
+        "ackStatuses": [
+          204
+        ],
+        "ackResponseKinds": [
+          "accepted"
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 204,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 204
+      }
+    },
+    {
+      "id": "preflight-410-then-absent",
+      "title": "Preflight absence followed by writer absence never dispatches DELETE",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 410,
+          "body": null
+        },
+        {
+          "method": "GET",
+          "status": 410,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error"
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200,
+          410,
+          410
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "ackStatuses": [
+          410
+        ],
+        "ackResponseKinds": [
+          null
+        ],
+        "ackSources": [
+          "writer-read"
+        ],
+        "finishStatuses": [],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "absent",
+        "remoteSource": "writer-read",
+        "possibleDispatch": false,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "absent",
+        "writerResultSource": "writer-read",
+        "writerResultStatus": 410
+      }
+    },
+    {
+      "id": "writer-410-skips-delete",
+      "title": "Only the writer final GET finds absence and no DELETE response is invented",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 410,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error"
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200,
+          200,
+          410
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "ackStatuses": [
+          410
+        ],
+        "ackResponseKinds": [
+          null
+        ],
+        "ackSources": [
+          "writer-read"
+        ],
+        "finishStatuses": [],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "absent",
+        "remoteSource": "writer-read",
+        "possibleDispatch": false,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "absent",
+        "writerResultSource": "writer-read",
+        "writerResultStatus": 410
+      }
+    },
+    {
+      "id": "delete-response-410",
+      "title": "A DELETE 410 receipt is fulfillment without accepted HTTP or observed GET absence",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 410,
+          "body": {
+            "ignored": "not parsed"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          410
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "provider-response"
+        ],
+        "ackStatuses": [
+          410
+        ],
+        "ackResponseKinds": [
+          "absent"
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": 410,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "absent",
+        "writerResultSource": "delete-response",
+        "writerResultStatus": 410
+      }
+    },
+    {
+      "id": "delete-accepted-200",
+      "title": "Existing DELETE retains native2xx 200 without body parsing or API readback",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 200,
+          "rawBody": "{"
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "provider-response"
+        ],
+        "ackStatuses": [
+          200
+        ],
+        "ackResponseKinds": [
+          "accepted"
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 200,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 200
+      }
+    },
+    {
+      "id": "delete-accepted-202",
+      "title": "Existing DELETE retains native2xx 202 without body parsing or API readback",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 202,
+          "rawBody": "{"
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          202
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "provider-response"
+        ],
+        "ackStatuses": [
+          202
+        ],
+        "ackResponseKinds": [
+          "accepted"
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 202,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 202
+      }
+    },
+    {
+      "id": "delete-accepted-206",
+      "title": "Existing DELETE retains native2xx 206 without body parsing or API readback",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 206,
+          "rawBody": "{"
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          206
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "provider-response"
+        ],
+        "ackStatuses": [
+          206
+        ],
+        "ackResponseKinds": [
+          "accepted"
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 206,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 206
+      }
+    },
+    {
+      "id": "delete-accepted-299",
+      "title": "Existing DELETE retains native2xx 299 without body parsing or API readback",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 299,
+          "rawBody": "{"
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          299
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "provider-response"
+        ],
+        "ackStatuses": [
+          299
+        ],
+        "ackResponseKinds": [
+          "accepted"
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 299,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 299
+      }
+    },
+    {
+      "id": "reference-response-202-read-404",
+      "title": "Strict reference requires a fresh exact GET absence after the native DELETE receipt",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 202,
+          "body": null
+        },
+        {
+          "method": "GET",
+          "status": 404,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          "error",
+          "error"
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          202,
+          404
+        ],
+        "preparedPatch": null,
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "ackStatuses": [
+          404
+        ],
+        "ackResponseKinds": [
+          null
+        ],
+        "ackSources": [
+          "readback"
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 202,
+        "responseAbsenceStatus": null,
+        "remoteKind": "absent",
+        "remoteSource": "readback",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 202
+      }
+    },
+    {
+      "id": "reference-response-206-read-410",
+      "title": "Strict reference requires a fresh exact GET absence after the native DELETE receipt",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 206,
+          "body": null
+        },
+        {
+          "method": "GET",
+          "status": 410,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          "error",
+          "error"
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          206,
+          410
+        ],
+        "preparedPatch": null,
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "ackStatuses": [
+          410
+        ],
+        "ackResponseKinds": [
+          null
+        ],
+        "ackSources": [
+          "readback"
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 206,
+        "responseAbsenceStatus": null,
+        "remoteKind": "absent",
+        "remoteSource": "readback",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 206
+      }
+    },
+    {
+      "id": "reference-response-404-read-410",
+      "title": "Strict reference requires a fresh exact GET absence after the native DELETE receipt",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 404,
+          "body": null
+        },
+        {
+          "method": "GET",
+          "status": 410,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          "error",
+          "error"
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          404,
+          410
+        ],
+        "preparedPatch": null,
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "ackStatuses": [
+          410
+        ],
+        "ackResponseKinds": [
+          null
+        ],
+        "ackSources": [
+          "readback"
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": 404,
+        "remoteKind": "absent",
+        "remoteSource": "readback",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "absent",
+        "writerResultSource": "delete-response",
+        "writerResultStatus": 404
+      }
+    },
+    {
+      "id": "reference-response-410-read-404",
+      "title": "Strict reference requires a fresh exact GET absence after the native DELETE receipt",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 410,
+          "body": null
+        },
+        {
+          "method": "GET",
+          "status": 404,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          "error",
+          "error"
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          410,
+          404
+        ],
+        "preparedPatch": null,
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "ackStatuses": [
+          404
+        ],
+        "ackResponseKinds": [
+          null
+        ],
+        "ackSources": [
+          "readback"
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": 410,
+        "remoteKind": "absent",
+        "remoteSource": "readback",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "absent",
+        "writerResultSource": "delete-response",
+        "writerResultStatus": 410
+      }
+    },
+    {
+      "id": "reference-202-still-present",
+      "title": "Native202 remains accepted evidence while a present readback prevents reference ACK",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 202,
+          "body": null
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          "error",
+          "error"
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          202,
+          200
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "accepted",
+        "acceptedStatus": 202,
+        "responseAbsenceStatus": null,
+        "remoteKind": "conflict",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 202
+      }
+    },
+    {
+      "id": "legacy-absence-metadata-floor",
+      "title": "Existing Google keeps its native absence metadata handling",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": null,
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 404,
+          "body": null,
+          "headers": {
+            "content-range": "items 0-0/2"
+          },
+          "responseUrl": "other",
+          "redirected": true
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          404
+        ],
+        "preparedPatch": null,
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "ackStatuses": [
+          404
+        ],
+        "ackResponseKinds": [
+          null
+        ],
+        "ackSources": [
+          "initial-read"
+        ],
+        "finishStatuses": [],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "absent",
+        "remoteSource": "initial-read",
+        "possibleDispatch": false,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "strict-absence-scope-refused",
+      "title": "Strict reference refuses ambiguous redirected or partial404 proof",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": null,
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 404,
+          "body": null,
+          "headers": {
+            "content-range": "items 0-0/2"
+          },
+          "responseUrl": "other",
+          "redirected": true
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          404
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 404,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "weak-current-tag",
+      "title": "Native task identity, strong version and assigned-source guards run before DELETE",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "W/\"weak\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-version-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "wrong-native-id",
+      "title": "Native task identity, strong version and assigned-source guards run before DELETE",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "other",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-projection-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "assigned-docs",
+      "title": "Native task identity, strong version and assigned-source guards run before DELETE",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z",
+            "assignmentInfo": {
+              "surfaceType": "DOCUMENT"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-source-read-only",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "assigned-chat",
+      "title": "Native task identity, strong version and assigned-source guards run before DELETE",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z",
+            "assignmentInfo": {
+              "surfaceType": "SPACE"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-source-read-only",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "missing-old-tag-present",
+      "title": "A present task cannot replace the original missing or weak accepted version",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": null,
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "conflict",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-provider-conflict",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "weak-old-tag-present",
+      "title": "A present task cannot replace the original missing or weak accepted version",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "W/\"weak\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "conflict",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-provider-conflict",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "changed-current-version",
+      "title": "A successful GET cannot adopt a newer native version for DELETE",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"newer\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "conflict",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-provider-conflict",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "changed-baseline",
+      "title": "Changed native content cannot silently rebase the accepted DELETE baseline",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Concurrent",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "conflict",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-provider-conflict",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "delete-408",
+      "title": "Known DELETE refusals and unknown outcomes preserve their actual current status and hint",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 408,
+          "body": {},
+          "headers": {
+            "retry-after": "17"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          408
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "rejected",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 408,
+        "retryAfterMs": 17000,
+        "providerErrorCode": "transport-failed",
+        "providerRetry": "after-delay",
+        "providerRetryAfterMs": 17000,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "delete-412",
+      "title": "Known DELETE refusals and unknown outcomes preserve their actual current status and hint",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 412,
+          "body": {},
+          "headers": {
+            "retry-after": "17"
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          412
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "providerKind": "rejected",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": "task-provider-conflict",
+        "errorOutcome": "not-written",
+        "providerStatus": 412,
+        "retryAfterMs": 17000,
+        "providerErrorCode": "conflict",
+        "providerRetry": "never",
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "delete-429",
+      "title": "Known DELETE refusals and unknown outcomes preserve their actual current status and hint",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 429,
+          "body": {},
+          "headers": {
+            "retry-after": "17"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          429
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "rejected",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 429,
+        "retryAfterMs": 17000,
+        "providerErrorCode": "rate-limited",
+        "providerRetry": "after-delay",
+        "providerRetryAfterMs": 17000,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "delete-500",
+      "title": "Known DELETE refusals and unknown outcomes preserve their actual current status and hint",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 500,
+          "body": {},
+          "headers": {
+            "retry-after": "17"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          500
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "uncertain",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": 500,
+        "retryAfterMs": 17000,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "prior-uncertain-current-429",
+      "title": "Prior uncertain facts remain separate from a current known DELETE429",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "uncertain",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 429,
+          "body": {},
+          "headers": {
+            "retry-after": "17"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          429
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "uncertain",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 429,
+        "retryAfterMs": 17000,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "prior-accepted-current-429",
+      "title": "Prior accepted facts remain separate from a current known DELETE429",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "accepted",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 429,
+          "body": {},
+          "headers": {
+            "retry-after": "17"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          429
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "accepted",
+        "acceptedStatus": 204,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 429,
+        "retryAfterMs": 17000,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "priorAcceptedStatus": 204
+    },
+    {
+      "id": "prior-accepted-current-404",
+      "title": "A current DELETE404 keeps the earlier native2xx sidecar and records separate absence receipt",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "accepted",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 404,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          404
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "provider-response"
+        ],
+        "ackStatuses": [
+          404
+        ],
+        "ackResponseKinds": [
+          "absent"
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 202,
+        "responseAbsenceStatus": 404,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "absent",
+        "writerResultSource": "delete-response",
+        "writerResultStatus": 404
+      },
+      "priorAcceptedStatus": 202
+    },
+    {
+      "id": "reference-known-response-present",
+      "title": "Reference known-response recovery observes a still-present task without another DELETE",
+      "policy": "reference",
+      "recovery": true,
+      "priorProvider": "accepted",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "accepted",
+        "acceptedStatus": 202,
+        "responseAbsenceStatus": null,
+        "remoteKind": "conflict",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "priorAcceptedStatus": 202
+    },
+    {
+      "id": "prior-accepted-lost-reply",
+      "title": "An unknown current DELETE cannot be mislabeled with only an older native rejection",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "accepted",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "error": "lost-reply"
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          "network-error"
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "accepted",
+        "acceptedStatus": 204,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "priorAcceptedStatus": 204
+    },
+    {
+      "id": "prior-uncertain-lost-reply",
+      "title": "An unknown current DELETE cannot be mislabeled with only an older native rejection",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "uncertain",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "error": "lost-reply"
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          "network-error"
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "uncertain",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "prior-rejected-lost-reply",
+      "title": "An unknown current DELETE cannot be mislabeled with only an older native rejection",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "rejected",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "error": "lost-reply"
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          "network-error"
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "uncertain",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "priorError": {
+        "code": "rate-limited",
+        "retry": "after-delay",
+        "retryAfterMs": 1000
+      }
+    },
+    {
+      "id": "reference-lost-reply-absent",
+      "title": "Lost DELETE reply can finish only after exact scoped GET absence",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "error": "lost-reply"
+        },
+        {
+          "method": "GET",
+          "status": 410,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          "error",
+          "error"
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          "network-error",
+          410
+        ],
+        "preparedPatch": null,
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "ackStatuses": [
+          410
+        ],
+        "ackResponseKinds": [
+          null
+        ],
+        "ackSources": [
+          "readback"
+        ],
+        "finishStatuses": [],
+        "providerKind": "uncertain",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "absent",
+        "remoteSource": "readback",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "reference-lost-reply-present",
+      "title": "A still-present task after a lost reply never causes a second DELETE in this attempt",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "error": "lost-reply"
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          "error",
+          "error"
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          "network-error",
+          200
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "uncertain",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "conflict",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "recovery-initial-absence",
+      "title": "Restart recovery finds absence with one GET and invents no successful DELETE response",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "uncertain",
+      "acceptedEtag": null,
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 404,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          404
+        ],
+        "preparedPatch": null,
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "ackStatuses": [
+          404
+        ],
+        "ackResponseKinds": [
+          null
+        ],
+        "ackSources": [
+          "initial-read"
+        ],
+        "finishStatuses": [],
+        "providerKind": "uncertain",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "absent",
+        "remoteSource": "initial-read",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "prior-rejection-absence",
+      "title": "Current verified absence fulfills DELETE without rewriting historical rejection into acceptance",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "rejected",
+      "acceptedEtag": null,
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 410,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          410
+        ],
+        "preparedPatch": null,
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "ackStatuses": [
+          410
+        ],
+        "ackResponseKinds": [
+          null
+        ],
+        "ackSources": [
+          "initial-read"
+        ],
+        "finishStatuses": [],
+        "providerKind": "rejected",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "absent",
+        "remoteSource": "initial-read",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": "rate-limited",
+        "providerRetry": "after-delay",
+        "providerRetryAfterMs": 1000,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "priorError": {
+        "code": "rate-limited",
+        "retry": "after-delay",
+        "retryAfterMs": 1000
+      }
+    },
+    {
+      "id": "initial-401-recovers",
+      "title": "Only the concrete initial delivery GET recovers after one401",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 401,
+          "body": {}
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 204,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "recovered",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 1,
+        "mutationMarks": 1,
+        "metrics": [
+          401,
+          200,
+          200,
+          200,
+          204
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "provider-response"
+        ],
+        "ackStatuses": [
+          204
+        ],
+        "ackResponseKinds": [
+          "accepted"
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 204,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 204
+      },
+      "readRecovery": true
+    },
+    {
+      "id": "preflight-401-recovers",
+      "title": "The separate permission read retains its one GET401 recovery",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 401,
+          "body": {}
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 204,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "recovered",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 1,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          401,
+          200,
+          200,
+          204
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "provider-response"
+        ],
+        "ackStatuses": [
+          204
+        ],
+        "ackResponseKinds": [
+          "accepted"
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 204,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 204
+      },
+      "readRecovery": true
+    },
+    {
+      "id": "writer-get-401-no-retry",
+      "title": "The immediate pre-DELETE GET401 never refreshes or dispatches DELETE",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 401,
+          "body": {}
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error"
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200,
+          200,
+          401
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 401,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "readRecovery": true
+    },
+    {
+      "id": "delete-401-no-replay",
+      "title": "A rejected DELETE401 never triggers mutation authentication replay",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 401,
+          "body": {}
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          401
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "rejected",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 401,
+        "retryAfterMs": null,
+        "providerErrorCode": "permission-denied",
+        "providerRetry": "after-reconnect",
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "readRecovery": true
+    },
+    {
+      "id": "double-read-401-raw-auth",
+      "title": "Second rejected delivery GET keeps the raw host auth error and drops invented hints",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 401,
+          "body": {}
+        },
+        {
+          "method": "GET",
+          "status": 401,
+          "body": {},
+          "headers": {
+            "retry-after": "99"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error"
+        ],
+        "bodyPresent": [
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "recovered"
+        ],
+        "sessions": 1,
+        "recoveries": 1,
+        "mutationMarks": 0,
+        "metrics": [
+          401,
+          401
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "readRecovery": true
+    },
+    {
+      "id": "legacy-malformed-notes",
+      "title": "Existing native notes values remain part of the accepted baseline without fake mutation body",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": 42,
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": 42,
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": 42,
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": 42,
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 204,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          204
+        ],
+        "preparedPatch": {
+          "notes": "Notes",
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "provider-response"
+        ],
+        "ackStatuses": [
+          204
+        ],
+        "ackResponseKinds": [
+          "accepted"
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 204,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 204
+      }
+    },
+    {
+      "id": "strict-malformed-notes",
+      "title": "Strict reference refuses malformed native notes before DELETE",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": 42,
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-projection-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "legacy-deleted-flag-floor",
+      "title": "Existing Google keeps its historical deleted flag floor",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z",
+            "deleted": true
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z",
+            "deleted": true
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z",
+            "deleted": true
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 204,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          204
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "provider-response"
+        ],
+        "ackStatuses": [
+          204
+        ],
+        "ackResponseKinds": [
+          "accepted"
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 204,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 204
+      }
+    },
+    {
+      "id": "strict-deleted-not-absence",
+      "title": "A native deleted:true200 is out of strict scope, never fabricated GET absence",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z",
+            "deleted": true
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-provider-conflict",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      }
+    },
+    {
+      "id": "legacy-any-ok-and-default-redirect",
+      "title": "Existing any-ok GETs and default-follow DELETE response floor remain unchanged",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 206,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          },
+          "headers": {
+            "content-range": "items 0-0/2"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 201,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 206,
+          "body": null,
+          "responseUrl": "other",
+          "redirected": true
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          206,
+          201,
+          200,
+          206
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "provider-response"
+        ],
+        "ackStatuses": [
+          206
+        ],
+        "ackResponseKinds": [
+          "accepted"
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 206,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 206
+      }
+    },
+    {
+      "id": "reference-response-202-readback-429",
+      "title": "A failed exact readback preserves the native response kind and current hint",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 202,
+          "body": null
+        },
+        {
+          "method": "GET",
+          "status": 429,
+          "body": {},
+          "headers": {
+            "retry-after": "17"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          "error",
+          "error"
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          202,
+          429
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "accepted",
+        "acceptedStatus": 202,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 429,
+        "retryAfterMs": 17000,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 202
+      }
+    },
+    {
+      "id": "reference-response-404-readback-429",
+      "title": "A failed exact readback preserves the native response kind and current hint",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 404,
+          "body": null
+        },
+        {
+          "method": "GET",
+          "status": 429,
+          "body": {},
+          "headers": {
+            "retry-after": "17"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          "error",
+          "error"
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          404,
+          429
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "accepted",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": 404,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 429,
+        "retryAfterMs": 17000,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "absent",
+        "writerResultSource": "delete-response",
+        "writerResultStatus": 404
+      }
+    },
+    {
+      "id": "prior-absence-current-accepted",
+      "title": "A later native2xx does not erase an older DELETE absence receipt",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "accepted",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 202,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          202
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "provider-response"
+        ],
+        "ackStatuses": [
+          202
+        ],
+        "ackResponseKinds": [
+          "accepted"
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 202,
+        "responseAbsenceStatus": 404,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 202
+      },
+      "priorResponseAbsenceStatus": 404
+    },
+    {
+      "id": "prior-rejection-current-read-429",
+      "title": "A current read failure keeps the historical rejection hint separate",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "rejected",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 429,
+          "body": {},
+          "headers": {
+            "retry-after": "17"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          429
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "rejected",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 429,
+        "retryAfterMs": 17000,
+        "providerErrorCode": "rate-limited",
+        "providerRetry": "after-delay",
+        "providerRetryAfterMs": 1000,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "priorError": {
+        "code": "rate-limited",
+        "retry": "after-delay",
+        "retryAfterMs": 1000
+      }
+    }
+  ]
+}

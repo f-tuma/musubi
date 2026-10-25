@@ -95,7 +95,8 @@ export class ReferenceStore {
     const graphCreate = await readFile(new URL("./schema-graph-create.sql", import.meta.url), "utf8");
     const caldavCreate = await readFile(new URL("./schema-caldav-create.sql", import.meta.url), "utf8");
     const taskUpdate = await readFile(new URL("./schema-google-task-update.sql", import.meta.url), "utf8");
-    await this.transaction(async client => { await client.query(sql); await client.query(forward); await client.query(create); await client.query(graph); await client.query(caldav); await client.query(graphCreate); await client.query(caldavCreate); await client.query(taskUpdate); });
+    const taskDelete = await readFile(new URL("./schema-google-task-delete.sql", import.meta.url), "utf8");
+    await this.transaction(async client => { await client.query(sql); await client.query(forward); await client.query(create); await client.query(graph); await client.query(caldav); await client.query(graphCreate); await client.query(caldavCreate); await client.query(taskUpdate); await client.query(taskDelete); });
   }
   private async transaction<T>(body: (client: PoolClient) => Promise<T>, signal?: AbortSignal): Promise<T> {
     signal?.throwIfAborted();
