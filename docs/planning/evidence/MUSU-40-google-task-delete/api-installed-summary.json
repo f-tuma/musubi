@@ -2,19 +2,19 @@
   "schemaVersion": 1,
   "scope": "Local installed API bounded Google Task DELETE extraction, retained UPDATE and task ACK regression proof; no registry publication, production deployment or live-provider certification.",
   "status": "passed",
-  "createdAt": "2026-10-25T18:29:28.542149+00:00",
-  "gitHeadAtBuild": "14d694f922b27fdfe0faf4743b77c94ece2da3bf",
+  "createdAt": "2026-10-25T18:50:05.276956+00:00",
+  "gitHeadAtBuild": "ef571a1d48400ec2f87f62c27476dbfe84e95a28",
   "imageTag": "musubi-c08-google-task-delete-api:proof",
-  "dockerImageInspectId": "sha256:c5e77c0282d288c12a0b0dae5ed4925dee1c0b4286bdf1f3e9adb50cc28238c5",
-  "localBuildIndexDigest": "sha256:c5e77c0282d288c12a0b0dae5ed4925dee1c0b4286bdf1f3e9adb50cc28238c5",
-  "platformManifestDigest": "sha256:6a3d5d48a48ea361b239edc85fa8580ac72317da6bcae4fbc3f46f2b13390cbb",
-  "imageConfigDigest": "sha256:929e0577e054ab6b9486d6573eb8cb1b69b5650ce7be78fa3aad62efbc9ad075",
+  "dockerImageInspectId": "sha256:9b6746a076fa6e3af056d9844d8e0f74e7d7eda9f7bd277d78961d1aaa559c98",
+  "localBuildIndexDigest": "sha256:9b6746a076fa6e3af056d9844d8e0f74e7d7eda9f7bd277d78961d1aaa559c98",
+  "platformManifestDigest": "sha256:0563a0f69d7fb1ea287e785e5461ca37eea037b20c52ead21167e4d08238cb52",
+  "imageConfigDigest": "sha256:f2bce5c148cc4f352c533443ff2671c0d2d61c9069777ed563fcbef32429b7ce",
   "platform": {
     "os": "linux",
     "architecture": "amd64"
   },
   "dockerIdentityNote": "The local OCI index, platform manifest and image config digests identify different layers and are recorded separately. No daemon RepoDigest is treated as registry publication.",
-  "sourceFingerprint": "6153ea742c2c44c2c433ea13e92484059d15554ba27821246519a4e32214e6d6",
+  "sourceFingerprint": "f1d14c201c8e49118359b1127aad9313d988a77eac95ec7d0c18cf356dfe4a1b",
   "sourceContextFiles": 875,
   "sourceFingerprintScope": "Frozen 875-file credential-free Docker context; excludes workspace .env, node_modules and data. Production TS/SQL parity excludes tests, fixtures and behavior harnesses.",
   "productionSourceFingerprint": "66f345ab91ecd894fe6282ae1626105aa50b45bd8bd1512aa3fbf08d4fa223b9",
@@ -38,7 +38,7 @@
     "externalDeliveryRecoveryMode": "disabled",
     "syncOperationV1EncoderEnabled": true,
     "syncOperationProfileVersion": "sync-profile-v1",
-    "timestamp": "2026-10-25T18:27:18.682Z",
+    "timestamp": "2026-10-25T18:48:33.403Z",
     "level": "info",
     "message": "server.started"
   },
@@ -199,37 +199,37 @@
   ],
   "artifacts": [
     {
-      "path": "/tmp/musu40-google-task-delete-api-proof-20261025182611_b8b9eb.json",
-      "sha256": "2570fc69c8d7dc42cf823f0c3c34779b1b0f5bfc3ae71219edd092d246476ac5",
-      "bytes": 6628
+      "path": "/tmp/musu40-google-task-delete-api-proof-20261025184809_e20aaa.json",
+      "sha256": "29367ac2351eddbc3d8966a5049ad60af4d4c8feb897e1ae20ee3d213b542834",
+      "bytes": 6629
     },
     {
-      "path": "/tmp/musu40-google-task-delete-api-http-20261025182611_b8b9eb.json",
-      "sha256": "fe8394594b302f53ed15497ade5b421e167ba708f691788768bd3eb2e0a3b0cf",
-      "bytes": 3406
+      "path": "/tmp/musu40-google-task-delete-api-http-20261025184809_e20aaa.json",
+      "sha256": "fc9fcb9733e7b1267dcc99817d504090a45496650d2add63e21843f2869e0341",
+      "bytes": 3407
     },
     {
-      "path": "/tmp/musu40-google-task-delete-api-runtime-20261025182611_b8b9eb.log",
-      "sha256": "549c99701e9006c30275371ce3aa649ebc5f17fd4bc2535a35637df86998530c",
-      "bytes": 6180
+      "path": "/tmp/musu40-google-task-delete-api-runtime-20261025184809_e20aaa.log",
+      "sha256": "a035a1e6aa040aff5eada7cece853d7ffac37637a700b0c4741b95dcf9025e84",
+      "bytes": 6183
     },
     {
-      "path": "/tmp/musu40-google-task-delete-api-source-20261025182611.json",
-      "sha256": "cd2442e513d0c3e07ddceb5324e90ae1ac2649297f4ffd98af3fedce81d2f7e1",
-      "bytes": 107479
+      "path": "/tmp/musu40-google-task-delete-api-source-20261025184809.json",
+      "sha256": "9c3483c89294bac0a20a536f390b42fba9ae6624a2258c3fca7b626a02f2e87a",
+      "bytes": 106179
     },
     {
-      "path": "/tmp/musu40-google-task-delete-api-build-20261025182611.log",
-      "sha256": "26f0917f8a9b30e5472baaba7887bac6382222ba3966aa6f2e9abf424975eb02",
-      "bytes": 4056
+      "path": "/tmp/musu40-google-task-delete-api-build-20261025184809.log",
+      "sha256": "af4d7389b42568d83684800b5b4b8d6ea7aeda9947ccc4acd1a30c3527546d83",
+      "bytes": 4050
     },
     {
-      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499.json",
-      "sha256": "9bb637a7fffcd05bc15650ee98f4579c4d5ff49ac79299eea0189706f933129c",
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025184903_ca29fb.json",
+      "sha256": "4586a229edf692ceaaa39d69b2b98a4d939f3437f92b41e8e8631d559356fb3c",
       "bytes": 4244
     },
     {
-      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499-migrate.log",
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025184903_ca29fb-migrate.log",
       "sha256": "52607390f6013e5fa3831e2bde93e5a9fe6cc3b9934e46329f513a8c7416ed49",
       "bytes": 61
     },
@@ -259,44 +259,99 @@
       "bytes": 8681
     },
     {
-      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499-google_shared_task_delete_delivery.log",
-      "sha256": "462a41a5e21a009a5e0c50d36e4e40c74dfab1fa119351d7223755c9a1e04d13",
-      "bytes": 3194
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025184903_ca29fb-google_shared_task_delete_delivery.log",
+      "sha256": "483f7617a219c791180c65f536bd6c362a0c2350791a6a59ff0239ae55551930",
+      "bytes": 3296
     },
     {
-      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499-google_shared_task_update_delivery.log",
-      "sha256": "f56ef6d30635cc7eb333338c3ec3ede7cc3556030545cced7b758231627e722e",
-      "bytes": 2126
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025184903_ca29fb-google_shared_task_update_delivery.log",
+      "sha256": "99448d43c3c31b902bc246aa8bd1036cafeb97d030c105f2673f29540ee99f99",
+      "bytes": 2228
     },
     {
-      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499-task-ack.log",
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025184903_ca29fb-task-ack.log",
       "sha256": "bf1637da55528a39cb452b2b645c0b5b00dd754550e65242fc6610fd90ec75b5",
       "bytes": 825
     },
     {
-      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499-task_ack_delivery.log",
-      "sha256": "c24938baf4fb1b5c165e5c4c5ced65f3436b11e3a18833b8bb9d5a8d4b80fc69",
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025184903_ca29fb-task_ack_delivery.log",
+      "sha256": "54c408486dc859d12d575d73b681304b164be7b64e4d966019e756465b11c84d",
       "bytes": 640
     },
     {
-      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499-tasks.log",
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025184903_ca29fb-tasks.log",
       "sha256": "86ab190809122f36df2345a242e5606ca036f2398f01b62f0354b857b9dcca54",
       "bytes": 93
     },
     {
-      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499-shared_tasks.log",
-      "sha256": "173925df8eee5e69984bcb1aea280e5c2ca2b27608e58e27f8dbd7cd8852cc0d",
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025184903_ca29fb-shared_tasks.log",
+      "sha256": "dbeb6ed623e4444599011458ba0a2ddd9d98a751b49647d458396e2aba65ef17",
       "bytes": 341
     },
     {
-      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499-task_delivery.log",
-      "sha256": "493b9be77fc9979adc653ecd0e40bea2cade8a9959ab769e5d9b8df97bc9f086",
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025184903_ca29fb-task_delivery.log",
+      "sha256": "bd91544f1cedf18406a8d3f18b5bbf3dc1fa10a7dadf6f22cf2435a72894f379",
       "bytes": 354
     },
     {
-      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025182838_9f3499-optional_tasks.log",
-      "sha256": "ad2ca61e4bac37d4ab7ab919e992bc38585a7db9e8bbc3d358ce9d42e6c490fd",
+      "path": "/tmp/musu40-google-task-delete-api-corpus-20261025184903_ca29fb-optional_tasks.log",
+      "sha256": "32a06b4481cdb362e391827b4fe047952aa4fe7be02a6d91c48c7a29138a216f",
       "bytes": 3479
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-rebuild-approval.json",
+      "sha256": "4bc55f78e236a303d4f9d3481bdd25785ed7da3acc94796df04d1cca63cb2d95",
+      "bytes": 1929
+    },
+    {
+      "path": "/tmp/musu40-google-task-delete-api-finalize-rebuild.py",
+      "sha256": "c56b442c06774d1c2e30305582a8c7a9cb5247edd0c8d795e66a7bf90c1ead76",
+      "bytes": 2681
     }
-  ]
+  ],
+  "approvedStagedTreeAtBuild": "985fbdc0aba8088831239911e2b395d2f191173f",
+  "approvedTreeContextHashParity": {
+    "checkedFiles": 875,
+    "mismatches": []
+  },
+  "priorProof": {
+    "summaryPath": "/tmp/musu40-google-task-delete-api-before-cleanup-fix/api-installed-summary.json",
+    "summarySha256": "79c07678440aba76a7de46abf8abce89ce030e07f04c9df88e82705a5beffbf9",
+    "localBuildIndexDigest": "sha256:c5e77c0282d288c12a0b0dae5ed4925dee1c0b4286bdf1f3e9adb50cc28238c5",
+    "sourceFingerprint": "6153ea742c2c44c2c433ea13e92484059d15554ba27821246519a4e32214e6d6",
+    "coversCleanupRevision": false
+  },
+  "testOnlyCleanupRevision": {
+    "kind": "test-only pool cleanup",
+    "reason": "CI completed all assertions then encountered an unhandled PostgreSQL57P01 during forced nonce database removal. Both native API suites now close every connected owned pool, assert zero nonce sessions, and use plain DROP DATABASE.",
+    "changedFiles": [
+      {
+        "path": "apps/api/src/sync/google_shared_task_delete_delivery.integration.test.ts",
+        "priorSha256": "93af5a787739b5004a2a9594af7f7557fe40c80016118a061387873b9b877705",
+        "currentSha256": "3576a7df2a7ab3be38a8c11f3d9694f0b63f4987b46e62a266d4d834a3ad68d1"
+      },
+      {
+        "path": "apps/api/src/sync/google_shared_task_update_delivery.integration.test.ts",
+        "priorSha256": "1cdd455ff93ef4dad5d053c29a2e4687bb45b636c8a1663bf8204a57f2bc549a",
+        "currentSha256": "7a75fa1d11f005db34446be7b207ad0b7ee72fab794a9b77b22b6c1859915b88"
+      }
+    ],
+    "productionUnchanged": true,
+    "installedVerification": [
+      {
+        "suite": "apps/api/src/sync/google_shared_task_delete_delivery.integration.test.ts",
+        "ownedPoolsClosed": 2,
+        "remainingNonceDatabaseSessions": 0,
+        "dropDatabaseUsedForce": false,
+        "status": "passed"
+      },
+      {
+        "suite": "apps/api/src/sync/google_shared_task_update_delivery.integration.test.ts",
+        "ownedPoolsClosed": 2,
+        "remainingNonceDatabaseSessions": 0,
+        "dropDatabaseUsedForce": false,
+        "status": "passed"
+      }
+    ]
+  }
 }

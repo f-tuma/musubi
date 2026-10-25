@@ -16,7 +16,14 @@ async function main() {
   const adminUrl = process.env.DATABASE_URL; assert(adminUrl);
   const databaseName = `google_task_delete_${randomUUID().replace(/-/g, "")}`, databaseUrl = new URL(adminUrl); databaseUrl.pathname = `/${databaseName}`;
   const admin = new Pool({ connectionString: adminUrl, max: 1 }); await admin.query(`CREATE DATABASE "${databaseName}"`); process.env.DATABASE_URL = databaseUrl.href;
-  let client: { end(): Promise<void> } | undefined, observer: Pool | undefined;
+  // tsx may load the DB through both dynamic and static module identities.
+  // Own every pool that actually connects before dropping the nonce database.
+  const pools = new Set<Pool>(), originalConnect = Pool.prototype.connect;
+  const connect = mock.method(Pool.prototype, "connect", function (this: Pool, ...args: any[]): any {
+    if (this !== admin) pools.add(this);
+    return Reflect.apply(originalConnect, this, args);
+  });
+  let observer: Pool | undefined;
   const originalFetch = globalThis.fetch, scope = "https://www.googleapis.com/auth/tasks", nativeList = "native/list+id", nativeId = "native/task+id";
   type Native = { id: string; etag: string; title: string; notes: unknown; status: string; due: unknown; assignmentInfo?: unknown; deleted?: boolean };
   const before = (): Native => ({ id: nativeId, etag: '"v1"', title: "Before", notes: "Keep notes", status: "needsAction", due: "2026-10-26T00:00:00.000Z" });
@@ -68,7 +75,7 @@ async function main() {
     const database = await import("@musubi/db");
     const { db, user, account, calendars, calendarMembers, calendarTasks, tasks, externalCalendars, externalTasks, taskOutbox,
       appendTaskOutbox, getTaskOutbox, unlinkTask, upsertExternalTask } = database;
-    client = db.$client; observer = new Pool({ connectionString: databaseUrl.href, max: 3 });
+    pools.add(db.$client); observer = new Pool({ connectionString: databaseUrl.href, max: 3 }); pools.add(observer);
     const { migrateDatabase } = await import("../../../../packages/db/src/migrate"); const { config } = await import("@musubi/config");
     const { deliverTaskOutbox } = await import("./task_delivery"); const { googleAdapter, toGoogleTask } = await import("./adapters/google");
     await migrateDatabase(); assert.equal(config.api.syncOperationV1EncoderEnabled, true);
@@ -264,8 +271,14 @@ async function main() {
     }
     console.log(`Google task DELETE PostgreSQL/native HTTP: ${passed} cases passed`);
   } finally {
-    timer.mock.restore(); globalThis.fetch = originalFetch; await new Promise<void>(resolve => server.close(() => resolve())); await observer?.end(); await client?.end();
-    try { await admin.query(`DROP DATABASE "${databaseName}" WITH (FORCE)`); } finally { await admin.end(); }
+    timer.mock.restore(); globalThis.fetch = originalFetch; await new Promise<void>(resolve => server.close(() => resolve()));
+    try {
+      await Promise.all([...pools].map(pool => pool.end()));
+      const sessions = await admin.query("SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=$1", [databaseName]);
+      assert.equal(sessions.rows[0].count, 0, "Every owned pool must close before nonce database removal");
+      await admin.query(`DROP DATABASE "${databaseName}"`);
+      console.log(`Google task DELETE cleanup: ${pools.size} owned pools closed, zero sessions, nonce DB dropped without FORCE: PASS`);
+    } finally { connect.mock.restore(); await admin.end(); }
   }
 }
 void main().catch(error => { console.error(error); process.exitCode = 1; });

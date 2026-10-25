@@ -19,7 +19,12 @@ async function main() {
   const admin = new Pool({ connectionString: adminUrl, max: 1 });
   await admin.query(`CREATE DATABASE "${databaseName}"`);
   process.env.DATABASE_URL = databaseUrl.href;
-  let client: { end(): Promise<void> } | undefined;
+  // Own pools from every loader identity before removing this fixture's DB.
+  const pools = new Set<Pool>(), originalConnect = Pool.prototype.connect;
+  const connect = mock.method(Pool.prototype, "connect", function (this: Pool, ...args: any[]): any {
+    if (this !== admin) pools.add(this);
+    return Reflect.apply(originalConnect, this, args);
+  });
   let observer: Pool | undefined;
   const originalFetch = globalThis.fetch;
   const nativeList = "native/list+id", nativeId = "native/task+id", scope = "https://www.googleapis.com/auth/tasks";
@@ -71,8 +76,8 @@ async function main() {
     const database = await import("@musubi/db");
     const { db, user, account, calendars, calendarMembers, calendarTasks, tasks, externalCalendars, externalTasks, taskOutbox,
       appendTaskOutbox, getTaskOutbox, upsertExternalTask } = database;
-    client = db.$client;
-    observer = new Pool({ connectionString: databaseUrl.href, max: 3 });
+    pools.add(db.$client);
+    observer = new Pool({ connectionString: databaseUrl.href, max: 3 }); pools.add(observer);
     const { config } = await import("@musubi/config");
     const { migrateDatabase } = await import("../../../../packages/db/src/migrate");
     const { deliverTaskOutbox } = await import("./task_delivery");
@@ -304,9 +309,13 @@ async function main() {
   } finally {
     globalThis.fetch = originalFetch;
     await new Promise<void>(resolve => server.close(() => resolve()));
-    await client?.end();
-    await observer?.end();
-    try { await admin.query(`DROP DATABASE "${databaseName}" WITH (FORCE)`); } finally { await admin.end(); }
+    try {
+      await Promise.all([...pools].map(pool => pool.end()));
+      const sessions = await admin.query("SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=$1", [databaseName]);
+      assert.equal(sessions.rows[0].count, 0, "Every owned pool must close before nonce database removal");
+      await admin.query(`DROP DATABASE "${databaseName}"`);
+      console.log(`Google task UPDATE cleanup: ${pools.size} owned pools closed, zero sessions, nonce DB dropped without FORCE: PASS`);
+    } finally { connect.mock.restore(); await admin.end(); }
   }
 }
 void main().catch(error => { console.error(error); process.exitCode = 1; });

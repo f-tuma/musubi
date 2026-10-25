@@ -111,6 +111,20 @@ payloadem: stará cesta provedla nula native requests, nová původně GET/GET/G
 Regrese je zachovaná; `TaskSchema.parse` v host prepare nyní odmítá payload před
 prvním native readem, bez přidání recurrence zákazu.
 
+První CI head `ef571a1d48400ec2f87f62c27476dbfe84e95a28` v
+[Quality 40221975531](https://github.com/f-tuma/musubi/actions/runs/40221975531)
+prošel všemi 46 DELETE i 29 UPDATE věcnými případy, ale obě sady poté selhaly
+při `DROP DATABASE WITH (FORCE)`: neuzavřený `BoundPool` dostal neošetřený
+PostgreSQL `57P01`. Rozdílné tsx module identities jsou možnou příčinou;
+netvrdíme, že se tato loader odlišnost reprodukovala v každém prostředí.
+Test-only oprava vlastní všechny skutečně připojené pooly již před dynamickými
+importy, všechny ukončí, ověří nulu sessions přes `pg_stat_activity` a použije
+obyčejný DROP bez FORCE. Neskrývá pool chyby a nemění věcné assertions ani
+produkční code. Obě source sady po opravě znovu prošly (46 + 29), včetně
+nulových sessions/úspěšného odstranění DB, a API typecheck prošel. Dotčený API
+obraz a installed corpus byly následně sestavené a ověřené znovu; původní CI
+selhání i původní lokální důkazy zůstávají zachované.
+
 ### Source a skutečné dependency hranice
 
 | Kontrola | Výsledek |
@@ -136,9 +150,9 @@ servery, durable PostgreSQL a skutečné child procesy.
 [Sanitizovaný API souhrn](evidence/MUSU-40-google-task-delete/api-installed-summary.json)
 zachycuje image `musubi-c08-google-task-delete-api:proof`:
 
-- OCI index `sha256:c5e77c0282d288c12a0b0dae5ed4925dee1c0b4286bdf1f3e9adb50cc28238c5`,
-  amd64 manifest `sha256:6a3d5d48a48ea361b239edc85fa8580ac72317da6bcae4fbc3f46f2b13390cbb`,
-  config `sha256:929e0577e054ab6b9486d6573eb8cb1b69b5650ce7be78fa3aad62efbc9ad075`.
+- OCI index `sha256:9b6746a076fa6e3af056d9844d8e0f74e7d7eda9f7bd277d78961d1aaa559c98`,
+  amd64 manifest `sha256:0563a0f69d7fb1ea287e785e5461ca37eea037b20c52ead21167e4d08238cb52`,
+  config `sha256:f2bce5c148cc4f352c533443ff2671c0d2d61c9069777ed563fcbef32429b7ce`.
 - Zmrazený 875-file context zůstává byte-identical; 444 installed production
   TS/SQL a 25 test/behavior source hashů souhlasí. Hash inventář neznamená,
   že každý behavior source byl v instalovaném corpus samostatně spuštěný.
@@ -149,7 +163,8 @@ zachycuje image `musubi-c08-google-task-delete-api:proof`:
   + API ACK4 = 94 číslovaných případů a čtyři původní suite gates.
   Test-only `/packages` symlinky odkazují na instalované balíčky; nemění
   produkční HTTP smoke layout ani source.
-- Všech 20 raw artifact hashů a délek je znovu ověřeno. Vlastní API kontejnery
+- Všech 22 raw artifact hashů a délek je znovu ověřeno; 20 původních artefaktů
+  před cleanup revizí je zachovaných odděleně a netvoří důkaz jejího úspěchu. Vlastní API kontejnery
   i všechny jejich nonce DB byly odstraněné a jejich absence ověřená.
 
 [Sanitizovaný referenční souhrn](evidence/MUSU-40-google-task-delete/reference-installed-summary.json)
@@ -177,15 +192,18 @@ zachycuje image `musubi-c08-google-task-delete-reference:proof`:
 - Všech 35 raw artifact hashů a délek je znovu ověřeno. Obě vlastní nonce DB
   i referenční CLI kontejnery byly odstraněné.
 
-Source pro oba buildy schválila nezávislá revize jako tree
-`f626fb646711922ca8efbff181a5e85bce676d68`. Později byly doplněné pouze dokumenty
-a evidence mimo oba image contexts. Lokální OCI index, platform manifest a
-config nejsou registry publication ani production rollout evidence.
+Původní source pro oba buildy schválila nezávislá revize jako tree
+`f626fb646711922ca8efbff181a5e85bce676d68`. Nové API IMAGE CLEAR po dvou
+test-only cleanup opravách má tree `985fbdc0aba8088831239911e2b395d2f191173f`.
+Referenční context zůstal beze změny; opakovaný API build má nový context/test
+hash a image identity. Dokumenty a evidence jsou mimo oba image contexts.
+Lokální OCI index, platform manifest a config nejsou registry publication ani
+production rollout evidence.
 
 ### Poslední kontrola běžící aplikace
 
 [Browser a cleanup souhrn](evidence/MUSU-40-google-task-delete/browser-summary.json)
-zachycuje závěrečný Chromium test: 8/8 napoprvé za 13.1 s, desktop 1280×900/light
+zachycuje poslední Chromium test: 8/8 za 13.7 s, desktop 1280×900/light
 + 390×844/dark. Skutečná aplikace/router/komponenty provedly JSON scénáře editace
 se zachováním bohatšího contentu, zachování draftu při konfliktu, read-only
 mirror a zrušení DELETE. Screenshoty obou šířek byly vizuálně ověřené; žádný
@@ -197,8 +215,12 @@ Browser plugin nebyl dostupný, proto běžel existující Playwright driver.
 Před jeho spuštěním oba image autoři ukončili všechny testy, v dočasném
 PostgreSQL zůstala pouze systémová DB a vlastní PG kontejner/port 55443 byly
 odstraněné a absence ověřená. Uživatelský QA kontejner zůstal zachovaný.
-Vlastní Docker cleanup neběžel souběžně s Chromium. Žádná testovací výjimka
-ani změna UI nebyla potřeba.
+V posledním důkazu vlastní Docker cleanup neběžel souběžně s Chromium.
+Původní běh před CI revizí prošel 8/8 za 13.1 s. Mezilehlý běh po revizi
+také prošel 8/8 za 14.0 s, ale byl spuštěný před potvrzením odstranění
+kontejneru, proto je z finální acceptance vyloučený. Samostatný poslední běh
+výše začal až po úspěšné kontrole absence kontejneru i portu. Všechny původní
+logy jsou zachované. Žádná testovací výjimka ani změna UI nebyla potřeba.
 
 ## Vendor a zbývající rozsah
 
