@@ -12,6 +12,7 @@ const SUITES = {
   "microsoft-create": "packages/sync-runtime/src/behavior/microsoft-create.json",
   "caldav-delete": "packages/sync-runtime/src/behavior/caldav-delete.json",
   "caldav-create": "packages/sync-runtime/src/behavior/caldav-create.json",
+  "task-delivery": "apps/api/src/sync/behavior/task-delivery.json",
   "task-inspector": "apps/web/src/tests/behavior/task-inspector.json",
 };
 const validDuration = value => typeof value === "number" && Number.isFinite(value) && value >= 0;
@@ -95,7 +96,7 @@ function runtimeResults(output, selection) {
   let report;
   try { report = JSON.parse(output); } catch { throw new BehaviorError("Runner did not return a valid JSON report."); }
   const errorCodes = new Set(["invalid-arguments", "unknown-scenario", "invalid-suite", "suite-unavailable",
-    "exchange-mismatch", "unconsumed-exchange", "expectation-mismatch"]);
+    "exchange-mismatch", "unconsumed-exchange", "unexpected-port", "unconsumed-port", "concurrent-run", "expectation-mismatch"]);
   if (report?.schemaVersion === 1 && report.suite === selection.name && report.error && !Object.hasOwn(report, "results") &&
       errorCodes.has(report.error.code) && (report.error.scenarioId === undefined ||
         selection.scenarios.some(item => item.id === report.error.scenarioId))) {
@@ -155,6 +156,11 @@ async function runSuite(selection, options, { root, execute, env }) {
     if (["google-delete", "google-create", "microsoft-delete", "microsoft-create", "caldav-delete", "caldav-create"].includes(selection.name)) {
       const entry = { "google-delete": "cli.ts", "google-create": "create-cli.ts", "microsoft-delete": "microsoft-delete-cli.ts", "microsoft-create": "microsoft-create-cli.ts", "caldav-delete": "caldav-delete-cli.ts", "caldav-create": "caldav-create-cli.ts" }[selection.name];
       child = await execute(process.execPath, ["--import", "tsx", join(root, "packages/sync-runtime/src/behavior", entry), "--json",
+        ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });
+      results = runtimeResults(child.stdout, selection);
+    } else if (selection.name === "task-delivery") {
+      child = await execute(process.execPath, ["--experimental-test-module-mocks", "--experimental-default-type=module", "--import", "tsx",
+        join(root, "apps/api/src/sync/behavior/task-delivery-cli.ts"), "--json",
         ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });
       results = runtimeResults(child.stdout, selection);
     } else {

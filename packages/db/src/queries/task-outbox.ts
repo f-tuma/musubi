@@ -233,19 +233,40 @@ export async function assertTaskOutboxSourceInTransaction(tx: DbTransaction, row
 
 /** Pair the address/version and accepted projection from the same proven
  * operation. A skipped successor must not mix a fresh ETag with an old baseline. */
-export async function getTaskOutboxPredecessorEvidence(row: TaskOutboxRow) {
-  let predecessorID = row.predecessorID;
+async function resolveTaskOutboxPredecessorEvidence(row: TaskOutboxRow, read: (id: string) => Promise<TaskOutboxRow | undefined>) {
+  let predecessorID = row.predecessorID, matchingPredecessorSource = true;
+  let originalMappingBaseline: Record<string, unknown> | null | undefined;
   const visited = new Set<string>([row.id]);
   while (predecessorID) {
     if (visited.has(predecessorID)) throw new Error("Task delivery predecessor cycle.");
     visited.add(predecessorID);
-    const previous = await getTaskOutbox(predecessorID);
+    const previous = await read(predecessorID);
     if (!previous || !["completed", "not-needed"].includes(previous.status)) break;
-    if (previous.resultRef) return { ref: previous.resultRef, projectionBaseline: previous.remoteSnapshot };
+    matchingPredecessorSource &&= previous.taskID === row.taskID && previous.calendarID === row.calendarID &&
+      previous.externalCalendarLinkID === row.externalCalendarLinkID && previous.provider === row.provider && previous.userID === row.userID &&
+      previous.accountID === row.accountID && previous.externalCalendarID === row.externalCalendarID &&
+      previous.providerAccessRevision === row.providerAccessRevision && previous.retiredGeneration === row.retiredGeneration;
+    if (matchingPredecessorSource && previous.externalTaskID === row.externalTaskID && previous.expectedEtag === row.expectedEtag &&
+        previous.icalUid === row.icalUid) {
+      if (Object.prototype.hasOwnProperty.call(previous.payload, "projectionBaseline")) originalMappingBaseline = previous.payload.projectionBaseline ?? null;
+      else if (previous.payload.dispatchProjection) originalMappingBaseline = previous.payload.dispatchProjection.baseline;
+    }
+    if (previous.resultRef) return { ref: previous.resultRef, projectionBaseline: previous.remoteSnapshot, hasPredecessorEvidence: true, matchingPredecessorSource, originalMappingBaseline };
     predecessorID = previous.predecessorID;
   }
   return { ref: { externalTaskId: row.externalTaskID, etag: row.expectedEtag, icalUid: row.icalUid },
-    projectionBaseline: row.payload.projectionBaseline ?? null };
+    projectionBaseline: row.payload.projectionBaseline ?? null, hasPredecessorEvidence: false, matchingPredecessorSource: false, originalMappingBaseline };
+}
+export async function getTaskOutboxPredecessorEvidence(row: TaskOutboxRow) {
+  const { ref, projectionBaseline } = await resolveTaskOutboxPredecessorEvidence(row, getTaskOutbox);
+  return { ref, projectionBaseline };
+}
+/** ACK uses the same paired predecessor rule inside its own transaction. The
+ * witness permits only a captured original mapping left behind by a detached
+ * or deleted canonical task, never an unrelated/newer inbound version. */
+export async function getTaskOutboxPredecessorEvidenceInTransaction(tx: DbTransaction, row: TaskOutboxRow) {
+  return resolveTaskOutboxPredecessorEvidence(row, async id =>
+    (await tx.select().from(taskOutbox).where(eq(taskOutbox.id, id)))[0]);
 }
 
 /** Resolve a successor's address from proven evidence, never a new CREATE. */

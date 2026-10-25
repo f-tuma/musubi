@@ -9,7 +9,8 @@ import { caldavSeriesDesired } from "./caldav-series-scope";
 import { expandRecurringEvents } from "@musubi/calendar";
 import { TaskSchema, ProviderReminderEditSchema, ProviderEventStateSchema, type ProviderEventState, type ProviderSettingTimeEvidence, hasKnownEventTime, BadRequestError, EventTimeModelSchema, OccurrenceStartSchema, type EventTimeModel, type OccurrenceStart } from "@musubi/types";
 import { randomUUID } from "node:crypto";
-import { appendTaskOutbox, prepareTaskOutboxInTransaction, finishTaskOutboxInTransaction, assertTaskOutboxSourceInTransaction, taskOutboxLeaseGuard, type TaskOutboxRow } from "./task-outbox";
+import { isDeepStrictEqual } from "node:util";
+import { appendTaskOutbox, prepareTaskOutboxInTransaction, finishTaskOutboxInTransaction, assertTaskOutboxSourceInTransaction, taskOutboxLeaseGuard, getTaskOutboxPredecessorEvidenceInTransaction, type TaskOutboxRow } from "./task-outbox";
 import { assertLegacyEventTimePatch } from "./event-time-write";
 import { appendEventOutbox, reserveEventMutation, type EventOutboxIntent } from "./event-outbox";
 import { retainPendingEventPull, retainUnmappedCreatePull, retainUnsupportedEventPull } from "./event-outbox-pull";
@@ -1763,35 +1764,126 @@ export async function importExternalTask(
   });
 }
 
+export type TaskAcknowledgementExpectedRef = { externalTaskId: string | null; etag?: string | null; icalUid?: string | null };
+class TaskAcknowledgementLeaseExpired extends Error {}
+function normalizedTaskAcknowledgementRef(value: TaskAcknowledgementExpectedRef | null | undefined) {
+  return value?.externalTaskId == null ? null : { externalTaskId: value.externalTaskId, etag: value.etag ?? null, icalUid: value.icalUid ?? null };
+}
+function sameTaskAcknowledgementRef(a: TaskAcknowledgementExpectedRef | null | undefined, b: TaskAcknowledgementExpectedRef | null | undefined) {
+  return isDeepStrictEqual(normalizedTaskAcknowledgementRef(a), normalizedTaskAcknowledgementRef(b));
+}
+
 /** The validated lease, captured source and mapping ACK commit together. A
  * removed attachment can retain delivery proof without resurrecting a mirror. */
-export async function acceptTaskOutboxDelivery(row: TaskOutboxRow, leaseToken: string, evidence: { ref: { externalTaskId: string; etag?: string | null; icalUid?: string | null }; projection: Record<string, unknown> } | null, deletionRef?: { externalTaskId: string; etag?: string | null; icalUid?: string | null }) {
-  return db.transaction(async tx => {
-    await lockCalendarLifecycle(tx, [row.calendarID], "shared");
-    const [task] = await tx.select().from(tasks).where(eq(tasks.id, row.taskID)).for("update");
-    const [claim] = await tx.select().from(taskOutbox).where(taskOutboxLeaseGuard(row.id, leaseToken)).for("update");
-    if (!claim) return false;
-    const decoded = decodeTaskOutboxOperation(claim);
-    if (decoded.kind === "blocked" || decoded.kind === "pinned-v1" && !await assertPinnedOutboxSourceInTransaction(tx, claim, true)) {
-      await finishTaskOutboxInTransaction(tx, row.id, leaseToken, "blocked", decoded.kind === "blocked" ? decoded.code : "operation-source-changed",
-        { uncertain: true, resultRef: evidence?.ref ?? deletionRef ?? row.resultRef, remoteSnapshot: evidence?.projection ?? null });
-      return false;
-    }
-    if (!await assertTaskOutboxSourceInTransaction(tx, row, { allowDeletedTask: true })) {
-      await finishTaskOutboxInTransaction(tx, row.id, leaseToken, "blocked", "task-source-changed", { uncertain: !evidence && row.uncertain, resultRef: evidence?.ref ?? deletionRef ?? row.resultRef, remoteSnapshot: evidence?.projection ?? null });
-      return false;
-    }
-    const [attached] = await tx.select({ taskID: calendarTasks.taskID }).from(calendarTasks).where(and(eq(calendarTasks.taskID, row.taskID), eq(calendarTasks.calendarID, row.calendarID)));
-    const address = and(eq(externalTasks.taskID, row.taskID), eq(externalTasks.calendarID, row.calendarID), eq(externalTasks.provider, row.provider), eq(externalTasks.externalCalendarLinkID, row.externalCalendarLinkID), eq(externalTasks.accountID, row.accountID));
-    if (row.action === "delete") await tx.delete(externalTasks).where(address);
-    else if (evidence && task?.deletedAt === null && attached) {
-      const [mapping] = await tx.select({ id: externalTasks.id }).from(externalTasks).where(address).for("update");
-      const data = { externalCalendarID: row.externalCalendarID, externalTaskID: evidence.ref.externalTaskId, etag: evidence.ref.etag ?? null, icalUid: evidence.ref.icalUid ?? null, providerAccessRevision: row.providerAccessRevision, projectionBaseline: evidence.projection, acceptedRevision: row.revision };
-      if (mapping) await tx.update(externalTasks).set(data).where(eq(externalTasks.id, mapping.id));
-      else await tx.insert(externalTasks).values({ taskID: row.taskID, calendarID: row.calendarID, provider: row.provider, externalCalendarLinkID: row.externalCalendarLinkID, accountID: row.accountID, ...data });
-    }
-    return finishTaskOutboxInTransaction(tx, row.id, leaseToken, "completed", null, { resultRef: evidence?.ref ?? deletionRef ?? (row.externalTaskID ? { externalTaskId: row.externalTaskID, etag: row.expectedEtag, icalUid: row.icalUid } : null), remoteSnapshot: evidence?.projection ?? null });
-  });
+export async function acceptTaskOutboxDelivery(row: TaskOutboxRow, leaseToken: string,
+  evidence: { ref: { externalTaskId: string; etag?: string | null; icalUid?: string | null }; projection: Record<string, unknown> } | null,
+  deletionRef?: { externalTaskId: string; etag?: string | null; icalUid?: string | null }, signal?: AbortSignal,
+  expectedRef?: TaskAcknowledgementExpectedRef | null) {
+  // Copy caller-owned evidence before any pool/lock wait. Only the identifier is
+  // read from its row DTO; every authority/scope field comes from the locked row.
+  const operationID = row.id, observation = evidence === null ? null : {
+    ref: structuredClone(evidence.ref),
+    // Match the existing JSONB persistence boundary (Date -> ISO, omitted
+    // undefined properties), rather than narrowing trusted legacy projections.
+    projection: JSON.parse(JSON.stringify(evidence.projection)) as Record<string, unknown>,
+  };
+  const deletedRef = deletionRef === undefined ? undefined : structuredClone(deletionRef);
+  const suppliedExpected = expectedRef === undefined ? undefined : structuredClone(expectedRef);
+  signal?.throwIfAborted();
+  try {
+    return await db.transaction(async tx => {
+      signal?.throwIfAborted();
+      const result = await (async () => {
+        const [admittedAddress] = await tx.select().from(taskOutbox).where(eq(taskOutbox.id, operationID));
+        if (!admittedAddress) return false;
+        await lockCalendarLifecycle(tx, [admittedAddress.calendarID], "shared");
+        const [task] = await tx.select().from(tasks).where(eq(tasks.id, admittedAddress.taskID)).for("update");
+        const [row] = await tx.select().from(taskOutbox).where(taskOutboxLeaseGuard(operationID, leaseToken)).for("update");
+        signal?.throwIfAborted();
+        if (!row || row.calendarID !== admittedAddress.calendarID || row.taskID !== admittedAddress.taskID) return false;
+        const settle = async (status: Exclude<TaskOutboxRow["status"], "pending" | "attempting">, code: string | null,
+          details: Parameters<typeof finishTaskOutboxInTransaction>[5]) => {
+          if (!await finishTaskOutboxInTransaction(tx, row.id, leaseToken, status, code, details))
+            throw new TaskAcknowledgementLeaseExpired(); // Roll back provisional mapping writes too.
+          return true;
+        };
+        const decoded = decodeTaskOutboxOperation(row);
+        const proof = { resultRef: observation?.ref ?? deletedRef ?? row.resultRef, remoteSnapshot: observation?.projection ?? null };
+        if (decoded.kind === "blocked" || decoded.kind === "pinned-v1" && !await assertPinnedOutboxSourceInTransaction(tx, row, true)) {
+          await settle("blocked", decoded.kind === "blocked" ? decoded.code : "operation-source-changed", { ...proof, uncertain: true });
+          return false;
+        }
+        if (!await assertTaskOutboxSourceInTransaction(tx, row, { allowDeletedTask: true })) {
+          await settle("blocked", "task-source-changed", { ...proof, uncertain: !observation && row.uncertain });
+          return false;
+        }
+        const predecessor = await getTaskOutboxPredecessorEvidenceInTransaction(tx, row);
+        const expected = normalizedTaskAcknowledgementRef(predecessor.ref);
+        const conflict = async () => {
+          await settle("conflict", "task-provider-conflict", { ...proof, uncertain: true });
+          return false;
+        };
+        if (predecessor.hasPredecessorEvidence && !predecessor.matchingPredecessorSource) return conflict();
+        if (suppliedExpected !== undefined && !sameTaskAcknowledgementRef(suppliedExpected, expected)) return conflict();
+        const pinnedUid = decoded.kind === "pinned-v1" && row.provider === "caldav" && typeof decoded.envelope.nativePlan.data.uid === "string"
+          ? decoded.envelope.nativePlan.data.uid : null;
+        const capturedUid = expected?.icalUid ?? pinnedUid;
+        if (capturedUid != null && observation && observation.ref.icalUid !== capturedUid) return conflict();
+        if (row.action === "update" && observation && observation.ref.externalTaskId !== expected?.externalTaskId ||
+            row.action === "delete" && deletedRef && !sameTaskAcknowledgementRef(deletedRef, expected)) return conflict();
+        const [attached] = await tx.select({ taskID: calendarTasks.taskID }).from(calendarTasks).where(and(eq(calendarTasks.taskID, row.taskID), eq(calendarTasks.calendarID, row.calendarID)));
+        const address = and(eq(externalTasks.taskID, row.taskID), eq(externalTasks.calendarID, row.calendarID), eq(externalTasks.provider, row.provider), eq(externalTasks.externalCalendarLinkID, row.externalCalendarLinkID), eq(externalTasks.accountID, row.accountID));
+        if (row.action === "delete" || observation && task?.deletedAt === null && attached) {
+          const [mapping] = await tx.select().from(externalTasks).where(address).for("update");
+          signal?.throwIfAborted();
+          const mappingRef = mapping && { externalTaskId: mapping.externalTaskID, etag: mapping.etag, icalUid: mapping.icalUid };
+          // Old DAV rows may not have captured a UID even though their mapping
+          // already retained one. Only that legacy unknown permits the existing
+          // mapping UID; a pinned/non-null capture remains an identity fence.
+          const legacyUncapturedUid = decoded.kind === "legacy-v0" && row.provider === "caldav" && capturedUid == null;
+          const mappingExpected = expected && { ...expected, icalUid: capturedUid ?? (legacyUncapturedUid ? mapping?.icalUid ?? null : expected.icalUid) };
+          if (legacyUncapturedUid && mapping?.icalUid != null && observation && observation.ref.icalUid !== mapping.icalUid) return conflict();
+          // A native GET may establish a dispatch baseline while a legacy
+          // mapping still has none. That does not backfill the admitted mapping
+          // pair. A proven predecessor supplies its own paired baseline.
+          const expectedBaseline = predecessor.hasPredecessorEvidence ? predecessor.projectionBaseline :
+            Object.prototype.hasOwnProperty.call(row.payload, "projectionBaseline") ? row.payload.projectionBaseline : row.payload.dispatchProjection?.baseline;
+          const legacyNullBaseline = !predecessor.hasPredecessorEvidence && mapping?.projectionBaseline == null &&
+            row.payload.projectionBaseline == null;
+          const matchesExpected = !!mapping && sameTaskAcknowledgementRef(mappingRef, mappingExpected) &&
+            (legacyNullBaseline || isDeepStrictEqual(mapping.projectionBaseline ?? null, expectedBaseline ?? null));
+          const isObservedEcho = !!mapping && !!observation && sameTaskAcknowledgementRef(mappingRef, observation.ref) &&
+            isDeepStrictEqual(mapping.projectionBaseline ?? null, observation.projection);
+          // An earlier inflight ACK may retain its native result while skipping
+          // mapping advancement after detach/delete. A successor can consume
+          // that exact source's history without adopting an unrelated pull.
+          const originalBaseline = Object.prototype.hasOwnProperty.call(row.payload, "projectionBaseline") ? row.payload.projectionBaseline ?? null : predecessor.originalMappingBaseline;
+          const matchesOriginal = !!mapping && originalBaseline !== undefined && predecessor.matchingPredecessorSource && expected?.externalTaskId === row.externalTaskID &&
+            sameTaskAcknowledgementRef(mappingRef, { externalTaskId: row.externalTaskID, etag: row.expectedEtag, icalUid: row.icalUid ?? (legacyUncapturedUid ? mapping.icalUid : null) }) &&
+            isDeepStrictEqual(mapping.projectionBaseline ?? null, originalBaseline);
+          if (mapping && (mapping.externalCalendarID !== row.externalCalendarID || mapping.providerAccessRevision !== row.providerAccessRevision ||
+              !matchesExpected && !isObservedEcho && !matchesOriginal)) return conflict();
+          if (row.action === "delete") {
+            if (mapping) await tx.delete(externalTasks).where(eq(externalTasks.id, mapping.id));
+          } else if (observation) {
+            if (!mapping && row.action !== "create") return conflict();
+            const data = { externalCalendarID: row.externalCalendarID, externalTaskID: observation.ref.externalTaskId, etag: observation.ref.etag ?? null,
+              icalUid: observation.ref.icalUid ?? null, providerAccessRevision: row.providerAccessRevision, projectionBaseline: observation.projection,
+              acceptedRevision: Math.max(mapping?.acceptedRevision ?? 0, row.revision) };
+            if (mapping) await tx.update(externalTasks).set(data).where(eq(externalTasks.id, mapping.id));
+            else await tx.insert(externalTasks).values({ taskID: row.taskID, calendarID: row.calendarID, provider: row.provider, externalCalendarLinkID: row.externalCalendarLinkID, accountID: row.accountID, ...data });
+          }
+        }
+        return settle("completed", null, { resultRef: proof.resultRef ?? (row.externalTaskID ? { externalTaskId: row.externalTaskID, etag: row.expectedEtag, icalUid: row.icalUid } : null), remoteSnapshot: proof.remoteSnapshot });
+      })();
+      signal?.throwIfAborted(); // A cancelled callback rolls back before COMMIT.
+      return result;
+    });
+  } catch (error) {
+    signal?.throwIfAborted();
+    if (error instanceof TaskAcknowledgementLeaseExpired) return false;
+    throw new Error("Task delivery acknowledgement could not be persisted.");
+  }
 }
 
 export async function assertTaskOutboxDeliverySource(row: TaskOutboxRow, allowDeletedTask = false) {

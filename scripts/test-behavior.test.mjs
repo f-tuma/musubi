@@ -12,6 +12,7 @@ const manifests = {
   "microsoft-create": "packages/sync-runtime/src/behavior/microsoft-create.json",
   "caldav-delete": "packages/sync-runtime/src/behavior/caldav-delete.json",
   "caldav-create": "packages/sync-runtime/src/behavior/caldav-create.json",
+  "task-delivery": "apps/api/src/sync/behavior/task-delivery.json",
   "task-inspector": "apps/web/src/tests/behavior/task-inspector.json",
 };
 const scenarios = [{ id: "first", title: "First behavior" }, { id: "second", title: "Second behavior" }];
@@ -104,6 +105,23 @@ test("CREATE selection launches only its fixed CLI and refuses DELETE evidence o
   await assert.rejects(runBehavior(["--suite", "google-create", "--scenario", "missing"], {
     root, execute: async () => { throw new Error("Unknown id must not launch a process"); },
   }), /Unknown scenario/);
+});
+
+test("task delivery runs only its fixed module-port CLI and rejects another boundary's report", async t => {
+  const root = await fixture(t), args = ["--suite", "task-delivery", "--scenario", "second"];
+  const report = await runBehavior(args, { root, execute: async (command, childArgs) => {
+    assert.equal(command, process.execPath);
+    assert.deepEqual(childArgs, ["--experimental-test-module-mocks", "--experimental-default-type=module", "--import", "tsx",
+      join(root, "apps/api/src/sync/behavior/task-delivery-cli.ts"), "--json", "--scenario", "second"]);
+    return runtime([scenarios[1]], { suite: "task-delivery" });
+  } });
+  assert.equal(report.passed, 1); assert.equal(report.errors, 0);
+  const wrong = await runBehavior(args, { root, execute: async () => runtime([scenarios[1]], { suite: "google-create" }) });
+  assert.equal(wrong.failed, 1); assert.equal(wrong.suites[0].results[0].status, "failed");
+  const portFailure = await runBehavior(args, { root, execute: async () => ({ code: 1, stderr: "PRIVATE PORT DETAIL",
+    stdout: JSON.stringify({ schemaVersion: 1, suite: "task-delivery", error: { code: "unexpected-port", scenarioId: "second", message: "PRIVATE PORT DETAIL" } }) }) });
+  assert.equal(portFailure.suites[0].errorCode, "unexpected-port"); assert.equal(portFailure.suites[0].scenarioId, "second");
+  assert.ok(!JSON.stringify(portFailure).includes("PRIVATE"));
 });
 
 test("Graph selection uses its fixed CLI and rejects another provider's report", async t => {
@@ -326,7 +344,8 @@ test("default runs every fixed suite and emits one clean aggregate JSON document
   const output = [];
   const code = await runCli(["--json"], line => output.push(line), { root, execute: async (_command, args) => {
     launches++;
-    if (args.includes("--import")) return runtime(scenarios, { suite: args.some(arg => arg.endsWith("/caldav-create-cli.ts")) ? "caldav-create" :
+    if (args.includes("--import")) return runtime(scenarios, { suite: args.some(arg => arg.endsWith("/task-delivery-cli.ts")) ? "task-delivery" :
+      args.some(arg => arg.endsWith("/caldav-create-cli.ts")) ? "caldav-create" :
       args.some(arg => arg.endsWith("/microsoft-create-cli.ts")) ? "microsoft-create" :
       args.some(arg => arg.endsWith("/caldav-delete-cli.ts")) ? "caldav-delete" :
       args.some(arg => arg.endsWith("/microsoft-delete-cli.ts")) ? "microsoft-delete" :
@@ -335,11 +354,11 @@ test("default runs every fixed suite and emits one clean aggregate JSON document
     return { code: 0, stdout: "NOISY CHILD STDOUT", stderr: "NOISY CHILD STDERR" };
   } });
   assert.equal(code, 0);
-  assert.equal(launches, 7);
+  assert.equal(launches, 8);
   assert.equal(output.length, 1);
   const report = JSON.parse(output[0]);
   assert.equal(report.schemaVersion, 1);
-  assert.equal(report.passed, 14);
+  assert.equal(report.passed, 16);
   assert.equal(report.failed, 0);
   assert.deepEqual(report.suites.map(item => item.suite), Object.keys(manifests));
   assert.ok(!output[0].includes("NOISY"));

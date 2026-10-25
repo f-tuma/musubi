@@ -1,0 +1,273 @@
+{
+  "schemaVersion": 1,
+  "scope": "Local installed API task ACK hardening proof only; no native task provider extraction, reference task adoption, registry publication or production deployment.",
+  "status": "passed",
+  "createdAt": "2026-10-25T14:35:59.040657+00:00",
+  "gitHeadAtBuild": "3ab0bbc84375af5b79a4fbe3d0627f7ea42d6ce0",
+  "imageTag": "musubi-c08-task-ack-api:proof",
+  "dockerImageInspectId": "sha256:6a5f84ace695f18aa0f4449e8a167bac0c00caeb5f41f8fc3ebe3c9405a1ab2c",
+  "localBuildIndexDigest": "sha256:6a5f84ace695f18aa0f4449e8a167bac0c00caeb5f41f8fc3ebe3c9405a1ab2c",
+  "platformManifestDigest": "sha256:c1513b219dc59495ee1e68e1b9c65df6bc14dc66d5d604e387d3188b00e85e60",
+  "imageConfigDigest": "sha256:c8a0e1d27d452996a071b21c1742f022f52bb5944d07375d011220353c9f9d29",
+  "platform": {
+    "os": "linux",
+    "architecture": "amd64"
+  },
+  "dockerIdentityNote": "The local OCI index, platform manifest and image config digests identify different layers and are recorded separately. No daemon RepoDigest is treated as registry publication.",
+  "sourceFingerprint": "568016f069a47406097776618c695a5c7f83dcbdb2999ddaff01d4a16dfb508d",
+  "sourceContextFiles": 846,
+  "sourceFingerprintScope": "Frozen 846-file credential-free Docker context; excludes workspace .env, node_modules and data. Production TS/SQL parity excludes tests, fixtures and behavior harnesses.",
+  "productionSourceFingerprint": "d4952f14a0a90278a15733d60c61311c7e767378f76f258919625fc91d0a7539",
+  "productionSourceHashParity": {
+    "checkedFiles": 429,
+    "mismatches": []
+  },
+  "productionSourceInventoryAfterProof": {
+    "frozenFiles": 429,
+    "currentFiles": 429,
+    "byteEqual": true,
+    "addedRemovedOrModified": []
+  },
+  "contextChangesAfterBuild": [],
+  "startup": {
+    "port": 7531,
+    "environment": "test",
+    "deploymentMode": "single-replica",
+    "logLevel": "info",
+    "externalSyncIntervalMin": 0,
+    "externalDeliveryRecoveryMode": "disabled",
+    "syncOperationV1EncoderEnabled": true,
+    "syncOperationProfileVersion": "sync-profile-v1",
+    "timestamp": "2026-10-25T14:34:46.756Z",
+    "level": "info",
+    "message": "server.started"
+  },
+  "emptyDatabaseBeforeBoot": {
+    "tables": 0
+  },
+  "emptyDatabaseMigrations": {
+    "applied": 86,
+    "sourceJournalEntries": 86,
+    "lastTag": "0085_graph_read_coverage",
+    "lastHashMatchesSource": true
+  },
+  "effectiveConfiguration": {
+    "encoder": true,
+    "encoderOverridePresent": false,
+    "environment": "test",
+    "nodeEnvironment": "production",
+    "externalSyncIntervalMin": 0,
+    "deliveryRecoveryMode": "disabled",
+    "smtpConfigured": false,
+    "pushConfigured": false
+  },
+  "runtime": {
+    "user": "node",
+    "sourceBindMounts": 0
+  },
+  "providerIsolation": {
+    "externalAccounts": 0,
+    "caldavAccounts": 0,
+    "externalCalendars": 0,
+    "eventOutboxRows": 0,
+    "taskOutboxRows": 0,
+    "smtpConfigured": false,
+    "pushConfigured": false
+  },
+  "cleanup": {
+    "containerRemoved": true,
+    "nonceDatabaseDropped": true,
+    "containerAbsentVerified": true,
+    "nonceDatabaseAbsentVerified": true,
+    "rootPostgresStillRunning": true
+  },
+  "httpChecks": {
+    "status": "passed",
+    "checks": 17,
+    "categories": {
+      "publicHealthAndCapabilities": 2,
+      "unauthenticatedAccessDenied": 1,
+      "realSignUpLoginAndCookieSession": 3,
+      "authenticatedCanonicalCalendarAndEventChecks": 11
+    },
+    "auth": {
+      "syntheticEmailDomain": "example.invalid",
+      "signup": true,
+      "passwordLogin": true,
+      "cookieSession": true,
+      "authBypass": false,
+      "dbSeedChanges": false
+    },
+    "providerScope": {
+      "configuredExternalAccounts": 0,
+      "liveProviderRequests": false,
+      "externalCaldavCreateNotExercised": true
+    },
+    "scopeNote": "Canonical 17-HTTP smoke uses the unchanged production image layout, real Better Auth signup/login/session and disposable PostgreSQL. It does not exercise task ACK or native task HTTP."
+  },
+  "installedTaskRegressionCorpus": {
+    "scope": "Separate installed-source test containers execute real task DB/API flows against disposable PostgreSQL and existing adapter/owned HTTP fixtures. Their test-only /packages path aliases do not affect the canonical production-layout HTTP smoke.",
+    "status": "passed",
+    "numberedNewCases": 19,
+    "existingSuiteGates": 4,
+    "migrations": 86,
+    "suites": [
+      {
+        "file": "packages/db/src/queries/task-ack.integration.test.ts",
+        "numberedCases": 15,
+        "legacySuiteGate": false,
+        "exitCode": 0
+      },
+      {
+        "file": "apps/api/src/sync/task_ack_delivery.integration.test.ts",
+        "numberedCases": 4,
+        "legacySuiteGate": false,
+        "exitCode": 0
+      },
+      {
+        "file": "packages/db/src/queries/tasks.integration.test.ts",
+        "numberedCases": null,
+        "legacySuiteGate": true,
+        "exitCode": 0
+      },
+      {
+        "file": "apps/api/src/sync/shared_tasks.integration.test.ts",
+        "numberedCases": null,
+        "legacySuiteGate": true,
+        "exitCode": 0
+      },
+      {
+        "file": "apps/api/src/sync/task_delivery.integration.test.ts",
+        "numberedCases": null,
+        "legacySuiteGate": true,
+        "exitCode": 0
+      },
+      {
+        "file": "apps/api/src/sync/optional_tasks.integration.test.ts",
+        "numberedCases": null,
+        "legacySuiteGate": true,
+        "exitCode": 0
+      }
+    ],
+    "testSourceHashParity": {
+      "checkedFiles": 10,
+      "mismatches": []
+    },
+    "testCreatedNonceDatabaseCleanup": {
+      "unretiredNewDatabaseCount": 0
+    },
+    "testWiring": {
+      "workspaceEnvRead": false,
+      "sourceBindMounts": 0,
+      "privateNetworkPolicy": "Explicit fixture-only loopback policy for existing CalDAV/HTTP tests",
+      "socialCredentialsConfigured": false,
+      "smtpConfigured": false,
+      "pushConfigured": false,
+      "testPathAliases": "A test-only tmpfs /packages contains symlinks to installed @musubi packages for existing private relative imports; no source or production behavior override."
+    },
+    "cleanup": {
+      "ownedContainersAbsentVerified": true,
+      "nonceDatabaseDropped": true,
+      "nonceDatabaseAbsentVerified": true,
+      "rootPostgresStillRunning": true
+    }
+  },
+  "limits": [
+    "No live provider or external account was used. Existing optional-task tests own all Google/Graph HTTP and token fixtures.",
+    "The new fast task-delivery JSON suite uses actual production orchestration and replaced DB/adapter ports; its source is hash-checked here, while real DB atomicity is proved by the separate task ACK integration suites.",
+    "Reference has no task canonical storage or native task execution in this slice; this image provides no reference-host or portable-task acceptance claim.",
+    "No source bind mount, real SMTP/push, publication or production rollout was used."
+  ],
+  "artifacts": [
+    {
+      "path": "/tmp/musu40-task-ack-api-proof-20261025143411_1c5b53.json",
+      "sha256": "9865c627891d891c00215132987918ea66226e379843abe1c6b8a1875792d72f",
+      "bytes": 6559
+    },
+    {
+      "path": "/tmp/musu40-task-ack-api-http-20261025143411_1c5b53.json",
+      "sha256": "376bb9d876328af959e658b1cffdd49cdb6c69eec8cfb6d0650f0722f13e106c",
+      "bytes": 3407
+    },
+    {
+      "path": "/tmp/musu40-task-ack-api-runtime-20261025143411_1c5b53.log",
+      "sha256": "afa8073ceae5c869b05ef45ecbeb51bb39998a55b6738078df9d697f2a7fce19",
+      "bytes": 6183
+    },
+    {
+      "path": "/tmp/musu40-task-ack-api-source-20261025143411.json",
+      "sha256": "a63f8f7703f90586975a0197ce27d1df76cccc679f2d0858c21abba86a723d61",
+      "bytes": 102797
+    },
+    {
+      "path": "/tmp/musu40-task-ack-api-build-20261025143411.log",
+      "sha256": "e95935dabd5982eaf1c79656ab1e044f98a2705101b9bce43cfe0d2f238f27b3",
+      "bytes": 4033
+    },
+    {
+      "path": "/tmp/musu40-task-ack-api-corpus-20261025143502_c2a33a.json",
+      "sha256": "57774230b2a7350c3d76f432ae2c0f8308eaeaffc4730ab855c59e86ef4dee06",
+      "bytes": 3292
+    },
+    {
+      "path": "/tmp/musu40-task-ack-api-corpus-20261025143502_c2a33a-migrate.log",
+      "sha256": "52607390f6013e5fa3831e2bde93e5a9fe6cc3b9934e46329f513a8c7416ed49",
+      "bytes": 61
+    },
+    {
+      "path": "/tmp/musu40-task-ack-api-build.py",
+      "sha256": "b139a42bd6989c935f04f1766dd7ff0a497a4eddabd1a77c322b56d3aa625060",
+      "bytes": 3336
+    },
+    {
+      "path": "/tmp/musu40-task-ack-api-probe.py",
+      "sha256": "1ac8007aeed28b22771f22125d1bef5dab38fc3bc16c179d1e66a3aafe1790ea",
+      "bytes": 10811
+    },
+    {
+      "path": "/tmp/musu40-task-ack-api-http-smoke.mjs",
+      "sha256": "bc66861a4dc9fe9bdad8f268b6075bd73c93e82b60b75a71c1a9ac20afffb731",
+      "bytes": 7279
+    },
+    {
+      "path": "/tmp/musu40-task-ack-api-corpus.py",
+      "sha256": "ef4cef7d1db028e4515b4ebc824a9581ee64929cd25a4b68511628f9c97b818c",
+      "bytes": 10511
+    },
+    {
+      "path": "/tmp/musu40-task-ack-api-summarize.py",
+      "sha256": "fa797299bdff1aa327f437eb363556bf6137de103a51a739c40c4474dca1e06f",
+      "bytes": 8327
+    },
+    {
+      "path": "/tmp/musu40-task-ack-api-corpus-20261025143502_c2a33a-task-ack.log",
+      "sha256": "bf1637da55528a39cb452b2b645c0b5b00dd754550e65242fc6610fd90ec75b5",
+      "bytes": 825
+    },
+    {
+      "path": "/tmp/musu40-task-ack-api-corpus-20261025143502_c2a33a-task_ack_delivery.log",
+      "sha256": "95abefd807ce0a72b343c3f536d03f00da31edd48f64f5d3009e9878f4820c12",
+      "bytes": 640
+    },
+    {
+      "path": "/tmp/musu40-task-ack-api-corpus-20261025143502_c2a33a-tasks.log",
+      "sha256": "86ab190809122f36df2345a242e5606ca036f2398f01b62f0354b857b9dcca54",
+      "bytes": 93
+    },
+    {
+      "path": "/tmp/musu40-task-ack-api-corpus-20261025143502_c2a33a-shared_tasks.log",
+      "sha256": "3bce4cc68a74debb0a351211c9b1d2affdee79e5345acdddcbd31a31a48dfa99",
+      "bytes": 341
+    },
+    {
+      "path": "/tmp/musu40-task-ack-api-corpus-20261025143502_c2a33a-task_delivery.log",
+      "sha256": "8fc377b8887b160bc7d05f3fd7ad2af5fa72436b5e70ac3067e338c86299162b",
+      "bytes": 354
+    },
+    {
+      "path": "/tmp/musu40-task-ack-api-corpus-20261025143502_c2a33a-optional_tasks.log",
+      "sha256": "95243c4e0fd96541f5e7d93638bfe53f4af7da8b09693dc234a997903a6971a4",
+      "bytes": 3479
+    }
+  ]
+}
