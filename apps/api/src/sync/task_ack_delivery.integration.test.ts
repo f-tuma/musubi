@@ -15,6 +15,13 @@ async function main() {
   const admin = new Pool({ connectionString: adminUrl, max: 1 });
   await admin.query(`CREATE DATABASE "${databaseName}"`);
   process.env.DATABASE_URL = databaseUrl.href;
+  // Own pools from every loader identity, including imports that fail later.
+  const pools = new Set<Pool>(), originalConnect = Pool.prototype.connect;
+  const connect = mock.method(Pool.prototype, "connect", function (this: Pool, ...args: any[]): any {
+    if (this !== admin) pools.add(this);
+    return Reflect.apply(originalConnect, this, args);
+  });
+  try {
   const { db, user, calendars, calendarMembers, calendarTasks, tasks, externalCalendars, externalTasks, taskOutbox,
     getTaskOutbox, upsertExternalTask } = await import("@musubi/db");
   const { migrateDatabase } = await import("../../../../packages/db/src/migrate");
@@ -148,8 +155,16 @@ async function main() {
     }
     console.log(`Task ACK delivery PostgreSQL: ${passed} cases passed`);
   } finally {
-    timer.mock.restore(); await observer.end(); await db.$client.end();
-    try { await admin.query(`DROP DATABASE "${databaseName}" WITH (FORCE)`); } finally { await admin.end(); }
+    timer.mock.restore();
+  }
+  } finally {
+    try {
+      await Promise.all([...pools].map(pool => pool.end()));
+      const sessions = await admin.query("SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=$1", [databaseName]);
+      assert.equal(sessions.rows[0].count, 0, "Every owned pool must close before nonce database removal");
+      await admin.query(`DROP DATABASE "${databaseName}"`);
+      console.log(`Task ACK delivery cleanup: ${pools.size} owned pools closed, zero sessions, nonce DB dropped without FORCE: PASS`);
+    } finally { connect.mock.restore(); await admin.end(); }
   }
 }
 void main().catch(error => { console.error(error); process.exitCode = 1; });
