@@ -10,3 +10,7 @@ export { runClaimedGooglePersonalDelete, supportsGooglePersonalDeleteEnvelope } 
 export * from "./create-ports";
 export * from "./create-trace";
 export { runClaimedGooglePersonalCreate, supportsGooglePersonalCreateEnvelope } from "./google-personal-create";
+
+export * from "./microsoft-delete-ports";
+export * from "./microsoft-delete-trace";
+export { runClaimedMicrosoftPersonalDelete, supportsMicrosoftPersonalDeleteEnvelope } from "./microsoft-personal-delete";

@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "scope": "local installed API proof only; no registry publication or production deployment",
+  "status": "passed",
+  "createdAt": "2026-10-24T11:29:45.233911+00:00",
+  "imageTag": "musubi-c07-graph-delete-api:proof",
+  "imageId": "sha256:c5e3b8197c6b5491940e88ad7124518bda99b11f8d9ba707d2a676b4b5c17248",
+  "localBuildIndexDigest": "sha256:c5e3b8197c6b5491940e88ad7124518bda99b11f8d9ba707d2a676b4b5c17248",
+  "sourceFingerprint": "d96f6efc06d4d23030e7f06bfc034606f6fc18089c60d857edad5a708ba2bac2",
+  "productionSourceHashParity": {
+    "checkedFiles": 407,
+    "mismatches": []
+  },
+  "startup": {
+    "port": 7531,
+    "environment": "test",
+    "deploymentMode": "single-replica",
+    "logLevel": "info",
+    "externalSyncIntervalMin": 0,
+    "externalDeliveryRecoveryMode": "disabled",
+    "syncOperationV1EncoderEnabled": true,
+    "syncOperationProfileVersion": "sync-profile-v1",
+    "timestamp": "2026-10-24T11:29:14.319Z",
+    "level": "info",
+    "message": "server.started"
+  },
+  "emptyDatabaseBeforeBoot": {
+    "tables": 0
+  },
+  "emptyDatabaseMigrations": {
+    "applied": 86,
+    "sourceJournalEntries": 86,
+    "lastTag": "0085_graph_read_coverage",
+    "lastHashMatchesSource": true
+  },
+  "effectiveConfiguration": {
+    "encoder": true,
+    "encoderOverridePresent": false,
+    "environment": "test",
+    "nodeEnvironment": "production",
+    "externalSyncIntervalMin": 0,
+    "deliveryRecoveryMode": "disabled"
+  },
+  "runtime": {
+    "user": "node",
+    "sourceBindMounts": 0
+  },
+  "providerIsolation": {
+    "externalAccounts": 0,
+    "eventOutboxRows": 0,
+    "smtpConfigured": false,
+    "pushConfigured": false
+  },
+  "cleanup": {
+    "containerRemoved": true,
+    "nonceDatabaseDropped": true
+  },
+  "artifacts": [
+    {
+      "path": "/tmp/musu39-graph-api-proof-20261024112808_bc54d3.json",
+      "sha256": "f1d9b8915beab10c88007bbf327b78c5da02371ac59d5bc2b459d91c95f28ad2",
+      "bytes": 6030
+    },
+    {
+      "path": "/tmp/musu39-graph-api-http-20261024112808_bc54d3.json",
+      "sha256": "90074c760fb09d069cdcc5ace28bd95e87d048c65f430e79231a77f938e29887",
+      "bytes": 3409
+    },
+    {
+      "path": "/tmp/musu39-graph-api-runtime-20261024112808_bc54d3.log",
+      "sha256": "003c606b0ac5616cc201a4a520a5babb165fe83e316d060000dad43ac998ac2e",
+      "bytes": 6190
+    },
+    {
+      "path": "/tmp/musu39-graph-api-source-20261024112808.json",
+      "sha256": "7e869ea496c9568d2b1879a31bb9c44fadaefbacbaa4d35ce2ec1cb2478e954e",
+      "bytes": 96270
+    },
+    {
+      "path": "/tmp/musu39-graph-api-build-20261024112808.log",
+      "sha256": "3ddb5e251188ef0ffdfa20c17a2a01e03dd7b61fee3a5465fe8fde3cc0945956",
+      "bytes": 4032
+    },
+    {
+      "path": "/tmp/musu39-graph-api-build.py",
+      "sha256": "aef46d5a91271d4d5a9b3e26dee2f41ab87c37ade77f511e404a96baa82f2ab1",
+      "bytes": 3824
+    },
+    {
+      "path": "/tmp/musu39-graph-api-probe.py",
+      "sha256": "c8dbb6640f454b04d03a3b2b03a1bdf298ea61e8925bae2ea49da58df6b9e9f7",
+      "bytes": 9034
+    },
+    {
+      "path": "/tmp/musu39-graph-api-http-smoke.mjs",
+      "sha256": "2cf66f90f81cbdd92e4cbd891a8ce1e13891d0506efc4afb274cd3099ed35197",
+      "bytes": 7278
+    }
+  ],
+  "httpChecks": {
+    "status": "passed",
+    "checks": 17,
+    "auth": {
+      "syntheticEmailDomain": "example.invalid",
+      "signup": true,
+      "passwordLogin": true,
+      "cookieSession": true,
+      "authBypass": false,
+      "dbSeedChanges": false
+    },
+    "providerScope": {
+      "configuredExternalAccounts": 0,
+      "liveProviderRequests": false,
+      "externalGraphDeleteNotExercised": true
+    },
+    "scopeNote": "The 17 checks include public health/capability and unauthenticated rejection alongside real login, cookie session and authenticated calendar/event CRUD."
+  },
+  "sourceFingerprintScope": "Frozen build context; runtime-source parity below covers the 407 production TS/SQL files.",
+  "nonProductionChangesSinceBuild": [
+    "apps/api/src/sync/microsoft_shared_delete_delivery.integration.test.ts",
+    "packages/provider-microsoft/README.md"
+  ]
+}

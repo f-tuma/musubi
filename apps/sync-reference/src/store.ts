@@ -1,17 +1,19 @@
 import { readFile } from "node:fs/promises";
 import type { Pool, PoolClient } from "pg";
-import { SyncDeliveryReceiptSchema, SyncOperationEnvelopeSchema, SyncErrorSchema, SyncJsonObjectSchema, type SyncDeliveryReceipt, type SyncOperationRowBinding } from "@musubi/types";
+import { decodeSyncOperationPayload, SyncDeliveryReceiptSchema, SyncOperationEnvelopeSchema, SyncErrorSchema, SyncJsonObjectSchema, type SyncDeliveryReceipt, type SyncOperationRowBinding } from "@musubi/types";
 import { parseNativeWritePlanV1, matchesPinnedProjectionV1 } from "@musubi/sync-codec";
-import { acceptedEnvelope, acceptedDeleteEnvelope, acceptedCreateEnvelope, admissionFingerprint, deleteAdmissionFingerprint, createAdmissionFingerprint, referenceCreateEventID, initialReceipt, jsonEqual, projection, strongEtag, validateContent, validatePatch } from "./admission.js";
+import { supportsMicrosoftPersonalDeleteEnvelope } from "@musubi/sync-runtime";
+import { acceptedEnvelope, acceptedDeleteEnvelope, acceptedCreateEnvelope, acceptedGraphDeleteEnvelope, admissionFingerprint, deleteAdmissionFingerprint, createAdmissionFingerprint, graphDeleteAdmissionFingerprint, graphDeleteEtag, REFERENCE_GRAPH_DELETE_PROFILE, referenceCreateEventID, initialReceipt, jsonEqual, projection, strongEtag, validateContent, validatePatch } from "./admission.js";
 import { assertCredentialKey, decryptCredential, encryptCredential } from "./crypto.js";
-import { ReferenceHoldError, type ReferenceAdmission, type ReferenceCapture, type ReferenceClaim, type ReferenceEvidence, type ReferenceOperation, type ReferenceSeed, type ReferenceContentPatch, type ReferenceDeleteAdmission, type ReferenceDeleteObservation, type ReferenceCreateAdmission, type ReferenceCreateSeed, type ReferenceCreateObservation } from "./model.js";
+import { ReferenceHoldError, type ReferenceAdmission, type ReferenceCapture, type ReferenceClaim, type ReferenceEvidence, type ReferenceOperation, type ReferenceSeed, type ReferenceContentPatch, type ReferenceDeleteAdmission, type ReferenceDeleteObservation, type ReferenceCreateAdmission, type ReferenceCreateSeed, type ReferenceCreateObservation, type ReferenceGraphDeleteSeed, type ReferenceGraphDeleteAdmission, type ReferenceGraphDeleteObservation } from "./model.js";
 export { ReferenceHoldError } from "./model.js";
 export type { ReferenceClaim as Claim } from "./model.js";
 
 type Row = Record<string, any>;
 interface Locked { operation: Row; connection: Row; object: Row; binding: Row }
 const scopeValue = (scope: string) => [...new Set(scope.split(/\s+/).filter(Boolean))].sort().join(" ");
-const writeAllowed = (scope: string) => scope.split(/\s+/).some(value => [
+const writeAllowed = (scope: string, provider: "google" | "microsoft" = "google") => provider === "microsoft"
+  ? scope.split(/[\s,]+/).includes("Calendars.ReadWrite") : scope.split(/\s+/).some(value => [
   "https://www.googleapis.com/auth/calendar", "https://www.googleapis.com/auth/calendar.events",
   "https://www.googleapis.com/auth/calendar.events.owned",
 ].includes(value));
@@ -29,6 +31,29 @@ function copyDataFields(value: unknown, required: readonly string[], optional: r
   }
   return copy;
 }
+function copyExactDataFields(value: unknown, required: readonly string[], optional: readonly string[] = []): Record<string, unknown> {
+  const result = copyDataFields(value, required, optional);
+  if (Reflect.ownKeys(value as object).some(key => typeof key !== "string" || ![...required, ...optional].includes(key)))
+    throw new Error("Invalid reference input");
+  return result;
+}
+/** Only the literal pre-provider schema lacks this column. New rows have
+ * NOT NULL metadata; invalid or mismatched explicit values never fall back. */
+function providerOf(row: Row): "google" | "microsoft" {
+  if (!Object.hasOwn(row, "provider")) return "google";
+  if (row.provider === "google" || row.provider === "microsoft") return row.provider;
+  throw new ReferenceHoldError("provider-profile-unavailable");
+}
+function profileOf(row: Row): string {
+  if (!Object.hasOwn(row, "endpoint_profile") && providerOf(row) === "google") return `google-personal-event-${row.action}-v1`;
+  if (typeof row.endpoint_profile === "string") return row.endpoint_profile;
+  throw new ReferenceHoldError("provider-profile-unavailable");
+}
+function profileMatches(row: Row): boolean {
+  const provider = providerOf(row), profile = profileOf(row);
+  return provider === "google" ? ["create", "update", "delete"].includes(row.action) && profile === `google-personal-event-${row.action}-v1`
+    : row.action === "delete" && profile === REFERENCE_GRAPH_DELETE_PROFILE;
+}
 /** Only the durable lease identities are accepted from a caller's claim DTO. */
 function claimIdentity(value: ReferenceClaim): ReferenceClaim {
   const fields = copyDataFields(value, ["operationId", "attemptId"]);
@@ -42,7 +67,7 @@ const rawEnvelope = (payload: unknown) => payload !== null && typeof payload ===
 const capture = (row: Row): ReferenceCapture => ({ connectionGeneration: Number(row.connection_generation), sourceGeneration: Number(row.source_generation),
   privacyGeneration: Number(row.privacy_generation), acceptedRevision: Number(row.accepted_revision), canonicalGeneration: Number(row.canonical_generation) });
 const rowBinding = (row: Row): SyncOperationRowBinding => ({ kind: "event", action: row.action, operationId: row.id, commandId: row.command_id,
-  hostObjectId: row.object_id, provider: "google", connectionId: row.connection_id, collectionId: row.calendar_id, resourceId: row.event_id,
+  hostObjectId: row.object_id, provider: providerOf(row), connectionId: row.connection_id, collectionId: row.calendar_id, resourceId: row.event_id,
   acceptedRevision: Number(row.accepted_revision), sourceEpoch: { sourceId: row.binding_id, generation: Number(row.source_generation) },
   privacyEpoch: String(row.privacy_generation) });
 
@@ -53,7 +78,8 @@ export class ReferenceStore {
     const sql = await readFile(new URL("./schema.sql", import.meta.url), "utf8");
     const forward = await readFile(new URL("./schema-delete.sql", import.meta.url), "utf8");
     const create = await readFile(new URL("./schema-create.sql", import.meta.url), "utf8");
-    await this.transaction(async client => { await client.query(sql); await client.query(forward); await client.query(create); });
+    const graph = await readFile(new URL("./schema-graph-delete.sql", import.meta.url), "utf8");
+    await this.transaction(async client => { await client.query(sql); await client.query(forward); await client.query(create); await client.query(graph); });
   }
   private async transaction<T>(body: (client: PoolClient) => Promise<T>, signal?: AbortSignal): Promise<T> {
     signal?.throwIfAborted();
@@ -84,6 +110,7 @@ export class ReferenceStore {
   private current(locked: Locked): boolean {
     const { operation: op, connection: conn, object, binding } = locked;
     return !!conn && !!object && !!binding && conn.status === "active" && conn.credential_ciphertext != null && binding.active &&
+      providerOf(conn) === providerOf(op) && profileMatches(op) &&
       (op.action === "create" ? binding.destination_lifecycle === "reserved" && binding.create_operation_id === op.id : binding.destination_lifecycle === "present") &&
       object.canonical_lifecycle === (op.action === "delete" ? "tombstoned" : "active") && Number(object.lifecycle_generation) === Number(op.canonical_generation) &&
       Number(conn.generation) === Number(op.connection_generation) && Number(object.revision) === Number(op.accepted_revision) &&
@@ -127,6 +154,55 @@ export class ReferenceStore {
         VALUES($1,$2,$3,$4,$5,NULL,NULL,'reserved',$6)`, [input.bindingId, input.connectionId, input.objectId, input.calendarId, eventId, input.operationId]);
     });
   }
+  async seedGraphDeleteBinding(supplied: ReferenceGraphDeleteSeed): Promise<void> {
+    const fields = copyExactDataFields(supplied, ["provider", "endpointProfile", "connectionId", "objectId", "bindingId", "calendarId", "eventId", "accessToken", "expiresAt", "scope", "content", "etag"], ["privacyLabel"]);
+    const input = Object.freeze({ ...fields, content: Object.freeze({ ...validateContent(fields.content as ReferenceGraphDeleteSeed["content"]) }) }) as unknown as ReferenceGraphDeleteSeed;
+    if (input.provider !== "microsoft" || input.endpointProfile !== REFERENCE_GRAPH_DELETE_PROFILE || !graphDeleteEtag(input.etag) ||
+      typeof input.accessToken !== "string" || typeof input.scope !== "string" || typeof input.expiresAt !== "string" || !Number.isFinite(Date.parse(input.expiresAt)) ||
+      input.privacyLabel !== undefined && typeof input.privacyLabel !== "string" ||
+      ![input.connectionId, input.objectId, input.bindingId, input.calendarId, input.eventId].every(value => typeof value === "string" && value.length > 0 && value.length <= 2048 && value.trim() === value && ![".", ".."].includes(value)))
+      throw new Error("Invalid reference Graph DELETE seed");
+    const ciphertext = encryptCredential(this.credentialKey, input.connectionId, input.accessToken);
+    await this.transaction(async client => {
+      await client.query("INSERT INTO reference_connections(id,provider,scope,credential_ciphertext,expires_at) VALUES($1,'microsoft',$2,$3,$4)",
+        [input.connectionId, scopeValue(input.scope), ciphertext, input.expiresAt]);
+      await client.query("INSERT INTO reference_objects(id,privacy_label,content) VALUES($1,$2,$3)", [input.objectId, input.privacyLabel ?? "private", input.content]);
+      await client.query("INSERT INTO reference_bindings(id,connection_id,object_id,calendar_id,event_id,etag,baseline) VALUES($1,$2,$3,$4,$5,$6,$7)",
+        [input.bindingId, input.connectionId, input.objectId, input.calendarId, input.eventId, input.etag, projection(input.content)]);
+    });
+  }
+  async admitGraphDelete(supplied: ReferenceGraphDeleteAdmission): Promise<ReferenceOperation> {
+    const input = Object.freeze(copyExactDataFields(supplied, ["bindingId", "expectedRevision", "commandId", "operationId"])) as unknown as ReferenceGraphDeleteAdmission;
+    const fingerprint = graphDeleteAdmissionFingerprint(input);
+    await this.transaction(async client => {
+      const initial = (await client.query("SELECT * FROM reference_bindings WHERE id=$1", [input.bindingId])).rows[0];
+      if (!initial) throw new ReferenceHoldError("binding-missing");
+      const conn = (await client.query("SELECT * FROM reference_connections WHERE id=$1 FOR UPDATE", [initial.connection_id])).rows[0];
+      const object = (await client.query("SELECT * FROM reference_objects WHERE id=$1 FOR UPDATE", [initial.object_id])).rows[0];
+      const binding = (await client.query("SELECT * FROM reference_bindings WHERE id=$1 FOR UPDATE", [input.bindingId])).rows[0];
+      const existing = (await client.query("SELECT * FROM reference_operations WHERE connection_id=$1 AND command_id=$2 FOR UPDATE", [binding.connection_id, input.commandId])).rows[0];
+      if (existing) { if (existing.fingerprint !== fingerprint) throw new ReferenceHoldError("command-reused"); return; }
+      if (providerOf(conn) !== "microsoft" || conn.status !== "active" || conn.credential_ciphertext == null || !writeAllowed(conn.scope, "microsoft") || !binding.active)
+        throw new ReferenceHoldError("source-unavailable");
+      if (object.canonical_lifecycle !== "active" || binding.destination_lifecycle !== "present") throw new ReferenceHoldError("lifecycle-unavailable");
+      if (Number(object.revision) !== input.expectedRevision) throw new ReferenceHoldError("revision-conflict");
+      if ((await client.query("SELECT 1 FROM reference_operations WHERE binding_id=$1 AND status<>'acked'", [input.bindingId])).rowCount)
+        throw new ReferenceHoldError("causal-barrier");
+      if (!graphDeleteEtag(binding.etag)) throw new ReferenceHoldError("validator-unavailable");
+      const content = validateContent(object.content);
+      const tombstone = (await client.query("UPDATE reference_objects SET revision=$2,canonical_lifecycle='tombstoned' WHERE id=$1 RETURNING revision,lifecycle_generation", [object.id, input.expectedRevision + 1])).rows[0];
+      const epochs: ReferenceCapture = { acceptedRevision: Number(tombstone.revision), canonicalGeneration: Number(tombstone.lifecycle_generation),
+        connectionGeneration: Number(conn.generation), sourceGeneration: Number(binding.source_generation), privacyGeneration: Number(object.privacy_generation) };
+      const envelope = acceptedGraphDeleteEnvelope(input, content, { objectId: object.id, connectionId: conn.id, calendarId: binding.calendar_id, eventId: binding.event_id, capture: epochs });
+      await client.query(`INSERT INTO reference_operations(id,command_id,binding_id,object_id,connection_id,calendar_id,event_id,accepted_revision,
+        connection_generation,source_generation,privacy_generation,accepted_etag,fingerprint,payload,receipt,canonical_generation,action,provider,endpoint_profile)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'delete','microsoft',$17)`,
+        [input.operationId, input.commandId, binding.id, object.id, conn.id, binding.calendar_id, binding.event_id, epochs.acceptedRevision,
+          epochs.connectionGeneration, epochs.sourceGeneration, epochs.privacyGeneration, binding.etag, fingerprint, { operationEnvelope: envelope }, initialReceipt(envelope), epochs.canonicalGeneration, REFERENCE_GRAPH_DELETE_PROFILE]);
+    });
+    const result = await this.pool.query("SELECT id FROM reference_operations WHERE command_id=$1 AND binding_id=$2", [input.commandId, input.bindingId]);
+    return this.inspectOperation(result.rows[0].id);
+  }
   async admitCreate(supplied: ReferenceCreateAdmission): Promise<ReferenceOperation> {
     const input = Object.freeze(copyDataFields(supplied, ["bindingId", "expectedRevision", "commandId", "operationId"])) as unknown as ReferenceCreateAdmission;
     const fingerprint = createAdmissionFingerprint(input);
@@ -139,7 +215,7 @@ export class ReferenceStore {
       const binding = (await client.query("SELECT * FROM reference_bindings WHERE id=$1 FOR UPDATE", [input.bindingId])).rows[0];
       const existing = (await client.query("SELECT * FROM reference_operations WHERE connection_id=$1 AND command_id=$2 FOR UPDATE", [binding.connection_id, input.commandId])).rows[0];
       if (existing) { if (existing.fingerprint !== fingerprint) throw new ReferenceHoldError("command-reused"); return; }
-      if (conn.status !== "active" || conn.credential_ciphertext == null || !writeAllowed(conn.scope) || !binding.active) throw new ReferenceHoldError("source-unavailable");
+      if (providerOf(conn) !== "google" || conn.status !== "active" || conn.credential_ciphertext == null || !writeAllowed(conn.scope) || !binding.active) throw new ReferenceHoldError("source-unavailable");
       if (object.canonical_lifecycle !== "active" || binding.destination_lifecycle !== "reserved" || binding.create_operation_id !== input.operationId ||
           binding.event_id !== eventId || binding.etag !== null || binding.baseline !== null) throw new ReferenceHoldError("lifecycle-unavailable");
       if (Number(object.revision) !== input.expectedRevision) throw new ReferenceHoldError("revision-conflict");
@@ -170,7 +246,7 @@ export class ReferenceStore {
       const binding = (await client.query("SELECT * FROM reference_bindings WHERE id=$1 FOR UPDATE", [input.bindingId])).rows[0];
       const existing = (await client.query("SELECT * FROM reference_operations WHERE connection_id=$1 AND command_id=$2 FOR UPDATE", [binding.connection_id, input.commandId])).rows[0];
       if (existing) { if (existing.fingerprint !== fingerprint) throw new ReferenceHoldError("command-reused"); return; }
-      if (conn.status !== "active" || conn.credential_ciphertext == null || !writeAllowed(conn.scope) || !binding.active) throw new ReferenceHoldError("source-unavailable");
+      if (providerOf(conn) !== "google" || conn.status !== "active" || conn.credential_ciphertext == null || !writeAllowed(conn.scope) || !binding.active) throw new ReferenceHoldError("source-unavailable");
       if (object.canonical_lifecycle !== "active" || binding.destination_lifecycle !== "present") throw new ReferenceHoldError("lifecycle-unavailable");
       if (Number(object.revision) !== input.expectedRevision) throw new ReferenceHoldError("revision-conflict");
       if ((await client.query("SELECT 1 FROM reference_operations WHERE binding_id=$1 AND status<>'acked'", [input.bindingId])).rowCount)
@@ -203,7 +279,7 @@ export class ReferenceStore {
       const binding = (await client.query("SELECT * FROM reference_bindings WHERE id=$1 FOR UPDATE", [input.bindingId])).rows[0];
       const existing = (await client.query("SELECT * FROM reference_operations WHERE connection_id=$1 AND command_id=$2 FOR UPDATE", [binding.connection_id, input.commandId])).rows[0];
       if (existing) { if (existing.fingerprint !== fingerprint) throw new ReferenceHoldError("command-reused"); return; }
-      if (conn.status !== "active" || conn.credential_ciphertext == null || !writeAllowed(conn.scope) || !binding.active) throw new ReferenceHoldError("source-unavailable");
+      if (providerOf(conn) !== "google" || conn.status !== "active" || conn.credential_ciphertext == null || !writeAllowed(conn.scope) || !binding.active) throw new ReferenceHoldError("source-unavailable");
       if (object.canonical_lifecycle !== "active" || binding.destination_lifecycle !== "present") throw new ReferenceHoldError("lifecycle-unavailable");
       if (Number(object.revision) !== input.expectedRevision) throw new ReferenceHoldError("revision-conflict");
       if ((await client.query("SELECT 1 FROM reference_operations WHERE binding_id=$1 AND status<>'acked'", [input.bindingId])).rowCount)
@@ -230,7 +306,7 @@ export class ReferenceStore {
       c.canonical_lifecycle,c.lifecycle_generation,c.revision AS canonical_revision
       FROM reference_operations o JOIN reference_bindings b ON b.id=o.binding_id JOIN reference_objects c ON c.id=o.object_id WHERE o.id=$1`, [operationId])).rows[0];
     if (!row) throw new ReferenceHoldError("operation-missing");
-    return { operationId: row.id, commandId: row.command_id, bindingId: row.binding_id, objectId: row.object_id, action: row.action, payload: row.payload,
+    return { operationId: row.id, commandId: row.command_id, bindingId: row.binding_id, objectId: row.object_id, provider: providerOf(row), endpointProfile: profileOf(row), action: row.action, payload: row.payload,
       canonical: { lifecycle: row.canonical_lifecycle, generation: Number(row.lifecycle_generation), revision: Number(row.canonical_revision) },
       deleteAcceptanceStatus: row.delete_acceptance_status,
       capture: capture(row), status: row.status, dispatchPossible: row.dispatch_possible, receipt: receipt(row.receipt),
@@ -244,6 +320,8 @@ export class ReferenceStore {
       if (op.status === "acked" || op.status === "conflict" || op.lease_live ||
         (op.not_before && (await client.query("SELECT $1::timestamptz>clock_timestamp() AS delayed", [op.not_before])).rows[0].delayed)) return null;
       let saved = receipt(op.receipt);
+      const attemptNumber = Number((await client.query("SELECT count(*) FROM reference_attempts WHERE operation_id=$1", [operationId])).rows[0].count) + 1;
+      if (!Number.isSafeInteger(attemptNumber)) throw new ReferenceHoldError("attempt-number-unavailable");
       if (op.dispatch_possible && ["pending", "not-dispatched"].includes(saved.provider.kind)) saved = receipt({ ...saved, provider: { kind: "uncertain" } });
       saved = receipt({ ...saved, attemptId });
       await client.query("INSERT INTO reference_attempts(id,operation_id,receipt,recovery,delete_acceptance_status) VALUES($1,$2,$3,$4,$5)", [attemptId, operationId, saved, op.dispatch_possible, op.delete_acceptance_status]);
@@ -251,7 +329,8 @@ export class ReferenceStore {
       const parsed = SyncOperationEnvelopeSchema.safeParse(rawEnvelope(op.payload));
       return { operationId, attemptId, payload: op.payload, envelope: parsed.success ? parsed.data : undefined,
         binding: rowBinding(op), capture: capture(op), locator: { connectionId: op.connection_id, calendarId: op.calendar_id, eventId: op.event_id },
-        etag: op.accepted_etag, receipt: saved, recovery: op.dispatch_possible, deleteAcceptanceStatus: op.delete_acceptance_status };
+        etag: op.accepted_etag, receipt: saved, recovery: op.dispatch_possible, deleteAcceptanceStatus: op.delete_acceptance_status,
+        endpointProfile: profileOf(op), attemptNumber };
     });
   }
   async renew(claim: ReferenceClaim): Promise<boolean> {
@@ -272,7 +351,7 @@ export class ReferenceStore {
         throw new ReferenceHoldError("credentials-expired");
       return { accessToken: decryptCredential(this.credentialKey, locked.connection.id, locked.connection.credential_ciphertext),
         connectionId: locked.connection.id, connectionGeneration: String(locked.connection.generation), scope: locked.connection.scope,
-        eventWriteAllowed: writeAllowed(locked.connection.scope) };
+        eventWriteAllowed: writeAllowed(locked.connection.scope, providerOf(locked.connection)) };
     });
     if (signal?.aborted) throw new ReferenceHoldError("cancelled");
     // Recheck after asynchronous materialization; final mutation has another fence.
@@ -288,6 +367,8 @@ export class ReferenceStore {
       const locked = await this.locked(client, claim.operationId);
       signal?.throwIfAborted();
       if (!this.owned(locked, claim) || !this.current(locked)) throw new ReferenceHoldError("authority-changed");
+      if (providerOf(locked.operation) === "microsoft" && locked.operation.dispatch_possible)
+        throw new ReferenceHoldError("guarded-delete-observe-only");
       const saved = receipt(locked.operation.receipt);
       const next = receipt({ ...saved, provider: saved.provider.kind === "accepted" ? saved.provider : { kind: "pending" } });
       await client.query("UPDATE reference_operations SET dispatch_possible=true,receipt=$3 WHERE id=$1 AND lease_attempt_id=$2", [claim.operationId, claim.attemptId, next]);
@@ -313,6 +394,8 @@ export class ReferenceStore {
       signal?.throwIfAborted();
       if (locked.operation.action === "delete" && (evidence.validator !== undefined || evidence.provider === "accepted" && evidence.acceptanceStatus === undefined) ||
         locked.operation.action !== "delete" && evidence.acceptanceStatus !== undefined) throw new ReferenceHoldError("invalid-protocol-evidence");
+      if (providerOf(locked.operation) === "microsoft" && evidence.acceptanceStatus !== undefined && ![204, 404].includes(evidence.acceptanceStatus))
+        throw new ReferenceHoldError("invalid-protocol-evidence");
       const attempt = (await client.query("SELECT receipt,delete_acceptance_status FROM reference_attempts WHERE id=$1 AND operation_id=$2 FOR UPDATE", [claim.attemptId, claim.operationId])).rows[0];
       if (!attempt) throw new ReferenceHoldError("attempt-missing");
       const make = (saved: SyncDeliveryReceipt) => {
@@ -343,7 +426,7 @@ export class ReferenceStore {
     return this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId);
       signal?.throwIfAborted();
-      if (!this.owned(locked, claim) || !this.current(locked) || locked.operation.action !== "update") return false;
+      if (!this.owned(locked, claim) || !this.current(locked) || providerOf(locked.operation) !== "google" || locked.operation.action !== "update") return false;
       const parsed = SyncOperationEnvelopeSchema.safeParse(rawEnvelope(locked.operation.payload));
       if (!parsed.success || !jsonEqual(observation.projection, parsed.data.admittedProjection.data)) throw new ReferenceHoldError("observation-conflict");
       const saved = receipt(locked.operation.receipt);
@@ -367,7 +450,7 @@ export class ReferenceStore {
     return this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId);
       signal?.throwIfAborted();
-      if (!this.owned(locked, claim) || !this.current(locked) || locked.operation.action !== "delete") return false;
+      if (!this.owned(locked, claim) || !this.current(locked) || providerOf(locked.operation) !== "google" || locked.operation.action !== "delete") return false;
       const parsed = SyncOperationEnvelopeSchema.safeParse(rawEnvelope(locked.operation.payload));
       if (!parsed.success || parsed.data.operation.action !== "delete") throw new ReferenceHoldError("invalid-delete-operation");
       const saved = receipt(locked.operation.receipt);
@@ -389,7 +472,7 @@ export class ReferenceStore {
     return this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId);
       signal?.throwIfAborted();
-      if (!this.owned(locked, claim) || !this.current(locked) || locked.operation.action !== "create") return false;
+      if (!this.owned(locked, claim) || !this.current(locked) || providerOf(locked.operation) !== "google" || locked.operation.action !== "create") return false;
       const parsed = SyncOperationEnvelopeSchema.safeParse(rawEnvelope(locked.operation.payload));
       if (!parsed.success || parsed.data.operation.action !== "create" || parsed.data.operationId !== locked.operation.id ||
         parsed.data.locator.resourceId !== locked.operation.event_id || referenceCreateEventID(locked.operation.id) !== observation.eventId ||
@@ -406,6 +489,26 @@ export class ReferenceStore {
       if (!locked.operation.dispatch_possible || saved.remote.kind !== "confirmed" || !["accepted", "uncertain"].includes(saved.provider.kind))
         throw new ReferenceHoldError("confirmation-missing");
       await client.query("UPDATE reference_bindings SET destination_lifecycle='present',etag=$2,baseline=$3 WHERE id=$1", [locked.binding.id, observation.etag, parsed.data.admittedProjection.data]);
+      await client.query("UPDATE reference_operations SET status='acked',lease_attempt_id=NULL,lease_until=NULL WHERE id=$1", [claim.operationId]);
+      return true;
+    }, signal);
+  }
+  async completeGraphDelete(claim: ReferenceClaim, supplied: ReferenceGraphDeleteObservation, signal?: AbortSignal): Promise<boolean> {
+    claim = claimIdentity(claim);
+    const fields = copyExactDataFields(supplied, ["kind", "read"]);
+    const read = copyExactDataFields(fields.read, ["kind", "status"]);
+    if (fields.kind !== "exact-absence" || read.kind !== "absent" || read.status !== 404) throw new ReferenceHoldError("invalid-graph-absence");
+    return this.transaction(async client => {
+      const locked = await this.locked(client, claim.operationId);
+      signal?.throwIfAborted();
+      if (!this.owned(locked, claim) || !this.current(locked) || providerOf(locked.operation) !== "microsoft" || locked.operation.action !== "delete" ||
+        profileOf(locked.operation) !== REFERENCE_GRAPH_DELETE_PROFILE) return false;
+      const decoded = decodeSyncOperationPayload(locked.operation.payload, rowBinding(locked.operation), { supports: supportsMicrosoftPersonalDeleteEnvelope });
+      if (decoded.kind !== "pinned-v1" || !graphDeleteEtag(locked.operation.accepted_etag))
+        throw new ReferenceHoldError("invalid-graph-delete-operation");
+      const saved = receipt(locked.operation.receipt);
+      if (saved.remote.kind !== "confirmed" || saved.provider.kind === "pending") throw new ReferenceHoldError("confirmation-missing");
+      await client.query("UPDATE reference_bindings SET destination_lifecycle='absent' WHERE id=$1", [locked.binding.id]);
       await client.query("UPDATE reference_operations SET status='acked',lease_attempt_id=NULL,lease_until=NULL WHERE id=$1", [claim.operationId]);
       return true;
     }, signal);

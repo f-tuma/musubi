@@ -1,4 +1,5 @@
 import { deliverSharedGoogleCreate, usesSharedGoogleCreate } from "./google_shared_create_delivery";
+import { deliverSharedMicrosoftDelete, usesSharedMicrosoftDelete } from "./microsoft_shared_delete_delivery";
 import { deliverSharedGoogleDelete, usesSharedGoogleDelete } from "./google_shared_delete_delivery";
 import { deliverSharedGoogleEvent, usesSharedGoogleDelivery } from "./google_shared_delivery";
 import { stopGraphOccurrenceContent, confirmGraphOccurrenceContent, markGraphOccurrenceContent, completeGraphOccurrenceContent } from "@musubi/db";
@@ -140,6 +141,11 @@ export async function deliverEventOutbox(
   const parsedPersonal = EventSchema.safeParse(row.payload.event);
   const specialized = ["organizer", "rsvp", "reminderEdit", "reminderInstance", "googleOccurrence", "caldavAlarm",
     "caldavSplit", "caldavSeries", "caldavSeriesDeletion", "graphSeriesCreate", "graphSeriesDeletion", "graphMeetingCancellation", "graphOccurrenceContent"];
+  if (pinned && parsedPersonal.success && !hasKnownEventTime(parsedPersonal.data) &&
+    !parsedPersonal.data.seriesID && !parsedPersonal.data.originalStart && !parsedPersonal.data.hasAttendees && !parsedPersonal.data.isMeeting &&
+    !parsedPersonal.data.isAllDay && !parsedPersonal.data.recurrence && !parsedPersonal.data.isCanceled && row.externalEventID &&
+    ![...specialized, "timeEdit", "graphOccurrence"].some(key => Object.prototype.hasOwnProperty.call(row.payload, key)) && usesSharedMicrosoftDelete(pinned, adapter))
+    return deliverSharedMicrosoftDelete(row, pinned, adapter!.microsoftPersonalDeleteV1!.bind(adapter), options);
   if (pinned && parsedPersonal.success && !hasKnownEventTime(parsedPersonal.data) &&
     !parsedPersonal.data.seriesID && !parsedPersonal.data.originalStart && !parsedPersonal.data.hasAttendees && !parsedPersonal.data.isMeeting &&
     !parsedPersonal.data.isAllDay && !parsedPersonal.data.recurrence && !parsedPersonal.data.isCanceled &&

@@ -55,7 +55,7 @@ function fixture(responses: (Response | Error)[], recovery = false) {
       return next;
     } },
     clock: { nowEpochMs: () => Date.parse("2026-10-13T00:00:00Z"), nowMonotonicMs: () => monotonic += 5 },
-    telemetry: { record(value) { metrics.push(value); } },
+    telemetry: { record(value) { assert.equal(value.provider, "google"); if (value.provider === "google") metrics.push(value); } },
   };
   const run = () => deliverReferenceOperation(store, operationId, ports, { attemptId: claim.attemptId });
   return { claim, store, ports, calls, metrics, evidence, finishes, observations, run,

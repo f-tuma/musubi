@@ -8,6 +8,7 @@ fixtures supply its dependencies at the existing boundaries.
 pnpm test:behavior --list
 pnpm test:behavior --suite google-delete --scenario already-absent --json
 pnpm test:behavior --suite google-create --scenario fresh-create --json
+pnpm test:behavior --suite microsoft-delete --scenario lost-reply-restart-present --json
 pnpm test:behavior --suite task-inspector --scenario conflict-keeps-draft
 pnpm test:behavior --json
 # Last: real routing, components, HTTP client, query cache and browser layout.
@@ -27,6 +28,7 @@ not committed. The root runner can also be called as
 | --- | --- | --- | --- |
 | `google-delete` | Claimed delivery runtime, Google provider preflight/conditional DELETE/recovery | Host persistence/lease/credential ports, HTTP responses and clock | None |
 | `google-create` | Admitted codec identity/body, CREATE delivery runtime and provider preflight/write/recovery | Host persistence/lease/credential ports, ordered HTTP responses and clock | None |
+| `microsoft-delete` | Admitted Graph DELETE codec, guarded runtime, native weak version, owned-calendar preflight and exact absence | Host persistence/lease/credential ports, ordered HTTP responses and clock | None |
 | `task-inspector` | React inspector/editor, capability checks, task serializer and HTTP client | Seeded context and HTTP receipts | None; Vitest/jsdom |
 | Browser confirmation | Running web app, router, task queries/cache and inspector/editor; same JSON commands and receipts | Auth/API responses at the browser HTTP boundary | Web dev server and Chromium |
 
@@ -50,6 +52,15 @@ temporary directory with attachments in the Playwright results. The intentional
 HTTP 409 receipt is allowed only as its exact browser resource diagnostic;
 unexpected console and page errors still fail.
 
+The Graph suite preserves the nine-call Musubi flow and the reference host's
+single guard pass. It covers strict 404 absence, weak native versions, changed
+final preflight, lost reply and GET-only restart, acceptance followed by failed
+verification, first-attempt resolution and the accepted read/write-gap race.
+Unresolved possible acceptance never permits replay merely because the event
+still exists at the same version. A captured reference dispatch marker remains
+one-shot even after a known 429 rejection; Musubi's existing conclusive
+not-written retry policy is separately proved by actual host integration tests.
+
 ## Add or debug a case
 
 - Sync data: `packages/sync-runtime/src/behavior/google-delete.json`.
@@ -68,6 +79,13 @@ unexpected console and page errors still fail.
   click/fill/assert actions. Mutation count/methods are exact; `body` assertions
   recursively match the specified fields so incidental optional fields may vary.
   Include every content/authority field whose preservation matters to the case.
+- Graph data: `packages/sync-runtime/src/behavior/microsoft-delete.json`.
+  Its adjacent driver invokes the actual codec, runtime and native provider.
+  Every ordered exchange asserts method, exact path, Prefer and native If-Match;
+  final summaries separate acceptance, presence/absence, dispatch and host ACK.
+  Run `pnpm --filter @musubi/sync-runtime test:scenarios:microsoft-delete --json`
+  for the native report. These port scenarios do not prove Musubi normalization,
+  SQL authority or explicit-resolution admission; actual paired host tests do.
 
 Edit the JSON, select the exact id, and inspect the JSON result. Add a small typed
 driver when testing a different domain boundary. Keep domain decisions in the
