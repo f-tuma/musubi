@@ -1,4 +1,4 @@
-# CalDAV personal conditional DELETE
+# CalDAV personal conditional event provider
 
 This private, storage-free package supplies native reads, fresh privilege and
 organizer preflight, and one logical conditional DELETE invocation. Guarded
@@ -51,3 +51,36 @@ timestamp revision, which is not a new monotonic ABA guarantee.
 
 Run native/port checks with `pnpm --filter @musubi/provider-caldav test` and the
 actual codec/runtime JSON loop with `pnpm test:behavior --suite caldav-delete`.
+
+## Personal timed CREATE
+
+`createCaldavPersonalEventCreateProvider` validates the original canonical UUID,
+its `musubi-UUID` UID, exact raw derived resource URL and saved full VCALENDAR
+before opening credentials. Preflight reads collection `all`, `write` or `bind`
+privileges; it performs no initial event or organizer discovery. One PUT retains
+the saved bytes with `If-None-Match: *`. Only 200/201/204 is native acceptance;
+strong ETags remain opaque, including `""`, and weak or malformed ETags become
+null. A 412 is a known conflict, not automatic adoption authority.
+
+Recovery reads the original planned resource with no-cache. Only recovery GET
+404 permits fresh collection guards and the same conditional write. A 410,
+partial response, wrong UID or incomplete parse never grants replay. The existing
+profile retains full native bytes and delegates its CREATE normalization order
+to the actual host, including normalization before cancelled-event refusal.
+The strict reference profile refuses organizers without inventing principal
+discovery and records PUT acceptance before exact strong readback. A readback
+404 after PUT does not allow another PUT in that attempt.
+
+The portable reference projector uses UTC or a unique resource-owned VTIMEZONE;
+an explicit non-UTC TZID needs its resource definition even when an ambient alias
+resolves to ICAL's UTC singleton. Floating or ambient registered zones are not
+accepted as time evidence. Existing
+Musubi normalization remains a host port. JSON cases that replace this port with
+declared data report `projectionPort: "fixture"`; they do not claim to execute
+Musubi's actual normalizer. Separate API integration checks establish that floor.
+
+The raw native helper preserves optional collection slashes and derived resource
+URLs exceeding 2048 characters. The existing v1 envelope still limits its native
+resource identity to 2048 characters; its explicit JSON admission case holds
+before credentials or network. No type-contract widening or fallback is implied.
+Run this loop with `pnpm test:behavior --suite caldav-create`.

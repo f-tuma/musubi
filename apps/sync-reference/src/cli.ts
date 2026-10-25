@@ -2,7 +2,7 @@ import { Pool } from "pg";
 import { lookup } from "node:dns/promises";
 import { createPinnedCaldavFetch } from "@musubi/provider-caldav/network";
 import { ReferenceStore } from "./store.js";
-import { ReferenceHoldError, type ReferenceAdmission, type ReferenceDeleteAdmission, type ReferenceSeed, type ReferenceCreateAdmission, type ReferenceCreateSeed, type ReferenceGraphDeleteSeed, type ReferenceGraphDeleteAdmission, type ReferenceCaldavDeleteSeed, type ReferenceCaldavDeleteAdmission, type ReferenceGraphCreateSeed, type ReferenceGraphCreateAdmission } from "./model.js";
+import { ReferenceHoldError, type ReferenceAdmission, type ReferenceDeleteAdmission, type ReferenceSeed, type ReferenceCreateAdmission, type ReferenceCreateSeed, type ReferenceGraphDeleteSeed, type ReferenceGraphDeleteAdmission, type ReferenceCaldavDeleteSeed, type ReferenceCaldavDeleteAdmission, type ReferenceGraphCreateSeed, type ReferenceGraphCreateAdmission, type ReferenceCaldavCreateSeed, type ReferenceCaldavCreateAdmission } from "./model.js";
 import { deliverReferenceOperation, type ReferenceRunnerPorts } from "./runner.js";
 
 /** The reference executable reads only its own configuration; never Musubi env/auth. */
@@ -29,7 +29,7 @@ function ownObject(value: unknown): Record<string, unknown> {
 }
 async function main() {
   const command = process.argv[2];
-  if (!["migrate", "seed", "seed-create", "seed-graph-delete", "seed-graph-create", "seed-caldav-delete", "admit", "admit-delete", "admit-create", "admit-graph-delete", "admit-graph-create", "admit-caldav-delete", "deliver", "show"].includes(command)) throw new Error("Invalid reference command.");
+  if (!["migrate", "seed", "seed-create", "seed-graph-delete", "seed-graph-create", "seed-caldav-delete", "seed-caldav-create", "admit", "admit-delete", "admit-create", "admit-graph-delete", "admit-graph-create", "admit-caldav-delete", "admit-caldav-create", "deliver", "show"].includes(command)) throw new Error("Invalid reference command.");
   const databaseUrl = process.env.REFERENCE_DATABASE_URL;
   const credentialKey = process.env.REFERENCE_CREDENTIAL_KEY;
   const privateNetwork = process.env.REFERENCE_ALLOW_PRIVATE_NETWORK;
@@ -50,7 +50,11 @@ async function main() {
       if (command === "seed") {
         await store.seedBinding(value as unknown as ReferenceSeed);
         result = { status: "seeded", bindingId: value.bindingId };
-      } else if (command === "seed-graph-create") {
+      } else if (command === "seed-caldav-create") {
+        await store.seedCaldavCreateBinding(value as unknown as ReferenceCaldavCreateSeed);
+        result = { status: "reserved", bindingId: value.bindingId, endpointProfile: "caldav-personal-event-create-v1" };
+      } else if (command === "admit-caldav-create") result = await store.admitCaldavCreate(value as unknown as ReferenceCaldavCreateAdmission);
+      else if (command === "seed-graph-create") {
         await store.seedGraphCreateBinding(value as unknown as ReferenceGraphCreateSeed);
         result = { status: "reserved", bindingId: value.bindingId, endpointProfile: "microsoft-personal-event-create-v1" };
       } else if (command === "admit-graph-create") result = await store.admitGraphCreate(value as unknown as ReferenceGraphCreateAdmission);

@@ -1,15 +1,29 @@
 // Owned crash fixture process. This module is never imported by the CLI.
 import { Pool } from "pg";
+import { createRequire } from "node:module";
+import { readFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
 import { ReferenceStore } from "./store.js";
 import { deliverReferenceOperation, type ReferenceCheckpoint } from "./runner.js";
-import type { ReferenceAdmission, ReferenceDeleteAdmission, ReferenceCreateAdmission, ReferenceGraphDeleteAdmission, ReferenceCaldavDeleteAdmission, ReferenceGraphCreateAdmission } from "./model.js";
+import type { ReferenceAdmission, ReferenceDeleteAdmission, ReferenceCreateAdmission, ReferenceGraphDeleteAdmission, ReferenceCaldavDeleteAdmission, ReferenceGraphCreateAdmission, ReferenceCaldavCreateAdmission } from "./model.js";
 
 async function main() {
   if (process.env.REFERENCE_TEST_CHILD !== "true" || !process.send || !process.env.REFERENCE_DATABASE_URL || !process.env.REFERENCE_CREDENTIAL_KEY)
     throw new Error("Owned child fixture configuration required.");
   const databaseUrl = process.env.REFERENCE_DATABASE_URL, key = process.env.REFERENCE_CREDENTIAL_KEY;
   let data = ""; for await (const chunk of process.stdin) data += chunk;
-  const input = JSON.parse(data) as { action: "admit" | "admit-delete" | "admit-create" | "admit-graph-delete" | "admit-graph-create" | "admit-caldav-delete" | "deliver" | "show"; operationId: string; admission?: ReferenceAdmission | ReferenceDeleteAdmission | ReferenceCreateAdmission | ReferenceGraphDeleteAdmission | ReferenceCaldavDeleteAdmission | ReferenceGraphCreateAdmission; pause?: string; fixtureOrigin: string };
+  const input = JSON.parse(data) as { action: "admit" | "admit-delete" | "admit-create" | "admit-graph-delete" | "admit-graph-create" | "admit-caldav-delete" | "admit-caldav-create" | "deliver" | "show"; operationId: string; admission?: ReferenceAdmission | ReferenceDeleteAdmission | ReferenceCreateAdmission | ReferenceGraphDeleteAdmission | ReferenceCaldavDeleteAdmission | ReferenceGraphCreateAdmission | ReferenceCaldavCreateAdmission; pause?: string; fixtureOrigin: string; ambientTimezone?: boolean };
+  if (input.ambientTimezone) {
+    // Adversarial process-local state in the exact provider dependency instance.
+    // This owned IPC module is never imported by the installed reference CLI.
+    const providerRequire = createRequire(createRequire(import.meta.url).resolve("@musubi/provider-caldav"));
+    // The require branch has a separate timezone registry. Load the exact ESM
+    // export used by the provider, rather than polluting an unrelated instance.
+    const manifestURL = new URL("../package.json", pathToFileURL(providerRequire.resolve("ical.js")));
+    const manifest = JSON.parse(await readFile(manifestURL, "utf8"));
+    const ical = (await import(new URL(manifest.exports.import, manifestURL).href)).default;
+    ical.TimezoneService.register("Ambient/UTC", ical.Timezone.utcTimezone);
+  }
   const fixture = new URL(input.fixtureOrigin);
   if (fixture.protocol !== "http:" || fixture.hostname !== "127.0.0.1" || fixture.pathname !== "/" || fixture.search || fixture.hash || fixture.username || fixture.password)
     throw new Error("Owned loopback HTTP fixture required.");
@@ -43,9 +57,9 @@ async function main() {
   try {
     const store = new ReferenceStore(pool, key);
     let result: unknown;
-    if (input.action === "admit" || input.action === "admit-delete" || input.action === "admit-create" || input.action === "admit-graph-delete" || input.action === "admit-caldav-delete" || input.action === "admit-graph-create") {
+    if (input.action === "admit" || input.action === "admit-delete" || input.action === "admit-create" || input.action === "admit-graph-delete" || input.action === "admit-caldav-delete" || input.action === "admit-graph-create" || input.action === "admit-caldav-create") {
       result = input.action === "admit" ? await store.admitUpdate(input.admission! as ReferenceAdmission) : input.action === "admit-create"
-        ? await store.admitCreate(input.admission!) : input.action === "admit-graph-delete" ? await store.admitGraphDelete(input.admission!) : input.action === "admit-caldav-delete" ? await store.admitCaldavDelete(input.admission!) : input.action === "admit-graph-create" ? await store.admitGraphCreate(input.admission!) : await store.admitDelete(input.admission!);
+        ? await store.admitCreate(input.admission!) : input.action === "admit-graph-delete" ? await store.admitGraphDelete(input.admission!) : input.action === "admit-caldav-delete" ? await store.admitCaldavDelete(input.admission!) : input.action === "admit-graph-create" ? await store.admitGraphCreate(input.admission!) : input.action === "admit-caldav-create" ? await store.admitCaldavCreate(input.admission!) : await store.admitDelete(input.admission!);
       await checkpoint("afterAdmission");
     } else if (input.action === "show") result = await store.inspectOperation(input.operationId);
     else result = await deliverReferenceOperation(store, input.operationId, {

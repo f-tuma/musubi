@@ -11,6 +11,7 @@ pnpm test:behavior --suite google-create --scenario fresh-create --json
 pnpm test:behavior --suite microsoft-delete --scenario lost-reply-restart-present --json
 pnpm test:behavior --suite microsoft-create --scenario fresh-create --json
 pnpm test:behavior --suite caldav-delete --scenario fresh-delete --json
+pnpm test:behavior --suite caldav-create --scenario fresh-create --json
 pnpm test:behavior --suite task-inspector --scenario conflict-keeps-draft
 pnpm test:behavior --json
 # Last: real routing, components, HTTP client, query cache and browser layout.
@@ -33,6 +34,7 @@ not committed. The root runner can also be called as
 | `microsoft-delete` | Admitted Graph DELETE codec, guarded runtime, native weak version, owned-calendar preflight and exact absence | Host persistence/lease/credential ports, ordered HTTP responses and clock | None |
 | `microsoft-create` | Admitted Graph transaction/body, bounded CREATE runtime, native permission/POST/scoped listing and candidate identity | Host persistence/lease/normalization/credential ports, ordered HTTP responses and clock | None |
 | `caldav-delete` | Admitted DAV DELETE codec, runtime, real XML/ICS parsing, privilege/organizer preflight and conditional DELETE | Host persistence/lease/credential ports, DNS, pinned HTTP leaf responses and clock | None |
+| `caldav-create` | Admitted full ICS/URL/UID, CREATE runtime, bind ACL/conditional PUT and exact resource recovery | Host persistence/lease/normalization/credential ports, DNS, pinned HTTP leaf responses and clock | None |
 | `task-inspector` | React inspector/editor, capability checks, task serializer and HTTP client | Seeded context and HTTP receipts | None; Vitest/jsdom |
 | Browser confirmation | Running web app, router, task queries/cache and inspector/editor; same JSON commands and receipts | Auth/API responses at the browser HTTP boundary | Web dev server and Chromium |
 
@@ -84,6 +86,15 @@ POST. Separate profiles preserve Musubi's actual normalizer and wire while the
 reference requires owned-calendar/personal/text-body readback. Durable candidate
 identity and uncertainty remain distinct from native acceptance.
 
+The DAV CREATE suite freezes full VCALENDAR bytes and deterministic URL/UID,
+then exercises bind ACL and `If-None-Match: *` PUT. Exact recovery 404 may permit
+the same conditional write; 410 and known 412 do not grant replay/adoption.
+It distinguishes strong-or-null native acceptance from strict strong readback,
+retains older uncertainty after a known retry refusal and covers DNS/redirect
+guards. Declared data-only host projection fixtures are labelled separately
+from the portable production ICS projector; real API normalization has paired
+SQL/HTTP coverage.
+
 ## Add or debug a case
 
 - Sync data: `packages/sync-runtime/src/behavior/google-delete.json`.
@@ -123,6 +134,14 @@ identity and uncertainty remain distinct from native acceptance.
   `pnpm --filter @musubi/sync-runtime test:scenarios:microsoft-create --json`
   for the native report. Actual Musubi normalization/SQL/pull and independent
   reference reservation/adoption/crash behavior have separate integration tests.
+- DAV CREATE data: `packages/sync-runtime/src/behavior/caldav-create.json`.
+  Its adjacent driver invokes the actual codec, kernel, native XML/ICS provider
+  and guarded transport with pinned leaf fixtures. Summaries assert full-body
+  hashes, original URL/UID, condition, auth presence, per-hop metrics, native
+  evidence, projection-port choice and exact host outcomes. Run
+  `pnpm --filter @musubi/sync-runtime test:scenarios:caldav-create --json`
+  for its native report. Host SQL authority, actual API conversion and durable
+  reference migration/crash behavior remain separate integration evidence.
 
 Edit the JSON, select the exact id, and inspect the JSON result. Add a small typed
 driver when testing a different domain boundary. Keep domain decisions in the

@@ -3,6 +3,7 @@ import "./create.test";
 import "./microsoft-delete.test";
 import "./caldav-delete.test";
 import "./microsoft-create.test";
+import "./caldav-create.test";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync, readdirSync } from "node:fs";

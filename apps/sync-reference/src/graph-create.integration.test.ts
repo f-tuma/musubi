@@ -30,7 +30,7 @@ async function accepted(f: { claim: ReferenceClaim }, id = "assigned-native-id",
   await store.markDispatch(f.claim); await store.recordGraphCreateEvidence(f.claim, { provider: "accepted", candidateEventId: id, createAcceptance: { status: 201, validator }, remote: "confirmed", observationId: randomUUID() });
 }
 const oids = async () => (await pool.query("SELECT relname,oid FROM pg_class WHERE relname LIKE 'reference_%' AND relkind IN ('r','i') ORDER BY relname")).rows;
-const newColumns = ["create_profile", "create_candidate_id", "create_acceptance_validator", "create_acceptance_status"];
+const newColumns = ["create_profile", "create_candidate_id", "create_acceptance_validator", "create_acceptance_status", "caldav_create_acceptance_status"];
 async function oldRows() { const result: Record<string, unknown> = {}; for (const table of ["reference_connections", "reference_objects", "reference_bindings", "reference_operations", "reference_attempts"]) result[table] = (await pool.query(`SELECT * FROM ${table} ORDER BY id`)).rows.map(value => Object.fromEntries(Object.entries(value).filter(([key]) => !newColumns.includes(key)))); return result; }
 let beforeRows: unknown, beforeOids: unknown; const old: { action: string; id: string; eventId: string; claim: ReferenceClaim }[] = [];
 before(async () => {
@@ -51,6 +51,7 @@ after(async () => { await pool.end(); try { await admin.query(`DROP DATABASE "${
 
 test("upgrade preserves populated Google/Graph/DAV payloads, epochs, attempts and OIDs before completing old pending operations", async () => {
   await store.migrate(); assert.deepEqual(await oids(), beforeOids); assert.deepEqual(await oldRows(), beforeRows);
+  for (const table of ["reference_operations", "reference_attempts"]) assert.equal((await pool.query(`SELECT count(*) FROM ${table} WHERE caldav_create_acceptance_status IS NOT NULL`)).rows[0].count, "0");
   const oldContent = { ...content, notes: null, place: "Room", beginsAt: "2026-10-25T08:00:00.000Z", endsAt: "2026-10-25T09:00:00.000Z" };
   for (const item of old) { const ok = item.action === "create" ? await store.completeCreate(item.claim, { eventId: item.eventId, etag: '"old-accepted"', projection: projection(oldContent) })
     : item.action === "update" ? await store.complete(item.claim, { etag: '"old-accepted"', projection: projection({ ...oldContent, name: "Old UPDATE" }) })

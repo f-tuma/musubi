@@ -1,6 +1,6 @@
 # Independent sync reference host
 
-C05–C07 / MUSU-37–39 runs bounded Google personal event CREATE, UPDATE and DELETE profiles, separate Microsoft guarded personal DELETE and one-shot personal CREATE profiles, and a CalDAV conditional personal DELETE profile with its own
+C05–C07 / MUSU-37–39 runs bounded Google personal event CREATE, UPDATE and DELETE profiles, separate Microsoft guarded personal DELETE and one-shot personal CREATE profiles, and CalDAV conditional personal CREATE/DELETE profiles with their own
 PostgreSQL ledger. It uses the C04 native provider ports, the C06 shared `@musubi/sync-runtime`
 already-claimed runner and the published v1 schema/plan validator, with no dependency on Musubi DB, auth, app config or API.
 Its content model is `ReferenceContent`, not a Musubi Event or Task.
@@ -45,6 +45,8 @@ stdin return a safe error code.
 | `admit-caldav-delete` | `{bindingId, expectedRevision, commandId, operationId}` | Atomically tombstone and capture one conditional DAV DELETE; this new reference command requires a lowercase UUID operation ID |
 | `seed-graph-create` | `ReferenceGraphCreateSeed` | Reserve one Microsoft target with unknown native ID, explicit create profile and canonical UUID operation identity |
 | `admit-graph-create` | `{bindingId, expectedRevision, commandId, operationId}` | Atomically commit the canonical revision and immutable Graph CREATE plan whose admitted native resource ID stays null |
+| `seed-caldav-create` | `ReferenceCaldavCreateSeed` | Reserve a deterministic URL/UID from one original UUID, with explicit DAV CREATE profile and Basic credentials; no ETag or baseline |
+| `admit-caldav-create` | `{bindingId, expectedRevision, commandId, operationId}` | Commit the canonical revision and original full codec ICS for that exact reserved URL/UID |
 | `deliver` | `{operationId}` | Claim and run one bounded attempt |
 | `show` | `{operationId}` | Inspect operation, capture, receipt and binding without credentials |
 
@@ -313,6 +315,62 @@ HTTP410, cancelled resources and empty/malformed DAV responses cannot prove
 absence. The absent binding retains historical UID/ETag/baseline. Lost-reply
 recovery preserves uncertainty, and initial absence invents no native acceptance.
 
+## CalDAV conditional personal CREATE
+
+`seed-caldav-create` requires `provider: "caldav"`,
+`endpointProfile: "caldav-personal-event-create-v1"`, `connectionId`, `objectId`,
+`bindingId`, `calendarUrl`, `operationId`, `username`, `password`, `expiresAt` and
+`content` (optional `privacyLabel`). `admit-caldav-create` takes `bindingId`,
+`expectedRevision`, `commandId` and that original `operationId`. Unknown fields,
+caller-supplied native URL/UID/ETag, OAuth inputs and resolution intents are refused.
+
+The reference requires a canonical HTTPS collection URL ending in `/`, matching
+its existing strict DAV DELETE address floor. The canonical lowercase UUID fixes `musubi-{UUID}` and the exact direct-child URL
+`{calendarUrl}/musubi-{UUID}.ics`. The reserved binding retains that known identity,
+its immutable CREATE profile and no validator or baseline. This is distinct from
+Google's known native ID and Graph's unknown-ID reservation; Graph's permanently
+NULL admitted ID and weak-or-null adopted validator remain unchanged. Admission
+uses the real CalDAV event encoder, saves its complete original `createResource`
+and verifies exact projection agreement. Second-precision UTC endpoints and
+nonempty-or-null optional text prevent silent wire normalization. Retry never
+rebuilds ICS or sends only the replacement VEVENT component.
+
+The existing reference Basic credential envelope, empty scope, own integer
+connection/source generations and local credential-valid-until policy apply.
+Strict delivery uses the dedicated DNS-pinned transport, exact collection
+`all`, `write` or `bind` privilege, and no redirects. It sends `If-None-Match: *`
+to the original URL. Native PUT 200/201/204 and its strong-or-null response ETag
+are durable evidence before verification. DAV-only operation/attempt status
+columns retain this history; Graph candidate and raw acceptance columns are not
+reused. A later conditional acceptance may have a newer status/validator, while
+an unsuccessful retry cannot erase an earlier accepted fact.
+
+Reference ACK requires a complete exact-URL GET, the admitted UID, matching actual
+normalized timed nonrecurring personal content and a real strong readback ETag.
+Physical validation permits valid resource-owned VTIMEZONE and VALARM data, but
+refuses extra/nested events, attendees, cancelled resources and unproven organizer
+identity. The portable projector does not use floating or ambient timezone
+fallbacks. Strong readback, baseline, reserved-to-present adoption and ACK commit
+atomically under current authority and lease fences. Adoption advances the source
+generation once. A later serial DAV DELETE can use the captured real identity;
+this slice adds no DAV UPDATE, recreation or supersession workflow.
+
+Possible dispatch is never cleared. Restart recovery may GET404, prove fresh bind
+authority and retry the same conditional URL/UID/full body, including after earlier
+native acceptance. This is a native conditional policy, not Graph's one-shot rule.
+Matching recovery GET can adopt only accepted or uncertain dispatch; a previously
+rejected CREATE stays on HOLD with evidence and no resend if a resource appears.
+Older unknown PUT outcomes remain uncertain if a later conditional retry is
+known rejected; a later matching GET can still confirm that older uncertainty.
+Known 412 is terminal conflict without same-attempt readback. A readback404 after a
+PUT does not trigger a second PUT in that attempt. HTTP410 cannot authorize retry.
+Unresolved or terminal-conflict intent retains the pending-binding barrier.
+
+Full-chain migration reruns preserve the later DAV CREATE checks before older
+Graph migration statements execute. Existing six-profile payloads, attempts,
+receipts, epochs, Graph reservations/adopted NULL validators, and table/index OIDs
+remain intact. No Musubi database, auth, configuration or UI package participates.
+
 ## Verification
 
 `pnpm --filter @musubi/sync-reference test` runs pure admission and injected-port
@@ -341,6 +399,11 @@ The Graph CREATE storage/process corpora preserve all older Google/Graph/DAV
 profiles through migration, enforce unknown admitted identity and one-shot
 recovery, test nullable readback and lossless raw acceptance metadata, and kill
 actual workers before/after dispatch, candidate persistence and atomic ACK.
+The DAV CREATE storage/process corpora preserve all six earlier profiles and
+Graph unknown/adopted NULL identities through repeated migration. They test
+conditional PUT body equality, response-versus-readback evidence, native status
+history, authority ABA, stale ACK, cancelled lock waits and real SIGKILL recovery
+before/after PUT without importing Graph one-shot behavior.
 Provider metrics count requests whose dispatch reaches the telemetry boundary.
 They are not a durable exactly-once audit across a process kill inside HTTP.
 
