@@ -1,11 +1,12 @@
 import { readFile } from "node:fs/promises";
 import type { Pool, PoolClient } from "pg";
+import { nativeMicrosoftEtag, type MicrosoftNativeEvent } from "@musubi/provider-microsoft";
 import { decodeSyncOperationPayload, SyncDeliveryReceiptSchema, SyncOperationEnvelopeSchema, SyncErrorSchema, SyncJsonObjectSchema, type SyncDeliveryReceipt, type SyncOperationRowBinding } from "@musubi/types";
 import { parseNativeWritePlanV1, matchesPinnedProjectionV1 } from "@musubi/sync-codec";
-import { supportsMicrosoftPersonalDeleteEnvelope, supportsCaldavPersonalDeleteEnvelope } from "@musubi/sync-runtime";
-import { acceptedEnvelope, acceptedDeleteEnvelope, acceptedCreateEnvelope, acceptedGraphDeleteEnvelope, admissionFingerprint, deleteAdmissionFingerprint, createAdmissionFingerprint, graphDeleteAdmissionFingerprint, graphDeleteEtag, REFERENCE_GRAPH_DELETE_PROFILE, referenceCreateEventID, initialReceipt, jsonEqual, projection, strongEtag, validateContent, validatePatch, acceptedCaldavDeleteEnvelope, caldavDeleteAdmissionFingerprint, caldavDeleteAddress, caldavUid, REFERENCE_CALDAV_DELETE_PROFILE } from "./admission.js";
+import { supportsMicrosoftPersonalDeleteEnvelope, supportsCaldavPersonalDeleteEnvelope, supportsMicrosoftPersonalCreateEnvelope, projectMicrosoftCreatedEvent } from "@musubi/sync-runtime";
+import { acceptedEnvelope, acceptedDeleteEnvelope, acceptedCreateEnvelope, acceptedGraphDeleteEnvelope, admissionFingerprint, deleteAdmissionFingerprint, createAdmissionFingerprint, graphDeleteAdmissionFingerprint, graphDeleteEtag, REFERENCE_GRAPH_DELETE_PROFILE, referenceCreateEventID, referenceCreateOperationID, initialReceipt, jsonEqual, projection, strongEtag, validateContent, validatePatch, acceptedCaldavDeleteEnvelope, caldavDeleteAdmissionFingerprint, caldavDeleteAddress, caldavUid, REFERENCE_CALDAV_DELETE_PROFILE, REFERENCE_GRAPH_CREATE_PROFILE, acceptedGraphCreateEnvelope, graphCreateAdmissionFingerprint } from "./admission.js";
 import { assertCredentialKey, decryptCredential, encryptCredential, basicCredential } from "./crypto.js";
-import { ReferenceHoldError, type ReferenceAdmission, type ReferenceCapture, type ReferenceClaim, type ReferenceEvidence, type ReferenceOperation, type ReferenceSeed, type ReferenceContentPatch, type ReferenceDeleteAdmission, type ReferenceDeleteObservation, type ReferenceCreateAdmission, type ReferenceCreateSeed, type ReferenceCreateObservation, type ReferenceGraphDeleteSeed, type ReferenceGraphDeleteAdmission, type ReferenceGraphDeleteObservation, type ReferenceCaldavDeleteSeed, type ReferenceCaldavDeleteAdmission, type ReferenceCaldavDeleteObservation } from "./model.js";
+import { ReferenceHoldError, type ReferenceAdmission, type ReferenceCapture, type ReferenceClaim, type ReferenceEvidence, type ReferenceOperation, type ReferenceSeed, type ReferenceContentPatch, type ReferenceDeleteAdmission, type ReferenceDeleteObservation, type ReferenceCreateAdmission, type ReferenceCreateSeed, type ReferenceCreateObservation, type ReferenceGraphDeleteSeed, type ReferenceGraphDeleteAdmission, type ReferenceGraphDeleteObservation, type ReferenceCaldavDeleteSeed, type ReferenceCaldavDeleteAdmission, type ReferenceCaldavDeleteObservation, type ReferenceGraphCreateSeed, type ReferenceGraphCreateAdmission, type ReferenceGraphCreateEvidence, type ReferenceGraphCreateObservation, type ReferenceGraphCreateNativeEvidence } from "./model.js";
 export { ReferenceHoldError } from "./model.js";
 export type { ReferenceClaim as Claim } from "./model.js";
 
@@ -52,7 +53,8 @@ function profileOf(row: Row): string {
 function profileMatches(row: Row): boolean {
   const provider = providerOf(row), profile = profileOf(row);
   return provider === "google" ? ["create", "update", "delete"].includes(row.action) && profile === `google-personal-event-${row.action}-v1`
-    : row.action === "delete" && profile === (provider === "microsoft" ? REFERENCE_GRAPH_DELETE_PROFILE : REFERENCE_CALDAV_DELETE_PROFILE);
+    : provider === "microsoft" ? (row.action === "create" && profile === REFERENCE_GRAPH_CREATE_PROFILE || row.action === "delete" && profile === REFERENCE_GRAPH_DELETE_PROFILE)
+    : row.action === "delete" && profile === REFERENCE_CALDAV_DELETE_PROFILE;
 }
 /** Only the durable lease identities are accepted from a caller's claim DTO. */
 function claimIdentity(value: ReferenceClaim): ReferenceClaim {
@@ -60,6 +62,16 @@ function claimIdentity(value: ReferenceClaim): ReferenceClaim {
   if (![fields.operationId, fields.attemptId].every(item => typeof item === "string" && item.length > 0 && item.length <= 2048))
     throw new Error("Invalid reference claim identity");
   return Object.freeze(fields) as unknown as ReferenceClaim;
+}
+/** JSON string encoding round-trips even NUL/unpaired UTF-16 without claiming
+ * that raw native acceptance metadata is a conditional-write validator. */
+const encodeCreateValidator = (value: string | null): string | null => value === null ? null : JSON.stringify(value);
+function graphCreateNativeEvidence(row: Row): ReferenceGraphCreateNativeEvidence {
+  let validator: unknown = null;
+  try { if (row.create_acceptance_validator !== null && row.create_acceptance_validator !== undefined) validator = JSON.parse(row.create_acceptance_validator); }
+  catch { throw new ReferenceHoldError("invalid-graph-create-history"); }
+  if (validator !== null && typeof validator !== "string") throw new ReferenceHoldError("invalid-graph-create-history");
+  return { candidateEventId: row.create_candidate_id ?? null, acceptanceStatus: row.create_acceptance_status ?? null, acceptanceValidator: validator as string | null };
 }
 const receipt = (value: unknown): SyncDeliveryReceipt => SyncDeliveryReceiptSchema.parse(value);
 const rawEnvelope = (payload: unknown) => payload !== null && typeof payload === "object" && !Array.isArray(payload)
@@ -80,7 +92,8 @@ export class ReferenceStore {
     const create = await readFile(new URL("./schema-create.sql", import.meta.url), "utf8");
     const graph = await readFile(new URL("./schema-graph-delete.sql", import.meta.url), "utf8");
     const caldav = await readFile(new URL("./schema-caldav-delete.sql", import.meta.url), "utf8");
-    await this.transaction(async client => { await client.query(sql); await client.query(forward); await client.query(create); await client.query(graph); await client.query(caldav); });
+    const graphCreate = await readFile(new URL("./schema-graph-create.sql", import.meta.url), "utf8");
+    await this.transaction(async client => { await client.query(sql); await client.query(forward); await client.query(create); await client.query(graph); await client.query(caldav); await client.query(graphCreate); });
   }
   private async transaction<T>(body: (client: PoolClient) => Promise<T>, signal?: AbortSignal): Promise<T> {
     signal?.throwIfAborted();
@@ -113,7 +126,9 @@ export class ReferenceStore {
     return !!conn && !!object && !!binding && conn.status === "active" && conn.credential_ciphertext != null && binding.active &&
       providerOf(conn) === providerOf(op) && profileMatches(op) &&
       (providerOf(op) !== "caldav" || conn.scope === "" && caldavUid(op.accepted_uid) && binding.ical_uid === op.accepted_uid && caldavDeleteAddress(op.calendar_id, op.event_id)) &&
-      (op.action === "create" ? binding.destination_lifecycle === "reserved" && binding.create_operation_id === op.id : binding.destination_lifecycle === "present") &&
+      (op.action === "create" ? binding.destination_lifecycle === "reserved" && binding.create_operation_id === op.id &&
+        (providerOf(op) === "microsoft" ? binding.create_profile === REFERENCE_GRAPH_CREATE_PROFILE && binding.event_id === null && op.event_id === null
+          : !Object.hasOwn(binding, "create_profile") || binding.create_profile === "google-personal-event-create-v1") : binding.destination_lifecycle === "present") &&
       object.canonical_lifecycle === (op.action === "delete" ? "tombstoned" : "active") && Number(object.lifecycle_generation) === Number(op.canonical_generation) &&
       Number(conn.generation) === Number(op.connection_generation) && Number(object.revision) === Number(op.accepted_revision) &&
       Number(object.privacy_generation) === Number(op.privacy_generation) && Number(binding.source_generation) === Number(op.source_generation) &&
@@ -201,6 +216,53 @@ export class ReferenceStore {
         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'delete','microsoft',$17)`,
         [input.operationId, input.commandId, binding.id, object.id, conn.id, binding.calendar_id, binding.event_id, epochs.acceptedRevision,
           epochs.connectionGeneration, epochs.sourceGeneration, epochs.privacyGeneration, binding.etag, fingerprint, { operationEnvelope: envelope }, initialReceipt(envelope), epochs.canonicalGeneration, REFERENCE_GRAPH_DELETE_PROFILE]);
+    });
+    const result = await this.pool.query("SELECT id FROM reference_operations WHERE command_id=$1 AND binding_id=$2", [input.commandId, input.bindingId]);
+    return this.inspectOperation(result.rows[0].id);
+  }
+  async seedGraphCreateBinding(supplied: ReferenceGraphCreateSeed): Promise<void> {
+    const fields = copyExactDataFields(supplied, ["provider", "endpointProfile", "connectionId", "objectId", "bindingId", "calendarId", "operationId", "accessToken", "expiresAt", "scope", "content"], ["privacyLabel"]);
+    const input = Object.freeze({ ...fields, content: Object.freeze({ ...validateContent(fields.content as ReferenceGraphCreateSeed["content"]) }) }) as unknown as ReferenceGraphCreateSeed;
+    if (input.provider !== "microsoft" || input.endpointProfile !== REFERENCE_GRAPH_CREATE_PROFILE ||
+      typeof input.accessToken !== "string" || typeof input.scope !== "string" || typeof input.expiresAt !== "string" || !Number.isFinite(Date.parse(input.expiresAt)) ||
+      input.privacyLabel !== undefined && typeof input.privacyLabel !== "string" ||
+      ![input.connectionId, input.objectId, input.bindingId, input.calendarId].every(value => typeof value === "string" && value.length > 0 && value.length <= 2048 && value.trim() === value && ![".", ".."].includes(value)))
+      throw new Error("Invalid reference Graph CREATE seed");
+    referenceCreateOperationID(input.operationId);
+    const ciphertext = encryptCredential(this.credentialKey, input.connectionId, input.accessToken);
+    await this.transaction(async client => {
+      await client.query("INSERT INTO reference_connections(id,provider,scope,credential_ciphertext,expires_at) VALUES($1,'microsoft',$2,$3,$4)", [input.connectionId, scopeValue(input.scope), ciphertext, input.expiresAt]);
+      await client.query("INSERT INTO reference_objects(id,privacy_label,content) VALUES($1,$2,$3)", [input.objectId, input.privacyLabel ?? "private", input.content]);
+      await client.query(`INSERT INTO reference_bindings(id,connection_id,object_id,calendar_id,event_id,etag,baseline,destination_lifecycle,create_operation_id,create_profile)
+        VALUES($1,$2,$3,$4,NULL,NULL,NULL,'reserved',$5,$6)`, [input.bindingId, input.connectionId, input.objectId, input.calendarId, input.operationId, REFERENCE_GRAPH_CREATE_PROFILE]);
+    });
+  }
+  async admitGraphCreate(supplied: ReferenceGraphCreateAdmission): Promise<ReferenceOperation> {
+    const input = Object.freeze(copyExactDataFields(supplied, ["bindingId", "expectedRevision", "commandId", "operationId"])) as unknown as ReferenceGraphCreateAdmission;
+    const fingerprint = graphCreateAdmissionFingerprint(input);
+    await this.transaction(async client => {
+      const initial = (await client.query("SELECT * FROM reference_bindings WHERE id=$1", [input.bindingId])).rows[0];
+      if (!initial) throw new ReferenceHoldError("binding-missing");
+      const conn = (await client.query("SELECT * FROM reference_connections WHERE id=$1 FOR UPDATE", [initial.connection_id])).rows[0];
+      const object = (await client.query("SELECT * FROM reference_objects WHERE id=$1 FOR UPDATE", [initial.object_id])).rows[0];
+      const binding = (await client.query("SELECT * FROM reference_bindings WHERE id=$1 FOR UPDATE", [input.bindingId])).rows[0];
+      const existing = (await client.query("SELECT * FROM reference_operations WHERE connection_id=$1 AND command_id=$2 FOR UPDATE", [binding.connection_id, input.commandId])).rows[0];
+      if (existing) { if (existing.fingerprint !== fingerprint) throw new ReferenceHoldError("command-reused"); return; }
+      if (providerOf(conn) !== "microsoft" || conn.status !== "active" || conn.credential_ciphertext == null || !writeAllowed(conn.scope, "microsoft") || !binding.active)
+        throw new ReferenceHoldError("source-unavailable");
+      if (object.canonical_lifecycle !== "active" || binding.destination_lifecycle !== "reserved" || binding.create_profile !== REFERENCE_GRAPH_CREATE_PROFILE || binding.create_operation_id !== input.operationId ||
+        binding.event_id !== null || binding.etag !== null || binding.baseline !== null) throw new ReferenceHoldError("lifecycle-unavailable");
+      if (Number(object.revision) !== input.expectedRevision) throw new ReferenceHoldError("revision-conflict");
+      if ((await client.query("SELECT 1 FROM reference_operations WHERE binding_id=$1 AND status<>'acked'", [input.bindingId])).rowCount) throw new ReferenceHoldError("causal-barrier");
+      const epochs: ReferenceCapture = { acceptedRevision: input.expectedRevision + 1, connectionGeneration: Number(conn.generation), sourceGeneration: Number(binding.source_generation),
+        privacyGeneration: Number(object.privacy_generation), canonicalGeneration: Number(object.lifecycle_generation) };
+      const envelope = acceptedGraphCreateEnvelope(input, validateContent(object.content), { objectId: object.id, connectionId: conn.id, calendarId: binding.calendar_id, capture: epochs });
+      await client.query("UPDATE reference_objects SET revision=$2 WHERE id=$1", [object.id, epochs.acceptedRevision]);
+      await client.query(`INSERT INTO reference_operations(id,command_id,binding_id,object_id,connection_id,calendar_id,event_id,accepted_revision,
+        connection_generation,source_generation,privacy_generation,accepted_etag,fingerprint,payload,receipt,canonical_generation,action,provider,endpoint_profile)
+        VALUES($1,$2,$3,$4,$5,$6,NULL,$7,$8,$9,$10,NULL,$11,$12,$13,$14,'create','microsoft',$15)`,
+        [input.operationId, input.commandId, binding.id, object.id, conn.id, binding.calendar_id, epochs.acceptedRevision, epochs.connectionGeneration, epochs.sourceGeneration,
+          epochs.privacyGeneration, fingerprint, { operationEnvelope: envelope }, initialReceipt(envelope), epochs.canonicalGeneration, REFERENCE_GRAPH_CREATE_PROFILE]);
     });
     const result = await this.pool.query("SELECT id FROM reference_operations WHERE command_id=$1 AND binding_id=$2", [input.commandId, input.bindingId]);
     return this.inspectOperation(result.rows[0].id);
@@ -354,7 +416,7 @@ export class ReferenceStore {
   }
   async inspectOperation(operationId: string): Promise<ReferenceOperation> {
     const row = (await this.pool.query(`SELECT o.*,b.etag AS binding_etag,b.baseline,b.active,b.source_generation AS binding_generation,b.destination_lifecycle,
-      c.canonical_lifecycle,c.lifecycle_generation,c.revision AS canonical_revision
+      b.event_id AS binding_event_id,c.canonical_lifecycle,c.lifecycle_generation,c.revision AS canonical_revision
       FROM reference_operations o JOIN reference_bindings b ON b.id=o.binding_id JOIN reference_objects c ON c.id=o.object_id WHERE o.id=$1`, [operationId])).rows[0];
     if (!row) throw new ReferenceHoldError("operation-missing");
     return { operationId: row.id, commandId: row.command_id, bindingId: row.binding_id, objectId: row.object_id, provider: providerOf(row), endpointProfile: profileOf(row), action: row.action, payload: row.payload,
@@ -362,6 +424,7 @@ export class ReferenceStore {
       deleteAcceptanceStatus: row.delete_acceptance_status,
       capture: capture(row), status: row.status, dispatchPossible: row.dispatch_possible, receipt: receipt(row.receipt),
       ...(providerOf(row) === "caldav" ? { acceptedUid: row.accepted_uid } : {}),
+      ...(providerOf(row) === "microsoft" && row.action === "create" ? { graphCreate: { ...graphCreateNativeEvidence(row), bindingEventId: row.binding_event_id } } : {}),
       leaseAttemptId: row.lease_attempt_id, leaseUntil: row.lease_until?.toISOString() ?? null,
       binding: { etag: row.binding_etag, baseline: row.baseline, active: row.active, sourceGeneration: Number(row.binding_generation), destinationLifecycle: row.destination_lifecycle } };
   }
@@ -382,7 +445,8 @@ export class ReferenceStore {
       return { operationId, attemptId, payload: op.payload, envelope: parsed.success ? parsed.data : undefined,
         binding: rowBinding(op), capture: capture(op), locator: { connectionId: op.connection_id, calendarId: op.calendar_id, eventId: op.event_id },
         etag: op.accepted_etag, receipt: saved, recovery: op.dispatch_possible, deleteAcceptanceStatus: op.delete_acceptance_status,
-        endpointProfile: profileOf(op), attemptNumber, ...(providerOf(op) === "caldav" ? { acceptedUid: op.accepted_uid } : {}) };
+        endpointProfile: profileOf(op), attemptNumber, ...(providerOf(op) === "caldav" ? { acceptedUid: op.accepted_uid } : {}),
+        ...(providerOf(op) === "microsoft" && op.action === "create" ? { graphCreate: graphCreateNativeEvidence(op) } : {}) };
     });
   }
   async renew(claim: ReferenceClaim): Promise<boolean> {
@@ -446,7 +510,7 @@ export class ReferenceStore {
       signal?.throwIfAborted();
       if (!this.owned(locked, claim) || !this.current(locked)) throw new ReferenceHoldError("authority-changed");
       if (providerOf(locked.operation) === "microsoft" && locked.operation.dispatch_possible)
-        throw new ReferenceHoldError("guarded-delete-observe-only");
+        throw new ReferenceHoldError(locked.operation.action === "create" ? "create-observe-only" : "guarded-delete-observe-only");
       const saved = receipt(locked.operation.receipt);
       const next = receipt({ ...saved, provider: saved.provider.kind === "accepted" ? saved.provider : { kind: "pending" } });
       await client.query("UPDATE reference_operations SET dispatch_possible=true,receipt=$3 WHERE id=$1 AND lease_attempt_id=$2", [claim.operationId, claim.attemptId, next]);
@@ -470,6 +534,7 @@ export class ReferenceStore {
     return this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId);
       signal?.throwIfAborted();
+      if (providerOf(locked.operation) === "microsoft" && locked.operation.action === "create") throw new ReferenceHoldError("graph-create-evidence-port-required");
       if (locked.operation.action === "delete" && (evidence.validator !== undefined || evidence.provider === "accepted" && evidence.acceptanceStatus === undefined) ||
         locked.operation.action !== "delete" && evidence.acceptanceStatus !== undefined) throw new ReferenceHoldError("invalid-protocol-evidence");
       if ((providerOf(locked.operation) === "microsoft" && evidence.acceptanceStatus !== undefined && ![204, 404].includes(evidence.acceptanceStatus)) ||
@@ -490,6 +555,92 @@ export class ReferenceStore {
       await client.query("UPDATE reference_attempts SET receipt=$3,code=$4,delete_acceptance_status=COALESCE($5,delete_acceptance_status),updated_at=clock_timestamp() WHERE id=$1 AND operation_id=$2", [claim.attemptId, claim.operationId, nextAttempt, safeCode, evidence.acceptanceStatus ?? null]);
       if (!this.owned(locked, claim)) return false;
       await client.query("UPDATE reference_operations SET receipt=$2,delete_acceptance_status=COALESCE($3,delete_acceptance_status) WHERE id=$1", [claim.operationId, make(receipt(locked.operation.receipt)), evidence.acceptanceStatus ?? null]);
+      return true;
+    }, signal);
+  }
+  async recordGraphCreateEvidence(claim: ReferenceClaim, supplied: ReferenceGraphCreateEvidence, signal?: AbortSignal): Promise<boolean> {
+    claim = claimIdentity(claim);
+    const fields = copyExactDataFields(supplied, ["provider", "remote"], ["observationId", "code", "error", "candidateEventId", "createAcceptance"]);
+    if (!["accepted", "uncertain", "rejected", "not-dispatched"].includes(fields.provider as string) || !["confirmed", "conflict", "unobserved"].includes(fields.remote as string) ||
+      ["observationId", "code"].some(key => fields[key] !== undefined && typeof fields[key] !== "string") || fields.candidateEventId !== undefined && (typeof fields.candidateEventId !== "string" || !fields.candidateEventId || fields.candidateEventId.length > 2048))
+      throw new ReferenceHoldError("invalid-graph-create-evidence");
+    const acceptance = fields.createAcceptance === undefined ? undefined : copyExactDataFields(fields.createAcceptance, ["status", "validator"]);
+    if (acceptance && (![200, 201, 204].includes(acceptance.status as number) || acceptance.validator !== null && typeof acceptance.validator !== "string") ||
+      fields.provider === "accepted" && (!acceptance || fields.candidateEventId === undefined) || fields.provider !== "accepted" && acceptance ||
+      fields.candidateEventId !== undefined && fields.provider !== "accepted" && !(fields.provider === "uncertain" && fields.remote === "confirmed"))
+      throw new ReferenceHoldError("invalid-graph-create-evidence");
+    const parsedError = fields.error === undefined ? undefined : SyncErrorSchema.safeParse(fields.error);
+    if (parsedError && !parsedError.success) throw new ReferenceHoldError("invalid-protocol-error");
+    const protocolError = parsedError?.success ? parsedError.data : undefined;
+    const evidence = Object.freeze({ ...fields, ...(acceptance ? { createAcceptance: Object.freeze({ ...acceptance }) } : {}) }) as unknown as Readonly<ReferenceGraphCreateEvidence>;
+    return this.transaction(async client => {
+      const locked = await this.locked(client, claim.operationId), op = locked.operation;
+      signal?.throwIfAborted();
+      if (providerOf(op) !== "microsoft" || op.action !== "create" || profileOf(op) !== REFERENCE_GRAPH_CREATE_PROFILE || op.event_id !== null)
+        throw new ReferenceHoldError("graph-create-profile-unavailable");
+      if ((evidence.provider !== "not-dispatched" || evidence.candidateEventId !== undefined) && !op.dispatch_possible) throw new ReferenceHoldError("confirmation-missing");
+      const attempt = (await client.query("SELECT * FROM reference_attempts WHERE id=$1 AND operation_id=$2 FOR UPDATE", [claim.attemptId, claim.operationId])).rows[0];
+      if (!attempt) throw new ReferenceHoldError("attempt-missing");
+      const owned = this.owned(locked, claim), candidate = evidence.candidateEventId;
+      if (owned && candidate !== undefined && op.create_candidate_id !== null && op.create_candidate_id !== candidate)
+        throw new ReferenceHoldError("create-candidate-conflict");
+      const encodedValidator = acceptance ? encodeCreateValidator(acceptance.validator as string | null) : null;
+      if (acceptance && (attempt.create_acceptance_status !== null && (attempt.create_acceptance_status !== acceptance.status || attempt.create_acceptance_validator !== encodedValidator) ||
+        owned && op.create_acceptance_status !== null && (op.create_acceptance_status !== acceptance.status || op.create_acceptance_validator !== encodedValidator)))
+        throw new ReferenceHoldError("create-acceptance-conflict");
+      if (candidate !== undefined && attempt.create_candidate_id !== null && attempt.create_candidate_id !== candidate) throw new ReferenceHoldError("create-candidate-conflict");
+      const make = (saved: SyncDeliveryReceipt) => {
+        // Raw native acceptance versions belong only in the encoded sidecar;
+        // no conditional-write validator is manufactured in the shared receipt.
+        const provider = evidence.provider === "accepted" ? { kind: "accepted" as const } : evidence.provider === "rejected"
+          ? { kind: "rejected" as const, error: protocolError ?? { code: "transport-failed", retry: "never" as const } } : { kind: evidence.provider };
+        const effective = saved.provider.kind === "accepted" && evidence.provider !== "accepted" || saved.provider.kind === "rejected" && ["uncertain", "not-dispatched"].includes(evidence.provider as string) ? saved.provider : provider;
+        const remote = evidence.remote === "unobserved" ? saved.remote : { kind: evidence.remote, observationId: evidence.observationId ?? claim.attemptId };
+        return receipt({ ...saved, attemptId: claim.attemptId, provider: effective, remote });
+      };
+      const safeCode = typeof evidence.code === "string" && /^[a-z][a-z0-9-]{0,63}$/.test(evidence.code) ? evidence.code : null;
+      await client.query(`UPDATE reference_attempts SET receipt=$3,code=$4,create_candidate_id=COALESCE(create_candidate_id,$5),
+        create_acceptance_validator=CASE WHEN create_acceptance_status IS NULL AND $6::smallint IS NOT NULL THEN $7 ELSE create_acceptance_validator END,
+        create_acceptance_status=COALESCE(create_acceptance_status,$6),updated_at=clock_timestamp() WHERE id=$1 AND operation_id=$2`,
+        [claim.attemptId, claim.operationId, make(receipt(attempt.receipt)), safeCode, candidate ?? null, acceptance?.status ?? null, encodedValidator]);
+      if (!owned) return false;
+      await client.query(`UPDATE reference_operations SET receipt=$2,create_candidate_id=COALESCE(create_candidate_id,$3),
+        create_acceptance_validator=CASE WHEN create_acceptance_status IS NULL AND $4::smallint IS NOT NULL THEN $5 ELSE create_acceptance_validator END,
+        create_acceptance_status=COALESCE(create_acceptance_status,$4) WHERE id=$1`,
+        [claim.operationId, make(receipt(op.receipt)), candidate ?? null, acceptance?.status ?? null, encodedValidator]);
+      return true;
+    }, signal);
+  }
+  async completeGraphCreate(claim: ReferenceClaim, supplied: ReferenceGraphCreateObservation, signal?: AbortSignal): Promise<boolean> {
+    claim = claimIdentity(claim);
+    const fields = copyExactDataFields(supplied, ["kind", "eventId", "etag", "projection", "read", "correlation"]);
+    const read = copyExactDataFields(fields.read, ["kind", "event", "etag"]), correlation = copyExactDataFields(fields.correlation, ["kind", "operationId", "calendarId", "matches"]);
+    const parsedProjection = SyncJsonObjectSchema.safeParse(fields.projection), parsedEvent = SyncJsonObjectSchema.safeParse(read.event);
+    if (fields.kind !== "correlated-readback" || typeof fields.eventId !== "string" || !fields.eventId || fields.eventId.length > 2048 ||
+      fields.etag !== null && nativeMicrosoftEtag(fields.etag) !== fields.etag || read.kind !== "present" || read.etag !== fields.etag || !parsedProjection.success || !parsedEvent.success ||
+      correlation.kind !== "complete-scoped-listing" || correlation.matches !== 1 || typeof correlation.operationId !== "string" || typeof correlation.calendarId !== "string")
+      throw new ReferenceHoldError("invalid-graph-create-observation");
+    const observation = Object.freeze({ eventId: fields.eventId, etag: fields.etag as string | null,
+      projection: Object.freeze(JSON.parse(JSON.stringify(parsedProjection.data)) as Record<string, unknown>),
+      event: Object.freeze(JSON.parse(JSON.stringify(parsedEvent.data)) as Record<string, unknown>), correlation: Object.freeze({ ...correlation }) });
+    return this.transaction(async client => {
+      const locked = await this.locked(client, claim.operationId), op = locked.operation;
+      signal?.throwIfAborted();
+      if (!this.owned(locked, claim) || !this.current(locked) || providerOf(op) !== "microsoft" || op.action !== "create" || profileOf(op) !== REFERENCE_GRAPH_CREATE_PROFILE) return false;
+      const decoded = decodeSyncOperationPayload(op.payload, rowBinding(op), { supports: supportsMicrosoftPersonalCreateEnvelope });
+      if (decoded.kind !== "pinned-v1" || op.event_id !== null || decoded.envelope.locator.resourceId !== null) throw new ReferenceHoldError("invalid-graph-create-operation");
+      const plan = parseNativeWritePlanV1(decoded.envelope.serializer, "create", "event", decoded.envelope.nativePlan.data);
+      if (!plan || plan.planKind !== "json-body" || !plan.body || plan.body.transactionId !== op.id || Object.hasOwn(plan.body, "id") ||
+        observation.correlation.operationId !== op.id || observation.correlation.calendarId !== op.calendar_id || observation.event.id !== observation.eventId || observation.event.transactionId !== op.id ||
+        !jsonEqual(observation.projection, decoded.envelope.admittedProjection.data) || !jsonEqual(projectMicrosoftCreatedEvent(observation.event as unknown as MicrosoftNativeEvent), observation.projection))
+        throw new ReferenceHoldError("observation-conflict");
+      const saved = receipt(op.receipt);
+      if (!op.dispatch_possible || !["accepted", "uncertain"].includes(saved.provider.kind) || saved.remote.kind !== "confirmed" || op.create_candidate_id !== observation.eventId)
+        throw new ReferenceHoldError("confirmation-missing");
+      if ((await client.query("SELECT id FROM reference_bindings WHERE connection_id=$1 AND calendar_id=$2 AND event_id=$3 AND id<>$4", [op.connection_id, op.calendar_id, observation.eventId, locked.binding.id])).rowCount)
+        throw new ReferenceHoldError("create-scope-occupied");
+      await client.query("UPDATE reference_bindings SET event_id=$2,destination_lifecycle='present',etag=$3,baseline=$4 WHERE id=$1", [locked.binding.id, observation.eventId, observation.etag, observation.projection]);
+      await client.query("UPDATE reference_operations SET status='acked',lease_attempt_id=NULL,lease_until=NULL WHERE id=$1", [claim.operationId]);
       return true;
     }, signal);
   }

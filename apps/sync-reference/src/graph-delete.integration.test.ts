@@ -51,7 +51,7 @@ before(async () => {
   const deleteClaim = await store.claim(deleteId, randomUUID()); assert(deleteClaim); await store.markDispatch(deleteClaim);
   await store.recordEvidence(deleteClaim, { provider: "accepted", acceptanceStatus: 204, remote: "confirmed" }); oldDelete = { id: deleteId, claim: deleteClaim };
   oldOids = await oids(); oldRows = (await pool.query("SELECT id,payload,receipt,accepted_etag,connection_generation,source_generation,privacy_generation,canonical_generation FROM reference_operations ORDER BY id")).rows;
-  oldAttempts = (await pool.query("SELECT * FROM reference_attempts ORDER BY id")).rows;
+  oldAttempts = (await pool.query("SELECT id,operation_id,dispatch_possible,recovery,receipt,code,created_at,updated_at,delete_acceptance_status FROM reference_attempts ORDER BY id")).rows;
   await store.migrate();
 });
 after(async () => { await pool.end(); try { await admin.query(`DROP DATABASE "${name}"`); } finally { await admin.end(); } });
@@ -59,7 +59,8 @@ after(async () => { await pool.end(); try { await admin.query(`DROP DATABASE "${
 test("populated Google CREATE/UPDATE/DELETE upgrade preserves identities/history and stamps only explicit metadata", async () => {
   await store.migrate(); await store.migrate(); assert.deepEqual(await oids(), oldOids);
   assert.deepEqual((await pool.query("SELECT id,payload,receipt,accepted_etag,connection_generation,source_generation,privacy_generation,canonical_generation FROM reference_operations ORDER BY id")).rows, oldRows);
-  assert.deepEqual((await pool.query("SELECT * FROM reference_attempts ORDER BY id")).rows, oldAttempts);
+  assert.deepEqual((await pool.query("SELECT id,operation_id,dispatch_possible,recovery,receipt,code,created_at,updated_at,delete_acceptance_status FROM reference_attempts ORDER BY id")).rows, oldAttempts);
+  assert.equal((await pool.query("SELECT count(*) FROM reference_attempts WHERE create_candidate_id IS NOT NULL OR create_acceptance_status IS NOT NULL OR create_acceptance_validator IS NOT NULL")).rows[0].count, "0");
   assert.equal((await store.inspectOperation(oldUpdate.id)).endpointProfile, "google-personal-event-update-v1");
   assert.equal((await store.inspectOperation(oldCreate.id)).endpointProfile, "google-personal-event-create-v1");
   assert.equal((await store.inspectOperation(oldDelete.id)).endpointProfile, "google-personal-event-delete-v1");

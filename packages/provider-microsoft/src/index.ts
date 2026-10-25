@@ -5,6 +5,7 @@ import type {
   MicrosoftNativeDeletePreflight, MicrosoftNativeDeleteReadEvidence, MicrosoftNativeEvent, MicrosoftPersonalDelete,
 } from "./types";
 export * from "./types";
+export { createMicrosoftPersonalEventCreateProvider } from "./create";
 
 const GRAPH = "https://graph.microsoft.com/v1.0";
 const SMALL_PREFER = 'outlook.timezone="UTC", outlook.body-content-type="text"';

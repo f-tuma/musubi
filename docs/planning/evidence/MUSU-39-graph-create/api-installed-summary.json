@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "scope": "local installed API proof only; no registry publication or production deployment",
+  "status": "passed",
+  "createdAt": "2026-10-25T11:57:45.407788+00:00",
+  "gitHeadAtBuild": "ee0130e67c584e8848050d3b850f537668c9e073",
+  "imageTag": "musubi-c07-graph-create-api:proof",
+  "dockerImageInspectId": "sha256:c5f35f44609980f3590f1ce5284b57892ec6c60ce82ca8c01adfba7af3d8f6b3",
+  "localBuildIndexDigest": "sha256:c5f35f44609980f3590f1ce5284b57892ec6c60ce82ca8c01adfba7af3d8f6b3",
+  "platformManifestDigest": "sha256:663af2703b2f06675c3e3c2001e265328d504f860ccacb1dcb24f7d001bf97be",
+  "imageConfigDigest": "sha256:13e5dd5bc2d1314ce3a0defe754baf8210a02128b6cbf9810e809cfd9d39b543",
+  "platform": {
+    "os": "linux",
+    "architecture": "amd64"
+  },
+  "dockerIdentityNote": "Docker image inspect Id and the running container image reference identify the local OCI index here. Platform manifest and image config digests are recorded separately. A local daemon RepoDigest does not establish registry publication.",
+  "sourceFingerprint": "fd7ee20aa9ba330775f651b89fb6c006c67394daa64213235736abe6f9ab4f06",
+  "sourceContextFiles": 826,
+  "sourceFingerprintScope": "Frozen 826-file credential-free Docker build context. Production TS/SQL parity excludes tests, process fixtures and behavior harnesses and covers the entire API workspace production source closure.",
+  "productionSourceFingerprint": "84e8473558b02e00f883870f94f9206f05b648a4b0977e561aef100d6b6d99fd",
+  "productionSourceHashParity": {
+    "checkedFiles": 423,
+    "mismatches": []
+  },
+  "productionSourceInventoryAfterProof": {
+    "frozenFiles": 423,
+    "currentFiles": 423,
+    "byteEqual": true,
+    "addedRemovedOrModified": []
+  },
+  "contextChangesAfterBuild": [],
+  "startup": {
+    "port": 7531,
+    "environment": "test",
+    "deploymentMode": "single-replica",
+    "logLevel": "info",
+    "externalSyncIntervalMin": 0,
+    "externalDeliveryRecoveryMode": "disabled",
+    "syncOperationV1EncoderEnabled": true,
+    "syncOperationProfileVersion": "sync-profile-v1",
+    "timestamp": "2026-10-25T11:57:28.548Z",
+    "level": "info",
+    "message": "server.started"
+  },
+  "emptyDatabaseBeforeBoot": {
+    "tables": 0
+  },
+  "emptyDatabaseMigrations": {
+    "applied": 86,
+    "sourceJournalEntries": 86,
+    "lastTag": "0085_graph_read_coverage",
+    "lastHashMatchesSource": true
+  },
+  "effectiveConfiguration": {
+    "encoder": true,
+    "encoderOverridePresent": false,
+    "environment": "test",
+    "nodeEnvironment": "production",
+    "externalSyncIntervalMin": 0,
+    "deliveryRecoveryMode": "disabled",
+    "smtpConfigured": false,
+    "pushConfigured": false
+  },
+  "runtime": {
+    "user": "node",
+    "sourceBindMounts": 0
+  },
+  "providerIsolation": {
+    "externalAccounts": 0,
+    "caldavAccounts": 0,
+    "externalCalendars": 0,
+    "eventOutboxRows": 0,
+    "smtpConfigured": false,
+    "pushConfigured": false
+  },
+  "cleanup": {
+    "containerRemoved": true,
+    "nonceDatabaseDropped": true,
+    "containerAbsentVerified": true,
+    "nonceDatabaseAbsentVerified": true,
+    "rootPostgresStillRunning": true
+  },
+  "httpChecks": {
+    "status": "passed",
+    "checks": 17,
+    "categories": {
+      "publicHealthAndCapabilities": 2,
+      "unauthenticatedAccessDenied": 1,
+      "realSignUpLoginAndCookieSession": 3,
+      "authenticatedCanonicalCalendarAndEventChecks": 11
+    },
+    "auth": {
+      "syntheticEmailDomain": "example.invalid",
+      "signup": true,
+      "passwordLogin": true,
+      "cookieSession": true,
+      "authBypass": false,
+      "dbSeedChanges": false
+    },
+    "providerScope": {
+      "configuredExternalAccounts": 0,
+      "liveProviderRequests": false,
+      "externalGraphCreateNotExercised": true
+    },
+    "scopeNote": "The 17 HTTP checks include public health/capability and unauthenticated rejection, real Better Auth registration/login/cookie session, and canonical calendar/event CRUD, idempotent replay, revision conflict and readback. No direct authentication bypass or database seeding."
+  },
+  "limits": [
+    "This installed image smoke does not exercise a native Microsoft Graph CREATE or any live provider.",
+    "The separate 206-scenario source PG/HTTP corpus exercises real legacy/shared Graph CREATE delivery against owned loopback Graph and OAuth endpoints, including permission preflight, complete bounded listing recovery, nullable/native validators, host authority and second-session credential boundaries, lease/ACK races and SIGKILL. Its source execution evidence is separate from this installed-image smoke.",
+    "No external accounts, external calendar targets, delivery outbox rows, SMTP or push were configured. External sync interval is zero and delivery recovery is disabled.",
+    "This proof builds and runs a local image; it does not prove registry publication or a production rollout."
+  ],
+  "artifacts": [
+    {
+      "path": "/tmp/musu39-graph-create-api-proof-20261025115652_32884a.json",
+      "sha256": "7c39934dec2e8aed7d67dfa99fa4084ab079dc78dcda6bf3aff9bbdcbf59c4e7",
+      "bytes": 6558
+    },
+    {
+      "path": "/tmp/musu39-graph-create-api-http-20261025115652_32884a.json",
+      "sha256": "c14f26b74651f7f6d2897a55b6902cc21b3b02041fc366107033d0c8eb9a7133",
+      "bytes": 3405
+    },
+    {
+      "path": "/tmp/musu39-graph-create-api-runtime-20261025115652_32884a.log",
+      "sha256": "6337b832b2391f162f3dafba5bd827ae2f965e3454a4d46acf90515439202427",
+      "bytes": 6180
+    },
+    {
+      "path": "/tmp/musu39-graph-create-api-source-20261025115652.json",
+      "sha256": "c2728c017c71d795a4c17a818f39db3f27082df473cb156db7def069bf41815a",
+      "bytes": 101042
+    },
+    {
+      "path": "/tmp/musu39-graph-create-api-build-20261025115652.log",
+      "sha256": "f5c4e573b5f6858d7e66868d8fedb4a9fae362679960479411903da399ce993d",
+      "bytes": 4152
+    },
+    {
+      "path": "/tmp/musu39-graph-create-api-build.py",
+      "sha256": "09d3d3a152fd5b3a61f560faf9bf03b1fd4f4b793a7b7c38c71153e76ca17511",
+      "bytes": 4420
+    },
+    {
+      "path": "/tmp/musu39-graph-create-api-probe.py",
+      "sha256": "f1b8f1348036d904d7c6607fd23069cacdf2d19f684f5daeb9e9bb8f1ea3d4b9",
+      "bytes": 10731
+    },
+    {
+      "path": "/tmp/musu39-graph-create-api-http-smoke.mjs",
+      "sha256": "afc4371e7237fbd48430a2c7fb01206a59dde061f5b84a3bc22763c7e79690bc",
+      "bytes": 7278
+    },
+    {
+      "path": "/tmp/musu39-graph-create-api-summarize.py",
+      "sha256": "367ce99c9500a1d6bf57572ef271c98d41df7e0bcc4e17738ed65f6c9a122214",
+      "bytes": 7144
+    }
+  ]
+}

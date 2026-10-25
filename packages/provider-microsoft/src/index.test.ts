@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import "./create.test";
 import {
   createMicrosoftPersonalEventDeleteProvider, MicrosoftProviderError, nativeMicrosoftEtag,
   type MicrosoftAccountSession, type MicrosoftDeleteProviderPorts, type MicrosoftPersonalDelete, type MicrosoftRequestMetric,
