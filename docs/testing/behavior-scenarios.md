@@ -8,6 +8,7 @@ fixtures supply its dependencies at the existing boundaries.
 pnpm test:behavior --list
 pnpm test:behavior --suite google-delete --scenario already-absent --json
 pnpm test:behavior --suite google-create --scenario fresh-create --json
+pnpm test:behavior --suite google-task-update --scenario fresh-title-update --json
 pnpm test:behavior --suite microsoft-delete --scenario lost-reply-restart-present --json
 pnpm test:behavior --suite microsoft-create --scenario fresh-create --json
 pnpm test:behavior --suite caldav-delete --scenario fresh-delete --json
@@ -32,6 +33,7 @@ not committed. The root runner can also be called as
 | --- | --- | --- | --- |
 | `google-delete` | Claimed delivery runtime, Google provider preflight/conditional DELETE/recovery | Host persistence/lease/credential ports, HTTP responses and clock | None |
 | `google-create` | Admitted codec identity/body, CREATE delivery runtime and provider preflight/write/recovery | Host persistence/lease/credential ports, ordered HTTP responses and clock | None |
+| `google-task-update` | Actual Task codec, claimed task UPDATE kernel, saved field selection and Google Tasks provider | Host preparation/lease/credential/ACK ports, ordered HTTP receipts and clock | None |
 | `microsoft-delete` | Admitted Graph DELETE codec, guarded runtime, native weak version, owned-calendar preflight and exact absence | Host persistence/lease/credential ports, ordered HTTP responses and clock | None |
 | `microsoft-create` | Admitted Graph transaction/body, bounded CREATE runtime, native permission/POST/scoped listing and candidate identity | Host persistence/lease/normalization/credential ports, ordered HTTP responses and clock | None |
 | `caldav-delete` | Admitted DAV DELETE codec, runtime, real XML/ICS parsing, privilege/organizer preflight and conditional DELETE | Host persistence/lease/credential ports, DNS, pinned HTTP leaf responses and clock | None |
@@ -106,6 +108,21 @@ module-mock flags; application code does not load the fixture modules. These
 scenarios do not prove PostgreSQL rollback, native provider wire or a new shared
 task runtime. The separate `task-ack` DB and `task_ack_delivery` API integration
 suites exercise actual transactions and lock/deadline races.
+
+The Google task UPDATE suite exercises the new shared boundary directly. An
+already addressed task sends the frozen changed fields through the existing
+GET/GET/GET/PATCH/GET flow; an empty mask stops after two GETs. Recovery may
+confirm achieved fields from one GET, while conditional replay still requires
+the original tag and complete saved baseline. The API uses patch-achieved
+readback and its existing permissive native response profile. The independent
+reference host uses full-target readback and a stricter native profile.
+Accepted HTTP status, usable returned validator and confirmed readback are
+separate facts; a later 429 cannot erase older acceptance or uncertainty.
+Fixtures also cover refresh only for delivery GETs, malformed responses and
+assigned/deleted-resource refusals under their explicit profiles. Native JSON
+ports do not prove live Google conditional enforcement or host SQL authority;
+the separate paired API and reference storage/process suites cover those local
+boundaries. See [the C08 task gate](../planning/MUSU-40-google-task-update.md).
 
 ## Add or debug a case
 

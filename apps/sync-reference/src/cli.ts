@@ -2,6 +2,9 @@ import { Pool } from "pg";
 import { lookup } from "node:dns/promises";
 import { createPinnedCaldavFetch } from "@musubi/provider-caldav/network";
 import { ReferenceStore } from "./store.js";
+import { ReferenceTaskStore } from "./task-store.js";
+import { deliverReferenceTaskUpdate } from "./task-runner.js";
+import type { ReferenceTaskSeed, ReferenceTaskAdmission } from "./task-model.js";
 import { ReferenceHoldError, type ReferenceAdmission, type ReferenceDeleteAdmission, type ReferenceSeed, type ReferenceCreateAdmission, type ReferenceCreateSeed, type ReferenceGraphDeleteSeed, type ReferenceGraphDeleteAdmission, type ReferenceCaldavDeleteSeed, type ReferenceCaldavDeleteAdmission, type ReferenceGraphCreateSeed, type ReferenceGraphCreateAdmission, type ReferenceCaldavCreateSeed, type ReferenceCaldavCreateAdmission } from "./model.js";
 import { deliverReferenceOperation, type ReferenceRunnerPorts } from "./runner.js";
 
@@ -29,7 +32,7 @@ function ownObject(value: unknown): Record<string, unknown> {
 }
 async function main() {
   const command = process.argv[2];
-  if (!["migrate", "seed", "seed-create", "seed-graph-delete", "seed-graph-create", "seed-caldav-delete", "seed-caldav-create", "admit", "admit-delete", "admit-create", "admit-graph-delete", "admit-graph-create", "admit-caldav-delete", "admit-caldav-create", "deliver", "show"].includes(command)) throw new Error("Invalid reference command.");
+  if (!["migrate", "seed", "seed-create", "seed-graph-delete", "seed-graph-create", "seed-caldav-delete", "seed-caldav-create", "admit", "admit-delete", "admit-create", "admit-graph-delete", "admit-graph-create", "admit-caldav-delete", "admit-caldav-create", "deliver", "show", "seed-task", "admit-task-update", "deliver-task", "show-task"].includes(command)) throw new Error("Invalid reference command.");
   const databaseUrl = process.env.REFERENCE_DATABASE_URL;
   const credentialKey = process.env.REFERENCE_CREDENTIAL_KEY;
   const privateNetwork = process.env.REFERENCE_ALLOW_PRIVATE_NETWORK;
@@ -47,7 +50,19 @@ async function main() {
     else {
       const value = ownObject(await input(controller.signal));
       controller.signal.throwIfAborted();
-      if (command === "seed") {
+      if (["seed-task", "admit-task-update", "deliver-task", "show-task"].includes(command)) {
+        const taskStore = new ReferenceTaskStore(pool, credentialKey);
+        if (command === "seed-task") { await taskStore.seedBinding(value as unknown as ReferenceTaskSeed); result = { status: "seeded", bindingId: value.bindingId, endpointProfile: "google-task-update-v1" }; }
+        else if (command === "admit-task-update") result = await taskStore.admitUpdate(value as unknown as ReferenceTaskAdmission);
+        else {
+          if (typeof value.operationId !== "string" || !value.operationId || value.operationId.length > 2048) throw new Error("Invalid reference task operation identity");
+          result = command === "show-task" ? await taskStore.inspectOperation(value.operationId) : await deliverReferenceTaskUpdate(taskStore, value.operationId, {
+            http: { fetch: (url, init) => globalThis.fetch(url, init) },
+            clock: { nowEpochMs: () => Date.now(), nowMonotonicMs: () => performance.now() },
+            telemetry: { record: metric => process.stderr.write(`${JSON.stringify({ type: "provider-http", ...metric })}\n`) },
+          }, { signal: controller.signal });
+        }
+      } else if (command === "seed") {
         await store.seedBinding(value as unknown as ReferenceSeed);
         result = { status: "seeded", bindingId: value.bindingId };
       } else if (command === "seed-caldav-create") {

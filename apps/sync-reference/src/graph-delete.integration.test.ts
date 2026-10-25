@@ -28,7 +28,7 @@ async function confirmed(claim: ReferenceClaim, provider: "accepted" | "uncertai
   if (provider !== "not-dispatched") await store.markDispatch(claim);
   await store.recordEvidence(claim, { provider, ...(provider === "accepted" ? { acceptanceStatus: 204 as const } : {}), remote: "confirmed", observationId: randomUUID() });
 }
-const oids = async () => (await pool.query("SELECT relname,oid FROM pg_class WHERE relname LIKE 'reference_%' AND relkind IN ('r','i') ORDER BY relname")).rows;
+const oids = async () => (await pool.query("SELECT relname,oid FROM pg_class WHERE relname LIKE 'reference_%' AND relname NOT LIKE 'reference_task_%' AND relkind IN ('r','i') ORDER BY relname")).rows;
 let oldOids: unknown, oldRows: unknown, oldAttempts: unknown;
 let oldUpdate: { id: string; claim: ReferenceClaim }, oldDelete: { id: string; claim: ReferenceClaim }, oldCreate: { id: string; claim: ReferenceClaim; eventId: string };
 before(async () => {

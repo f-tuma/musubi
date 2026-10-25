@@ -1,0 +1,4477 @@
+{
+  "schemaVersion": 1,
+  "driver": "google-task-update",
+  "scenarios": [
+    {
+      "id": "fresh-title-update",
+      "title": "Frozen four-field target selects a title-only conditional update",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 200,
+          "body": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\"",
+            "title": "Admitted title",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          200,
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackProjection": {
+          "title": "Admitted title",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "ackValidators": [
+          "\"written\""
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "validator": "\"written\"",
+        "acceptedStatus": 200,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "rich-state-and-due-day",
+      "title": "Rich canonical states and deadline clocks keep the same bounded native projection",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 200,
+          "body": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\"",
+            "title": "Admitted title",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          200,
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackProjection": {
+          "title": "Admitted title",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "ackValidators": [
+          "\"written\""
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "validator": "\"written\"",
+        "acceptedStatus": 200,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      },
+      "taskOverrides": {
+        "status": "cancelled",
+        "due": "2026-10-20T23:59:59.999Z",
+        "priority": 9,
+        "percentComplete": 73,
+        "isAllDay": true
+      }
+    },
+    {
+      "id": "null-clears",
+      "title": "Nullable notes and due clear only the actual frozen four-field target",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 200,
+          "body": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\"",
+            "title": "Admitted title",
+            "notes": null,
+            "status": "completed",
+            "due": null
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title",
+            "notes": null,
+            "status": "completed",
+            "due": null
+          },
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          200,
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title",
+          "notes": null,
+          "status": "completed",
+          "due": null
+        },
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackProjection": {
+          "title": "Admitted title",
+          "notes": null,
+          "status": "completed",
+          "due": null
+        },
+        "ackValidators": [
+          "\"written\""
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "validator": "\"written\"",
+        "acceptedStatus": 200,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      },
+      "taskOverrides": {
+        "description": null,
+        "due": null,
+        "status": "completed"
+      }
+    },
+    {
+      "id": "empty-patch",
+      "title": "No changed native fields still preflight twice and never PATCH",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Admitted title",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Admitted title",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Admitted title",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error"
+        ],
+        "bodies": [
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial"
+        ],
+        "sessions": 2,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200,
+          200
+        ],
+        "preparedPatch": {},
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackProjection": {
+          "title": "Admitted title",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "ackValidators": [
+          "\"accepted\""
+        ],
+        "finishStatuses": [],
+        "providerKind": "not-dispatched",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "confirmed",
+        "possibleDispatch": false,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "recovery-achieved-get-only",
+      "title": "An achieved saved patch reconciles through one GET with a newer native version",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "uncertain",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"newer\"",
+            "title": "Admitted title",
+            "notes": "Untouched concurrent note",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodies": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackProjection": {
+          "title": "Admitted title",
+          "notes": "Untouched concurrent note",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "ackValidators": [
+          "\"newer\""
+        ],
+        "finishStatuses": [],
+        "providerKind": "uncertain",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      },
+      "savedPatch": {
+        "title": "Admitted title"
+      }
+    },
+    {
+      "id": "recovery-unapplied-conditional",
+      "title": "Unapplied recovery preserves original baseline and conditional retry at the same task",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "uncertain",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 200,
+          "body": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\"",
+            "title": "Admitted title",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          200,
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackProjection": {
+          "title": "Admitted title",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "ackValidators": [
+          "\"written\""
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "validator": "\"written\"",
+        "acceptedStatus": 200,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      },
+      "savedPatch": {
+        "title": "Admitted title"
+      }
+    },
+    {
+      "id": "changed-baseline",
+      "title": "A changed baseline is a conflict before another preflight or PATCH",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Concurrent",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodies": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "providerKind": "not-dispatched",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "conflict",
+        "possibleDispatch": false,
+        "errorCode": "task-provider-conflict",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "accepted-bad-json",
+      "title": "Accepted HTTP status survives unusable success JSON or version: accepted-bad-json",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 200,
+          "rawBody": "{"
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          }
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "accepted",
+        "validator": null,
+        "acceptedStatus": 200,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "accepted-missing-tag",
+      "title": "Accepted HTTP status survives unusable success JSON or version: accepted-missing-tag",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 200,
+          "body": {}
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          }
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "accepted",
+        "validator": null,
+        "acceptedStatus": 200,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "errorCode": "task-version-unavailable",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "accepted-weak-tag",
+      "title": "Accepted HTTP status survives unusable success JSON or version: accepted-weak-tag",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 200,
+          "body": {
+            "etag": "W/\"weak\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          }
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "accepted",
+        "validator": null,
+        "acceptedStatus": 200,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "errorCode": "task-version-unavailable",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "quoted-empty-tag",
+      "title": "A valid quoted-empty strong ETag remains opaque native response evidence",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 200,
+          "body": {
+            "etag": "\"\""
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"\"",
+            "title": "Admitted title",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          200,
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackProjection": {
+          "title": "Admitted title",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "ackValidators": [
+          "\"\""
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "validator": "\"\"",
+        "acceptedStatus": 200,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "final-read-throttled",
+      "title": "A throttled readback keeps accepted native status and current retry hint",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 200,
+          "body": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "status": 429,
+          "body": {},
+          "headers": {
+            "retry-after": "17"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          200,
+          429
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "accepted",
+        "validator": "\"written\"",
+        "acceptedStatus": 200,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 429,
+        "retryAfterMs": 17000
+      }
+    },
+    {
+      "id": "prior-uncertain-retry-429",
+      "title": "Older uncertain native evidence survives a current conditional retry refusal",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "uncertain",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 429,
+          "body": {},
+          "headers": {
+            "retry-after": "17"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          }
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          429
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "uncertain",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 429,
+        "retryAfterMs": 17000
+      },
+      "savedPatch": {
+        "title": "Admitted title"
+      }
+    },
+    {
+      "id": "prior-accepted-retry-429",
+      "title": "Older accepted native evidence survives a current conditional retry refusal",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "accepted",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 429,
+          "body": {},
+          "headers": {
+            "retry-after": "17"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          }
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          429
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "accepted",
+        "validator": null,
+        "acceptedStatus": 200,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 429,
+        "retryAfterMs": 17000
+      },
+      "savedPatch": {
+        "title": "Admitted title"
+      },
+      "priorAcceptedStatus": 200
+    },
+    {
+      "id": "current-weak-tag",
+      "title": "A weak current tag cannot become native present update evidence",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "W/\"weak\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodies": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "errorCode": "task-version-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "assigned-docs-task",
+      "title": "Assigned Docs or Spaces tasks never become ordinary writable destinations",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z",
+            "assignmentInfo": {
+              "surfaceType": "DOCUMENT"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodies": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "errorCode": "task-source-read-only",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "initial-404",
+      "title": "Initial 404 is UPDATE conflict and never creation or ACK permission",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 404,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodies": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          404
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "providerKind": "not-dispatched",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "conflict",
+        "possibleDispatch": false,
+        "errorCode": "task-provider-conflict",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "initial-410",
+      "title": "Initial 410 is UPDATE conflict and never creation or ACK permission",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 410,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodies": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          410
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "providerKind": "not-dispatched",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "conflict",
+        "possibleDispatch": false,
+        "errorCode": "task-provider-conflict",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "delivery-401-recovery",
+      "title": "Only the concrete rejected delivery GET recovers once after refresh",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 401,
+          "body": {}
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 200,
+          "body": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\"",
+            "title": "Admitted title",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "recovered",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 1,
+        "mutationMarks": 1,
+        "metrics": [
+          401,
+          200,
+          200,
+          200,
+          200,
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackProjection": {
+          "title": "Admitted title",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "ackValidators": [
+          "\"written\""
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "validator": "\"written\"",
+        "acceptedStatus": 200,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      },
+      "readRecovery": true
+    },
+    {
+      "id": "preflight-401-recovery",
+      "title": "The separate delivery preflight GET retains its one refresh recovery",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 401,
+          "body": {}
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 200,
+          "body": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\"",
+            "title": "Admitted title",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "recovered",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 1,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          401,
+          200,
+          200,
+          200,
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackProjection": {
+          "title": "Admitted title",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "ackValidators": [
+          "\"written\""
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "validator": "\"written\"",
+        "acceptedStatus": 200,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      },
+      "readRecovery": true
+    },
+    {
+      "id": "writer-get-401-no-retry",
+      "title": "The final writer GET401 is never silently retried",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 401,
+          "body": {}
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200,
+          200,
+          401
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 401,
+        "retryAfterMs": null
+      },
+      "readRecovery": true
+    },
+    {
+      "id": "patch-401-no-replay",
+      "title": "A rejected PATCH401 is known refusal without authentication replay",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 401,
+          "body": {}
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          }
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          401
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "rejected",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 401,
+        "retryAfterMs": null
+      },
+      "readRecovery": true
+    },
+    {
+      "id": "second-delivery-401-raw-auth",
+      "title": "The second rejected GET keeps the raw host auth floor and invents no Retry-After",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 401,
+          "body": {}
+        },
+        {
+          "method": "GET",
+          "status": 401,
+          "body": {},
+          "headers": {
+            "retry-after": "999"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error"
+        ],
+        "bodies": [
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "recovered"
+        ],
+        "sessions": 1,
+        "recoveries": 1,
+        "mutationMarks": 0,
+        "metrics": [
+          401,
+          401
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null
+      },
+      "readRecovery": true
+    },
+    {
+      "id": "legacy-malformed-notes",
+      "title": "Existing native notes conversion stays permissive before a bounded repair",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": 42,
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": 42,
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": 42,
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": 42,
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 200,
+          "body": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\"",
+            "title": "Admitted title",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title",
+            "notes": "Notes"
+          },
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          200,
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title",
+          "notes": "Notes"
+        },
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackProjection": {
+          "title": "Admitted title",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "ackValidators": [
+          "\"written\""
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "validator": "\"written\"",
+        "acceptedStatus": 200,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "strict-malformed-notes",
+      "title": "Strict reference explicitly refuses malformed native notes",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": 42,
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": 42,
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodies": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "errorCode": "task-projection-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "legacy-malformed-due",
+      "title": "Existing native due conversion stays permissive before a bounded repair",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "12345T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": 12345
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": 12345
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": 12345
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 200,
+          "body": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\"",
+            "title": "Admitted title",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title",
+            "due": "2026-10-20T00:00:00.000Z"
+          },
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          200,
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackProjection": {
+          "title": "Admitted title",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "ackValidators": [
+          "\"written\""
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "validator": "\"written\"",
+        "acceptedStatus": 200,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "strict-malformed-due",
+      "title": "Strict reference explicitly refuses malformed native due",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "12345T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": 12345
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodies": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "errorCode": "task-projection-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "legacy-any-ok-and-redirect-floor",
+      "title": "Existing any-ok reads and default-follow PATCH response handling remain unchanged",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 206,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          },
+          "headers": {
+            "content-range": "items 0-0/2"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 201,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 201,
+          "body": {
+            "etag": "\"written\""
+          },
+          "responseUrl": "other",
+          "redirected": true
+        },
+        {
+          "method": "GET",
+          "status": 206,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\"",
+            "title": "Admitted title",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          206,
+          201,
+          200,
+          201,
+          206
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackProjection": {
+          "title": "Admitted title",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "ackValidators": [
+          "\"written\""
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "validator": "\"written\"",
+        "acceptedStatus": 201,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "musubi-untouched-readback",
+      "title": "Final readback applies the explicit musubi field-comparison policy",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 200,
+          "body": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\"",
+            "title": "Admitted title",
+            "notes": "Concurrent untouched note",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          200,
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackProjection": {
+          "title": "Admitted title",
+          "notes": "Concurrent untouched note",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "ackValidators": [
+          "\"written\""
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "validator": "\"written\"",
+        "acceptedStatus": 200,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "reference-untouched-readback",
+      "title": "Final readback applies the explicit reference field-comparison policy",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 200,
+          "body": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\"",
+            "title": "Admitted title",
+            "notes": "Concurrent untouched note",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          "error",
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          200,
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "accepted",
+        "validator": "\"written\"",
+        "acceptedStatus": 200,
+        "remoteKind": "conflict",
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "musubi-lost-reply",
+      "title": "A lost PATCH reply uses explicit musubi observation policy without blind resend",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "error": "lost-reply"
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          }
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          "network-error"
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "uncertain",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "reference-lost-reply",
+      "title": "A lost PATCH reply uses explicit reference observation policy without blind resend",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "error": "lost-reply"
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\"",
+            "title": "Admitted title",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          "error",
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          "network-error",
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackProjection": {
+          "title": "Admitted title",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "ackValidators": [
+          "\"written\""
+        ],
+        "finishStatuses": [],
+        "providerKind": "uncertain",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "recovery-achieved-without-old-tag",
+      "title": "Achieved recovery reads and ACKs without inventing an original dispatch tag",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "uncertain",
+      "acceptedEtag": null,
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"newer\"",
+            "title": "Admitted title",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodies": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackProjection": {
+          "title": "Admitted title",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "ackValidators": [
+          "\"newer\""
+        ],
+        "finishStatuses": [],
+        "providerKind": "uncertain",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      },
+      "savedPatch": {
+        "title": "Admitted title"
+      }
+    },
+    {
+      "id": "strict-accepted-missing-tag-readback",
+      "title": "Strict reference repairs an accepted response without a tag by exact GET only",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 200,
+          "body": {}
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\"",
+            "title": "Admitted title",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          "error",
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          200,
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackProjection": {
+          "title": "Admitted title",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "ackValidators": [
+          "\"written\""
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "validator": null,
+        "acceptedStatus": 200,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "legacy-deleted-flag-floor",
+      "title": "Existing Google host preserves its native deleted and hidden flag floor",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z",
+            "deleted": true,
+            "hidden": true
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z",
+            "deleted": true,
+            "hidden": true
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z",
+            "deleted": true,
+            "hidden": true
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 200,
+          "body": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\"",
+            "title": "Admitted title",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z",
+            "deleted": true,
+            "hidden": true
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          200,
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackProjection": {
+          "title": "Admitted title",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "ackValidators": [
+          "\"written\""
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "validator": "\"written\"",
+        "acceptedStatus": 200,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "strict-deleted-task",
+      "title": "Strict reference refuses an inactive or malformed deleted native task",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z",
+            "deleted": true
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodies": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "providerKind": "not-dispatched",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "errorCode": "task-provider-conflict",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "strict-malformed-deleted",
+      "title": "Strict reference refuses an inactive or malformed deleted native task",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z",
+            "deleted": "malformed"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodies": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "errorCode": "task-projection-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "legacy-malformed-raw-due-floor",
+      "title": "Existing raw due String conversion retains its day-only malformed response floor",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20garbage"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20garbage"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20garbage"
+          }
+        },
+        {
+          "method": "PATCH",
+          "status": 200,
+          "body": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\"",
+            "title": "Admitted title",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          null,
+          {
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          200,
+          200
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackProjection": {
+          "title": "Admitted title",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "ackValidators": [
+          "\"written\""
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "validator": "\"written\"",
+        "acceptedStatus": 200,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "strict-malformed-raw-due",
+      "title": "Strict native proof refuses raw due garbage even when String projection looks valid",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20garbage"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodies": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          200
+        ],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "validator": null,
+        "acceptedStatus": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "errorCode": "task-projection-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    }
+  ]
+}

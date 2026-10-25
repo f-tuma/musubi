@@ -1,4 +1,5 @@
 import type { GoogleNativeReadEvidence, GoogleNativeDeleteReadEvidence, GoogleNativeCreateReadEvidence, GoogleProviderPorts, GoogleDeleteProviderPorts, GoogleCreateProviderPorts } from "@musubi/provider-google";
+import type { GoogleTaskProviderPorts, GoogleNativeTaskReadEvidence } from "@musubi/provider-google";
 import type { MicrosoftCreateProviderPorts, MicrosoftNativeCreateReadEvidence, MicrosoftDeleteProviderPorts, MicrosoftNativeDeleteReadEvidence } from "@musubi/provider-microsoft";
 import type { CaldavCreateProviderPorts, CaldavNativeCreateReadEvidence, CaldavDeleteProviderPorts, CaldavNativeDeleteReadEvidence } from "@musubi/provider-caldav";
 import type { CaldavPersonalContentOperation } from "./caldav_personal_content";
@@ -184,6 +185,11 @@ export type GooglePersonalContentV1Bridge = {
   normalizeObservation(read: GoogleNativeReadEvidence): CreatedEventEvidence | null;
 };
 
+export type GoogleTaskUpdateV1Bridge = {
+  ports: Omit<GoogleTaskProviderPorts, "beforeMutation" | "onAcceptedResponse">;
+  normalizeObservation(read: GoogleNativeTaskReadEvidence): TaskReadEvidence | null;
+};
+
 export type GooglePersonalDeleteV1Bridge = {
   ports: Omit<GoogleDeleteProviderPorts, "beforeMutation">;
   normalizeObservation(read: GoogleNativeDeleteReadEvidence): CreatedEventEvidence | null;
@@ -215,6 +221,8 @@ export type CaldavPersonalDeleteV1Bridge = {
 };
 
 export type CalendarAdapter = {
+  googleTaskUpdateV1?(userID: string, accountID: string,
+    capture: Pick<AcceptedEventUpdateContext, "connectionId" | "connectionGeneration">): GoogleTaskUpdateV1Bridge;
   caldavPersonalCreateV1?(userID: string, accountID: string,
     capture: Pick<AcceptedEventUpdateContext, "connectionId" | "connectionGeneration">): CaldavPersonalCreateV1Bridge;
   microsoftPersonalCreateV1?(userID: string, accountID: string,

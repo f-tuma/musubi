@@ -29,7 +29,7 @@ function observation(f: { operationId: string; calendarId: string }, id = "assig
 async function accepted(f: { claim: ReferenceClaim }, id = "assigned-native-id", validator: string | null = "raw-acceptance-value") {
   await store.markDispatch(f.claim); await store.recordGraphCreateEvidence(f.claim, { provider: "accepted", candidateEventId: id, createAcceptance: { status: 201, validator }, remote: "confirmed", observationId: randomUUID() });
 }
-const oids = async () => (await pool.query("SELECT relname,oid FROM pg_class WHERE relname LIKE 'reference_%' AND relkind IN ('r','i') ORDER BY relname")).rows;
+const oids = async () => (await pool.query("SELECT relname,oid FROM pg_class WHERE relname LIKE 'reference_%' AND relname NOT LIKE 'reference_task_%' AND relkind IN ('r','i') ORDER BY relname")).rows;
 const newColumns = ["create_profile", "create_candidate_id", "create_acceptance_validator", "create_acceptance_status", "caldav_create_acceptance_status"];
 async function oldRows() { const result: Record<string, unknown> = {}; for (const table of ["reference_connections", "reference_objects", "reference_bindings", "reference_operations", "reference_attempts"]) result[table] = (await pool.query(`SELECT * FROM ${table} ORDER BY id`)).rows.map(value => Object.fromEntries(Object.entries(value).filter(([key]) => !newColumns.includes(key)))); return result; }
 let beforeRows: unknown, beforeOids: unknown; const old: { action: string; id: string; eventId: string; claim: ReferenceClaim }[] = [];
