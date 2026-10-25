@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { strictCaldavResourceURL } from "@musubi/provider-caldav";
 import { SyncOperationEnvelopeSchema, SyncDeliveryReceiptSchema, type SyncOperationEnvelope, type SyncDeliveryReceipt } from "@musubi/types";
 import { encodeEventV1, parseNativeWritePlanV1, matchesPinnedProjectionV1 } from "@musubi/sync-codec";
-import type { ReferenceAdmission, ReferenceCapture, ReferenceContent, ReferenceContentPatch, ReferenceDeleteAdmission, ReferenceCreateAdmission, ReferenceGraphDeleteAdmission, ReferenceCaldavDeleteAdmission } from "./model.js";
+import type { ReferenceAdmission, ReferenceCapture, ReferenceContent, ReferenceContentPatch, ReferenceDeleteAdmission, ReferenceCreateAdmission, ReferenceGraphDeleteAdmission, ReferenceCaldavDeleteAdmission, ReferenceGraphCreateAdmission } from "./model.js";
 
 function ownRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype &&
@@ -68,6 +68,30 @@ export function strongEtag(value: unknown): value is string { return typeof valu
 /** Graph's original weak validator is a preflight comparison, never strong CAS. */
 export function graphDeleteEtag(value: unknown): value is string { return typeof value === "string" && /^W\/"[\x21\x23-\x7e\x80-\xff]+"$/.test(value); }
 export const REFERENCE_GRAPH_DELETE_PROFILE = "microsoft-personal-event-delete-v1";
+export const REFERENCE_GRAPH_CREATE_PROFILE = "microsoft-personal-event-create-v1";
+export function graphCreateAdmissionFingerprint(input: ReferenceGraphCreateAdmission): string {
+  // The real encoder requires a UUID transactionId. This new reference-only
+  // admission restriction does not change opaque runtime or old operation IDs.
+  deleteAdmissionFingerprint(input); referenceCreateOperationID(input.operationId);
+  return createHash("sha256").update(JSON.stringify([REFERENCE_GRAPH_CREATE_PROFILE, input.bindingId, input.expectedRevision, input.operationId])).digest("hex");
+}
+export function acceptedGraphCreateEnvelope(input: ReferenceGraphCreateAdmission, content: ReferenceContent, host: {
+  objectId: string; connectionId: string; calendarId: string; capture: ReferenceCapture;
+}): SyncOperationEnvelope {
+  graphCreateAdmissionFingerprint(input); validateContent(content);
+  const encoded = encodeEventV1("microsoft", { id: host.objectId, creatorID: "reference", organizer: "", title: content.name, color: "",
+    start: new Date(content.beginsAt), end: new Date(content.endsAt), calendars: [], isCanceled: false, isAllDay: false,
+    hasAttendees: false, description: content.notes, location: content.place, recurrence: null }, undefined,
+  { action: "create", operationId: input.operationId, acceptedAt: "2026-01-01T00:00:00.000Z" });
+  const plan = parseNativeWritePlanV1(encoded.serializer, "create", "event", encoded.nativePlan.data);
+  if (!plan || plan.planKind !== "json-body" || !plan.body || plan.body.transactionId !== input.operationId || Object.hasOwn(plan.body, "id") ||
+    !matchesPinnedProjectionV1(encoded.serializer, "create", encoded.admittedProjection.data, plan)) throw new Error("Reference Graph CREATE codec disagreement");
+  return SyncOperationEnvelopeSchema.parse({ schemaVersion: 1, profileVersion: "sync-profile-v1", operation: { kind: "event", action: "create", version: 1 },
+    serializer: encoded.serializer, commandId: input.commandId, operationId: input.operationId, hostObjectId: host.objectId,
+    locator: { provider: "microsoft", connectionId: host.connectionId, collectionId: host.calendarId, resourceId: null },
+    sourceEpoch: { sourceId: input.bindingId, generation: host.capture.sourceGeneration }, acceptedRevision: host.capture.acceptedRevision,
+    privacyEpoch: String(host.capture.privacyGeneration), allowedSideEffects: ["provider-content-write"], admittedProjection: encoded.admittedProjection, nativePlan: encoded.nativePlan });
+}
 export const REFERENCE_CALDAV_DELETE_PROFILE = "caldav-personal-event-delete-v1";
 export function caldavUid(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && value.length <= 2048 && !/[\r\n\0]/.test(value);
@@ -132,10 +156,13 @@ export function acceptedDeleteEnvelope(input: ReferenceDeleteAdmission, content:
 }
 
 /** The existing v1 identity is tied to the operation, never the attempt or a clock. */
-export function referenceCreateEventID(operationId: string): string {
+export function referenceCreateOperationID(operationId: string): string {
   if (typeof operationId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(operationId))
     throw new Error("Invalid reference CREATE identity");
-  return `musubi${operationId.replace(/-/g, "")}`;
+  return operationId;
+}
+export function referenceCreateEventID(operationId: string): string {
+  return `musubi${referenceCreateOperationID(operationId).replace(/-/g, "")}`;
 }
 export function createAdmissionFingerprint(input: ReferenceCreateAdmission): string {
   referenceCreateEventID(input.operationId);

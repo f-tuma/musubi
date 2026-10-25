@@ -2,7 +2,7 @@
   "name": "@musubi/provider-microsoft",
   "private": true,
   "type": "module",
-  "description": "Storage-free guarded Microsoft personal event DELETE transport with explicit host ports.",
+  "description": "Storage-free Microsoft personal event CREATE and guarded DELETE transport with explicit host ports.",
   "main": "./src/index.ts",
   "exports": { ".": "./src/index.ts" },
   "scripts": { "test": "node --import tsx src/index.test.ts" },

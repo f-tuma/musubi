@@ -1,4 +1,4 @@
-# Microsoft personal event DELETE provider
+# Microsoft personal event provider
 
 This storage-free package implements one bounded Graph v1.0 personal timed,
 non-recurring event DELETE transport. Hosts supply credentials, HTTP, clocks,
@@ -24,3 +24,31 @@ Host storage determines durability: reference retains the acceptance status
 across restart; Musubi's existing outbox conservatively resumes with uncertainty.
 
 Run the injected-port tests with `pnpm --filter @musubi/provider-microsoft test`.
+
+## Timed personal CREATE
+
+`createMicrosoftPersonalEventCreateProvider(ports, { nativeProfile })` also accepts
+the exact frozen `microsoft-personal-event@1` timed, nonrecurring CREATE body.
+Its canonical operation UUID must equal `transactionId`; Graph assigns the event
+ID. Each mutation opens a fresh attested session, verifies the refreshed write
+grant, then invokes the host fence before one POST. Native 200/201/204 acceptance
+requires a nonempty returned ID and retains any string ETag, including an empty
+string. A lost response never triggers an internal retry.
+
+The `existing-microsoft` profile preserves Musubi's original calendar `canEdit`
+preflight, including its default-follow redirect and successful-status semantics.
+Recovery consumes the complete original calendar-scoped listing with the UTC
+Prefer header and bounded, same-path pagination. The selected native JSON reaches
+the host's actual normalizer before content comparison. A missing marker, failed
+page, duplicate candidate, cancelled event or recurring candidate cannot authorize
+a second POST. `transactionId` correlation does not promise unlimited provider
+deduplication or retention.
+
+The `strict-reference` profile separately requires an owned writable calendar,
+complete personal native flags and exact read response identity. This profile
+requests the Graph body explicitly as text; the ETag remains a nullable response
+annotation rather than an entity property in `$select`. The runtime records raw
+POST acceptance before independent correlated readback and requires a
+native weak or null readback validator before ACK. Neither profile claims CAS or
+an exact POST response-URL guarantee. These injected-port tests do not prove live
+Microsoft service behavior.

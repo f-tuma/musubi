@@ -2,12 +2,12 @@
   "name": "@musubi/sync-reference",
   "private": true,
   "type": "module",
-  "description": "Independent durable host for bounded Google operations, Microsoft guarded DELETE and CalDAV conditional DELETE.",
+  "description": "Independent durable host for bounded Google operations, Microsoft guarded DELETE/one-shot CREATE and CalDAV conditional DELETE.",
   "scripts": {
     "start": "tsx src/cli.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx src/admission.test.ts && tsx src/runner.test.ts && tsx src/delete.test.ts && tsx src/create.test.ts && tsx src/graph-delete.test.ts && tsx src/caldav-delete.test.ts",
-    "test:db": "tsx src/store.integration.test.ts && tsx src/process.integration.test.ts && tsx src/delete.integration.test.ts && tsx src/delete-process.integration.test.ts && tsx src/create.integration.test.ts && tsx src/create-process.integration.test.ts && tsx src/graph-delete.integration.test.ts && tsx src/graph-delete-process.integration.test.ts && tsx src/caldav-delete.integration.test.ts && tsx src/caldav-delete-process.integration.test.ts"
+    "test": "tsx src/admission.test.ts && tsx src/runner.test.ts && tsx src/delete.test.ts && tsx src/create.test.ts && tsx src/graph-delete.test.ts && tsx src/caldav-delete.test.ts && tsx src/graph-create.test.ts",
+    "test:db": "tsx src/store.integration.test.ts && tsx src/process.integration.test.ts && tsx src/delete.integration.test.ts && tsx src/delete-process.integration.test.ts && tsx src/create.integration.test.ts && tsx src/create-process.integration.test.ts && tsx src/graph-delete.integration.test.ts && tsx src/graph-delete-process.integration.test.ts && tsx src/caldav-delete.integration.test.ts && tsx src/caldav-delete-process.integration.test.ts && tsx src/graph-create.integration.test.ts && tsx src/graph-create-process.integration.test.ts"
   },
   "dependencies": {
     "@musubi/provider-caldav": "workspace:*",

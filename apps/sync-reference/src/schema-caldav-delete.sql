@@ -6,12 +6,19 @@ ALTER TABLE reference_connections DROP CONSTRAINT IF EXISTS reference_connection
 ALTER TABLE reference_connections ADD CONSTRAINT reference_connections_provider_check CHECK (provider IN ('google','microsoft','caldav'));
 ALTER TABLE reference_operations DROP CONSTRAINT IF EXISTS reference_operations_provider_check;
 ALTER TABLE reference_operations ADD CONSTRAINT reference_operations_provider_check CHECK (provider IN ('google','microsoft','caldav'));
-ALTER TABLE reference_operations DROP CONSTRAINT IF EXISTS reference_operations_provider_profile_check;
-ALTER TABLE reference_operations ADD CONSTRAINT reference_operations_provider_profile_check CHECK (
-  provider='google' AND endpoint_profile='google-personal-event-'||action||'-v1' OR
-  provider='microsoft' AND action='delete' AND endpoint_profile='microsoft-personal-event-delete-v1' OR
-  provider='caldav' AND action='delete' AND endpoint_profile='caldav-personal-event-delete-v1'
-);
+-- Later Microsoft CREATE owns a wider action/profile constraint. Preserve it
+-- while rerunning this earlier migration on an already upgraded ledger.
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='reference_operations'::regclass AND conname='reference_operations_provider_profile_check') OR
+     NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='reference_bindings' AND column_name='create_profile') THEN
+    ALTER TABLE reference_operations DROP CONSTRAINT IF EXISTS reference_operations_provider_profile_check;
+    ALTER TABLE reference_operations ADD CONSTRAINT reference_operations_provider_profile_check CHECK (
+      provider='google' AND endpoint_profile='google-personal-event-'||action||'-v1' OR
+      provider='microsoft' AND action='delete' AND endpoint_profile='microsoft-personal-event-delete-v1' OR
+      provider='caldav' AND action='delete' AND endpoint_profile='caldav-personal-event-delete-v1'
+    );
+  END IF;
+END $$;
 ALTER TABLE reference_operations DROP CONSTRAINT IF EXISTS reference_operations_accepted_uid_check;
 ALTER TABLE reference_operations ADD CONSTRAINT reference_operations_accepted_uid_check CHECK (
   CASE WHEN provider='caldav' THEN accepted_uid IS NOT NULL AND length(accepted_uid) BETWEEN 1 AND 2048

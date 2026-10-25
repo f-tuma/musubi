@@ -43,13 +43,14 @@ before(async () => {
     const claim = await store.claim(id, randomUUID()); assert(claim); await store.markDispatch(claim);
     await store.recordEvidence(claim, { provider: "accepted", remote: "confirmed", ...(action.includes("delete") ? { acceptanceStatus: 204 as const } : { validator: '"old-accepted"' }) }); old.push({ action, id, claim, eventId });
   }
-  beforeOids = await oids(); beforeRows = await oldRows(); beforeAttempts = (await pool.query("SELECT * FROM reference_attempts ORDER BY id")).rows;
+  beforeOids = await oids(); beforeRows = await oldRows(); beforeAttempts = (await pool.query("SELECT id,operation_id,dispatch_possible,recovery,receipt,code,created_at,updated_at,delete_acceptance_status FROM reference_attempts ORDER BY id")).rows;
   await store.migrate();
 });
 after(async () => { await pool.end(); try { await admin.query(`DROP DATABASE "${name}"`); } finally { await admin.end(); } });
 
 test("populated Google CREATE/UPDATE/DELETE and Graph upgrade preserves old identities, immutable payloads and historical receipts", async () => {
-  await store.migrate(); assert.deepEqual(await oids(), beforeOids); assert.deepEqual(await oldRows(), beforeRows); assert.deepEqual((await pool.query("SELECT * FROM reference_attempts ORDER BY id")).rows, beforeAttempts);
+  await store.migrate(); assert.deepEqual(await oids(), beforeOids); assert.deepEqual(await oldRows(), beforeRows); assert.deepEqual((await pool.query("SELECT id,operation_id,dispatch_possible,recovery,receipt,code,created_at,updated_at,delete_acceptance_status FROM reference_attempts ORDER BY id")).rows, beforeAttempts);
+  assert.equal((await pool.query("SELECT count(*) FROM reference_attempts WHERE create_candidate_id IS NOT NULL OR create_acceptance_status IS NOT NULL OR create_acceptance_validator IS NOT NULL")).rows[0].count, "0");
   assert.equal((await pool.query("SELECT count(*) FROM reference_operations WHERE accepted_uid IS NOT NULL")).rows[0].count, "0");
   for (const item of old) {
     const ok = item.action === "create" ? await store.completeCreate(item.claim, { eventId: item.eventId, etag: '"old-accepted"', projection: projection(content) })

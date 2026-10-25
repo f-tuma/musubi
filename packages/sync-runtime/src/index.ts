@@ -17,4 +17,7 @@ export { runClaimedMicrosoftPersonalDelete, supportsMicrosoftPersonalDeleteEnvel
 
 export * from "./caldav-delete-ports";
 export * from "./caldav-delete-trace";
+export * from "./microsoft-create-ports";
+export * from "./microsoft-personal-create";
+export * from "./microsoft-create-trace";
 export { runClaimedCaldavPersonalDelete, supportsCaldavPersonalDeleteEnvelope } from "./caldav-personal-delete";

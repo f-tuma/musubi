@@ -59,7 +59,7 @@ before(async () => {
   assert.equal(await store.completeDelete(deleteClaim, { kind: "exact-absence", read: { kind: "absent", status: 404 } }), true);
   oldOids = await rows();
   oldPayloads = (await pool.query("SELECT id,payload,receipt,dispatch_possible,delete_acceptance_status FROM reference_operations ORDER BY id")).rows;
-  oldAttempts = (await pool.query("SELECT * FROM reference_attempts ORDER BY id")).rows;
+  oldAttempts = (await pool.query("SELECT id,operation_id,dispatch_possible,recovery,receipt,code,created_at,updated_at,delete_acceptance_status FROM reference_attempts ORDER BY id")).rows;
   await store.migrate();
 });
 after(async () => { await pool.end(); try { await admin.query(`DROP DATABASE "${name}"`); } finally { await admin.end(); } });
@@ -68,7 +68,8 @@ test("populated C05/C07 upgrade preserves tables, indexes, payloads, receipt/sta
   await store.migrate(); await store.migrate();
   assert.deepEqual(await rows(), oldOids);
   assert.deepEqual((await pool.query("SELECT id,payload,receipt,dispatch_possible,delete_acceptance_status FROM reference_operations ORDER BY id")).rows, oldPayloads);
-  assert.deepEqual((await pool.query("SELECT * FROM reference_attempts ORDER BY id")).rows, oldAttempts);
+  assert.deepEqual((await pool.query("SELECT id,operation_id,dispatch_possible,recovery,receipt,code,created_at,updated_at,delete_acceptance_status FROM reference_attempts ORDER BY id")).rows, oldAttempts);
+  assert.equal((await pool.query("SELECT count(*) FROM reference_attempts WHERE create_candidate_id IS NOT NULL OR create_acceptance_status IS NOT NULL OR create_acceptance_validator IS NOT NULL")).rows[0].count, "0");
   assert.equal(await store.complete(legacyUpdate.claim, { etag: '"legacy-written"', projection: projection(legacyUpdate.content) }), true);
   const op = await store.inspectOperation(legacyUpdate.operationId); assert.equal(op.status, "acked"); assert.equal(op.action, "update");
   assert.equal((await pool.query("SELECT count(*) FROM pg_constraint WHERE contype='f' AND conrelid IN ('reference_bindings'::regclass,'reference_operations'::regclass,'reference_attempts'::regclass)")).rows[0].count, "6");

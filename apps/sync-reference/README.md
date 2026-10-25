@@ -1,6 +1,6 @@
 # Independent sync reference host
 
-C05–C07 / MUSU-37–39 runs bounded Google personal event CREATE, UPDATE and DELETE profiles, a separate Microsoft guarded personal DELETE profile and a CalDAV conditional personal DELETE profile with its own
+C05–C07 / MUSU-37–39 runs bounded Google personal event CREATE, UPDATE and DELETE profiles, separate Microsoft guarded personal DELETE and one-shot personal CREATE profiles, and a CalDAV conditional personal DELETE profile with its own
 PostgreSQL ledger. It uses the C04 native provider ports, the C06 shared `@musubi/sync-runtime`
 already-claimed runner and the published v1 schema/plan validator, with no dependency on Musubi DB, auth, app config or API.
 Its content model is `ReferenceContent`, not a Musubi Event or Task.
@@ -43,6 +43,8 @@ stdin return a safe error code.
 | `admit-graph-delete` | `{bindingId, expectedRevision, commandId, operationId}` | Atomically CAS the canonical object to tombstoned and capture one guarded Microsoft DELETE |
 | `seed-caldav-delete` | `ReferenceCaldavDeleteSeed` | Bootstrap an exact HTTPS collection/resource URL, existing UID, original strong ETag and Basic credentials with explicit provider/profile |
 | `admit-caldav-delete` | `{bindingId, expectedRevision, commandId, operationId}` | Atomically tombstone and capture one conditional DAV DELETE; this new reference command requires a lowercase UUID operation ID |
+| `seed-graph-create` | `ReferenceGraphCreateSeed` | Reserve one Microsoft target with unknown native ID, explicit create profile and canonical UUID operation identity |
+| `admit-graph-create` | `{bindingId, expectedRevision, commandId, operationId}` | Atomically commit the canonical revision and immutable Graph CREATE plan whose admitted native resource ID stays null |
 | `deliver` | `{operationId}` | Claim and run one bounded attempt |
 | `show` | `{operationId}` | Inspect operation, capture, receipt and binding without credentials |
 
@@ -194,6 +196,67 @@ flag, marker reset or admitted-validator rewrite. Musubi's separately admitted
 first-attempt resolution flow remains a host-owned policy and is not exposed
 by this reference CLI. Google conditional recovery remains unchanged.
 
+## Microsoft one-shot personal CREATE
+
+`seed-graph-create` takes explicit `provider: "microsoft"`,
+`endpointProfile: "microsoft-personal-event-create-v1"`, `connectionId`,
+`objectId`, `bindingId`, physical `calendarId`, lowercase UUID `operationId`,
+`accessToken`, `expiresAt`, `scope`, `content` and optional `privacyLabel`.
+The current OAuth scope must contain the exact `Calendars.ReadWrite` token.
+No event ID, ETag or baseline is asserted for this reservation. Bootstrap is
+not fresh native permission or ownership evidence.
+
+Admission uses the actual v1 Microsoft encoder. Its operation UUID fixes
+`transactionId` and the complete timed nonrecurring JSON body. The encoder's
+Microsoft projection normalizes nullable text while this host retains its own
+`ReferenceContent`. The required codec context time is inert for this serializer;
+it creates no timestamp or native identity. The immutable operation locator and
+SQL `event_id` remain NULL forever, including after completion. Graph's returned
+ID belongs to separate native evidence and eventually the binding.
+
+An immutable binding `create_profile` distinguishes this reservation from
+Google's deterministic native ID. Only the Microsoft CREATE profile may reserve
+an unknown ID or retain a present/absent binding with nullable native validator.
+Atomic adoption installs the returned ID, exact confirmed projection and original
+weak-or-null readback ETag, then ACKs and advances this host's source generation.
+Old Google strong-validator and reservation rules remain unchanged. Earlier
+migrations preserve later provider/profile constraints when rerun; populated
+upgrade and repeat-migrate tests include adopted Graph rows with NULL ETags.
+
+Fresh reference delivery proves the current Microsoft principal, exact editable
+calendar and matching owner. This is deliberately stricter than Musubi's existing
+single calendar permission request. It sends one POST with no conditional header,
+persists native acceptance before verification, then completes the entire scoped
+collection listing and requires exactly one `transactionId` match. Strict listing
+requests UTC and plain-text body representation; HTML despite that preference is
+not normalized by this reference host. The ETag annotation is read from the
+response, not named as a selectable Graph property.
+
+Native candidate ID, acceptance status and raw response validator are durable
+operation/attempt sidecars. The validator column contains `JSON.stringify`
+encoded text (SQL NULL means native NULL), so empty, malformed, NUL and unpaired
+UTF-16 strings round-trip honestly. Only the new Graph CREATE DTO decodes this
+metadata. It is never installed as a conditional validator in the shared receipt.
+Readback separately requires a real native weak ETag or explicit NULL. A prior
+accepted or uncertain provider fact remains separate from remote confirmation.
+
+Candidate identity is monotonic. Neither stale attempts nor a later different
+unique ID can rewrite it. A confirmed uncertain read can capture a candidate
+without inventing an accepted POST response; that candidate also fences restart
+recovery after a process dies before ACK. Scope occupancy collisions, stale
+leases, changed source/connection/privacy/canonical authority and cancelled
+waiting transactions refuse adoption without a partial binding update. Actual
+native evidence remains durable independently of failed host ACK.
+
+Possible dispatch is a permanent one-shot marker, including a killed worker
+before HTTP, uncertain replies and known rejected 429 responses. Restart recovery
+only reads the complete collection; zero matches, duplicate markers, incomplete
+listing, changed content/identity or unsupported native scope never authorize a
+second POST. Retry-After still delays the next observation. This reference also
+keeps a rejected response on HOLD if a matching resource later appears; it does
+not manufacture native acceptance or provide resolution/supersession. The existing
+pending-binding barrier prevents another intent while the outcome is unresolved.
+
 ## CalDAV conditional personal DELETE
 
 `seed-caldav-delete` requires `provider: "caldav"`,
@@ -274,6 +337,10 @@ waiting-lock cancellation. Its process corpus kills actual admission/delivery
 processes, proves same-version conditional retry after interrupted dispatch,
 refuses changed UID/version and unsupported scope, and verifies exact absence
 without disclosing native alarms/extensions or credentials.
+The Graph CREATE storage/process corpora preserve all older Google/Graph/DAV
+profiles through migration, enforce unknown admitted identity and one-shot
+recovery, test nullable readback and lossless raw acceptance metadata, and kill
+actual workers before/after dispatch, candidate persistence and atomic ACK.
 Provider metrics count requests whose dispatch reaches the telemetry boundary.
 They are not a durable exactly-once audit across a process kill inside HTTP.
 

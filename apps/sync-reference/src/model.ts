@@ -11,7 +11,7 @@ export interface ReferenceClaim {
   readonly envelope?: SyncOperationEnvelope;
   readonly binding: SyncOperationRowBinding;
   readonly capture: ReferenceCapture;
-  readonly locator: { connectionId: string; calendarId: string; eventId: string };
+  readonly locator: { connectionId: string; calendarId: string; eventId: string | null };
   readonly etag: string | null;
   readonly receipt: SyncDeliveryReceipt;
   readonly recovery: boolean;
@@ -20,6 +20,7 @@ export interface ReferenceClaim {
   readonly endpointProfile?: string;
   readonly attemptNumber?: number;
   readonly acceptedUid?: string | null;
+  readonly graphCreate?: ReferenceGraphCreateNativeEvidence;
 }
 export type ReferenceStatus = "pending" | "running" | "hold" | "conflict" | "acked";
 export interface ReferenceOperation {
@@ -30,6 +31,7 @@ export interface ReferenceOperation {
   deleteAcceptanceStatus: ReferenceDeleteAcceptanceStatus | null;
   dispatchPossible: boolean; receipt: SyncDeliveryReceipt;
   acceptedUid?: string | null;
+  graphCreate?: ReferenceGraphCreateNativeEvidence & { bindingEventId: string | null };
   leaseAttemptId: string | null; leaseUntil: string | null;
   binding: { etag: string | null; baseline: Record<string, unknown> | null; active: boolean; sourceGeneration: number; destinationLifecycle: "reserved" | "present" | "absent" };
 }
@@ -58,6 +60,27 @@ export interface ReferenceCaldavDeleteSeed {
 }
 export type ReferenceCaldavDeleteAdmission = ReferenceDeleteAdmission;
 export type ReferenceCaldavDeleteObservation = ReferenceGraphDeleteObservation;
+export interface ReferenceGraphCreateSeed extends Omit<ReferenceSeed, "eventId" | "etag"> {
+  provider: "microsoft"; endpointProfile: "microsoft-personal-event-create-v1"; operationId: string;
+}
+export type ReferenceGraphCreateAdmission = ReferenceDeleteAdmission;
+/** Native CREATE response/correlation data, separate from admitted identity and
+ * conditional-write validators. NULL acceptance status means no response fact. */
+export interface ReferenceGraphCreateNativeEvidence {
+  candidateEventId: string | null; acceptanceValidator: string | null; acceptanceStatus: 200 | 201 | 204 | null;
+}
+export interface ReferenceGraphCreateEvidence extends ReferenceEvidence {
+  candidateEventId?: string;
+  createAcceptance?: { status: 200 | 201 | 204; validator: string | null };
+}
+export interface ReferenceGraphCreateObservation {
+  kind: "correlated-readback";
+  eventId: string; etag: string | null; projection: Record<string, unknown>;
+  read: Extract<import("@musubi/provider-microsoft").MicrosoftNativeCreateReadEvidence, { kind: "present" }>;
+  /** The trusted provider port returns present only after completing its scoped
+   * collection traversal and refusing duplicate markers. Never an HTTP absence. */
+  correlation: { kind: "complete-scoped-listing"; operationId: string; calendarId: string; matches: 1 };
+}
 export type ReferenceCreateAdmission = ReferenceDeleteAdmission;
 /** Bootstrap a new destination reservation; never pretend it has a native validator. */
 export interface ReferenceCreateSeed extends Omit<ReferenceSeed, "eventId" | "etag"> { operationId: string }

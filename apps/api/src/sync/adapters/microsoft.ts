@@ -29,6 +29,8 @@ import {
 } from "@musubi/types";
 import type {
   CalendarAdapter,
+  CreatedEventEvidence,
+  MicrosoftPersonalCreateV1Bridge,
   CalendarDiscoveryResult,
   ExternalCalendarInfo,
   FetchChangesResult,
@@ -1206,27 +1208,43 @@ export async function fetchMicrosoftCalendars(
   return calendars;
 }
 
+/** Shared owned OAuth incarnation/session port; logical account IDs remain host addresses. */
+function microsoftEventDeliveryPorts(userID: string, accountID: string, capture: { connectionId: string; connectionGeneration: number }): MicrosoftPersonalCreateV1Bridge["ports"] {
+  const currentCredentials = async () => {
+    const credentials = await getOAuthCredentials(userID, "microsoft", accountID);
+    if (!credentials || credentials.id !== capture.connectionId || credentials.syncReadGeneration !== capture.connectionGeneration ||
+        credentials.syncStatus !== "active" || !credentials.refreshToken) throw new MicrosoftProviderError("account-session-changed");
+    return credentials;
+  };
+  return {
+    accountSession: { async open(_connection, signal) {
+      signal?.throwIfAborted(); await currentCredentials();
+      const accessToken = await getAccessToken(userID, accountID, false, signal);
+      signal?.throwIfAborted(); const credentials = await currentCredentials();
+      return { connectionId: credentials.id, connectionGeneration: String(credentials.syncReadGeneration), accessToken,
+        eventWriteAllowed: credentials.scope == null ? undefined : hasProviderSyncScopes("microsoft", credentials.scope) };
+    } },
+    http: { fetch: (url, init) => globalThis.fetch(url, init) },
+    clock: { nowEpochMs: () => Date.now(), nowMonotonicMs: () => performance.now() },
+    telemetry: { record: metric => recordProviderHttpRequest(metric.method, metric.status, metric.durationMs) },
+  };
+}
+
+/** One host normalization floor for legacy and shared correlated CREATE recovery. */
+function microsoftCreatedEventEvidence(found: Record<string, any>): CreatedEventEvidence {
+  if (found.isCancelled || found.recurrence) throw new ProviderEventWriteError("provider-conflict");
+  const event = assertCreatedEventEvidence(toNormalized(found));
+  return { ref: { externalEventId: found.id, etag: event.etag ?? null }, event };
+}
+
 export const microsoftAdapter: CalendarAdapter = {
+  microsoftPersonalCreateV1(userID, accountID, capture) {
+    return { ports: microsoftEventDeliveryPorts(userID, accountID, capture),
+      normalizeObservation: read => read.kind === "present" ? microsoftCreatedEventEvidence(read.event) : null };
+  },
   microsoftPersonalDeleteV1(userID, accountID, capture) {
-    const currentCredentials = async () => {
-      const credentials = await getOAuthCredentials(userID, "microsoft", accountID);
-      if (!credentials || credentials.id !== capture.connectionId || credentials.syncReadGeneration !== capture.connectionGeneration ||
-          credentials.syncStatus !== "active" || !credentials.refreshToken) throw new MicrosoftProviderError("account-session-changed");
-      return credentials;
-    };
     return {
-      ports: {
-        accountSession: { async open(_connection, signal) {
-          signal?.throwIfAborted(); await currentCredentials();
-          const accessToken = await getAccessToken(userID, accountID, false, signal);
-          signal?.throwIfAborted(); const credentials = await currentCredentials();
-          return { connectionId: credentials.id, connectionGeneration: String(credentials.syncReadGeneration), accessToken,
-            eventWriteAllowed: credentials.scope == null ? undefined : hasProviderSyncScopes("microsoft", credentials.scope) };
-        } },
-        http: { fetch: (url, init) => globalThis.fetch(url, init) },
-        clock: { nowEpochMs: () => Date.now(), nowMonotonicMs: () => performance.now() },
-        telemetry: { record: metric => recordProviderHttpRequest(metric.method, metric.status, metric.durationMs) },
-      },
+      ports: microsoftEventDeliveryPorts(userID, accountID, capture),
       normalizeObservation(read) {
         return read.kind === "present" ? { ref: { externalEventId: read.event.id, etag: read.etag },
           event: assertCreatedEventEvidence(toNormalized(read.event)) } : null;
@@ -1481,14 +1499,7 @@ export const microsoftAdapter: CalendarAdapter = {
         }
       next = data["@odata.nextLink"] ?? null;
     }
-    if (!found) return null;
-    if (found.isCancelled || found.recurrence)
-      throw new ProviderEventWriteError("provider-conflict");
-    const event = assertCreatedEventEvidence(toNormalized(found));
-    return {
-      ref: { externalEventId: found.id, etag: event.etag ?? null },
-      event,
-    };
+    return found ? microsoftCreatedEventEvidence(found) : null;
   },
 
   async pushCreate(

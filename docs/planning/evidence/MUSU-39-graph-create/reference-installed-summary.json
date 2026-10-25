@@ -1,0 +1,559 @@
+{
+  "schemaVersion": 1,
+  "scope": "local installed independent reference proof only; no registry publication or production deployment",
+  "status": "passed",
+  "createdAt": "2026-10-25T12:10:31.723807+00:00",
+  "gitHeadAtBuild": "ee0130e67c584e8848050d3b850f537668c9e073",
+  "imageTag": "musubi-c07-graph-create-reference:proof",
+  "oldDockerImageInspectId": "sha256:767b0c785ed21f1c315c429d1d2db58333976b835295313e0dcbb2c67e62e0bc",
+  "dockerImageInspectId": "sha256:6251ca9b5663960d32b3a5d5b60a310517bdd0903f16eefdd7dca810d117239b",
+  "localBuildIndexDigest": "sha256:6251ca9b5663960d32b3a5d5b60a310517bdd0903f16eefdd7dca810d117239b",
+  "platformManifestDigest": "sha256:5613416067ea1075d8655fa7e642c123ac514e12ffaf1ac2de724a7906e84760",
+  "imageConfigDigest": "sha256:d862a858234842badc906b1458b75027229a3588bc2e2ad5ebf94db8fa4e5d0d",
+  "platform": {
+    "os": "linux",
+    "architecture": "amd64"
+  },
+  "dockerIdentityNote": "Docker image inspect Id identifies the local OCI index here. Platform manifest and image config digests are recorded separately. Local daemon metadata does not establish registry publication.",
+  "sourceContextFiles": 163,
+  "sourceContextFingerprint": "0f73a6dccd5f7410744fa38aa953a1da14a8fcc446cf4f4fefc0fa1a9067f99a",
+  "sourceContextScope": "Credential-free frozen tracked and feature source COPY closure; .env, data, node_modules, build outputs and source symlinks excluded. No source bind mounts.",
+  "allSourceFingerprint": "f75efcdec5200635bb81db74ddf029dc530efe86dc0265fd59acd92f660e3460",
+  "allSourceFiles": 137,
+  "productionSourceFingerprint": "3a680da7c2369e38646dc59fe307d17a059b9e66a408f3cb9fd4332ec8db4f83",
+  "productionSourceFiles": 79,
+  "productionSourceFingerprintScope": "Reference, types, sync-codec, Google/Microsoft/CalDAV provider and shared runtime TS/SQL; excludes tests, process fixtures and behavior harnesses.",
+  "installedSourceHashParity": {
+    "checkedFiles": 137,
+    "productionFiles": 79,
+    "mismatches": []
+  },
+  "sourceInventoryAfterProof": {
+    "frozenFiles": 137,
+    "currentFiles": 137,
+    "byteEqual": true,
+    "addedRemovedOrModified": []
+  },
+  "installedDependencies": {
+    "namedPackages": 30,
+    "packages": [
+      {
+        "name": "@esbuild/linux-x64",
+        "version": "0.28.2"
+      },
+      {
+        "name": "@musubi/provider-caldav",
+        "version": null
+      },
+      {
+        "name": "@musubi/provider-google",
+        "version": null
+      },
+      {
+        "name": "@musubi/provider-microsoft",
+        "version": null
+      },
+      {
+        "name": "@musubi/sync-codec",
+        "version": null
+      },
+      {
+        "name": "@musubi/sync-reference",
+        "version": null
+      },
+      {
+        "name": "@musubi/sync-runtime",
+        "version": null
+      },
+      {
+        "name": "@musubi/types",
+        "version": null
+      },
+      {
+        "name": "esbuild",
+        "version": "0.28.2"
+      },
+      {
+        "name": "ical.js",
+        "version": "2.2.1"
+      },
+      {
+        "name": "ipaddr.js",
+        "version": "1.9.1"
+      },
+      {
+        "name": "pg",
+        "version": "8.23.0"
+      },
+      {
+        "name": "pg-cloudflare",
+        "version": "1.4.0"
+      },
+      {
+        "name": "pg-connection-string",
+        "version": "2.14.0"
+      },
+      {
+        "name": "pg-int8",
+        "version": "1.0.1"
+      },
+      {
+        "name": "pg-pool",
+        "version": "3.14.0"
+      },
+      {
+        "name": "pg-protocol",
+        "version": "1.16.0"
+      },
+      {
+        "name": "pg-types",
+        "version": "2.2.0"
+      },
+      {
+        "name": "pgpass",
+        "version": "1.0.5"
+      },
+      {
+        "name": "postgres-array",
+        "version": "2.0.0"
+      },
+      {
+        "name": "postgres-bytea",
+        "version": "1.0.1"
+      },
+      {
+        "name": "postgres-date",
+        "version": "1.0.7"
+      },
+      {
+        "name": "postgres-interval",
+        "version": "1.2.0"
+      },
+      {
+        "name": "sax",
+        "version": "1.6.1"
+      },
+      {
+        "name": "split2",
+        "version": "4.2.0"
+      },
+      {
+        "name": "tsx",
+        "version": "4.23.12"
+      },
+      {
+        "name": "undici",
+        "version": "7.29.0"
+      },
+      {
+        "name": "xml-js",
+        "version": "1.6.11"
+      },
+      {
+        "name": "xtend",
+        "version": "4.0.2"
+      },
+      {
+        "name": "zod",
+        "version": "4.4.3"
+      }
+    ],
+    "forbiddenPackageNamesChecked": [
+      "@musubi/db",
+      "@musubi/auth",
+      "@musubi/config",
+      "@musubi/mobile",
+      "better-auth",
+      "expo",
+      "react-native"
+    ],
+    "forbiddenPackagesPresent": []
+  },
+  "execution": {
+    "durationMs": 52832,
+    "installedCliInvocations": 71,
+    "cases": 14,
+    "nativeFixtureRequests": 73,
+    "nativeRequestCounts": {
+      "google": {
+        "GET": 9,
+        "POST": 1,
+        "PATCH": 1,
+        "DELETE": 1
+      },
+      "microsoft": {
+        "GET": 45,
+        "DELETE": 1,
+        "POST": 10
+      },
+      "caldav": {
+        "GET": 3,
+        "PROPFIND": 1,
+        "DELETE": 1
+      }
+    },
+    "runtimeUser": "node",
+    "sourceBindMounts": 0,
+    "readOnlyContainerFilesystem": true,
+    "temporaryFilesystem": "/tmp only",
+    "configurationNames": [
+      "REFERENCE_DATABASE_URL",
+      "REFERENCE_CREDENTIAL_KEY",
+      "REFERENCE_ALLOW_PRIVATE_NETWORK"
+    ],
+    "oldAndNewDeploymentsSerial": true,
+    "realSigkillCases": 4,
+    "sigkillExitCodes": [
+      137
+    ]
+  },
+  "upgrade": {
+    "oldPendingProfiles": [
+      "google-personal-event-create-v1",
+      "google-personal-event-update-v1",
+      "google-personal-event-delete-v1",
+      "microsoft-personal-event-delete-v1",
+      "caldav-personal-event-delete-v1"
+    ],
+    "oldRowCounts": {
+      "reference_connections": 5,
+      "reference_objects": 5,
+      "reference_bindings": 5,
+      "reference_operations": 5,
+      "reference_attempts": 5
+    },
+    "preservedTableAndIndexOids": 15,
+    "preservedRowHashes": {
+      "reference_connections": "cb1ece13621746b1429d2dace2aeadb58cf050df7a86c13fb7280388fb1cc055",
+      "reference_objects": "8d88aa64bddaa18d8fc62d3d0a1d69677c8d27c62df0843ab885931edd8159a6",
+      "reference_bindings": "24c923fef7fd47b6d48af929287f95d662017e7b6e9bfa55d8bf4b083dbed1fa",
+      "reference_operations": "ff5930715267b2529d28ff25d5c7808f20ac9edc49beae57fbb3313625b138c1",
+      "reference_attempts": "712f544a7ce9fa8c8acf767d5364aa0abdee94297459a3b913f09b1a0068b3fb"
+    },
+    "oldPayloadHashes": [
+      {
+        "provider": "google",
+        "action": "create",
+        "sha256": "7bce3328eefdcef6f4d555ceec669a19fbe55907b2ba7e54003fc31acd29c9cb"
+      },
+      {
+        "provider": "google",
+        "action": "update",
+        "sha256": "c6db125f22148eeca321ba347f73206450d21c39d35c50918f1ed6b0d897c2bf"
+      },
+      {
+        "provider": "google",
+        "action": "delete",
+        "sha256": "3de6b86ad5d2f1f7f11b4f9c63be26f9ce842514cc39601d15e8b48e4b6a9e5b"
+      },
+      {
+        "provider": "microsoft",
+        "action": "delete",
+        "sha256": "207d9d06993df9dd932d61b63d557546ce6a74af926a985b27e771f59713d7a6"
+      },
+      {
+        "provider": "caldav",
+        "action": "delete",
+        "sha256": "dc396fd14723e02713ff253c43f77da0ba74386b649e5b6652401b0b13966306"
+      }
+    ],
+    "preservedOriginalEpochsPayloadsReceiptsAndAttemptHistory": true,
+    "oldPendingOperationsDeliveredByNewImage": 5,
+    "initialNewMigrationRuns": 1,
+    "additionalMigrationRunsWithUnknownGraphReservation": 2,
+    "additionalMigrationRunsWithAdoptedGraphNullValidator": 2,
+    "populatedGraphMigrationPreservedFullRowsEpochsAndOids": true
+  },
+  "cases": [
+    {
+      "case": "old-installed-pending-Google-CREATE-UPDATE-DELETE-Graph-DELETE-DAV-DELETE-additive-upgrade",
+      "status": "passed"
+    },
+    {
+      "case": "installed-repeat-migrate-unknown-Graph-reservation",
+      "status": "passed"
+    },
+    {
+      "case": "installed-fresh-assigned-ID-plain-text-body-null-readback-validator",
+      "status": "passed",
+      "postCount": 1,
+      "final": {
+        "provider": "accepted",
+        "remote": "confirmed",
+        "acceptanceStatus": 201,
+        "candidatePreserved": true,
+        "rawAcceptancePreserved": true,
+        "admittedResourceStillNull": true,
+        "bindingAssigned": true,
+        "bindingEtag": "null",
+        "sourceGeneration": 2,
+        "payloadHash": "4e25be909c00c09af7a92c332bf57e6869587afb4128789f99fbde0e12104c6e"
+      }
+    },
+    {
+      "case": "installed-repeat-migrate-adopted-Graph-null-validator",
+      "status": "passed"
+    },
+    {
+      "case": "installed-SIGKILL-before-POST-permanent-marker-zero-POST",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "postCount": 0,
+      "restartMethods": [
+        "GET"
+      ],
+      "held": true
+    },
+    {
+      "case": "installed-native-acceptance-candidate-raw-version-SIGKILL-restart-ACK",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "postCount": 1,
+      "restartMethods": [
+        "GET"
+      ],
+      "final": {
+        "provider": "accepted",
+        "remote": "confirmed",
+        "acceptanceStatus": 201,
+        "candidatePreserved": true,
+        "rawAcceptancePreserved": true,
+        "admittedResourceStillNull": true,
+        "bindingAssigned": true,
+        "bindingEtag": "native-weak",
+        "sourceGeneration": 2,
+        "payloadHash": "efa34ccaf8900291787d2a113514d429bda6db882f0df7f11b211d9efcfa58fb"
+      }
+    },
+    {
+      "case": "installed-lost-reply-SIGKILL-unique-correlation-uncertain-ACK",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "postCount": 1,
+      "restartMethods": [
+        "GET"
+      ],
+      "final": {
+        "provider": "uncertain",
+        "remote": "confirmed",
+        "acceptanceStatus": null,
+        "candidatePreserved": true,
+        "rawAcceptancePreserved": true,
+        "admittedResourceStillNull": true,
+        "bindingAssigned": true,
+        "bindingEtag": "native-weak",
+        "sourceGeneration": 2,
+        "payloadHash": "8e1455129770b61117552e5525230fd0e0b49f5a09094bbd2dc7e83b220d0130"
+      }
+    },
+    {
+      "case": "installed-uncertain-candidate-COMMIT-SIGKILL-changed-unique-ID-refused",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "postCount": 1,
+      "restartMethods": [
+        "GET"
+      ],
+      "candidatePreserved": true,
+      "noAdoption": true
+    },
+    {
+      "case": "installed-complete-zero-matches-remain-HOLD-no-POST-replay",
+      "status": "passed",
+      "postCount": 1,
+      "repeatedRecoveryGets": 2,
+      "noAdoption": true
+    },
+    {
+      "case": "installed-duplicate-preserves-acceptance-without-adoption",
+      "status": "passed",
+      "postCount": 1,
+      "candidatePreserved": true,
+      "rawAcceptancePreserved": true,
+      "noAdoption": true
+    },
+    {
+      "case": "installed-partial-denied-preserves-acceptance-without-adoption",
+      "status": "passed",
+      "postCount": 1,
+      "candidatePreserved": true,
+      "rawAcceptancePreserved": true,
+      "noAdoption": true
+    },
+    {
+      "case": "installed-html-despite-prefer-preserves-acceptance-without-adoption",
+      "status": "passed",
+      "postCount": 1,
+      "candidatePreserved": true,
+      "rawAcceptancePreserved": true,
+      "noAdoption": true
+    },
+    {
+      "case": "installed-native-scope-collision-keeps-reservation-and-acceptance",
+      "status": "passed",
+      "postCount": 1,
+      "candidatePreserved": true,
+      "noPartialAdoption": true
+    },
+    {
+      "case": "installed-known429-one-shot-delay-read-only-recovery",
+      "status": "passed",
+      "postCount": 1,
+      "retryDelayMs": 9000,
+      "rejectedResourceNotAdopted": true
+    }
+  ],
+  "providerIsolation": {
+    "ownedLoopbackHttpFixtureOnly": true,
+    "logicalNativeTargets": "Fixed Google/Microsoft origins plus HTTPS loopback DAV URLs",
+    "normalPrivatePolicyExplicitForDav": true,
+    "testTransport": "Node --import data URL replaces only native fetch leaves with a fixed owned HTTP loopback destination, preserves logical Response.url, and rejects nonfixture URLs. No external fallback or DNS override.",
+    "candidateCommitPause": "The test preload forwards the installed pg.Client real candidate UPDATE and COMMIT unchanged, then signals only an owned loopback control endpoint and waits before returning. SIGKILL therefore preserves committed candidate evidence before ACK. No production source or schema instrumentation.",
+    "basicCredentialPortUsedForOldDav": true,
+    "externalProviderCredentialsOrAccountsUsed": false,
+    "liveProviderRequests": false
+  },
+  "cleanup": {
+    "ownedCliContainersRemoved": true,
+    "nonceDatabaseDropped": true,
+    "containerAbsenceVerified": true,
+    "databaseAbsenceVerified": true,
+    "rootPostgresStillRunning": true
+  },
+  "limits": [
+    "This local installed-image proof uses synthetic Google, Microsoft and DAV resources at a fixed owned loopback server. It does not exercise an external provider, external DNS or live TLS.",
+    "The restricted preload preserves logical native response URLs while routing to owned HTTP loopback. Candidate persistence pause observes actual installed SQL completion and changes neither writes nor authority decisions. The CLI, shared runtime/providers, credential ports, PostgreSQL ledger and physical container SIGKILL are real installed code.",
+    "The Microsoft CREATE operation locator and admitted event_id remain NULL permanently. Only the binding adopts a server-assigned ID after complete unique transactionId correlation and exact normalized content readback. Candidate and raw native acceptance metadata are separate monotonic evidence.",
+    "Reference CREATE remains one-shot after possible dispatch, including known 429 rejection. Complete zero/duplicate/incomplete correlation does not authorize a second POST. A rejected operation does not adopt a later matching resource. There is no resolution or supersession feature.",
+    "Reference strict listing requests plain-text body representation and accepts only a real weak-or-null readback validator. HTML despite Prefer, changed candidate, invalid content, stale authority or occupied native scope cannot ACK.",
+    "The complete source regression corpus and installed API authentication/HTTP smoke are separate evidence. This proof establishes no registry publication, production rollout, new Microsoft UPDATE or global source-epoch guarantee."
+  ],
+  "commands": {
+    "build": "docker build -f apps/sync-reference/Dockerfile -t musubi-c07-graph-create-reference:proof /tmp/musu39-graph-create-reference-context",
+    "probe": "node /tmp/musu39-graph-create-installed-reference.mjs"
+  },
+  "artifacts": [
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/installed-reference-proof.json",
+      "sha256": "ac160b06a0eda88a7453fbdf90ec7f05c7ebc5153b4857c44c2837e5301e9184",
+      "bytes": 70302
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/artifact-attestation.json",
+      "sha256": "5bd17eaa367f2c5b940690bdcdd2c6e10143675c47858ca2b8ef413413955288",
+      "bytes": 1016
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/source-manifest.json",
+      "sha256": "94ea89622a9f345fb5fe0798a9d768eef5297bff415e7bee9a4ec198c79e8945",
+      "bytes": 15381
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/runtime-source-manifest.json",
+      "sha256": "01b3dd69ef9c1d7e3bf64fea4643bbcb2546cb418347308850fcbe163d0aae66",
+      "bytes": 8550
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/installed-source-manifest.json",
+      "sha256": "7a359be0a4b6c24d6587832e947e3592a121fb1a4d4053f84c68128f0efc6fba",
+      "bytes": 15381
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/installed-runtime-source-manifest.json",
+      "sha256": "01b3dd69ef9c1d7e3bf64fea4643bbcb2546cb418347308850fcbe163d0aae66",
+      "bytes": 8550
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/installed-package-map.json",
+      "sha256": "bce1b58a6a46296755dce1bb5f77a0eae396225271919d074ec52727bfc7a0ac",
+      "bytes": 1782
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/current-source-inventory.json",
+      "sha256": "20e235e7fe99126b4ee8dcf29fa3f644be5badf194c833dcd2e6780dfc791710",
+      "bytes": 101
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/old-ledger-before-upgrade.json",
+      "sha256": "ee128af7ca996dbfa7e80160a72dcd4ca5c89d9a6cba29fbe4a6efe0926c2860",
+      "bytes": 6507
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/new-ledger-after-upgrade.json",
+      "sha256": "ee128af7ca996dbfa7e80160a72dcd4ca5c89d9a6cba29fbe4a6efe0926c2860",
+      "bytes": 6507
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/http-requests.json",
+      "sha256": "d29e307754ef56b95db72df05a4dee98918b1e909ccf5c02297f753af65cd98b",
+      "bytes": 11949
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/image-inventory.json",
+      "sha256": "1ad7fa7ea7df49db75fd41a848d22201a6e6f373e64d2413473f7bf6de1ab41e",
+      "bytes": 1423
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/build-context.json",
+      "sha256": "842fc6c424e0536780825f3f201ca0fa7e97e79227dfa78ffdae6b83642c57ab",
+      "bytes": 383
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/build-context-manifest.json",
+      "sha256": "af1b7b975e082e2ab768006d07c72c992fab947e85b359fcf854e3118f8e2531",
+      "bytes": 18093
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/build.log",
+      "sha256": "a76a184838cf74a53ca6894f2252cc0280cb75ed6f648ca7f9ba1d1443659123",
+      "bytes": 3413
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/cleanup.json",
+      "sha256": "fd31fcbe68e4175a992a6ee3c5615ffd28897613c7f9acae1e1aec5d8396caf5",
+      "bytes": 169
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/cleanup-verified.json",
+      "sha256": "0c3956b484cf4722f9a3218318bd8abbc624988ecad4632fcb5db7434f1c52f6",
+      "bytes": 229
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/installed-reference-probe.mjs",
+      "sha256": "9b1e70f60a0b8180b2003527d925b1f5e66375f0ede8121f3cdd086e02c8fdbc",
+      "bytes": 39480
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/checkpoint-accepted-before-listing.json",
+      "sha256": "6f5067f450b8d7caa0a44141e9641aca003f71da41bf36a76599d6b489cea1d0",
+      "bytes": 1856
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/checkpoint-before-post.json",
+      "sha256": "083bd929d472742ee9b0b7396d2945d5d63be43f0fc9e367b767f59af005a9a2",
+      "bytes": 1692
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/checkpoint-lost-before-listing.json",
+      "sha256": "f229de524731f1f14cdaf445977a08dd105dec241b1625c982ca7e330f615631",
+      "bytes": 1704
+    },
+    {
+      "path": "/tmp/musu39-graph-create-reference-evidence/checkpoint-uncertain-confirmed-candidate.json",
+      "sha256": "1d09c5cef8f6ca855c6a6a215dfb767f18dc839aa09559d1e7b608dce799f4a8",
+      "bytes": 1934
+    }
+  ]
+}

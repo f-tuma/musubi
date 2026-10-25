@@ -9,6 +9,7 @@ pnpm test:behavior --list
 pnpm test:behavior --suite google-delete --scenario already-absent --json
 pnpm test:behavior --suite google-create --scenario fresh-create --json
 pnpm test:behavior --suite microsoft-delete --scenario lost-reply-restart-present --json
+pnpm test:behavior --suite microsoft-create --scenario fresh-create --json
 pnpm test:behavior --suite caldav-delete --scenario fresh-delete --json
 pnpm test:behavior --suite task-inspector --scenario conflict-keeps-draft
 pnpm test:behavior --json
@@ -30,6 +31,7 @@ not committed. The root runner can also be called as
 | `google-delete` | Claimed delivery runtime, Google provider preflight/conditional DELETE/recovery | Host persistence/lease/credential ports, HTTP responses and clock | None |
 | `google-create` | Admitted codec identity/body, CREATE delivery runtime and provider preflight/write/recovery | Host persistence/lease/credential ports, ordered HTTP responses and clock | None |
 | `microsoft-delete` | Admitted Graph DELETE codec, guarded runtime, native weak version, owned-calendar preflight and exact absence | Host persistence/lease/credential ports, ordered HTTP responses and clock | None |
+| `microsoft-create` | Admitted Graph transaction/body, bounded CREATE runtime, native permission/POST/scoped listing and candidate identity | Host persistence/lease/normalization/credential ports, ordered HTTP responses and clock | None |
 | `caldav-delete` | Admitted DAV DELETE codec, runtime, real XML/ICS parsing, privilege/organizer preflight and conditional DELETE | Host persistence/lease/credential ports, DNS, pinned HTTP leaf responses and clock | None |
 | `task-inspector` | React inspector/editor, capability checks, task serializer and HTTP client | Seeded context and HTTP receipts | None; Vitest/jsdom |
 | Browser confirmation | Running web app, router, task queries/cache and inspector/editor; same JSON commands and receipts | Auth/API responses at the browser HTTP boundary | Web dev server and Chromium |
@@ -73,6 +75,15 @@ interrupted DAV recovery may resend the original conditional request after
 fresh guards; inherited uncertainty is retained. The two hosts' explicit native
 profiles and acceptance/ACK policies are tested separately.
 
+The Graph CREATE suite keeps the admitted native locator null and uses the
+provider-assigned ID only as a returned/correlated fact. It covers original
+fresh permission/POST behavior, raw nullable versions, complete pagination,
+duplicate/missing/unsafe observations, native refusal and lost replies. Unique
+matching correlation can adopt; zero or incomplete results never grant another
+POST. Separate profiles preserve Musubi's actual normalizer and wire while the
+reference requires owned-calendar/personal/text-body readback. Durable candidate
+identity and uncertainty remain distinct from native acceptance.
+
 ## Add or debug a case
 
 - Sync data: `packages/sync-runtime/src/behavior/google-delete.json`.
@@ -105,6 +116,13 @@ profiles and acceptance/ACK policies are tested separately.
   `pnpm --filter @musubi/sync-runtime test:scenarios:caldav-delete --json`
   for its bounded native report. Host SQL authority, normalization, account
   revision checks and durable crash recovery have separate integration tests.
+- Graph CREATE data: `packages/sync-runtime/src/behavior/microsoft-create.json`.
+  Its adjacent driver invokes the actual codec, shared kernel and provider, with
+  complete ordered paths/headers/body hashes, marker/assigned-ID/version facts,
+  metrics and host completion expectations. Run
+  `pnpm --filter @musubi/sync-runtime test:scenarios:microsoft-create --json`
+  for the native report. Actual Musubi normalization/SQL/pull and independent
+  reference reservation/adoption/crash behavior have separate integration tests.
 
 Edit the JSON, select the exact id, and inspect the JSON result. Add a small typed
 driver when testing a different domain boundary. Keep domain decisions in the

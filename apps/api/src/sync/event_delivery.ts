@@ -1,3 +1,4 @@
+import { deliverSharedMicrosoftCreate, usesSharedMicrosoftCreate } from "./microsoft_shared_create_delivery";
 import { deliverSharedGoogleCreate, usesSharedGoogleCreate } from "./google_shared_create_delivery";
 import { deliverSharedCaldavDelete, usesSharedCaldavDelete } from "./caldav_shared_delete_delivery";
 import { deliverSharedMicrosoftDelete, usesSharedMicrosoftDelete } from "./microsoft_shared_delete_delivery";
@@ -152,6 +153,11 @@ export async function deliverEventOutbox(
     !parsedPersonal.data.isAllDay && !parsedPersonal.data.recurrence && !parsedPersonal.data.isCanceled && row.externalEventID &&
     ![...specialized, "timeEdit", "graphOccurrence"].some(key => Object.prototype.hasOwnProperty.call(row.payload, key)) && usesSharedMicrosoftDelete(pinned, adapter))
     return deliverSharedMicrosoftDelete(row, pinned, adapter!.microsoftPersonalDeleteV1!.bind(adapter), options);
+  if (pinned && parsedPersonal.success && !hasKnownEventTime(parsedPersonal.data) &&
+    !parsedPersonal.data.seriesID && !parsedPersonal.data.originalStart && !parsedPersonal.data.hasAttendees && !parsedPersonal.data.isMeeting &&
+    !parsedPersonal.data.isAllDay && !parsedPersonal.data.recurrence && !parsedPersonal.data.isCanceled &&
+    ![...specialized, "timeEdit", "graphOccurrence"].some(key => Object.prototype.hasOwnProperty.call(row.payload, key)) && usesSharedMicrosoftCreate(pinned, adapter))
+    return deliverSharedMicrosoftCreate(row, pinned, adapter!.microsoftPersonalCreateV1!.bind(adapter), options);
   if (pinned && parsedPersonal.success && !hasKnownEventTime(parsedPersonal.data) &&
     !parsedPersonal.data.seriesID && !parsedPersonal.data.originalStart && !parsedPersonal.data.hasAttendees && !parsedPersonal.data.isMeeting &&
     !parsedPersonal.data.isAllDay && !parsedPersonal.data.recurrence && !parsedPersonal.data.isCanceled &&

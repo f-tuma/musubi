@@ -23,7 +23,7 @@ export interface MicrosoftAccountSession {
 export interface MicrosoftRequestMetric {
   readonly provider: "microsoft";
   readonly family: "event";
-  readonly method: "GET" | "DELETE";
+  readonly method: "GET" | "DELETE" | "POST";
   readonly status: number | "network-error" | "aborted";
   readonly durationMs: number;
 }
@@ -59,6 +59,42 @@ export type MicrosoftNativeDeletePreflight =
   | MicrosoftNativeDeleteAbsence;
 /** Native acceptance only. The caller must separately persist this and verify exact 404 before ACK. */
 export type MicrosoftNativeDeleteEvidence = { readonly kind: "deleted"; readonly status: 204 | 404 };
+/** CREATE has no admitted native event ID; Graph assigns it after dispatch. */
+export interface MicrosoftCreateTarget {
+  readonly connectionId: string;
+  readonly connectionGeneration: string;
+  readonly calendarId: string;
+}
+/** Frozen microsoft-personal-event@1 timed, nonrecurring CREATE body. */
+export interface MicrosoftPersonalCreateBody {
+  readonly subject: string;
+  readonly body: { readonly contentType: "text"; readonly content: string };
+  readonly location: { readonly displayName: string };
+  readonly isAllDay: false;
+  readonly start: { readonly dateTime: string; readonly timeZone: "UTC" };
+  readonly end: { readonly dateTime: string; readonly timeZone: "UTC" };
+  readonly transactionId: string;
+}
+export interface MicrosoftPersonalCreate {
+  readonly target: MicrosoftCreateTarget;
+  readonly body: MicrosoftPersonalCreateBody;
+  readonly operationId: string;
+  readonly attemptId: string;
+  readonly serializer: { readonly id: "microsoft-personal-event"; readonly version: 1 };
+}
+export type MicrosoftCreateNativeProfile = "existing-microsoft" | "strict-reference";
+export interface MicrosoftCreateProviderPorts extends Omit<MicrosoftDeleteProviderPorts, "beforeMutation"> {
+  readonly beforeMutation: (request: MicrosoftPersonalCreate, signal?: AbortSignal) => Promise<void>;
+}
+export type MicrosoftNativeCreatePreflight = { readonly kind: "allowed" };
+/** Raw provider acceptance; its ETag is any native string, not a DELETE guard. */
+export type MicrosoftNativeCreateEvidence = {
+  readonly kind: "created"; readonly status: 200 | 201 | 204; readonly eventId: string; readonly etag: string | null;
+};
+/** A missing complete listing is observation only, never proof that re-POST is safe. */
+export type MicrosoftNativeCreateReadEvidence =
+  | { readonly kind: "missing" }
+  | { readonly kind: "present"; readonly event: MicrosoftNativeEvent; readonly etag: string | null };
 export type MicrosoftProviderErrorCode =
   | "provider-conflict"
   | "provider-version-unavailable"
