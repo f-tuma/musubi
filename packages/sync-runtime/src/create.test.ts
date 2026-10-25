@@ -122,6 +122,32 @@ test("POST 400/409 remain rejected without automatic GET/adoption, and 429 prese
   assert.equal((await rate.run()).status, "hold"); assert.equal(rate.finishes[0]!.retryAfterMs, 9000); assert.equal(rate.calls.length, 2);
 });
 
+test("a refused same-ID retry cannot erase older Google CREATE uncertainty or acceptance", async () => {
+  for (const policy of [musubi, reference]) for (const prior of ["uncertain", "accepted"] as const) for (const status of [400, 401, 403, 408, 409, 412, 429]) {
+    const f = fixture([response({}, 404), calendar(), response({}, status, { "retry-after": "9" })], policy, true);
+    const priorProvider = prior === "accepted" ? { kind: "accepted" as const, validator: '"earlier"' } : { kind: "uncertain" as const };
+    Object.assign(f.input, { priorProvider });
+    const result = await f.run();
+    assert.equal(result.status, status === 412 ? "conflict" : "hold"); assert.deepEqual(result.facts.provider, priorProvider);
+    assert.equal(result.facts.possibleDispatch, true); assert.equal(result.error?.providerStatus, status); assert.equal(result.error?.outcome, "not-written");
+    assert.equal(f.calls.length, 3); assert.equal(f.acks.length, 0); assert.equal(f.finishes[0]!.error.providerStatus, status);
+    if (status === 429) assert.equal(f.finishes[0]!.retryAfterMs, 9000);
+  }
+});
+
+test("a lost same-ID retry preserves known acceptance while its current result remains ambiguous", async () => {
+  for (const policy of [musubi, reference]) {
+    const f = fixture([response({}, 404), calendar(), new Error("owned lost retry reply"), ...(policy === reference ? [response(native())] : [])], policy, true);
+    const priorProvider = { kind: "accepted" as const, validator: '"earlier"' };
+    Object.assign(f.input, { priorProvider });
+    const result = await f.run(); assert.deepEqual(result.facts.provider, priorProvider); assert.equal(result.facts.possibleDispatch, true);
+    assert.equal(result.status, policy === reference ? "acked" : "hold");
+    assert.equal(f.calls.filter(call => call.init.method === "POST").length, 1);
+    if (policy === musubi) assert.equal(result.error?.outcome, "unconfirmed");
+    else assert.equal(f.acks[0]!.facts.provider.kind, "accepted");
+  }
+});
+
 test("malformed success or5xx remains uncertain; readback404 never resends in the same attempt", async () => {
   for (const reply of [response({ id: "wrong" }, 201), new Response("{", { status: 201 }), response({}, 500)]) {
     const f = fixture([calendar(), reply]); const result = await f.run();

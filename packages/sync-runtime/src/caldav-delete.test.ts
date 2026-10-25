@@ -99,6 +99,30 @@ test("DAV uncertain conditional replay sends only the original UID, address and 
   assert.equal(new Headers(f.calls[3]!.init.headers).get("if-match"), '"before"'); assert.equal(f.calls[3]!.url, resource);
 });
 
+test("a refused DAV conditional DELETE retry preserves older native facts", async () => {
+  for (const policy of [undefined, reference]) for (const prior of ["uncertain", "accepted"] as const) for (const status of [412, 429]) {
+    const refused = new Response(null, { status, headers: { "retry-after": "9" } });
+    const observesConflict = !policy && status === 412;
+    const f = fixture([point(), acl(), point(), refused, ...(observesConflict ? [point()] : [])], policy);
+    const priorProvider = prior === "accepted" ? { kind: "accepted" as const, status: 204 as const } : { kind: "uncertain" as const };
+    Object.assign(f.input, { recovery: { required: true, possibleDispatch: true }, priorProvider });
+    const result = await f.run(); assert.deepEqual(result.facts.provider, priorProvider); assert.equal(result.facts.possibleDispatch, true);
+    if (!observesConflict) { assert.equal(result.error?.providerStatus, status); assert.equal(result.error?.outcome, "not-written"); }
+    else assert.equal(result.status, "conflict");
+    assert.equal(f.calls.length, observesConflict ? 5 : 4); assert.equal(f.acks.length, 0);
+    if (status === 429) assert.equal(f.finishes[0]!.retryAfterMs, 9000);
+  }
+});
+
+test("a lost DAV conditional DELETE retry preserves earlier acceptance", async () => {
+  for (const policy of [undefined, reference]) {
+    const f = fixture([point(), acl(), point(), new Error("owned lost retry"), ...(policy ? [response(null, 404)] : [])], policy);
+    Object.assign(f.input, { recovery: { required: true, possibleDispatch: true }, priorProvider: { kind: "accepted", status: 204 } });
+    const result = await f.run(); assert.deepEqual(result.facts.provider, { kind: "accepted", status: 204 }); assert.equal(result.facts.possibleDispatch, true);
+    assert.equal(result.status, policy ? "acked" : "hold"); assert.equal(f.calls.filter(call => call.init.method === "DELETE").length, 1);
+  }
+});
+
 test("DAV changed, missing or weak current validators never select a write", async () => {
   for (const etag of ['"changed"', 'W/"before"', undefined]) {
     const f = fixture([response(native(), 200, etag)]); assert.equal((await f.run()).status, "conflict");

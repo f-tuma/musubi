@@ -59,6 +59,14 @@ async function main() {
   }
   try{
     await store.migrate();
+    await fixture("older-uncertain-DELETE-keeps-truth-through-later429-and-GET-absence",async ids=>{
+      await run("admit-delete",ids.input.operationId,ids.input);mode="lost";await kill(child("deliver",ids.input.operationId,undefined,"afterUncertain"));const pinned=hash((await store.inspectOperation(ids.input.operationId)).payload);
+      absent=false;mode="reject";await expire(ids.input.operationId);assert.equal((await run("deliver",ids.input.operationId)).status,"hold");const held=await store.inspectOperation(ids.input.operationId);assert.equal(held.receipt.provider.kind,"uncertain");assert.equal(held.dispatchPossible,true);assert.equal(await store.claim(ids.input.operationId,randomUUID()),null);
+      absent=true;mode="healthy";await expire(ids.input.operationId);const before=methods.length;await run("deliver",ids.input.operationId);await ack(ids.input.operationId,"uncertain");assert.equal(writes,2);assert.deepEqual(methods.slice(before),["GET"]);assert.equal(hash((await store.inspectOperation(ids.input.operationId)).payload),pinned);
+    });
+    await fixture("prior-accepted-DELETE-status-survives-a-later-lost-conditional-response",async ids=>{
+      await run("admit-delete",ids.input.operationId,ids.input);await kill(child("deliver",ids.input.operationId,undefined,"afterAcceptance"));absent=false;mode="lost";await expire(ids.input.operationId);assert.equal((await run("deliver",ids.input.operationId)).status,"acked");const op=await ack(ids.input.operationId,"accepted");assert.equal(op.deleteAcceptanceStatus,204);assert.equal(writes,2);
+    });
     await fixture("kill-inside-atomic-tombstone-admission",async ids=>{
       const value=child("admit-delete",ids.input.operationId,ids.input,"admissionCanonical");await value.checkpoint;
       const object=(await pool.query("SELECT revision,canonical_lifecycle FROM reference_objects WHERE id=$1",[ids.objectId])).rows[0];assert.equal(object.revision,"1");assert.equal(object.canonical_lifecycle,"active");await kill(value);

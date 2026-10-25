@@ -55,6 +55,29 @@ test("DELETE host policies share exact read/preflight/dispatch and differ only a
   }
 });
 
+test("a refused Google conditional DELETE retry preserves older native facts", async () => {
+  for (const policy of [musubi, reference]) for (const prior of ["uncertain", "accepted"] as const) for (const status of [412, 429]) {
+    const observesConflict = policy.observeConflict && status === 412;
+    const f = fixture([response(native()), calendar(), response(native()), response({}, status, { "retry-after": "9" }), ...(observesConflict ? [response(native())] : [])], policy);
+    const priorProvider = prior === "accepted" ? { kind: "accepted" as const, status: 204 as const } : { kind: "uncertain" as const };
+    Object.assign(f.input, { recovery: { required: true, possibleDispatch: true }, priorProvider });
+    const result = await f.run(); assert.deepEqual(result.facts.provider, priorProvider); assert.equal(result.facts.possibleDispatch, true);
+    if (!observesConflict) { assert.equal(result.error?.providerStatus, status); assert.equal(result.error?.outcome, "not-written"); }
+    else assert.equal(result.status, "conflict");
+    assert.equal(f.calls.length, observesConflict ? 5 : 4); assert.equal(f.acks.length, 0);
+    if (status === 429) assert.equal(f.finishes[0]!.retryAfterMs, 9000);
+  }
+});
+
+test("a lost Google conditional DELETE retry preserves earlier acceptance", async () => {
+  for (const policy of [musubi, reference]) {
+    const f = fixture([response(native()), calendar(), response(native()), new Error("owned lost retry"), ...(policy === reference ? [response({}, 404)] : [])], policy);
+    Object.assign(f.input, { recovery: { required: true, possibleDispatch: true }, priorProvider: { kind: "accepted", status: 204 } });
+    const result = await f.run(); assert.deepEqual(result.facts.provider, { kind: "accepted", status: 204 }); assert.equal(result.facts.possibleDispatch, true);
+    assert.equal(result.status, policy === reference ? "acked" : "hold"); assert.equal(f.calls.filter(call => call.init.method === "DELETE").length, 1);
+  }
+});
+
 test("DELETE exact absence ACK skips ACL and mutation without fabricating acceptance or validator", async () => {
   for (const observed of [response({}, 404), response({}, 410), response({ id: "native/event", status: "cancelled" })]) {
     const f = fixture([observed], musubi); const result = await f.run(); assert.equal(result.status, "acked"); assert.equal(f.calls.length, 1);

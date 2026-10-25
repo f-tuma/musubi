@@ -36,6 +36,7 @@ test("broken admitted CREATE identity is held before any provider calls", async 
     scenario.expected = { status: "hold", methods: [], bodyIds: [], markers: [], ackKinds: [], finishStatuses: ["hold"],
       provider: { kind: "not-dispatched", validator: null, errorCode: null, retry: null, retryAfterMs: null },
       remoteKind: "unobserved", possibleDispatch: false, mutationMarks: 0, retryAfterMs: null,
+      errorOutcome: "not-written", providerStatus: null,
       errorCode: mismatch === "marker" ? "operation-envelope-codec-unavailable" : "operation-envelope-binding-mismatch" };
     const claim = structuredClone(claimedCreateInput(scenario));
     if (mismatch === "marker") {
@@ -44,6 +45,23 @@ test("broken admitted CREATE identity is held before any provider calls", async 
       body.extendedProperties.private.musubiOperationID = "00000000-0000-4000-8000-000000000072";
     } else (claim.nativeTarget as { eventId: string }).eventId = "wrong-native-id";
     assert.equal((await runCreateScenario(scenario, claim)).mutationMarks, 0);
+  }
+});
+
+test("older possible CREATE acceptance survives known retry rejection and can ACK a later matching GET", async () => {
+  for (const [id, status, retryAfterMs] of [["uncertain-retry-rate-limit", 429, 9000], ["uncertain-retry-request-timeout", 408, 4000], ["uncertain-retry-precondition", 412, null]] as const) {
+    const refused = await runCreateScenario(suite.scenarios.find(item => item.id === id)!);
+    assert.equal(refused.provider.kind, "uncertain"); assert.equal(refused.possibleDispatch, true);
+    assert.equal(refused.errorOutcome, "not-written"); assert.equal(refused.providerStatus, status);
+    assert.equal(refused.retryAfterMs, retryAfterMs); assert.equal(refused.provider.retryAfterMs, null);
+    assert.deepEqual(refused.methods, ["GET", "GET", "POST"]); assert.deepEqual(refused.ackKinds, []);
+    const resumed = structuredClone(suite.scenarios.find(item => item.id === "recover-after-uncertain-retry")!);
+    const claim = claimedCreateInput(resumed);
+    if (refused.provider.kind !== "uncertain") assert.fail();
+    const result = await runCreateScenario(resumed, { ...claim, priorProvider: { kind: refused.provider.kind },
+      recovery: { required: true, possibleDispatch: refused.possibleDispatch } });
+    assert.equal(result.status, "acked"); assert.equal(result.provider.kind, "uncertain");
+    assert.deepEqual(result.methods, ["GET"]); assert.equal(result.mutationMarks, 0);
   }
 });
 

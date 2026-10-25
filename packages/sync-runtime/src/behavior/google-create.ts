@@ -21,6 +21,7 @@ export type CreateSummary = {
   ackKinds: string[]; finishStatuses: string[];
   provider: { kind: string; validator: string | null; errorCode: string | null; retry: string | null; retryAfterMs: number | null };
   remoteKind: string; possibleDispatch: boolean; mutationMarks: number; retryAfterMs: number | null; errorCode: string | null;
+  errorOutcome: "not-written" | "unconfirmed" | null; providerStatus: number | null;
 };
 export type CreateScenario = {
   id: string; title: string; policy: "musubi" | "reference";
@@ -73,7 +74,7 @@ function validJson(value: unknown, depth = 0): void {
   invalid();
 }
 function validateSummary(value: unknown) {
-  const summary = object(value, ["status", "methods", "bodyIds", "markers", "ackKinds", "finishStatuses", "provider", "remoteKind", "possibleDispatch", "mutationMarks", "retryAfterMs", "errorCode"]);
+  const summary = object(value, ["status", "methods", "bodyIds", "markers", "ackKinds", "finishStatuses", "provider", "remoteKind", "possibleDispatch", "mutationMarks", "retryAfterMs", "errorCode", "errorOutcome", "providerStatus"]);
   oneOf(summary.status, ["acked", "hold", "conflict"]); list(summary.methods, ["GET", "POST"]);
   for (const [key, expected] of [["bodyIds", EVENT_ID], ["markers", OPERATION_ID]] as const) {
     list(summary[key], [null, expected]);
@@ -90,6 +91,7 @@ function validateSummary(value: unknown) {
   oneOf(summary.remoteKind, ["unobserved", "confirmed", "conflict"]);
   if (typeof summary.possibleDispatch !== "boolean") invalid();
   integer(summary.mutationMarks, 0, 1); integer(summary.retryAfterMs, 0, Number.MAX_SAFE_INTEGER, true);
+  oneOf(summary.errorOutcome, [null, "not-written", "unconfirmed"]); integer(summary.providerStatus, 100, 599, true);
 }
 export function parseCreateSuite(value: unknown): CreateSuite {
   const suite = object(value, ["schemaVersion", "scenarios"]);
@@ -201,7 +203,8 @@ export async function runCreateScenario(raw: CreateScenario, suppliedClaim?: Cla
       errorCode: fact.kind === "rejected" ? fact.error.code : null, retry: fact.kind === "rejected" ? fact.error.retry : null,
       retryAfterMs: fact.kind === "rejected" ? fact.error.retryAfterMs ?? null : null },
     remoteKind: result.facts.remote.kind, possibleDispatch: result.facts.possibleDispatch, mutationMarks,
-    retryAfterMs: finishes.at(-1)?.retryAfterMs ?? null, errorCode: result.error?.code ?? null };
+    retryAfterMs: finishes.at(-1)?.retryAfterMs ?? null, errorCode: result.error?.code ?? null,
+    errorOutcome: result.error?.outcome ?? null, providerStatus: result.error?.providerStatus ?? null };
   if (!isDeepStrictEqual(summary, scenario.expected)) throw new ScenarioFailure("expectation-mismatch", "The observed runtime summary differs from the complete expected summary.");
   return summary;
 }

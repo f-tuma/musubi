@@ -186,7 +186,7 @@ export async function runClaimedGooglePersonalCreate(input: ClaimedGooglePersona
     const at = error && typeof error === "object" ? errorPhases.get(error) ?? "mutation" : "mutation";
     const info = runtimeError(error, at);
     if (at === "mutation" && info.outcome === "unconfirmed" && facts.possibleDispatch) {
-      facts = frozen({ ...facts, provider: { kind: "uncertain" } });
+      facts = frozen({ ...facts, provider: facts.provider.kind === "accepted" ? facts.provider : { kind: "uncertain" } });
       await persist(); await checkpoint("afterUncertain");
       const decision = choose({ kind: "failure", error: info }, at);
       if (error && typeof error === "object") recordedFailures.add(error);
@@ -230,7 +230,8 @@ export async function runClaimedGooglePersonalCreate(input: ClaimedGooglePersona
       const info = error instanceof DecisionFailure ? error.info : runtimeError(error, error && typeof error === "object" ? errorPhases.get(error) ?? phase : phase);
       const original = error instanceof DecisionFailure ? error.cause : error;
       if (!attempt.signal.aborted && (!original || typeof original !== "object" || !recordedFailures.has(original))) choose({ kind: "failure", error: info }, info.phase);
-      if (info.phase === "mutation" && info.providerStatus !== undefined && info.outcome === "not-written" && facts.provider.kind !== "accepted")
+      if (info.phase === "mutation" && info.providerStatus !== undefined && info.outcome === "not-written" &&
+          facts.provider.kind !== "accepted" && facts.provider.kind !== "uncertain")
         facts = frozen({ ...facts, provider: rejection(info) });
       else if (facts.possibleDispatch && facts.provider.kind === "not-dispatched") facts = frozen({ ...facts, provider: { kind: "uncertain" } });
       if (attempt.signal.aborted) failure = { status: "hold", error: runtimeError(attempt.signal.reason, info.phase), facts, cause: error };

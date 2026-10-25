@@ -196,7 +196,7 @@ export async function runClaimedCaldavPersonalDelete(input: ClaimedCaldavPersona
     const info = runtimeError(error, errorPhase);
     if (error && typeof error === "object") errorPhases.set(error, errorPhase);
     if (info.phase === "mutation" && info.outcome === "unconfirmed" && facts.possibleDispatch) {
-      facts = frozen({ ...facts, provider: { kind: "uncertain" } });
+      facts = frozen({ ...facts, provider: facts.provider.kind === "accepted" ? facts.provider : { kind: "uncertain" } });
       await persist(); await checkpoint("afterUncertain");
       const decision = choose({ kind: "failure", error: info }, "mutation");
       if (error && typeof error === "object") recordedFailures.add(error);
@@ -264,7 +264,8 @@ export async function runClaimedCaldavPersonalDelete(input: ClaimedCaldavPersona
         choose({ kind: "failure", error: info }, info.phase); recordedFailures.add(originalError);
       }
       // Only actual DELETE rejection can replace mutation evidence. Later GETs cannot.
-      if (info.phase === "mutation" && info.providerStatus !== undefined && info.outcome === "not-written" && facts.provider.kind !== "accepted")
+      if (info.phase === "mutation" && info.providerStatus !== undefined && info.outcome === "not-written" &&
+          facts.provider.kind !== "accepted" && facts.provider.kind !== "uncertain")
         facts = frozen({ ...facts, provider: rejected(info) });
       else if (facts.possibleDispatch && facts.provider.kind === "not-dispatched") facts = frozen({ ...facts, provider: { kind: "uncertain" } });
       if (attempt.signal.aborted) {

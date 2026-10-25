@@ -287,7 +287,8 @@ export async function runClaimedMicrosoftPersonalDelete(input: ClaimedMicrosoftP
         choose({ kind: "failure", error: info }, info.phase); recordedFailures.add(originalError);
       }
       // Only actual DELETE rejection can replace mutation evidence. Later GETs cannot.
-      if (info.phase === "mutation" && info.providerStatus !== undefined && info.outcome === "not-written" && facts.provider.kind !== "accepted")
+      if (info.phase === "mutation" && info.providerStatus !== undefined && info.outcome === "not-written" &&
+          facts.provider.kind !== "accepted" && facts.provider.kind !== "uncertain")
         facts = frozen({ ...facts, provider: rejected(info) });
       else if (facts.possibleDispatch && facts.provider.kind === "not-dispatched") facts = frozen({ ...facts, provider: { kind: "uncertain" } });
       if (attempt.signal.aborted) {

@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "recordRole": "C07 bounded source merge audit; not a deployment or live-provider attestation",
+  "observedAt": "2026-10-25 13:39:03 UTC",
+  "baseSource": "9ba231876838c9c53d6bb80a6c6bb10eed411569",
+  "families": [
+    {
+      "provider": "google",
+      "action": "delete",
+      "pr": 351,
+      "url": "https://github.com/f-tuma/musubi/pull/351",
+      "reviewedHead": "f2a86ac9d440d1eaaf8ac6bb45c8a5e7bb6124fe",
+      "mergeCommit": "601836b4f3ecd78a2cd86acf6719e9c7127cac38",
+      "mergedAt": "2026-10-13T16:45:30Z",
+      "workflows": [
+        {
+          "id": 38430592295,
+          "name": "Quality",
+          "status": "completed",
+          "conclusion": "success",
+          "jobs": 21,
+          "url": "https://github.com/f-tuma/musubi/actions/runs/38430592295"
+        }
+      ],
+      "externalCanary": "not-performed",
+      "registryPublication": "not-proved",
+      "productionDeployment": "not-proved",
+      "liveProviderAcceptance": "not-proved"
+    },
+    {
+      "provider": "google",
+      "action": "create",
+      "pr": 374,
+      "url": "https://github.com/f-tuma/musubi/pull/374",
+      "reviewedHead": "d0e0bef1cacab2391693e98afa2ca683cc86cdc8",
+      "mergeCommit": "afa2e17bf2ceb0fa94e4d108c70a9c36ee0df551",
+      "mergedAt": "2026-10-24T11:43:34Z",
+      "workflows": [
+        {
+          "id": 40089775468,
+          "name": "Quality",
+          "status": "completed",
+          "conclusion": "success",
+          "jobs": 21,
+          "url": "https://github.com/f-tuma/musubi/actions/runs/40089775468"
+        }
+      ],
+      "externalCanary": "not-performed",
+      "registryPublication": "not-proved",
+      "productionDeployment": "not-proved",
+      "liveProviderAcceptance": "not-proved"
+    },
+    {
+      "provider": "microsoft",
+      "action": "delete",
+      "pr": 375,
+      "url": "https://github.com/f-tuma/musubi/pull/375",
+      "reviewedHead": "bb993743bcc1e8c365031f8cf34ea057a397a89d",
+      "mergeCommit": "4809cc4d1f4aa211715fb020e1a85763abde2bf1",
+      "mergedAt": "2026-10-25T10:34:45Z",
+      "workflows": [
+        {
+          "id": 40091086107,
+          "name": "iOS widgets",
+          "status": "completed",
+          "conclusion": "success",
+          "jobs": 1,
+          "url": "https://github.com/f-tuma/musubi/actions/runs/40091086107"
+        },
+        {
+          "id": 40091086111,
+          "name": "Quality",
+          "status": "completed",
+          "conclusion": "success",
+          "jobs": 21,
+          "url": "https://github.com/f-tuma/musubi/actions/runs/40091086111"
+        }
+      ],
+      "externalCanary": "not-performed",
+      "registryPublication": "not-proved",
+      "productionDeployment": "not-proved",
+      "liveProviderAcceptance": "not-proved"
+    },
+    {
+      "provider": "caldav",
+      "action": "delete",
+      "pr": 376,
+      "url": "https://github.com/f-tuma/musubi/pull/376",
+      "reviewedHead": "6d6bc434cbedc78d418e4f9423a5af1bc1cc87d4",
+      "mergeCommit": "ee0130e67c584e8848050d3b850f537668c9e073",
+      "mergedAt": "2026-10-25T11:45:21Z",
+      "workflows": [
+        {
+          "id": 40188218384,
+          "name": "Quality",
+          "status": "completed",
+          "conclusion": "success",
+          "jobs": 21,
+          "url": "https://github.com/f-tuma/musubi/actions/runs/40188218384"
+        },
+        {
+          "id": 40188218387,
+          "name": "iOS widgets",
+          "status": "completed",
+          "conclusion": "success",
+          "jobs": 1,
+          "url": "https://github.com/f-tuma/musubi/actions/runs/40188218387"
+        }
+      ],
+      "externalCanary": "not-performed",
+      "registryPublication": "not-proved",
+      "productionDeployment": "not-proved",
+      "liveProviderAcceptance": "not-proved"
+    },
+    {
+      "provider": "microsoft",
+      "action": "create",
+      "pr": 377,
+      "url": "https://github.com/f-tuma/musubi/pull/377",
+      "reviewedHead": "ad58874d1a7a9297990fa7f1c2d920baf4fe91f9",
+      "mergeCommit": "8a8e605cd9f2ae5c9500e4cc5de18346355caa99",
+      "mergedAt": "2026-10-25T12:49:04Z",
+      "workflows": [
+        {
+          "id": 40192231644,
+          "name": "Quality",
+          "status": "completed",
+          "conclusion": "success",
+          "jobs": 21,
+          "url": "https://github.com/f-tuma/musubi/actions/runs/40192231644"
+        }
+      ],
+      "externalCanary": "not-performed",
+      "registryPublication": "not-proved",
+      "productionDeployment": "not-proved",
+      "liveProviderAcceptance": "not-proved"
+    },
+    {
+      "provider": "caldav",
+      "action": "create",
+      "pr": 378,
+      "url": "https://github.com/f-tuma/musubi/pull/378",
+      "reviewedHead": "83de0111e02da6a42e9b8777ed0f17a81e4cb865",
+      "mergeCommit": "9ba231876838c9c53d6bb80a6c6bb10eed411569",
+      "mergedAt": "2026-10-25T13:36:00Z",
+      "workflows": [
+        {
+          "id": 40197419063,
+          "name": "Quality",
+          "status": "completed",
+          "conclusion": "success",
+          "jobs": 21,
+          "url": "https://github.com/f-tuma/musubi/actions/runs/40197419063"
+        }
+      ],
+      "externalCanary": "not-performed",
+      "registryPublication": "not-proved",
+      "productionDeployment": "not-proved",
+      "liveProviderAcceptance": "not-proved"
+    }
+  ],
+  "correction": {
+    "reason": "C07 audit found historical native evidence downgraded by later retry outcomes",
+    "required": "The evidence-retention correction in this revision must obtain independent approval, green current-head CI and source merge before C07 closure."
+  }
+}

@@ -96,6 +96,28 @@ async function main() {
   }
   try {
     await store.migrate();
+    await fixture("older-uncertainty-404-known429-later-owned-GET-ACKs-uncertain", async ids => {
+      await run("admit-create", ids.input); mode = "lost"; await kill(child("deliver", undefined, "afterUncertain"));
+      const original = remote; assert(original); const pinned = hash((await store.inspectOperation(operationId)).payload);
+      remote = null; mode = "reject"; await expire(); const retryStart = methods.length; assert.equal((await run("deliver")).status, "hold");
+      const held = await store.inspectOperation(operationId); assert.equal(held.dispatchPossible, true); assert.equal(await store.claim(operationId, randomUUID()), null);
+      assert.deepEqual(methods.slice(retryStart), ["GET", "GET", "POST"]); assert.equal(writes, 2); assert.equal(postBodies[0], postBodies[1]);
+      remote = original; mode = "healthy"; await expire(); const observeStart = methods.length; assert.equal((await run("deliver")).status, "acked");
+      await ack("uncertain"); assert.equal(held.receipt.provider.kind, "uncertain"); assert.equal(writes, 2); assert.deepEqual(methods.slice(observeStart), ["GET"]);
+      assert.equal(hash((await store.inspectOperation(operationId)).payload), pinned); assert.equal((await run("deliver")).status, "unclaimed"); assert.equal(writes, 2);
+    });
+    await fixture("prior-accepted-CREATE-fact-survives-later-same-ID-POST-lost-reply", async ids => {
+      await run("admit-create", ids.input); await kill(child("deliver", undefined, "afterAcceptance"));
+      assert.equal((await store.inspectOperation(operationId)).receipt.provider.kind, "accepted"); remote = null; mode = "lost"; await expire();
+      assert.equal((await run("deliver")).status, "acked"); await ack("accepted"); assert.equal(writes, 2); assert.equal(postBodies[0], postBodies[1]); assert(remote);
+    });
+    await fixture("known429-next404-new-POST-lost-applied-GET-ACKs-uncertain", async ids => {
+      await run("admit-create", ids.input); mode = "reject"; assert.equal((await run("deliver")).status, "hold");
+      assert.equal((await store.inspectOperation(operationId)).receipt.provider.kind, "rejected"); assert.equal(await store.claim(operationId, randomUUID()), null);
+      mode = "lost"; await expire(); const before = methods.length; assert.equal((await run("deliver")).status, "acked"); await ack("uncertain");
+      assert.equal(writes, 2); assert.equal(postBodies[0], postBodies[1]); assert.deepEqual(methods.slice(before), ["GET", "GET", "POST", "GET"]); assert(remote);
+      assert.equal((await run("deliver")).status, "unclaimed"); assert.equal(writes, 2);
+    });
     await fixture("SIGKILL-inside-canonical-admission-rolls-back", async ids => {
       await kill(child("admit-create", ids.input, "admissionCanonical"));
       assert.equal((await pool.query("SELECT revision FROM reference_objects WHERE id=$1", [ids.objectId])).rows[0].revision, "1");
