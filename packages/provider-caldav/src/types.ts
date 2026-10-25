@@ -27,7 +27,7 @@ export interface CaldavDeleteProviderOptions { readonly nativeProfile: CaldavNat
 export interface CaldavRequestMetric {
   readonly provider: "caldav";
   readonly family: "event";
-  readonly method: "GET" | "PROPFIND" | "DELETE";
+  readonly method: "GET" | "PROPFIND" | "DELETE" | "PUT";
   readonly status: number | "network-error" | "aborted";
   readonly durationMs: number;
 }
@@ -61,6 +61,36 @@ export type CaldavNativeDeletePreflight = {
 };
 /** Native acceptance only, independently of scoped absence and host settlement. */
 export type CaldavNativeDeleteEvidence = { readonly kind: "deleted"; readonly status: 200 | 201 | 204 | 404 };
+/** Exact admitted CREATE address, UUID-derived UID and full saved VCALENDAR bytes. */
+export interface CaldavPersonalCreate {
+  readonly target: CaldavEventTarget;
+  readonly body: string;
+  readonly operationId: string;
+  readonly attemptId: string;
+  readonly serializer: { readonly id: "caldav-personal-event"; readonly version: 1 };
+}
+export interface CaldavCreateProviderOptions { readonly nativeProfile: CaldavNativeProfile }
+export interface CaldavCreateProviderPorts extends Omit<CaldavDeleteProviderPorts, "beforeMutation"> {
+  readonly beforeMutation: (request: CaldavPersonalCreate, signal?: AbortSignal) => Promise<void>;
+}
+export type CaldavNativeCreatePreflight = { readonly kind: "allowed" };
+export type CaldavNativeCreateEvidence = {
+  readonly kind: "created"; readonly status: 200 | 201 | 204; readonly resourceUrl: string; readonly uid: string; readonly etag: string | null;
+};
+/** Only this exact planned resource's 404 supplies conditional CREATE retry evidence. */
+export type CaldavNativeCreateReadEvidence =
+  | { readonly kind: "present"; readonly resource: CaldavNativeResource; readonly etag: string | null }
+  | { readonly kind: "absent"; readonly status: 404 };
+/** Independent narrow reference projection; product hosts keep their own actual normalizer. */
+export interface CaldavNativeCreateProjection {
+  readonly title: string;
+  readonly description: string | null;
+  readonly location: string | null;
+  readonly start: string;
+  readonly end: string;
+  readonly isAllDay: false;
+  readonly recurrence: null;
+}
 export type CaldavProviderErrorCode =
   | "provider-conflict" | "provider-version-unavailable" | "event-diff-unavailable"
   | "provider-write-failed" | "account-session-changed" | "capability-evidence";

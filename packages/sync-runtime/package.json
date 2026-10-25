@@ -2,19 +2,20 @@
   "name": "@musubi/sync-runtime",
   "private": true,
   "type": "module",
-  "description": "Storage-free bounded runtime for claimed Google personal operations, guarded Microsoft DELETE/CREATE and conditional CalDAV DELETE.",
+  "description": "Storage-free bounded runtime for claimed Google personal operations, Microsoft DELETE/CREATE and CalDAV conditional DELETE/CREATE.",
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "tsx src/index.test.ts && node --import tsx src/behavior/harness.test.ts && pnpm test:scenarios && node --import tsx src/behavior/create-harness.test.ts && pnpm test:scenarios:create && node --import tsx src/behavior/microsoft-delete-harness.test.ts && pnpm test:scenarios:microsoft-delete && node --import tsx src/behavior/caldav-delete-harness.test.ts && pnpm test:scenarios:caldav-delete && node --import tsx src/behavior/microsoft-create-harness.test.ts && pnpm test:scenarios:microsoft-create",
+    "test": "tsx src/index.test.ts && node --import tsx src/behavior/harness.test.ts && pnpm test:scenarios && node --import tsx src/behavior/create-harness.test.ts && pnpm test:scenarios:create && node --import tsx src/behavior/microsoft-delete-harness.test.ts && pnpm test:scenarios:microsoft-delete && node --import tsx src/behavior/caldav-delete-harness.test.ts && pnpm test:scenarios:caldav-delete && node --import tsx src/behavior/microsoft-create-harness.test.ts && pnpm test:scenarios:microsoft-create && node --import tsx src/behavior/caldav-create-harness.test.ts && pnpm test:scenarios:caldav-create",
     "test:scenarios": "node --import tsx src/behavior/cli.ts",
     "test:scenarios:create": "node --import tsx src/behavior/create-cli.ts",
     "test:scenarios:microsoft-delete": "node --import tsx src/behavior/microsoft-delete-cli.ts",
     "test:scenarios:caldav-delete": "node --import tsx src/behavior/caldav-delete-cli.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test:scenarios:microsoft-create": "node --import tsx src/behavior/microsoft-create-cli.ts"
+    "test:scenarios:microsoft-create": "node --import tsx src/behavior/microsoft-create-cli.ts",
+    "test:scenarios:caldav-create": "node --import tsx src/behavior/caldav-create-cli.ts"
   },
   "dependencies": {
     "@musubi/provider-google": "workspace:*",

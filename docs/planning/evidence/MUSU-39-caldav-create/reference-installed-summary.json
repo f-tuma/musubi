@@ -1,0 +1,738 @@
+{
+  "schemaVersion": 1,
+  "scope": "local installed independent reference proof only; no registry publication or production deployment",
+  "status": "passed",
+  "createdAt": "2026-10-25T13:19:22.001132+00:00",
+  "gitHeadAtBuild": "8a8e605cd9f2ae5c9500e4cc5de18346355caa99",
+  "imageTag": "musubi-c07-caldav-create-reference:proof",
+  "oldDockerImageInspectId": "sha256:6251ca9b5663960d32b3a5d5b60a310517bdd0903f16eefdd7dca810d117239b",
+  "dockerImageInspectId": "sha256:09b7c38f09ffc10d22cb90fa4812a2bb176c53c79165e5af12554e47e082cf25",
+  "localBuildIndexDigest": "sha256:09b7c38f09ffc10d22cb90fa4812a2bb176c53c79165e5af12554e47e082cf25",
+  "platformManifestDigest": "sha256:00fd7638fa36fb97d598f006ef42a7b0d0b691be9c447b6d707d62efe5e9acc4",
+  "imageConfigDigest": "sha256:ea79175dcb1d51b6febeed28cd755cc52c91353a515d6d14fe23a3abe6d842fc",
+  "platform": {
+    "os": "linux",
+    "architecture": "amd64"
+  },
+  "dockerIdentityNote": "Docker image inspect Id identifies the local OCI index here. Platform manifest and image config digests are recorded separately. Local daemon metadata does not establish registry publication.",
+  "sourceContextFiles": 178,
+  "sourceContextFingerprint": "a2dca78ff9f4fb44661e54e6468aa990781edc0206ac2f954f723ff993e6947f",
+  "sourceContextScope": "Credential-free frozen tracked and feature source COPY closure; .env, data, node_modules, build outputs and source symlinks excluded. No source bind mounts.",
+  "allSourceFingerprint": "d233f8f0a655c123eaff2dcf1904eeea9f74707d41df46dd3d418f1252d20a9f",
+  "allSourceFiles": 151,
+  "productionSourceFingerprint": "f53560ed6d21ec38b4a8e83bea63c14f3c4bd682ec4c6d4953d28d6fa943d256",
+  "productionSourceFiles": 85,
+  "productionSourceFingerprintScope": "Reference, types, sync-codec, Google/Microsoft/CalDAV provider and shared runtime TS/SQL; excludes tests, process fixtures and behavior harnesses.",
+  "installedSourceHashParity": {
+    "checkedFiles": 151,
+    "productionFiles": 85,
+    "mismatches": []
+  },
+  "sourceInventoryAfterProof": {
+    "frozenFiles": 151,
+    "currentFiles": 151,
+    "byteEqual": true,
+    "addedRemovedOrModified": []
+  },
+  "fullContextInventoryAfterProof": {
+    "checkedFiles": 178,
+    "byteEqual": true,
+    "addedRemovedOrModified": []
+  },
+  "installedDependencies": {
+    "namedPackages": 30,
+    "packages": [
+      {
+        "name": "@esbuild/linux-x64",
+        "version": "0.28.2"
+      },
+      {
+        "name": "@musubi/provider-caldav",
+        "version": null
+      },
+      {
+        "name": "@musubi/provider-google",
+        "version": null
+      },
+      {
+        "name": "@musubi/provider-microsoft",
+        "version": null
+      },
+      {
+        "name": "@musubi/sync-codec",
+        "version": null
+      },
+      {
+        "name": "@musubi/sync-reference",
+        "version": null
+      },
+      {
+        "name": "@musubi/sync-runtime",
+        "version": null
+      },
+      {
+        "name": "@musubi/types",
+        "version": null
+      },
+      {
+        "name": "esbuild",
+        "version": "0.28.2"
+      },
+      {
+        "name": "ical.js",
+        "version": "2.2.1"
+      },
+      {
+        "name": "ipaddr.js",
+        "version": "1.9.1"
+      },
+      {
+        "name": "pg",
+        "version": "8.23.0"
+      },
+      {
+        "name": "pg-cloudflare",
+        "version": "1.4.0"
+      },
+      {
+        "name": "pg-connection-string",
+        "version": "2.14.0"
+      },
+      {
+        "name": "pg-int8",
+        "version": "1.0.1"
+      },
+      {
+        "name": "pg-pool",
+        "version": "3.14.0"
+      },
+      {
+        "name": "pg-protocol",
+        "version": "1.16.0"
+      },
+      {
+        "name": "pg-types",
+        "version": "2.2.0"
+      },
+      {
+        "name": "pgpass",
+        "version": "1.0.5"
+      },
+      {
+        "name": "postgres-array",
+        "version": "2.0.0"
+      },
+      {
+        "name": "postgres-bytea",
+        "version": "1.0.1"
+      },
+      {
+        "name": "postgres-date",
+        "version": "1.0.7"
+      },
+      {
+        "name": "postgres-interval",
+        "version": "1.2.0"
+      },
+      {
+        "name": "sax",
+        "version": "1.6.1"
+      },
+      {
+        "name": "split2",
+        "version": "4.2.0"
+      },
+      {
+        "name": "tsx",
+        "version": "4.23.12"
+      },
+      {
+        "name": "undici",
+        "version": "7.29.0"
+      },
+      {
+        "name": "xml-js",
+        "version": "1.6.11"
+      },
+      {
+        "name": "xtend",
+        "version": "4.0.2"
+      },
+      {
+        "name": "zod",
+        "version": "4.4.3"
+      }
+    ],
+    "forbiddenPackageNamesChecked": [
+      "@musubi/db",
+      "@musubi/auth",
+      "@musubi/config",
+      "@musubi/mobile",
+      "better-auth",
+      "expo",
+      "react-native"
+    ],
+    "forbiddenPackagesPresent": []
+  },
+  "execution": {
+    "durationMs": 86883,
+    "installedCliInvocations": 117,
+    "cases": 22,
+    "nativeFixtureRequests": 110,
+    "nativeRequestCounts": {
+      "microsoft": {
+        "GET": 11,
+        "POST": 2,
+        "DELETE": 1
+      },
+      "google": {
+        "GET": 9,
+        "POST": 1,
+        "PATCH": 1,
+        "DELETE": 1
+      },
+      "caldav": {
+        "GET": 33,
+        "PROPFIND": 26,
+        "DELETE": 1,
+        "PUT": 24
+      }
+    },
+    "runtimeUser": "node",
+    "sourceBindMounts": 0,
+    "readOnlyContainerFilesystem": true,
+    "temporaryFilesystem": "/tmp only",
+    "configurationNames": [
+      "REFERENCE_DATABASE_URL",
+      "REFERENCE_CREDENTIAL_KEY",
+      "REFERENCE_ALLOW_PRIVATE_NETWORK"
+    ],
+    "oldAndNewDeploymentsSerial": true,
+    "realSigkillCases": 7,
+    "sigkillExitCodes": [
+      137
+    ]
+  },
+  "upgrade": {
+    "oldPendingProfiles": [
+      "google-personal-event-create-v1",
+      "google-personal-event-update-v1",
+      "google-personal-event-delete-v1",
+      "microsoft-personal-event-delete-v1",
+      "caldav-personal-event-delete-v1",
+      "microsoft-personal-event-create-v1"
+    ],
+    "oldRowCounts": {
+      "reference_connections": 7,
+      "reference_objects": 7,
+      "reference_bindings": 7,
+      "reference_operations": 7,
+      "reference_attempts": 7
+    },
+    "preservedTableAndIndexOids": 15,
+    "preservedRowHashes": {
+      "reference_connections": "cf5e4430a820aa7e06e511ca5419121cae1d95f9dd4337e9eaa0350b83617032",
+      "reference_objects": "fd50cbcb3ad98317f0177a6aaf8f958ac8e40637007f087ce423acba88a7ca63",
+      "reference_bindings": "ae5ffd1ba7eed02f866b1552cab203ec244714ee1fded0c9a40802a5cefe077d",
+      "reference_operations": "07b34c2f27e61db23cc01f76df5b8c4a1ae87437e05d098ba4ecea5c9220e30e",
+      "reference_attempts": "23b9280b763c6255209ebd99c89ece06f084bb871e4d21006b42d37806231699"
+    },
+    "oldPayloadHashes": [
+      {
+        "provider": "google",
+        "action": "create",
+        "sha256": "71923a0e0b41e7cd06a7780e42cef924dd5ff45c1502103d733e5bd6395eb880"
+      },
+      {
+        "provider": "google",
+        "action": "update",
+        "sha256": "4a2204d0b07c3cde42b18da723b75762778035589134a3402da3ea60d57d0dbc"
+      },
+      {
+        "provider": "google",
+        "action": "delete",
+        "sha256": "942d77a52842d58b619332c1ffcff6689338347fbd010d31527a29eb08d0f12f"
+      },
+      {
+        "provider": "microsoft",
+        "action": "delete",
+        "sha256": "d88e2c32ec455f2bb84a007694fbe10135083ccee0e26eba319a80d872a1752a"
+      },
+      {
+        "provider": "caldav",
+        "action": "delete",
+        "sha256": "b0bfa01b82ee839dff9866e39558aa162230c398cd30215cb00a331a217de68c"
+      },
+      {
+        "provider": "microsoft",
+        "action": "create",
+        "sha256": "7c60b95358b1f5fff43001dde2bd13c0ab796339cc3039ef60141b42e1f8bf8c"
+      }
+    ],
+    "preservedOriginalEpochsPayloadsReceiptsAndAttemptHistory": true,
+    "oldPendingOperationsDeliveredByNewImage": 6,
+    "initialNewMigrationRuns": 1,
+    "oldUnknownGraphReservationAndAdoptedNullValidatorPreserved": true,
+    "additionalMigrationRunsWithKnownDavReservation": 2,
+    "additionalMigrationRunsWithAdoptedDavStrongValidator": 2,
+    "populatedDavMigrationPreservedFullRowsEpochsAndOids": true
+  },
+  "cases": [
+    {
+      "case": "old-installed-all-six-profiles-Graph-unknown-adopted-null-additive-upgrade",
+      "status": "passed"
+    },
+    {
+      "case": "installed-repeat-migrate-known-DAV-reservation-and-old-Graph-null",
+      "status": "passed"
+    },
+    {
+      "case": "installed-fresh-full-ICS-conditional-PUT-strong-atomic-adoption-repeat-migrate",
+      "status": "passed",
+      "putCount": 1,
+      "final": {
+        "provider": "accepted",
+        "remote": "confirmed",
+        "acceptanceStatus": 201,
+        "knownResourceAndUidPreserved": true,
+        "strongReadback": true,
+        "baselineAtomic": true,
+        "sourceGeneration": 2,
+        "payloadHash": "5b498be21aadae9f68399a83b220234ca7e77ccf62b441a9b19fe2b2e9764fc2",
+        "fullBodySha256": "677a51cc853411bd3aec6563eec1cc29431fb0b98c0e16ee69f299214f2c6f2b"
+      }
+    },
+    {
+      "case": "installed-SIGKILL-before-PUT-404-authorizes-original-conditional-resource",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "putCount": 1,
+      "restartMethods": [
+        "GET",
+        "PROPFIND",
+        "PUT",
+        "GET"
+      ],
+      "final": {
+        "provider": "accepted",
+        "remote": "confirmed",
+        "acceptanceStatus": 201,
+        "knownResourceAndUidPreserved": true,
+        "strongReadback": true,
+        "baselineAtomic": true,
+        "sourceGeneration": 2,
+        "payloadHash": "cbe9ff3ddd96f928858cd93e782a2b8dc806cec23ae90c88280228d6ddd4b8fc",
+        "fullBodySha256": "cb41de78b38489e3ce1456372c8d213dafcf24abea9f1d76cb15939eabc95330"
+      }
+    },
+    {
+      "case": "installed-accepted-PUT-SIGKILL-GET-only-ACK",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "putCount": 1,
+      "restartMethods": [
+        "GET"
+      ],
+      "final": {
+        "provider": "accepted",
+        "remote": "confirmed",
+        "acceptanceStatus": 201,
+        "knownResourceAndUidPreserved": true,
+        "strongReadback": true,
+        "baselineAtomic": true,
+        "sourceGeneration": 2,
+        "payloadHash": "fbdc28a6d200d2d4aaa30ba16efb4cd468825b23a58b7946fe3b55fa1a30ea35",
+        "fullBodySha256": "db6d2f3c8e8272a343c2092fc106558ab8f02ccc5ad5bc1868bff3e23b2fb65d"
+      }
+    },
+    {
+      "case": "installed-lost-PUT-reply-SIGKILL-GET-only-uncertain-ACK",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "putCount": 1,
+      "restartMethods": [
+        "GET"
+      ],
+      "final": {
+        "provider": "uncertain",
+        "remote": "confirmed",
+        "acceptanceStatus": null,
+        "knownResourceAndUidPreserved": true,
+        "strongReadback": true,
+        "baselineAtomic": true,
+        "sourceGeneration": 2,
+        "payloadHash": "14dcdccdea9a9d6cda28cbbe1f71679d5f7d67db1c946e746c290d7eba48291a",
+        "fullBodySha256": "b1abc1d522aa44e2792c1ebb123d7f49bfb282eb7fc79f3e9b687e36b68d690c"
+      }
+    },
+    {
+      "case": "installed-confirmed-readback-COMMIT-SIGKILL-before-atomic-ACK",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "putCount": 1,
+      "final": {
+        "provider": "uncertain",
+        "remote": "confirmed",
+        "acceptanceStatus": null,
+        "knownResourceAndUidPreserved": true,
+        "strongReadback": true,
+        "baselineAtomic": true,
+        "sourceGeneration": 2,
+        "payloadHash": "a62c834fe31e2e9f7771a1f0ecf842ebd1a8b472593f162c87ea00377536f34f",
+        "fullBodySha256": "05f9ae6705e35484e976462f067cfa0b1a795463ea31c1458c677c0985a07339"
+      }
+    },
+    {
+      "case": "installed-uncertain-exact404-same-URL-UID-full-ICS-conditional-retry",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "putCount": 2,
+      "restartMethods": [
+        "GET",
+        "PROPFIND",
+        "PUT",
+        "GET"
+      ],
+      "byteIdenticalBodies": true,
+      "final": {
+        "provider": "accepted",
+        "remote": "confirmed",
+        "acceptanceStatus": 201,
+        "knownResourceAndUidPreserved": true,
+        "strongReadback": true,
+        "baselineAtomic": true,
+        "sourceGeneration": 2,
+        "payloadHash": "fd1e260e6f8f7a6fb964b3f7866c83e9d73f47aea31cbc7294626d58996ea96f",
+        "fullBodySha256": "786d4bbbf4e0722307f2468f07c7fd5d0a81154a6fc888b8630b089b56c22603"
+      }
+    },
+    {
+      "case": "installed-prior-accepted-404-retry-retains-status-history",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "putCount": 2,
+      "acceptanceStatuses": [
+        201,
+        200
+      ],
+      "final": {
+        "provider": "accepted",
+        "remote": "confirmed",
+        "acceptanceStatus": 200,
+        "knownResourceAndUidPreserved": true,
+        "strongReadback": true,
+        "baselineAtomic": true,
+        "sourceGeneration": 2,
+        "payloadHash": "7434dd2e72b0a1b38d9d0635ef85ef6de63de310d2677c49645bad588e635dc0",
+        "fullBodySha256": "de33b9b1c3dc8169d3988ee040e13568b0975435d5a9146d7ff2282e0b3f778a"
+      }
+    },
+    {
+      "case": "installed-older-uncertainty-survives-known429-later-GET-ACK",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "putCount": 2,
+      "final": {
+        "provider": "uncertain",
+        "remote": "confirmed",
+        "acceptanceStatus": null,
+        "knownResourceAndUidPreserved": true,
+        "strongReadback": true,
+        "baselineAtomic": true,
+        "sourceGeneration": 2,
+        "payloadHash": "e045168f357247610945078389edc64292979aaa4a722f69ba31e9dfc2424d07",
+        "fullBodySha256": "4750b9043dbb0bdbefe8c44c7aed0352b996f6b0ab440fd4dc2a736241ae6915"
+      }
+    },
+    {
+      "case": "installed-known429-delay-404-next-PUT-lost-reply-GET-uncertain-ACK",
+      "status": "passed",
+      "putCount": 2,
+      "retryDelayMs": 9000,
+      "final": {
+        "provider": "uncertain",
+        "remote": "confirmed",
+        "acceptanceStatus": null,
+        "knownResourceAndUidPreserved": true,
+        "strongReadback": true,
+        "baselineAtomic": true,
+        "sourceGeneration": 2,
+        "payloadHash": "fa5319bde052f2598f9999b4816de99e1fe5fa595f3bea4b1c771e3a05b7a34b",
+        "fullBodySha256": "324fdf26b4477bbe17984ba79d5b70ad092fe3760286f102b67c5a2deaa2adb8"
+      }
+    },
+    {
+      "case": "installed-known-rejected-matching-resource-HOLD-no-adoption",
+      "status": "passed",
+      "putCount": 1,
+      "noAdoption": true
+    },
+    {
+      "case": "installed-wrong-uid-refuses-adoption-with-original-evidence",
+      "status": "passed",
+      "putCount": 1,
+      "noAdoption": true,
+      "nativeAcceptancePreserved": true
+    },
+    {
+      "case": "installed-changed-content-refuses-adoption-with-original-evidence",
+      "status": "passed",
+      "putCount": 1,
+      "noAdoption": true,
+      "nativeAcceptancePreserved": true
+    },
+    {
+      "case": "installed-nested-event-refuses-adoption-with-original-evidence",
+      "status": "passed",
+      "putCount": 1,
+      "noAdoption": true,
+      "nativeAcceptancePreserved": true
+    },
+    {
+      "case": "installed-ambient-utc-refuses-adoption-with-original-evidence",
+      "status": "passed",
+      "putCount": 1,
+      "noAdoption": true,
+      "nativeAcceptancePreserved": true
+    },
+    {
+      "case": "installed-weak-readback-refuses-adoption-with-original-evidence",
+      "status": "passed",
+      "putCount": 1,
+      "noAdoption": true,
+      "nativeAcceptancePreserved": true
+    },
+    {
+      "case": "installed-gone-refuses-adoption-with-original-evidence",
+      "status": "passed",
+      "putCount": 1,
+      "noAdoption": true,
+      "nativeAcceptancePreserved": true
+    },
+    {
+      "case": "installed-readback404-refuses-adoption-with-original-evidence",
+      "status": "passed",
+      "putCount": 1,
+      "noAdoption": true,
+      "nativeAcceptancePreserved": true
+    },
+    {
+      "case": "installed-412-refuses-adoption-with-original-evidence",
+      "status": "passed",
+      "putCount": 1,
+      "noAdoption": true,
+      "nativeAcceptancePreserved": false
+    },
+    {
+      "case": "installed-valid-extras-strong-normalized-readback-ACK",
+      "status": "passed",
+      "putCount": 1,
+      "final": {
+        "provider": "accepted",
+        "remote": "confirmed",
+        "acceptanceStatus": 201,
+        "knownResourceAndUidPreserved": true,
+        "strongReadback": true,
+        "baselineAtomic": true,
+        "sourceGeneration": 2,
+        "payloadHash": "3a8c39bccf8da42ae788d7e5347faf25d161188d347932bf7f3685a5f9c78911",
+        "fullBodySha256": "bf80742ed7020259dd0d4c212d55a69da664d9687306c3536a36168fe10b822e"
+      }
+    },
+    {
+      "case": "installed-missing-response-etag-strong-normalized-readback-ACK",
+      "status": "passed",
+      "putCount": 1,
+      "final": {
+        "provider": "accepted",
+        "remote": "confirmed",
+        "acceptanceStatus": 201,
+        "knownResourceAndUidPreserved": true,
+        "strongReadback": true,
+        "baselineAtomic": true,
+        "sourceGeneration": 2,
+        "payloadHash": "47be8dd994241a474d1c4e2d9cabc49cbb611ff6010f98db79a88b42d9818144",
+        "fullBodySha256": "727f5755f60d9cda2ce64593aeece76aa5ec020d1889a4209f57f2393cac8b93"
+      }
+    }
+  ],
+  "providerIsolation": {
+    "ownedLoopbackHttpFixtureOnly": true,
+    "logicalNativeTargets": "Fixed Google/Microsoft origins plus HTTPS loopback DAV URLs",
+    "normalPrivatePolicyExplicitForDav": true,
+    "testTransport": "Node --import data URL replaces only native fetch leaves with a fixed owned HTTP loopback destination, preserves logical Response.url, and rejects nonfixture URLs. No external fallback or DNS override.",
+    "readbackCommitPause": "The test preload forwards the installed pg.Client real evidence UPDATE and COMMIT unchanged, then signals only an owned loopback control endpoint and waits before returning. SIGKILL preserves committed readback evidence before ACK. No production source or schema instrumentation.",
+    "ambientTimezoneFixture": "The test-only preload registers an unowned alias in the installed ICAL ESM timezone registry; strict reference readback refuses it without resource-owned VTIMEZONE proof.",
+    "basicCredentialPortUsedForOldDav": true,
+    "externalProviderCredentialsOrAccountsUsed": false,
+    "liveProviderRequests": false
+  },
+  "cleanup": {
+    "ownedCliContainersRemoved": true,
+    "nonceDatabaseDropped": true,
+    "containerAbsenceVerified": true,
+    "databaseAbsenceVerified": true,
+    "rootPostgresStillRunning": true
+  },
+  "limits": [
+    "This local installed-image proof uses synthetic Google, Microsoft and DAV resources at a fixed owned loopback server. It does not exercise an external provider, external DNS or live TLS.",
+    "The restricted preload preserves logical native response URLs while routing only fixed owned native URL families to HTTP loopback. Evidence persistence pause observes actual installed SQL completion and changes neither writes nor authority decisions. The CLI, shared runtime/providers, Basic credential ports, PostgreSQL ledger and physical container SIGKILL are real installed code.",
+    "The DAV CREATE reservation keeps the original UUID-derived URL and UID, exact full original codec ICS, no initial ETag/baseline, and atomically adopts matching strict normalized content with a real strong readback validator. Graph admitted NULL resource IDs and adopted NULL validators remain unchanged.",
+    "DAV may conditionally retry only the original resource after exact scoped404 and fresh collection bind authority in a later attempt. Dispatch markers remain sticky. HTTP410 and known412 cannot authorize recreation; same-attempt readback404 never sends another PUT. No resolution/supersession or DAV UPDATE is added.",
+    "Older unknown PUT outcomes remain uncertain after later known rejection. Known acceptance is never downgraded by failed retry; later accepted responses can advance the DAV-specific status/validator while prior attempt history survives. A purely known rejected CREATE cannot adopt a later matching resource.",
+    "Reference strict readback rejects wrong UID/content, nested events, ambient timezone aliases, weak validators and unsupported scope. The reference integer Basic/source generation fences are independent of Musubi timestamp floors and do not establish a global ABA guarantee.",
+    "The complete source regression corpus and installed API authentication/HTTP smoke are separate evidence. This proof establishes no registry publication or production rollout."
+  ],
+  "commands": {
+    "build": "docker build -f apps/sync-reference/Dockerfile -t musubi-c07-caldav-create-reference:proof /tmp/musu39-caldav-create-reference-context",
+    "probe": "node /tmp/musu39-caldav-create-installed-reference.mjs"
+  },
+  "artifacts": [
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/installed-reference-proof.json",
+      "sha256": "0768b4c41eac18fcd3747364878bd1c50bb1ff0ceae080927d5cc602664152c6",
+      "bytes": 103867
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/artifact-attestation.json",
+      "sha256": "8ddb65166373fc864327ec36f5c7a693811b75671260f46abc6e6041b7888e55",
+      "bytes": 1016
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/source-manifest.json",
+      "sha256": "eefe7b22d8b66bed59ce5a45df7a4b85e26369587374f57bdaa56e57cd8b9d63",
+      "bytes": 17064
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/runtime-source-manifest.json",
+      "sha256": "49d655e34bcffcb15f6f35a347a5426fba905898ef832c2a0c2a4f790a372f07",
+      "bytes": 9246
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/installed-source-manifest.json",
+      "sha256": "1c1ce6746f56258bfde35b625f1fbdba5901a0903806f877ea1f1a548578487b",
+      "bytes": 17064
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/installed-runtime-source-manifest.json",
+      "sha256": "49d655e34bcffcb15f6f35a347a5426fba905898ef832c2a0c2a4f790a372f07",
+      "bytes": 9246
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/installed-package-map.json",
+      "sha256": "bce1b58a6a46296755dce1bb5f77a0eae396225271919d074ec52727bfc7a0ac",
+      "bytes": 1782
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/current-source-inventory.json",
+      "sha256": "462dcfad090f001e37ffd980b2588d29426e9c31eda3f42c3d2ad0415a01f4e8",
+      "bytes": 101
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/current-context-inventory.json",
+      "sha256": "d25dced3f7c31940728e38bbadb7059bc973fa5e2f91dce1ad07bef218489b3c",
+      "bytes": 79
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/old-ledger-before-upgrade.json",
+      "sha256": "899c67d3d24fc07cc7f4c1ebf5184baf70c7a2ad7442bbba7f3165ddce94e2f6",
+      "bytes": 8284
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/new-ledger-after-upgrade.json",
+      "sha256": "899c67d3d24fc07cc7f4c1ebf5184baf70c7a2ad7442bbba7f3165ddce94e2f6",
+      "bytes": 8284
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/http-requests.json",
+      "sha256": "1e631e8e58888d500fd6a492ea1240b0fcb8c29d9bfbc9fa03a975294b61f59d",
+      "bytes": 20423
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/image-inventory.json",
+      "sha256": "867148bd83dfe894cddacba6a0dd4550b803847f2791c43157b24d1bb25ad65b",
+      "bytes": 1437
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/build-context.json",
+      "sha256": "9a1daebe1d6f7a5d417aa1c5f6580c49f6ef28f268fe7ee4830e120709cc3c31",
+      "bytes": 495
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/build-context-manifest.json",
+      "sha256": "5cc01a0f5b5042b18e57d2070fa184cbcfcca774f7ede6304f9ad0d1af745bfb",
+      "bytes": 19899
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/build.log",
+      "sha256": "d3a4c4cd8e143afd54c6baca586ae3c3e9da692aa11307c43048b330cd5e4439",
+      "bytes": 3400
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/cleanup.json",
+      "sha256": "80276f074936a79908b6dde55206ce745443091587917c9eaa3437187c8a008c",
+      "bytes": 170
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/cleanup-verified.json",
+      "sha256": "70e5cd2540356a8c4c10ae8de303f2cd61216b0035d0bd17532d59bbaee49978",
+      "bytes": 230
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/installed-reference-probe.mjs",
+      "sha256": "94b99063b8a3385f6bdd49fa4f73aca4a753313fcd3bce5dcc78adfadf1f5351",
+      "bytes": 48701
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/checkpoint-accepted-before-readback.json",
+      "sha256": "f2b65f64686878136a956eff23b8d30ecc976f7b3e6da040ab35ae8b2cbd28a1",
+      "bytes": 1920
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/checkpoint-accepted-then-404.json",
+      "sha256": "71b18958a127dbd4d330590df410752a03c33c7b1246f87102ab94ff73e2b496",
+      "bytes": 1920
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/checkpoint-lost-before-readback.json",
+      "sha256": "9a32d54af9cd36004cadbe5453dd7c0b1d01645c78b376c4ab638ccde37be0dc",
+      "bytes": 1708
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/checkpoint-lost-not-applied.json",
+      "sha256": "92567095ba81cd1c6ab9655bd15bcde333ab208476d827c6878d47fbff2a44cb",
+      "bytes": 1708
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/checkpoint-older-unknown-known429.json",
+      "sha256": "05801ffaf9caca7802b79a7e1297e997c1c491a8558d40b90747381cd9191e1a",
+      "bytes": 1708
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-reference-evidence/checkpoint-readback-commit.json",
+      "sha256": "e5e7e5828925eb2e21f9512dd211dce193b94b888ac3cb2625d13c7bcf56c817",
+      "bytes": 1836
+    }
+  ]
+}

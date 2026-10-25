@@ -11,6 +11,7 @@ const SUITES = {
   "microsoft-delete": "packages/sync-runtime/src/behavior/microsoft-delete.json",
   "microsoft-create": "packages/sync-runtime/src/behavior/microsoft-create.json",
   "caldav-delete": "packages/sync-runtime/src/behavior/caldav-delete.json",
+  "caldav-create": "packages/sync-runtime/src/behavior/caldav-create.json",
   "task-inspector": "apps/web/src/tests/behavior/task-inspector.json",
 };
 const validDuration = value => typeof value === "number" && Number.isFinite(value) && value >= 0;
@@ -151,8 +152,8 @@ async function runSuite(selection, options, { root, execute, env }) {
   let directory;
   try {
     let child, results, ancillaryFailed = false, uiFailed = false;
-    if (["google-delete", "google-create", "microsoft-delete", "microsoft-create", "caldav-delete"].includes(selection.name)) {
-      const entry = { "google-delete": "cli.ts", "google-create": "create-cli.ts", "microsoft-delete": "microsoft-delete-cli.ts", "microsoft-create": "microsoft-create-cli.ts", "caldav-delete": "caldav-delete-cli.ts" }[selection.name];
+    if (["google-delete", "google-create", "microsoft-delete", "microsoft-create", "caldav-delete", "caldav-create"].includes(selection.name)) {
+      const entry = { "google-delete": "cli.ts", "google-create": "create-cli.ts", "microsoft-delete": "microsoft-delete-cli.ts", "microsoft-create": "microsoft-create-cli.ts", "caldav-delete": "caldav-delete-cli.ts", "caldav-create": "caldav-create-cli.ts" }[selection.name];
       child = await execute(process.execPath, ["--import", "tsx", join(root, "packages/sync-runtime/src/behavior", entry), "--json",
         ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });
       results = runtimeResults(child.stdout, selection);

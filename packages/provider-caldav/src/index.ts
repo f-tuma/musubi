@@ -5,11 +5,14 @@ import {
   strictCaldavResourceURL, validateCaldavObservation, validateCaldavPhysicalResource,
 } from "./native-event";
 import { CaldavProviderError } from "./types";
+import { strongCaldavEtag } from "./native-etag";
 import type {
   CaldavAccountSession, CaldavDeleteProviderOptions, CaldavDeleteProviderPorts, CaldavEventTarget, CaldavNativeDeleteEvidence,
   CaldavNativeDeletePreflight, CaldavNativeDeleteReadEvidence, CaldavNativeProfile, CaldavPersonalDelete,
 } from "./types";
 export * from "./types";
+export { strongCaldavEtag } from "./native-etag";
+export { createCaldavPersonalEventCreateProvider, caldavPersonalCreateIdentityV1, normalizeCaldavCreateProjection } from "./create";
 export { selectCaldavEventMaster, strictCaldavResourceURL, validateCaldavPhysicalResource } from "./native-event";
 
 const failed = () => new CaldavProviderError("provider-write-failed");
@@ -27,10 +30,6 @@ function exact(value: unknown, keys: readonly string[]) {
 function id(value: unknown): string {
   if (typeof value !== "string" || !value || value.length > 2048) throw new CaldavProviderError("provider-conflict");
   return value;
-}
-/** Preserve the native opaque strong ETag verbatim, including comma/backslash. */
-export function strongCaldavEtag(value: unknown): string | null {
-  return typeof value === "string" && /^"[\x21\x23-\x7e\x80-\xff]*"$/.test(value) ? value : null;
 }
 function requireEtag(value: unknown): string {
   const etag = strongCaldavEtag(value);

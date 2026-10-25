@@ -2,7 +2,7 @@
   "name": "@musubi/provider-caldav",
   "private": true,
   "type": "module",
-  "description": "Storage-free CalDAV personal conditional DELETE and shared guarded native transport.",
+  "description": "Storage-free CalDAV personal conditional CREATE/DELETE and shared guarded native transport.",
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",

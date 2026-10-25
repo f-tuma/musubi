@@ -1,0 +1,6105 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    {
+      "id": "fresh-create",
+      "title": "Musubi checks collection bind then sends the exact saved conditional CREATE once",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 201,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "PROPFIND",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 201
+          }
+        ],
+        "dnsLookups": 2,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": "\"created\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 201,
+          "etag": "\"created\"",
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 2
+      }
+    },
+    {
+      "id": "fresh-missing-etag",
+      "title": "PUT acceptance retains missing ETag under native strong-or-null policy",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 201,
+          "body": null,
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "PROPFIND",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 201
+          }
+        ],
+        "dnsLookups": 2,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 201,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 2
+      }
+    },
+    {
+      "id": "fresh-weak-etag",
+      "title": "PUT acceptance retains weak ETag under native strong-or-null policy",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 201,
+          "body": null,
+          "headers": {
+            "etag": "W/\"weak\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "PROPFIND",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 201
+          }
+        ],
+        "dnsLookups": 2,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 201,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 2
+      }
+    },
+    {
+      "id": "fresh-quoted-empty-etag",
+      "title": "PUT acceptance retains quoted-empty ETag under native strong-or-null policy",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 201,
+          "body": null,
+          "headers": {
+            "etag": "\"\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "PROPFIND",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 201
+          }
+        ],
+        "dnsLookups": 2,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": "\"\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 201,
+          "etag": "\"\"",
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 2
+      }
+    },
+    {
+      "id": "fresh-no-slash-collection",
+      "title": "Existing CREATE preserves exact no-slash collection identity and derived URL",
+      "policy": "musubi",
+      "collection": "no-slash",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 201,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "PROPFIND",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 201
+          }
+        ],
+        "dnsLookups": 2,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": "\"created\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 201,
+          "etag": "\"created\"",
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 2
+      }
+    },
+    {
+      "id": "long-resource-admission-boundary",
+      "title": "Native helper preserves derived long URL while existing v1 admission holds it before ports",
+      "policy": "musubi",
+      "collection": "long",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [],
+      "expected": {
+        "status": "hold",
+        "methods": [],
+        "urls": [],
+        "ifNoneMatch": [],
+        "bodyHashes": [],
+        "authorized": [],
+        "propfindKinds": [],
+        "metrics": [],
+        "dnsLookups": 0,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "operation-envelope-malformed",
+        "errorOutcome": "not-written",
+        "preparations": 0,
+        "sessions": 0
+      }
+    },
+    {
+      "id": "fresh-query-collection",
+      "title": "Existing CREATE preserves exact query collection identity and derived URL",
+      "policy": "musubi",
+      "collection": "query",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/?opaque=1",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/?opaque=1</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/?opaque=1/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 201,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "PROPFIND",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/?opaque=1",
+          "https://dav.example.test/cal/?opaque=1/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 201
+          }
+        ],
+        "dnsLookups": 2,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": "\"created\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 201,
+          "etag": "\"created\"",
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 2
+      }
+    },
+    {
+      "id": "fresh-hash-collection",
+      "title": "Existing hash collection retains exact ACL authority refusal without sending PUT",
+      "policy": "musubi",
+      "collection": "hash",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/#opaque",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/#opaque</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "PROPFIND"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/#opaque"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          "privileges"
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "capability-evidence",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "known-resource-binding",
+      "title": "CREATE also validates an already captured exact native resource binding",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 201,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "PROPFIND",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 201
+          }
+        ],
+        "dnsLookups": 2,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": "\"created\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 201,
+          "etag": "\"created\"",
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 2
+      },
+      "binding": "known"
+    },
+    {
+      "id": "acl-denied",
+      "title": "Missing create privileges never imply permission to PUT",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:read/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "PROPFIND"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          "privileges"
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "capability-evidence",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "acl-malformed",
+      "title": "Missing create privileges never imply permission to PUT",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "not XML"
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "PROPFIND"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          "privileges"
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "capability-evidence",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "acl-rate-limit",
+      "title": "Transient collection ACL Retry-After blocks PUT",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 429,
+          "body": null,
+          "headers": {
+            "retry-after": "2"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "PROPFIND"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          "privileges"
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 429
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": 2000,
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "put-412-not-written",
+      "title": "Conditional PUT 412 never triggers same-attempt GET or adoption",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 412,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "PROPFIND",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 412
+          }
+        ],
+        "dnsLookups": 2,
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "rejected",
+              "status": null,
+              "etag": null,
+              "errorCode": "transport-failed",
+              "retry": "never",
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "rejected",
+          "status": null,
+          "etag": null,
+          "errorCode": "transport-failed",
+          "retry": "never",
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "provider-conflict",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 2
+      }
+    },
+    {
+      "id": "put-408-not-written",
+      "title": "Conditional PUT 408 never triggers same-attempt GET or adoption",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 408,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "PROPFIND",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 408
+          }
+        ],
+        "dnsLookups": 2,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "rejected",
+              "status": null,
+              "etag": null,
+              "errorCode": "transport-failed",
+              "retry": "never",
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "rejected",
+          "status": null,
+          "etag": null,
+          "errorCode": "transport-failed",
+          "retry": "never",
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 2
+      }
+    },
+    {
+      "id": "put-429-not-written",
+      "title": "Conditional PUT 429 never triggers same-attempt GET or adoption",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 429,
+          "body": null,
+          "headers": {
+            "retry-after": "2"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "PROPFIND",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 429
+          }
+        ],
+        "dnsLookups": 2,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "rejected",
+              "status": null,
+              "etag": null,
+              "errorCode": "rate-limited",
+              "retry": "after-delay",
+              "retryAfterMs": 2000
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "rejected",
+          "status": null,
+          "etag": null,
+          "errorCode": "rate-limited",
+          "retry": "after-delay",
+          "retryAfterMs": 2000
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": 2000,
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 2
+      }
+    },
+    {
+      "id": "put-unexpected-success",
+      "title": "Possible conditional PUT acceptance remains uncertain without an internal retry",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 202,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "PROPFIND",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 202
+          }
+        ],
+        "dnsLookups": 2,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "unconfirmed",
+        "preparations": 1,
+        "sessions": 2
+      }
+    },
+    {
+      "id": "put-server-error",
+      "title": "Possible conditional PUT acceptance remains uncertain without an internal retry",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 500,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "PROPFIND",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 500
+          }
+        ],
+        "dnsLookups": 2,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "unconfirmed",
+        "preparations": 1,
+        "sessions": 2
+      }
+    },
+    {
+      "id": "lost-reply-musubi",
+      "title": "Possible conditional PUT acceptance remains uncertain without an internal retry",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "error": "lost-reply"
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "PROPFIND",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": "network-error"
+          }
+        ],
+        "dnsLookups": 2,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "runtime-attempt-failed",
+        "errorOutcome": "unconfirmed",
+        "preparations": 1,
+        "sessions": 2
+      }
+    },
+    {
+      "id": "recover-matching-create",
+      "title": "Exact planned resource recovers matching UID and content without PUT",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nSUMMARY:Synthetic event\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "confirmed",
+            "remoteEtag": "\"created\"",
+            "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+            "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+            "remoteDataHash": "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "confirmed",
+        "remoteEtag": "\"created\"",
+        "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+        "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+        "remoteDataHash": "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 1,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "recover-missing-etag",
+      "title": "Musubi matching recovery can ACK a native null strong validator",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nSUMMARY:Synthetic event\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "confirmed",
+            "remoteEtag": null,
+            "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+            "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+            "remoteDataHash": "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "confirmed",
+        "remoteEtag": null,
+        "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+        "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+        "remoteDataHash": "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 1,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "recover-404-conditional-retry",
+      "title": "Only exact recovery 404 permits fresh bind ACL and the same conditional body",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 404,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 201,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          null,
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 404
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 201
+          }
+        ],
+        "dnsLookups": 3,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "absent",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": 404,
+            "possibleDispatch": true
+          },
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": "\"created\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 201,
+          "etag": "\"created\"",
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 3
+      }
+    },
+    {
+      "id": "recover-404-acl-denied",
+      "title": "Recovery absence cannot substitute for current collection create permission",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 404,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:read/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "PROPFIND"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "https://dav.example.test/cal/"
+        ],
+        "ifNoneMatch": [
+          null,
+          null
+        ],
+        "bodyHashes": [
+          null,
+          null
+        ],
+        "authorized": [
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges"
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 404
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          }
+        ],
+        "dnsLookups": 2,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "absent",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": 404,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "absent",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": 404,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "capability-evidence",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 2
+      }
+    },
+    {
+      "id": "recover-410-no-retry",
+      "title": "Gone is not conditional CREATE retry proof",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 410,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 410
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "capability-evidence",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "uncertain-retry-412",
+      "title": "Earlier possible PUT acceptance remains uncertain after a later conditional rejection",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 404,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 412,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          null,
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 404
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 412
+          }
+        ],
+        "dnsLookups": 3,
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "absent",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": 404,
+            "possibleDispatch": true
+          },
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "absent",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": 404,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "absent",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": 404,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "provider-conflict",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 3
+      }
+    },
+    {
+      "id": "accepted-retry-rate-limit",
+      "title": "Prior accepted PUT remains recorded when a later allowed retry is rate-limited",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "accepted",
+        "validator": "\"old\"",
+        "status": 204
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 404,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 429,
+          "body": null,
+          "headers": {
+            "retry-after": "2"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          null,
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 404
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 429
+          }
+        ],
+        "dnsLookups": 3,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 204,
+              "etag": "\"old\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "absent",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": 404,
+            "possibleDispatch": true
+          },
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 204,
+              "etag": "\"old\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "absent",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": 404,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 204,
+          "etag": "\"old\"",
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "absent",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": 404,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": 2000,
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 3
+      }
+    },
+    {
+      "id": "cancelled-candidate",
+      "title": "Cancelled exact resource cannot establish active CREATE completion",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nSTATUS:CANCELLED\r\nSUMMARY:Synthetic event\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "conflict",
+            "remoteEtag": "\"created\"",
+            "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+            "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+            "remoteDataHash": "c525306016808082a4208da4a1161f3988689f0e41961ba662eacadf89a56480",
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "conflict",
+        "remoteEtag": "\"created\"",
+        "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+        "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+        "remoteDataHash": "c525306016808082a4208da4a1161f3988689f0e41961ba662eacadf89a56480",
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 1,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "runtime-profile-unavailable",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "normalizer-before-cancel",
+      "title": "Malformed cancelled resource reaches the mandatory host normalization port first",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "throw",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nSTATUS:CANCELLED\r\nSUMMARY:Synthetic event\r\nDTEND:20261013T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 1,
+        "projectionPort": "throw",
+        "retryAfterMs": null,
+        "errorCode": "runtime-attempt-failed",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "wrong-provider-uid",
+      "title": "Exact resource with wrong native UID never becomes retry or adoption proof",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:wrong\r\nSUMMARY:Synthetic event\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "partial-resource",
+      "title": "Partial successful resource response is not full CREATE evidence",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 206,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nSUMMARY:Synthetic event\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR"
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 206
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "changed-content",
+      "title": "Matching planned UID does not hide changed canonical content",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nSUMMARY:Changed remote title\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "conflict",
+            "remoteEtag": "\"created\"",
+            "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+            "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+            "remoteDataHash": "3617c34a507161a2c9f8b22d7a5d3c7511de322233609c889953c5afe240d8ec",
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "conflict",
+        "remoteEtag": "\"created\"",
+        "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+        "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+        "remoteDataHash": "3617c34a507161a2c9f8b22d7a5d3c7511de322233609c889953c5afe240d8ec",
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 1,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "runtime-readback-differs",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "extra-uid-existing",
+      "title": "Existing native compatibility uses an explicitly declared host projection fixture",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nSUMMARY:Synthetic event\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:other\r\nDTSTART:20261013T100000Z\r\nDTEND:20261013T110000Z\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "confirmed",
+            "remoteEtag": "\"created\"",
+            "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+            "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+            "remoteDataHash": "5e57ca970b94659d765c3d620f9034958d78acc1e6e62a001a9695e08f10a88d",
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "confirmed",
+        "remoteEtag": "\"created\"",
+        "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+        "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+        "remoteDataHash": "5e57ca970b94659d765c3d620f9034958d78acc1e6e62a001a9695e08f10a88d",
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 1,
+        "projectionPort": "fixture",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 1
+      },
+      "hostProjection": {
+        "title": "Synthetic event",
+        "description": null,
+        "location": null,
+        "start": "2026-10-13T08:00:00.000Z",
+        "end": "2026-10-13T09:00:00.000Z",
+        "isAllDay": false,
+        "recurrence": null
+      }
+    },
+    {
+      "id": "orphan-attendee-existing",
+      "title": "Existing native compatibility uses an explicitly declared host projection fixture",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nATTENDEE:mailto:nobody@example.invalid\r\nSUMMARY:Synthetic event\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "confirmed",
+            "remoteEtag": "\"created\"",
+            "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+            "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+            "remoteDataHash": "751d525445967f8c3f0f98462c27d560ab0cabff131ec8a446d28a30756a4b07",
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "confirmed",
+        "remoteEtag": "\"created\"",
+        "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+        "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+        "remoteDataHash": "751d525445967f8c3f0f98462c27d560ab0cabff131ec8a446d28a30756a4b07",
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 1,
+        "projectionPort": "fixture",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 1
+      },
+      "hostProjection": {
+        "title": "Synthetic event",
+        "description": null,
+        "location": null,
+        "start": "2026-10-13T08:00:00.000Z",
+        "end": "2026-10-13T09:00:00.000Z",
+        "isAllDay": false,
+        "recurrence": null
+      }
+    },
+    {
+      "id": "wrong-host-projection",
+      "title": "A fixture host projection cannot bypass the actual kernel content comparison",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nSUMMARY:Synthetic event\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:other\r\nDTSTART:20261013T100000Z\r\nDTEND:20261013T110000Z\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "conflict",
+            "remoteEtag": "\"created\"",
+            "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+            "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+            "remoteDataHash": "5e57ca970b94659d765c3d620f9034958d78acc1e6e62a001a9695e08f10a88d",
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "conflict",
+        "remoteEtag": "\"created\"",
+        "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+        "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+        "remoteDataHash": "5e57ca970b94659d765c3d620f9034958d78acc1e6e62a001a9695e08f10a88d",
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 1,
+        "projectionPort": "fixture",
+        "retryAfterMs": null,
+        "errorCode": "runtime-readback-differs",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 1
+      },
+      "hostProjection": {
+        "title": "Wrong projected title",
+        "description": null,
+        "location": null,
+        "start": "2026-10-13T08:00:00.000Z",
+        "end": "2026-10-13T09:00:00.000Z",
+        "isAllDay": false,
+        "recurrence": null
+      }
+    },
+    {
+      "id": "reference-fresh-strong",
+      "title": "Reference records native PUT acceptance before exact strong readback",
+      "policy": "reference",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 201,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nSUMMARY:Synthetic event\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "PROPFIND",
+          "PUT",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*",
+          null
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+          null
+        ],
+        "authorized": [
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 201
+          },
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 3,
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": "\"created\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          },
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": "\"created\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "confirmed",
+            "remoteEtag": "\"created\"",
+            "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+            "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+            "remoteDataHash": "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 201,
+          "etag": "\"created\"",
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "confirmed",
+        "remoteEtag": "\"created\"",
+        "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+        "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+        "remoteDataHash": "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 1,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 3
+      }
+    },
+    {
+      "id": "reference-fresh-missing-put",
+      "title": "Reference records native PUT acceptance before exact strong readback",
+      "policy": "reference",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 201,
+          "body": null,
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nSUMMARY:Synthetic event\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "PROPFIND",
+          "PUT",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*",
+          null
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+          null
+        ],
+        "authorized": [
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 201
+          },
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 3,
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          },
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "confirmed",
+            "remoteEtag": "\"created\"",
+            "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+            "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+            "remoteDataHash": "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 201,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "confirmed",
+        "remoteEtag": "\"created\"",
+        "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+        "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+        "remoteDataHash": "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 1,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 3
+      }
+    },
+    {
+      "id": "reference-fresh-quoted-empty",
+      "title": "Reference records native PUT acceptance before exact strong readback",
+      "policy": "reference",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 201,
+          "body": null,
+          "headers": {
+            "etag": "\"\""
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nSUMMARY:Synthetic event\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {
+            "etag": "\"\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "PROPFIND",
+          "PUT",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*",
+          null
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+          null
+        ],
+        "authorized": [
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 201
+          },
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 3,
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": "\"\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          },
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": "\"\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "confirmed",
+            "remoteEtag": "\"\"",
+            "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+            "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+            "remoteDataHash": "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 201,
+          "etag": "\"\"",
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "confirmed",
+        "remoteEtag": "\"\"",
+        "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+        "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+        "remoteDataHash": "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 1,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 3
+      }
+    },
+    {
+      "id": "reference-readback-404",
+      "title": "Readback 404 after PUT is conflict and cannot send a second PUT",
+      "policy": "reference",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 201,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 404,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "PROPFIND",
+          "PUT",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*",
+          null
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+          null
+        ],
+        "authorized": [
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 201
+          },
+          {
+            "method": "GET",
+            "status": 404
+          }
+        ],
+        "dnsLookups": 3,
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": "\"created\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          },
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": "\"created\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "absent",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": 404,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 201,
+          "etag": "\"created\"",
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "absent",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": 404,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "runtime-resource-absent",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 3
+      }
+    },
+    {
+      "id": "reference-readback-410",
+      "title": "Accepted PUT survives later 410 verification failure",
+      "policy": "reference",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 201,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 410,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "PROPFIND",
+          "PUT",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*",
+          null
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+          null
+        ],
+        "authorized": [
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 201
+          },
+          {
+            "method": "GET",
+            "status": 410
+          }
+        ],
+        "dnsLookups": 3,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": "\"created\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 201,
+          "etag": "\"created\"",
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "capability-evidence",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 3
+      }
+    },
+    {
+      "id": "reference-organizer",
+      "title": "Strict reference refuses unsupported recovered native shape without principal discovery",
+      "policy": "reference",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nORGANIZER:mailto:owner@example.invalid\r\nSUMMARY:Synthetic event\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "capability-evidence",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "reference-nested-event",
+      "title": "Strict reference refuses unsupported recovered native shape without principal discovery",
+      "policy": "reference",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nSUMMARY:Synthetic event\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nBEGIN:VEVENT\r\nUID:hidden\r\nEND:VEVENT\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "capability-evidence",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "reference-method",
+      "title": "Strict reference refuses unsupported recovered native shape without principal discovery",
+      "policy": "reference",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nMETHOD:PUBLISH\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nSUMMARY:Synthetic event\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "capability-evidence",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "lost-reply-reference",
+      "title": "Reference observes one lost PUT reply and ACKs exact matching strong evidence",
+      "policy": "reference",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "error": "lost-reply"
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nSUMMARY:Synthetic event\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "PROPFIND",
+          "PUT",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*",
+          null
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+          null
+        ],
+        "authorized": [
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": "network-error"
+          },
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 3,
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          },
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "confirmed",
+            "remoteEtag": "\"created\"",
+            "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+            "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+            "remoteDataHash": "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "confirmed",
+        "remoteEtag": "\"created\"",
+        "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+        "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+        "remoteDataHash": "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 1,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 3
+      }
+    },
+    {
+      "id": "lost-reply-reference-404",
+      "title": "Immediate readback absence after lost PUT never authorizes another PUT",
+      "policy": "reference",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "error": "lost-reply"
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 404,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "PROPFIND",
+          "PUT",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*",
+          null
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+          null
+        ],
+        "authorized": [
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": "network-error"
+          },
+          {
+            "method": "GET",
+            "status": 404
+          }
+        ],
+        "dnsLookups": 3,
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          },
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "absent",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": 404,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "absent",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": 404,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "runtime-resource-absent",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 3
+      }
+    },
+    {
+      "id": "reference-null-readback",
+      "title": "Strict reference keeps acceptance but refuses a missing strong readback validator",
+      "policy": "reference",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 201,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nSUMMARY:Synthetic event\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "PROPFIND",
+          "PUT",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*",
+          null
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+          null
+        ],
+        "authorized": [
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 201
+          },
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 3,
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": "\"created\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          },
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": "\"created\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "conflict",
+            "remoteEtag": null,
+            "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+            "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+            "remoteDataHash": "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 201,
+          "etag": "\"created\"",
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "conflict",
+        "remoteEtag": null,
+        "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+        "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+        "remoteDataHash": "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 1,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "runtime-remote-validator-unavailable",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 3
+      }
+    },
+    {
+      "id": "put-redirect-301",
+      "title": "Existing guarded PUT redirect preserves saved body and condition at every hop",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 301,
+          "body": null,
+          "headers": {
+            "location": "https://dav.example.test/alias/event.ics"
+          }
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/alias/event.ics",
+          "status": 201,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "PROPFIND",
+          "PUT",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "https://dav.example.test/alias/event.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*",
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 301
+          },
+          {
+            "method": "PUT",
+            "status": 201
+          }
+        ],
+        "dnsLookups": 3,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": "\"created\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 201,
+          "etag": "\"created\"",
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 2
+      }
+    },
+    {
+      "id": "put-redirect-307",
+      "title": "Existing guarded PUT redirect preserves saved body and condition at every hop",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 307,
+          "body": null,
+          "headers": {
+            "location": "https://other.example.test/alias.ics"
+          }
+        },
+        {
+          "method": "PUT",
+          "url": "https://other.example.test/alias.ics",
+          "status": 201,
+          "body": null,
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "PROPFIND",
+          "PUT",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "https://other.example.test/alias.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*",
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true,
+          false
+        ],
+        "propfindKinds": [
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 307
+          },
+          {
+            "method": "PUT",
+            "status": 201
+          }
+        ],
+        "dnsLookups": 3,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 201,
+              "etag": "\"created\"",
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 201,
+          "etag": "\"created\"",
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 2
+      }
+    },
+    {
+      "id": "put-303-refused",
+      "title": "Conditional PUT can never become an apparent successful GET",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:bind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>"
+        },
+        {
+          "method": "PUT",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 303,
+          "body": null,
+          "headers": {
+            "location": "https://dav.example.test/alias/event.ics"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "PROPFIND",
+          "PUT"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          "*"
+        ],
+        "bodyHashes": [
+          null,
+          "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04"
+        ],
+        "authorized": [
+          true,
+          true
+        ],
+        "propfindKinds": [
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PUT",
+            "status": 303
+          }
+        ],
+        "dnsLookups": 2,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "runtime-attempt-failed",
+        "errorOutcome": "unconfirmed",
+        "preparations": 1,
+        "sessions": 2
+      }
+    },
+    {
+      "id": "recovery-alias-existing",
+      "title": "Existing guarded GET alias preserves original stored URL and UID",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 307,
+          "body": null,
+          "headers": {
+            "location": "https://dav.example.test/alias/event.ics"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/alias/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nSUMMARY:Synthetic event\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "https://dav.example.test/alias/event.ics"
+        ],
+        "ifNoneMatch": [
+          null,
+          null
+        ],
+        "bodyHashes": [
+          null,
+          null
+        ],
+        "authorized": [
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 307
+          },
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 2,
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "confirmed",
+            "remoteEtag": "\"created\"",
+            "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+            "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+            "remoteDataHash": "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "confirmed",
+        "remoteEtag": "\"created\"",
+        "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+        "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+        "remoteDataHash": "271006c8f6716510cc47c1a96e1a11214f75c1e20d1ffb5232b87b3457de6b04",
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 1,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "reference-alias-refused",
+      "title": "Strict reference refuses a redirected exact-resource recovery",
+      "policy": "reference",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 307,
+          "body": null,
+          "headers": {
+            "location": "https://dav.example.test/alias/event.ics"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 307
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "mixed-private-dns",
+      "title": "Mixed public and loopback DNS answers deny dispatch before any leaf call",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "mixed-private",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [],
+      "expected": {
+        "status": "hold",
+        "methods": [],
+        "urls": [],
+        "ifNoneMatch": [],
+        "bodyHashes": [],
+        "authorized": [],
+        "propfindKinds": [],
+        "metrics": [],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "runtime-attempt-failed",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "reference-embedded-timezone",
+      "title": "Resource-owned VTIMEZONE produces exact UTC projection without ambient registration",
+      "policy": "reference",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VTIMEZONE\r\nTZID:Fixture/Fixed\r\nBEGIN:STANDARD\r\nDTSTART:19700101T000000\r\nTZOFFSETFROM:+0100\r\nTZOFFSETTO:+0100\r\nEND:STANDARD\r\nEND:VTIMEZONE\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nSUMMARY:Synthetic event\r\nDTSTART;TZID=Fixture/Fixed:20261013T090000\r\nDTEND;TZID=Fixture/Fixed:20261013T100000\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "confirmed",
+            "remoteEtag": "\"created\"",
+            "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+            "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+            "remoteDataHash": "7eb1ff445e7787f716614614b5fc02f2ced456df0292c246e7b4f184143c9762",
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "confirmed",
+        "remoteEtag": "\"created\"",
+        "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+        "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+        "remoteDataHash": "7eb1ff445e7787f716614614b5fc02f2ced456df0292c246e7b4f184143c9762",
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 1,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "raw-preflight-network",
+      "title": "Existing preflight transport failure retains raw host retry floor",
+      "policy": "musubi",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "error": "lost-reply"
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "PROPFIND"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          "privileges"
+        ],
+        "metrics": [
+          {
+            "method": "PROPFIND",
+            "status": "network-error"
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "normalizations": 0,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "runtime-attempt-failed",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 1
+      }
+    },
+    {
+      "id": "reference-ambient-tzid-no-definition",
+      "title": "Explicit non-UTC TZID without a resource definition cannot establish CREATE completion",
+      "policy": "reference",
+      "collection": "default",
+      "normalize": "project",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Musubi//EN\r\nBEGIN:VEVENT\r\nUID:musubi-abcdef01-abcd-4000-8000-abcdefabcdef\r\nSUMMARY:Synthetic event\r\nDTSTART;TZID=Ambient/UTC:20261013T080000\r\nDTEND;TZID=Ambient/UTC:20261013T090000\r\nEND:VEVENT\r\nEND:VCALENDAR",
+          "headers": {
+            "etag": "\"created\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics"
+        ],
+        "ifNoneMatch": [
+          null
+        ],
+        "bodyHashes": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "etag": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "conflict",
+            "remoteEtag": "\"created\"",
+            "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+            "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+            "remoteDataHash": "cfa93d5b76962469c60eb84dba466f7e3898948448e503423dfae658c370200d",
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "etag": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "conflict",
+        "remoteEtag": "\"created\"",
+        "remoteUid": "musubi-abcdef01-abcd-4000-8000-abcdefabcdef",
+        "remoteUrl": "https://dav.example.test/cal/musubi-abcdef01-abcd-4000-8000-abcdefabcdef.ics",
+        "remoteDataHash": "cfa93d5b76962469c60eb84dba466f7e3898948448e503423dfae658c370200d",
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "normalizations": 1,
+        "projectionPort": "portable",
+        "retryAfterMs": null,
+        "errorCode": "runtime-profile-unavailable",
+        "errorOutcome": "not-written",
+        "preparations": 1,
+        "sessions": 1
+      }
+    }
+  ]
+}

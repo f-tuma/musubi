@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "scope": "local installed API proof only; no registry publication or production deployment",
+  "status": "passed",
+  "createdAt": "2026-10-25T13:15:02.068972+00:00",
+  "gitHeadAtBuild": "8a8e605cd9f2ae5c9500e4cc5de18346355caa99",
+  "imageTag": "musubi-c07-caldav-create-api:proof",
+  "dockerImageInspectId": "sha256:092111cafb67b9aaa9818c7a78fec81ef8c242854d73c1d61e42a4582a9c39e6",
+  "localBuildIndexDigest": "sha256:092111cafb67b9aaa9818c7a78fec81ef8c242854d73c1d61e42a4582a9c39e6",
+  "platformManifestDigest": "sha256:bacc6f822895396e466f1ad8ef9d16b0bebc9584fe4e8b0ccd07a5842d57b510",
+  "imageConfigDigest": "sha256:9aa984838343e93dc93d82c706b88499bfacd582f979a1912178b5fa733f48cb",
+  "platform": {
+    "os": "linux",
+    "architecture": "amd64"
+  },
+  "dockerIdentityNote": "Docker image inspect Id and the running container image reference identify the local OCI index here. Platform manifest and image config digests are recorded separately. A local daemon RepoDigest does not establish registry publication.",
+  "sourceFingerprint": "e4a48fd43a009c2938536c0c3059e346ce29a05b71964ce8ae5ac1b88e25a73f",
+  "sourceContextFiles": 840,
+  "sourceFingerprintScope": "Frozen 840-file credential-free Docker build context. Production TS/SQL parity excludes tests, process fixtures and behavior harnesses and covers the entire API workspace production source closure.",
+  "productionSourceFingerprint": "db40291b86d7596f970ee2a5d93351e407a78839da916e2a2b126f02dab6cf21",
+  "productionSourceHashParity": {
+    "checkedFiles": 429,
+    "mismatches": []
+  },
+  "productionSourceInventoryAfterProof": {
+    "frozenFiles": 429,
+    "currentFiles": 429,
+    "byteEqual": true,
+    "addedRemovedOrModified": []
+  },
+  "contextChangesAfterBuild": [],
+  "startup": {
+    "port": 7531,
+    "environment": "test",
+    "deploymentMode": "single-replica",
+    "logLevel": "info",
+    "externalSyncIntervalMin": 0,
+    "externalDeliveryRecoveryMode": "disabled",
+    "syncOperationV1EncoderEnabled": true,
+    "syncOperationProfileVersion": "sync-profile-v1",
+    "timestamp": "2026-10-25T13:14:17.624Z",
+    "level": "info",
+    "message": "server.started"
+  },
+  "emptyDatabaseBeforeBoot": {
+    "tables": 0
+  },
+  "emptyDatabaseMigrations": {
+    "applied": 86,
+    "sourceJournalEntries": 86,
+    "lastTag": "0085_graph_read_coverage",
+    "lastHashMatchesSource": true
+  },
+  "effectiveConfiguration": {
+    "encoder": true,
+    "encoderOverridePresent": false,
+    "environment": "test",
+    "nodeEnvironment": "production",
+    "externalSyncIntervalMin": 0,
+    "deliveryRecoveryMode": "disabled",
+    "smtpConfigured": false,
+    "pushConfigured": false
+  },
+  "runtime": {
+    "user": "node",
+    "sourceBindMounts": 0
+  },
+  "providerIsolation": {
+    "externalAccounts": 0,
+    "caldavAccounts": 0,
+    "externalCalendars": 0,
+    "eventOutboxRows": 0,
+    "smtpConfigured": false,
+    "pushConfigured": false
+  },
+  "cleanup": {
+    "containerRemoved": true,
+    "nonceDatabaseDropped": true,
+    "containerAbsentVerified": true,
+    "nonceDatabaseAbsentVerified": true,
+    "rootPostgresStillRunning": true
+  },
+  "httpChecks": {
+    "status": "passed",
+    "checks": 17,
+    "categories": {
+      "publicHealthAndCapabilities": 2,
+      "unauthenticatedAccessDenied": 1,
+      "realSignUpLoginAndCookieSession": 3,
+      "authenticatedCanonicalCalendarAndEventChecks": 11
+    },
+    "auth": {
+      "syntheticEmailDomain": "example.invalid",
+      "signup": true,
+      "passwordLogin": true,
+      "cookieSession": true,
+      "authBypass": false,
+      "dbSeedChanges": false
+    },
+    "providerScope": {
+      "configuredExternalAccounts": 0,
+      "liveProviderRequests": false,
+      "externalCaldavCreateNotExercised": true
+    },
+    "scopeNote": "The 17 HTTP checks include public health/capability and unauthenticated rejection, real Better Auth registration/login/cookie session, and canonical calendar/event CRUD, idempotent replay, revision conflict and readback. No direct authentication bypass or database seeding."
+  },
+  "limits": [
+    "This installed image smoke does not exercise a native CalDAV CREATE or any live provider.",
+    "The separate source PG/HTTP corpus exercises real legacy/shared CalDAV CREATE delivery against owned loopback CalDAV endpoints, including fresh collection ACL preflight, exact-resource conditional replay, nullable/native validators, host authority and second Basic-session credential boundaries, lease/ACK races and SIGKILL. Its source execution evidence is separate from this installed-image smoke.",
+    "No external accounts, external calendar targets, delivery outbox rows, SMTP or push were configured. External sync interval is zero and delivery recovery is disabled.",
+    "This proof builds and runs a local image; it does not prove registry publication or a production rollout."
+  ],
+  "artifacts": [
+    {
+      "path": "/tmp/musu39-caldav-create-api-proof-20261025131345_d52def.json",
+      "sha256": "809bb55645a763db1621bd4add51ab1baa991cefb2a30ce453f882fd18e14a6f",
+      "bytes": 6569
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-api-http-20261025131345_d52def.json",
+      "sha256": "bd9f1b5709d6a820781a012801868363b6607bdf937e4d190bdcfcbea18e56ca",
+      "bytes": 3409
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-api-runtime-20261025131345_d52def.log",
+      "sha256": "c66168c3cf0aa69ea7b97e3a670c099aa4c5bb4053195668eb89f00951509b97",
+      "bytes": 6181
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-api-source-20261025131345.json",
+      "sha256": "c3644fbb2203e75883a21688eebf0fe946a0914063a1347bd847149cdce16c33",
+      "bytes": 102829
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-api-build-20261025131345.log",
+      "sha256": "ebb9c9834c0c41905483f58eb8d1a339af07d1eb9f4b4acb9c4d3fcf3ce4648d",
+      "bytes": 4053
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-api-build.py",
+      "sha256": "3399d1cf25b9a6c8dfbf55183ba7e74fb34c11a015c89818ff22ef11b6a21ba1",
+      "bytes": 3361
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-api-probe.py",
+      "sha256": "ea24c79fe970bca92f91c014dc3e38fee8434e6b1a8756b45639f842570a4d85",
+      "bytes": 10735
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-api-http-smoke.mjs",
+      "sha256": "84d6393722c8f85799ce1ae6ab2c56f9907f453dbadb7120ccd3afc195204ac7",
+      "bytes": 7280
+    },
+    {
+      "path": "/tmp/musu39-caldav-create-api-summarize.py",
+      "sha256": "b3c6e4785d0fe78f63d74be939ccdff1bd20ae286f48acf3c1d08c33a413dc41",
+      "bytes": 7137
+    }
+  ]
+}

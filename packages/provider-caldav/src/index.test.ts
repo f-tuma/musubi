@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import "./create.test";
 import { readFile } from "node:fs/promises";
 import {
   createCaldavPersonalEventDeleteProvider, CaldavProviderError, strongCaldavEtag, selectCaldavEventMaster,

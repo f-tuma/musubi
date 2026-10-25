@@ -44,6 +44,7 @@ import {
 } from "@musubi/db";
 import type {
   CalendarAdapter,
+  CaldavPersonalCreateV1Bridge,
   CalendarDiscoveryResult,
   ExternalEventRef,
   ExternalTaskRef,
@@ -1403,29 +1404,48 @@ export function classifyCaldavCalendars(cals: DAVCalendar[]) {
       }));
 }
 
+/** Owned Basic credentials attest the captured row timestamp, not an OAuth epoch. */
+function caldavEventDeliveryPorts(userID: string, accountID: string, capture: { connectionId: string; connectionGeneration: number }): CaldavPersonalCreateV1Bridge["ports"] {
+  const currentCredentials = async () => {
+    const account = await getOwnedCaldavAccountById(userID, accountID);
+    if (!account || account.id !== capture.connectionId || account.userID !== userID ||
+        account.updatedAt.getTime() !== capture.connectionGeneration) throw new CaldavProviderError("account-session-changed");
+    return account;
+  };
+  return {
+    accountSession: { async open(_connection, signal) {
+      signal?.throwIfAborted(); const account = await currentCredentials();
+      const authorization = `Basic ${Buffer.from(`${account.username}:${decryptSecret(account.encryptedPassword)}`).toString("base64")}`;
+      signal?.throwIfAborted(); const current = await currentCredentials();
+      // This is an opaque host timestamp floor, with no monotonic ABA guarantee.
+      return { connectionId: current.id, connectionGeneration: String(current.updatedAt.getTime()), authorization };
+    } },
+    network: { allowPrivate: config.security.federationAllowPrivateHosts, lookupImpl: lookup },
+    http: { fetchPinned: fetchCaldavPinned },
+    clock: { nowEpochMs: () => Date.now(), nowMonotonicMs: () => performance.now() },
+    telemetry: { record: metric => recordProviderHttpRequest(metric.method, metric.status, metric.durationMs) },
+  };
+}
+
+/** Preserve CREATE's exact validation order, including malformed cancelled data. */
+function caldavCreatedEventEvidence(data: string, url: string, uid: string, etag: string | null) {
+  const selected = eventMaster(data, uid);
+  replaceEventProperties(data, selected.index, new Map());
+  const fields = veventToFields(selected.master);
+  if (!fields) throw new ProviderEventWriteError("provider-write-failed");
+  const event = assertCreatedEventEvidence({ ...fields, externalId: url, etag, icalUid: uid, url: null,
+    status: componentString(selected.master, "status")?.toUpperCase() === "CANCELLED" ? "cancelled" : "active" });
+  return { ref: { externalEventId: url, etag, icalUid: uid }, event };
+}
+
 export const caldavAdapter: CalendarAdapter = {
+  caldavPersonalCreateV1(userID, accountID, capture) {
+    return { ports: caldavEventDeliveryPorts(userID, accountID, capture),
+      normalizeObservation: read => read.kind === "present" ? caldavCreatedEventEvidence(read.resource.data,
+        read.resource.resourceUrl, read.resource.uid, read.etag) : null };
+  },
   caldavPersonalDeleteV1(userID, accountID, capture) {
-    const currentCredentials = async () => {
-      const account = await getOwnedCaldavAccountById(userID, accountID);
-      if (!account || account.id !== capture.connectionId || account.userID !== userID ||
-          account.updatedAt.getTime() !== capture.connectionGeneration) throw new CaldavProviderError("account-session-changed");
-      return account;
-    };
-    return {
-      ports: {
-        accountSession: { async open(_connection, signal) {
-          signal?.throwIfAborted(); const account = await currentCredentials();
-          const authorization = `Basic ${Buffer.from(`${account.username}:${decryptSecret(account.encryptedPassword)}`).toString("base64")}`;
-          signal?.throwIfAborted(); const current = await currentCredentials();
-          // DAV attests its captured host revision timestamp. It has no OAuth
-          // monotonic grant generation or independently claimed ABA guarantee.
-          return { connectionId: current.id, connectionGeneration: String(current.updatedAt.getTime()), authorization };
-        } },
-        network: { allowPrivate: config.security.federationAllowPrivateHosts, lookupImpl: lookup },
-        http: { fetchPinned: fetchCaldavPinned },
-        clock: { nowEpochMs: () => Date.now(), nowMonotonicMs: () => performance.now() },
-        telemetry: { record: metric => recordProviderHttpRequest(metric.method, metric.status, metric.durationMs) },
-      },
+    return { ports: caldavEventDeliveryPorts(userID, accountID, capture),
       normalizeObservation(read) {
         return read.kind === "present" ? caldavReadEventEvidence(read.resource.data,
           { externalEventId: read.resource.resourceUrl, icalUid: read.resource.uid }, read.etag) : null;
@@ -1736,24 +1756,7 @@ export const caldavAdapter: CalendarAdapter = {
       fatal: true,
       ignoreBOM: true,
     }).decode(await response.arrayBuffer());
-    const selected = eventMaster(data, uid);
-    replaceEventProperties(data, selected.index, new Map());
-    const fields = veventToFields(selected.master);
-    if (!fields) throw new ProviderEventWriteError("provider-write-failed");
-    const etag = strongEventEtag(response.headers.get("etag"));
-    const event = assertCreatedEventEvidence({
-      ...fields,
-      externalId: url,
-      etag,
-      icalUid: uid,
-      url: null,
-      status:
-        componentString(selected.master, "status")?.toUpperCase() ===
-        "CANCELLED"
-          ? "cancelled"
-          : "active",
-    });
-    return { ref: { externalEventId: url, etag, icalUid: uid }, event };
+    return caldavCreatedEventEvidence(data, url, uid, strongEventEtag(response.headers.get("etag")));
   },
 
   async pushCreate(

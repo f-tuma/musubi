@@ -21,6 +21,7 @@ export interface ReferenceClaim {
   readonly attemptNumber?: number;
   readonly acceptedUid?: string | null;
   readonly graphCreate?: ReferenceGraphCreateNativeEvidence;
+  readonly caldavCreateAcceptanceStatus?: 200 | 201 | 204 | null;
 }
 export type ReferenceStatus = "pending" | "running" | "hold" | "conflict" | "acked";
 export interface ReferenceOperation {
@@ -29,6 +30,7 @@ export interface ReferenceOperation {
   action: "create" | "update" | "delete"; payload: unknown; capture: ReferenceCapture; status: ReferenceStatus;
   canonical: { lifecycle: "active" | "tombstoned"; generation: number; revision: number };
   deleteAcceptanceStatus: ReferenceDeleteAcceptanceStatus | null;
+  caldavCreateAcceptanceStatus?: 200 | 201 | 204 | null;
   dispatchPossible: boolean; receipt: SyncDeliveryReceipt;
   acceptedUid?: string | null;
   graphCreate?: ReferenceGraphCreateNativeEvidence & { bindingEventId: string | null };
@@ -60,6 +62,16 @@ export interface ReferenceCaldavDeleteSeed {
 }
 export type ReferenceCaldavDeleteAdmission = ReferenceDeleteAdmission;
 export type ReferenceCaldavDeleteObservation = ReferenceGraphDeleteObservation;
+export interface ReferenceCaldavCreateSeed extends Omit<ReferenceCaldavDeleteSeed, "resourceUrl" | "uid" | "etag" | "endpointProfile"> {
+  endpointProfile: "caldav-personal-event-create-v1"; operationId: string;
+}
+export type ReferenceCaldavCreateAdmission = ReferenceDeleteAdmission;
+export interface ReferenceCaldavCreateEvidence extends Omit<ReferenceEvidence, "acceptanceStatus"> { createAcceptanceStatus?: 200 | 201 | 204 }
+export interface ReferenceCaldavCreateObservation {
+  kind: "exact-readback"; resourceUrl: string; uid: string; etag: string; projection: Record<string, unknown>;
+  read: { kind: "present"; resource: { resourceUrl: string; uid: string; data: string }; etag: string | null };
+}
+
 export interface ReferenceGraphCreateSeed extends Omit<ReferenceSeed, "eventId" | "etag"> {
   provider: "microsoft"; endpointProfile: "microsoft-personal-event-create-v1"; operationId: string;
 }

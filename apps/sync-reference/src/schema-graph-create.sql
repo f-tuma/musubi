@@ -15,26 +15,32 @@ ALTER TABLE reference_attempts ADD COLUMN IF NOT EXISTS create_acceptance_status
 COMMENT ON COLUMN reference_operations.create_acceptance_validator IS 'JSON.stringify encoded raw native acceptance string; SQL NULL is native NULL. Never a conditional validator.';
 COMMENT ON COLUMN reference_attempts.create_acceptance_validator IS 'JSON.stringify encoded raw native acceptance string; SQL NULL is native NULL. Never a conditional validator.';
 
-ALTER TABLE reference_operations DROP CONSTRAINT IF EXISTS reference_operations_provider_profile_check;
-ALTER TABLE reference_operations ADD CONSTRAINT reference_operations_provider_profile_check CHECK (
-  provider='google' AND endpoint_profile='google-personal-event-'||action||'-v1' OR
-  provider='microsoft' AND action IN ('create','delete') AND endpoint_profile='microsoft-personal-event-'||action||'-v1' OR
-  provider='caldav' AND action='delete' AND endpoint_profile='caldav-personal-event-delete-v1'
-);
-ALTER TABLE reference_bindings DROP CONSTRAINT IF EXISTS reference_bindings_create_reservation_check;
-ALTER TABLE reference_bindings ADD CONSTRAINT reference_bindings_create_reservation_check CHECK (
-  (create_operation_id IS NULL OR create_operation_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$') AND
-  ((create_operation_id IS NULL) = (create_profile IS NULL)) AND
-  (create_profile IS NULL OR create_profile IN ('google-personal-event-create-v1','microsoft-personal-event-create-v1')) AND
-  CASE WHEN destination_lifecycle='reserved' THEN
-    create_operation_id IS NOT NULL AND etag IS NULL AND baseline IS NULL AND
-    CASE WHEN create_profile='microsoft-personal-event-create-v1' THEN event_id IS NULL
-      ELSE event_id IS NOT NULL AND event_id='musubi'||replace(create_operation_id,'-','') END
-  ELSE event_id IS NOT NULL AND length(event_id)>0 AND baseline IS NOT NULL AND
-    CASE WHEN create_profile='microsoft-personal-event-create-v1' THEN
-      etag IS NULL OR length(etag)<=2048 AND etag ~ ('^W/"[!#-~'||chr(128)||'-'||chr(255)||']+"$')
-    ELSE etag IS NOT NULL END END
-);
+-- Preserve the later DAV CREATE shape on full migration reruns. Initial
+-- upgrades still install this Graph widening before the DAV migration runs.
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='reference_bindings'::regclass AND conname='reference_bindings_caldav_create_identity_check') THEN
+    ALTER TABLE reference_operations DROP CONSTRAINT IF EXISTS reference_operations_provider_profile_check;
+    ALTER TABLE reference_operations ADD CONSTRAINT reference_operations_provider_profile_check CHECK (
+      provider='google' AND endpoint_profile='google-personal-event-'||action||'-v1' OR
+      provider='microsoft' AND action IN ('create','delete') AND endpoint_profile='microsoft-personal-event-'||action||'-v1' OR
+      provider='caldav' AND action='delete' AND endpoint_profile='caldav-personal-event-delete-v1'
+    );
+    ALTER TABLE reference_bindings DROP CONSTRAINT IF EXISTS reference_bindings_create_reservation_check;
+    ALTER TABLE reference_bindings ADD CONSTRAINT reference_bindings_create_reservation_check CHECK (
+      (create_operation_id IS NULL OR create_operation_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$') AND
+      ((create_operation_id IS NULL) = (create_profile IS NULL)) AND
+      (create_profile IS NULL OR create_profile IN ('google-personal-event-create-v1','microsoft-personal-event-create-v1')) AND
+      CASE WHEN destination_lifecycle='reserved' THEN
+        create_operation_id IS NOT NULL AND etag IS NULL AND baseline IS NULL AND
+        CASE WHEN create_profile='microsoft-personal-event-create-v1' THEN event_id IS NULL
+          ELSE event_id IS NOT NULL AND event_id='musubi'||replace(create_operation_id,'-','') END
+      ELSE event_id IS NOT NULL AND length(event_id)>0 AND baseline IS NOT NULL AND
+        CASE WHEN create_profile='microsoft-personal-event-create-v1' THEN
+          etag IS NULL OR length(etag)<=2048 AND etag ~ ('^W/"[!#-~'||chr(128)||'-'||chr(255)||']+"$')
+        ELSE etag IS NOT NULL END END
+    );
+  END IF;
+END $$;
 ALTER TABLE reference_operations DROP CONSTRAINT IF EXISTS reference_operations_resource_identity_check;
 ALTER TABLE reference_operations ADD CONSTRAINT reference_operations_resource_identity_check CHECK (
   CASE WHEN provider='microsoft' AND action='create' AND endpoint_profile='microsoft-personal-event-create-v1'

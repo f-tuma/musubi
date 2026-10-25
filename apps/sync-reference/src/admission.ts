@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
-import { strictCaldavResourceURL } from "@musubi/provider-caldav";
+import { strictCaldavResourceURL, caldavPersonalCreateIdentityV1 } from "@musubi/provider-caldav";
 import { SyncOperationEnvelopeSchema, SyncDeliveryReceiptSchema, type SyncOperationEnvelope, type SyncDeliveryReceipt } from "@musubi/types";
 import { encodeEventV1, parseNativeWritePlanV1, matchesPinnedProjectionV1 } from "@musubi/sync-codec";
-import type { ReferenceAdmission, ReferenceCapture, ReferenceContent, ReferenceContentPatch, ReferenceDeleteAdmission, ReferenceCreateAdmission, ReferenceGraphDeleteAdmission, ReferenceCaldavDeleteAdmission, ReferenceGraphCreateAdmission } from "./model.js";
+import type { ReferenceAdmission, ReferenceCapture, ReferenceContent, ReferenceContentPatch, ReferenceDeleteAdmission, ReferenceCreateAdmission, ReferenceGraphDeleteAdmission, ReferenceCaldavDeleteAdmission, ReferenceGraphCreateAdmission, ReferenceCaldavCreateAdmission } from "./model.js";
 
 function ownRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype &&
@@ -93,6 +93,39 @@ export function acceptedGraphCreateEnvelope(input: ReferenceGraphCreateAdmission
     privacyEpoch: String(host.capture.privacyGeneration), allowedSideEffects: ["provider-content-write"], admittedProjection: encoded.admittedProjection, nativePlan: encoded.nativePlan });
 }
 export const REFERENCE_CALDAV_DELETE_PROFILE = "caldav-personal-event-delete-v1";
+export const REFERENCE_CALDAV_CREATE_PROFILE = "caldav-personal-event-create-v1";
+/** Original intent UUID fixes both the native URL and UID; never an attempt ID. */
+export function referenceCaldavCreateIdentity(calendarUrl: string, operationId: string): { resourceUrl: string; uid: string } {
+  const identity = caldavPersonalCreateIdentityV1(calendarUrl, referenceCreateOperationID(operationId));
+  if (!identity || !caldavDeleteAddress(calendarUrl, identity.resourceUrl)) throw new Error("Invalid reference CalDAV CREATE target");
+  return identity;
+}
+export function caldavCreateAdmissionFingerprint(input: ReferenceCaldavCreateAdmission): string {
+  deleteAdmissionFingerprint(input); referenceCreateOperationID(input.operationId);
+  return createHash("sha256").update(JSON.stringify([REFERENCE_CALDAV_CREATE_PROFILE, input.bindingId, input.expectedRevision, input.operationId])).digest("hex");
+}
+export function acceptedCaldavCreateEnvelope(input: ReferenceCaldavCreateAdmission, content: ReferenceContent, host: {
+  objectId: string; connectionId: string; calendarUrl: string; resourceUrl: string; uid: string; capture: ReferenceCapture;
+}): SyncOperationEnvelope {
+  caldavCreateAdmissionFingerprint(input); validateContent(content);
+  const identity = referenceCaldavCreateIdentity(host.calendarUrl, input.operationId);
+  if (identity.resourceUrl !== host.resourceUrl || identity.uid !== host.uid) throw new Error("Reference CalDAV CREATE reservation disagrees with operation identity");
+  const encoded = encodeEventV1("caldav", { id: host.objectId, creatorID: "reference", organizer: "", title: content.name, color: "",
+    start: new Date(content.beginsAt), end: new Date(content.endsAt), calendars: [], isCanceled: false, isAllDay: false,
+    hasAttendees: false, description: content.notes, location: content.place, recurrence: null }, undefined,
+  // Event CREATE does not encode acceptedAt into its resource; the serializer
+  // requires this inert context field, not a host/provider evidence timestamp.
+  { action: "create", operationId: input.operationId, acceptedAt: "2026-01-01T00:00:00.000Z" });
+  const saved = projection(content), plan = parseNativeWritePlanV1(encoded.serializer, "create", "event", encoded.nativePlan.data);
+  if (!plan || plan.planKind !== "caldav-properties" || plan.uid !== identity.uid || !jsonEqual(encoded.admittedProjection.data, saved) ||
+    !matchesPinnedProjectionV1(encoded.serializer, "create", saved, plan)) throw new Error("Reference CalDAV CREATE content loses wire precision");
+  return SyncOperationEnvelopeSchema.parse({ schemaVersion: 1, profileVersion: "sync-profile-v1", operation: { kind: "event", action: "create", version: 1 },
+    serializer: encoded.serializer, commandId: input.commandId, operationId: input.operationId, hostObjectId: host.objectId,
+    locator: { provider: "caldav", connectionId: host.connectionId, collectionId: host.calendarUrl, resourceId: identity.resourceUrl },
+    sourceEpoch: { sourceId: input.bindingId, generation: host.capture.sourceGeneration }, acceptedRevision: host.capture.acceptedRevision,
+    privacyEpoch: String(host.capture.privacyGeneration), allowedSideEffects: ["provider-content-write"], admittedProjection: { data: saved }, nativePlan: encoded.nativePlan });
+}
+
 export function caldavUid(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && value.length <= 2048 && !/[\r\n\0]/.test(value);
 }

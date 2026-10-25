@@ -3,10 +3,10 @@ import type { Pool, PoolClient } from "pg";
 import { nativeMicrosoftEtag, type MicrosoftNativeEvent } from "@musubi/provider-microsoft";
 import { decodeSyncOperationPayload, SyncDeliveryReceiptSchema, SyncOperationEnvelopeSchema, SyncErrorSchema, SyncJsonObjectSchema, type SyncDeliveryReceipt, type SyncOperationRowBinding } from "@musubi/types";
 import { parseNativeWritePlanV1, matchesPinnedProjectionV1 } from "@musubi/sync-codec";
-import { supportsMicrosoftPersonalDeleteEnvelope, supportsCaldavPersonalDeleteEnvelope, supportsMicrosoftPersonalCreateEnvelope, projectMicrosoftCreatedEvent } from "@musubi/sync-runtime";
-import { acceptedEnvelope, acceptedDeleteEnvelope, acceptedCreateEnvelope, acceptedGraphDeleteEnvelope, admissionFingerprint, deleteAdmissionFingerprint, createAdmissionFingerprint, graphDeleteAdmissionFingerprint, graphDeleteEtag, REFERENCE_GRAPH_DELETE_PROFILE, referenceCreateEventID, referenceCreateOperationID, initialReceipt, jsonEqual, projection, strongEtag, validateContent, validatePatch, acceptedCaldavDeleteEnvelope, caldavDeleteAdmissionFingerprint, caldavDeleteAddress, caldavUid, REFERENCE_CALDAV_DELETE_PROFILE, REFERENCE_GRAPH_CREATE_PROFILE, acceptedGraphCreateEnvelope, graphCreateAdmissionFingerprint } from "./admission.js";
+import { supportsMicrosoftPersonalDeleteEnvelope, supportsCaldavPersonalDeleteEnvelope, supportsMicrosoftPersonalCreateEnvelope, projectMicrosoftCreatedEvent, supportsCaldavPersonalCreateEnvelope, projectCaldavCreatedEvent } from "@musubi/sync-runtime";
+import { acceptedEnvelope, acceptedDeleteEnvelope, acceptedCreateEnvelope, acceptedGraphDeleteEnvelope, admissionFingerprint, deleteAdmissionFingerprint, createAdmissionFingerprint, graphDeleteAdmissionFingerprint, graphDeleteEtag, REFERENCE_GRAPH_DELETE_PROFILE, referenceCreateEventID, referenceCreateOperationID, initialReceipt, jsonEqual, projection, strongEtag, validateContent, validatePatch, acceptedCaldavDeleteEnvelope, caldavDeleteAdmissionFingerprint, caldavDeleteAddress, caldavUid, REFERENCE_CALDAV_DELETE_PROFILE, REFERENCE_GRAPH_CREATE_PROFILE, acceptedGraphCreateEnvelope, graphCreateAdmissionFingerprint, acceptedCaldavCreateEnvelope, caldavCreateAdmissionFingerprint, referenceCaldavCreateIdentity, REFERENCE_CALDAV_CREATE_PROFILE } from "./admission.js";
 import { assertCredentialKey, decryptCredential, encryptCredential, basicCredential } from "./crypto.js";
-import { ReferenceHoldError, type ReferenceAdmission, type ReferenceCapture, type ReferenceClaim, type ReferenceEvidence, type ReferenceOperation, type ReferenceSeed, type ReferenceContentPatch, type ReferenceDeleteAdmission, type ReferenceDeleteObservation, type ReferenceCreateAdmission, type ReferenceCreateSeed, type ReferenceCreateObservation, type ReferenceGraphDeleteSeed, type ReferenceGraphDeleteAdmission, type ReferenceGraphDeleteObservation, type ReferenceCaldavDeleteSeed, type ReferenceCaldavDeleteAdmission, type ReferenceCaldavDeleteObservation, type ReferenceGraphCreateSeed, type ReferenceGraphCreateAdmission, type ReferenceGraphCreateEvidence, type ReferenceGraphCreateObservation, type ReferenceGraphCreateNativeEvidence } from "./model.js";
+import { ReferenceHoldError, type ReferenceAdmission, type ReferenceCapture, type ReferenceClaim, type ReferenceEvidence, type ReferenceOperation, type ReferenceSeed, type ReferenceContentPatch, type ReferenceDeleteAdmission, type ReferenceDeleteObservation, type ReferenceCreateAdmission, type ReferenceCreateSeed, type ReferenceCreateObservation, type ReferenceGraphDeleteSeed, type ReferenceGraphDeleteAdmission, type ReferenceGraphDeleteObservation, type ReferenceCaldavDeleteSeed, type ReferenceCaldavDeleteAdmission, type ReferenceCaldavDeleteObservation, type ReferenceGraphCreateSeed, type ReferenceGraphCreateAdmission, type ReferenceGraphCreateEvidence, type ReferenceGraphCreateObservation, type ReferenceGraphCreateNativeEvidence, type ReferenceCaldavCreateSeed, type ReferenceCaldavCreateAdmission, type ReferenceCaldavCreateEvidence, type ReferenceCaldavCreateObservation } from "./model.js";
 export { ReferenceHoldError } from "./model.js";
 export type { ReferenceClaim as Claim } from "./model.js";
 
@@ -54,7 +54,7 @@ function profileMatches(row: Row): boolean {
   const provider = providerOf(row), profile = profileOf(row);
   return provider === "google" ? ["create", "update", "delete"].includes(row.action) && profile === `google-personal-event-${row.action}-v1`
     : provider === "microsoft" ? (row.action === "create" && profile === REFERENCE_GRAPH_CREATE_PROFILE || row.action === "delete" && profile === REFERENCE_GRAPH_DELETE_PROFILE)
-    : row.action === "delete" && profile === REFERENCE_CALDAV_DELETE_PROFILE;
+    : (row.action === "delete" && profile === REFERENCE_CALDAV_DELETE_PROFILE || row.action === "create" && profile === REFERENCE_CALDAV_CREATE_PROFILE);
 }
 /** Only the durable lease identities are accepted from a caller's claim DTO. */
 function claimIdentity(value: ReferenceClaim): ReferenceClaim {
@@ -93,7 +93,8 @@ export class ReferenceStore {
     const graph = await readFile(new URL("./schema-graph-delete.sql", import.meta.url), "utf8");
     const caldav = await readFile(new URL("./schema-caldav-delete.sql", import.meta.url), "utf8");
     const graphCreate = await readFile(new URL("./schema-graph-create.sql", import.meta.url), "utf8");
-    await this.transaction(async client => { await client.query(sql); await client.query(forward); await client.query(create); await client.query(graph); await client.query(caldav); await client.query(graphCreate); });
+    const caldavCreate = await readFile(new URL("./schema-caldav-create.sql", import.meta.url), "utf8");
+    await this.transaction(async client => { await client.query(sql); await client.query(forward); await client.query(create); await client.query(graph); await client.query(caldav); await client.query(graphCreate); await client.query(caldavCreate); });
   }
   private async transaction<T>(body: (client: PoolClient) => Promise<T>, signal?: AbortSignal): Promise<T> {
     signal?.throwIfAborted();
@@ -128,6 +129,8 @@ export class ReferenceStore {
       (providerOf(op) !== "caldav" || conn.scope === "" && caldavUid(op.accepted_uid) && binding.ical_uid === op.accepted_uid && caldavDeleteAddress(op.calendar_id, op.event_id)) &&
       (op.action === "create" ? binding.destination_lifecycle === "reserved" && binding.create_operation_id === op.id &&
         (providerOf(op) === "microsoft" ? binding.create_profile === REFERENCE_GRAPH_CREATE_PROFILE && binding.event_id === null && op.event_id === null
+          : providerOf(op) === "caldav" ? binding.create_profile === REFERENCE_CALDAV_CREATE_PROFILE &&
+            binding.event_id === referenceCaldavCreateIdentity(op.calendar_id, op.id).resourceUrl && binding.ical_uid === referenceCaldavCreateIdentity(op.calendar_id, op.id).uid
           : !Object.hasOwn(binding, "create_profile") || binding.create_profile === "google-personal-event-create-v1") : binding.destination_lifecycle === "present") &&
       object.canonical_lifecycle === (op.action === "delete" ? "tombstoned" : "active") && Number(object.lifecycle_generation) === Number(op.canonical_generation) &&
       Number(conn.generation) === Number(op.connection_generation) && Number(object.revision) === Number(op.accepted_revision) &&
@@ -316,6 +319,56 @@ export class ReferenceStore {
     const result = await this.pool.query("SELECT id FROM reference_operations WHERE command_id=$1 AND binding_id=$2", [input.commandId, input.bindingId]);
     return this.inspectOperation(result.rows[0].id);
   }
+  async seedCaldavCreateBinding(supplied: ReferenceCaldavCreateSeed): Promise<void> {
+    const fields = copyExactDataFields(supplied, ["provider", "endpointProfile", "connectionId", "objectId", "bindingId", "calendarUrl", "operationId", "username", "password", "expiresAt", "content"], ["privacyLabel"]);
+    const input = Object.freeze({ ...fields, content: Object.freeze({ ...validateContent(fields.content as ReferenceCaldavCreateSeed["content"]) }) }) as unknown as ReferenceCaldavCreateSeed;
+    const identity = referenceCaldavCreateIdentity(input.calendarUrl, input.operationId);
+    if (input.provider !== "caldav" || input.endpointProfile !== REFERENCE_CALDAV_CREATE_PROFILE ||
+      typeof input.expiresAt !== "string" || !Number.isFinite(Date.parse(input.expiresAt)) || input.privacyLabel !== undefined && typeof input.privacyLabel !== "string" ||
+      ![input.connectionId, input.objectId, input.bindingId].every(value => typeof value === "string" && value.length > 0 && value.length <= 2048) ||
+      ![input.content.beginsAt, input.content.endsAt].every(value => value.endsWith(".000Z")) || input.content.notes === "" || input.content.place === "")
+      throw new Error("Invalid reference CalDAV CREATE seed");
+    const credential = basicCredential({ kind: "basic", username: input.username, password: input.password });
+    const ciphertext = encryptCredential(this.credentialKey, input.connectionId, JSON.stringify(credential));
+    await this.transaction(async client => {
+      await client.query("INSERT INTO reference_connections(id,provider,scope,credential_ciphertext,expires_at) VALUES($1,'caldav','',$2,$3)", [input.connectionId, ciphertext, input.expiresAt]);
+      await client.query("INSERT INTO reference_objects(id,privacy_label,content) VALUES($1,$2,$3)", [input.objectId, input.privacyLabel ?? "private", input.content]);
+      await client.query(`INSERT INTO reference_bindings(id,connection_id,object_id,calendar_id,event_id,etag,baseline,ical_uid,destination_lifecycle,create_operation_id,create_profile)
+        VALUES($1,$2,$3,$4,$5,NULL,NULL,$6,'reserved',$7,$8)`, [input.bindingId, input.connectionId, input.objectId, input.calendarUrl, identity.resourceUrl, identity.uid, input.operationId, REFERENCE_CALDAV_CREATE_PROFILE]);
+    });
+  }
+  async admitCaldavCreate(supplied: ReferenceCaldavCreateAdmission): Promise<ReferenceOperation> {
+    const input = Object.freeze(copyExactDataFields(supplied, ["bindingId", "expectedRevision", "commandId", "operationId"])) as unknown as ReferenceCaldavCreateAdmission;
+    const fingerprint = caldavCreateAdmissionFingerprint(input);
+    await this.transaction(async client => {
+      const initial = (await client.query("SELECT * FROM reference_bindings WHERE id=$1", [input.bindingId])).rows[0];
+      if (!initial) throw new ReferenceHoldError("binding-missing");
+      const conn = (await client.query("SELECT * FROM reference_connections WHERE id=$1 FOR UPDATE", [initial.connection_id])).rows[0];
+      const object = (await client.query("SELECT * FROM reference_objects WHERE id=$1 FOR UPDATE", [initial.object_id])).rows[0];
+      const binding = (await client.query("SELECT * FROM reference_bindings WHERE id=$1 FOR UPDATE", [input.bindingId])).rows[0];
+      const existing = (await client.query("SELECT * FROM reference_operations WHERE connection_id=$1 AND command_id=$2 FOR UPDATE", [binding.connection_id, input.commandId])).rows[0];
+      if (existing) { if (existing.fingerprint !== fingerprint) throw new ReferenceHoldError("command-reused"); return; }
+      if (providerOf(conn) !== "caldav" || conn.status !== "active" || conn.credential_ciphertext == null || conn.scope !== "" || !binding.active)
+        throw new ReferenceHoldError("source-unavailable");
+      const identity = referenceCaldavCreateIdentity(binding.calendar_id, input.operationId);
+      if (object.canonical_lifecycle !== "active" || binding.destination_lifecycle !== "reserved" || binding.create_profile !== REFERENCE_CALDAV_CREATE_PROFILE ||
+        binding.create_operation_id !== input.operationId || binding.event_id !== identity.resourceUrl || binding.ical_uid !== identity.uid || binding.etag !== null || binding.baseline !== null)
+        throw new ReferenceHoldError("lifecycle-unavailable");
+      if (Number(object.revision) !== input.expectedRevision) throw new ReferenceHoldError("revision-conflict");
+      if ((await client.query("SELECT 1 FROM reference_operations WHERE binding_id=$1 AND status<>'acked'", [input.bindingId])).rowCount) throw new ReferenceHoldError("causal-barrier");
+      const epochs: ReferenceCapture = { acceptedRevision: input.expectedRevision + 1, connectionGeneration: Number(conn.generation), sourceGeneration: Number(binding.source_generation),
+        privacyGeneration: Number(object.privacy_generation), canonicalGeneration: Number(object.lifecycle_generation) };
+      const envelope = acceptedCaldavCreateEnvelope(input, validateContent(object.content), { objectId: object.id, connectionId: conn.id, calendarUrl: binding.calendar_id, ...identity, capture: epochs });
+      await client.query("UPDATE reference_objects SET revision=$2 WHERE id=$1", [object.id, epochs.acceptedRevision]);
+      await client.query(`INSERT INTO reference_operations(id,command_id,binding_id,object_id,connection_id,calendar_id,event_id,accepted_revision,
+        connection_generation,source_generation,privacy_generation,accepted_etag,fingerprint,payload,receipt,canonical_generation,action,provider,endpoint_profile,accepted_uid)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NULL,$12,$13,$14,$15,'create','caldav',$16,$17)`,
+        [input.operationId, input.commandId, binding.id, object.id, conn.id, binding.calendar_id, identity.resourceUrl, epochs.acceptedRevision, epochs.connectionGeneration, epochs.sourceGeneration,
+          epochs.privacyGeneration, fingerprint, { operationEnvelope: envelope }, initialReceipt(envelope), epochs.canonicalGeneration, REFERENCE_CALDAV_CREATE_PROFILE, identity.uid]);
+    });
+    const result = await this.pool.query("SELECT id FROM reference_operations WHERE command_id=$1 AND binding_id=$2", [input.commandId, input.bindingId]);
+    return this.inspectOperation(result.rows[0].id);
+  }
   async admitCreate(supplied: ReferenceCreateAdmission): Promise<ReferenceOperation> {
     const input = Object.freeze(copyDataFields(supplied, ["bindingId", "expectedRevision", "commandId", "operationId"])) as unknown as ReferenceCreateAdmission;
     const fingerprint = createAdmissionFingerprint(input);
@@ -423,7 +476,7 @@ export class ReferenceStore {
       canonical: { lifecycle: row.canonical_lifecycle, generation: Number(row.lifecycle_generation), revision: Number(row.canonical_revision) },
       deleteAcceptanceStatus: row.delete_acceptance_status,
       capture: capture(row), status: row.status, dispatchPossible: row.dispatch_possible, receipt: receipt(row.receipt),
-      ...(providerOf(row) === "caldav" ? { acceptedUid: row.accepted_uid } : {}),
+      ...(providerOf(row) === "caldav" ? { acceptedUid: row.accepted_uid, ...(row.action === "create" ? { caldavCreateAcceptanceStatus: row.caldav_create_acceptance_status ?? null } : {}) } : {}),
       ...(providerOf(row) === "microsoft" && row.action === "create" ? { graphCreate: { ...graphCreateNativeEvidence(row), bindingEventId: row.binding_event_id } } : {}),
       leaseAttemptId: row.lease_attempt_id, leaseUntil: row.lease_until?.toISOString() ?? null,
       binding: { etag: row.binding_etag, baseline: row.baseline, active: row.active, sourceGeneration: Number(row.binding_generation), destinationLifecycle: row.destination_lifecycle } };
@@ -439,13 +492,14 @@ export class ReferenceStore {
       if (!Number.isSafeInteger(attemptNumber)) throw new ReferenceHoldError("attempt-number-unavailable");
       if (op.dispatch_possible && ["pending", "not-dispatched"].includes(saved.provider.kind)) saved = receipt({ ...saved, provider: { kind: "uncertain" } });
       saved = receipt({ ...saved, attemptId });
-      await client.query("INSERT INTO reference_attempts(id,operation_id,receipt,recovery,delete_acceptance_status) VALUES($1,$2,$3,$4,$5)", [attemptId, operationId, saved, op.dispatch_possible, op.delete_acceptance_status]);
+      if (Object.hasOwn(op, "caldav_create_acceptance_status")) await client.query("INSERT INTO reference_attempts(id,operation_id,receipt,recovery,delete_acceptance_status,caldav_create_acceptance_status) VALUES($1,$2,$3,$4,$5,$6)", [attemptId, operationId, saved, op.dispatch_possible, op.delete_acceptance_status, op.caldav_create_acceptance_status]);
+      else await client.query("INSERT INTO reference_attempts(id,operation_id,receipt,recovery,delete_acceptance_status) VALUES($1,$2,$3,$4,$5)", [attemptId, operationId, saved, op.dispatch_possible, op.delete_acceptance_status]);
       await client.query("UPDATE reference_operations SET status='running',lease_attempt_id=$2,lease_until=clock_timestamp()+interval '120 seconds',receipt=$3,not_before=NULL WHERE id=$1", [operationId, attemptId, saved]);
       const parsed = SyncOperationEnvelopeSchema.safeParse(rawEnvelope(op.payload));
       return { operationId, attemptId, payload: op.payload, envelope: parsed.success ? parsed.data : undefined,
         binding: rowBinding(op), capture: capture(op), locator: { connectionId: op.connection_id, calendarId: op.calendar_id, eventId: op.event_id },
         etag: op.accepted_etag, receipt: saved, recovery: op.dispatch_possible, deleteAcceptanceStatus: op.delete_acceptance_status,
-        endpointProfile: profileOf(op), attemptNumber, ...(providerOf(op) === "caldav" ? { acceptedUid: op.accepted_uid } : {}),
+        endpointProfile: profileOf(op), attemptNumber, ...(providerOf(op) === "caldav" ? { acceptedUid: op.accepted_uid, ...(op.action === "create" ? { caldavCreateAcceptanceStatus: op.caldav_create_acceptance_status ?? null } : {}) } : {}),
         ...(providerOf(op) === "microsoft" && op.action === "create" ? { graphCreate: graphCreateNativeEvidence(op) } : {}) };
     });
   }
@@ -535,6 +589,7 @@ export class ReferenceStore {
       const locked = await this.locked(client, claim.operationId);
       signal?.throwIfAborted();
       if (providerOf(locked.operation) === "microsoft" && locked.operation.action === "create") throw new ReferenceHoldError("graph-create-evidence-port-required");
+      if (providerOf(locked.operation) === "caldav" && locked.operation.action === "create") throw new ReferenceHoldError("caldav-create-evidence-port-required");
       if (locked.operation.action === "delete" && (evidence.validator !== undefined || evidence.provider === "accepted" && evidence.acceptanceStatus === undefined) ||
         locked.operation.action !== "delete" && evidence.acceptanceStatus !== undefined) throw new ReferenceHoldError("invalid-protocol-evidence");
       if ((providerOf(locked.operation) === "microsoft" && evidence.acceptanceStatus !== undefined && ![204, 404].includes(evidence.acceptanceStatus)) ||
@@ -555,6 +610,38 @@ export class ReferenceStore {
       await client.query("UPDATE reference_attempts SET receipt=$3,code=$4,delete_acceptance_status=COALESCE($5,delete_acceptance_status),updated_at=clock_timestamp() WHERE id=$1 AND operation_id=$2", [claim.attemptId, claim.operationId, nextAttempt, safeCode, evidence.acceptanceStatus ?? null]);
       if (!this.owned(locked, claim)) return false;
       await client.query("UPDATE reference_operations SET receipt=$2,delete_acceptance_status=COALESCE($3,delete_acceptance_status) WHERE id=$1", [claim.operationId, make(receipt(locked.operation.receipt)), evidence.acceptanceStatus ?? null]);
+      return true;
+    }, signal);
+  }
+  async recordCaldavCreateEvidence(claim: ReferenceClaim, supplied: ReferenceCaldavCreateEvidence, signal?: AbortSignal): Promise<boolean> {
+    claim = claimIdentity(claim);
+    const fields = copyExactDataFields(supplied, ["provider", "remote"], ["validator", "observationId", "code", "error", "createAcceptanceStatus"]);
+    if (!["accepted", "uncertain", "rejected", "not-dispatched"].includes(fields.provider as string) || !["confirmed", "conflict", "unobserved"].includes(fields.remote as string) ||
+      ["observationId", "code"].some(key => fields[key] !== undefined && typeof fields[key] !== "string") ||
+      fields.provider === "accepted" && ![200, 201, 204].includes(fields.createAcceptanceStatus as number) ||
+      fields.provider !== "accepted" && (fields.createAcceptanceStatus !== undefined || fields.validator !== undefined) || fields.validator !== undefined && !strongEtag(fields.validator))
+      throw new ReferenceHoldError("invalid-caldav-create-evidence");
+    const parsedError = fields.error === undefined ? undefined : SyncErrorSchema.safeParse(fields.error);
+    if (parsedError && !parsedError.success) throw new ReferenceHoldError("invalid-protocol-error");
+    const evidence = Object.freeze({ ...fields, ...(parsedError?.success ? { error: Object.freeze(parsedError.data) } : {}) }) as unknown as ReferenceCaldavCreateEvidence;
+    return this.transaction(async client => {
+      const locked = await this.locked(client, claim.operationId); signal?.throwIfAborted();
+      if (providerOf(locked.operation) !== "caldav" || locked.operation.action !== "create" || profileOf(locked.operation) !== REFERENCE_CALDAV_CREATE_PROFILE)
+        throw new ReferenceHoldError("caldav-create-evidence-port-required");
+      const attempt = (await client.query("SELECT receipt,caldav_create_acceptance_status FROM reference_attempts WHERE id=$1 AND operation_id=$2 FOR UPDATE", [claim.attemptId, claim.operationId])).rows[0];
+      if (!attempt) throw new ReferenceHoldError("attempt-missing");
+      const make = (saved: SyncDeliveryReceipt) => {
+        const provider = evidence.provider === "accepted" ? { kind: "accepted", ...(evidence.validator ? { validator: { kind: "etag", value: evidence.validator } } : {}) } :
+          evidence.provider === "rejected" ? { kind: "rejected", error: evidence.error ?? { code: "transport-failed", retry: "never" } } : { kind: evidence.provider };
+        const effectiveProvider = saved.provider.kind === "accepted" && evidence.provider !== "accepted" || saved.provider.kind === "rejected" && ["uncertain", "not-dispatched"].includes(evidence.provider) ? saved.provider : provider;
+        const remote = evidence.remote === "unobserved" ? saved.remote : { kind: evidence.remote, observationId: evidence.observationId ?? claim.attemptId };
+        return receipt({ ...saved, attemptId: claim.attemptId, provider: effectiveProvider, remote });
+      };
+      const status = evidence.provider === "accepted" ? evidence.createAcceptanceStatus! : null;
+      const code = evidence.code && /^[a-z][a-z0-9-]{0,63}$/.test(evidence.code) ? evidence.code : null;
+      await client.query("UPDATE reference_attempts SET receipt=$3,code=$4,caldav_create_acceptance_status=COALESCE($5,caldav_create_acceptance_status),updated_at=clock_timestamp() WHERE id=$1 AND operation_id=$2", [claim.attemptId, claim.operationId, make(receipt(attempt.receipt)), code, status]);
+      if (!this.owned(locked, claim)) return false;
+      await client.query("UPDATE reference_operations SET receipt=$2,caldav_create_acceptance_status=COALESCE($3,caldav_create_acceptance_status) WHERE id=$1", [claim.operationId, make(receipt(locked.operation.receipt)), status]);
       return true;
     }, signal);
   }
@@ -687,6 +774,37 @@ export class ReferenceStore {
       // GET-only scoped absence confirms the destination. It never invents native acceptance.
       if (saved.remote.kind !== "confirmed" || saved.provider.kind === "pending") throw new ReferenceHoldError("confirmation-missing");
       await client.query("UPDATE reference_bindings SET destination_lifecycle='absent' WHERE id=$1", [locked.binding.id]);
+      await client.query("UPDATE reference_operations SET status='acked',lease_attempt_id=NULL,lease_until=NULL WHERE id=$1", [claim.operationId]);
+      return true;
+    }, signal);
+  }
+  async completeCaldavCreate(claim: ReferenceClaim, supplied: ReferenceCaldavCreateObservation, signal?: AbortSignal): Promise<boolean> {
+    claim = claimIdentity(claim);
+    const fields = copyExactDataFields(supplied, ["kind", "resourceUrl", "uid", "etag", "projection", "read"]);
+    const read = copyExactDataFields(fields.read, ["kind", "resource", "etag"]), resource = copyExactDataFields(read.resource, ["resourceUrl", "uid", "data"]);
+    const parsedProjection = SyncJsonObjectSchema.safeParse(fields.projection);
+    if (fields.kind !== "exact-readback" || typeof fields.resourceUrl !== "string" || !caldavUid(fields.uid) || !strongEtag(fields.etag) ||
+      !parsedProjection.success || read.kind !== "present" || read.etag !== fields.etag || resource.resourceUrl !== fields.resourceUrl || resource.uid !== fields.uid ||
+      typeof resource.data !== "string" || resource.data.length > 2_000_000) throw new ReferenceHoldError("invalid-caldav-create-observation");
+    const observation = Object.freeze({ resourceUrl: fields.resourceUrl, uid: fields.uid, etag: fields.etag,
+      projection: Object.freeze(JSON.parse(JSON.stringify(parsedProjection.data)) as Record<string, unknown>),
+      resource: Object.freeze({ resourceUrl: resource.resourceUrl as string, uid: resource.uid as string, data: resource.data }) });
+    const normalized = projectCaldavCreatedEvent(observation.resource);
+    if (!normalized || !jsonEqual(normalized, observation.projection)) throw new ReferenceHoldError("invalid-caldav-create-observation");
+    return this.transaction(async client => {
+      const locked = await this.locked(client, claim.operationId), op = locked.operation; signal?.throwIfAborted();
+      if (!this.owned(locked, claim) || !this.current(locked) || providerOf(op) !== "caldav" || op.action !== "create" || profileOf(op) !== REFERENCE_CALDAV_CREATE_PROFILE) return false;
+      const decoded = decodeSyncOperationPayload(op.payload, rowBinding(op), { supports: supportsCaldavPersonalCreateEnvelope });
+      if (decoded.kind !== "pinned-v1") throw new ReferenceHoldError("invalid-caldav-create-operation");
+      const envelope = decoded.envelope, identity = referenceCaldavCreateIdentity(op.calendar_id, op.id);
+      const plan = parseNativeWritePlanV1(envelope.serializer, "create", "event", envelope.nativePlan.data);
+      if (!plan || plan.planKind !== "caldav-properties" || plan.uid !== identity.uid || op.accepted_uid !== identity.uid || envelope.locator.resourceId !== identity.resourceUrl ||
+        observation.resourceUrl !== identity.resourceUrl || observation.uid !== identity.uid || !jsonEqual(observation.projection, envelope.admittedProjection.data) ||
+        !matchesPinnedProjectionV1(envelope.serializer, "create", observation.projection, plan)) throw new ReferenceHoldError("observation-conflict");
+      const saved = receipt(op.receipt);
+      if (!op.dispatch_possible || saved.remote.kind !== "confirmed" || !["accepted", "uncertain"].includes(saved.provider.kind) ||
+        saved.provider.kind === "accepted" && ![200, 201, 204].includes(op.caldav_create_acceptance_status)) throw new ReferenceHoldError("confirmation-missing");
+      await client.query("UPDATE reference_bindings SET destination_lifecycle='present',etag=$2,baseline=$3 WHERE id=$1", [locked.binding.id, observation.etag, envelope.admittedProjection.data]);
       await client.query("UPDATE reference_operations SET status='acked',lease_attempt_id=NULL,lease_until=NULL WHERE id=$1", [claim.operationId]);
       return true;
     }, signal);
