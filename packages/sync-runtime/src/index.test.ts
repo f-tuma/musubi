@@ -56,6 +56,25 @@ function fixture(responses: (Response|Error)[], policy: GooglePersonalUpdatePoli
   return {input,host,ports,calls,metrics,evidence,finishes,frames,contexts,acknowledgements,run,counts:()=>({credentials,renewals,marks,identifiers})};
 }
 
+test("a refused Google UPDATE retry cannot erase inherited native uncertainty", async () => {
+  for (const policy of [musubi, reference]) {
+    const f = fixture([response(native()), calendar(), response(native()), response({}, 429, { "retry-after": "9" })], policy);
+    Object.assign(f.input, { recovery: { required: true, possibleDispatch: true }, priorProvider: { kind: "uncertain" } });
+    const result = await f.run(); assert.deepEqual(result.facts.provider, { kind: "uncertain" }); assert.equal(result.facts.possibleDispatch, true);
+    assert.equal(result.error?.providerStatus, 429); assert.equal(result.error?.outcome, "not-written"); assert.equal(f.finishes[0]!.retryAfterMs, 9000);
+    assert.equal(f.calls.length, 4); assert.equal(f.acknowledgements.length, 0);
+  }
+});
+
+test("a lost Google UPDATE retry cannot erase prior acceptance", async () => {
+  for (const policy of [musubi, reference]) {
+    const f = fixture([response(native()), calendar(), response(native()), new Error("owned lost retry"), ...(policy === reference ? [response(native("New", '"after"'))] : [])], policy);
+    Object.assign(f.input, { recovery: { required: true, possibleDispatch: true }, priorProvider: { kind: "accepted", validator: '"earlier"' } });
+    const result = await f.run(); assert.deepEqual(result.facts.provider, { kind: "accepted", validator: '"earlier"' }); assert.equal(result.facts.possibleDispatch, true);
+    assert.equal(result.status, policy === reference ? "acked" : "hold"); assert.equal(f.calls.filter(call => call.init.method === "PATCH").length, 1);
+  }
+});
+
 test("one core preserves each host's deliberate completion wire sequence and physical identity", async()=>{
   const ordinary=fixture([calendar(),response(native()),response({etag:'"after"'})],musubi);
   assert.equal((await ordinary.run()).status,"acked");assert.deepEqual(ordinary.calls.map(c=>c.init.method),["GET","GET","PATCH"]);

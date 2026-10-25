@@ -4397,6 +4397,268 @@
         "errorCode": "provider-write-failed",
         "errorOutcome": "unconfirmed"
       }
+    },
+    {
+      "id": "resolution-uncertain-rate-limit",
+      "title": "Explicit first-attempt resolution keeps earlier uncertainty after a known 429",
+      "policy": "musubi",
+      "attemptNumber": 1,
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "resolution": {
+        "expectedRemoteExists": true,
+        "expectedRemoteEtag": "W/\"before\""
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/v1.0/me/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "@odata.etag": "W/\"before\"",
+            "subject": "Synthetic event",
+            "type": "singleInstance",
+            "isCancelled": false,
+            "isOrganizer": true,
+            "isDraft": false,
+            "recurrence": null,
+            "attendees": [],
+            "isOnlineMeeting": false,
+            "onlineMeeting": null,
+            "onlineMeetingUrl": null,
+            "isAllDay": false,
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.0000000",
+              "timeZone": "UTC"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00",
+              "timeZone": "UTC"
+            },
+            "body": {
+              "contentType": "text",
+              "content": ""
+            },
+            "location": {
+              "displayName": ""
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/v1.0/me?$select=id,mail,userPrincipalName",
+          "status": 200,
+          "body": {
+            "id": "self",
+            "mail": "owner@example.test"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/v1.0/me/calendars/native%2Fcalendar?$select=id,canEdit,owner",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "canEdit": true,
+            "owner": {
+              "address": "owner@example.test"
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/v1.0/me/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "@odata.etag": "W/\"before\"",
+            "subject": "Synthetic event",
+            "type": "singleInstance",
+            "isCancelled": false,
+            "isOrganizer": true,
+            "isDraft": false,
+            "recurrence": null,
+            "attendees": [],
+            "isOnlineMeeting": false,
+            "onlineMeeting": null,
+            "onlineMeetingUrl": null,
+            "isAllDay": false,
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.0000000",
+              "timeZone": "UTC"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00",
+              "timeZone": "UTC"
+            },
+            "body": {
+              "contentType": "text",
+              "content": ""
+            },
+            "location": {
+              "displayName": ""
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/v1.0/me?$select=id,mail,userPrincipalName",
+          "status": 200,
+          "body": {
+            "id": "self",
+            "mail": "owner@example.test"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/v1.0/me/calendars/native%2Fcalendar?$select=id,canEdit,owner",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "canEdit": true,
+            "owner": {
+              "address": "owner@example.test"
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/v1.0/me/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "@odata.etag": "W/\"before\"",
+            "subject": "Synthetic event",
+            "type": "singleInstance",
+            "isCancelled": false,
+            "isOrganizer": true,
+            "isDraft": false,
+            "recurrence": null,
+            "attendees": [],
+            "isOnlineMeeting": false,
+            "onlineMeeting": null,
+            "onlineMeetingUrl": null,
+            "isAllDay": false,
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.0000000",
+              "timeZone": "UTC"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00",
+              "timeZone": "UTC"
+            },
+            "body": {
+              "contentType": "text",
+              "content": ""
+            },
+            "location": {
+              "displayName": ""
+            }
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/v1.0/me/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 429,
+          "body": {},
+          "headers": {
+            "retry-after": "2"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "GET",
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "paths": [
+          "/v1.0/me/calendars/native%2Fcalendar/events/native%2Fevent",
+          "/v1.0/me?$select=id,mail,userPrincipalName",
+          "/v1.0/me/calendars/native%2Fcalendar?$select=id,canEdit,owner",
+          "/v1.0/me/calendars/native%2Fcalendar/events/native%2Fevent",
+          "/v1.0/me?$select=id,mail,userPrincipalName",
+          "/v1.0/me/calendars/native%2Fcalendar?$select=id,canEdit,owner",
+          "/v1.0/me/calendars/native%2Fcalendar/events/native%2Fevent",
+          "/v1.0/me/calendars/native%2Fcalendar/events/native%2Fevent"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          "W/\"before\""
+        ],
+        "prefer": [
+          "outlook.timezone=\"UTC\", outlook.body-content-type=\"text\", odata.maxpagesize=100",
+          "outlook.timezone=\"UTC\", outlook.body-content-type=\"text\"",
+          "outlook.timezone=\"UTC\", outlook.body-content-type=\"text\"",
+          "outlook.timezone=\"UTC\", outlook.body-content-type=\"text\"",
+          "outlook.timezone=\"UTC\", outlook.body-content-type=\"text\"",
+          "outlook.timezone=\"UTC\", outlook.body-content-type=\"text\"",
+          "outlook.timezone=\"UTC\", outlook.body-content-type=\"text\"",
+          null
+        ],
+        "dispatchVersions": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": 2000,
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "not-written"
+      }
     }
   ]
 }

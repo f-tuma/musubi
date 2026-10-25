@@ -1,0 +1,258 @@
+{
+  "schemaVersion": 1,
+  "scope": "local installed API proof only; no registry publication or production deployment",
+  "status": "passed",
+  "createdAt": "2026-10-25T13:44:50.227890+00:00",
+  "gitHeadAtBuild": "9ba231876838c9c53d6bb80a6c6bb10eed411569",
+  "imageTag": "musubi-c07-evidence-api:proof",
+  "dockerImageInspectId": "sha256:aa8cd293bf3589e9f410af5e8896e1bc07b644b26277dbd3d1390756844cbb11",
+  "localBuildIndexDigest": "sha256:aa8cd293bf3589e9f410af5e8896e1bc07b644b26277dbd3d1390756844cbb11",
+  "platformManifestDigest": "sha256:e50cd794b4068536afb6a6c4321e66fd98b8f828f5b9ae2ccf08534cde12ae6a",
+  "imageConfigDigest": "sha256:76766037b5687bb92621fcbe4e1ea942448bcf929a83caf8ba2e87d6ad77423f",
+  "platform": {
+    "os": "linux",
+    "architecture": "amd64"
+  },
+  "dockerIdentityNote": "Docker image inspect Id and the running container image reference identify the local OCI index here. Platform manifest and image config digests are recorded separately. A local daemon RepoDigest does not establish registry publication.",
+  "sourceFingerprint": "76f1ec236b442d7d6ddfa8ca7f18e36b5e23293de252eb4abff38630bae355ce",
+  "sourceContextFiles": 840,
+  "sourceFingerprintScope": "Frozen 840-file credential-free Docker build context. Production TS/SQL parity excludes tests, process fixtures and behavior harnesses and covers the entire API workspace production source closure.",
+  "productionSourceFingerprint": "ff87ae15a5651426a5be06f745eaa29717405736a9f31c5b4355fc569460d1bc",
+  "productionSourceHashParity": {
+    "checkedFiles": 429,
+    "mismatches": []
+  },
+  "productionSourceInventoryAfterProof": {
+    "frozenFiles": 429,
+    "currentFiles": 429,
+    "byteEqual": true,
+    "addedRemovedOrModified": []
+  },
+  "contextChangesAfterBuild": [],
+  "startup": {
+    "port": 7531,
+    "environment": "test",
+    "deploymentMode": "single-replica",
+    "logLevel": "info",
+    "externalSyncIntervalMin": 0,
+    "externalDeliveryRecoveryMode": "disabled",
+    "syncOperationV1EncoderEnabled": true,
+    "syncOperationProfileVersion": "sync-profile-v1",
+    "timestamp": "2026-10-25T13:41:47.386Z",
+    "level": "info",
+    "message": "server.started"
+  },
+  "emptyDatabaseBeforeBoot": {
+    "tables": 0
+  },
+  "emptyDatabaseMigrations": {
+    "applied": 86,
+    "sourceJournalEntries": 86,
+    "lastTag": "0085_graph_read_coverage",
+    "lastHashMatchesSource": true
+  },
+  "effectiveConfiguration": {
+    "encoder": true,
+    "encoderOverridePresent": false,
+    "environment": "test",
+    "nodeEnvironment": "production",
+    "externalSyncIntervalMin": 0,
+    "deliveryRecoveryMode": "disabled",
+    "smtpConfigured": false,
+    "pushConfigured": false
+  },
+  "runtime": {
+    "user": "node",
+    "sourceBindMounts": 0
+  },
+  "providerIsolation": {
+    "externalAccounts": 0,
+    "caldavAccounts": 0,
+    "externalCalendars": 0,
+    "eventOutboxRows": 0,
+    "smtpConfigured": false,
+    "pushConfigured": false
+  },
+  "cleanup": {
+    "containerRemoved": true,
+    "nonceDatabaseDropped": true,
+    "containerAbsentVerified": true,
+    "nonceDatabaseAbsentVerified": true,
+    "rootPostgresStillRunning": true
+  },
+  "httpChecks": {
+    "status": "passed",
+    "checks": 17,
+    "categories": {
+      "publicHealthAndCapabilities": 2,
+      "unauthenticatedAccessDenied": 1,
+      "realSignUpLoginAndCookieSession": 3,
+      "authenticatedCanonicalCalendarAndEventChecks": 11
+    },
+    "auth": {
+      "syntheticEmailDomain": "example.invalid",
+      "signup": true,
+      "passwordLogin": true,
+      "cookieSession": true,
+      "authBypass": false,
+      "dbSeedChanges": false
+    },
+    "providerScope": {
+      "configuredExternalAccounts": 0,
+      "liveProviderRequests": false,
+      "externalCaldavCreateNotExercised": true
+    },
+    "scopeNote": "The 17 HTTP checks include public health/capability and unauthenticated rejection, real Better Auth registration/login/cookie session, and canonical calendar/event CRUD, idempotent replay, revision conflict and readback. No direct authentication bypass or database seeding."
+  },
+  "limits": [
+    "This installed image smoke does not exercise a native CalDAV CREATE or any live provider.",
+    "The separate API regression corpus exercises the existing Google CREATE, Google DELETE, CalDAV DELETE, Graph DELETE and C06 Google UPDATE suites against disposable PostgreSQL and owned loopback provider fixtures. Its evidence is separate from this canonical HTTP smoke.",
+    "No external accounts, external calendar targets, delivery outbox rows, SMTP or push were configured. External sync interval is zero and delivery recovery is disabled.",
+    "This proof builds and runs a local image; it does not prove registry publication or a production rollout."
+  ],
+  "apiRegressionCorpus": {
+    "scope": "Existing API suites executed from this installed source closure in separate disposable test containers; distinct from the canonical 17-HTTP production-layout smoke.",
+    "status": "passed",
+    "passedScenarios": 415,
+    "migrations": 86,
+    "suites": [
+      {
+        "file": "apps/api/src/sync/google_shared_create_delivery.integration.test.ts",
+        "passedScenarios": 68,
+        "exitCode": 0
+      },
+      {
+        "file": "apps/api/src/sync/google_shared_delete_delivery.integration.test.ts",
+        "passedScenarios": 55,
+        "exitCode": 0
+      },
+      {
+        "file": "apps/api/src/sync/caldav_shared_delete_delivery.integration.test.ts",
+        "passedScenarios": 154,
+        "exitCode": 0
+      },
+      {
+        "file": "apps/api/src/sync/microsoft_shared_delete_delivery.integration.test.ts",
+        "passedScenarios": 124,
+        "exitCode": 0
+      },
+      {
+        "file": "apps/api/src/sync/google_shared_delivery.integration.test.ts",
+        "passedScenarios": 14,
+        "exitCode": 0
+      }
+    ],
+    "testSourceHashParity": {
+      "checkedFiles": 8,
+      "mismatches": []
+    },
+    "testWiring": {
+      "workspaceEnvRead": false,
+      "sourceBindMounts": 0,
+      "privateNetworkPolicy": "explicit fixture policy for owned loopback only",
+      "socialCredentialsConfigured": false,
+      "smtpConfigured": false,
+      "pushConfigured": false,
+      "testPathAliases": "/packages symlinks only to installed @musubi packages for existing private relative test imports"
+    },
+    "cleanup": {
+      "nonceDatabaseDropped": true,
+      "nonceDatabaseAbsentVerified": true,
+      "rootPostgresStillRunning": true,
+      "allCorpusContainersAbsentVerified": true
+    },
+    "providerBoundary": "Existing suites redirect Google/Graph HTTP to owned loopback fixtures and use owned CalDAV loopback endpoints; no live provider account or request. Disposable PostgreSQL is the only other configured service."
+  },
+  "artifacts": [
+    {
+      "path": "/tmp/musu39-c07-evidence-api-proof-20261025134027_23a0fd.json",
+      "sha256": "9f150a7660f863fa51769c7634b75393f689faf8b4fcc60bf909b5e501c12a98",
+      "bytes": 6549
+    },
+    {
+      "path": "/tmp/musu39-c07-evidence-api-http-20261025134027_23a0fd.json",
+      "sha256": "9899eef5b598b55e699aaf3fcbab2c467c7f5c88ff2586be2a372f5b718568a6",
+      "bytes": 3408
+    },
+    {
+      "path": "/tmp/musu39-c07-evidence-api-runtime-20261025134027_23a0fd.log",
+      "sha256": "79fb4354aeca55a316f254d67ca0094acee9a0314b5cc93aaaad09f9ac6a3ee5",
+      "bytes": 6184
+    },
+    {
+      "path": "/tmp/musu39-c07-evidence-api-source-20261025134027.json",
+      "sha256": "0fdde0efce96b623a4da64d7c8c09fb3c1bd3a0834d3dfeecdd7d8adb4c8d1ea",
+      "bytes": 102696
+    },
+    {
+      "path": "/tmp/musu39-c07-evidence-api-build-20261025134027.log",
+      "sha256": "e351d4018f1f91e858564d28c5d6736bc15f28e45b932952104c5707aef73433",
+      "bytes": 4020
+    },
+    {
+      "path": "/tmp/musu39-c07-evidence-api-build.py",
+      "sha256": "c57c9e133bead474fd8f3af721c0a94600a23c9a2bed5519c2d8d876c3953023",
+      "bytes": 3352
+    },
+    {
+      "path": "/tmp/musu39-c07-evidence-api-probe.py",
+      "sha256": "aa4f7332d76118bb267e5869be76554a41fd61c595c9d0787ae868cf14364099",
+      "bytes": 10721
+    },
+    {
+      "path": "/tmp/musu39-c07-evidence-api-http-smoke.mjs",
+      "sha256": "bc66861a4dc9fe9bdad8f268b6075bd73c93e82b60b75a71c1a9ac20afffb731",
+      "bytes": 7279
+    },
+    {
+      "path": "/tmp/musu39-c07-evidence-api-summarize.py",
+      "sha256": "1ad67ab484b732876b5d06aa0a4a07dba751773ff19d58fe0a8e12f1265a6646",
+      "bytes": 8558
+    },
+    {
+      "path": "/tmp/musu39-c07-evidence-api-corpus-20261025134143_26637c.json",
+      "sha256": "0755158c1d24db41a25db0e7dceb36ed6c465a5cdfc2619d96001caf29290c45",
+      "bytes": 3074
+    },
+    {
+      "path": "/tmp/musu39-c07-evidence-api-corpus.py",
+      "sha256": "f22ba459f1fed60d8461e821d89109918965f33e5eb81c496c16adf2b132d049",
+      "bytes": 6601
+    },
+    {
+      "path": "/tmp/musu39-c07-evidence-api-corpus-verify.py",
+      "sha256": "2f8a225592a3cd15246ed8f5e71fde4f01572efaa43fc8a04c0d834f338301fa",
+      "bytes": 2452
+    },
+    {
+      "path": "/tmp/musu39-c07-evidence-api-corpus-20261025134143_26637c-migrate.log",
+      "sha256": "52607390f6013e5fa3831e2bde93e5a9fe6cc3b9934e46329f513a8c7416ed49",
+      "bytes": 61
+    },
+    {
+      "path": "/tmp/musu39-c07-evidence-api-corpus-20261025134143_26637c-google_shared_create_delivery.log",
+      "sha256": "0b27ad2b0f40538f04c96f95c1d03c04e01c09e157af46297a5fce28aa790cc7",
+      "bytes": 4924
+    },
+    {
+      "path": "/tmp/musu39-c07-evidence-api-corpus-20261025134143_26637c-google_shared_delete_delivery.log",
+      "sha256": "aff5db6ae9533af0e0c7238081919702320c525c739329c13df8635ee1c43cfb",
+      "bytes": 4274
+    },
+    {
+      "path": "/tmp/musu39-c07-evidence-api-corpus-20261025134143_26637c-caldav_shared_delete_delivery.log",
+      "sha256": "f280cd2e38a66803e5eb5a5fed01e6731e192300008243153572158553bbd3e1",
+      "bytes": 11459
+    },
+    {
+      "path": "/tmp/musu39-c07-evidence-api-corpus-20261025134143_26637c-microsoft_shared_delete_delivery.log",
+      "sha256": "18237fd7c77178b4f3fb54225e035838a815e08788eabc0bdeb4adfb0b4cc51b",
+      "bytes": 9233
+    },
+    {
+      "path": "/tmp/musu39-c07-evidence-api-corpus-20261025134143_26637c-google_shared_delivery.log",
+      "sha256": "27db8cd64be1a37640224c59f103c9122c1fcbfce711e022ff12ee194d8b50a2",
+      "bytes": 1447
+    }
+  ]
+}

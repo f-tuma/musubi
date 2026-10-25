@@ -91,3 +91,12 @@ test("malformed row action DELETE disagrees with UPDATE payload before credentia
   f.store.getSession = async () => { assert.fail("Unsupported action cannot open credentials"); };
   assert.equal((await f.run()).status,"hold"); assert.equal(f.calls.length,0);
 });
+test("earlier uncertain conditional DELETE is not downgraded by a later known429", async () => {
+  const f = fixture([response(present()), acl(), response(present()), response({}, 429)], true);
+  assert.equal((await f.run()).status, "hold"); assert.equal(f.evidence.at(-1)!.provider, "uncertain"); assert.equal(f.marks(), 1); assert.equal(f.completions.length, 0);
+});
+test("earlier accepted DELETE status survives a later conditional retry with lost response", async () => {
+  const f = fixture([response(present()), acl(), response(present()), new Error("Owned retry lost reply"), response({}, 404)], true);
+  f.claim.receipt.provider = { kind: "accepted" }; (f.claim as { deleteAcceptanceStatus: number }).deleteAcceptanceStatus = 204;
+  assert.equal((await f.run()).status, "acked"); assert.equal(f.evidence.at(-1)!.provider, "accepted"); assert.equal(f.evidence.at(-1)!.acceptanceStatus, 204); assert.equal(f.marks(), 1);
+});

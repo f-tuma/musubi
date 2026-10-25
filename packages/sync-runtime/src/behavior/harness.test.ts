@@ -34,17 +34,29 @@ test("schema refuses missing assertions, unknown fields, unsupported versions an
     { schemaVersion: 1, scenarios: [] },
     { schemaVersion: 1, scenarios: [{ ...first(), expected: { status: "acked" } }] },
     { schemaVersion: 1, scenarios: [{ ...first(), injected: true }] },
+    { schemaVersion: 1, scenarios: [{ ...first(), priorProvider: { kind: "uncertain" } }] },
+    { schemaVersion: 1, scenarios: [{ ...first(), recovery: { required: false, possibleDispatch: false }, priorProvider: { kind: "uncertain" } }] },
     { schemaVersion: 1, scenarios: [{ ...first(), exchanges: [{ method: "GET", path: "https://example.invalid", status: 200, body: {} }] }] },
     { schemaVersion: 1, scenarios: [{ ...first(), exchanges: [{ method: "GET", path: first().exchanges[0]!.path, error: "lost-reply", status: 500, body: {} }] }] },
   ];
   for (const value of cases) assert.throws(() => parseDeleteSuite(value), failureCode("invalid-suite"));
 });
 
+test("conditional DELETE keeps inherited uncertainty and earlier acceptance separate from the latest retry error", async () => {
+  const limited = await runDeleteScenario(suite.scenarios.find(item => item.id === "uncertain-retry-rate-limit")!);
+  assert.equal(limited.provider.kind, "uncertain"); assert.equal(limited.provider.retryAfterMs, null);
+  assert.equal(limited.possibleDispatch, true); assert.equal(limited.retryAfterMs, 9000);
+  assert.equal(limited.errorOutcome, "not-written"); assert.equal(limited.providerStatus, 429);
+  const lost = await runDeleteScenario(suite.scenarios.find(item => item.id === "accepted-retry-lost-reply")!);
+  assert.equal(lost.provider.kind, "accepted"); assert.equal(lost.provider.status, 204); assert.equal(lost.errorOutcome, "unconfirmed");
+  assert.equal(lost.methods.filter(method => method === "DELETE").length, 1); assert.deepEqual(lost.ackKinds, []);
+});
+
 test("JSON CLI lists, selects, rejects ambiguous flags and emits bounded parseable diagnostics", async () => {
   const lines: string[] = [];
   const write = (line: string) => { lines.push(line); };
   assert.equal(await runCli(["--json", "--list"], write), 0);
-  assert.equal(JSON.parse(lines.pop()!).scenarios.length, 5);
+  assert.equal(JSON.parse(lines.pop()!).scenarios.length, suite.scenarios.length);
   assert.equal(await runCli(["--scenario", "already-absent", "--json"], write), 0);
   const selected = JSON.parse(lines.pop()!);
   assert.equal(selected.results.length, 1);

@@ -94,6 +94,17 @@ test("Graph second resolution attempt and mismatched comparison remain observe-o
   }
 });
 
+test("a refused explicit Graph resolution cannot erase older DELETE uncertainty", async () => {
+  const refused = new Response(null, { status: 429, headers: { "retry-after": "9" } });
+  const f = fixture([response(native()), ...guard(), ...guard(), refused]);
+  Object.assign(f.input, { recovery: { required: true, possibleDispatch: true }, priorProvider: { kind: "uncertain" },
+    resolution: { expectedRemoteExists: true, expectedRemoteEtag: 'W/"before"' } });
+  const result = await f.run(); assert.equal(result.status, "hold"); assert.deepEqual(result.facts.provider, { kind: "uncertain" });
+  assert.equal(result.facts.possibleDispatch, true); assert.equal(result.error?.providerStatus, 429); assert.equal(result.error?.outcome, "not-written");
+  assert.equal(f.finishes[0]!.retryAfterMs, 9000); assert.equal(f.calls.length, 8); assert.equal(f.acks.length, 0);
+  assert.equal(f.calls.filter(call => call.init.method === "DELETE").length, 1);
+});
+
 test("Graph verification denial, 410 and malformed response preserve accepted native DELETE", async () => {
   for (const verification of [response({}, 403), response({}, 410), new Response("{", { status: 200 })]) {
     const responses = fresh(); responses[8] = verification; const f = fixture(responses); const result = await f.run();

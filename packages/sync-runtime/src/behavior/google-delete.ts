@@ -1,6 +1,6 @@
 import { readFile, stat } from "node:fs/promises";
 import { isDeepStrictEqual } from "node:util";
-import { SyncOperationEnvelopeSchema } from "@musubi/types";
+import { SyncErrorSchema, SyncJsonValueSchema, SyncOperationEnvelopeSchema } from "@musubi/types";
 import {
   runClaimedGooglePersonalDelete,
   type ClaimedGooglePersonalDelete,
@@ -9,6 +9,7 @@ import {
   type RuntimeDeleteCompletionEvidence,
   type RuntimeDeleteFinishOutcome,
   type RuntimeDeleteRunResult,
+  type RuntimeDeleteProviderFact,
 } from "../index";
 
 type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
@@ -31,11 +32,15 @@ export type DeleteSummary = {
   possibleDispatch: boolean;
   mutationMarks: number;
   retryAfterMs: number | null;
+  errorOutcome: "not-written" | "unconfirmed" | null;
+  providerStatus: number | null;
 };
 export type DeleteScenario = {
   id: string;
   title: string;
   policy: "musubi" | "reference";
+  recovery?: { required: boolean; possibleDispatch: boolean };
+  priorProvider?: RuntimeDeleteProviderFact;
   exchanges: Exchange[];
   expected: DeleteSummary;
 };
@@ -76,7 +81,7 @@ function validJson(value: unknown, depth = 0): void {
   invalid();
 }
 function validateSummary(value: unknown): void {
-  const s = object(value, ["status", "methods", "ifMatch", "ackKinds", "finishStatuses", "provider", "remoteKind", "possibleDispatch", "mutationMarks", "retryAfterMs"]);
+  const s = object(value, ["status", "methods", "ifMatch", "ackKinds", "finishStatuses", "provider", "remoteKind", "possibleDispatch", "mutationMarks", "retryAfterMs", "errorOutcome", "providerStatus"]);
   oneOf(s.status, ["acked", "hold", "conflict"]);
   list(s.methods, ["GET", "DELETE"]);
   if (!Array.isArray(s.ifMatch) || s.ifMatch.length !== (s.methods as unknown[]).length) invalid();
@@ -94,17 +99,28 @@ function validateSummary(value: unknown): void {
   nullableInteger(s.mutationMarks, 0, 1);
   if (s.mutationMarks === null) invalid();
   nullableInteger(s.retryAfterMs);
+  oneOf(s.errorOutcome, [null, "not-written", "unconfirmed"]); nullableInteger(s.providerStatus, 100, 599);
 }
 export function parseDeleteSuite(value: unknown): DeleteSuite {
+  if (!SyncJsonValueSchema.safeParse(value).success) invalid();
   const suite = object(value, ["schemaVersion", "scenarios"]);
   if (suite.schemaVersion !== 1 || !Array.isArray(suite.scenarios) || !suite.scenarios.length || suite.scenarios.length > 100) invalid();
   const ids = new Set<string>();
   for (const item of suite.scenarios as unknown[]) {
-    const scenario = object(item, ["id", "title", "policy", "exchanges", "expected"]);
+    const scenario = object(item, ["id", "title", "policy", "exchanges", "expected"], ["recovery", "priorProvider"]);
     if (typeof scenario.id !== "string" || !/^[a-z][a-z0-9-]{0,79}$/.test(scenario.id) || ids.has(scenario.id)) invalid();
     ids.add(scenario.id as string);
     if (typeof scenario.title !== "string" || !scenario.title.length || scenario.title.length > 160 || /[\u0000-\u001f\u007f]/.test(scenario.title)) invalid();
     oneOf(scenario.policy, ["musubi", "reference"]);
+    if (Object.hasOwn(scenario, "recovery") !== Object.hasOwn(scenario, "priorProvider")) invalid();
+    if (scenario.recovery !== undefined) {
+      const recovery = object(scenario.recovery, ["required", "possibleDispatch"]), prior = object(scenario.priorProvider, ["kind"], ["status", "error"]);
+      if (typeof recovery.required !== "boolean" || typeof recovery.possibleDispatch !== "boolean" || recovery.required !== recovery.possibleDispatch) invalid();
+      if (prior.kind === "accepted") { object(prior, ["kind", "status"]); oneOf(prior.status, [200, 201, 204, 404, 410]); }
+      else if (prior.kind === "rejected") { object(prior, ["kind", "error"]); if (!SyncErrorSchema.safeParse(prior.error).success) invalid(); }
+      else { object(prior, ["kind"]); oneOf(prior.kind, ["not-dispatched", "uncertain"]); }
+      if (prior.kind !== "not-dispatched" && !recovery.possibleDispatch) invalid();
+    }
     if (!Array.isArray(scenario.exchanges) || scenario.exchanges.length > 32) invalid();
     for (const raw of scenario.exchanges as unknown[]) {
       const exchange = object(raw, ["method", "path"], ["status", "body", "headers", "error"]);
@@ -174,7 +190,9 @@ export async function runDeleteScenario(raw: DeleteScenario): Promise<DeleteSumm
     async finish(outcome) { finishes.push(outcome); }, observationId() { return `observation:${++observations}`; },
   };
   let result: RuntimeDeleteRunResult;
-  result = await runClaimedGooglePersonalDelete(claimedInput(), host, {
+  const claim = claimedInput();
+  result = await runClaimedGooglePersonalDelete({ ...claim,
+    ...(scenario.recovery ? { recovery: scenario.recovery, priorProvider: scenario.priorProvider! } : {}) }, host, {
     http: { async fetch(url, init) {
       const exchange = scenario.exchanges[next++];
       methods.push(init.method ?? "GET"); ifMatch.push(new Headers(init.headers).get("if-match"));
@@ -198,7 +216,8 @@ export async function runDeleteScenario(raw: DeleteScenario): Promise<DeleteSumm
       errorCode: fact.kind === "rejected" ? fact.error.code : null, retry: fact.kind === "rejected" ? fact.error.retry : null,
       retryAfterMs: fact.kind === "rejected" ? fact.error.retryAfterMs ?? null : null },
     remoteKind: result.facts.remote.kind, possibleDispatch: result.facts.possibleDispatch, mutationMarks,
-    retryAfterMs: finishes.at(-1)?.retryAfterMs ?? null };
+    retryAfterMs: finishes.at(-1)?.retryAfterMs ?? null,
+    errorOutcome: result.error?.outcome ?? null, providerStatus: result.error?.providerStatus ?? null };
   if (!isDeepStrictEqual(summary, scenario.expected)) throw new ScenarioFailure("expectation-mismatch", "The observed runtime summary differs from the complete expected summary.");
   return summary;
 }

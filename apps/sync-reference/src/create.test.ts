@@ -104,3 +104,21 @@ test("runtime pins nested CREATE body before an awaited host checkpoint", async 
   } });
   assert.equal(result.status, "acked"); assert.equal(f.calls[1]!.init.body, saved);
 });
+
+test("older uncertain CREATE survives a later exact404 and known429 without losing its provider fact", async () => {
+  const f = fixture([response({}, 404), acl(), response({}, 429, { "retry-after": "9" })], true);
+  assert.equal((await f.run()).status, "hold"); assert.equal(f.evidence.at(-1)!.provider, "uncertain"); assert.equal(f.completions.length, 0);
+  assert.deepEqual(f.calls.map(call => call.init.method), ["GET", "GET", "POST"]); assert.equal(f.counts().marks, 1);
+  assert.deepEqual(f.finishes.at(-1), { status: "hold", code: "provider-write-failed", retryAfterMs: 9000 });
+});
+test("known rejection followed by a newly dispatched lost CREATE response can still ACK uncertainty", async () => {
+  const f = fixture([response({}, 404), acl(), new Error("Owned newly dispatched lost reply"), response(native())], true);
+  f.claim.receipt.provider = { kind: "rejected", error: { code: "rate-limited", retry: "after-delay", retryAfterMs: 9000 } };
+  assert.equal((await f.run()).status, "acked"); assert.equal(f.evidence.at(-1)!.provider, "uncertain"); assert.equal(f.counts().marks, 1);
+  assert.deepEqual(f.calls.map(call => call.init.method), ["GET", "GET", "POST", "GET"]);
+});
+test("prior CREATE acceptance survives a later same-ID retry whose response is lost", async () => {
+  const f = fixture([response({}, 404), acl(), new Error("Owned later lost reply"), response(native())], true);
+  f.claim.receipt.provider = { kind: "accepted", validator: { kind: "etag", value: '"prior-accepted"' } };
+  assert.equal((await f.run()).status, "acked"); assert.equal(f.evidence.at(-1)!.provider, "accepted"); assert.equal(f.evidence.at(-1)!.validator, '"prior-accepted"'); assert.equal(f.counts().marks, 1);
+});

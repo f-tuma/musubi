@@ -78,6 +78,14 @@ async function main() {
   }
   try {
     await store.migrate();
+    await fixture("older-uncertain-DAV-DELETE-keeps-truth-through-later429-and-exact404", async input => {
+      await run("admit-caldav-delete", input.operationId, input); mode = "lost-retained"; await kill(child("deliver", input.operationId, undefined, "afterUncertain")); const pinned = hash((await store.inspectOperation(input.operationId)).payload);
+      mode = "reject"; await expire(input.operationId); assert.equal((await run("deliver", input.operationId)).status, "hold"); const held = await store.inspectOperation(input.operationId); assert.equal(held.receipt.provider.kind, "uncertain"); assert.equal(held.dispatchPossible, true); assert.equal(await store.claim(input.operationId, randomUUID()), null);
+      absent = true; mode = "healthy"; await expire(input.operationId); const before = methods.length; await run("deliver", input.operationId); await ack(input.operationId, "uncertain"); assert.equal(writes, 2); assert.deepEqual(methods.slice(before), ["GET"]); assert.equal(hash((await store.inspectOperation(input.operationId)).payload), pinned);
+    });
+    await fixture("prior-accepted-DAV-DELETE-status-survives-later-lost-conditional-response", async input => {
+      await run("admit-caldav-delete", input.operationId, input); await kill(child("deliver", input.operationId, undefined, "afterAcceptance")); absent = false; mode = "lost"; await expire(input.operationId); assert.equal((await run("deliver", input.operationId)).status, "acked"); const op = await ack(input.operationId, "accepted"); assert.equal(op.deleteAcceptanceStatus, 204); assert.equal(writes, 2);
+    });
     await fixture("SIGKILL-inside-admission-rolls-back-tombstone-and-intent", async (input, ids) => {
       await kill(child("admit-caldav-delete", input.operationId, input, "admissionCanonical")); assert.equal((await pool.query("SELECT revision FROM reference_objects WHERE id=$1", [ids.objectId])).rows[0].revision, "1"); assert.equal((await pool.query("SELECT count(*) FROM reference_operations WHERE id=$1", [input.operationId])).rows[0].count, "0");
       await run("admit-caldav-delete", input.operationId, input); await run("deliver", input.operationId); await ack(input.operationId, "accepted"); assert.equal(writes, 1);

@@ -5,17 +5,63 @@
       "id": "fresh-create",
       "title": "A fresh admitted CREATE sends one exact saved body after ACL preflight",
       "policy": "musubi",
-      "recovery": { "required": false, "possibleDispatch": false },
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
       "priorProvider": "not-dispatched",
       "exchanges": [
-        { "method": "GET", "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar", "status": 200, "body": { "id": "native/calendar", "accessRole": "owner" } },
-        { "method": "POST", "path": "/calendar/v3/calendars/native%2Fcalendar/events", "status": 201, "body": { "id": "musubiabcdef01abcd40008000abcdefabcdef", "etag": "\"created\"" } }
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events",
+          "status": 201,
+          "body": {
+            "id": "musubiabcdef01abcd40008000abcdefabcdef",
+            "etag": "\"created\""
+          }
+        }
       ],
       "expected": {
-        "status": "acked", "methods": ["GET", "POST"], "bodyIds": [null, "musubiabcdef01abcd40008000abcdefabcdef"], "markers": [null, "abcdef01-abcd-4000-8000-abcdefabcdef"],
-        "ackKinds": ["provider-response"], "finishStatuses": [],
-        "provider": { "kind": "accepted", "validator": "\"created\"", "errorCode": null, "retry": null, "retryAfterMs": null },
-        "remoteKind": "unobserved", "possibleDispatch": true, "mutationMarks": 1, "retryAfterMs": null, "errorCode": null
+        "status": "acked",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "bodyIds": [
+          null,
+          "musubiabcdef01abcd40008000abcdefabcdef"
+        ],
+        "markers": [
+          null,
+          "abcdef01-abcd-4000-8000-abcdefabcdef"
+        ],
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "provider": {
+          "kind": "accepted",
+          "validator": "\"created\"",
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null
       }
     },
     {
@@ -75,7 +121,9 @@
         "possibleDispatch": true,
         "mutationMarks": 1,
         "retryAfterMs": null,
-        "errorCode": null
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null
       }
     },
     {
@@ -140,7 +188,9 @@
         "possibleDispatch": true,
         "mutationMarks": 0,
         "retryAfterMs": null,
-        "errorCode": null
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null
       }
     },
     {
@@ -210,7 +260,9 @@
         "possibleDispatch": true,
         "mutationMarks": 1,
         "retryAfterMs": null,
-        "errorCode": null
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null
       }
     },
     {
@@ -256,7 +308,9 @@
         "possibleDispatch": true,
         "mutationMarks": 0,
         "retryAfterMs": null,
-        "errorCode": "provider-conflict"
+        "errorCode": "provider-conflict",
+        "errorOutcome": "not-written",
+        "providerStatus": null
       }
     },
     {
@@ -321,7 +375,9 @@
         "possibleDispatch": true,
         "mutationMarks": 0,
         "retryAfterMs": null,
-        "errorCode": "provider-conflict"
+        "errorCode": "provider-conflict",
+        "errorOutcome": "not-written",
+        "providerStatus": null
       }
     },
     {
@@ -386,7 +442,9 @@
         "possibleDispatch": true,
         "mutationMarks": 0,
         "retryAfterMs": null,
-        "errorCode": "provider-conflict"
+        "errorCode": "provider-conflict",
+        "errorOutcome": "not-written",
+        "providerStatus": null
       }
     },
     {
@@ -451,7 +509,9 @@
         "possibleDispatch": true,
         "mutationMarks": 0,
         "retryAfterMs": null,
-        "errorCode": "runtime-readback-differs"
+        "errorCode": "runtime-readback-differs",
+        "errorOutcome": "not-written",
+        "providerStatus": null
       }
     },
     {
@@ -509,7 +569,9 @@
         "possibleDispatch": true,
         "mutationMarks": 1,
         "retryAfterMs": null,
-        "errorCode": "provider-write-failed"
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 409
       }
     },
     {
@@ -570,7 +632,9 @@
         "possibleDispatch": true,
         "mutationMarks": 1,
         "retryAfterMs": 9000,
-        "errorCode": "provider-write-failed"
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 429
       }
     },
     {
@@ -655,7 +719,9 @@
         "possibleDispatch": true,
         "mutationMarks": 1,
         "retryAfterMs": null,
-        "errorCode": null
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null
       }
     },
     {
@@ -744,7 +810,289 @@
         "possibleDispatch": true,
         "mutationMarks": 1,
         "retryAfterMs": null,
-        "errorCode": null
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null
+      }
+    },
+    {
+      "id": "uncertain-retry-rate-limit",
+      "title": "Older possible CREATE acceptance survives a later same-ID POST rate limit",
+      "policy": "musubi",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": "uncertain",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/musubiabcdef01abcd40008000abcdefabcdef",
+          "status": 404,
+          "body": {}
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events",
+          "status": 429,
+          "body": {},
+          "headers": {
+            "retry-after": "9"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "POST"
+        ],
+        "bodyIds": [
+          null,
+          null,
+          "musubiabcdef01abcd40008000abcdefabcdef"
+        ],
+        "markers": [
+          null,
+          null,
+          "abcdef01-abcd-4000-8000-abcdefabcdef"
+        ],
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "validator": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": 9000,
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 429
+      }
+    },
+    {
+      "id": "uncertain-retry-request-timeout",
+      "title": "Older possible CREATE acceptance survives a later same-ID POST timeout rejection",
+      "policy": "musubi",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": "uncertain",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/musubiabcdef01abcd40008000abcdefabcdef",
+          "status": 404,
+          "body": {}
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events",
+          "status": 408,
+          "body": {},
+          "headers": {
+            "retry-after": "4"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "POST"
+        ],
+        "bodyIds": [
+          null,
+          null,
+          "musubiabcdef01abcd40008000abcdefabcdef"
+        ],
+        "markers": [
+          null,
+          null,
+          "abcdef01-abcd-4000-8000-abcdefabcdef"
+        ],
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "validator": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": 4000,
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 408
+      }
+    },
+    {
+      "id": "uncertain-retry-precondition",
+      "title": "Older possible CREATE acceptance survives a later same-ID POST precondition rejection",
+      "policy": "musubi",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": "uncertain",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/musubiabcdef01abcd40008000abcdefabcdef",
+          "status": 404,
+          "body": {}
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events",
+          "status": 412,
+          "body": {}
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET",
+          "GET",
+          "POST"
+        ],
+        "bodyIds": [
+          null,
+          null,
+          "musubiabcdef01abcd40008000abcdefabcdef"
+        ],
+        "markers": [
+          null,
+          null,
+          "abcdef01-abcd-4000-8000-abcdefabcdef"
+        ],
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "validator": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": "provider-conflict",
+        "errorOutcome": "not-written",
+        "providerStatus": 412
+      }
+    },
+    {
+      "id": "recover-after-uncertain-retry",
+      "title": "A later matching GET can acknowledge the earlier uncertain CREATE after a retry was rejected",
+      "policy": "reference",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": "uncertain",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/musubiabcdef01abcd40008000abcdefabcdef",
+          "status": 200,
+          "body": {
+            "id": "musubiabcdef01abcd40008000abcdefabcdef",
+            "etag": "\"created\"",
+            "status": "confirmed",
+            "eventType": "default",
+            "summary": "Synthetic event",
+            "description": null,
+            "location": null,
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.000Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00.000Z"
+            },
+            "extendedProperties": {
+              "private": {
+                "musubiOperationID": "abcdef01-abcd-4000-8000-abcdefabcdef"
+              }
+            }
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET"
+        ],
+        "bodyIds": [
+          null
+        ],
+        "markers": [
+          null
+        ],
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "finishStatuses": [],
+        "provider": {
+          "kind": "uncertain",
+          "validator": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null
       }
     }
   ]

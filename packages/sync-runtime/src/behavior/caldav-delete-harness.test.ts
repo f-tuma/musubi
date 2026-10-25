@@ -10,6 +10,16 @@ const suite = await loadCaldavDeleteSuite(), first = () => structuredClone(suite
 const byId = (id: string) => structuredClone(suite.scenarios.find(item => item.id === id)!);
 const failureCode = (code: ScenarioFailure["code"]) => (error: unknown) => error instanceof ScenarioFailure && error.code === code;
 
+test("conditional DAV DELETE preserves older native facts through a later known refusal or lost reply", async () => {
+  const limited = await runCaldavDeleteScenario(byId("uncertain-retry-rate-limit"));
+  assert.equal(limited.provider.kind, "uncertain"); assert.equal(limited.provider.retryAfterMs, null);
+  assert.equal(limited.retryAfterMs, 2000); assert.equal(limited.errorOutcome, "not-written");
+  const lost = await runCaldavDeleteScenario(byId("accepted-retry-lost-reply"));
+  assert.equal(lost.provider.kind, "accepted"); assert.equal(lost.provider.status, 204);
+  assert.equal(lost.evidence.at(-1)!.provider.kind, "accepted"); assert.equal(lost.errorOutcome, "unconfirmed");
+  assert.equal(lost.possibleDispatch, true); assert.equal(lost.methods.filter(method => method === "DELETE").length, 1);
+});
+
 test("DAV JSON harness runs actual codec/runtime/transport with complete native wire and evidence expectations", async () => {
   const scenario = first(), observed = await runCaldavDeleteScenario(scenario);
   assert.deepEqual(observed.methods, ["GET", "PROPFIND", "GET", "DELETE"]); assert.equal(observed.dnsLookups, 4);

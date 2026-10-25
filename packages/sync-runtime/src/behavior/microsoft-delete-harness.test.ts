@@ -32,6 +32,11 @@ test("Graph observe-only and explicit-resolution fixtures distinguish dispatch a
   const gap = await runMicrosoftDeleteScenario(byId("accepted-read-write-gap"));
   const dispatch = gap.methods.indexOf("DELETE"); assert.equal(gap.ifMatch[dispatch], 'W/"before"');
   assert.equal(gap.dispatchVersions[dispatch], 'W/"concurrent-edit"'); assert.equal(gap.status, "acked");
+  const limited = await runMicrosoftDeleteScenario(byId("resolution-uncertain-rate-limit"));
+  assert.equal(limited.provider.kind, "uncertain"); assert.equal(limited.provider.retryAfterMs, null);
+  assert.equal(limited.retryAfterMs, 2000); assert.equal(limited.possibleDispatch, true); assert.equal(limited.errorOutcome, "not-written");
+  assert.equal(limited.methods.filter(method => method === "GET").length, 7);
+  assert.equal(limited.methods.filter(method => method === "DELETE").length, 1); assert.deepEqual(limited.ackKinds, []);
 });
 
 test("Graph caught transport failures cannot hide unexpected or unconsumed HTTP exchanges", async () => {

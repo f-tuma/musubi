@@ -111,3 +111,12 @@ test("410 cannot satisfy DAV absence and rejected429 keeps its bounded retry del
   const gone = fixture([response("", 410)], true); assert.notEqual((await gone.run()).status, "acked"); assert.equal(gone.completions.length, 0);
   const limited = fixture([present(), privilege(), present(), response("", 429, { "retry-after": "9" })]); assert.equal((await limited.run()).status, "hold"); assert.equal(limited.evidence.at(-1)!.provider, "rejected"); assert.equal((limited.finishes.at(-1) as { retryAfterMs: number }).retryAfterMs, 9000);
 });
+test("earlier uncertain DAV DELETE remains uncertain after a known rejection of its later conditional retry", async () => {
+  const f = fixture([present(), privilege(), present(), response("", 429, { "retry-after": "9" })], true);
+  assert.equal((await f.run()).status, "hold"); assert.equal(f.evidence.at(-1)!.provider, "uncertain"); assert.equal(f.counts().marks, 1); assert.equal(f.completions.length, 0);
+});
+test("earlier accepted DAV DELETE keeps its actual status when a later conditional retry loses its reply", async () => {
+  const f = fixture([present(), privilege(), present(), new Error("Owned retry lost reply"), response("", 404)], true);
+  f.claim.receipt.provider = { kind: "accepted" }; (f.claim as { deleteAcceptanceStatus: number }).deleteAcceptanceStatus = 204;
+  assert.equal((await f.run()).status, "acked"); assert.equal(f.evidence.at(-1)!.provider, "accepted"); assert.equal(f.evidence.at(-1)!.acceptanceStatus, 204); assert.equal(f.counts().marks, 1);
+});
