@@ -14,3 +14,7 @@ export { runClaimedGooglePersonalCreate, supportsGooglePersonalCreateEnvelope } 
 export * from "./microsoft-delete-ports";
 export * from "./microsoft-delete-trace";
 export { runClaimedMicrosoftPersonalDelete, supportsMicrosoftPersonalDeleteEnvelope } from "./microsoft-personal-delete";
+
+export * from "./caldav-delete-ports";
+export * from "./caldav-delete-trace";
+export { runClaimedCaldavPersonalDelete, supportsCaldavPersonalDeleteEnvelope } from "./caldav-personal-delete";

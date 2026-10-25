@@ -1,4 +1,6 @@
 import { isIcloudRsvpDestination } from "@musubi/types";
+import { CaldavProviderError, selectCaldavEventMaster } from "@musubi/provider-caldav";
+import { lookup } from "node:dns/promises";
 import { isCaldavPersonalContentOperation, isIcloudPersonalContentDestination, type CaldavPersonalContentOperation } from "../caldav_personal_content";
 import { caldavOrganizerTransport } from "./caldav_organizer_delivery";
 import { caldavAlarmScope } from "@musubi/calendar";
@@ -35,6 +37,7 @@ import {
   sameCaldavRecurrence,
   sameCaldavScopeContext,
   getCaldavAccountById,
+  getOwnedCaldavAccountById,
   getCaldavAccountsByUser,
   getUserExternalCalendars,
   type EventContentPatch,
@@ -52,7 +55,8 @@ import type {
 } from "../adapter";
 import { assertTaskEtag, assertTaskMutationResponse, assertTaskReadResponse, canonicalTaskProjection, ProviderTaskWriteError, requireTaskEtag } from "../task_write";
 import { assertCompleteEventReadResponse, assertCreatedEventEvidence, caldavEventCreateIdentity } from "../event_create_identity";
-import { createCaldavClient, createGuardedCaldavFetch } from "../caldav_client";
+import { createCaldavClient, createGuardedCaldavFetch, fetchCaldavPinned } from "../caldav_client";
+import { recordProviderHttpRequest } from "../provider_http_metrics";
 import { decryptSecret } from "../crypto";
 import {
   assertEventWriteEvidence,
@@ -555,22 +559,25 @@ function patchTaskCalendarData(
 }
 
 function eventMaster(data: string, uid?: string | null) {
-  const calendar = new ICAL.Component(ICAL.parse(data));
-  if (calendar.name !== "vcalendar")
-    throw new ProviderEventWriteError("provider-write-failed");
-  const events = calendar.getAllSubcomponents("vevent");
-  const masters = events.filter(
-    (component) =>
-      !component.getFirstProperty("recurrence-id") &&
-      (uid == null || component.getFirstPropertyValue("uid") === uid),
-  );
-  if (masters.length !== 1 || masters[0].getAllProperties("uid").length !== 1) {
-    throw new ProviderEventWriteError("provider-write-failed");
+  try { return selectCaldavEventMaster(data, uid); }
+  catch (error) {
+    if (error instanceof CaldavProviderError)
+      throw new ProviderEventWriteError("provider-write-failed", error.outcome, error.providerStatus, error.retryAfterMs);
+    throw error;
   }
-  const master = masters[0];
-  const actualUid = componentString(master, "uid");
-  if (!actualUid) throw new ProviderEventWriteError("provider-write-failed");
-  return { calendar, master, uid: actualUid, index: events.indexOf(master) };
+}
+
+/** The existing product projection floor for both legacy and shared delivery.
+ * Native verification alone must not bypass a malformed or cancelled event. */
+function caldavReadEventEvidence(data: string, ref: ExternalEventRef, etag: string | null) {
+  const selected = eventMaster(data, ref.icalUid);
+  replaceEventProperties(data, selected.index, new Map());
+  if (componentString(selected.master, "status")?.toUpperCase() === "CANCELLED")
+    throw new ProviderEventWriteError("provider-conflict");
+  const fields = veventToFields(selected.master);
+  if (!fields) throw new ProviderEventWriteError("provider-write-failed");
+  const event = assertCreatedEventEvidence({ ...fields, externalId: ref.externalEventId, etag, icalUid: selected.uid, url: null, status: "active" });
+  return { ref: { externalEventId: ref.externalEventId, etag, icalUid: selected.uid }, event };
 }
 
 export function patchEventIcal(
@@ -1397,6 +1404,34 @@ export function classifyCaldavCalendars(cals: DAVCalendar[]) {
 }
 
 export const caldavAdapter: CalendarAdapter = {
+  caldavPersonalDeleteV1(userID, accountID, capture) {
+    const currentCredentials = async () => {
+      const account = await getOwnedCaldavAccountById(userID, accountID);
+      if (!account || account.id !== capture.connectionId || account.userID !== userID ||
+          account.updatedAt.getTime() !== capture.connectionGeneration) throw new CaldavProviderError("account-session-changed");
+      return account;
+    };
+    return {
+      ports: {
+        accountSession: { async open(_connection, signal) {
+          signal?.throwIfAborted(); const account = await currentCredentials();
+          const authorization = `Basic ${Buffer.from(`${account.username}:${decryptSecret(account.encryptedPassword)}`).toString("base64")}`;
+          signal?.throwIfAborted(); const current = await currentCredentials();
+          // DAV attests its captured host revision timestamp. It has no OAuth
+          // monotonic grant generation or independently claimed ABA guarantee.
+          return { connectionId: current.id, connectionGeneration: String(current.updatedAt.getTime()), authorization };
+        } },
+        network: { allowPrivate: config.security.federationAllowPrivateHosts, lookupImpl: lookup },
+        http: { fetchPinned: fetchCaldavPinned },
+        clock: { nowEpochMs: () => Date.now(), nowMonotonicMs: () => performance.now() },
+        telemetry: { record: metric => recordProviderHttpRequest(metric.method, metric.status, metric.durationMs) },
+      },
+      normalizeObservation(read) {
+        return read.kind === "present" ? caldavReadEventEvidence(read.resource.data,
+          { externalEventId: read.resource.resourceUrl, icalUid: read.resource.uid }, read.etag) : null;
+      },
+    };
+  },
   caldavOrganizer: caldavOrganizerTransport(async (userID, accountID) => { const accounts = await getCaldavAccountsByUser(userID); if (!accounts.some(account => account.id === accountID)) throw new EventWriteError("organizer", "denied"); return basicAuthForAccount(accountID); }, async (userID, accountID, collection, resource) => {
     if (!config.api.caldavOrganizerEditsEnabled || !config.api.icloudOrganizerCreateEnabled) return false;
     await schedulingAuthorization(userID, accountID, collection);
@@ -1679,15 +1714,7 @@ export const caldavAdapter: CalendarAdapter = {
     if (response.status === 404) return null;
     assertCompleteEventReadResponse(response);
     const data = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(await response.arrayBuffer());
-    const selected = eventMaster(data, ref.icalUid);
-    replaceEventProperties(data, selected.index, new Map());
-    if (componentString(selected.master, "status")?.toUpperCase() === "CANCELLED")
-      throw new ProviderEventWriteError("provider-conflict");
-    const fields = veventToFields(selected.master);
-    if (!fields) throw new ProviderEventWriteError("provider-write-failed");
-    const etag = strongEventEtag(response.headers.get("etag"));
-    const event = assertCreatedEventEvidence({ ...fields, externalId: ref.externalEventId, etag, icalUid: selected.uid, url: null, status: "active" });
-    return { ref: { externalEventId: ref.externalEventId, etag, icalUid: selected.uid }, event };
+    return caldavReadEventEvidence(data, ref, strongEventEtag(response.headers.get("etag")));
   },
 
   async findCreatedEvent(_userID, accountId, externalCalendarId, identity) {

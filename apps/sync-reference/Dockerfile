@@ -7,6 +7,7 @@ COPY apps/sync-reference apps/sync-reference
 COPY packages/types packages/types
 COPY packages/sync-codec packages/sync-codec
 COPY packages/provider-google packages/provider-google
+COPY packages/provider-caldav packages/provider-caldav
 COPY packages/provider-microsoft packages/provider-microsoft
 COPY packages/sync-runtime packages/sync-runtime
 RUN pnpm --config.inject-workspace-packages=true --filter @musubi/sync-reference deploy --prod --frozen-lockfile /prod/reference

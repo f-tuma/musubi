@@ -1,6 +1,6 @@
 # Independent sync reference host
 
-C05–C07 / MUSU-37–39 runs bounded Google personal event CREATE, UPDATE and DELETE profiles and a separate Microsoft guarded personal DELETE profile with its own
+C05–C07 / MUSU-37–39 runs bounded Google personal event CREATE, UPDATE and DELETE profiles, a separate Microsoft guarded personal DELETE profile and a CalDAV conditional personal DELETE profile with its own
 PostgreSQL ledger. It uses the C04 native provider ports, the C06 shared `@musubi/sync-runtime`
 already-claimed runner and the published v1 schema/plan validator, with no dependency on Musubi DB, auth, app config or API.
 Its content model is `ReferenceContent`, not a Musubi Event or Task.
@@ -13,10 +13,12 @@ accepted time endpoints use canonical UTC instants and remain unchanged.
 
 ## Configuration and commands
 
-The executable reads only `REFERENCE_DATABASE_URL` and
-`REFERENCE_CREDENTIAL_KEY` (64 hexadecimal characters). Use its own database;
+The executable reads only `REFERENCE_DATABASE_URL`,
+`REFERENCE_CREDENTIAL_KEY` (64 hexadecimal characters), and optional
+`REFERENCE_ALLOW_PRIVATE_NETWORK` (`true` or `false`, default `false`) for its
+CalDAV network policy. Use its own database;
 `migrate` applies only the five reference tables, never Musubi migrations.
-The key protects stored access tokens with AES-256-GCM and connection identity
+The key protects stored access tokens and strict Basic credential envelopes with AES-256-GCM and connection identity
 as authenticated data. Changing the key requires an explicit credential migration.
 Credentials are never written into operation envelopes or delivery receipts.
 
@@ -39,6 +41,8 @@ stdin return a safe error code.
 | `admit-delete` | `{bindingId, expectedRevision, commandId, operationId}` | Atomically CAS the canonical object to tombstoned and capture one conditional DELETE |
 | `seed-graph-delete` | `ReferenceGraphDeleteSeed` | Bootstrap an existing Microsoft target with explicit provider/profile, original native weak ETag, scoped token and expiry |
 | `admit-graph-delete` | `{bindingId, expectedRevision, commandId, operationId}` | Atomically CAS the canonical object to tombstoned and capture one guarded Microsoft DELETE |
+| `seed-caldav-delete` | `ReferenceCaldavDeleteSeed` | Bootstrap an exact HTTPS collection/resource URL, existing UID, original strong ETag and Basic credentials with explicit provider/profile |
+| `admit-caldav-delete` | `{bindingId, expectedRevision, commandId, operationId}` | Atomically tombstone and capture one conditional DAV DELETE; this new reference command requires a lowercase UUID operation ID |
 | `deliver` | `{operationId}` | Claim and run one bounded attempt |
 | `show` | `{operationId}` | Inspect operation, capture, receipt and binding without credentials |
 
@@ -190,6 +194,62 @@ flag, marker reset or admitted-validator rewrite. Musubi's separately admitted
 first-attempt resolution flow remains a host-owned policy and is not exposed
 by this reference CLI. Google conditional recovery remains unchanged.
 
+## CalDAV conditional personal DELETE
+
+`seed-caldav-delete` requires `provider: "caldav"`,
+`endpointProfile: "caldav-personal-event-delete-v1"`, `connectionId`, `objectId`,
+`bindingId`, `calendarUrl`, `resourceUrl`, `uid`, `etag`, `username`, `password`,
+`expiresAt`, and `content` (optional `privacyLabel`). The resource is one exact
+canonical HTTPS direct child of the captured collection. UID is mandatory and
+never inferred from a filename or host object. Unknown fields, OAuth token/scope
+inputs and weak ETags are refused. Content uses UTC timed endpoints at second
+precision; nullable empty text that the existing codec would normalize is
+refused instead of silently changing the accepted projection.
+
+This new reference command requires a canonical lowercase UUID `operationId`
+because it uses the actual portable v1 encoder. That is a reference admission
+constraint, not a portable runtime identity rule; existing Google/Microsoft
+identities remain unchanged. The encoder receives an inert required context
+time that DELETE does not serialize. No provider/receipt timestamp is invented.
+
+Basic credentials are stored only as a strict encrypted
+`{kind:"basic",username,password}` connection envelope. The connection has an
+empty OAuth scope. `expiresAt` is this independent host's local credential
+valid-until policy, not an OAuth or provider expiry. The distinct session port
+constructs the Basic authorization header and never falls back to a bearer
+session. CLI delivery uses the shared guarded DNS-pinned transport with public
+network policy by default; private-address access requires the explicit local
+reference option above. The runtime refuses missing dedicated transport or
+completion capabilities before credentials or HTTP.
+
+The admitted native plan, accepted UID, collection/resource URL and original
+strong ETag remain immutable. Binding UID/URL changes advance this host's own
+integer source generation; changes to Basic credential ciphertext advance its
+connection generation. These are local reference floors and do not describe a
+global guarantee for Musubi's separately owned CalDAV connection timestamps.
+
+Fresh delivery proves exact collection DAV `all`, `write` or `unbind` privilege,
+then reads a complete resource at the original UID and strong ETag. The strict
+profile requires exactly one timed nonrecurring VEVENT, no attendees, and no
+ambiguous organizer identity. Physically valid unmodified VTIMEZONE/VALARM data
+may remain in the native resource. Missing/unknown ACL is refused; there is no
+iCloud missing-ACL compatibility. Redirects, collection escapes, changed UID or
+validator cannot select a new resource or advance the admitted version.
+
+Possible dispatch is persisted before HTTP and never cleared to enable retry.
+Unlike the Microsoft one-shot gate, an interrupted DAV claim may retry the same
+conditional DELETE after exact present observation and another fresh authority
+preflight prove the same UID/URL/original ETag. Rejected 429 responses retain
+Retry-After; a later retry still uses the original `If-Match`. This does not
+create a resolution/supersession feature. A completed attempt whose retained
+resource produces terminal conflict keeps the pending-binding barrier.
+
+Native DELETE acceptance (200/201/204/404) remains separate from confirmation.
+Reference ACK always needs a later exact resource GET404, including recovery.
+HTTP410, cancelled resources and empty/malformed DAV responses cannot prove
+absence. The absent binding retains historical UID/ETag/baseline. Lost-reply
+recovery preserves uncertainty, and initial absence invents no native acceptance.
+
 ## Verification
 
 `pnpm --filter @musubi/sync-reference test` runs pure admission and injected-port
@@ -207,6 +267,13 @@ It also covers reserved-target constraints, serial handoff, stale ACK, rejected
 adoption, caller mutation and cancellation while waiting for a PostgreSQL lock.
 CREATE process fixtures kill admission and delivery at actual checkpoints,
 verify one POST across lost-reply recovery and preserve pinned body hashes.
+The CalDAV storage corpus upgrades populated Google CREATE/UPDATE/DELETE and
+Microsoft DELETE history, reruns migration with DAV rows, and checks immutable
+UID/URL/validator, Basic credentials, UID/URL/credential ABA, stale leases and
+waiting-lock cancellation. Its process corpus kills actual admission/delivery
+processes, proves same-version conditional retry after interrupted dispatch,
+refuses changed UID/version and unsupported scope, and verifies exact absence
+without disclosing native alarms/extensions or credentials.
 Provider metrics count requests whose dispatch reaches the telemetry boundary.
 They are not a durable exactly-once audit across a process kill inside HTTP.
 

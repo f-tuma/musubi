@@ -1,6 +1,8 @@
 import { Pool } from "pg";
+import { lookup } from "node:dns/promises";
+import { createPinnedCaldavFetch } from "@musubi/provider-caldav/network";
 import { ReferenceStore } from "./store.js";
-import { ReferenceHoldError, type ReferenceAdmission, type ReferenceDeleteAdmission, type ReferenceSeed, type ReferenceCreateAdmission, type ReferenceCreateSeed, type ReferenceGraphDeleteSeed, type ReferenceGraphDeleteAdmission } from "./model.js";
+import { ReferenceHoldError, type ReferenceAdmission, type ReferenceDeleteAdmission, type ReferenceSeed, type ReferenceCreateAdmission, type ReferenceCreateSeed, type ReferenceGraphDeleteSeed, type ReferenceGraphDeleteAdmission, type ReferenceCaldavDeleteSeed, type ReferenceCaldavDeleteAdmission } from "./model.js";
 import { deliverReferenceOperation, type ReferenceRunnerPorts } from "./runner.js";
 
 /** The reference executable reads only its own configuration; never Musubi env/auth. */
@@ -27,9 +29,11 @@ function ownObject(value: unknown): Record<string, unknown> {
 }
 async function main() {
   const command = process.argv[2];
-  if (!["migrate", "seed", "seed-create", "seed-graph-delete", "admit", "admit-delete", "admit-create", "admit-graph-delete", "deliver", "show"].includes(command)) throw new Error("Invalid reference command.");
+  if (!["migrate", "seed", "seed-create", "seed-graph-delete", "seed-caldav-delete", "admit", "admit-delete", "admit-create", "admit-graph-delete", "admit-caldav-delete", "deliver", "show"].includes(command)) throw new Error("Invalid reference command.");
   const databaseUrl = process.env.REFERENCE_DATABASE_URL;
   const credentialKey = process.env.REFERENCE_CREDENTIAL_KEY;
+  const privateNetwork = process.env.REFERENCE_ALLOW_PRIVATE_NETWORK;
+  if (privateNetwork !== undefined && !["true", "false"].includes(privateNetwork)) throw new Error("Invalid reference network policy");
   if (!databaseUrl || !credentialKey) throw new Error("Missing reference configuration.");
   const pool = new Pool({ connectionString: databaseUrl, max: 4, application_name: "musubi-sync-reference",
     statement_timeout: 10_000, query_timeout: 15_000, idle_in_transaction_session_timeout: 15_000 });
@@ -46,7 +50,11 @@ async function main() {
       if (command === "seed") {
         await store.seedBinding(value as unknown as ReferenceSeed);
         result = { status: "seeded", bindingId: value.bindingId };
-      } else if (command === "seed-graph-delete") {
+      } else if (command === "seed-caldav-delete") {
+        await store.seedCaldavDeleteBinding(value as unknown as ReferenceCaldavDeleteSeed);
+        result = { status: "seeded", bindingId: value.bindingId, endpointProfile: "caldav-personal-event-delete-v1" };
+      } else if (command === "admit-caldav-delete") result = await store.admitCaldavDelete(value as unknown as ReferenceCaldavDeleteAdmission);
+      else if (command === "seed-graph-delete") {
         await store.seedGraphDeleteBinding(value as unknown as ReferenceGraphDeleteSeed);
         result = { status: "seeded", bindingId: value.bindingId, endpointProfile: "microsoft-personal-event-delete-v1" };
       } else if (command === "admit-graph-delete") result = await store.admitGraphDelete(value as unknown as ReferenceGraphDeleteAdmission);
@@ -63,6 +71,7 @@ async function main() {
         else {
           const ports: ReferenceRunnerPorts = {
             http: { fetch: (url, init) => globalThis.fetch(url, init) },
+            caldav: { network: { allowPrivate: privateNetwork === "true", lookupImpl: lookup }, http: { fetchPinned: createPinnedCaldavFetch((url, init) => globalThis.fetch(url, init)) } },
             clock: { nowEpochMs: () => Date.now(), nowMonotonicMs: () => performance.now() },
             telemetry: { record: metric => process.stderr.write(`${JSON.stringify({ type: "provider-http", ...metric })}\n`) },
           };

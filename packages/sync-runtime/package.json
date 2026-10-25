@@ -2,20 +2,22 @@
   "name": "@musubi/sync-runtime",
   "private": true,
   "type": "module",
-  "description": "Storage-free bounded runtime for claimed Google personal operations and guarded Microsoft DELETE.",
+  "description": "Storage-free bounded runtime for claimed Google personal operations, guarded Microsoft DELETE and conditional CalDAV DELETE.",
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "tsx src/index.test.ts && node --import tsx src/behavior/harness.test.ts && pnpm test:scenarios && node --import tsx src/behavior/create-harness.test.ts && pnpm test:scenarios:create && node --import tsx src/behavior/microsoft-delete-harness.test.ts && pnpm test:scenarios:microsoft-delete",
+    "test": "tsx src/index.test.ts && node --import tsx src/behavior/harness.test.ts && pnpm test:scenarios && node --import tsx src/behavior/create-harness.test.ts && pnpm test:scenarios:create && node --import tsx src/behavior/microsoft-delete-harness.test.ts && pnpm test:scenarios:microsoft-delete && node --import tsx src/behavior/caldav-delete-harness.test.ts && pnpm test:scenarios:caldav-delete",
     "test:scenarios": "node --import tsx src/behavior/cli.ts",
     "test:scenarios:create": "node --import tsx src/behavior/create-cli.ts",
     "test:scenarios:microsoft-delete": "node --import tsx src/behavior/microsoft-delete-cli.ts",
+    "test:scenarios:caldav-delete": "node --import tsx src/behavior/caldav-delete-cli.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@musubi/provider-google": "workspace:*",
+    "@musubi/provider-caldav": "workspace:*",
     "@musubi/provider-microsoft": "workspace:*",
     "@musubi/types": "workspace:*",
     "@musubi/sync-codec": "workspace:*"

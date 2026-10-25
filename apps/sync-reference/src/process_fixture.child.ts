@@ -2,14 +2,14 @@
 import { Pool } from "pg";
 import { ReferenceStore } from "./store.js";
 import { deliverReferenceOperation, type ReferenceCheckpoint } from "./runner.js";
-import type { ReferenceAdmission, ReferenceDeleteAdmission, ReferenceCreateAdmission, ReferenceGraphDeleteAdmission } from "./model.js";
+import type { ReferenceAdmission, ReferenceDeleteAdmission, ReferenceCreateAdmission, ReferenceGraphDeleteAdmission, ReferenceCaldavDeleteAdmission } from "./model.js";
 
 async function main() {
   if (process.env.REFERENCE_TEST_CHILD !== "true" || !process.send || !process.env.REFERENCE_DATABASE_URL || !process.env.REFERENCE_CREDENTIAL_KEY)
     throw new Error("Owned child fixture configuration required.");
   const databaseUrl = process.env.REFERENCE_DATABASE_URL, key = process.env.REFERENCE_CREDENTIAL_KEY;
   let data = ""; for await (const chunk of process.stdin) data += chunk;
-  const input = JSON.parse(data) as { action: "admit" | "admit-delete" | "admit-create" | "admit-graph-delete" | "deliver" | "show"; operationId: string; admission?: ReferenceAdmission | ReferenceDeleteAdmission | ReferenceCreateAdmission | ReferenceGraphDeleteAdmission; pause?: string; fixtureOrigin: string };
+  const input = JSON.parse(data) as { action: "admit" | "admit-delete" | "admit-create" | "admit-graph-delete" | "admit-caldav-delete" | "deliver" | "show"; operationId: string; admission?: ReferenceAdmission | ReferenceDeleteAdmission | ReferenceCreateAdmission | ReferenceGraphDeleteAdmission | ReferenceCaldavDeleteAdmission; pause?: string; fixtureOrigin: string };
   const fixture = new URL(input.fixtureOrigin);
   if (fixture.protocol !== "http:" || fixture.hostname !== "127.0.0.1" || fixture.pathname !== "/" || fixture.search || fixture.hash || fixture.username || fixture.password)
     throw new Error("Owned loopback HTTP fixture required.");
@@ -43,9 +43,9 @@ async function main() {
   try {
     const store = new ReferenceStore(pool, key);
     let result: unknown;
-    if (input.action === "admit" || input.action === "admit-delete" || input.action === "admit-create" || input.action === "admit-graph-delete") {
+    if (input.action === "admit" || input.action === "admit-delete" || input.action === "admit-create" || input.action === "admit-graph-delete" || input.action === "admit-caldav-delete") {
       result = input.action === "admit" ? await store.admitUpdate(input.admission! as ReferenceAdmission) : input.action === "admit-create"
-        ? await store.admitCreate(input.admission!) : input.action === "admit-graph-delete" ? await store.admitGraphDelete(input.admission!) : await store.admitDelete(input.admission!);
+        ? await store.admitCreate(input.admission!) : input.action === "admit-graph-delete" ? await store.admitGraphDelete(input.admission!) : input.action === "admit-caldav-delete" ? await store.admitCaldavDelete(input.admission!) : await store.admitDelete(input.admission!);
       await checkpoint("afterAdmission");
     } else if (input.action === "show") result = await store.inspectOperation(input.operationId);
     else result = await deliverReferenceOperation(store, input.operationId, {
@@ -58,6 +58,17 @@ async function main() {
         Object.defineProperty(response, "url", { value: native.href });
         return response;
       } },
+      caldav: {
+        network: { allowPrivate: true, lookupImpl: async hostname => {
+          if (hostname !== "dav.example.test") throw new Error("Nonfixture DAV DNS forbidden");
+          return [{ address: "127.0.0.1", family: 4 }];
+        } },
+        http: { async fetchPinned(native, init, address) {
+          if (native.origin !== "https://dav.example.test" || address.address !== "127.0.0.1" || address.family !== 4) throw new Error("Nonfixture DAV transport forbidden");
+          const response = await globalThis.fetch(`${fixture.origin}${native.pathname}${native.search}`, { ...init, redirect: "error" });
+          Object.defineProperty(response, "url", { value: native.href }); return response;
+        } },
+      },
       clock: { nowEpochMs: () => Date.now(), nowMonotonicMs: () => performance.now() },
       telemetry: { record: metric => process.send!({ type: "metric", metric }) },
     }, { checkpoint: phase => checkpoint(phase as ReferenceCheckpoint) });

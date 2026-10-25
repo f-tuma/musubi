@@ -1,0 +1,4140 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    {
+      "id": "fresh-delete",
+      "title": "Musubi conditional DAV DELETE preserves four native calls",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 204,
+          "body": null,
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET",
+          "DELETE"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"before\""
+        ],
+        "authorized": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "DELETE",
+            "status": 204
+          }
+        ],
+        "dnsLookups": 4,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 204,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 204,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null
+      }
+    },
+    {
+      "id": "reference-exact-absence",
+      "title": "Reference persists acceptance then requires a separate exact 404 readback",
+      "policy": "reference",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 204,
+          "body": null,
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 404,
+          "body": "",
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET",
+          "DELETE",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"before\"",
+          null
+        ],
+        "authorized": [
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null,
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "DELETE",
+            "status": 204
+          },
+          {
+            "method": "GET",
+            "status": 404
+          }
+        ],
+        "dnsLookups": 5,
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 204,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          },
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 204,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "absent",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": 404,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 204,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "absent",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": 404,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null
+      }
+    },
+    {
+      "id": "owned-organizer-delete",
+      "title": "Owned organizer without attendees adds principal and address-set proof",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nORGANIZER:mailto:owner@example.test\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nORGANIZER:mailto:owner@example.test\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-principal><d:href>/principal/</d:href></d:current-user-principal></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/principal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/principal/</d:href><d:propstat><d:prop><c:calendar-user-address-set><d:href>mailto:owner@example.test</d:href></c:calendar-user-address-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 204,
+          "body": null,
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET",
+          "PROPFIND",
+          "PROPFIND",
+          "DELETE"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/principal/",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          "\"before\""
+        ],
+        "authorized": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null,
+          "principal",
+          "addresses",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "DELETE",
+            "status": 204
+          }
+        ],
+        "dnsLookups": 6,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 204,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 204,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null
+      }
+    },
+    {
+      "id": "initial-absence",
+      "title": "Initial resource 404 completes before ACL or mutation",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 404,
+          "body": "",
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 404
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "absent",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": 404,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "absent",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": 404,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null
+      }
+    },
+    {
+      "id": "preflight-404-is-error",
+      "title": "Resource disappearing during preflight remains unknown and cannot ACK",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 404,
+          "body": "",
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "authorized": [
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 404
+          }
+        ],
+        "dnsLookups": 3,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": "capability-evidence",
+        "errorOutcome": "not-written"
+      }
+    },
+    {
+      "id": "gone-is-not-absence",
+      "title": "HTTP 410 is not DAV absence evidence",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 410,
+          "body": "",
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 410
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": "capability-evidence",
+        "errorOutcome": "not-written"
+      }
+    },
+    {
+      "id": "cancelled-conflicts",
+      "title": "Cancelled native resource conflicts and cannot be settled as absence",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSTATUS:CANCELLED\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSTATUS:CANCELLED\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "authorized": [
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 2,
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": "provider-conflict",
+        "errorOutcome": "not-written"
+      }
+    },
+    {
+      "id": "missing-strong-version",
+      "title": "Current native validator never replaces the admitted strong baseline",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "present",
+            "remoteEtag": null,
+            "remoteUid": "native-uid",
+            "remoteUrl": "https://dav.example.test/cal/event.ics",
+            "remoteDataHash": "f59e572392e028f7c90c7b603ae1fb3dce30c37325504f897816ad27f4ef4c0e",
+            "remoteStatus": null,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "present",
+        "remoteEtag": null,
+        "remoteUid": "native-uid",
+        "remoteUrl": "https://dav.example.test/cal/event.ics",
+        "remoteDataHash": "f59e572392e028f7c90c7b603ae1fb3dce30c37325504f897816ad27f4ef4c0e",
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": "runtime-remote-validator-unavailable",
+        "errorOutcome": "not-written"
+      }
+    },
+    {
+      "id": "changed-strong-version",
+      "title": "Current native validator never replaces the admitted strong baseline",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"changed\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "present",
+            "remoteEtag": "\"changed\"",
+            "remoteUid": "native-uid",
+            "remoteUrl": "https://dav.example.test/cal/event.ics",
+            "remoteDataHash": "f59e572392e028f7c90c7b603ae1fb3dce30c37325504f897816ad27f4ef4c0e",
+            "remoteStatus": null,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "present",
+        "remoteEtag": "\"changed\"",
+        "remoteUid": "native-uid",
+        "remoteUrl": "https://dav.example.test/cal/event.ics",
+        "remoteDataHash": "f59e572392e028f7c90c7b603ae1fb3dce30c37325504f897816ad27f4ef4c0e",
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": "runtime-recovery-validator-changed",
+        "errorOutcome": "not-written"
+      }
+    },
+    {
+      "id": "changed-preflight-version",
+      "title": "Changed preflight version conflicts and captures a current comparison",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"changed\""
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"changed\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "authorized": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 4,
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "present",
+            "remoteEtag": "\"changed\"",
+            "remoteUid": "native-uid",
+            "remoteUrl": "https://dav.example.test/cal/event.ics",
+            "remoteDataHash": "f59e572392e028f7c90c7b603ae1fb3dce30c37325504f897816ad27f4ef4c0e",
+            "remoteStatus": null,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "present",
+        "remoteEtag": "\"changed\"",
+        "remoteUid": "native-uid",
+        "remoteUrl": "https://dav.example.test/cal/event.ics",
+        "remoteDataHash": "f59e572392e028f7c90c7b603ae1fb3dce30c37325504f897816ad27f4ef4c0e",
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": "provider-conflict",
+        "errorOutcome": "not-written"
+      }
+    },
+    {
+      "id": "lost-reply-deferred",
+      "title": "Musubi retains uncertainty after a raw lost DELETE reply without reading again",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/cal/event.ics",
+          "error": "lost-reply"
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET",
+          "DELETE"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"before\""
+        ],
+        "authorized": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "DELETE",
+            "status": "network-error"
+          }
+        ],
+        "dnsLookups": 4,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": "runtime-attempt-failed",
+        "errorOutcome": "unconfirmed"
+      }
+    },
+    {
+      "id": "uncertain-conditional-replay",
+      "title": "Uncertain recovery may repeat only the same UID URL and accepted conditional guard",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 204,
+          "body": null,
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET",
+          "DELETE"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"before\""
+        ],
+        "authorized": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "DELETE",
+            "status": 204
+          }
+        ],
+        "dnsLookups": 4,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 204,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 204,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null
+      }
+    },
+    {
+      "id": "uncertain-restart-absence",
+      "title": "Exact 404 settles recovery while retaining uncertainty rather than inventing acceptance",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": true,
+        "possibleDispatch": true
+      },
+      "priorProvider": {
+        "kind": "uncertain"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 404,
+          "body": "",
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 404
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "absent",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": 404,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "absent",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": 404,
+        "possibleDispatch": true,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null
+      }
+    },
+    {
+      "id": "lost-reply-reference-absence",
+      "title": "Reference confirms absence after a lost reply with one DELETE only",
+      "policy": "reference",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/cal/event.ics",
+          "error": "lost-reply"
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 404,
+          "body": "",
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET",
+          "DELETE",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"before\"",
+          null
+        ],
+        "authorized": [
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null,
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "DELETE",
+            "status": "network-error"
+          },
+          {
+            "method": "GET",
+            "status": 404
+          }
+        ],
+        "dnsLookups": 5,
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          },
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "absent",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": 404,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "absent",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": 404,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null
+      }
+    },
+    {
+      "id": "lost-reply-reference-present",
+      "title": "Reference retains uncertain mutation separately from a present-resource conflict",
+      "policy": "reference",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/cal/event.ics",
+          "error": "lost-reply"
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET",
+          "DELETE",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"before\"",
+          null
+        ],
+        "authorized": [
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null,
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "DELETE",
+            "status": "network-error"
+          },
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 5,
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          },
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "present",
+            "remoteEtag": "\"before\"",
+            "remoteUid": "native-uid",
+            "remoteUrl": "https://dav.example.test/cal/event.ics",
+            "remoteDataHash": "f59e572392e028f7c90c7b603ae1fb3dce30c37325504f897816ad27f4ef4c0e",
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "present",
+        "remoteEtag": "\"before\"",
+        "remoteUid": "native-uid",
+        "remoteUrl": "https://dav.example.test/cal/event.ics",
+        "remoteDataHash": "f59e572392e028f7c90c7b603ae1fb3dce30c37325504f897816ad27f4ef4c0e",
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": "runtime-resource-present",
+        "errorOutcome": "not-written"
+      }
+    },
+    {
+      "id": "request-timeout-rejected",
+      "title": "Known rejection and possible acceptance retain provider-specific DAV classifications",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 408,
+          "body": "",
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET",
+          "DELETE"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"before\""
+        ],
+        "authorized": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "DELETE",
+            "status": 408
+          }
+        ],
+        "dnsLookups": 4,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "rejected",
+              "status": null,
+              "errorCode": "transport-failed",
+              "retry": "never",
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "rejected",
+          "status": null,
+          "errorCode": "transport-failed",
+          "retry": "never",
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "not-written"
+      }
+    },
+    {
+      "id": "rate-limited-delete",
+      "title": "Known rejection and possible acceptance retain provider-specific DAV classifications",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 429,
+          "body": "",
+          "headers": {
+            "retry-after": "2"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET",
+          "DELETE"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"before\""
+        ],
+        "authorized": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "DELETE",
+            "status": 429
+          }
+        ],
+        "dnsLookups": 4,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "rejected",
+              "status": null,
+              "errorCode": "rate-limited",
+              "retry": "after-delay",
+              "retryAfterMs": 2000
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "rejected",
+          "status": null,
+          "errorCode": "rate-limited",
+          "retry": "after-delay",
+          "retryAfterMs": 2000
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": 2000,
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "not-written"
+      }
+    },
+    {
+      "id": "server-failure-uncertain",
+      "title": "Known rejection and possible acceptance retain provider-specific DAV classifications",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 500,
+          "body": "",
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET",
+          "DELETE"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"before\""
+        ],
+        "authorized": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "DELETE",
+            "status": 500
+          }
+        ],
+        "dnsLookups": 4,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "unconfirmed"
+      }
+    },
+    {
+      "id": "stale-conditional-rejected",
+      "title": "DELETE 412 never upgrades to an unconditional write",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 412,
+          "body": "",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET",
+          "DELETE",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"before\"",
+          null
+        ],
+        "authorized": [
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null,
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "DELETE",
+            "status": 412
+          },
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 5,
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "rejected",
+              "status": null,
+              "errorCode": "conflict",
+              "retry": "never",
+              "retryAfterMs": null
+            },
+            "remoteKind": "present",
+            "remoteEtag": "\"before\"",
+            "remoteUid": "native-uid",
+            "remoteUrl": "https://dav.example.test/cal/event.ics",
+            "remoteDataHash": "f59e572392e028f7c90c7b603ae1fb3dce30c37325504f897816ad27f4ef4c0e",
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "rejected",
+          "status": null,
+          "errorCode": "conflict",
+          "retry": "never",
+          "retryAfterMs": null
+        },
+        "remoteKind": "present",
+        "remoteEtag": "\"before\"",
+        "remoteUid": "native-uid",
+        "remoteUrl": "https://dav.example.test/cal/event.ics",
+        "remoteDataHash": "f59e572392e028f7c90c7b603ae1fb3dce30c37325504f897816ad27f4ef4c0e",
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": "provider-conflict",
+        "errorOutcome": "not-written"
+      }
+    },
+    {
+      "id": "accepted-readback-denied",
+      "title": "A failed reference readback cannot erase captured native acceptance",
+      "policy": "reference",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 204,
+          "body": null,
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 403,
+          "body": "",
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET",
+          "DELETE",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"before\"",
+          null
+        ],
+        "authorized": [
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null,
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "DELETE",
+            "status": 204
+          },
+          {
+            "method": "GET",
+            "status": 403
+          }
+        ],
+        "dnsLookups": 5,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 204,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 204,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": "capability-evidence",
+        "errorOutcome": "not-written"
+      }
+    },
+    {
+      "id": "multiple-uids-legacy",
+      "title": "Existing generic profile preserves legacy native extras behind host admission gates",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:another-uid\r\nDTSTART:20261014T080000Z\r\nDTEND:20261014T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:another-uid\r\nDTSTART:20261014T080000Z\r\nDTEND:20261014T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 204,
+          "body": null,
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET",
+          "DELETE"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"before\""
+        ],
+        "authorized": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "DELETE",
+            "status": 204
+          }
+        ],
+        "dnsLookups": 4,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 204,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 204,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null
+      }
+    },
+    {
+      "id": "multiple-uids-reference",
+      "title": "Strict reference profile explicitly refuses additional native event scope",
+      "policy": "reference",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:another-uid\r\nDTSTART:20261014T080000Z\r\nDTEND:20261014T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:another-uid\r\nDTSTART:20261014T080000Z\r\nDTEND:20261014T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "authorized": [
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 3,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": "capability-evidence",
+        "errorOutcome": "not-written"
+      }
+    },
+    {
+      "id": "orphan-attendee-legacy",
+      "title": "Existing generic profile preserves legacy native extras behind host admission gates",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nATTENDEE:mailto:orphan@example.test\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nATTENDEE:mailto:orphan@example.test\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 204,
+          "body": null,
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET",
+          "DELETE"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"before\""
+        ],
+        "authorized": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "DELETE",
+            "status": 204
+          }
+        ],
+        "dnsLookups": 4,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 204,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 204,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null
+      }
+    },
+    {
+      "id": "orphan-attendee-reference",
+      "title": "Strict reference profile explicitly refuses additional native event scope",
+      "policy": "reference",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nATTENDEE:mailto:orphan@example.test\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nATTENDEE:mailto:orphan@example.test\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "authorized": [
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 3,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": "capability-evidence",
+        "errorOutcome": "not-written"
+      }
+    },
+    {
+      "id": "guarded-read-alias",
+      "title": "Generic read follows its guarded native alias while saved URL remains unchanged",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 307,
+          "body": null,
+          "headers": {
+            "location": "/alias/event.ics"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/alias/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 204,
+          "body": null,
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "PROPFIND",
+          "GET",
+          "DELETE"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/alias/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          null,
+          "\"before\""
+        ],
+        "authorized": [
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          null,
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 307
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "DELETE",
+            "status": 204
+          }
+        ],
+        "dnsLookups": 5,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 204,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 204,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null
+      }
+    },
+    {
+      "id": "cross-origin-auth-stripped",
+      "title": "Every redirect hop is checked and Authorization never crosses origins",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 302,
+          "body": null,
+          "headers": {
+            "location": "https://other.example.test/alias.ics"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://other.example.test/alias.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 204,
+          "body": null,
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "PROPFIND",
+          "GET",
+          "DELETE"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://other.example.test/alias.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          null,
+          "\"before\""
+        ],
+        "authorized": [
+          true,
+          false,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          null,
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 302
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "DELETE",
+            "status": 204
+          }
+        ],
+        "dnsLookups": 5,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 204,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 204,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null
+      }
+    },
+    {
+      "id": "guarded-delete-alias",
+      "title": "Generic DELETE redirect retains the exact If-Match and method at each hop",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 307,
+          "body": "",
+          "headers": {
+            "location": "/alias/event.ics"
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/alias/event.ics",
+          "status": 204,
+          "body": null,
+          "headers": {}
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET",
+          "DELETE",
+          "DELETE"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/alias/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"before\"",
+          "\"before\""
+        ],
+        "authorized": [
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null,
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "DELETE",
+            "status": 307
+          },
+          {
+            "method": "DELETE",
+            "status": 204
+          }
+        ],
+        "dnsLookups": 5,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "accepted",
+              "status": 204,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "accepted",
+          "status": 204,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null
+      }
+    },
+    {
+      "id": "reference-refuses-alias",
+      "title": "Reference exact-resource policy refuses a redirect without changing generic policy",
+      "policy": "reference",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 307,
+          "body": null,
+          "headers": {
+            "location": "/alias/event.ics"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 307
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "not-written"
+      }
+    },
+    {
+      "id": "conditional-303-never-gets",
+      "title": "A conditional DELETE can never become an apparently successful GET",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 303,
+          "body": "",
+          "headers": {
+            "location": "/alias/event.ics"
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET",
+          "DELETE"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"before\""
+        ],
+        "authorized": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null,
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "DELETE",
+            "status": 303
+          }
+        ],
+        "dnsLookups": 4,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "uncertain",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": true
+          }
+        ],
+        "provider": {
+          "kind": "uncertain",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": true,
+        "mutationMarks": 1,
+        "retryAfterMs": null,
+        "errorCode": "runtime-attempt-failed",
+        "errorOutcome": "unconfirmed"
+      }
+    },
+    {
+      "id": "dns-private-denied",
+      "title": "Any private DNS answer refuses dispatch before the first native HTTP hop",
+      "policy": "musubi",
+      "dns": "mixed-private",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [],
+      "expected": {
+        "status": "hold",
+        "methods": [],
+        "urls": [],
+        "ifMatch": [],
+        "authorized": [],
+        "propfindKinds": [],
+        "metrics": [],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": "runtime-attempt-failed",
+        "errorOutcome": "not-written"
+      }
+    },
+    {
+      "id": "wrong-native-uid",
+      "title": "A native UID mismatch cannot be adopted from a fresh GET",
+      "policy": "musubi",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:wrong-native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null
+        ],
+        "authorized": [
+          true
+        ],
+        "propfindKinds": [
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": "provider-write-failed",
+        "errorOutcome": "not-written"
+      }
+    },
+    {
+      "id": "nested-component-reference",
+      "title": "Strict reference refuses a second VEVENT hidden inside the selected event",
+      "policy": "reference",
+      "dns": "public",
+      "recovery": {
+        "required": false,
+        "possibleDispatch": false
+      },
+      "priorProvider": {
+        "kind": "not-dispatched"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nBEGIN:VEVENT\r\nUID:nested-uid\r\nDTSTART:20261014T080000Z\r\nDTEND:20261014T090000Z\r\nEND:VEVENT\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        },
+        {
+          "method": "PROPFIND",
+          "url": "https://dav.example.test/cal/",
+          "status": 207,
+          "body": "<d:multistatus xmlns:d=\"DAV:\" xmlns:c=\"urn:ietf:params:xml:ns:caldav\"><d:response><d:href>https://dav.example.test/cal/</d:href><d:propstat><d:prop><d:current-user-privilege-set><d:privilege><d:unbind/></d:privilege></d:current-user-privilege-set></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response></d:multistatus>",
+          "headers": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://dav.example.test/cal/event.ics",
+          "status": 200,
+          "body": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Synthetic fixture//EN\r\nBEGIN:VEVENT\r\nUID:native-uid\r\nDTSTART:20261013T080000Z\r\nDTEND:20261013T090000Z\r\nSUMMARY:Native event\r\nX-UNKNOWN:keep\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT5M\r\nDESCRIPTION:Keep\r\nEND:VALARM\r\nBEGIN:VEVENT\r\nUID:nested-uid\r\nDTSTART:20261014T080000Z\r\nDTEND:20261014T090000Z\r\nEND:VEVENT\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+          "headers": {
+            "etag": "\"before\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "PROPFIND",
+          "GET"
+        ],
+        "urls": [
+          "https://dav.example.test/cal/event.ics",
+          "https://dav.example.test/cal/",
+          "https://dav.example.test/cal/event.ics"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "authorized": [
+          true,
+          true,
+          true
+        ],
+        "propfindKinds": [
+          null,
+          "privileges",
+          null
+        ],
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200
+          },
+          {
+            "method": "PROPFIND",
+            "status": 207
+          },
+          {
+            "method": "GET",
+            "status": 200
+          }
+        ],
+        "dnsLookups": 3,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "evidence": [
+          {
+            "provider": {
+              "kind": "not-dispatched",
+              "status": null,
+              "errorCode": null,
+              "retry": null,
+              "retryAfterMs": null
+            },
+            "remoteKind": "unobserved",
+            "remoteEtag": null,
+            "remoteUid": null,
+            "remoteUrl": null,
+            "remoteDataHash": null,
+            "remoteStatus": null,
+            "possibleDispatch": false
+          }
+        ],
+        "provider": {
+          "kind": "not-dispatched",
+          "status": null,
+          "errorCode": null,
+          "retry": null,
+          "retryAfterMs": null
+        },
+        "remoteKind": "unobserved",
+        "remoteEtag": null,
+        "remoteUid": null,
+        "remoteUrl": null,
+        "remoteDataHash": null,
+        "remoteStatus": null,
+        "possibleDispatch": false,
+        "mutationMarks": 0,
+        "retryAfterMs": null,
+        "errorCode": "capability-evidence",
+        "errorOutcome": "not-written"
+      }
+    }
+  ]
+}

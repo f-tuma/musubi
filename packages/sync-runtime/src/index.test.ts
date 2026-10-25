@@ -1,6 +1,7 @@
 import "./delete.test";
 import "./create.test";
 import "./microsoft-delete.test";
+import "./caldav-delete.test";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync, readdirSync } from "node:fs";
@@ -247,7 +248,7 @@ test("runtime dependency boundary contains no storage/auth/env/product DTO impor
     assert.doesNotMatch(source,/@musubi\/(?:db|auth|config)|apps\/api|process\.env|(?:Event|Task)Schema|encodeEventV1|encodeTaskV1/);
   }
   const deps=JSON.parse(readFileSync(new URL("../package.json",import.meta.url),"utf8")).dependencies;
-  assert.deepEqual(Object.keys(deps).sort(),["@musubi/provider-google","@musubi/provider-microsoft","@musubi/sync-codec","@musubi/types"]);
+  assert.deepEqual(Object.keys(deps).sort(),["@musubi/provider-caldav","@musubi/provider-google","@musubi/provider-microsoft","@musubi/sync-codec","@musubi/types"]);
 });
 
 

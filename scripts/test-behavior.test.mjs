@@ -9,6 +9,7 @@ const manifests = {
   "google-delete": "packages/sync-runtime/src/behavior/google-delete.json",
   "google-create": "packages/sync-runtime/src/behavior/google-create.json",
   "microsoft-delete": "packages/sync-runtime/src/behavior/microsoft-delete.json",
+  "caldav-delete": "packages/sync-runtime/src/behavior/caldav-delete.json",
   "task-inspector": "apps/web/src/tests/behavior/task-inspector.json",
 };
 const scenarios = [{ id: "first", title: "First behavior" }, { id: "second", title: "Second behavior" }];
@@ -113,6 +114,19 @@ test("Graph selection uses its fixed CLI and rejects another provider's report",
   } });
   assert.equal(report.passed, 1); assert.equal(report.errors, 0);
   const wrong = await runBehavior(args, { root, execute: async () => runtime([scenarios[1]]) });
+  assert.equal(wrong.failed, 1); assert.equal(wrong.suites[0].results[0].status, "failed");
+});
+
+test("DAV selection uses only its native CLI and rejects another provider's evidence", async t => {
+  const root = await fixture(t);
+  const args = ["--suite", "caldav-delete", "--scenario", "second"];
+  const report = await runBehavior(args, { root, execute: async (command, childArgs) => {
+    assert.equal(command, process.execPath);
+    assert.deepEqual(childArgs, ["--import", "tsx", join(root, "packages/sync-runtime/src/behavior/caldav-delete-cli.ts"), "--json", "--scenario", "second"]);
+    return runtime([scenarios[1]], { suite: "caldav-delete" });
+  } });
+  assert.equal(report.passed, 1); assert.equal(report.errors, 0);
+  const wrong = await runBehavior(args, { root, execute: async () => runtime([scenarios[1]], { suite: "microsoft-delete" }) });
   assert.equal(wrong.failed, 1); assert.equal(wrong.suites[0].results[0].status, "failed");
 });
 
@@ -286,17 +300,18 @@ test("default runs every fixed suite and emits one clean aggregate JSON document
   const output = [];
   const code = await runCli(["--json"], line => output.push(line), { root, execute: async (_command, args) => {
     launches++;
-    if (args.includes("--import")) return runtime(scenarios, { suite: args.some(arg => arg.endsWith("/microsoft-delete-cli.ts")) ? "microsoft-delete" :
+    if (args.includes("--import")) return runtime(scenarios, { suite: args.some(arg => arg.endsWith("/caldav-delete-cli.ts")) ? "caldav-delete" :
+      args.some(arg => arg.endsWith("/microsoft-delete-cli.ts")) ? "microsoft-delete" :
       args.some(arg => arg.endsWith("/create-cli.ts")) ? "google-create" : "google-delete" });
     await writeFile(args.at(-1).slice("--outputFile=".length), JSON.stringify(uiReport()));
     return { code: 0, stdout: "NOISY CHILD STDOUT", stderr: "NOISY CHILD STDERR" };
   } });
   assert.equal(code, 0);
-  assert.equal(launches, 4);
+  assert.equal(launches, 5);
   assert.equal(output.length, 1);
   const report = JSON.parse(output[0]);
   assert.equal(report.schemaVersion, 1);
-  assert.equal(report.passed, 8);
+  assert.equal(report.passed, 10);
   assert.equal(report.failed, 0);
   assert.deepEqual(report.suites.map(item => item.suite), Object.keys(manifests));
   assert.ok(!output[0].includes("NOISY"));

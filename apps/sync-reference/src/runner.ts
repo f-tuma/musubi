@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { GoogleProviderPorts, GoogleRequestMetric } from "@musubi/provider-google";
+import type { CaldavDeleteProviderPorts, CaldavRequestMetric } from "@musubi/provider-caldav";
 import type { MicrosoftRequestMetric } from "@musubi/provider-microsoft";
 import {
   runClaimedGooglePersonalUpdate, supportsGooglePersonalUpdateEnvelope, runClaimedGooglePersonalDelete, supportsGooglePersonalDeleteEnvelope,
@@ -10,16 +11,18 @@ import {
   type GooglePersonalCreatePolicy, type RuntimeCreateNativeFacts, type RuntimeCreateProviderFact,
   runClaimedMicrosoftPersonalDelete, supportsMicrosoftPersonalDeleteEnvelope,
   type MicrosoftPersonalDeletePolicy, type MicrosoftRuntimeDeleteNativeFacts, type MicrosoftRuntimeDeleteProviderFact,
+  runClaimedCaldavPersonalDelete, supportsCaldavPersonalDeleteEnvelope,
+  type CaldavPersonalDeletePolicy, type CaldavRuntimeDeleteNativeFacts, type CaldavRuntimeDeleteProviderFact,
 } from "@musubi/sync-runtime";
 import { ReferenceHoldError, type ReferenceClaim } from "./model.js";
 import type { ReferenceStore } from "./store.js";
-import { REFERENCE_GRAPH_DELETE_PROFILE } from "./admission.js";
+import { REFERENCE_GRAPH_DELETE_PROFILE, REFERENCE_CALDAV_DELETE_PROFILE } from "./admission.js";
 
 export const REFERENCE_DEADLINE_MS = SYNC_RUNTIME_TIMEOUT_MS;
 export const REFERENCE_HEARTBEAT_MS = SYNC_RUNTIME_HEARTBEAT_MS;
 export type ReferenceCheckpoint = "claim" | "afterCredentials" | "beforeDispatch" | "afterAcceptance" | "afterUncertain" | "afterReadback" | "afterAck";
-export type ReferenceRunnerPorts = Pick<GoogleProviderPorts, "http" | "clock"> & { telemetry: { record(metric: GoogleRequestMetric | MicrosoftRequestMetric): void } };
-export type ReferenceRunnerStore = Pick<ReferenceStore, "claim" | "renew" | "getSession" | "markDispatch" | "recordEvidence" | "complete" | "completeDelete" | "finish"> & Partial<Pick<ReferenceStore, "completeCreate" | "completeGraphDelete">>;
+export type ReferenceRunnerPorts = Pick<GoogleProviderPorts, "http" | "clock"> & { caldav?: Pick<CaldavDeleteProviderPorts, "network" | "http">; telemetry: { record(metric: GoogleRequestMetric | MicrosoftRequestMetric | CaldavRequestMetric): void } };
+export type ReferenceRunnerStore = Pick<ReferenceStore, "claim" | "renew" | "getSession" | "markDispatch" | "recordEvidence" | "complete" | "completeDelete" | "finish"> & Partial<Pick<ReferenceStore, "completeCreate" | "completeGraphDelete" | "getCaldavSession" | "completeCaldavDelete">>;
 export interface ReferenceRunnerOptions {
   attemptId?: string;
   deadlineMs?: number;
@@ -35,7 +38,8 @@ export type ReferenceRunResult = {
 };
 type Evidence = Parameters<ReferenceStore["recordEvidence"]>[1];
 export const supportsReferenceEnvelope = (envelope: Parameters<typeof supportsGooglePersonalUpdateEnvelope>[0]) =>
-  supportsGooglePersonalUpdateEnvelope(envelope) || supportsGooglePersonalDeleteEnvelope(envelope) || supportsGooglePersonalCreateEnvelope(envelope) || supportsMicrosoftPersonalDeleteEnvelope(envelope);
+  supportsGooglePersonalUpdateEnvelope(envelope) || supportsGooglePersonalDeleteEnvelope(envelope) || supportsGooglePersonalCreateEnvelope(envelope) || supportsMicrosoftPersonalDeleteEnvelope(envelope) || supportsCaldavPersonalDeleteEnvelope(envelope);
+export const REFERENCE_CALDAV_DELETE_POLICY: CaldavPersonalDeletePolicy = Object.freeze({ completion: "exact-absence", ambiguousRecovery: "within-attempt", nativeProfile: "strict-reference", observeConflict: false });
 export const REFERENCE_MICROSOFT_DELETE_POLICY: MicrosoftPersonalDeletePolicy = Object.freeze({ preflightPasses: 1, ambiguousRecovery: "within-attempt" });
 export const REFERENCE_CREATE_POLICY: GooglePersonalCreatePolicy = Object.freeze({
   completion: "exact-readback", ambiguousRecovery: "within-attempt", compareContent: "literal", nativeProfile: "strict-reference", requireStrongReadback: true,
@@ -91,13 +95,15 @@ export async function deliverReferenceOperation(store: ReferenceRunnerStore, ope
   // These private authority identities never follow later caller DTO mutation.
   const claim = Object.freeze({ ...claimed, capture: Object.freeze({ ...claimed.capture }),
     locator: Object.freeze({ ...claimed.locator }), binding: Object.freeze({ ...claimed.binding }) });
-  const expectedProfile = claim.binding.provider === "google" ? `google-personal-event-${claim.binding.action}-v1` : REFERENCE_GRAPH_DELETE_PROFILE;
-  if ((claim.binding.provider !== "google" && claim.binding.provider !== "microsoft") ||
+  const expectedProfile = claim.binding.provider === "google" ? `google-personal-event-${claim.binding.action}-v1` : claim.binding.provider === "microsoft" ? REFERENCE_GRAPH_DELETE_PROFILE : REFERENCE_CALDAV_DELETE_PROFILE;
+  if ((claim.binding.provider !== "google" && claim.binding.provider !== "microsoft" && claim.binding.provider !== "caldav") ||
     claim.binding.provider === "microsoft" && (claim.binding.action !== "delete" || claim.endpointProfile !== REFERENCE_GRAPH_DELETE_PROFILE) ||
+    claim.binding.provider === "caldav" && (claim.binding.action !== "delete" || claim.endpointProfile !== REFERENCE_CALDAV_DELETE_PROFILE) ||
     claim.endpointProfile !== undefined && claim.endpointProfile !== expectedProfile) {
     await store.finish(claim, "hold", { code: "reference-provider-profile-unavailable" });
     return { status: "hold", operationId, attemptId, code: "reference-provider-profile-unavailable" };
   }
+  if (claim.binding.provider === "caldav") return deliverClaimedCaldavDelete(store, claim, ports, options, bounds);
   if (claim.binding.provider === "microsoft") return deliverClaimedMicrosoftDelete(store, claim, ports, options, bounds);
   if (claim.binding.action === "delete") return deliverClaimedDelete(store, claim, ports, options, bounds);
   if (claim.binding.action === "create") return deliverClaimedCreate(store, claim, ports, options, bounds);
@@ -312,4 +318,60 @@ async function deliverClaimedMicrosoftDelete(store: ReferenceRunnerStore, claim:
   }, ports, REFERENCE_MICROSOFT_DELETE_POLICY, { timeoutMs: bounds.deadline, heartbeatMs: bounds.heartbeat, signal: options.signal });
   return { status: result.status, operationId: claim.operationId, attemptId: claim.attemptId,
     ...(result.error ? { code: referenceCode(result.error.code) } : {}) };
+}
+
+function caldavDeleteProtocolEvidence(facts: CaldavRuntimeDeleteNativeFacts): Evidence {
+  return { provider: facts.provider.kind,
+    ...(facts.provider.kind === "accepted" ? { acceptanceStatus: facts.provider.status } : {}),
+    ...(facts.provider.kind === "rejected" ? { error: facts.provider.error } : {}),
+    remote: facts.remote.kind === "absent" ? "confirmed" : facts.remote.kind === "present" ? "conflict" : "unobserved",
+    ...(facts.remote.kind === "unobserved" ? {} : { observationId: facts.remote.observationId }),
+  };
+}
+async function deliverClaimedCaldavDelete(store: ReferenceRunnerStore, claim: ReferenceClaim, ports: ReferenceRunnerPorts,
+  options: ReferenceRunnerOptions, bounds: { deadline: number; heartbeat: number }): Promise<ReferenceRunResult> {
+  // A missing guarded transport must never fall back to the generic OAuth fetch.
+  if (!store.getCaldavSession || !store.completeCaldavDelete || !ports.caldav || typeof ports.caldav.http?.fetchPinned !== "function" ||
+    typeof ports.caldav.network?.lookupImpl !== "function" || typeof ports.caldav.network.allowPrivate !== "boolean") {
+    await store.finish(claim, "hold", { code: "reference-caldav-ports-unavailable" });
+    return { status: "hold", operationId: claim.operationId, attemptId: claim.attemptId, code: "reference-caldav-ports-unavailable" };
+  }
+  const saved = claim.receipt.provider;
+  const priorProvider: CaldavRuntimeDeleteProviderFact = saved.kind === "accepted" && [200, 201, 204, 404].includes(claim.deleteAcceptanceStatus ?? 0)
+    ? { kind: "accepted", status: claim.deleteAcceptanceStatus as 200 | 201 | 204 | 404 }
+    : saved.kind === "rejected" ? { kind: "rejected", error: saved.error }
+    : saved.kind === "uncertain" || claim.recovery ? { kind: "uncertain" } : { kind: "not-dispatched" };
+  let recorded: string | undefined;
+  const record = async (facts: CaldavRuntimeDeleteNativeFacts, signal?: AbortSignal) => {
+    const evidence = caldavDeleteProtocolEvidence(facts); await hostCall(() => store.recordEvidence(claim, evidence, signal)); recorded = JSON.stringify(evidence);
+  };
+  const result = await runClaimedCaldavPersonalDelete({
+    operationId: claim.operationId, attemptId: claim.attemptId, payload: claim.payload, binding: claim.binding,
+    nativeTarget: { connectionId: claim.locator.connectionId, connectionGeneration: String(claim.capture.connectionGeneration),
+      calendarUrl: claim.locator.calendarId, resourceUrl: claim.locator.eventId, uid: claim.acceptedUid ?? "" },
+    acceptedEtag: claim.etag, recovery: { required: claim.recovery, possibleDispatch: claim.recovery }, priorProvider,
+  }, {
+    renew: () => store.renew(claim),
+    async prepare(signal) { signal.throwIfAborted(); await options.checkpoint?.("claim"); signal.throwIfAborted(); return { acceptedEtag: claim.etag, acceptedUid: claim.acceptedUid ?? null }; },
+    accountSession: { open: (_connection, signal) => hostCall(() => store.getCaldavSession!(claim, ports.clock.nowEpochMs(), signal)) },
+    async beforeMutation(_request, signal) {
+      if (!await hostCall(() => store.markDispatch(claim, signal))) throw new SyncRuntimeHostError({ code: "account-session-changed", outcome: "not-written" });
+    },
+    recordEvidence: record,
+    async ack(evidence, signal) {
+      if (evidence.kind !== "exact-absence" || evidence.read.kind !== "absent" || evidence.read.status !== 404)
+        throw new SyncRuntimeHostError({ code: "reference-confirmation-missing", outcome: "not-written" });
+      return await hostCall(() => store.completeCaldavDelete!(claim, { kind: "exact-absence", read: { kind: "absent", status: 404 } }, signal))
+        ? { kind: "acknowledged" } : { kind: "authority-rejected" };
+    },
+    async finish(outcome) {
+      const evidence = caldavDeleteProtocolEvidence(outcome.facts);
+      if (outcome.error.phase !== "decode" && JSON.stringify(evidence) !== recorded) await record(outcome.facts);
+      const delay = outcome.retryAfterMs, retryAfterMs = delay === undefined ? undefined : delay > Number.MAX_SAFE_INTEGER ? Infinity : Math.ceil(delay);
+      await store.finish(claim, outcome.status, { code: referenceCode(outcome.error.code), ...(retryAfterMs === undefined ? {} : { retryAfterMs }) });
+    },
+    observationId: randomUUID, checkpoint: phase => options.checkpoint?.(phase),
+  }, { ...ports.caldav, clock: ports.clock, telemetry: ports.telemetry }, REFERENCE_CALDAV_DELETE_POLICY,
+  { timeoutMs: bounds.deadline, heartbeatMs: bounds.heartbeat, signal: options.signal });
+  return { status: result.status, operationId: claim.operationId, attemptId: claim.attemptId, ...(result.error ? { code: referenceCode(result.error.code) } : {}) };
 }

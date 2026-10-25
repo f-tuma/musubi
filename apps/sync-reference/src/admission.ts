@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
+import { strictCaldavResourceURL } from "@musubi/provider-caldav";
 import { SyncOperationEnvelopeSchema, SyncDeliveryReceiptSchema, type SyncOperationEnvelope, type SyncDeliveryReceipt } from "@musubi/types";
-import { parseNativeWritePlanV1, matchesPinnedProjectionV1 } from "@musubi/sync-codec";
-import type { ReferenceAdmission, ReferenceCapture, ReferenceContent, ReferenceContentPatch, ReferenceDeleteAdmission, ReferenceCreateAdmission, ReferenceGraphDeleteAdmission } from "./model.js";
+import { encodeEventV1, parseNativeWritePlanV1, matchesPinnedProjectionV1 } from "@musubi/sync-codec";
+import type { ReferenceAdmission, ReferenceCapture, ReferenceContent, ReferenceContentPatch, ReferenceDeleteAdmission, ReferenceCreateAdmission, ReferenceGraphDeleteAdmission, ReferenceCaldavDeleteAdmission } from "./model.js";
 
 function ownRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype &&
@@ -67,6 +68,47 @@ export function strongEtag(value: unknown): value is string { return typeof valu
 /** Graph's original weak validator is a preflight comparison, never strong CAS. */
 export function graphDeleteEtag(value: unknown): value is string { return typeof value === "string" && /^W\/"[\x21\x23-\x7e\x80-\xff]+"$/.test(value); }
 export const REFERENCE_GRAPH_DELETE_PROFILE = "microsoft-personal-event-delete-v1";
+export const REFERENCE_CALDAV_DELETE_PROFILE = "caldav-personal-event-delete-v1";
+export function caldavUid(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && value.length <= 2048 && !/[\r\n\0]/.test(value);
+}
+/** Strict reference address: exact canonical HTTPS collection and direct child.
+ * DNS/public-address enforcement remains the provider transport's responsibility. */
+export function caldavDeleteAddress(calendarUrl: unknown, resourceUrl: unknown): boolean {
+  if (typeof calendarUrl !== "string" || typeof resourceUrl !== "string" || calendarUrl.length > 2048 || resourceUrl.length > 2048) return false;
+  try {
+    const calendar = new URL(calendarUrl), resource = strictCaldavResourceURL(calendarUrl, resourceUrl);
+    return calendar.protocol === "https:" && calendar.href === calendarUrl && resource.href === resourceUrl;
+  } catch { return false; }
+}
+export function caldavDeleteAdmissionFingerprint(input: ReferenceCaldavDeleteAdmission): string {
+  deleteAdmissionFingerprint(input);
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(input.operationId)) throw new Error("Invalid reference CalDAV DELETE identity");
+  return createHash("sha256").update(JSON.stringify([REFERENCE_CALDAV_DELETE_PROFILE, input.bindingId, input.expectedRevision, input.operationId])).digest("hex");
+}
+export function acceptedCaldavDeleteEnvelope(input: ReferenceCaldavDeleteAdmission, content: ReferenceContent, host: {
+  objectId: string; connectionId: string; calendarUrl: string; resourceUrl: string; uid: string; capture: ReferenceCapture;
+}): SyncOperationEnvelope {
+  caldavDeleteAdmissionFingerprint(input); validateContent(content);
+  if (!caldavUid(host.uid) || !caldavDeleteAddress(host.calendarUrl, host.resourceUrl)) throw new Error("Invalid reference CalDAV DELETE target");
+  // Adapt this host's own content at the existing portable serializer boundary.
+  // No Musubi rows, clocks, memberships or credentials participate in encoding.
+  const encoded = encodeEventV1("caldav", { id: host.objectId, creatorID: "reference", organizer: "", title: content.name, color: "",
+    start: new Date(content.beginsAt), end: new Date(content.endsAt), calendars: [], isCanceled: false, isAllDay: false,
+    hasAttendees: false, description: content.notes, location: content.place, recurrence: null }, undefined,
+  // The existing codec requires this context field but DELETE does not encode
+  // it into its plan/resource. A fixed inert value keeps this pure adapter free
+  // of clocks; it is never provider or receipt evidence.
+  { action: "delete", operationId: input.operationId, uid: host.uid, acceptedAt: "2026-01-01T00:00:00.000Z" });
+  const saved = projection(content);
+  if (!jsonEqual(encoded.admittedProjection.data, saved) || !matchesPinnedProjectionV1(encoded.serializer, "delete", saved, encoded.nativePlan.data))
+    throw new Error("Reference CalDAV DELETE content loses wire precision");
+  return SyncOperationEnvelopeSchema.parse({ schemaVersion: 1, profileVersion: "sync-profile-v1", operation: { kind: "event", action: "delete", version: 1 },
+    serializer: encoded.serializer, commandId: input.commandId, operationId: input.operationId, hostObjectId: host.objectId,
+    locator: { provider: "caldav", connectionId: host.connectionId, collectionId: host.calendarUrl, resourceId: host.resourceUrl },
+    sourceEpoch: { sourceId: input.bindingId, generation: host.capture.sourceGeneration }, acceptedRevision: host.capture.acceptedRevision,
+    privacyEpoch: String(host.capture.privacyGeneration), allowedSideEffects: ["provider-content-write"], admittedProjection: { data: saved }, nativePlan: encoded.nativePlan });
+}
 
 /** Action-prefixed fingerprint cannot alias an UPDATE command. */
 export function deleteAdmissionFingerprint(input: ReferenceDeleteAdmission): string {

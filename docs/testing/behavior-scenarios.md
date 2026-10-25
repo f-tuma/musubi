@@ -9,6 +9,7 @@ pnpm test:behavior --list
 pnpm test:behavior --suite google-delete --scenario already-absent --json
 pnpm test:behavior --suite google-create --scenario fresh-create --json
 pnpm test:behavior --suite microsoft-delete --scenario lost-reply-restart-present --json
+pnpm test:behavior --suite caldav-delete --scenario fresh-delete --json
 pnpm test:behavior --suite task-inspector --scenario conflict-keeps-draft
 pnpm test:behavior --json
 # Last: real routing, components, HTTP client, query cache and browser layout.
@@ -29,6 +30,7 @@ not committed. The root runner can also be called as
 | `google-delete` | Claimed delivery runtime, Google provider preflight/conditional DELETE/recovery | Host persistence/lease/credential ports, HTTP responses and clock | None |
 | `google-create` | Admitted codec identity/body, CREATE delivery runtime and provider preflight/write/recovery | Host persistence/lease/credential ports, ordered HTTP responses and clock | None |
 | `microsoft-delete` | Admitted Graph DELETE codec, guarded runtime, native weak version, owned-calendar preflight and exact absence | Host persistence/lease/credential ports, ordered HTTP responses and clock | None |
+| `caldav-delete` | Admitted DAV DELETE codec, runtime, real XML/ICS parsing, privilege/organizer preflight and conditional DELETE | Host persistence/lease/credential ports, DNS, pinned HTTP leaf responses and clock | None |
 | `task-inspector` | React inspector/editor, capability checks, task serializer and HTTP client | Seeded context and HTTP receipts | None; Vitest/jsdom |
 | Browser confirmation | Running web app, router, task queries/cache and inspector/editor; same JSON commands and receipts | Auth/API responses at the browser HTTP boundary | Web dev server and Chromium |
 
@@ -61,6 +63,16 @@ still exists at the same version. A captured reference dispatch marker remains
 one-shot even after a known 429 rejection; Musubi's existing conclusive
 not-written retry policy is separately proved by actual host integration tests.
 
+The CalDAV suite preserves Musubi's generic guarded transport and its four-call
+personal flow (six calls when organizer evidence is needed). The reference
+profile restricts native resources to one timed nonrecurring event, checks the
+whole component tree and requires a final exact GET 404. Cases cover strong
+native validators, UID binding, privileges, redirects, DNS pinning, credential
+stripping, status classification and conditional recovery. Unlike Graph,
+interrupted DAV recovery may resend the original conditional request after
+fresh guards; inherited uncertainty is retained. The two hosts' explicit native
+profiles and acceptance/ACK policies are tested separately.
+
 ## Add or debug a case
 
 - Sync data: `packages/sync-runtime/src/behavior/google-delete.json`.
@@ -86,6 +98,13 @@ not-written retry policy is separately proved by actual host integration tests.
   Run `pnpm --filter @musubi/sync-runtime test:scenarios:microsoft-delete --json`
   for the native report. These port scenarios do not prove Musubi normalization,
   SQL authority or explicit-resolution admission; actual paired host tests do.
+- CalDAV data: `packages/sync-runtime/src/behavior/caldav-delete.json`.
+  Its adjacent driver invokes the real codec/runtime/provider and replaces only
+  DNS and the pinned HTTP leaf. Ordered exchanges assert native bytes, UID,
+  validators, PROPFIND kinds, redirect behavior and per-hop metrics. Run
+  `pnpm --filter @musubi/sync-runtime test:scenarios:caldav-delete --json`
+  for its bounded native report. Host SQL authority, normalization, account
+  revision checks and durable crash recovery have separate integration tests.
 
 Edit the JSON, select the exact id, and inspect the JSON result. Add a small typed
 driver when testing a different domain boundary. Keep domain decisions in the
