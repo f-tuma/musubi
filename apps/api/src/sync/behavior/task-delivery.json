@@ -1,0 +1,2381 @@
+{
+  "schemaVersion": 1,
+  "driver": "task-delivery",
+  "scenarios": [
+    {
+      "id": "saved-title-update",
+      "title": "Actual task executor selects the saved title mask and reads before ACK",
+      "row": {
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "action": "update"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "\"accepted\"",
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "ack-signal-forwarded",
+      "title": "The real executor forwards its same AbortSignal to the ACK port",
+      "row": {
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "action": "update"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "\"accepted\"",
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "achieved-recovery-read-only",
+      "title": "Already achieved saved fields reconcile through one read and ACK",
+      "row": {
+        "reconciling": true,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "action": "update"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"newer\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask"
+        ],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"newer\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "empty-mask-no-mutation",
+      "title": "An empty saved field mask reads and authorizes without a mutation",
+      "row": {
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "dispatchProjection": null,
+        "action": "update"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "patch": {}
+        },
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "changed-baseline-conflict",
+      "title": "A changed native baseline cannot authorize a write or ACK",
+      "row": {
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "action": "update"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Concurrent note",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "conflict"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "conflict",
+            "code": "task-provider-conflict",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "conflict",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "ack-cancelled-wait",
+      "title": "The actual ACK port receives the attempt signal and cancels its wait",
+      "row": {
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "action": "update"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": true,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "unconfirmed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "adapter.readTask",
+          "db.ack",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "\"accepted\"",
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": true,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "task-write-failed",
+            "uncertain": true
+          }
+        ],
+        "returnedStatus": "unconfirmed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "finishSnapshot": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        }
+      }
+    },
+    {
+      "id": "false-ack-after-write",
+      "title": "A false ACK after accepted mutation remains unconfirmed",
+      "row": {
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "action": "update"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": false,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "unconfirmed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "adapter.readTask",
+          "db.ack",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "\"accepted\"",
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "task-write-failed",
+            "uncertain": true
+          }
+        ],
+        "returnedStatus": "unconfirmed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "finishSnapshot": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        }
+      }
+    },
+    {
+      "id": "false-ack-empty-mask",
+      "title": "A false ACK without dispatch retries without manufacturing uncertainty",
+      "row": {
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "dispatchProjection": null,
+        "action": "update"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        }
+      ],
+      "ack": {
+        "result": false,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "retry"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "db.ack",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "patch": {}
+        },
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [
+          {
+            "status": "retry",
+            "code": "task-write-failed",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "retry",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishSnapshot": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        }
+      }
+    },
+    {
+      "id": "captured-predecessor-version",
+      "title": "ACK receives the resolved old version captured before a mutable read port",
+      "row": {
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "action": "update",
+        "predecessorRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"predecessor\"",
+          "icalUid": null
+        }
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"predecessor\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          },
+          "mutatePredecessorEtag": "\"changed-after-capture\""
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "\"predecessor\"",
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"predecessor\"",
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "create-recovery-ack-signal",
+      "title": "An addressed CREATE recovery forwards signal and an unresolved old ref to ACK",
+      "row": {
+        "reconciling": true,
+        "projectionBaseline": null,
+        "dispatchProjection": null,
+        "action": "create"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask"
+        ],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": null,
+          "etag": null,
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "create-readback-ack-signal",
+      "title": "Fresh CREATE readback uses the same guarded ACK port",
+      "row": {
+        "reconciling": false,
+        "projectionBaseline": null,
+        "dispatchProjection": null,
+        "action": "create"
+      },
+      "adapter": [
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskCreate",
+          "result": {
+            "externalTaskId": "native-task",
+            "etag": "\"written\"",
+            "icalUid": null
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskCreate",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "assertTaskWrite",
+          "pushTaskCreate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": null,
+          "patch": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": null,
+          "etag": null,
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "delete-absence-ack-signal",
+      "title": "Scoped DELETE absence forwards captured reference and signal to ACK",
+      "row": {
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "action": "delete"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": null
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask"
+        ],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "delete-write-ack-signal",
+      "title": "Accepted DELETE forwards signal and the captured old reference to ACK",
+      "row": {
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "action": "delete"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskDelete"
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskDelete",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskDelete"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "cancelled-create-recovery-ack-signal",
+      "title": "Cancelled ACK wait: An addressed CREATE recovery forwards signal and an unresolved old ref to ACK",
+      "row": {
+        "reconciling": true,
+        "projectionBaseline": null,
+        "dispatchProjection": null,
+        "action": "create"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": true,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "unconfirmed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.ack",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask"
+        ],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": true,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": null,
+          "etag": null,
+          "icalUid": null
+        },
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "task-write-failed",
+            "uncertain": true
+          }
+        ],
+        "returnedStatus": "unconfirmed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "finishSnapshot": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        }
+      }
+    },
+    {
+      "id": "cancelled-delete-absence-ack-signal",
+      "title": "Cancelled ACK wait: Scoped DELETE absence forwards captured reference and signal to ACK",
+      "row": {
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "action": "delete"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": null
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": true,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "retry"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.ack",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask"
+        ],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": true,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [
+          {
+            "status": "retry",
+            "code": "task-write-failed",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "retry",
+        "createPlanBody": null,
+        "ackDeletionRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "cancelled-achieved-recovery-read-only",
+      "title": "Cancelled ACK wait: Already achieved saved fields reconcile through one read and ACK",
+      "row": {
+        "reconciling": true,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "action": "update"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"newer\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": true,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "unconfirmed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.ack",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask"
+        ],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": true,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"newer\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "task-write-failed",
+            "uncertain": true
+          }
+        ],
+        "returnedStatus": "unconfirmed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"newer\"",
+          "icalUid": null
+        },
+        "finishSnapshot": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        }
+      }
+    },
+    {
+      "id": "cancelled-empty-mask-no-mutation",
+      "title": "Cancelled ACK wait: An empty saved field mask reads and authorizes without a mutation",
+      "row": {
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "dispatchProjection": null,
+        "action": "update"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": true,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "retry"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "db.ack",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "patch": {}
+        },
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": true,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [
+          {
+            "status": "retry",
+            "code": "task-write-failed",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "retry",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishSnapshot": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        }
+      }
+    },
+    {
+      "id": "cancelled-delete-write-ack-signal",
+      "title": "Cancelled ACK wait: Accepted DELETE forwards signal and the captured old reference to ACK",
+      "row": {
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "action": "delete"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskDelete"
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": true,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "unconfirmed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskDelete",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "db.ack",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskDelete"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": true,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "task-write-failed",
+            "uncertain": true
+          }
+        ],
+        "returnedStatus": "unconfirmed",
+        "createPlanBody": null,
+        "ackDeletionRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "late-read-after-timeout-no-ack",
+      "title": "A late adapter readback after timeout cannot reach ACK",
+      "row": {
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "action": "update"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          },
+          "waitForAbort": true
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "unconfirmed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "adapter.readTask",
+          "db.finish",
+          "db.get",
+          "fixture.late-read-return"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "\"accepted\"",
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "task-write-failed",
+            "uncertain": true
+          }
+        ],
+        "returnedStatus": "unconfirmed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "finishSnapshot": null
+      }
+    }
+  ]
+}

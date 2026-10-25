@@ -45,9 +45,23 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
   }
   let dispatched = false;
   let resultRef: ExternalTaskRef | undefined;
+  let acknowledgementProjection: TaskProjection | undefined;
   let mutationAccepted = false;
   const attempt = createDeliveryAttempt(() => renewTaskOutboxLease(row.id, token), options);
   const signal = attempt.signal;
+  let acknowledgementExpectedRef: Readonly<{ externalTaskId: string | null; etag: string | null; icalUid: string | null }> | undefined;
+  const acknowledge = async (evidence: Parameters<typeof acceptTaskOutboxDelivery>[2], deletionRef?: ExternalTaskRef) => {
+    signal.throwIfAborted();
+    if (evidence) {
+      resultRef = { ...evidence.ref };
+      acknowledgementProjection = jsonTaskProjection(evidence.projection);
+    } else if (deletionRef) resultRef = { ...deletionRef };
+    const accepted = await acceptTaskOutboxDelivery(row, token, evidence, deletionRef, signal, acknowledgementExpectedRef);
+    // A false ACK can mean a stale lease or a mapping race, not a loss of ACL.
+    // A committed ACK remains authoritative even if the signal then expires.
+    if (!accepted) throw new ProviderTaskWriteError("task-write-failed",
+      row.reconciling || dispatched || mutationAccepted ? "unconfirmed" : "not-written");
+  };
   const mark = async () => {
     signal.throwIfAborted();
     if (!await renewTaskOutboxLease(row.id, token) || !await admitted(row, false, !!pinned)) throw new ProviderTaskWriteError("task-source-read-only");
@@ -72,6 +86,8 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
       if (secondary && row.action !== "delete" && task.recurrence) throw new ProviderTaskWriteError("task-recurrence-projection-unsupported");
       const predecessor = await getTaskOutboxPredecessorEvidence(row);
       const expected = predecessor.ref;
+      acknowledgementExpectedRef = Object.freeze({ externalTaskId: expected.externalTaskId ?? null,
+        etag: expected.etag ?? null, icalUid: expected.icalUid ?? null });
       let ref: ExternalTaskRef | undefined = expected.externalTaskId ? { ...expected, externalTaskId: expected.externalTaskId } : undefined;
       let saved: Projection | undefined = row.payload.dispatchProjection;
       const target = pinned ? pinned.admittedProjection.data : saved?.projection ?? jsonTaskProjection(adapter.projectTask!(task));
@@ -88,14 +104,14 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
         const observed = await adapter.readTask(row.userID, row.accountID, row.externalCalendarID, ref, signal);
         if (!observed || !sameTaskProjection(observed.projection, target)) throw new ProviderTaskWriteError("task-create-unconfirmed", "unconfirmed");
         signal.throwIfAborted();
-        await acceptTaskOutboxDelivery(row, token, observed);
+        await acknowledge(observed);
         return getTaskOutbox(row.id);
       }
 
       const current = ref ? await adapter.readTask(row.userID, row.accountID, row.externalCalendarID, ref, signal) : null;
       if (row.action === "delete" && !current) {
         signal.throwIfAborted();
-        await acceptTaskOutboxDelivery(row, token, null, ref);
+        await acknowledge(null, ref);
         return getTaskOutbox(row.id);
       }
       if (row.action !== "create" && !ref) throw new ProviderTaskWriteError("task-version-unavailable");
@@ -108,7 +124,7 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
       }
       if (row.action === "update" && row.reconciling && current && achieved(current.projection, saved.patch)) {
         signal.throwIfAborted();
-        await acceptTaskOutboxDelivery(row, token, current);
+        await acknowledge(current);
         return getTaskOutbox(row.id);
       }
       if (!canDispatch) {
@@ -122,7 +138,7 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
       await adapter.assertTaskWrite(row.userID, row.accountID, row.externalCalendarID, { action: row.action, task, external: ref, projection: target, secondary, signal });
       if (row.action === "update" && !Object.keys(saved.patch).length && current) {
         signal.throwIfAborted();
-        await acceptTaskOutboxDelivery(row, token, current);
+        await acknowledge(current);
         return getTaskOutbox(row.id);
       }
       if (row.action === "create") resultRef = await adapter.pushTaskCreate(row.userID, row.accountID, row.externalCalendarID, task, mark, signal, nativePlan);
@@ -130,7 +146,7 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
         await adapter.pushTaskDelete(row.userID, row.accountID, row.externalCalendarID, ref!.externalTaskId, { ...ref!, beforeMutation: mark }, signal);
         mutationAccepted = true;
         signal.throwIfAborted();
-        await acceptTaskOutboxDelivery(row, token, null, ref);
+        await acknowledge(null, ref);
         return getTaskOutbox(row.id);
       } else {
         const result = await adapter.pushTaskUpdate(row.userID, row.accountID, row.externalCalendarID, ref!.externalTaskId, task, { ...ref!, beforeMutation: mark }, saved.patch, signal, nativePlan);
@@ -141,7 +157,7 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
       const observed = await adapter.readTask(row.userID, row.accountID, row.externalCalendarID, resultRef, signal);
       if (!observed || !achieved(observed.projection, saved.patch)) throw new ProviderTaskWriteError("task-write-failed", "unconfirmed");
       signal.throwIfAborted();
-      await acceptTaskOutboxDelivery(row, token, observed);
+      await acknowledge(observed);
       return getTaskOutbox(row.id);
     }));
   } catch (error) {
@@ -159,7 +175,9 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
     const definiteRejection = !mutationAccepted && providerError?.outcome === "not-written" && providerError.providerStatus != null && providerError.providerStatus < 500;
     const uncertain = row.reconciling || providerError?.outcome === "unconfirmed" || dispatched && !definiteRejection;
     const status = uncertain ? "unconfirmed" : code === "task-provider-conflict" ? "conflict" : blocked ? "blocked" : definite ? "not-written" : "retry";
-    await finishTaskOutbox(row.id, token, status, code, { uncertain, resultRef: resultRef ?? row.resultRef, nextAttemptAt: deliveryNextAttemptAt(row.attempts, providerError?.retryAfterMs) });
+    await finishTaskOutbox(row.id, token, status, code, { uncertain, resultRef: resultRef ?? row.resultRef,
+      ...(acknowledgementProjection === undefined ? {} : { remoteSnapshot: acknowledgementProjection }),
+      nextAttemptAt: deliveryNextAttemptAt(row.attempts, providerError?.retryAfterMs) });
     return getTaskOutbox(row.id);
   } finally { attempt.dispose(); }
 }

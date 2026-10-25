@@ -12,6 +12,7 @@ pnpm test:behavior --suite microsoft-delete --scenario lost-reply-restart-presen
 pnpm test:behavior --suite microsoft-create --scenario fresh-create --json
 pnpm test:behavior --suite caldav-delete --scenario fresh-delete --json
 pnpm test:behavior --suite caldav-create --scenario fresh-create --json
+pnpm test:behavior --suite task-delivery --scenario ack-signal-forwarded --json
 pnpm test:behavior --suite task-inspector --scenario conflict-keeps-draft
 pnpm test:behavior --json
 # Last: real routing, components, HTTP client, query cache and browser layout.
@@ -35,6 +36,7 @@ not committed. The root runner can also be called as
 | `microsoft-create` | Admitted Graph transaction/body, bounded CREATE runtime, native permission/POST/scoped listing and candidate identity | Host persistence/lease/normalization/credential ports, ordered HTTP responses and clock | None |
 | `caldav-delete` | Admitted DAV DELETE codec, runtime, real XML/ICS parsing, privilege/organizer preflight and conditional DELETE | Host persistence/lease/credential ports, DNS, pinned HTTP leaf responses and clock | None |
 | `caldav-create` | Admitted full ICS/URL/UID, CREATE runtime, bind ACL/conditional PUT and exact resource recovery | Host persistence/lease/normalization/credential ports, DNS, pinned HTTP leaf responses and clock | None |
+| `task-delivery` | Actual existing task executor, codec/decoder, stored patch selection, recovery and ACK/finish arguments | Existing DB/config module exports and adapter data receipts via test-only Node module mocks | None; no DB/native HTTP claim |
 | `task-inspector` | React inspector/editor, capability checks, task serializer and HTTP client | Seeded context and HTTP receipts | None; Vitest/jsdom |
 | Browser confirmation | Running web app, router, task queries/cache and inspector/editor; same JSON commands and receipts | Auth/API responses at the browser HTTP boundary | Web dev server and Chromium |
 
@@ -95,9 +97,20 @@ guards. Declared data-only host projection fixtures are labelled separately
 from the portable production ICS projector; real API normalization has paired
 SQL/HTTP coverage.
 
+The task delivery suite executes `apps/api/src/sync/task_delivery.ts` itself.
+It verifies all six ACK branches pass the same attempt signal and the old native
+reference captured before adapter awaits. Cases also cover false ACK settlement,
+copied observed ref/projection, saved field masks, achieved recovery, empty patch
+and a late readback that cannot reach ACK. The runner supplies the pinned Node
+module-mock flags; application code does not load the fixture modules. These
+scenarios do not prove PostgreSQL rollback, native provider wire or a new shared
+task runtime. The separate `task-ack` DB and `task_ack_delivery` API integration
+suites exercise actual transactions and lock/deadline races.
+
 ## Add or debug a case
 
 - Sync data: `packages/sync-runtime/src/behavior/google-delete.json`.
+- Existing server task delivery: `apps/api/src/sync/behavior/task-delivery.json`.
   Driver/validator: `google-delete.ts` in the same directory. Each case declares
   ordered HTTP exchanges and a complete expected observable summary. A transport
   mismatch remains a test failure even if production recovery catches the error.
