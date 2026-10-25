@@ -23,3 +23,17 @@ export function decryptCredential(key: string, connectionId: string, value: stri
   return Buffer.concat([cipher.update(encrypted), cipher.final()]).toString("utf8");
 }
 export function assertCredentialKey(key: string): void { keyBytes(key); }
+
+export interface ReferenceBasicCredential { kind: "basic"; username: string; password: string }
+/** Provider-specific plaintext shape exists only inside the credential port. */
+export function basicCredential(value: unknown): ReferenceBasicCredential {
+  if (!value || typeof value !== "object" || Array.isArray(value) || Object.getPrototypeOf(value) !== Object.prototype ||
+    Reflect.ownKeys(value).length !== 3 || !["kind", "username", "password"].every(key => Object.hasOwn(value, key))) throw new Error("Invalid reference Basic credential");
+  const fields = Object.fromEntries(["kind", "username", "password"].map(key => {
+    const field = Object.getOwnPropertyDescriptor(value, key); if (!field || !("value" in field)) throw new Error("Invalid reference Basic credential");
+    return [key, field.value];
+  }));
+  if (fields.kind !== "basic" || ![fields.username, fields.password].every(text => typeof text === "string" && text.length > 0 && text.length <= 8192 && !/[\x00-\x1f\x7f]/.test(text)) || fields.username.includes(":"))
+    throw new Error("Invalid reference Basic credential");
+  return { kind: "basic", username: fields.username, password: fields.password };
+}

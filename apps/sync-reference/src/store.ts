@@ -2,10 +2,10 @@ import { readFile } from "node:fs/promises";
 import type { Pool, PoolClient } from "pg";
 import { decodeSyncOperationPayload, SyncDeliveryReceiptSchema, SyncOperationEnvelopeSchema, SyncErrorSchema, SyncJsonObjectSchema, type SyncDeliveryReceipt, type SyncOperationRowBinding } from "@musubi/types";
 import { parseNativeWritePlanV1, matchesPinnedProjectionV1 } from "@musubi/sync-codec";
-import { supportsMicrosoftPersonalDeleteEnvelope } from "@musubi/sync-runtime";
-import { acceptedEnvelope, acceptedDeleteEnvelope, acceptedCreateEnvelope, acceptedGraphDeleteEnvelope, admissionFingerprint, deleteAdmissionFingerprint, createAdmissionFingerprint, graphDeleteAdmissionFingerprint, graphDeleteEtag, REFERENCE_GRAPH_DELETE_PROFILE, referenceCreateEventID, initialReceipt, jsonEqual, projection, strongEtag, validateContent, validatePatch } from "./admission.js";
-import { assertCredentialKey, decryptCredential, encryptCredential } from "./crypto.js";
-import { ReferenceHoldError, type ReferenceAdmission, type ReferenceCapture, type ReferenceClaim, type ReferenceEvidence, type ReferenceOperation, type ReferenceSeed, type ReferenceContentPatch, type ReferenceDeleteAdmission, type ReferenceDeleteObservation, type ReferenceCreateAdmission, type ReferenceCreateSeed, type ReferenceCreateObservation, type ReferenceGraphDeleteSeed, type ReferenceGraphDeleteAdmission, type ReferenceGraphDeleteObservation } from "./model.js";
+import { supportsMicrosoftPersonalDeleteEnvelope, supportsCaldavPersonalDeleteEnvelope } from "@musubi/sync-runtime";
+import { acceptedEnvelope, acceptedDeleteEnvelope, acceptedCreateEnvelope, acceptedGraphDeleteEnvelope, admissionFingerprint, deleteAdmissionFingerprint, createAdmissionFingerprint, graphDeleteAdmissionFingerprint, graphDeleteEtag, REFERENCE_GRAPH_DELETE_PROFILE, referenceCreateEventID, initialReceipt, jsonEqual, projection, strongEtag, validateContent, validatePatch, acceptedCaldavDeleteEnvelope, caldavDeleteAdmissionFingerprint, caldavDeleteAddress, caldavUid, REFERENCE_CALDAV_DELETE_PROFILE } from "./admission.js";
+import { assertCredentialKey, decryptCredential, encryptCredential, basicCredential } from "./crypto.js";
+import { ReferenceHoldError, type ReferenceAdmission, type ReferenceCapture, type ReferenceClaim, type ReferenceEvidence, type ReferenceOperation, type ReferenceSeed, type ReferenceContentPatch, type ReferenceDeleteAdmission, type ReferenceDeleteObservation, type ReferenceCreateAdmission, type ReferenceCreateSeed, type ReferenceCreateObservation, type ReferenceGraphDeleteSeed, type ReferenceGraphDeleteAdmission, type ReferenceGraphDeleteObservation, type ReferenceCaldavDeleteSeed, type ReferenceCaldavDeleteAdmission, type ReferenceCaldavDeleteObservation } from "./model.js";
 export { ReferenceHoldError } from "./model.js";
 export type { ReferenceClaim as Claim } from "./model.js";
 
@@ -39,9 +39,9 @@ function copyExactDataFields(value: unknown, required: readonly string[], option
 }
 /** Only the literal pre-provider schema lacks this column. New rows have
  * NOT NULL metadata; invalid or mismatched explicit values never fall back. */
-function providerOf(row: Row): "google" | "microsoft" {
+function providerOf(row: Row): "google" | "microsoft" | "caldav" {
   if (!Object.hasOwn(row, "provider")) return "google";
-  if (row.provider === "google" || row.provider === "microsoft") return row.provider;
+  if (row.provider === "google" || row.provider === "microsoft" || row.provider === "caldav") return row.provider;
   throw new ReferenceHoldError("provider-profile-unavailable");
 }
 function profileOf(row: Row): string {
@@ -52,7 +52,7 @@ function profileOf(row: Row): string {
 function profileMatches(row: Row): boolean {
   const provider = providerOf(row), profile = profileOf(row);
   return provider === "google" ? ["create", "update", "delete"].includes(row.action) && profile === `google-personal-event-${row.action}-v1`
-    : row.action === "delete" && profile === REFERENCE_GRAPH_DELETE_PROFILE;
+    : row.action === "delete" && profile === (provider === "microsoft" ? REFERENCE_GRAPH_DELETE_PROFILE : REFERENCE_CALDAV_DELETE_PROFILE);
 }
 /** Only the durable lease identities are accepted from a caller's claim DTO. */
 function claimIdentity(value: ReferenceClaim): ReferenceClaim {
@@ -79,7 +79,8 @@ export class ReferenceStore {
     const forward = await readFile(new URL("./schema-delete.sql", import.meta.url), "utf8");
     const create = await readFile(new URL("./schema-create.sql", import.meta.url), "utf8");
     const graph = await readFile(new URL("./schema-graph-delete.sql", import.meta.url), "utf8");
-    await this.transaction(async client => { await client.query(sql); await client.query(forward); await client.query(create); await client.query(graph); });
+    const caldav = await readFile(new URL("./schema-caldav-delete.sql", import.meta.url), "utf8");
+    await this.transaction(async client => { await client.query(sql); await client.query(forward); await client.query(create); await client.query(graph); await client.query(caldav); });
   }
   private async transaction<T>(body: (client: PoolClient) => Promise<T>, signal?: AbortSignal): Promise<T> {
     signal?.throwIfAborted();
@@ -111,6 +112,7 @@ export class ReferenceStore {
     const { operation: op, connection: conn, object, binding } = locked;
     return !!conn && !!object && !!binding && conn.status === "active" && conn.credential_ciphertext != null && binding.active &&
       providerOf(conn) === providerOf(op) && profileMatches(op) &&
+      (providerOf(op) !== "caldav" || conn.scope === "" && caldavUid(op.accepted_uid) && binding.ical_uid === op.accepted_uid && caldavDeleteAddress(op.calendar_id, op.event_id)) &&
       (op.action === "create" ? binding.destination_lifecycle === "reserved" && binding.create_operation_id === op.id : binding.destination_lifecycle === "present") &&
       object.canonical_lifecycle === (op.action === "delete" ? "tombstoned" : "active") && Number(object.lifecycle_generation) === Number(op.canonical_generation) &&
       Number(conn.generation) === Number(op.connection_generation) && Number(object.revision) === Number(op.accepted_revision) &&
@@ -199,6 +201,55 @@ export class ReferenceStore {
         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'delete','microsoft',$17)`,
         [input.operationId, input.commandId, binding.id, object.id, conn.id, binding.calendar_id, binding.event_id, epochs.acceptedRevision,
           epochs.connectionGeneration, epochs.sourceGeneration, epochs.privacyGeneration, binding.etag, fingerprint, { operationEnvelope: envelope }, initialReceipt(envelope), epochs.canonicalGeneration, REFERENCE_GRAPH_DELETE_PROFILE]);
+    });
+    const result = await this.pool.query("SELECT id FROM reference_operations WHERE command_id=$1 AND binding_id=$2", [input.commandId, input.bindingId]);
+    return this.inspectOperation(result.rows[0].id);
+  }
+  async seedCaldavDeleteBinding(supplied: ReferenceCaldavDeleteSeed): Promise<void> {
+    const fields = copyExactDataFields(supplied, ["provider", "endpointProfile", "connectionId", "objectId", "bindingId", "calendarUrl", "resourceUrl", "uid", "username", "password", "expiresAt", "content", "etag"], ["privacyLabel"]);
+    const input = Object.freeze({ ...fields, content: Object.freeze({ ...validateContent(fields.content as ReferenceCaldavDeleteSeed["content"]) }) }) as unknown as ReferenceCaldavDeleteSeed;
+    if (input.provider !== "caldav" || input.endpointProfile !== REFERENCE_CALDAV_DELETE_PROFILE || !strongEtag(input.etag) || !caldavUid(input.uid) ||
+      !caldavDeleteAddress(input.calendarUrl, input.resourceUrl) || typeof input.expiresAt !== "string" || !Number.isFinite(Date.parse(input.expiresAt)) ||
+      input.privacyLabel !== undefined && typeof input.privacyLabel !== "string" ||
+      ![input.connectionId, input.objectId, input.bindingId].every(value => typeof value === "string" && value.length > 0 && value.length <= 2048) ||
+      ![input.content.beginsAt, input.content.endsAt].every(value => value.endsWith(".000Z")) || input.content.notes === "" || input.content.place === "")
+      throw new Error("Invalid reference CalDAV DELETE seed");
+    const credential = basicCredential({ kind: "basic", username: input.username, password: input.password });
+    const ciphertext = encryptCredential(this.credentialKey, input.connectionId, JSON.stringify(credential));
+    await this.transaction(async client => {
+      await client.query("INSERT INTO reference_connections(id,provider,scope,credential_ciphertext,expires_at) VALUES($1,'caldav','',$2,$3)", [input.connectionId, ciphertext, input.expiresAt]);
+      await client.query("INSERT INTO reference_objects(id,privacy_label,content) VALUES($1,$2,$3)", [input.objectId, input.privacyLabel ?? "private", input.content]);
+      await client.query("INSERT INTO reference_bindings(id,connection_id,object_id,calendar_id,event_id,etag,baseline,ical_uid) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
+        [input.bindingId, input.connectionId, input.objectId, input.calendarUrl, input.resourceUrl, input.etag, projection(input.content), input.uid]);
+    });
+  }
+  async admitCaldavDelete(supplied: ReferenceCaldavDeleteAdmission): Promise<ReferenceOperation> {
+    const input = Object.freeze(copyExactDataFields(supplied, ["bindingId", "expectedRevision", "commandId", "operationId"])) as unknown as ReferenceCaldavDeleteAdmission;
+    const fingerprint = caldavDeleteAdmissionFingerprint(input);
+    await this.transaction(async client => {
+      const initial = (await client.query("SELECT * FROM reference_bindings WHERE id=$1", [input.bindingId])).rows[0];
+      if (!initial) throw new ReferenceHoldError("binding-missing");
+      const conn = (await client.query("SELECT * FROM reference_connections WHERE id=$1 FOR UPDATE", [initial.connection_id])).rows[0];
+      const object = (await client.query("SELECT * FROM reference_objects WHERE id=$1 FOR UPDATE", [initial.object_id])).rows[0];
+      const binding = (await client.query("SELECT * FROM reference_bindings WHERE id=$1 FOR UPDATE", [input.bindingId])).rows[0];
+      const existing = (await client.query("SELECT * FROM reference_operations WHERE connection_id=$1 AND command_id=$2 FOR UPDATE", [binding.connection_id, input.commandId])).rows[0];
+      if (existing) { if (existing.fingerprint !== fingerprint) throw new ReferenceHoldError("command-reused"); return; }
+      if (providerOf(conn) !== "caldav" || conn.status !== "active" || conn.credential_ciphertext == null || conn.scope !== "" || !binding.active)
+        throw new ReferenceHoldError("source-unavailable");
+      if (object.canonical_lifecycle !== "active" || binding.destination_lifecycle !== "present") throw new ReferenceHoldError("lifecycle-unavailable");
+      if (Number(object.revision) !== input.expectedRevision) throw new ReferenceHoldError("revision-conflict");
+      if ((await client.query("SELECT 1 FROM reference_operations WHERE binding_id=$1 AND status<>'acked'", [input.bindingId])).rowCount) throw new ReferenceHoldError("causal-barrier");
+      if (!strongEtag(binding.etag) || !caldavUid(binding.ical_uid) || !caldavDeleteAddress(binding.calendar_id, binding.event_id)) throw new ReferenceHoldError("native-identity-unavailable");
+      const content = validateContent(object.content);
+      const tombstone = (await client.query("UPDATE reference_objects SET revision=$2,canonical_lifecycle='tombstoned' WHERE id=$1 RETURNING revision,lifecycle_generation", [object.id, input.expectedRevision + 1])).rows[0];
+      const epochs: ReferenceCapture = { acceptedRevision: Number(tombstone.revision), canonicalGeneration: Number(tombstone.lifecycle_generation),
+        connectionGeneration: Number(conn.generation), sourceGeneration: Number(binding.source_generation), privacyGeneration: Number(object.privacy_generation) };
+      const envelope = acceptedCaldavDeleteEnvelope(input, content, { objectId: object.id, connectionId: conn.id, calendarUrl: binding.calendar_id, resourceUrl: binding.event_id, uid: binding.ical_uid, capture: epochs });
+      await client.query(`INSERT INTO reference_operations(id,command_id,binding_id,object_id,connection_id,calendar_id,event_id,accepted_revision,
+        connection_generation,source_generation,privacy_generation,accepted_etag,fingerprint,payload,receipt,canonical_generation,action,provider,endpoint_profile,accepted_uid)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'delete','caldav',$17,$18)`,
+        [input.operationId, input.commandId, binding.id, object.id, conn.id, binding.calendar_id, binding.event_id, epochs.acceptedRevision,
+          epochs.connectionGeneration, epochs.sourceGeneration, epochs.privacyGeneration, binding.etag, fingerprint, { operationEnvelope: envelope }, initialReceipt(envelope), epochs.canonicalGeneration, REFERENCE_CALDAV_DELETE_PROFILE, binding.ical_uid]);
     });
     const result = await this.pool.query("SELECT id FROM reference_operations WHERE command_id=$1 AND binding_id=$2", [input.commandId, input.bindingId]);
     return this.inspectOperation(result.rows[0].id);
@@ -310,6 +361,7 @@ export class ReferenceStore {
       canonical: { lifecycle: row.canonical_lifecycle, generation: Number(row.lifecycle_generation), revision: Number(row.canonical_revision) },
       deleteAcceptanceStatus: row.delete_acceptance_status,
       capture: capture(row), status: row.status, dispatchPossible: row.dispatch_possible, receipt: receipt(row.receipt),
+      ...(providerOf(row) === "caldav" ? { acceptedUid: row.accepted_uid } : {}),
       leaseAttemptId: row.lease_attempt_id, leaseUntil: row.lease_until?.toISOString() ?? null,
       binding: { etag: row.binding_etag, baseline: row.baseline, active: row.active, sourceGeneration: Number(row.binding_generation), destinationLifecycle: row.destination_lifecycle } };
   }
@@ -330,7 +382,7 @@ export class ReferenceStore {
       return { operationId, attemptId, payload: op.payload, envelope: parsed.success ? parsed.data : undefined,
         binding: rowBinding(op), capture: capture(op), locator: { connectionId: op.connection_id, calendarId: op.calendar_id, eventId: op.event_id },
         etag: op.accepted_etag, receipt: saved, recovery: op.dispatch_possible, deleteAcceptanceStatus: op.delete_acceptance_status,
-        endpointProfile: profileOf(op), attemptNumber };
+        endpointProfile: profileOf(op), attemptNumber, ...(providerOf(op) === "caldav" ? { acceptedUid: op.accepted_uid } : {}) };
     });
   }
   async renew(claim: ReferenceClaim): Promise<boolean> {
@@ -349,9 +401,11 @@ export class ReferenceStore {
       if (!this.owned(locked, claim) || !this.current(locked)) throw new ReferenceHoldError("authority-changed");
       if (!(await client.query("SELECT $1::timestamptz>clock_timestamp() AS valid", [locked.connection.expires_at])).rows[0].valid)
         throw new ReferenceHoldError("credentials-expired");
+      const provider = providerOf(locked.connection);
+      if (provider === "caldav") throw new ReferenceHoldError("credential-kind-unavailable");
       return { accessToken: decryptCredential(this.credentialKey, locked.connection.id, locked.connection.credential_ciphertext),
         connectionId: locked.connection.id, connectionGeneration: String(locked.connection.generation), scope: locked.connection.scope,
-        eventWriteAllowed: writeAllowed(locked.connection.scope, providerOf(locked.connection)) };
+        eventWriteAllowed: writeAllowed(locked.connection.scope, provider) };
     });
     if (signal?.aborted) throw new ReferenceHoldError("cancelled");
     // Recheck after asynchronous materialization; final mutation has another fence.
@@ -359,6 +413,30 @@ export class ReferenceStore {
       const locked = await this.locked(client, claim.operationId);
       if (!this.owned(locked, claim) || !this.current(locked)) throw new ReferenceHoldError("authority-changed");
     });
+    return session;
+  }
+  async getCaldavSession(claim: ReferenceClaim, _clockEpochMs: number, signal?: AbortSignal): Promise<{
+    authorization: string; connectionId: string; connectionGeneration: string;
+  }> {
+    claim = claimIdentity(claim);
+    const session = await this.transaction(async client => {
+      const locked = await this.locked(client, claim.operationId);
+      if (!this.owned(locked, claim) || !this.current(locked) || providerOf(locked.connection) !== "caldav" || locked.connection.scope !== "")
+        throw new ReferenceHoldError("authority-changed");
+      // This is this independent host's local credential-valid-until policy.
+      // Basic credentials have no OAuth provider expiry or OAuth write scope.
+      if (!(await client.query("SELECT $1::timestamptz>clock_timestamp() AS valid", [locked.connection.expires_at])).rows[0].valid)
+        throw new ReferenceHoldError("credentials-expired");
+      let credential;
+      try { credential = basicCredential(JSON.parse(decryptCredential(this.credentialKey, locked.connection.id, locked.connection.credential_ciphertext))); }
+      catch { throw new ReferenceHoldError("credential-kind-unavailable"); }
+      return { authorization: `Basic ${Buffer.from(`${credential.username}:${credential.password}`, "utf8").toString("base64")}`,
+        connectionId: locked.connection.id, connectionGeneration: String(locked.connection.generation) };
+    }, signal);
+    await this.transaction(async client => {
+      const locked = await this.locked(client, claim.operationId);
+      if (!this.owned(locked, claim) || !this.current(locked)) throw new ReferenceHoldError("authority-changed");
+    }, signal);
     return session;
   }
   async markDispatch(claim: ReferenceClaim, signal?: AbortSignal): Promise<boolean> {
@@ -394,7 +472,8 @@ export class ReferenceStore {
       signal?.throwIfAborted();
       if (locked.operation.action === "delete" && (evidence.validator !== undefined || evidence.provider === "accepted" && evidence.acceptanceStatus === undefined) ||
         locked.operation.action !== "delete" && evidence.acceptanceStatus !== undefined) throw new ReferenceHoldError("invalid-protocol-evidence");
-      if (providerOf(locked.operation) === "microsoft" && evidence.acceptanceStatus !== undefined && ![204, 404].includes(evidence.acceptanceStatus))
+      if ((providerOf(locked.operation) === "microsoft" && evidence.acceptanceStatus !== undefined && ![204, 404].includes(evidence.acceptanceStatus)) ||
+        (providerOf(locked.operation) === "caldav" && evidence.acceptanceStatus !== undefined && ![200, 201, 204, 404].includes(evidence.acceptanceStatus)))
         throw new ReferenceHoldError("invalid-protocol-evidence");
       const attempt = (await client.query("SELECT receipt,delete_acceptance_status FROM reference_attempts WHERE id=$1 AND operation_id=$2 FOR UPDATE", [claim.attemptId, claim.operationId])).rows[0];
       if (!attempt) throw new ReferenceHoldError("attempt-missing");
@@ -506,6 +585,26 @@ export class ReferenceStore {
       const decoded = decodeSyncOperationPayload(locked.operation.payload, rowBinding(locked.operation), { supports: supportsMicrosoftPersonalDeleteEnvelope });
       if (decoded.kind !== "pinned-v1" || !graphDeleteEtag(locked.operation.accepted_etag))
         throw new ReferenceHoldError("invalid-graph-delete-operation");
+      const saved = receipt(locked.operation.receipt);
+      if (saved.remote.kind !== "confirmed" || saved.provider.kind === "pending") throw new ReferenceHoldError("confirmation-missing");
+      await client.query("UPDATE reference_bindings SET destination_lifecycle='absent' WHERE id=$1", [locked.binding.id]);
+      await client.query("UPDATE reference_operations SET status='acked',lease_attempt_id=NULL,lease_until=NULL WHERE id=$1", [claim.operationId]);
+      return true;
+    }, signal);
+  }
+  async completeCaldavDelete(claim: ReferenceClaim, supplied: ReferenceCaldavDeleteObservation, signal?: AbortSignal): Promise<boolean> {
+    claim = claimIdentity(claim);
+    const fields = copyExactDataFields(supplied, ["kind", "read"]), read = copyExactDataFields(fields.read, ["kind", "status"]);
+    if (fields.kind !== "exact-absence" || read.kind !== "absent" || read.status !== 404) throw new ReferenceHoldError("invalid-caldav-absence");
+    return this.transaction(async client => {
+      const locked = await this.locked(client, claim.operationId);
+      signal?.throwIfAborted();
+      if (!this.owned(locked, claim) || !this.current(locked) || providerOf(locked.operation) !== "caldav" || locked.operation.action !== "delete" ||
+        profileOf(locked.operation) !== REFERENCE_CALDAV_DELETE_PROFILE) return false;
+      const decoded = decodeSyncOperationPayload(locked.operation.payload, rowBinding(locked.operation), { supports: supportsCaldavPersonalDeleteEnvelope });
+      const plan = decoded.kind === "pinned-v1" ? parseNativeWritePlanV1(decoded.envelope.serializer, "delete", "event", decoded.envelope.nativePlan.data) : undefined;
+      if (!plan || plan.planKind !== "caldav-properties" || plan.uid !== locked.operation.accepted_uid || !strongEtag(locked.operation.accepted_etag))
+        throw new ReferenceHoldError("invalid-caldav-delete-operation");
       const saved = receipt(locked.operation.receipt);
       if (saved.remote.kind !== "confirmed" || saved.provider.kind === "pending") throw new ReferenceHoldError("confirmation-missing");
       await client.query("UPDATE reference_bindings SET destination_lifecycle='absent' WHERE id=$1", [locked.binding.id]);

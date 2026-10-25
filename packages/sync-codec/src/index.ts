@@ -289,3 +289,6 @@ export function restrictJsonBodyPlanV1(plan: JsonBodyPlanV1, patchKeys: readonly
   if (!plan.body || patchKeys.some(key=>!Object.prototype.hasOwnProperty.call(plan.body,key))) refuse("invalid-native-plan");
   return { planKind: "json-body", body: Object.fromEntries(patchKeys.map(key=>[key,plan.body![key]])) };
 }
+
+export { replaceComponentPropertiesV1 } from "./caldav_resource";
+export { recurrenceFrom as caldavRecurrenceFromV1 } from "./recurrence";

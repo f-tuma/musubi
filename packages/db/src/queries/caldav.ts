@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { caldavAccounts, db } from "..";
 
 // Stores the ALREADY-ENCRYPTED password blob — this layer never sees plaintext.
@@ -42,5 +42,15 @@ export async function getCaldavAccountById(id: string) {
     })
     .from(caldavAccounts)
     .where(eq(caldavAccounts.id, id));
+  return res ?? null;
+}
+
+/** A native session can attest the current owned DAV row and captured host
+ * revision without changing the legacy credential helper's result shape. */
+export async function getOwnedCaldavAccountById(userID: string, id: string) {
+  const [res] = await db.select({
+    id: caldavAccounts.id, userID: caldavAccounts.userID, updatedAt: caldavAccounts.updatedAt,
+    serverUrl: caldavAccounts.serverUrl, username: caldavAccounts.username, encryptedPassword: caldavAccounts.encryptedPassword,
+  }).from(caldavAccounts).where(and(eq(caldavAccounts.id, id), eq(caldavAccounts.userID, userID)));
   return res ?? null;
 }

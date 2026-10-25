@@ -7,11 +7,16 @@ ALTER TABLE reference_operations ADD COLUMN IF NOT EXISTS provider text NOT NULL
 ALTER TABLE reference_operations ADD COLUMN IF NOT EXISTS endpoint_profile text;
 UPDATE reference_operations SET endpoint_profile='google-personal-event-'||action||'-v1' WHERE endpoint_profile IS NULL AND provider='google';
 ALTER TABLE reference_operations ALTER COLUMN endpoint_profile SET NOT NULL;
-ALTER TABLE reference_operations DROP CONSTRAINT IF EXISTS reference_operations_provider_profile_check;
-ALTER TABLE reference_operations ADD CONSTRAINT reference_operations_provider_profile_check CHECK (
-  provider='google' AND endpoint_profile='google-personal-event-'||action||'-v1' OR
-  provider='microsoft' AND action='delete' AND endpoint_profile='microsoft-personal-event-delete-v1'
-);
+-- A later additive provider migration may already own a wider constraint.
+-- Re-running the full migration chain must not narrow that installed schema.
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='reference_operations'::regclass AND conname='reference_operations_provider_profile_check') THEN
+    ALTER TABLE reference_operations ADD CONSTRAINT reference_operations_provider_profile_check CHECK (
+      provider='google' AND endpoint_profile='google-personal-event-'||action||'-v1' OR
+      provider='microsoft' AND action='delete' AND endpoint_profile='microsoft-personal-event-delete-v1'
+    );
+  END IF;
+END $$;
 -- Compatibility for the existing Google-only SQL/CLI: metadata is stamped once
 -- at INSERT, never inferred from a mutable payload while an operation runs.
 CREATE OR REPLACE FUNCTION reference_operation_profile() RETURNS trigger LANGUAGE plpgsql AS $$

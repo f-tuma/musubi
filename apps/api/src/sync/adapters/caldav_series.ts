@@ -1,4 +1,5 @@
 import ICAL from "ical.js";
+import { CaldavProviderError, strictCaldavResourceURL } from "@musubi/provider-caldav";
 import { matchesEventProviderProjection } from "@musubi/db";
 import { EventSchema, EventTimeModelSchema, EventWriteError, OccurrenceStartSchema, type Event } from "@musubi/types";
 import type { ExternalEventRef, NormalizedEvent } from "../adapter";
@@ -121,21 +122,11 @@ export function sameCaldavResource(left: string, right: string): boolean {
 /** Refuse ambiguous path encodings before sending account credentials. Some
  * DAV servers decode escaped separators or a second percent-encoding layer. */
 export function caldavSeriesResourceURL(collectionID: string, resourceID: string): URL {
-  const collection = new URL(collectionID);
-  const resource = new URL(resourceID);
-  const safePath = (url: URL) => url.pathname.split("/").every(segment => {
-    try {
-      const decoded = decodeURIComponent(segment);
-      return decoded !== "." && decoded !== ".." && !/[\/\\%\u0000-\u001f\u007f]/.test(decoded);
-    } catch { return false; }
-  });
-  if (!["http:", "https:"].includes(resource.protocol) || resource.origin !== collection.origin || collection.username || collection.password ||
-      resource.username || resource.password || collection.search || collection.hash ||
-      resource.search || resource.hash || !safePath(collection) || !safePath(resource) ||
-      !collection.pathname.endsWith("/") || !resource.pathname.startsWith(collection.pathname) ||
-      !resource.pathname.slice(collection.pathname.length) || resource.pathname.slice(collection.pathname.length).includes("/"))
-    throw new ProviderEventWriteError("provider-conflict");
-  return resource;
+  try { return strictCaldavResourceURL(collectionID, resourceID); }
+  catch (error) {
+    if (error instanceof CaldavProviderError) throw new ProviderEventWriteError("provider-conflict");
+    throw error;
+  }
 }
 
 /** One complete GET plus its accepted resource ETag covers all components.

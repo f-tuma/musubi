@@ -19,15 +19,17 @@ export interface ReferenceClaim {
   /** Absent only on older Google-only injected fixtures. Graph requires its exact profile. */
   readonly endpointProfile?: string;
   readonly attemptNumber?: number;
+  readonly acceptedUid?: string | null;
 }
 export type ReferenceStatus = "pending" | "running" | "hold" | "conflict" | "acked";
 export interface ReferenceOperation {
   operationId: string; commandId: string; bindingId: string; objectId: string;
-  provider: "google" | "microsoft"; endpointProfile: string;
+  provider: "google" | "microsoft" | "caldav"; endpointProfile: string;
   action: "create" | "update" | "delete"; payload: unknown; capture: ReferenceCapture; status: ReferenceStatus;
   canonical: { lifecycle: "active" | "tombstoned"; generation: number; revision: number };
   deleteAcceptanceStatus: ReferenceDeleteAcceptanceStatus | null;
   dispatchPossible: boolean; receipt: SyncDeliveryReceipt;
+  acceptedUid?: string | null;
   leaseAttemptId: string | null; leaseUntil: string | null;
   binding: { etag: string | null; baseline: Record<string, unknown> | null; active: boolean; sourceGeneration: number; destinationLifecycle: "reserved" | "present" | "absent" };
 }
@@ -48,6 +50,14 @@ export interface ReferenceGraphDeleteSeed extends ReferenceSeed {
 }
 export type ReferenceGraphDeleteAdmission = ReferenceDeleteAdmission;
 export interface ReferenceGraphDeleteObservation { kind: "exact-absence"; read: { kind: "absent"; status: 404 } }
+export interface ReferenceCaldavDeleteSeed {
+  provider: "caldav"; endpointProfile: "caldav-personal-event-delete-v1";
+  connectionId: string; objectId: string; bindingId: string;
+  calendarUrl: string; resourceUrl: string; uid: string; etag: string;
+  username: string; password: string; expiresAt: string; content: ReferenceContent; privacyLabel?: string;
+}
+export type ReferenceCaldavDeleteAdmission = ReferenceDeleteAdmission;
+export type ReferenceCaldavDeleteObservation = ReferenceGraphDeleteObservation;
 export type ReferenceCreateAdmission = ReferenceDeleteAdmission;
 /** Bootstrap a new destination reservation; never pretend it has a native validator. */
 export interface ReferenceCreateSeed extends Omit<ReferenceSeed, "eventId" | "etag"> { operationId: string }

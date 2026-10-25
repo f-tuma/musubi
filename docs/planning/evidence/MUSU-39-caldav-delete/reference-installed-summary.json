@@ -1,0 +1,545 @@
+{
+  "schemaVersion": 1,
+  "scope": "local installed independent reference proof only; no registry publication or production deployment",
+  "status": "passed",
+  "createdAt": "2026-10-25T11:14:36.749476+00:00",
+  "gitHeadAtBuild": "4809cc4d1f4aa211715fb020e1a85763abde2bf1",
+  "imageTag": "musubi-c07-caldav-reference:proof",
+  "oldDockerImageInspectId": "sha256:528b899fe815b37bbc065090a156dcf936222074a20c0f34e6af02746c00d7d4",
+  "dockerImageInspectId": "sha256:767b0c785ed21f1c315c429d1d2db58333976b835295313e0dcbb2c67e62e0bc",
+  "localBuildIndexDigest": "sha256:767b0c785ed21f1c315c429d1d2db58333976b835295313e0dcbb2c67e62e0bc",
+  "platformManifestDigest": "sha256:f3a5d095d2be91f4907d32db991b1f4fb8669a167ce56ae4731579bd801c4d0f",
+  "imageConfigDigest": "sha256:44390ef6cf5989e51646a2a529e54ae8c18ef90c80194b097a0e379deed5c4d8",
+  "platform": {
+    "os": "linux",
+    "architecture": "amd64"
+  },
+  "dockerIdentityNote": "Docker image inspect Id identifies the local OCI index here. Platform manifest and image config digests are recorded separately. Local daemon metadata does not establish registry publication.",
+  "sourceContextFiles": 149,
+  "sourceContextFingerprint": "c3aa0429a4115113177be6cde51a6913d12b9989b6444f5acbd64fcc87eefd4b",
+  "sourceContextScope": "Credential-free frozen tracked and feature source COPY closure; .env, data, node_modules, build outputs and source symlinks excluded. No source bind mounts.",
+  "allSourceFingerprint": "6975c55095f9cfe563f0c318d53efe2aabf171d01eeb6a636d20ccd5a5edafde",
+  "allSourceFiles": 124,
+  "productionSourceFingerprint": "02cde1385761a953f194adad76ef804d0e879461d60cdddbc59c49edc2ecf608",
+  "productionSourceFiles": 74,
+  "productionSourceFingerprintScope": "Reference, types, sync-codec, Google/Microsoft/CalDAV provider and shared runtime TS/SQL; excludes tests, process fixtures and behavior harnesses.",
+  "installedSourceHashParity": {
+    "checkedFiles": 124,
+    "productionFiles": 74,
+    "mismatches": []
+  },
+  "sourceInventoryAfterProof": {
+    "frozenFiles": 124,
+    "currentFiles": 124,
+    "byteEqual": true,
+    "addedRemovedOrModified": []
+  },
+  "installedDependencies": {
+    "namedPackages": 30,
+    "packages": [
+      {
+        "name": "@esbuild/linux-x64",
+        "version": "0.28.2"
+      },
+      {
+        "name": "@musubi/provider-caldav",
+        "version": null
+      },
+      {
+        "name": "@musubi/provider-google",
+        "version": null
+      },
+      {
+        "name": "@musubi/provider-microsoft",
+        "version": null
+      },
+      {
+        "name": "@musubi/sync-codec",
+        "version": null
+      },
+      {
+        "name": "@musubi/sync-reference",
+        "version": null
+      },
+      {
+        "name": "@musubi/sync-runtime",
+        "version": null
+      },
+      {
+        "name": "@musubi/types",
+        "version": null
+      },
+      {
+        "name": "esbuild",
+        "version": "0.28.2"
+      },
+      {
+        "name": "ical.js",
+        "version": "2.2.1"
+      },
+      {
+        "name": "ipaddr.js",
+        "version": "1.9.1"
+      },
+      {
+        "name": "pg",
+        "version": "8.23.0"
+      },
+      {
+        "name": "pg-cloudflare",
+        "version": "1.4.0"
+      },
+      {
+        "name": "pg-connection-string",
+        "version": "2.14.0"
+      },
+      {
+        "name": "pg-int8",
+        "version": "1.0.1"
+      },
+      {
+        "name": "pg-pool",
+        "version": "3.14.0"
+      },
+      {
+        "name": "pg-protocol",
+        "version": "1.16.0"
+      },
+      {
+        "name": "pg-types",
+        "version": "2.2.0"
+      },
+      {
+        "name": "pgpass",
+        "version": "1.0.5"
+      },
+      {
+        "name": "postgres-array",
+        "version": "2.0.0"
+      },
+      {
+        "name": "postgres-bytea",
+        "version": "1.0.1"
+      },
+      {
+        "name": "postgres-date",
+        "version": "1.0.7"
+      },
+      {
+        "name": "postgres-interval",
+        "version": "1.2.0"
+      },
+      {
+        "name": "sax",
+        "version": "1.6.1"
+      },
+      {
+        "name": "split2",
+        "version": "4.2.0"
+      },
+      {
+        "name": "tsx",
+        "version": "4.23.12"
+      },
+      {
+        "name": "undici",
+        "version": "7.29.0"
+      },
+      {
+        "name": "xml-js",
+        "version": "1.6.11"
+      },
+      {
+        "name": "xtend",
+        "version": "4.0.2"
+      },
+      {
+        "name": "zod",
+        "version": "4.4.3"
+      }
+    ],
+    "forbiddenPackageNamesChecked": [
+      "@musubi/db",
+      "@musubi/auth",
+      "@musubi/config",
+      "@musubi/mobile",
+      "better-auth",
+      "expo",
+      "react-native"
+    ],
+    "forbiddenPackagesPresent": []
+  },
+  "execution": {
+    "durationMs": 39053,
+    "installedCliInvocations": 57,
+    "cases": 10,
+    "nativeFixtureRequests": 69,
+    "nativeRequestCounts": {
+      "google": {
+        "GET": 9,
+        "POST": 1,
+        "PATCH": 1,
+        "DELETE": 1
+      },
+      "microsoft": {
+        "GET": 5,
+        "DELETE": 1
+      },
+      "caldav": {
+        "GET": 32,
+        "PROPFIND": 10,
+        "DELETE": 9
+      }
+    },
+    "runtimeUser": "node",
+    "sourceBindMounts": 0,
+    "readOnlyContainerFilesystem": true,
+    "temporaryFilesystem": "/tmp only",
+    "configurationNames": [
+      "REFERENCE_DATABASE_URL",
+      "REFERENCE_CREDENTIAL_KEY",
+      "REFERENCE_ALLOW_PRIVATE_NETWORK"
+    ],
+    "oldAndNewDeploymentsSerial": true,
+    "realSigkillCases": 5,
+    "sigkillExitCodes": [
+      137
+    ]
+  },
+  "upgrade": {
+    "oldPendingProfiles": [
+      "google-personal-event-create-v1",
+      "google-personal-event-update-v1",
+      "google-personal-event-delete-v1",
+      "microsoft-personal-event-delete-v1"
+    ],
+    "oldRowCounts": {
+      "reference_connections": 4,
+      "reference_objects": 4,
+      "reference_bindings": 4,
+      "reference_operations": 4,
+      "reference_attempts": 4
+    },
+    "preservedTableAndIndexOids": 15,
+    "preservedRowHashes": {
+      "reference_connections": "e58140bcfc6f276d4579ad3e1921c9b283827299f61710dabe45ef8800efcfd1",
+      "reference_objects": "07a16074724b4c6d5dc29f467f0b08d7ec4421bb0e43306bdf0d0537ca27fbf6",
+      "reference_bindings": "66f8dc996a07660a131a60ec79e99ae742ab108690a17903190976135cea763e",
+      "reference_operations": "4c93b4a0c8a988b5cec170a0ffe6dccbbd2b2b67a46bddc0c618af9c475ad1da",
+      "reference_attempts": "48be1a7bdecd60ca475abf063a276ff9337e971b512d29a2cceac6fb6806874a"
+    },
+    "oldPayloadHashes": [
+      {
+        "provider": "google",
+        "action": "create",
+        "sha256": "6f84a2e13b06b1f16f722461dee342a8bda1a93f6e8cd47eb7425474f059e777"
+      },
+      {
+        "provider": "google",
+        "action": "update",
+        "sha256": "a33fc0721dcaa0189b9ed6f35618a27f88707eaf5f6a455f9c24451262ebe072"
+      },
+      {
+        "provider": "google",
+        "action": "delete",
+        "sha256": "e4ba1ff614fb3da48686e015b3c13e62101285beec5c7a777ce658d68abf73ed"
+      },
+      {
+        "provider": "microsoft",
+        "action": "delete",
+        "sha256": "1deebb57f30d787eeb84a83ffdaed800bc633bf7ebab84b4427bd121702059e4"
+      }
+    ],
+    "preservedOriginalEpochsPayloadsReceiptsAndAttemptHistory": true,
+    "oldPendingOperationsDeliveredByNewImage": 4,
+    "initialNewMigrationRuns": 1,
+    "additionalMigrationRunsWithDavRows": 2,
+    "populatedDavMigrationPreservedRowsEpochsAndOids": true
+  },
+  "cases": [
+    {
+      "case": "old-installed-pending-Google-CREATE-UPDATE-DELETE-and-Graph-DELETE-additive-upgrade",
+      "status": "passed"
+    },
+    {
+      "case": "installed-populated-DAV-repeat-migrate",
+      "status": "passed"
+    },
+    {
+      "case": "installed-valid-VTIMEZONE-VALARM-and-explicit-normal-private-policy",
+      "status": "passed",
+      "defaultPrivateDeniedBeforeHttp": true,
+      "explicitNormalPrivatePolicy": true,
+      "deleteCount": 1,
+      "final": {
+        "provider": {
+          "kind": "accepted"
+        },
+        "deleteAcceptanceStatus": 204,
+        "remote": "confirmed",
+        "dispatchPossible": true,
+        "payloadHash": "b73e6fb84cd3efdc4daa45647286010901bf49441e7bd713402ec02cb3aa0e1a",
+        "acceptedUidPreserved": true,
+        "bindingLifecycle": "absent",
+        "originalEtagPreserved": true
+      }
+    },
+    {
+      "case": "installed-uncertain-SIGKILL-same-UID-URL-ETag-conditional-replay",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "deleteCount": 2,
+      "restartMethods": [
+        "GET",
+        "PROPFIND",
+        "GET",
+        "DELETE",
+        "GET"
+      ],
+      "dispatchMarkerNeverCleared": true,
+      "final": {
+        "provider": {
+          "kind": "accepted"
+        },
+        "deleteAcceptanceStatus": 204,
+        "remote": "confirmed",
+        "dispatchPossible": true,
+        "payloadHash": "c0bda0e339adf76d0fc5e5c6d6e6eee5088e733549c276bcd57513c560b562f0",
+        "acceptedUidPreserved": true,
+        "bindingLifecycle": "absent",
+        "originalEtagPreserved": true
+      }
+    },
+    {
+      "case": "installed-uncertain-changed-etag-cannot-adopt-or-resend",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "heldStatus": "conflict",
+      "deleteCount": 1,
+      "restartMethods": [
+        "GET"
+      ],
+      "originalUidEtagPayloadPreserved": true
+    },
+    {
+      "case": "installed-uncertain-changed-uid-cannot-adopt-or-resend",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "heldStatus": "hold",
+      "deleteCount": 1,
+      "restartMethods": [
+        "GET"
+      ],
+      "originalUidEtagPayloadPreserved": true
+    },
+    {
+      "case": "installed-accepted-DELETE-SIGKILL-verification-restart404",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "deleteCount": 1,
+      "restartMethods": [
+        "GET"
+      ],
+      "final": {
+        "provider": {
+          "kind": "accepted"
+        },
+        "deleteAcceptanceStatus": 204,
+        "remote": "confirmed",
+        "dispatchPossible": true,
+        "payloadHash": "d7ebd32c893294c4fc4f3abcd19da825a8c0a233d52341c4565182ddead39d8f",
+        "acceptedUidPreserved": true,
+        "bindingLifecycle": "absent",
+        "originalEtagPreserved": true
+      }
+    },
+    {
+      "case": "installed-lost-DELETE-SIGKILL-verification-restart404",
+      "status": "passed",
+      "termination": {
+        "code": 137,
+        "signal": null
+      },
+      "deleteCount": 1,
+      "restartMethods": [
+        "GET"
+      ],
+      "final": {
+        "provider": {
+          "kind": "uncertain"
+        },
+        "deleteAcceptanceStatus": null,
+        "remote": "confirmed",
+        "dispatchPossible": true,
+        "payloadHash": "c1458a7b2e12d5ee77bca635364a5b9382b7e4a4f47e9e1839cfa5fdd7e09b48",
+        "acceptedUidPreserved": true,
+        "bindingLifecycle": "absent",
+        "originalEtagPreserved": true
+      }
+    },
+    {
+      "case": "installed-nested-VEVENT-resource-HOLD-zero-DELETE",
+      "status": "passed",
+      "deleteCount": 0,
+      "requestMethods": [
+        "GET",
+        "PROPFIND",
+        "GET"
+      ],
+      "noAck": true
+    },
+    {
+      "case": "installed-DAV429-delay-and-original-conditional-retry",
+      "status": "passed",
+      "deleteCount": 2,
+      "retryDelayMs": 9000,
+      "dispatchMarkerNeverCleared": true,
+      "final": {
+        "provider": {
+          "kind": "accepted"
+        },
+        "deleteAcceptanceStatus": 204,
+        "remote": "confirmed",
+        "dispatchPossible": true,
+        "payloadHash": "4dd05e40aec9b35f6824706ca56ed97203d8736384ac5190014d55ad6b921647",
+        "acceptedUidPreserved": true,
+        "bindingLifecycle": "absent",
+        "originalEtagPreserved": true
+      }
+    }
+  ],
+  "providerIsolation": {
+    "ownedLoopbackHttpFixtureOnly": true,
+    "logicalDavTargets": "HTTPS loopback URLs only",
+    "normalPrivatePolicyExplicit": true,
+    "defaultPrivatePolicyDeniedBeforeHttp": true,
+    "testTransport": "Node --import data URL replaces only the fetch leaf with a fixed owned HTTP loopback destination, preserves logical Response.url, and rejects nonfixture URLs. No external fallback and no DNS override.",
+    "sharedProviderGuardAndPinnedLeafUsed": true,
+    "basicCredentialPortUsed": true,
+    "noOAuthScopeInferredForDav": true,
+    "externalProviderCredentialsOrAccountsUsed": false,
+    "liveProviderRequests": false
+  },
+  "cleanup": {
+    "ownedCliContainersRemoved": true,
+    "nonceDatabaseDropped": true,
+    "containerAbsenceVerified": true,
+    "databaseAbsenceVerified": true,
+    "rootPostgresStillRunning": true
+  },
+  "limits": [
+    "This local installed-image proof uses synthetic Google, Microsoft and DAV provider resources at a fixed owned loopback server. It does not exercise an external provider, external DNS or live TLS.",
+    "The test-only fetch preload preserves native logical response URL while routing to HTTP loopback. The production source, CLI, shared DNS/private-address guard, Basic credential materialization, runtime, PostgreSQL ledger and physical container SIGKILL are real installed code.",
+    "Conditional replay is limited to the captured resource URL, UID and original strong ETag after fresh preflight. Changed ETag is terminal conflict; changed UID remains HOLD. No resolution, supersession or global tombstone feature is exposed.",
+    "Reference integer source/connection generations are this host own fences; this proof does not establish a global source floor for Musubi CalDAV connection timestamps.",
+    "The complete source regression corpus and installed API authentication/HTTP smoke are separate evidence. This image proof does not establish registry publication or production rollout."
+  ],
+  "commands": {
+    "build": "docker build -f apps/sync-reference/Dockerfile -t musubi-c07-caldav-reference:proof /tmp/musu39-caldav-reference-context",
+    "probe": "node /tmp/musu39-caldav-installed-reference.mjs"
+  },
+  "artifacts": [
+    {
+      "path": "/tmp/musu39-caldav-reference-evidence/installed-reference-proof.json",
+      "sha256": "7e6fcecbc2b5c67c3d86d1f3fa133910206adc58e8366743d8bbdd820048c190",
+      "bytes": 50225
+    },
+    {
+      "path": "/tmp/musu39-caldav-reference-evidence/artifact-attestation.json",
+      "sha256": "f3cfe1733d8001bbf959ed0bafdc0bc909e8cde39192ce1b0573838ea097f5c6",
+      "bytes": 1016
+    },
+    {
+      "path": "/tmp/musu39-caldav-reference-evidence/source-manifest.json",
+      "sha256": "5fe761cf66e8468a5b1cd94aabb94628ed013d28adf06d108c9e19191fa6a388",
+      "bytes": 13788
+    },
+    {
+      "path": "/tmp/musu39-caldav-reference-evidence/runtime-source-manifest.json",
+      "sha256": "40c45ecf271ecaf3488886bb628b52136a5238eae9258233335373f158c9d5a9",
+      "bytes": 7956
+    },
+    {
+      "path": "/tmp/musu39-caldav-reference-evidence/installed-source-manifest.json",
+      "sha256": "ede192a2b4ea42756e427d93ef347020b20e01108c1bc30c2cfe36af27e6320c",
+      "bytes": 13788
+    },
+    {
+      "path": "/tmp/musu39-caldav-reference-evidence/installed-runtime-source-manifest.json",
+      "sha256": "40c45ecf271ecaf3488886bb628b52136a5238eae9258233335373f158c9d5a9",
+      "bytes": 7956
+    },
+    {
+      "path": "/tmp/musu39-caldav-reference-evidence/installed-package-map.json",
+      "sha256": "bce1b58a6a46296755dce1bb5f77a0eae396225271919d074ec52727bfc7a0ac",
+      "bytes": 1782
+    },
+    {
+      "path": "/tmp/musu39-caldav-reference-evidence/current-source-inventory.json",
+      "sha256": "27b7c3c70c4e1ba9641be4b34a64182871f7ae077e3b68d4ea9996575d3a585e",
+      "bytes": 101
+    },
+    {
+      "path": "/tmp/musu39-caldav-reference-evidence/old-ledger-before-upgrade.json",
+      "sha256": "ae12986e68c053b9aaab7da19109e2ae7395045c836aba9f28eb99147e2f91c9",
+      "bytes": 5614
+    },
+    {
+      "path": "/tmp/musu39-caldav-reference-evidence/new-ledger-after-upgrade.json",
+      "sha256": "ae12986e68c053b9aaab7da19109e2ae7395045c836aba9f28eb99147e2f91c9",
+      "bytes": 5614
+    },
+    {
+      "path": "/tmp/musu39-caldav-reference-evidence/http-requests.json",
+      "sha256": "14cb5f7adf61cb4b6debf6704e6a82f62650263c6cb7ed7dd96c79947254baec",
+      "bytes": 10037
+    },
+    {
+      "path": "/tmp/musu39-caldav-reference-evidence/image-inventory.json",
+      "sha256": "0aff26c22f5d3a83eeb49a4ce5334b13d6f4246293a32e48cd95a06d27db436f",
+      "bytes": 1409
+    },
+    {
+      "path": "/tmp/musu39-caldav-reference-evidence/build-context.json",
+      "sha256": "c610c2f93419df9b45b61dccb1b1f125ea3281c050615b023de1d74a91878baf",
+      "bytes": 607
+    },
+    {
+      "path": "/tmp/musu39-caldav-reference-evidence/build-context-manifest.json",
+      "sha256": "2c481eed8fcbe87aad2e21aa4b2b8a3776f232434e7668fdecb91e71098319a8",
+      "bytes": 16374
+    },
+    {
+      "path": "/tmp/musu39-caldav-reference-evidence/build.log",
+      "sha256": "3fd6fb675949cc33c4b998ffcbcddccabce1a806dbb67ccccfe82be3f44a0138",
+      "bytes": 3344
+    },
+    {
+      "path": "/tmp/musu39-caldav-reference-evidence/cleanup.json",
+      "sha256": "ed3e8d36fbd2ea14dd78d31f5161bf8aa452f5191dd4c7a5b9124164428eca72",
+      "bytes": 163
+    },
+    {
+      "path": "/tmp/musu39-caldav-reference-evidence/cleanup-verified.json",
+      "sha256": "4d7540bffb4d2a85c6a73a67c3cbfd441e784840c90e16863f2fe5366f5590d1",
+      "bytes": 223
+    },
+    {
+      "path": "/tmp/musu39-caldav-reference-evidence/installed-reference-probe.mjs",
+      "sha256": "658088113a0b9e8ecc305c2b8ada9c01026fd83350d51ef218e03716caeaec59",
+      "bytes": 30569
+    }
+  ]
+}

@@ -77,6 +77,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@musubi/provider-caldav':
+        specifier: workspace:*
+        version: link:../../packages/provider-caldav
       '@musubi/provider-google':
         specifier: workspace:*
         version: link:../../packages/provider-google
@@ -394,6 +397,9 @@ importers:
 
   apps/sync-reference:
     dependencies:
+      '@musubi/provider-caldav':
+        specifier: workspace:*
+        version: link:../../packages/provider-caldav
       '@musubi/provider-google':
         specifier: workspace:*
         version: link:../../packages/provider-google
@@ -692,6 +698,28 @@ importers:
         specifier: ^4.23.12
         version: 4.23.12
 
+  packages/provider-caldav:
+    dependencies:
+      '@musubi/sync-codec':
+        specifier: workspace:*
+        version: link:../sync-codec
+      ical.js:
+        specifier: ^2.2.1
+        version: 2.2.1
+      ipaddr.js:
+        specifier: ^1.9.1
+        version: 1.9.1
+      undici:
+        specifier: ^7.29.0
+        version: 7.29.0
+      xml-js:
+        specifier: 1.6.11
+        version: 1.6.11
+    devDependencies:
+      tsx:
+        specifier: ^4.23.12
+        version: 4.23.12
+
   packages/provider-google:
     devDependencies:
       tsx:
@@ -723,6 +751,9 @@ importers:
 
   packages/sync-runtime:
     dependencies:
+      '@musubi/provider-caldav':
+        specifier: workspace:*
+        version: link:../provider-caldav
       '@musubi/provider-google':
         specifier: workspace:*
         version: link:../provider-google
