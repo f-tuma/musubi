@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spec Pilot"
+  short_description: "Guide a bounded spec-driven development task"
+  default_prompt: "Use $spec-guide to orient in this repository and propose the next bounded step."

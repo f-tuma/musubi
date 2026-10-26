@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "mode": "pilot",
+  "goal": "Verify a portable coding-agent workflow against Musubi's existing project sources",
+  "stop_condition": "Finish source mapping, mechanical checks and a bounded next-checkpoint recommendation; do not start a product feature or deployment",
+  "documents": {
+    "instructions": ["AGENTS.md"],
+    "brief": ["README.md"],
+    "architecture": ["packages/docs/src/content/docs/architecture/overview.mdx"],
+    "specification": ["docs/sync/README.md"],
+    "commands": ["package.json", "docs/testing/behavior-scenarios.md"],
+    "visual_design": ["docs/ui/design-system.md"],
+    "session": ["docs/agent-system/spec-pilot.md"],
+    "release": ["docs/releasing.md"]
+  },
+  "checks": {
+    "scenario_inventory": ["pnpm", "test:behavior", "--list"],
+    "behavior_browser": ["pnpm", "test:behavior:browser"],
+    "plugin_unit": ["python3", "-m", "unittest", "discover", "-s", "plugins/spec-pilot/tests", "-p", "test_*.py"]
+  }
+}

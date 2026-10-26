@@ -1,0 +1,31 @@
+name: Spec Pilot
+
+on:
+  pull_request:
+    paths:
+      - 'plugins/spec-pilot/**'
+      - '.spec-pilot.json'
+      - '.agents/plugins/marketplace.json'
+      - 'docs/agent-system/spec-pilot.md'
+      - '.github/workflows/spec-pilot.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'plugins/spec-pilot/**'
+      - '.spec-pilot.json'
+      - '.agents/plugins/marketplace.json'
+      - 'docs/agent-system/spec-pilot.md'
+      - '.github/workflows/spec-pilot.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  plugin:
+    name: Spec Pilot unit and package checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - run: python3 -m unittest discover -s plugins/spec-pilot/tests -p 'test_*.py' -v
+      - run: python3 plugins/spec-pilot/skills/spec-guide/scripts/spec_pilot.py check --root . --phase orient --ui

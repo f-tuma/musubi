@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spec Checkpoint"
+  short_description: "Implement and verify one accepted checkpoint"
+  default_prompt: "Use $spec-checkpoint to implement the next bounded task and collect honest verification evidence."
