@@ -261,3 +261,13 @@ database and does not use Git or an historical executor. These source tests are
 separate from image, deployment and live-provider evidence. Rollout must retire
 old workers before new workers consume historical pending intents: an old
 worker does not enforce the new private sidecar.
+
+
+The Google RSVP native ingress owns its entire evidence object before reading
+identity, baseline, response or original occurrence slot. It uses the shared
+iterative descriptor clone, preserving legacy Dates and undefined values without
+adding v1 admission size/depth limits. Native JSON probes reject root/nested
+accessors, inherited prototypes, callbacks and cycles before credentials or HTTP,
+and retain original baseline/slot data when a credential callback mutates the
+caller object. These are native boundary probes; host dispatch permission still
+comes from the permanent database marker described above.

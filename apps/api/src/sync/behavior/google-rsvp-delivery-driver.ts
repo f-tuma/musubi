@@ -15,7 +15,7 @@ const { googleRsvpEvidence } = await import("../adapters/google_rsvp");
 const jsonObject = z.record(z.string(), SyncJsonValueSchema);
 const exchange = z.object({ method: z.enum(["GET", "PATCH"]), url: z.string(), status: z.number().int().min(200).max(599), body: SyncJsonValueSchema.optional(), requestBody: jsonObject.optional(), ifMatch: z.string().optional(), networkError: z.boolean().optional(), bodyError: z.boolean().optional() }).strict();
 const result = z.object({ outcome: z.enum(["confirmed", "unconfirmed", "not-written"]), recovered: z.boolean().optional(), status: z.number().optional() }).strict();
-const step = z.object({ observeOnly: z.boolean(), beforeWrite: z.enum(["grant", "reject", "absent"]), credentialMutation: z.enum(["policy", "evidence"]).optional(), policyFault: z.enum(["getter", "prototype"]).optional(), expected: result }).strict();
+const step = z.object({ observeOnly: z.boolean(), beforeWrite: z.enum(["grant", "reject", "absent"]), credentialMutation: z.enum(["policy", "evidence", "nested-baseline", "original-slot"]).optional(), policyFault: z.enum(["getter", "prototype"]).optional(), evidenceFault: z.enum(["getter", "id-getter", "etag-getter", "nested-getter", "response-getter", "patch-getter", "occurrence-getter", "slot-getter", "prototype", "baseline-prototype", "slot-prototype", "function", "cycle"]).optional(), expected: result }).strict();
 export const GoogleRsvpScenarioSchema = z.object({ id: z.string().regex(/^[a-z][a-z0-9-]{0,79}$/), title: z.string().min(1), baseline: jsonObject, occurrence: z.object({ externalSeriesID: z.string(), originalStart: z.object({ kind: z.literal("date"), value: z.string() }).strict() }).strict().optional(), steps: z.array(step).min(1), exchanges: z.array(exchange), expected: z.object({ patches: z.number().int().nonnegative(), grants: z.number().int().nonnegative(), credentials: z.number().int().nonnegative() }).strict() }).strict();
 const suiteSchema = z.object({ schemaVersion: z.literal(1), scenarios: z.array(GoogleRsvpScenarioSchema).min(1) }).strict();
 export class GoogleRsvpScenarioFailure extends Error { constructor(readonly code: string, message: string) { super(message); } }
@@ -35,7 +35,7 @@ export async function runGoogleRsvpScenario(input: z.infer<typeof GoogleRsvpScen
   const savedFetch = globalThis.fetch, flag = config.api.providerRsvpEditsEnabled;
   let index = 0, patches = 0, grants = 0, credentials = 0;
   let fixtureFailure: GoogleRsvpScenarioFailure | undefined;
-  let policyGetterCalls = 0;
+  let policyGetterCalls = 0, evidenceGetterCalls = 0;
   const methods: string[] = [];
   try {
     config.api.providerRsvpEditsEnabled = true;
@@ -64,6 +64,8 @@ export async function runGoogleRsvpScenario(input: z.infer<typeof GoogleRsvpScen
       assert.equal(user, "user"); assert.equal(account, "account"); credentials++;
       if (active?.command.credentialMutation === "policy") active.policy.observeOnly = false;
       if (active?.command.credentialMutation === "evidence") { evidence.baseline.id = "substituted"; evidence.baseline.etag = '\"substituted\"'; evidence.response = "declined"; if (evidence.occurrence) evidence.occurrence.externalSeriesID = "substituted"; }
+      if (active?.command.credentialMutation === "nested-baseline") { evidence.baseline.attendees[0]!.email = "substituted@example.test"; evidence.baseline.attendees[0]!.comment = "Changed during credential refresh"; }
+      if (active?.command.credentialMutation === "original-slot") evidence.occurrence!.originalStart.value = "2026-09-06";
       return "synthetic-google-rsvp-token";
     });
     const evidence = googleRsvpEvidence(scenario.baseline, { eventId: String(scenario.baseline.id), etag: String(scenario.baseline.etag), authenticatedCopyEmail: "guest@example.test", occurrence: scenario.occurrence }, "accepted");
@@ -73,6 +75,21 @@ export async function runGoogleRsvpScenario(input: z.infer<typeof GoogleRsvpScen
       const policy = { sendUpdates: "all" as const, observeOnly: command.observeOnly };
       if (command.policyFault === "getter") Object.defineProperty(policy, "observeOnly", { get() { policyGetterCalls++; return false; }, enumerable: true });
       if (command.policyFault === "prototype") Object.setPrototypeOf(policy, { observeOnly: false });
+      const rejectGetter = () => { evidenceGetterCalls++; throw new Error("Native evidence accessor executed"); };
+      const accessor = (target: object, key: string) => Object.defineProperty(target, key, { get: rejectGetter, enumerable: true });
+      if (command.evidenceFault === "getter") accessor(evidence, "baseline");
+      if (command.evidenceFault === "id-getter") accessor(evidence.baseline, "id");
+      if (command.evidenceFault === "etag-getter") accessor(evidence.baseline, "etag");
+      if (command.evidenceFault === "nested-getter") accessor(evidence.baseline.attendees[0]!, "comment");
+      if (command.evidenceFault === "response-getter") accessor(evidence, "response");
+      if (command.evidenceFault === "patch-getter") accessor(evidence, "patch");
+      if (command.evidenceFault === "occurrence-getter") accessor(evidence, "occurrence");
+      if (command.evidenceFault === "slot-getter") accessor(evidence.occurrence!.originalStart, "value");
+      if (command.evidenceFault === "prototype") Object.setPrototypeOf(evidence, { inherited: true });
+      if (command.evidenceFault === "baseline-prototype") Object.setPrototypeOf(evidence.baseline, { inherited: true });
+      if (command.evidenceFault === "slot-prototype") Object.setPrototypeOf(evidence.occurrence!.originalStart, { inherited: true });
+      if (command.evidenceFault === "function") evidence.baseline.callback = () => undefined;
+      if (command.evidenceFault === "cycle") evidence.baseline.circular = evidence.baseline;
       active = { command, policy };
       try {
         const native = await adapter.writeRsvp!("user", "account", "guest@example.test", evidence, policy, undefined, command.beforeWrite === "absent" ? undefined : async () => {
@@ -86,6 +103,7 @@ export async function runGoogleRsvpScenario(input: z.infer<typeof GoogleRsvpScen
         const failure = error as { outcome?: string; providerStatus?: number };
         observed = { outcome: failure.outcome ?? "not-written", ...(failure.providerStatus === undefined ? {} : { status: failure.providerStatus }) };
       }
+      if (evidenceGetterCalls) throw new GoogleRsvpScenarioFailure("expectation-mismatch", `Native evidence evaluated ${evidenceGetterCalls} accessor(s) before credentials.`);
       if (fixtureFailure) throw fixtureFailure;
       outcomes.push(observed);
       if (!isEqual(observed, command.expected)) throw new GoogleRsvpScenarioFailure("expectation-mismatch", `Result mismatch: ${JSON.stringify(observed)}.`);

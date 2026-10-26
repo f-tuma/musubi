@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { copyCompatibilityData } from "@musubi/sync-runtime";
 import { googleRsvpDeliveryPolicy, GoogleRsvpDeliverySchema } from "@musubi/types";
 import { loadGoogleRsvpSuite, runGoogleRsvpScenario } from "./google-rsvp-delivery-driver";
 import { runGoogleRsvpCli } from "./google-rsvp-delivery-cli";
@@ -31,4 +32,17 @@ await test("strict Google JSON harness rejects malformed, duplicate and executab
   assert.equal(JSON.parse(output.pop()!).error.code, "unknown-scenario");
   assert.equal(await runGoogleRsvpCli(["--json", "--json"], line => output.push(line)), 1);
   assert.equal(JSON.parse(output.pop()!).error.code, "invalid-arguments");
+});
+
+await test("shared ingress snapshot retains legacy Date/undefined data without v1 depth limits", () => {
+  const legacy: Record<string, unknown> = { at: new Date("2026-10-26T12:00:00.000Z"), absent: undefined };
+  let cursor = legacy;
+  for (let index = 0; index < 2_000; index++) { const next: Record<string, unknown> = {}; cursor.next = next; cursor = next; }
+  const owned = copyCompatibilityData(legacy);
+  assert.notEqual(owned, legacy); assert.notEqual(owned.at, legacy.at);
+  assert.equal((owned.at as Date).getTime(), (legacy.at as Date).getTime());
+  assert.equal(Object.prototype.hasOwnProperty.call(owned, "absent"), true); assert.equal(owned.absent, undefined);
+  let original = legacy, snapshot = owned, depth = 0;
+  while (original.next) { original = original.next as Record<string, unknown>; snapshot = snapshot.next as Record<string, unknown>; assert.notEqual(snapshot, original); depth++; }
+  assert.equal(depth, 2_000);
 });

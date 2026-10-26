@@ -3657,6 +3657,1078 @@
         "grants": 0,
         "credentials": 0
       }
+    },
+    {
+      "id": "evidence-getter-before-credentials",
+      "title": "Native evidence accessors are refused without evaluation before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "getter",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-id-getter-before-credentials",
+      "title": "Whole native evidence refuses id-getter before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "id-getter",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-etag-getter-before-credentials",
+      "title": "Whole native evidence refuses etag-getter before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "etag-getter",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-nested-getter-before-credentials",
+      "title": "Whole native evidence refuses nested-getter before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "nested-getter",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-response-getter-before-credentials",
+      "title": "Whole native evidence refuses response-getter before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "response-getter",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-patch-getter-before-credentials",
+      "title": "Whole native evidence refuses patch-getter before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "patch-getter",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-occurrence-getter-before-credentials",
+      "title": "Whole native evidence refuses occurrence-getter before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        },
+        "recurringEventId": "master",
+        "originalStartTime": {
+          "date": "2026-09-07"
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "occurrence-getter",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      },
+      "occurrence": {
+        "externalSeriesID": "master",
+        "originalStart": {
+          "kind": "date",
+          "value": "2026-09-07"
+        }
+      }
+    },
+    {
+      "id": "evidence-slot-getter-before-credentials",
+      "title": "Whole native evidence refuses slot-getter before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        },
+        "recurringEventId": "master",
+        "originalStartTime": {
+          "date": "2026-09-07"
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "slot-getter",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      },
+      "occurrence": {
+        "externalSeriesID": "master",
+        "originalStart": {
+          "kind": "date",
+          "value": "2026-09-07"
+        }
+      }
+    },
+    {
+      "id": "evidence-prototype-before-credentials",
+      "title": "Whole native evidence refuses prototype before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "prototype",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-baseline-prototype-before-credentials",
+      "title": "Whole native evidence refuses baseline-prototype before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "baseline-prototype",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-slot-prototype-before-credentials",
+      "title": "Whole native evidence refuses slot-prototype before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        },
+        "recurringEventId": "master",
+        "originalStartTime": {
+          "date": "2026-09-07"
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "slot-prototype",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      },
+      "occurrence": {
+        "externalSeriesID": "master",
+        "originalStart": {
+          "kind": "date",
+          "value": "2026-09-07"
+        }
+      }
+    },
+    {
+      "id": "evidence-function-before-credentials",
+      "title": "Whole native evidence refuses function before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "function",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-cycle-before-credentials",
+      "title": "Whole native evidence refuses cycle before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "cycle",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "credential-cannot-mutate-nested-baseline",
+      "title": "Credentials cannot mutate owned native nested-baseline",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        },
+        "recurringEventId": "master",
+        "originalStartTime": {
+          "date": "2026-09-07"
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "confirmed",
+            "recovered": false
+          },
+          "credentialMutation": "nested-baseline"
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            },
+            "recurringEventId": "master",
+            "originalStartTime": {
+              "date": "2026-09-07"
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 200,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v2\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "accepted",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            },
+            "recurringEventId": "master",
+            "originalStartTime": {
+              "date": "2026-09-07"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 1
+      },
+      "occurrence": {
+        "externalSeriesID": "master",
+        "originalStart": {
+          "kind": "date",
+          "value": "2026-09-07"
+        }
+      }
+    },
+    {
+      "id": "credential-cannot-mutate-original-slot",
+      "title": "Credentials cannot mutate owned native original-slot",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        },
+        "recurringEventId": "master",
+        "originalStartTime": {
+          "date": "2026-09-07"
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "confirmed",
+            "recovered": false
+          },
+          "credentialMutation": "original-slot"
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            },
+            "recurringEventId": "master",
+            "originalStartTime": {
+              "date": "2026-09-07"
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 200,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v2\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "accepted",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            },
+            "recurringEventId": "master",
+            "originalStartTime": {
+              "date": "2026-09-07"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 1
+      },
+      "occurrence": {
+        "externalSeriesID": "master",
+        "originalStart": {
+          "kind": "date",
+          "value": "2026-09-07"
+        }
+      }
     }
   ]
 }
