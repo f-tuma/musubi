@@ -9,6 +9,9 @@ ALTER TABLE reference_task_operations ADD COLUMN IF NOT EXISTS delete_response_a
 ALTER TABLE reference_task_attempts ADD COLUMN IF NOT EXISTS delete_response_absence_status smallint;
 ALTER TABLE reference_task_operations ALTER COLUMN saved_projection DROP NOT NULL;
 ALTER TABLE reference_task_operations ALTER COLUMN field_mask DROP NOT NULL;
+-- A populated later CREATE ledger must survive a complete migration rerun.
+DO $$ BEGIN
+IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='reference_task_bindings'::regclass AND conname='reference_task_bindings_create_reservation_check') THEN
 ALTER TABLE reference_task_operations DROP CONSTRAINT IF EXISTS reference_task_operations_action_check;
 ALTER TABLE reference_task_operations ADD CONSTRAINT reference_task_operations_action_check CHECK(action IN ('update','delete'));
 ALTER TABLE reference_task_operations DROP CONSTRAINT IF EXISTS reference_task_operations_endpoint_profile_check;
@@ -21,6 +24,8 @@ ALTER TABLE reference_task_operations ADD CONSTRAINT reference_task_operations_d
     delete_acceptance_status IS NULL AND delete_response_absence_status IS NULL OR
   action='delete' AND saved_projection IS NULL AND field_mask IS NULL AND delete_accepted_baseline IS NOT NULL AND jsonb_typeof(delete_accepted_baseline)='object' AND native_acceptance_status IS NULL
 );
+END IF;
+END $$;
 ALTER TABLE reference_task_operations DROP CONSTRAINT IF EXISTS reference_task_operations_delete_response_check;
 ALTER TABLE reference_task_operations ADD CONSTRAINT reference_task_operations_delete_response_check CHECK(
   (delete_acceptance_status IS NULL OR delete_acceptance_status BETWEEN 200 AND 299) AND

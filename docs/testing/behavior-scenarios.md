@@ -10,6 +10,7 @@ pnpm test:behavior --suite google-delete --scenario already-absent --json
 pnpm test:behavior --suite google-create --scenario fresh-create --json
 pnpm test:behavior --suite google-task-update --scenario fresh-title-update --json
 pnpm test:behavior --suite google-task-delete --scenario fresh-delete --json
+pnpm test:behavior --suite google-task-create --scenario fresh-create --json
 pnpm test:behavior --suite microsoft-delete --scenario lost-reply-restart-present --json
 pnpm test:behavior --suite microsoft-create --scenario fresh-create --json
 pnpm test:behavior --suite caldav-delete --scenario fresh-delete --json
@@ -36,6 +37,7 @@ not committed. The root runner can also be called as
 | `google-create` | Admitted codec identity/body, CREATE delivery runtime and provider preflight/write/recovery | Host persistence/lease/credential ports, ordered HTTP responses and clock | None |
 | `google-task-update` | Actual Task codec, claimed task UPDATE kernel, saved field selection and Google Tasks provider | Host preparation/lease/credential/ACK ports, ordered HTTP receipts and clock | None |
 | `google-task-delete` | Actual Task DELETE codec, claimed kernel, scoped reads and native conditional DELETE | Host preparation/lease/credential/ACK ports, ordered native receipts and clock | None |
+| `google-task-create` | Actual Task CREATE codec, generated-address kernel, list proof, POST and scoped readback | Host preparation/lease/credential/ACK ports, ordered native receipts and clock | None |
 | `microsoft-delete` | Admitted Graph DELETE codec, guarded runtime, native weak version, owned-calendar preflight and exact absence | Host persistence/lease/credential ports, ordered HTTP responses and clock | None |
 | `microsoft-create` | Admitted Graph transaction/body, bounded CREATE runtime, native permission/POST/scoped listing and candidate identity | Host persistence/lease/normalization/credential ports, ordered HTTP responses and clock | None |
 | `caldav-delete` | Admitted DAV DELETE codec, runtime, real XML/ICS parsing, privilege/organizer preflight and conditional DELETE | Host persistence/lease/credential ports, DNS, pinned HTTP leaf responses and clock | None |
@@ -137,6 +139,16 @@ settlement policy. Cases exercise bodyless any-2xx success, original validators,
 assigned tasks, read401 boundaries, lost responses, sticky history, and
 reference observe-only recovery after any known response. See [DELETE scope and
 local proof](../planning/MUSU-40-google-task-delete.md).
+
+The Google task CREATE suite keeps the admitted resource address null and sends
+exactly the saved four-field body. Raw HTTP acceptance, parsed response address,
+complete awaited writer result and confirmed GET remain distinct. API fixtures
+preserve the existing list GET/POST/task GET/parser/auth floors; reference fixtures
+persist earlier candidate facts and require strict full-target readback. Unknown
+response without an address never POSTs or searches again. Recovery always checks
+the full target, even when ordinary API readback uses a saved partial mask.
+JSON-time cancellation is separate from cancellation after the writer returned.
+See [CREATE scope and proof](../planning/MUSU-40-google-task-create.md).
 
 ## Add or debug a case
 

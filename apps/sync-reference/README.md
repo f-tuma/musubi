@@ -3,14 +3,15 @@
 C05–C07 / MUSU-37–39 runs bounded Google personal event CREATE, UPDATE and DELETE profiles, separate Microsoft guarded personal DELETE and one-shot personal CREATE profiles, and CalDAV conditional personal CREATE/DELETE profiles with their own
 PostgreSQL ledger. It uses the C04 native provider ports, the C06 shared `@musubi/sync-runtime`
 already-claimed runner and the published v1 schema/plan validator, with no dependency on Musubi DB, auth, app config or API.
-Its event content model is `ReferenceContent`; bounded Google Task UPDATE uses
+Its event content model is `ReferenceContent`; bounded Google Task CREATE/UPDATE uses
 the independent richer `ReferenceTaskContent` and four separate task ledger tables.
 Addressed Google Task DELETE uses that task namespace with its own canonical
-tombstone, response evidence and scoped absence ACK.
+tombstone, response evidence and scoped absence ACK. Google Task CREATE reserves
+an unknown native address and adopts it only after an exact full-target readback.
 
 This is an extraction fixture and CLI. It is not the future Calendar Relay
 service. It has no account onboarding, OAuth refresh, scheduler, public API,
-meeting/recurrence support or task CREATE. Google CREATE reserves a new personal, nonrecurring timed event using an immutable operation UUID and exact UTC time endpoints. Google DELETE targets an existing exact native address with a strong accepted validator. Microsoft DELETE uses its original native weak ETag for a guarded preflight, with observe-only recovery and no CAS guarantee. Only `name`, `notes` and
+meeting/recurrence support or pending task address dependencies. Google event CREATE reserves a new personal, nonrecurring timed event using an immutable operation UUID and exact UTC time endpoints. Google DELETE targets an existing exact native address with a strong accepted validator. Microsoft DELETE uses its original native weak ETag for a guarded preflight, with observe-only recovery and no CAS guarantee. Only `name`, `notes` and
 `place` can be changed on an existing personal nonrecurring timed event. The
 accepted time endpoints use canonical UTC instants and remain unchanged.
 
@@ -53,9 +54,11 @@ stdin return a safe error code.
 | `deliver` | `{operationId}` | Claim and run one bounded attempt |
 | `show` | `{operationId}` | Inspect operation, capture, receipt and binding without credentials |
 | `seed-task` | `ReferenceTaskSeed` | Bootstrap an existing exact native Google task list/task, strong ETag and full native baseline, with explicit Tasks grant and independent rich content |
+| `seed-task-create` | `ReferenceTaskCreateSeed` | Reserve a new task destination with explicit profile, physical task list and original operation UUID; no native ID, ETag or baseline |
+| `admit-task-create` | `{bindingId, expectedRevision, commandId, operationId}` | Commit canonical CAS and the real full Task CREATE codec body for that exact reservation |
 | `admit-task-update` | `{bindingId, expectedRevision, commandId, operationId, patch}` | Commit task canonical CAS, full original codec target, baseline and sorted field mask; this reference helper requires a lowercase UUID operation ID |
 | `admit-task-delete` | `{bindingId, expectedRevision, commandId, operationId}` | Tombstone canonical content and capture one original-address DELETE with a null body and separate baseline; lowercase UUID required |
-| `deliver-task` | `{operationId}` | Claim and run the registered Google Task UPDATE or DELETE profile |
+| `deliver-task` | `{operationId}` | Claim and run the registered Google Task CREATE, UPDATE or DELETE profile |
 | `show-task` | `{operationId}` | Inspect task content, capture, native baseline and receipt without credentials |
 
 `seed` is an explicit fixture/bootstrap input, not provider discovery or proof
@@ -544,3 +547,67 @@ lease ownership after awaited locks, with final credential validity on dispatch
 and ACK. Cancellation or false final settlement rolls back provisional writes;
 HTTP never runs under these locks. Only the bounded independent host gate is
 proven; production activation/deployment and full C08 acceptance remain separate.
+
+## Google Task CREATE
+
+`seed-task-create` uses `ReferenceTaskCreateSeed`: explicit `provider:"google"`,
+`endpointProfile:"google-task-create-v1"`, connection/object/binding IDs, a
+physical `taskListId` other than `@default`, original lowercase UUID `operationId`,
+rich `ReferenceTaskContent`, encrypted token input, canonical UTC expiry and the
+exact Tasks write scope. It accepts no task ID, native ETag or baseline. This is
+bootstrap input, not fresh native evidence. The reserved binding has all three
+native fields null and immutable CREATE provenance. `admit-task-create` uses that
+same reservation/UUID, atomically advances canonical revision, and freezes the
+real portable Task codec's full four-field body. The admitted envelope and
+operation row retain a null native resource ID permanently. No event times,
+fictional ETag, UPDATE saved mask or preexisting native baseline are introduced.
+
+Fresh delivery checks the exact task list, rechecks current account/host
+authority in the writer, then commits a possible-dispatch marker before one POST. The original physical list
+and complete admitted body remain frozen. Actual `200|201|204` HTTP acceptance
+is committed before success JSON is parsed. A bounded assigned ID is committed
+before native validator validation, separately from that HTTP fact; an unusable
+response validator leaves its candidate validator null. The raw status remains
+known after malformed JSON, missing ID, failed validation or verification. Only
+a fresh exact-ID GET with a strong native ETag, unassigned/undeleted task and all
+four target fields matching can confirm delivery. The response validator never
+substitutes for that readback.
+
+A sticky possible-dispatch marker makes all later attempts observe-only,
+including after a known429 rejection. Without a captured response ID they HOLD
+without native HTTP: no second POST, content search or fabricated identity. This
+also deliberately HOLDs a process killed after the marker but before POST.
+With a captured ID, recovery reads only that exact address in the original list;
+absence, changed content, assignment, deleted flags, partial responses or weak
+native versions do not authorize adoption or another POST. Retry-After still
+delays claims. There is no task-content marker or collection correlation search.
+
+Response facts are monotone and independently stored on operation and attempt.
+A callback already executing may append compatible concrete response facts from
+its exact original marked attempt if its DB lease expires while awaiting locks.
+It returns lost ownership and cannot add a remote confirmation, dispatch again,
+adopt a binding or ACK. Closed or aborted late runtime callbacks never invoke
+the host. Cancellation still rolls back a waiting evidence transaction. A new
+claim sees those concrete sidecars without treating them as fresh authority.
+
+Preparation, credential materialization, final dispatch and ACK use the existing
+connection → canonical task → binding → operation lock order and fresh DB clock
+after all lock waits. Active source/grant, exact Tasks scope, encrypted live
+credential, connection/source/privacy/canonical epochs, canonical revision,
+reservation identity and owned lease must remain current. No native HTTP runs
+under these locks. ACK atomically adopts the verified ID, real readback ETag and
+baseline, changes presence to `present`, advances the source epoch once and ACKs
+the operation. A final lease/credential check after mapping writes rolls back
+provisional adoption on expiry, cancellation or false settlement. Canonical
+doing/time/importance remain intact. DELETE's later absence ACK still preserves
+that addressed epoch and historical native ETag/baseline.
+
+Only serial CREATE→UPDATE→DELETE after each ACK is supported. Successor
+admission captures the adopted native ID, new source epoch and real ETag/baseline
+together in its row and immutable envelope. Pending successors with deferred
+addresses, cancellation/supersession, hierarchy, recurrence and other task
+providers remain separate gates. The final additive migration preserves all nine
+older profiles and their histories, sidecars, epochs and 28 table/index OIDs,
+including repeated full-chain migration over unresolved reservations and adopted
+CREATE rows. Source/installed fixture proof, registry publication, production
+deployment and full C08 acceptance remain distinct.
