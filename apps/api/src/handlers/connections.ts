@@ -61,7 +61,7 @@ export async function handlerDisconnectAccount(req: Request, res: Response) {
         accountId,
       );
       const refreshToken = await decryptToken(creds?.refreshToken);
-      if (refreshToken) await revokeGoogleToken(refreshToken);
+      if (refreshToken) await revokeGoogleToken(refreshToken, { userID: req.user!.id, accountID: accountId });
     }
   } finally {
     // Always remove local state, even if revoke or credential lookup threw.

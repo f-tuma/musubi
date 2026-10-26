@@ -1,3 +1,4 @@
+import type { NativeHttpDispatch } from "./http-dispatch";
 import type { LookupAddress } from "node:dns";
 import type { LookupAll } from "./network-origin";
 
@@ -36,7 +37,7 @@ export interface CaldavDeleteProviderPorts {
     open(connection: Pick<CaldavEventTarget, "connectionId" | "connectionGeneration">, signal?: AbortSignal): Promise<CaldavAccountSession>;
   };
   readonly network: { readonly allowPrivate: boolean; readonly lookupImpl: LookupAll };
-  readonly http: { fetchPinned(url: URL, init: RequestInit, address: LookupAddress): Promise<Response> };
+  readonly http: NativeHttpDispatch & { fetchPinned(url: URL, init: RequestInit, address: LookupAddress): Promise<Response> };
   readonly clock: { nowEpochMs(): number; nowMonotonicMs(): number };
   /** Exactly once per actual native HTTP hop; no resource, account, UID or credential labels. */
   readonly telemetry: { record(metric: CaldavRequestMetric): void };

@@ -78,3 +78,10 @@ export * from "./queries/graph-series-time";
 export * from "./queries/source-read";
 
 export * from "./queries/operation-admission";
+export * from "./queries/sync-read-work";
+export * from "./queries/sync-work-candidates";
+export * from "./queries/provider-budget-cooldowns";
+
+export type { SyncReadWorkExecution } from "./queries/read-work-transaction";
+export { ackSyncDiscoveryWork } from "./queries/read-work-transaction";
+export * from "./queries/delivery-postponement";

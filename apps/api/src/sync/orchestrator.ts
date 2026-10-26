@@ -18,6 +18,7 @@ type ProviderAccountSource = {
   listAccounts(
     userID: string,
     accountId?: string,
+    options?: { metadataOnly?: boolean },
   ): Promise<{ id: string; label: string }[]>;
 };
 
@@ -37,16 +38,20 @@ export async function runProviderSyncs<TAdapter extends ProviderAccountSource>(
       account: { id: string; label: string },
     ): Promise<string[]>;
     onFailure(failure: ProviderSyncFailure): void;
+    /** HTTP-bearing accounts are admitted by the shared coordinator later. */
+    metadataOnly?: boolean;
+    concurrent?: boolean;
   },
 ) {
   const changedCalendarIDs: string[] = [];
+  const pending: Promise<string[]>[] = [];
 
   for (const adapter of adapters) {
     if (options.provider && adapter.provider !== options.provider) continue;
 
     let accounts: { id: string; label: string }[];
     try {
-      accounts = await adapter.listAccounts(userID, options.accountId);
+      accounts = await adapter.listAccounts(userID, options.accountId, { metadataOnly: hooks.metadataOnly });
     } catch (error) {
       hooks.onFailure({
         stage: "discovery",
@@ -67,21 +72,19 @@ export async function runProviderSyncs<TAdapter extends ProviderAccountSource>(
 
     for (const account of accounts) {
       if (options.accountId && account.id !== options.accountId) continue;
-      try {
-        changedCalendarIDs.push(
-          ...(await hooks.syncAccount(adapter, userID, account)),
-        );
-      } catch (error) {
-        hooks.onFailure({
-          stage: "account",
-          provider: adapter.provider,
-          accountId: account.id,
-          error,
-        });
-        if (options.throwOnError) throw error;
-      }
+      const run = async () => {
+        try { return await hooks.syncAccount(adapter, userID, account); }
+        catch (error) {
+          hooks.onFailure({ stage: "account", provider: adapter.provider, accountId: account.id, error });
+          if (options.throwOnError) throw error;
+          return [];
+        }
+      };
+      if (hooks.concurrent && !options.throwOnError) pending.push(run());
+      else changedCalendarIDs.push(...await run());
     }
   }
 
+  for (const changed of await Promise.all(pending)) changedCalendarIDs.push(...changed);
   return changedCalendarIDs;
 }

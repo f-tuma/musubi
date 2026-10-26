@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-26T19:35:20.075595+00:00",
+  "status": "FAILED_INSTALLED_RUNTIME_ACCEPTANCE",
+  "sourceHead": "6295d09931405d0df8ff5034fe3392f677d0dbe5",
+  "sourceTree": "877d6b325ebf256ced9fbd436339b09bb765e157",
+  "sourceFrozenAsHistoricalAfterFinding": true,
+  "canonicalSmokeArtifact": {
+    "path": "/tmp/musu41-fair-sync-api-proof-20261026193253_63bdef.json",
+    "sha256": "6d3d4367b4d0daaff6381d7d9a0ae7d8eecce1e92e78f1a8c222c5658bc39f3c",
+    "bytes": 5044
+  },
+  "failedInstalledArtifact": {
+    "path": "/tmp/musu41-fair-sync-api-installed-budget-20261026193335_df44fb.json",
+    "sha256": "50c038075138dc16be6f93db778cc2baf8a15d053de51c1dfc57766dd54f40fe",
+    "bytes": 395627
+  },
+  "rawLog": {
+    "path": "/tmp/musu41-fair-sync-api-installed-budget-20261026193335_df44fb.log",
+    "sha256": "8a28e82661d32c84ef5a7ca7a8554bd2f9c134f6ed7d52985de29507ccf20c73",
+    "bytes": 293501
+  },
+  "failure": "Unchanged actual installed integration fixture timed out waiting for fourth strict MAX-quota account; three returned SyncWorkDeferred. Not a PASS.",
+  "fixtureProductionCodeEdited": false,
+  "fixtureByteEqualInstalledTest": true,
+  "sourceBeforeAfter": {
+    "mirrorFiles": 939,
+    "mirrorManifestBefore": "5467f06b00ea7687e578a89d988b2236c792ad29bf98695856047fd943639380",
+    "mirrorManifestAfter": "5467f06b00ea7687e578a89d988b2236c792ad29bf98695856047fd943639380",
+    "byteEqualBeforeAfter": true,
+    "full47EndReceiptReached": false
+  },
+  "cleanup": {
+    "fixture": {
+      "database": "c09budget_b1564d58131840f98e8339f8a86443cb",
+      "sessionsBeforeDrop": 0,
+      "plainDrop": true,
+      "databaseAbsent": true
+    },
+    "parent": {
+      "database": "c09_installed_budget_20261026193335_df44fb",
+      "sessionsBeforePlainDrop": 0,
+      "plainDrop": true,
+      "databaseAbsent": true
+    },
+    "ownedContainerAbsent": true
+  },
+  "imageIdentity": {
+    "imageTag": "musubi-c09-fair-sync-api:proof",
+    "localBuildIndexDigest": "sha256:279bb79cabd632420321b954dc72b41d61543bc9700632d63f48bb5165813d55",
+    "platformManifestDigest": "sha256:1f4061e2e8f03473c4f2eb3fa522446b21eb875ca1ca43ef227254b7de91af5f",
+    "imageConfigDigest": "sha256:c5fd651b7b88c5b3b6d9a0193bac464ffa1d9354a8e01379839c251cb9c2ad81",
+    "imageArchiveArtifact": {
+      "path": "/tmp/musu41-fair-sync-api-image-20261026193230_b4e9a1.tar",
+      "sha256": "10b8cb55ec1485af08785c113c7c313f5b0c54638315c328a9ca0bf1c3573df4",
+      "bytes": 77193216
+    }
+  },
+  "suspectedRootCause": "Direct submit arriving while same durable key is already active adds a second pending item with waiter; active deferral backoff sends that duplicate to far-future eligibility and does not resolve its waiter. Root independently reproducing and owning fix.",
+  "newSourceApprovalAndNewImagesRequired": true,
+  "publication": false,
+  "deployment": false
+}

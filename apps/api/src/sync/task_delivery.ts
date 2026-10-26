@@ -1,3 +1,6 @@
+import { withDeliveryBudgetScope, providerDeferral } from "./provider_budget";
+import { currentSyncWorkParking } from "./work_coordinator";
+import * as budgetPersistence from "@musubi/db";
 import { TaskSchema } from "@musubi/types";
 import { claimTaskOutbox, decodeTaskOutboxOperation, assertPinnedOutboxSource, getTaskOutbox, getTaskOutboxPredecessorEvidence, renewTaskOutboxLease, assertTaskOutboxDeliverySource, setTaskOutboxProjection, finishTaskOutbox, acceptTaskOutboxDelivery, TaskOutboxPredecessorError, type TaskOutboxRow } from "@musubi/db";
 import type { CalendarAdapter } from "./adapter";
@@ -27,6 +30,8 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
   const row = await claimTaskOutbox(id);
   if (!row?.leaseToken) return undefined;
   const token = row.leaseToken;
+  return withDeliveryBudgetScope(row.provider, row.userID, row.accountID, { operationId: row.id, attemptId: token,
+    sourceIncarnationKey: JSON.stringify([row.externalCalendarLinkID, row.providerAccessRevision]) }, async () => {
   const decoded = decodeTaskOutboxOperation(row);
   if (decoded.kind === "blocked") {
     await finishTaskOutbox(row.id, token, "blocked", decoded.code, { uncertain: row.reconciling });
@@ -65,6 +70,17 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
     ? new ProviderTaskWriteError("task-provider-conflict") : error instanceof ProviderTaskWriteError ? error : error instanceof ProviderEventWriteError
       ? new ProviderTaskWriteError("task-write-failed", error.outcome, error.providerStatus, error.retryAfterMs) : undefined;
   const finish = async (outcome: TaskCompatibilityFinish) => {
+    if (outcome.kind === "failed") {
+      const deferral = providerDeferral(outcome.cause);
+      if (deferral) {
+        const uncertain = row.reconciling || outcome.facts.possibleDispatch || outcome.facts.writerFulfilled;
+        await finishTaskOutbox(row.id, token, uncertain ? "unconfirmed" : "retry", "provider-budget-deferred", {
+          uncertain, nextAttemptAt: new Date(deferral.retryAtMs), resultRef: outcome.facts.resultRef ?? row.resultRef,
+          ...(outcome.facts.acknowledgementProjection === undefined ? {} : { remoteSnapshot: outcome.facts.acknowledgementProjection }),
+        });
+        return;
+      }
+    }
     if (outcome.kind === "blocked") {
       await finishTaskOutbox(row.id, token, "blocked", outcome.code, { uncertain: row.reconciling });
       return;
@@ -144,4 +160,8 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
       ref.externalTaskId, { ...ref, beforeMutation: mark }, signal),
   }, options));
   return getTaskOutbox(row.id);
+  }, { park: currentSyncWorkParking() ? async (retryAtMs, signal) => {
+    if (!await budgetPersistence.postponeTaskOutbox(row.id, token, retryAtMs)) throw new Error("Task work lease changed while parking.");
+    await currentSyncWorkParking()!(retryAtMs, signal);
+  } : undefined });
 }

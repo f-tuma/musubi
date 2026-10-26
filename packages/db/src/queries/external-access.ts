@@ -1,3 +1,5 @@
+import { withSyncReadTransaction } from "./read-work-transaction";
+import type { SyncReadWorkExecution } from "./read-work-transaction";
 import { redactGoogleCalendarMirror } from "./external-access-redaction";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "..";
@@ -16,9 +18,9 @@ export type ExternalCalendarAccessContext = {
 };
 
 /** Local ordering of complete discovery observations, not a native ACL version. */
-export async function reconcileGoogleCalendarAccess(userID: string, accountID: string, calendarID: string, accessRole: GoogleCalendarAccessRole) {
+export async function reconcileGoogleCalendarAccess(userID: string, accountID: string, calendarID: string, accessRole: GoogleCalendarAccessRole, readWork?: SyncReadWorkExecution) {
   if (!["owner", "writer", "reader", "writerWithoutPrivateAccess", "unknown"].includes(accessRole)) throw new Error("Invalid Google access role.");
-  return db.transaction(async tx => {
+  return withSyncReadTransaction(readWork, async tx => {
     await lockCalendarLifecycle(tx, [calendarID], "exclusive");
     const [source] = await tx.select().from(externalCalendars).where(and(eq(externalCalendars.provider, "google"), eq(externalCalendars.userID, userID), eq(externalCalendars.accountID, accountID), eq(externalCalendars.calendarID, calendarID), eq(externalCalendars.disabled, false), eq(externalCalendars.supportsEvents, true))).for("update");
     if (!source) throw new Error("Calendar access source changed.");

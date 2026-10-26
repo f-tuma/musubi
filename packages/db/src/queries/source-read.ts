@@ -7,6 +7,8 @@ import { lockCalendarLifecycle, lockUserLifecycle } from "./calendar-lifecycle";
 import type { ExternalCalendarAccessContext } from "./external-access";
 import { hasFullProviderReadAccess } from "./microsoft-access";
 import { hasProviderSyncScopes } from "./oauth";
+import { ackSyncReadWorkInTransaction } from "./sync-read-work";
+import type { SyncReadWorkExecution } from "./read-work-transaction";
 
 export type GraphReadAdmission = {
   userID: string; accountID: string; calendarID: string; sourceID: string;
@@ -40,6 +42,31 @@ async function sourceForRead(tx: DbTransaction, address: GraphReadAddress) {
   return { source, connection };
 }
 
+async function prepareConfigurationInTransaction(
+  tx: DbTransaction, input: GraphReadAddress, configurationFingerprint: string,
+) {
+  let { source, connection } = await sourceForRead(tx, input);
+  if (source.readConfigurationFingerprint !== configurationFingerprint) {
+    [source] = await tx.update(externalCalendars).set({
+      sourceGeneration: sql`${externalCalendars.sourceGeneration} + 1`,
+      checkpointRevision: sql`${externalCalendars.checkpointRevision} + 1`,
+      readConfigurationFingerprint: configurationFingerprint, cursor: null, readCoverage: null,
+    }).where(eq(externalCalendars.id, source.id)).returning();
+  }
+  return { source, connection };
+}
+
+/** Establish the read profile before binding durable work to its source
+ * generation. This is DB-only; claim and apply still revalidate the profile. */
+export async function prepareGraphReadConfiguration(input: GraphReadAddress & { configurationFingerprint: string }) {
+  const configurationFingerprint = fingerprint(input.configurationFingerprint);
+  await db.transaction(async tx => {
+    await lockUserLifecycle(tx, [input.userID], "shared");
+    await lockCalendarLifecycle(tx, [input.calendarID], "exclusive");
+    await prepareConfigurationInTransaction(tx, input, configurationFingerprint);
+  });
+}
+
 /** Captures one read incarnation before provider IO. The first new profile
  * starts a fresh bounded read; old mappings and accepted writes stay intact. */
 export async function beginGraphRead(input: GraphReadAddress & { configurationFingerprint: string }): Promise<GraphReadAdmission> {
@@ -47,14 +74,7 @@ export async function beginGraphRead(input: GraphReadAddress & { configurationFi
   return db.transaction(async tx => {
     await lockUserLifecycle(tx, [input.userID], "shared");
     await lockCalendarLifecycle(tx, [input.calendarID], "exclusive");
-    let { source, connection } = await sourceForRead(tx, input);
-    if (source.readConfigurationFingerprint !== configurationFingerprint) {
-      [source] = await tx.update(externalCalendars).set({
-        sourceGeneration: sql`${externalCalendars.sourceGeneration} + 1`,
-        checkpointRevision: sql`${externalCalendars.checkpointRevision} + 1`,
-        readConfigurationFingerprint: configurationFingerprint, cursor: null, readCoverage: null,
-      }).where(eq(externalCalendars.id, source.id)).returning();
-    }
+    const { source, connection } = await prepareConfigurationInTransaction(tx, input, configurationFingerprint);
     const mappings = await tx.select({ id: externalEvents.id, externalEventID: externalEvents.externalEventID, eventID: externalEvents.eventID }).from(externalEvents).where(and(eq(externalEvents.provider, "microsoft"), eq(externalEvents.calendarID, input.calendarID))).orderBy(externalEvents.externalEventID);
     return { ...input, configurationFingerprint, sourceGeneration: source.sourceGeneration, checkpointRevision: source.checkpointRevision, cursor: source.cursor,
       providerAccessRevision: source.providerAccessRevision, providerAccessRole: source.providerAccessRole, connectionID: connection.id, connectionScope: connection.scope, connectionGeneration: connection.generation, externalCalendarID: source.externalCalendarID,
@@ -88,6 +108,7 @@ export async function applyGraphReadBatch<T>(
   admission: GraphReadAdmission,
   checkpoint: { coverage: SyncCoverage; nextCursor: string; configurationFingerprint: string },
   apply: (tx: DbTransaction, accessContext: ExternalCalendarAccessContext | undefined) => Promise<T>,
+  readWork?: SyncReadWorkExecution,
 ): Promise<T> {
   admission = structuredClone(admission);
   const coverage = SyncCoverageSchema.parse(checkpoint.coverage);
@@ -118,6 +139,12 @@ export async function applyGraphReadBatch<T>(
       eq(externalCalendars.providerAccessRevision, admission.providerAccessRevision), eq(externalCalendars.readConfigurationFingerprint, admission.configurationFingerprint), sql`${externalCalendars.cursor} is not distinct from ${admission.cursor}`,
     )).returning({ id: externalCalendars.id });
     if (!accepted) refuse();
+    if (readWork) {
+      if (readWork.capture.binding.source?.id !== admission.sourceID) refuse();
+      readWork.signal.throwIfAborted();
+      await ackSyncReadWorkInTransaction(tx, readWork.capture, { lockLifecycle: false });
+      readWork.signal.throwIfAborted();
+    }
     return result;
   }).catch(error => { if (error instanceof GraphReadSourceChanged) throw error; throw new Error("Graph read batch could not be persisted."); });
 }

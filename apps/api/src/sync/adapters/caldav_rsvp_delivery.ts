@@ -6,6 +6,7 @@ import { readCaldavSchedulingProof } from "../caldav_scheduling";
 import { assertEventWriteResponse, assertProviderEventMutationResponse, requireEventEtag, ProviderEventWriteError } from "../event_write";
 import { caldavSeriesResourceURL, sameCaldavResource } from "./caldav_series";
 import { prepareCaldavRsvp, caldavRsvpResourceHash, type CaldavRsvpEvidence, type CaldavRsvpMode } from "./caldav_rsvp";
+import { providerDeferral, reserveProviderMutation } from "../provider_budget";
 const fetch = createGuardedCaldavFetch();
 function enabled(compatibility = false) { if (!config.api.providerRsvpEditsEnabled || compatibility && !config.api.icloudRsvpEditsEnabled) throw new EventWriteError("event-write", "unsupported"); }
 async function eligible(eligibility?: () => Promise<boolean>): Promise<boolean> {
@@ -60,6 +61,7 @@ export async function deliverCaldavRsvp(collection: string, saved: CaldavRsvpEvi
     current = await readCaldavRsvpResource(evidence.id, authorization, signal, compatibility);
     if (caldavRsvpResourceHash(current.data) === evidence.desiredResourceHash) return result(current, true);
   } catch (error) {
+    if (providerDeferral(error)) throw error;
     if (!readOnly) throw error;
     throw new ProviderEventWriteError("caldav-rsvp-response-unconfirmed", "unconfirmed", error instanceof ProviderEventWriteError ? error.providerStatus : undefined, error instanceof ProviderEventWriteError ? error.retryAfterMs : undefined);
   }
@@ -67,7 +69,7 @@ export async function deliverCaldavRsvp(collection: string, saved: CaldavRsvpEvi
   // still reads as the baseline. Only a complete desired readback can settle it.
   if (readOnly) throw new ProviderEventWriteError("caldav-rsvp-response-unconfirmed", "unconfirmed");
   if (current.etag !== evidence.etag || current.scheduleTag !== evidence.scheduleTag || !sameCaldavResource(current.data, evidence.before)) throw new ProviderEventWriteError("provider-conflict");
-  await beforeWrite?.(); signal?.throwIfAborted(); enabled();
+  await reserveProviderMutation({ url: new URL(evidence.id).href, method: "PUT" }, async () => { await beforeWrite?.(); }); signal?.throwIfAborted(); enabled();
   if (compatibility && !await eligible(eligibility)) throw new EventWriteError("event-write", "unsupported");
   signal?.throwIfAborted(); enabled();
   let accepted = false;
@@ -76,6 +78,7 @@ export async function deliverCaldavRsvp(collection: string, saved: CaldavRsvpEvi
     assertProviderEventMutationResponse(response); accepted = true;
     return result(await readCaldavRsvpResource(evidence.id, authorization, signal, compatibility), false);
   } catch (error) {
+    if (providerDeferral(error)) throw error;
     if (!accepted && error instanceof ProviderEventWriteError && error.providerStatus !== undefined) throw error;
     throw new ProviderEventWriteError("provider-write-failed", "unconfirmed", error instanceof ProviderEventWriteError ? error.providerStatus : undefined);
   }

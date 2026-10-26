@@ -9,6 +9,7 @@ import {
 } from "@musubi/types";
 import { createGuardedCaldavFetch } from "../caldav_client";
 import { readCaldavSchedulingProof } from "../caldav_scheduling";
+import { reserveProviderMutation } from "../provider_budget";
 import {
   assertEventWriteResponse,
   assertProviderEventMutationResponse,
@@ -165,7 +166,7 @@ export function caldavOrganizerTransport(
           throw new ProviderEventWriteError("provider-conflict");
         enabled();
         signal?.throwIfAborted();
-        await beforeDispatch();
+        await reserveProviderMutation({ url: new URL(target).href, method: request.action === "delete" ? "DELETE" : "PUT" }, beforeDispatch);
         enabled();
         signal?.throwIfAborted();
         const response = await fetch(target, {

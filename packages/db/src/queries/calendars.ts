@@ -1,3 +1,5 @@
+import { withSyncReadTransaction } from "./read-work-transaction";
+import type { SyncReadWorkExecution } from "./read-work-transaction";
 import { lockCalendarLifecycle, lockUserLifecycle } from "./calendar-lifecycle";
 import { randomUUID } from "node:crypto";
 import { appendTaskOutbox, prepareTaskOutboxInTransaction, taskOutboxSnapshot } from "./task-outbox";
@@ -239,8 +241,8 @@ export async function removeCalendarInTransaction(
 	return result;
 }
 
-export async function removeCalendar(calendarID: string) {
-	return db.transaction(async (tx) => {
+export async function removeCalendar(calendarID: string, readWork?: SyncReadWorkExecution) {
+	return withSyncReadTransaction(readWork, async (tx) => {
 		await lockCalendarLifecycle(tx, [calendarID], "exclusive");
 		return removeCalendarInTransaction(tx, calendarID);
 	});
@@ -329,8 +331,9 @@ export async function setMemberRole(
 	userID: string,
 	calendarID: string,
 	role: string,
+	readWork?: SyncReadWorkExecution,
 ) {
-	const [result] = await db
+	const [result] = await withSyncReadTransaction(readWork, tx => tx
 		.update(calendarMembers)
 		.set({ role })
 		.where(
@@ -339,7 +342,7 @@ export async function setMemberRole(
 				eq(calendarMembers.calendarID, calendarID),
 			),
 		)
-		.returning();
+		.returning());
 
 	return result;
 }

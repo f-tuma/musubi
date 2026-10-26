@@ -6,7 +6,9 @@ import {
 import { ProviderAuthError } from "./errors";
 import { decryptToken, encryptToken } from "../tokenCrypto";
 import { createHash } from "node:crypto";
-import { observedProviderFetch } from "./provider_http_metrics";
+import { observedProviderFetch, captureProviderCallMetrics } from "./provider_http_metrics";
+import { withOAuthRefreshBudgetScope, withProviderRevokeBudgetScope, withAccountBudgetScope, providerDeferral } from "./provider_budget";
+import { runAuxiliaryProviderWork, awaitWithReleasedSyncPermit } from "./work_coordinator";
 
 // Shared OAuth access-token minting for adapter API calls (google, microsoft).
 // Refreshes expired access tokens directly against the provider's token
@@ -68,12 +70,15 @@ export async function getOAuthAccessToken(
     credentials.refreshToken, credentials.scope, credentials.accessTokenExpiresAt,
   ])).digest("hex");
   const pending = refreshes.get(key);
-  if (pending) return awaitRefresh(pending, options.signal);
-  const refresh = refreshOAuthAccessToken(provider, userID, accountId, cfg, { rejectedAccessToken: options.rejectedAccessToken }).finally(() => {
+  if (pending) return awaitWithReleasedSyncPermit(awaitRefresh(pending, options.signal), options.signal);
+  const refreshDeadline = AbortSignal.timeout(REFRESH_TIMEOUT_MS);
+  const refreshMetrics = captureProviderCallMetrics();
+  const refresh = runAuxiliaryProviderWork(key, provider as "google" | "microsoft", credentials.id,
+    signal => refreshMetrics(() => refreshOAuthAccessToken(provider, userID, accountId, cfg, { rejectedAccessToken: options.rejectedAccessToken, signal: signal ?? refreshDeadline })), refreshDeadline).finally(() => {
     if (refreshes.get(key) === refresh) refreshes.delete(key);
   });
   refreshes.set(key, refresh);
-  return awaitRefresh(refresh, options.signal);
+  return awaitWithReleasedSyncPermit(awaitRefresh(refresh, options.signal), options.signal);
 }
 
 async function readActiveCredentials(provider: string, userID: string, accountId: string) {
@@ -109,11 +114,13 @@ async function refreshOAuthAccessToken(
   cfg: TokenEndpointConfig,
   options: AccessTokenOptions,
 ): Promise<string> {
-  const signal = AbortSignal.timeout(REFRESH_TIMEOUT_MS);
+  const signal = options.signal ?? AbortSignal.timeout(REFRESH_TIMEOUT_MS);
   // A failed compare-and-swap means the grant changed while HTTP was in flight.
   // Re-read once; never return or revoke credentials from the obsolete grant.
   for (let attempt = 0; attempt < 2; attempt++) {
+    signal.throwIfAborted();
     const credentials = await readActiveCredentials(provider, userID, accountId);
+    signal.throwIfAborted();
     const currentToken = await usableAccessToken(credentials, options);
     if (currentToken) return currentToken;
 
@@ -126,7 +133,7 @@ async function refreshOAuthAccessToken(
     const refreshToken = await decryptToken(credentials.refreshToken);
     let response: Response;
     try {
-      response = await observedProviderFetch(cfg.tokenEndpoint, {
+      response = await withOAuthRefreshBudgetScope(provider, userID, accountId, credentials, signal, () => observedProviderFetch(cfg.tokenEndpoint, {
         signal,
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
@@ -137,8 +144,9 @@ async function refreshOAuthAccessToken(
           client_secret: cfg.clientSecret,
           ...cfg.extraParams,
         }),
-      });
-    } catch {
+      }));
+    } catch (error) {
+      if (providerDeferral(error)) throw error;
       throw new ProviderAuthError(provider, "token_endpoint_unreachable", undefined, false);
     }
 
@@ -185,13 +193,15 @@ async function refreshOAuthAccessToken(
 // given the refresh token. Never throws (a failed revoke must not block the
 // local disconnect) and never logs the token — URLSearchParams encodes it so a
 // token with url-unsafe characters is handled correctly.
-export async function revokeGoogleToken(refreshToken: string): Promise<void> {
+export async function revokeGoogleToken(refreshToken: string, account?: { userID: string; accountID: string }): Promise<void> {
   try {
-    await fetch("https://oauth2.googleapis.com/revoke", {
+    const run = () => observedProviderFetch("https://oauth2.googleapis.com/revoke", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({ token: refreshToken }),
     });
+    if (account) await withAccountBudgetScope("google", account.userID, account.accountID, run, { purpose: "revoke", signal: AbortSignal.timeout(10_000) });
+    else await withProviderRevokeBudgetScope("google", run);
   } catch {
     // network/endpoint failure — caller still removes local credentials
   }

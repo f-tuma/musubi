@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "kind": "PRE_ACCEPTANCE_DIAGNOSTICS",
+  "status": "prior failures retained and excluded from final acceptance",
+  "cases": [
+    {
+      "source": "140ead15563c4aa6153eb9dba28a00abb0cd3ac3",
+      "failure": "Actual V8 MAX cooldown overflow before final source equality.",
+      "artifacts": [
+        {
+          "path": "/tmp/musu41-active-budget-v8-failure.json",
+          "bytes": 1231,
+          "sha256": "bf86bde1aa61216f0884f1382294e7563af723bff1225b99cd0ec60688b8f35e"
+        }
+      ]
+    },
+    {
+      "source": "9831fa30afbaaf25bb526ddc21345d3b4356b24e",
+      "failure": "Independent reviewer found finite adjacent MAX-1 overflow; not source-approved.",
+      "fixedBy": "6295d09931405d0df8ff5034fe3392f677d0dbe5"
+    },
+    {
+      "source": "6295d09931405d0df8ff5034fe3392f677d0dbe5",
+      "failure": "Installed actual fourthMAX direct submit waiter remained pending after running background claim deferred.",
+      "fixedBy": "722d9f04ba934f7175b04422599189a5cf476180",
+      "details": "historical-installed-failure.json",
+      "reproducerBefore": {
+        "path": "/tmp/musu41-active-submit-race-before-fix-direct.log",
+        "bytes": 509,
+        "sha256": "a40e36357b7241789c5714351d70b097b1573d381b8e834752ff478a20abee71"
+      },
+      "independentReproducer": {
+        "path": "/tmp/musu41-active-deferred-race-repro.json",
+        "bytes": 1128,
+        "sha256": "60f4310de537014842af5c6d1ecee1bbb97ac70040f2dfe988862912cc4cefe8"
+      },
+      "scenarioAfter": {
+        "path": "/tmp/musu41-active-submit-race-after-fix.json",
+        "bytes": 359,
+        "sha256": "3a98f0a3f9f5c2b58254f16fcf9fffe8f54f719d6dc9dc915a30a6db28a884b4"
+      },
+      "revokedApproval": {
+        "path": "/tmp/musu41-source-review-6295d09-approval.json",
+        "bytes": 6051,
+        "sha256": "a3cc8512fa28b73e18c7ca51f09a895a3b23d415be83575ec01fda75c0360746"
+      },
+      "originalApprovedBytesPreserved": {
+        "path": "/tmp/musu41-source-review-6295d09-historical-revoked-original.json",
+        "bytes": 4940,
+        "sha256": "af7c5ece0838692d53c1f433e38043ca299fe1acca05f62762f2ac51077af25d"
+      }
+    },
+    {
+      "source": "0c7a7d6d36e83e4316e5df21e3ec545d897297a1",
+      "failure": "CI DAV fixture changed only SQL eligibility while process-local failure backoff remained valid.",
+      "classification": "test-only clock/lifetime assumption; production source722 approval remains valid",
+      "fixedBy": "23afedd8a219087d19065847421577a24001c05f",
+      "evidence": "ci-fixture-correction.json",
+      "newCurrentHeadCiRequired": true
+    }
+  ],
+  "finalSourceApproval": "source-review.json",
+  "finalFreshInstalledApi": "api-installed-summary.json",
+  "noHistoricalPassRelabeled": true
+}

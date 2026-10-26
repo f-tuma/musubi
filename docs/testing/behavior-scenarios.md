@@ -6,6 +6,9 @@ fixtures supply its dependencies at the existing boundaries.
 
 ```sh
 pnpm test:behavior --list
+pnpm test:behavior --suite read-attempt --scenario steady-large-pagination --json
+pnpm test:behavior --suite read-attempt --json
+pnpm --filter @musubi/api test:read-attempt
 pnpm test:behavior --suite google-delete --scenario already-absent --json
 pnpm test:behavior --suite google-create --scenario fresh-create --json
 pnpm test:behavior --suite google-rsvp-delivery --scenario started-unchanged-is-read-only --json
@@ -36,6 +39,7 @@ not committed. The root runner can also be called as
 
 | Suite | Production code exercised | Replaced boundary | Services needed |
 | --- | --- | --- | --- |
+| `read-attempt` | Actual pull progress watchdog, pause/resume, lease heartbeat, cancellation and disposal | Explicit production clock port and renewal receipts | None; virtual time, no DB/provider calls |
 | `google-delete` | Claimed delivery runtime, Google provider preflight/conditional DELETE/recovery | Host persistence/lease/credential ports, HTTP responses and clock | None |
 | `google-create` | Admitted codec identity/body, CREATE delivery runtime and provider preflight/write/recovery | Host persistence/lease/credential ports, ordered HTTP responses and clock | None |
 | `google-task-update` | Actual Task codec, claimed UPDATE kernel, original NULL causal admission, predecessor proof, saved mask and native provider | Host preparation/lease/credential/ACK ports, ordered HTTP receipts and clock | None |
@@ -54,6 +58,14 @@ The sync suite covers a conditional write, exact absence without mutation,
 version conflict before mutation, lost response followed by read-only observation,
 and `Retry-After` without immediate replay. Its bounded summary asserts every
 request method and validator, completion evidence and dispatch uncertainty.
+
+The read-attempt suite advances 190 progressing leaves and a DB apply through
+95.5 seconds, proving that active pagination has no aggregate 90-second cap.
+Separate scenarios prove stalled HTTP/DB work expires, explicit quota pauses keep
+lease renewal and caller cancellation live, resume is one-shot, and disposal
+releases all timer callbacks. It exercises `createReadAttempt` directly through
+its clock port; it does not prove engine progress placement, SQL leases or native
+provider behavior. Delivery attempt deadlines retain their separate tests.
 
 The CREATE suite covers frozen planned IDs and bodies, nullable ETag handling,
 matching GET-only adoption, exact 404 same-ID retry, 410/cancelled/marker/content

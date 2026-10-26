@@ -7,6 +7,13 @@ export type ExternalBackgroundOptions = {
   deliveryRecoveryMode: ExternalDeliveryRecoveryMode;
 };
 
+export function externalBackgroundPolicy(options: ExternalBackgroundOptions) {
+  const pullEnabled = options.pullIntervalMin > 0;
+  const deliveryRecoveryEnabled = options.deliveryRecoveryMode === "independent" ||
+    (options.deliveryRecoveryMode === "legacy" && pullEnabled);
+  return { pullEnabled, deliveryRecoveryEnabled };
+}
+
 /** Register independent schedules only after migration and singleton admission. */
 export function startExternalBackground(
   options: ExternalBackgroundOptions,
@@ -17,10 +24,7 @@ export function startExternalBackground(
     every(callback: () => void, intervalMs: number): void;
   },
 ) {
-  const pullEnabled = options.pullIntervalMin > 0;
-  const deliveryRecoveryEnabled =
-    options.deliveryRecoveryMode === "independent" ||
-    (options.deliveryRecoveryMode === "legacy" && pullEnabled);
+  const { pullEnabled, deliveryRecoveryEnabled } = externalBackgroundPolicy(options);
 
   if (deliveryRecoveryEnabled) {
     // A fresh process must recover retained work without waiting for its first

@@ -1,3 +1,4 @@
+import { dispatchNativeHttp } from "./http-dispatch";
 import ICAL from "ical.js";
 import { createGuardedCaldavFetch } from "./network";
 import { createCaldavPrivilegeReader, caldavAllows } from "./dav-privileges";
@@ -97,14 +98,10 @@ export function createCaldavPersonalEventCreateProvider(ports: CaldavCreateProvi
       typeof ports.network.lookupImpl !== "function") throw invalid();
   const fetch = createGuardedCaldavFetch({ allowPrivate: ports.network.allowPrivate, lookupImpl: ports.network.lookupImpl,
     async fetchPinnedImpl(url, init, address) {
-      const started = ports.clock.nowMonotonicMs(), method = (init.method ?? "GET") as "GET" | "PROPFIND" | "PUT";
-      let status: number | "network-error" | "aborted" = "network-error";
-      try { const response = await ports.http.fetchPinned(url, init, address); status = response.status; init.signal?.throwIfAborted(); return response; }
-      catch (error) { if (init.signal?.aborted || error instanceof Error && error.name === "AbortError") status = "aborted"; throw error; }
-      finally {
-        try { ports.telemetry.record({ provider: "caldav", family: "event", method, status, durationMs: Math.max(0, ports.clock.nowMonotonicMs() - started) }); }
-        catch { /* Diagnostics have no authority. */ }
-      }
+      const method = (init.method ?? "GET") as "GET" | "PROPFIND" | "PUT";
+      try { const response = await dispatchNativeHttp(ports.http, String(url), init, (requestInit) => ports.http.fetchPinned(url, requestInit, address), ports.clock, (status, durationMs) => ports.telemetry.record({ provider: "caldav", family: "event", method, status, durationMs })); init.signal?.throwIfAborted(); return response; }
+      catch (error) { throw error; }
+
     },
   });
   const redirect: RequestRedirect = nativeProfile === "strict-reference" ? "error" : "follow";
@@ -117,6 +114,7 @@ export function createCaldavPersonalEventCreateProvider(ports: CaldavCreateProvi
       if (nativeProfile === "strict-reference" && init.method !== "PUT" && (response.redirected || response.url && response.url !== new URL(url).href)) throw failed();
       signal.throwIfAborted(); return response;
     } catch (error) {
+      if (ports.http.isDispatchDeferred?.(error)) throw error;
       if (error instanceof CaldavProviderError) throw error;
       if (nativeProfile === "existing-caldav") throw error;
       throw new CaldavProviderError("provider-write-failed", init.method === "PUT" ? "unconfirmed" : "not-written");

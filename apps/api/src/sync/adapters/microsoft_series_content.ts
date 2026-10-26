@@ -1,3 +1,4 @@
+import { reserveProviderMutation, providerDeferral } from "../provider_budget";
 import { observedProviderFetch as fetch } from "../provider_http_metrics";
 import { requireSupportedSeriesZone } from "./microsoft_time_zone";
 import { config } from "@musubi/config";
@@ -57,7 +58,7 @@ export async function prepareGraphSeriesContent(token: string, context: GraphMee
     if (!observed.timeZoneSupported) throw new OrganizerAdmissionRejectedError("The series time zone is not supported by this Outlook mailbox.");
     if (!config.api.eventTimeEditsEnabled) throw new OrganizerAdmissionRejectedError("Time editing is not available.");
     try { graphSeriesTimeChange(saved); }
-    catch (error) { throw new OrganizerAdmissionRejectedError(error instanceof Error ? error.message : "Choose a supported series time."); }
+    catch (error) { if (providerDeferral(error)) throw error; throw new OrganizerAdmissionRejectedError(error instanceof Error ? error.message : "Choose a supported series time."); }
   }
   return saved;
 }
@@ -99,7 +100,7 @@ export async function updateGraphSeriesContent(token: string, saved: GraphOccurr
     for (const pause of [0, 200, 400, 800]) {
       if (signal?.aborted) return unknown();
       if (pause) await delay(pause, undefined, { signal });
-      const after = await read(true).catch(() => null);
+      const after = await read(true).catch(error => { if (providerDeferral(error)) throw error; return null; });
       if (after && matches(after)) return { kind: "observed" as const, observation: after.family };
     }
     return unknown();
@@ -112,7 +113,7 @@ export async function updateGraphSeriesContent(token: string, saved: GraphOccurr
   const current = await read();
   if (!same(current.family, saved.baseline) || !same(current.native, baseline) || !same(current.nativeExceptions, saved.nativeExceptions)) fail();
   if (matches(current)) return { kind: "observed" as const, observation: current.family };
-  await mark();
+  await reserveProviderMutation({ url: transport.path(saved.targetID), method: "PATCH" }, mark);
   try {
     const response = await fetch(transport.path(saved.targetID), { method: "PATCH", headers: { ...transport.headers, "Content-Type": "application/json", "If-Match": baseline.etag }, body: JSON.stringify(patch), signal, redirect: "error" });
     if (response.status === 412) return { kind: "rejected" as const };
@@ -121,5 +122,5 @@ export async function updateGraphSeriesContent(token: string, saved: GraphOccurr
     if (native?.id !== baseline.id || native.iCalUId !== baseline.iCalUId || native.type !== "seriesMaster" || native.seriesMasterId != null) return unknown();
     await accepted();
     return await verify();
-  } catch { return unknown(); }
+  } catch (error) { if (providerDeferral(error)) throw error; return unknown(); }
 }

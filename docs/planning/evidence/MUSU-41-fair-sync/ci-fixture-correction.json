@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "baseHead": "0c7a7d6d36e83e4316e5df21e3ec545d897297a1",
+  "changedFiles": [
+    "apps/api/src/sync/caldav_discovery_material.integration.test.ts"
+  ],
+  "productionSourceUnchanged": true,
+  "fix": "Fixture restarts its process-local coordinator after expiring only the owned SQL fixture row; no production backoff/timeout/budget or generation reset.",
+  "oldCiRun": 40391230598,
+  "oldCiRemainsFailed": true,
+  "unchangedReproExitCode": 1,
+  "correctedActualPgExitCode": 0,
+  "apiTypecheckExitCode": 0,
+  "productionDeferralJsonExitCode": 0,
+  "publication": false,
+  "deployment": false,
+  "evidence": [
+    {
+      "path": "/tmp/musu41-ci-dav-unchanged0c7.log",
+      "sha256": "41e71bd968052aaab167d62734eaaec98e5a6fed919d4553315a87efcde5e2db"
+    },
+    {
+      "path": "/tmp/musu41-ci-dav-unchanged0c7-receipt.json",
+      "sha256": "96dda4a06c34bb13f8da00276173cec4c8f3154e006bdcc245b5b3cbf6c700d8"
+    },
+    {
+      "path": "/tmp/musu41-ci-dav-fixture-restart-pass.log",
+      "sha256": "75a4d71ca6f71e03c22f1dd10b3d1408a9dfef8713134c7c9622414e66f60de6"
+    },
+    {
+      "path": "/tmp/musu41-ci-dav-fixture-restart-pass-receipt.json",
+      "sha256": "2c322d9956a49ad86ed50f10885e53d92be92d27fb974e8e6d82fe53ee6abff8"
+    },
+    {
+      "path": "/tmp/musu41-ci-dav-fixture-api-types.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/tmp/musu41-ci-dav-active-deferral-json.log",
+      "sha256": "09c6c38ffbd3977730c531e22582152a9fed22d83b3c61eae9a7c95e0a77b8ab"
+    },
+    {
+      "path": "/tmp/musu41-ci-dav-owned.json",
+      "sha256": "7602c20405b57c907f31363dfbc015b6a3598e56a83f3a0340931a95c54010ea"
+    }
+  ],
+  "correctedFixtureCommittedHead": "23afedd8a219087d19065847421577a24001c05f",
+  "actualPgDurationMs": 2508,
+  "originalCiRawLog": {
+    "path": "/tmp/musu41-ci-db2-failure.log",
+    "bytes": 85059,
+    "sha256": "2239d0c65e18f496cfff87e404062e3ce88fda56f8a32b77e61ebfa6d5a42a45"
+  },
+  "originalRunResult": {
+    "head": "0c7a7d6d36e83e4316e5df21e3ec545d897297a1",
+    "run": 40391230598,
+    "jobs": 21,
+    "successful": 20,
+    "failed": [
+      "Database integration (2/4)"
+    ],
+    "newCurrentHeadCiRequired": true
+  }
+}

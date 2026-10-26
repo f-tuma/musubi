@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "check": "pnpm check",
+  "exitCode": 0,
+  "sourceHead": "722d9f04ba934f7175b04422599189a5cf476180",
+  "sourceTree": "c7915c4d3923734a8d3d69888898924f85139561",
+  "postRunClean": true,
+  "rawLog": "/tmp/musu41-root-workspace-check.log",
+  "rawSha256": "8ccc90e18fab85ee08b57df540ecdbec67e734fbffe2a4be2e111ccf339a10b7",
+  "completedAt": "2026-10-26T19:41:56.837365+00:00",
+  "environment": "explicit synthetic dotenv shadows; type/unit/lint/build; no real provider or DB credentials",
+  "buildCache": "Unchanged web and docs build outputs reused; type/unit/lint commands executed",
+  "installed": false,
+  "deployment": false
+}

@@ -1,3 +1,4 @@
+import type { NativeHttpDispatch } from "./http-dispatch";
 /** A captured Google Tasks address, separate from Calendar event identities. */
 export interface GoogleTaskTarget {
   readonly connectionId: string;
@@ -77,7 +78,7 @@ export interface GoogleTaskProviderPorts {
      * the second rejected delivery GET. No retry hint is invented. */
     onReadAuthenticationRejected?(signal?: AbortSignal): Promise<never>;
   };
-  readonly http: { fetch(url: string, init: RequestInit): Promise<Response> };
+  readonly http: NativeHttpDispatch & { fetch(url: string, init: RequestInit): Promise<Response> };
   readonly clock: { nowEpochMs(): number; nowMonotonicMs(): number };
   readonly telemetry: { record(metric: GoogleTaskRequestMetric): void };
   readonly beforeMutation: (request: GoogleTaskUpdate, signal?: AbortSignal) => Promise<void>;

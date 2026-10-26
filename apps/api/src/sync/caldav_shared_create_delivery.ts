@@ -1,3 +1,4 @@
+import { reserveProviderMutation } from "./provider_budget";
 import { randomUUID } from "node:crypto";
 import {
   assertPinnedOutboxSource, completeEventOutbox, finishEventOutbox, getEventOutboxDeletion,
@@ -88,6 +89,14 @@ export async function deliverSharedCaldavCreate(row: EventOutboxRow & { reconcil
   const finish = async (outcome: CaldavRuntimeCreateFinishOutcome) => {
     record(outcome.facts);
     const info = outcome.error;
+    if (info.deferral) {
+      const uncertain = row.reconciling || outcome.facts.possibleDispatch || outcome.facts.provider.kind === "accepted" || outcome.facts.provider.kind === "uncertain";
+      await finishEventOutbox(row.id, token, uncertain ? "unconfirmed" : "retry", "provider-budget-deferred", {
+        uncertain, nextAttemptAt: new Date(info.deferral.retryAtMs), ...(resultRef ? { resultRef } : {}),
+        ...(remoteSnapshot ? { remoteSnapshot } : {}),
+      });
+      return;
+    }
     let error: unknown = outcome.cause;
     if (info.code === "account-session-changed") error = new EventWriteError("event-write", "unknown");
     else if (info.code === "capability-evidence") error = new EventWriteError(info.capability ?? "event-write", info.evidence ?? "unknown");
@@ -151,9 +160,12 @@ export async function deliverSharedCaldavCreate(row: EventOutboxRow & { reconcil
       return native().ports.accountSession.open(connection, signal);
     } },
     beforeMutation: async (_request, signal) => {
+      return reserveProviderMutation({ url: new URL(_request.target.resourceUrl).href, method: "PUT" }, async () => {
       signal.throwIfAborted();
       if (!await renewEventOutboxLease(row.id, token)) throw new ProviderEventWriteError("provider-write-failed");
       await checkDestination(signal); signal.throwIfAborted();
+
+      });
     },
     normalizeObservation(read, signal) {
       signal.throwIfAborted(); const observed = normalize(read); signal.throwIfAborted();
@@ -167,7 +179,9 @@ export async function deliverSharedCaldavCreate(row: EventOutboxRow & { reconcil
     ack, finish, observationId: randomUUID,
   }, {
     network: { get allowPrivate() { return native().ports.network.allowPrivate; }, lookupImpl: (...args) => native().ports.network.lookupImpl(...args) },
-    http: { fetchPinned: (url, init, address) => native().ports.http.fetchPinned(url, init, address) },
+    http: { fetchPinned: (url, init, address) => native().ports.http.fetchPinned(url, init, address),
+      dispatch: (request, send) => native().ports.http.dispatch?.(request, send) ?? send(),
+      isDispatchDeferred: error => native().ports.http.isDispatchDeferred?.(error) ?? false },
     clock: { nowEpochMs: () => native().ports.clock.nowEpochMs(), nowMonotonicMs: () => native().ports.clock.nowMonotonicMs() },
     telemetry: { record: metric => native().ports.telemetry.record(metric) },
   }, MUSUBI_CREATE_POLICY, options));

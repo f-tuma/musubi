@@ -1,3 +1,4 @@
+import type { NativeHttpDispatch } from "./http-dispatch";
 /** Native provider inputs. Connection identities are opaque host values. */
 export interface GoogleEventTarget {
   readonly connectionId: string;
@@ -42,7 +43,7 @@ export interface GoogleProviderPorts {
   readonly accountSession: {
     open(connection: Pick<GoogleEventTarget, "connectionId" | "connectionGeneration">, signal?: AbortSignal): Promise<GoogleAccountSession>;
   };
-  readonly http: { fetch(url: string, init: RequestInit): Promise<Response> };
+  readonly http: NativeHttpDispatch & { fetch(url: string, init: RequestInit): Promise<Response> };
   readonly clock: { nowEpochMs(): number; nowMonotonicMs(): number };
   /** Diagnostic failures cannot change the provider outcome. No sensitive labels. */
   readonly telemetry: { record(metric: GoogleRequestMetric): void };

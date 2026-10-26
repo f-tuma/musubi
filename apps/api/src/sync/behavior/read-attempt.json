@@ -1,0 +1,469 @@
+{
+  "schemaVersion": 1,
+  "suite": "read-attempt",
+  "driver": "read-attempt",
+  "scenarios": [
+    {
+      "id": "steady-large-pagination",
+      "title": "190 progressing leaves and DB apply exceed 90 seconds without a total pull cap",
+      "steps": [
+        {
+          "command": "pages",
+          "id": "fetch",
+          "count": 190,
+          "leafMs": 500
+        },
+        {
+          "command": "database-progress",
+          "id": "apply",
+          "durationMs": 500
+        },
+        {
+          "command": "guard"
+        },
+        {
+          "command": "dispose"
+        },
+        {
+          "command": "advance",
+          "durationMs": 180000
+        },
+        {
+          "command": "guard"
+        }
+      ],
+      "expected": {
+        "elapsedMs": 275500,
+        "completedAtMs": 95500,
+        "pages": 190,
+        "databaseProgress": 1,
+        "renewals": 4,
+        "resumeCalls": 0,
+        "signalReason": "finished",
+        "guards": [
+          "live",
+          "finished"
+        ],
+        "runs": [
+          {
+            "id": "fetch",
+            "kind": "pages",
+            "outcome": "completed",
+            "entered": true
+          },
+          {
+            "id": "apply",
+            "kind": "database",
+            "outcome": "completed",
+            "entered": true
+          }
+        ],
+        "callbacksAfterDispose": 0,
+        "pendingTimers": 0
+      }
+    },
+    {
+      "id": "quota-pause-keeps-heartbeats",
+      "title": "Explicit quota pause outlives the idle interval while renewals continue",
+      "steps": [
+        {
+          "command": "pause",
+          "id": "quota"
+        },
+        {
+          "command": "start-blocked",
+          "id": "pull",
+          "kind": "leaf"
+        },
+        {
+          "command": "advance",
+          "durationMs": 120000
+        },
+        {
+          "command": "guard"
+        },
+        {
+          "command": "resume",
+          "id": "quota"
+        },
+        {
+          "command": "guard"
+        },
+        {
+          "command": "dispose"
+        },
+        {
+          "command": "advance",
+          "durationMs": 180000
+        },
+        {
+          "command": "guard"
+        }
+      ],
+      "expected": {
+        "elapsedMs": 300000,
+        "completedAtMs": null,
+        "pages": 0,
+        "databaseProgress": 0,
+        "renewals": 6,
+        "resumeCalls": 1,
+        "signalReason": "finished",
+        "guards": [
+          "live",
+          "live",
+          "finished"
+        ],
+        "runs": [
+          {
+            "id": "pull",
+            "kind": "leaf",
+            "outcome": "finished",
+            "entered": true
+          }
+        ],
+        "callbacksAfterDispose": 0,
+        "pendingTimers": 0
+      }
+    },
+    {
+      "id": "stalled-leaf-idle-aborts",
+      "title": "A stalled native leaf with no progress aborts at the idle deadline",
+      "steps": [
+        {
+          "command": "start-blocked",
+          "id": "fetch",
+          "kind": "leaf"
+        },
+        {
+          "command": "advance",
+          "durationMs": 90000
+        },
+        {
+          "command": "guard"
+        },
+        {
+          "command": "dispose"
+        },
+        {
+          "command": "advance",
+          "durationMs": 180000
+        },
+        {
+          "command": "guard"
+        }
+      ],
+      "expected": {
+        "elapsedMs": 270000,
+        "completedAtMs": null,
+        "pages": 0,
+        "databaseProgress": 0,
+        "renewals": 4,
+        "resumeCalls": 0,
+        "signalReason": "idle",
+        "guards": [
+          "idle",
+          "finished"
+        ],
+        "runs": [
+          {
+            "id": "fetch",
+            "kind": "leaf",
+            "outcome": "idle",
+            "entered": true
+          }
+        ],
+        "callbacksAfterDispose": 0,
+        "pendingTimers": 0
+      }
+    },
+    {
+      "id": "stalled-database-idle-aborts",
+      "title": "A stalled DB apply with no progress aborts at the idle deadline",
+      "steps": [
+        {
+          "command": "start-blocked",
+          "id": "apply",
+          "kind": "database"
+        },
+        {
+          "command": "advance",
+          "durationMs": 90000
+        },
+        {
+          "command": "guard"
+        },
+        {
+          "command": "dispose"
+        },
+        {
+          "command": "advance",
+          "durationMs": 180000
+        },
+        {
+          "command": "guard"
+        }
+      ],
+      "expected": {
+        "elapsedMs": 270000,
+        "completedAtMs": null,
+        "pages": 0,
+        "databaseProgress": 0,
+        "renewals": 4,
+        "resumeCalls": 0,
+        "signalReason": "idle",
+        "guards": [
+          "idle",
+          "finished"
+        ],
+        "runs": [
+          {
+            "id": "apply",
+            "kind": "database",
+            "outcome": "idle",
+            "entered": true
+          }
+        ],
+        "callbacksAfterDispose": 0,
+        "pendingTimers": 0
+      }
+    },
+    {
+      "id": "lease-loss-during-pause",
+      "title": "Lease refusal aborts paused work without resuming quota wait",
+      "renewalResponses": [
+        false
+      ],
+      "steps": [
+        {
+          "command": "pause",
+          "id": "quota"
+        },
+        {
+          "command": "start-blocked",
+          "id": "pull",
+          "kind": "leaf"
+        },
+        {
+          "command": "advance",
+          "durationMs": 20000
+        },
+        {
+          "command": "guard"
+        },
+        {
+          "command": "dispose"
+        },
+        {
+          "command": "advance",
+          "durationMs": 180000
+        },
+        {
+          "command": "guard"
+        }
+      ],
+      "expected": {
+        "elapsedMs": 200000,
+        "completedAtMs": null,
+        "pages": 0,
+        "databaseProgress": 0,
+        "renewals": 1,
+        "resumeCalls": 0,
+        "signalReason": "lease-lost",
+        "guards": [
+          "lease-lost",
+          "finished"
+        ],
+        "runs": [
+          {
+            "id": "pull",
+            "kind": "leaf",
+            "outcome": "lease-lost",
+            "entered": true
+          }
+        ],
+        "callbacksAfterDispose": 0,
+        "pendingTimers": 0
+      }
+    },
+    {
+      "id": "caller-abort-during-pause",
+      "title": "Caller cancellation aborts paused work without resuming quota wait",
+      "steps": [
+        {
+          "command": "pause",
+          "id": "quota"
+        },
+        {
+          "command": "start-blocked",
+          "id": "pull",
+          "kind": "leaf"
+        },
+        {
+          "command": "advance",
+          "durationMs": 30000
+        },
+        {
+          "command": "caller-abort"
+        },
+        {
+          "command": "guard"
+        },
+        {
+          "command": "dispose"
+        },
+        {
+          "command": "advance",
+          "durationMs": 180000
+        },
+        {
+          "command": "guard"
+        }
+      ],
+      "expected": {
+        "elapsedMs": 210000,
+        "completedAtMs": null,
+        "pages": 0,
+        "databaseProgress": 0,
+        "renewals": 1,
+        "resumeCalls": 0,
+        "signalReason": "cancelled",
+        "guards": [
+          "cancelled",
+          "finished"
+        ],
+        "runs": [
+          {
+            "id": "pull",
+            "kind": "leaf",
+            "outcome": "cancelled",
+            "entered": true
+          }
+        ],
+        "callbacksAfterDispose": 0,
+        "pendingTimers": 0
+      }
+    },
+    {
+      "id": "resume-is-one-shot",
+      "title": "A repeated resume cannot renew the idle deadline twice",
+      "steps": [
+        {
+          "command": "pause",
+          "id": "quota"
+        },
+        {
+          "command": "advance",
+          "durationMs": 120000
+        },
+        {
+          "command": "resume",
+          "id": "quota"
+        },
+        {
+          "command": "advance",
+          "durationMs": 89999
+        },
+        {
+          "command": "guard"
+        },
+        {
+          "command": "resume",
+          "id": "quota"
+        },
+        {
+          "command": "advance",
+          "durationMs": 1
+        },
+        {
+          "command": "guard"
+        },
+        {
+          "command": "dispose"
+        },
+        {
+          "command": "advance",
+          "durationMs": 180000
+        },
+        {
+          "command": "guard"
+        }
+      ],
+      "expected": {
+        "elapsedMs": 390000,
+        "completedAtMs": null,
+        "pages": 0,
+        "databaseProgress": 0,
+        "renewals": 10,
+        "resumeCalls": 2,
+        "signalReason": "idle",
+        "guards": [
+          "live",
+          "idle",
+          "finished"
+        ],
+        "runs": [],
+        "callbacksAfterDispose": 0,
+        "pendingTimers": 0
+      }
+    },
+    {
+      "id": "dispose-closes-work-and-timers",
+      "title": "Disposed work rejects guards and callbacks and releases all timers",
+      "steps": [
+        {
+          "command": "start-blocked",
+          "id": "pending",
+          "kind": "leaf"
+        },
+        {
+          "command": "dispose"
+        },
+        {
+          "command": "immediate-run",
+          "id": "closed"
+        },
+        {
+          "command": "progress"
+        },
+        {
+          "command": "advance",
+          "durationMs": 360000
+        },
+        {
+          "command": "guard"
+        },
+        {
+          "command": "dispose"
+        }
+      ],
+      "expected": {
+        "elapsedMs": 360000,
+        "completedAtMs": null,
+        "pages": 0,
+        "databaseProgress": 0,
+        "renewals": 0,
+        "resumeCalls": 0,
+        "signalReason": "finished",
+        "guards": [
+          "finished"
+        ],
+        "runs": [
+          {
+            "id": "pending",
+            "kind": "leaf",
+            "outcome": "finished",
+            "entered": true
+          },
+          {
+            "id": "closed",
+            "kind": "leaf",
+            "outcome": "finished",
+            "entered": false
+          }
+        ],
+        "callbacksAfterDispose": 0,
+        "pendingTimers": 0
+      }
+    }
+  ]
+}

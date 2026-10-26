@@ -9,6 +9,7 @@ import {
   deleteExpiredInvites,
   deleteExpiredMemberTokens,
   deleteExpiredSessions,
+  deleteExpiredProviderCooldowns,
   purgeDeletedEvents,
 } from "@musubi/db";
 import { migrateDatabase } from "@musubi/db/migrate";
@@ -138,7 +139,9 @@ import {
   handlerFederationConnect,
   handlerFederationPreview,
 } from "./handlers/federation";
-import { syncUser, drainEventOutbox } from "./sync/engine";
+import { syncUser, drainEventOutbox, initializeSyncEngine } from "./sync/engine";
+import { bootstrapProviderBudget, stopProviderBudget } from "./sync/provider_budget";
+import { kickSyncWork, stopSyncWorkCoordinator } from "./sync/work_coordinator";
 import { getExternalSyncUserIDs } from "@musubi/db";
 import {
   middlewareMetrics,
@@ -149,7 +152,7 @@ import {
 import { dispatchDueReminders, pushEnabled } from "./reminder_dispatch";
 import { drainPendingNotifications } from "./notification_dispatch";
 import { nonOverlapping } from "./scheduling";
-import { runDeliveryRecovery, startExternalBackground } from "./sync/background";
+import { externalBackgroundPolicy, runDeliveryRecovery, startExternalBackground } from "./sync/background";
 import { acquireApiSingletonLock } from "./singleton";
 import { trustPrivateProxies } from "./middleware/proxy";
 
@@ -600,6 +603,7 @@ async function cleanupExpired() {
     await deleteExpiredInvites();
     await deleteExpiredMemberTokens();
     await deleteExpiredSessions();
+    await deleteExpiredProviderCooldowns();
     await purgeDeletedEvents(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)); // tombstones > 30d
     logger.debug("cleanup.completed", {
       durationMs: Math.round((performance.now() - startedAt) * 10) / 10,
@@ -619,10 +623,10 @@ async function syncExternalAccounts() {
   const startedAt = performance.now();
   try {
     const userIDs = await getExternalSyncUserIDs();
-    let changedCalendars = 0;
-    for (const userID of userIDs) {
-      changedCalendars += (await syncUser(userID)).length; // per-provider errors are caught inside
-    }
+    // Enumerate/enqueue every account before waiting for any user's slow HTTP.
+    // The single coordinator owns actual provider concurrency across users.
+    const changedCalendars = (await Promise.all(userIDs.map(userID => syncUser(userID))))
+      .reduce((total, changed) => total + changed.length, 0);
     const fields = {
       users: userIDs.length,
       changedCalendars,
@@ -712,6 +716,15 @@ async function start() {
   await acquireApiSingletonLock();
   await migrateDatabase();
   await initializeEmailCapability();
+  const syncPolicy = externalBackgroundPolicy({ pullIntervalMin: config.api.externalSyncIntervalMin,
+    deliveryRecoveryMode: config.api.externalDeliveryRecoveryMode });
+  initializeSyncEngine([
+    ...(syncPolicy.pullEnabled ? ["pull" as const] : []),
+    ...(syncPolicy.deliveryRecoveryEnabled ? ["event-delivery" as const, "task-delivery" as const, "outlook-move" as const] : []),
+  ]);
+  await bootstrapProviderBudget({ onRecovered: kickSyncWork });
+  kickSyncWork();
+  process.once("exit", () => { stopSyncWorkCoordinator(); stopProviderBudget(); });
 
   app.listen(port, "0.0.0.0", () => {
     logger.info("server.started", {

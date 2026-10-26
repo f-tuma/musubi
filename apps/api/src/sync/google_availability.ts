@@ -3,6 +3,7 @@ import { AvailabilityRequestSchema, AvailabilityResponseSchema, ForbiddenError, 
 import { readAvailabilitySources, googleAvailabilityScope } from "@musubi/db";
 import { getGoogleAccessToken } from "./adapters/google";
 import { queryGoogleFreebusy } from "./adapters/google_freebusy";
+import { withAccountBudgetScope } from "./provider_budget";
 export function requireAvailabilityEnabled() {
   if (!config.api.googleAvailabilityEnabled) throw new ForbiddenError("Google availability is not enabled.");
 }
@@ -16,13 +17,14 @@ export async function readGoogleAvailability(userID: string, input: unknown): Pr
     const { source, nativeAccountID, scope, syncStatus, refreshToken } = row!;
     const base = { sourceId: source.id, generation: source.generation };
     if (!refreshToken || syncStatus !== "active" || !googleAvailabilityScope(scope)) return { ...base, status: "reconnect-required" as const };
-    try {
+    try { return await withAccountBudgetScope("google", userID, nativeAccountID, async () => {
       const token = await getGoogleAccessToken(userID, nativeAccountID);
       const before = (await readAvailabilitySources(userID)).find(current => current.source.id === source.id);
       if (!before || before.source.generation !== source.generation || !before.source.enabled || (before.accountGeneration !== row!.accountGeneration || before.accountEpoch !== row!.accountEpoch)) return { ...base, status: "unavailable" as const };
       if (!before.refreshToken || before.syncStatus !== "active" || !googleAvailabilityScope(before.scope)) return { ...base, status: "reconnect-required" as const };
       const intervals = await queryGoogleFreebusy(token, source.externalID, range, AbortSignal.timeout(10_000));
       return { ...base, status: "available" as const, intervals };
+    }, { purpose: "pull" });
     } catch { return { ...base, status: "unavailable" as const }; }
   }));
   // No in-flight observation crosses a selection/access/account generation.

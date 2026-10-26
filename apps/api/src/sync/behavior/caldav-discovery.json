@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "suite": "caldav-discovery",
+  "scenarios": [
+    { "id": "warm-routes", "title": "A fresh session reuses only owned validated routes", "steps": [
+      { "command": "begin", "session": "cold", "expectHome": null },
+      { "command": "commit", "session": "cold" },
+      { "command": "begin", "session": "warm", "expectHome": "https://dav.example/home/" }
+    ] },
+    { "id": "authoritative-refresh", "title": "Authoritative discovery bypasses previously cached routes", "steps": [
+      { "command": "begin", "session": "cold", "expectHome": null },
+      { "command": "commit", "session": "cold" },
+      { "command": "begin", "session": "fresh", "refresh": true, "expectHome": null },
+      { "command": "commit", "session": "fresh", "home": "https://dav.example/new-home/" },
+      { "command": "begin", "session": "warm", "expectHome": "https://dav.example/new-home/" }
+    ] },
+    { "id": "precise-credential-revision", "title": "A microsecond credential revision invalidates routing hints", "steps": [
+      { "command": "begin", "session": "old", "expectHome": null },
+      { "command": "commit", "session": "old" },
+      { "command": "begin", "session": "changed", "binding": { "credentialRevision": "2026-10-26T12:00:00.000002" }, "expectHome": null }
+    ] },
+    { "id": "credential-fingerprint", "title": "Changed encrypted credentials invalidate equal-timestamp routing hints", "steps": [
+      { "command": "begin", "session": "old", "expectHome": null },
+      { "command": "commit", "session": "old" },
+      { "command": "begin", "session": "changed", "binding": { "credentialFingerprint": "private-fixture-credential-b" }, "expectHome": null }
+    ] },
+    { "id": "owner-account-isolation", "title": "Different owners and physical account rows never share routing material", "steps": [
+      { "command": "begin", "session": "a", "expectHome": null },
+      { "command": "commit", "session": "a" },
+      { "command": "begin", "session": "other-owner", "binding": { "userID": "owner-b" }, "expectHome": null },
+      { "command": "begin", "session": "other-account", "binding": { "accountID": "physical-row-b" }, "expectHome": null }
+    ] },
+    { "id": "policy-invalidation", "title": "A changed guarded-network policy invalidates routing hints", "steps": [
+      { "command": "begin", "session": "old", "expectHome": null },
+      { "command": "commit", "session": "old" },
+      { "command": "begin", "session": "changed", "binding": { "policyFingerprint": "policy-b" }, "expectHome": null }
+    ] },
+    { "id": "stale-publish", "title": "A slow old discovery cannot replace newer routing material", "steps": [
+      { "command": "begin", "session": "slow", "expectHome": null },
+      { "command": "begin", "session": "fresh", "refresh": true, "expectHome": null },
+      { "command": "commit", "session": "fresh", "home": "https://dav.example/new-home/" },
+      { "command": "commit", "session": "slow" },
+      { "command": "begin", "session": "warm", "expectHome": "https://dav.example/new-home/" }
+    ] },
+    { "id": "stale-failure", "title": "An old failed attempt cannot evict a newer successful discovery", "steps": [
+      { "command": "begin", "session": "slow", "expectHome": null },
+      { "command": "begin", "session": "fresh", "refresh": true, "expectHome": null },
+      { "command": "commit", "session": "fresh" },
+      { "command": "invalidate", "session": "slow" },
+      { "command": "begin", "session": "warm", "expectHome": "https://dav.example/home/" }
+    ] },
+    { "id": "failed-attempt", "title": "An incomplete or cancelled discovery cannot populate a later session", "steps": [
+      { "command": "begin", "session": "failed", "expectHome": null },
+      { "command": "invalidate", "session": "failed" },
+      { "command": "commit", "session": "failed" },
+      { "command": "begin", "session": "later", "expectHome": null }
+    ] },
+    { "id": "expiry", "title": "Routing hints expire at their fixed monotonic deadline", "ttlMs": 20, "steps": [
+      { "command": "begin", "session": "cold", "expectHome": null },
+      { "command": "commit", "session": "cold" },
+      { "command": "advance", "ms": 19 },
+      { "command": "begin", "session": "warm", "expectHome": "https://dav.example/home/" },
+      { "command": "commit", "session": "warm" },
+      { "command": "advance", "ms": 1 },
+      { "command": "begin", "session": "expired", "expectHome": null }
+    ] },
+    { "id": "bounded-eviction", "title": "Evicted in-flight sessions cannot resurrect an unbounded cache", "capacity": 1, "steps": [
+      { "command": "begin", "session": "a", "expectHome": null },
+      { "command": "begin", "session": "b", "binding": { "accountID": "physical-row-b" }, "expectHome": null },
+      { "command": "commit", "session": "a" },
+      { "command": "begin", "session": "a-again", "expectHome": null }
+    ] }
+  ]
+}

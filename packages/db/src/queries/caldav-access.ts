@@ -1,3 +1,5 @@
+import { withSyncReadTransaction } from "./read-work-transaction";
+import type { SyncReadWorkExecution } from "./read-work-transaction";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "..";
 import { calendarMembers, externalCalendars } from "../schema";
@@ -8,8 +10,8 @@ const flag = (value: boolean | null) => value === true ? "yes" : value === false
 export function caldavReadRole(evidence: CaldavReadAccess) { return `caldav:read=${flag(evidence.read)};freebusy=${flag(evidence.readFreeBusy)}`; }
 export function caldavHasRead(role: string | null): boolean | null { return role?.startsWith("caldav:read=yes;") ? true : role?.startsWith("caldav:read=no;") ? false : null; }
 /** Collection discovery invalidates stale imported detail, not child write ACLs. */
-export async function reconcileCaldavReadAccess(userID: string, accountID: string, calendarID: string, evidence: CaldavReadAccess, readOnly: boolean) {
-  return db.transaction(async tx => {
+export async function reconcileCaldavReadAccess(userID: string, accountID: string, calendarID: string, evidence: CaldavReadAccess, readOnly: boolean, readWork?: SyncReadWorkExecution) {
+  return withSyncReadTransaction(readWork, async tx => {
     await lockCalendarLifecycle(tx, [calendarID], "exclusive");
     const [source] = await tx.select().from(externalCalendars).where(and(eq(externalCalendars.provider, "caldav"), eq(externalCalendars.userID, userID), eq(externalCalendars.accountID, accountID), eq(externalCalendars.calendarID, calendarID), eq(externalCalendars.disabled, false))).for("update");
     const [member] = await tx.select().from(calendarMembers).where(and(eq(calendarMembers.userID, userID), eq(calendarMembers.calendarID, calendarID))).for("update");

@@ -7,6 +7,7 @@ import type { ProviderReminderEdit, ProviderRsvpIntent, ProviderReminderInstance
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  bigint,
   check,
   customType,
   index,
@@ -1306,11 +1307,13 @@ export const outlookMoves = pgTable("outlook_moves", {
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   leaseToken: uuid("lease_token"),
   leaseUntil: timestamp("lease_until", { withTimezone: true }),
+  nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, t => [
   index("outlook_moves_owner_family_idx").on(t.actorID, t.linkID, t.masterID, t.createdAt),
   index("outlook_moves_running_idx").on(t.updatedAt).where(sql`${t.status} = 'running'`),
+  index("outlook_moves_due_idx").on(t.nextAttemptAt, t.updatedAt, t.id).where(sql`${t.status} = 'running'`),
   uniqueIndex("outlook_moves_one_running_idx").on(t.linkID, t.masterID).where(sql`${t.status} = 'running'`),
 ]);
 
@@ -1320,6 +1323,75 @@ export const availabilityAccounts = pgTable("availability_accounts", {
   accountID: text("account_id").primaryKey().references(() => account.id, { onDelete: "cascade" }),
   generation: integer("generation").notNull().default(0),
 });
+
+/** Durable read wakeups, separate from permission/cursor/checkpoint epochs and
+ * from the accepted write journals. Private host metadata contains no secrets. */
+export const syncReadWork = pgTable("sync_read_work", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userID: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  provider: text("provider").$type<"google" | "microsoft" | "caldav">().notNull(),
+  accountID: text("account_id").notNull(),
+  oauthAccountID: text("oauth_account_id").references(() => account.id, { onDelete: "cascade" }),
+  caldavAccountID: uuid("caldav_account_id").references(() => caldavAccounts.id, { onDelete: "cascade" }),
+  sourceID: uuid("source_id").references(() => externalCalendars.id, { onDelete: "cascade" }),
+  scopeKey: text("scope_key").notNull(),
+  stream: text("stream").$type<"discovery" | "events" | "tasks" | "components">().notNull(),
+  oauthReadGeneration: integer("oauth_read_generation"),
+  oauthScope: text("oauth_scope"),
+  caldavCredentialRevision: text("caldav_credential_revision"),
+  caldavCredentialFingerprint: text("caldav_credential_fingerprint"),
+  sourceGeneration: integer("source_generation"),
+  providerAccessRevision: integer("provider_access_revision"),
+  sourceConfigurationFingerprint: text("source_configuration_fingerprint"),
+  sourceFingerprint: text("source_fingerprint"),
+  configurationFingerprint: text("configuration_fingerprint").notNull(),
+  policyFingerprint: text("policy_fingerprint").notNull(),
+  bindingToken: uuid("binding_token").notNull().defaultRandom(),
+  requestedGeneration: bigint("requested_generation", { mode: "bigint" }).notNull().default(sql`1`),
+  completedGeneration: bigint("completed_generation", { mode: "bigint" }).notNull().default(sql`0`),
+  claimGeneration: bigint("claim_generation", { mode: "bigint" }),
+  claimToken: uuid("claim_token"),
+  leaseUntil: timestamp("lease_until", { withTimezone: true }),
+  notBefore: timestamp("not_before", { withTimezone: true }).notNull().defaultNow(),
+  retiredAt: timestamp("retired_at", { withTimezone: true }),
+  lastDeferralKind: text("last_deferral_kind").$type<"optional-unavailable" | "budget" | "failure">(),
+  requestedAt: timestamp("requested_at", { withTimezone: true }).notNull().defaultNow(),
+  lastStartedAt: timestamp("last_started_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  uniqueIndex("sync_read_work_oauth_scope_idx").on(t.oauthAccountID, t.scopeKey, t.stream).where(sql`${t.oauthAccountID} is not null`),
+  uniqueIndex("sync_read_work_caldav_scope_idx").on(t.caldavAccountID, t.scopeKey, t.stream).where(sql`${t.caldavAccountID} is not null`),
+  index("sync_read_work_source_idx").on(t.sourceID),
+  index("sync_read_work_user_idx").on(t.userID),
+  index("sync_read_work_due_idx").on(t.notBefore, t.lastStartedAt, t.id).where(sql`${t.retiredAt} is null and ${t.requestedGeneration} > ${t.completedGeneration}`),
+  check("sync_read_work_provider_check", sql`${t.provider} in ('google','microsoft','caldav')`),
+  check("sync_read_work_connection_check", sql`(
+    (${t.provider} in ('google','microsoft') and ${t.oauthAccountID} is not null and ${t.caldavAccountID} is null and ${t.oauthReadGeneration} is not null and ${t.oauthReadGeneration} >= 0 and ${t.caldavCredentialRevision} is null and ${t.caldavCredentialFingerprint} is null)
+    or (${t.provider} = 'caldav' and ${t.oauthAccountID} is null and ${t.caldavAccountID} is not null and ${t.oauthReadGeneration} is null and ${t.oauthScope} is null and ${t.caldavCredentialRevision} is not null and ${t.caldavCredentialFingerprint} is not null))`),
+  check("sync_read_work_stream_check", sql`(
+    (${t.sourceID} is null and ${t.scopeKey} = 'account' and ${t.stream} = 'discovery' and ${t.sourceGeneration} is null and ${t.providerAccessRevision} is null and ${t.sourceConfigurationFingerprint} is null and ${t.sourceFingerprint} is null)
+    or (${t.sourceID} is not null and ${t.scopeKey} = ${t.sourceID}::text and ${t.stream} in ('events','tasks','components') and ${t.sourceGeneration} is not null and ${t.sourceGeneration} >= 0 and ${t.providerAccessRevision} is not null and ${t.providerAccessRevision} >= 0 and ${t.sourceFingerprint} is not null))`),
+  check("sync_read_work_generations_check", sql`${t.completedGeneration} >= 0 and ${t.requestedGeneration} >= ${t.completedGeneration}`),
+  check("sync_read_work_deferral_check", sql`${t.lastDeferralKind} is null or ${t.lastDeferralKind} in ('optional-unavailable','budget','failure')`),
+  check("sync_read_work_retirement_check", sql`${t.retiredAt} is null or (${t.claimToken} is null and ${t.claimGeneration} is null and ${t.leaseUntil} is null)`),
+  check("sync_read_work_claim_check", sql`(
+    (${t.claimToken} is null and ${t.claimGeneration} is null and ${t.leaseUntil} is null)
+    or (${t.claimToken} is not null and ${t.claimGeneration} is not null and ${t.leaseUntil} is not null and ${t.claimGeneration} > ${t.completedGeneration} and ${t.claimGeneration} <= ${t.requestedGeneration}))`),
+]);
+
+/** Observed shared server cooldowns survive process restart. Scope hashes are
+ * stable private rate identities, never authorization or telemetry labels. */
+export const providerBudgetCooldowns = pgTable("provider_budget_cooldowns", {
+  scopeKey: text("scope_key").primaryKey(),
+  dimension: text("dimension").$type<"provider" | "application" | "tenant" | "account">().notNull(),
+  notBefore: timestamp("not_before", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  index("provider_budget_cooldowns_expiry_idx").on(t.notBefore),
+  check("provider_budget_cooldowns_dimension_check", sql`${t.dimension} in ('provider','application','tenant','account')`),
+  check("provider_budget_cooldowns_scope_check", sql`${t.scopeKey} ~ '^[a-f0-9]{64}$'`),
+]);
 export const availabilitySources = pgTable("availability_sources", {
   id: uuid("id").primaryKey().defaultRandom(),
   accountID: text("account_id").notNull().references(() => availabilityAccounts.accountID, { onDelete: "cascade" }),

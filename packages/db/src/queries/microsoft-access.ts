@@ -1,3 +1,5 @@
+import { withSyncReadTransaction } from "./read-work-transaction";
+import type { SyncReadWorkExecution } from "./read-work-transaction";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "..";
 import { calendarMembers, externalCalendars } from "../schema";
@@ -11,9 +13,9 @@ export function hasFullProviderReadAccess(provider: string, role: string | null)
 /** Successful discovery records write and private-read evidence independently.
  * Only explicit loss of private reads retires content; write loss is not privacy.
  */
-export async function reconcileMicrosoftCalendarAccess(userID: string, accountID: string, calendarID: string, evidence: MicrosoftCalendarAccess) {
+export async function reconcileMicrosoftCalendarAccess(userID: string, accountID: string, calendarID: string, evidence: MicrosoftCalendarAccess, readWork?: SyncReadWorkExecution) {
   const accessRole = microsoftAccessRole(evidence);
-  return db.transaction(async tx => {
+  return withSyncReadTransaction(readWork, async tx => {
     await lockCalendarLifecycle(tx, [calendarID], "exclusive");
     const [source] = await tx.select().from(externalCalendars).where(and(eq(externalCalendars.provider, "microsoft"), eq(externalCalendars.userID, userID), eq(externalCalendars.accountID, accountID), eq(externalCalendars.calendarID, calendarID), eq(externalCalendars.disabled, false), eq(externalCalendars.supportsEvents, true))).for("update");
     const [member] = await tx.select().from(calendarMembers).where(and(eq(calendarMembers.userID, userID), eq(calendarMembers.calendarID, calendarID))).for("update");

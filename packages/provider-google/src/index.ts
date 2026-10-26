@@ -1,3 +1,4 @@
+import { dispatchNativeHttp } from "./http-dispatch";
 export { createGoogleTaskCreateProvider } from "./task-create";
 export * from "./task-create-types";
 export { createGoogleTaskDeleteProvider } from "./task-delete";
@@ -170,20 +171,15 @@ export function createGooglePersonalEventProvider(ports: GoogleProviderPorts) {
   }
   async function request(url: string, method: "GET" | "PATCH", current: GoogleAccountSession, signal?: AbortSignal, body?: GooglePersonalContentBody, etag?: string): Promise<Response> {
     signal?.throwIfAborted();
-    const started = ports.clock.nowMonotonicMs();
-    let status: number | "network-error" | "aborted" = "network-error";
     try {
-      const response = await ports.http.fetch(url, { method, redirect: "error", signal,
+      const response = await dispatchNativeHttp(ports.http, String(url), { method, redirect: "error", signal,
         headers: { Authorization: `Bearer ${current.accessToken}`, ...(method === "GET" ? { "Cache-Control": "no-cache" } : { "Content-Type": "application/json", "If-Match": etag! }) },
-        ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
-      status = response.status;
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }) }, (requestInit) => ports.http.fetch(url, requestInit), ports.clock, (status, durationMs) => ports.telemetry.record({ provider: "google", family: "event", method, status, durationMs }));
+
       return response;
     } catch (error) {
-      if (signal?.aborted || (error instanceof Error && error.name === "AbortError")) status = "aborted";
+      if (ports.http.isDispatchDeferred?.(error)) throw error;
       throw new GoogleProviderError("provider-write-failed", method === "PATCH" ? "unconfirmed" : "not-written");
-    } finally {
-      const durationMs = Math.max(0, ports.clock.nowMonotonicMs() - started);
-      try { ports.telemetry.record({ provider: "google", family: "event", method, status, durationMs }); } catch { /* Diagnostics never authorize or revoke a write. */ }
     }
   }
   function eventURL(scope: GoogleEventTarget) {
@@ -273,12 +269,10 @@ export function createGooglePersonalEventDeleteProvider(ports: GoogleDeleteProvi
   }
   async function request(url: string, method: "GET" | "DELETE", current: GoogleAccountSession, signal?: AbortSignal, etag?: string): Promise<Response> {
     signal?.throwIfAborted();
-    const started = ports.clock.nowMonotonicMs();
-    let status: number | "network-error" | "aborted" = "network-error";
     try {
-      const response = await ports.http.fetch(url, { method, redirect: "error", signal,
-        headers: { Authorization: `Bearer ${current.accessToken}`, ...(method === "GET" ? { "Cache-Control": "no-cache" } : { "If-Match": etag! }) } });
-      status = response.status;
+      const response = await dispatchNativeHttp(ports.http, String(url), { method, redirect: "error", signal,
+        headers: { Authorization: `Bearer ${current.accessToken}`, ...(method === "GET" ? { "Cache-Control": "no-cache" } : { "If-Match": etag! }) } }, (requestInit) => ports.http.fetch(url, requestInit), ports.clock, (status, durationMs) => ports.telemetry.record({ provider: "google", family: "event", method, status, durationMs }));
+
       // A host transport must not silently convert exact reads or conditional
       // mutations into redirected or differently scoped resources.
       if (response.redirected || response.url && response.url !== url)
@@ -286,12 +280,9 @@ export function createGooglePersonalEventDeleteProvider(ports: GoogleDeleteProvi
       signal?.throwIfAborted();
       return response;
     } catch (error) {
-      if (signal?.aborted || (error instanceof Error && error.name === "AbortError")) status = "aborted";
+      if (ports.http.isDispatchDeferred?.(error)) throw error;
       if (error instanceof GoogleProviderError) throw error;
       throw new GoogleProviderError("provider-write-failed", method === "DELETE" ? "unconfirmed" : "not-written");
-    } finally {
-      const durationMs = Math.max(0, ports.clock.nowMonotonicMs() - started);
-      try { ports.telemetry.record({ provider: "google", family: "event", method, status, durationMs }); } catch { /* Diagnostics have no authority. */ }
     }
   }
   function completeRead(response: Response) {
@@ -416,24 +407,19 @@ export function createGooglePersonalEventCreateProvider(ports: GoogleCreateProvi
   }
   async function request(url: string, method: "GET" | "POST", current: GoogleAccountSession, signal?: AbortSignal, body?: GooglePersonalCreateBody): Promise<Response> {
     signal?.throwIfAborted();
-    const started = ports.clock.nowMonotonicMs();
-    let status: number | "network-error" | "aborted" = "network-error";
     try {
-      const response = await ports.http.fetch(url, { method, redirect: "error", signal,
+      const response = await dispatchNativeHttp(ports.http, String(url), { method, redirect: "error", signal,
         headers: { Authorization: `Bearer ${current.accessToken}`, ...(method === "GET" ? { "Cache-Control": "no-cache" } : { "Content-Type": "application/json" }) },
-        ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
-      status = response.status;
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }) }, (requestInit) => ports.http.fetch(url, requestInit), ports.clock, (status, durationMs) => ports.telemetry.record({ provider: "google", family: "event", method, status, durationMs }));
+
       if (response.redirected || response.url && response.url !== url)
         throw new GoogleProviderError("provider-write-failed", method === "POST" ? "unconfirmed" : "not-written", response.status);
       signal?.throwIfAborted();
       return response;
     } catch (error) {
-      if (signal?.aborted || error instanceof Error && error.name === "AbortError") status = "aborted";
+      if (ports.http.isDispatchDeferred?.(error)) throw error;
       if (error instanceof GoogleProviderError) throw error;
       throw new GoogleProviderError("provider-write-failed", method === "POST" ? "unconfirmed" : "not-written");
-    } finally {
-      try { ports.telemetry.record({ provider: "google", family: "event", method, status,
-        durationMs: Math.max(0, ports.clock.nowMonotonicMs() - started) }); } catch { /* Diagnostics have no authority. */ }
     }
   }
   function completeRead(response: Response) {

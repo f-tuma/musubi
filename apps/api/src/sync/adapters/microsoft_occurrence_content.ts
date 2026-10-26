@@ -1,3 +1,4 @@
+import { reserveProviderMutation, providerDeferral } from "../provider_budget";
 import { observedProviderFetch as fetch } from "../provider_http_metrics";
 import { requireSupportedSeriesZone } from "./microsoft_time_zone";
 import { setTimeout as delay } from "node:timers/promises";
@@ -36,7 +37,7 @@ export async function prepareGraphOccurrenceContent(token: string, context: Grap
   if (request.patch.time) {
     if (!config.api.eventTimeEditsEnabled) throw new OrganizerAdmissionRejectedError("Time editing is not available.");
     try { graphOccurrenceTimeChange(saved); }
-    catch (error) { throw new OrganizerAdmissionRejectedError(error instanceof Error ? error.message : "Choose a time between neighbouring occurrences."); }
+    catch (error) { if (providerDeferral(error)) throw error; throw new OrganizerAdmissionRejectedError(error instanceof Error ? error.message : "Choose a time between neighbouring occurrences."); }
   }
   return saved;
 }
@@ -65,7 +66,7 @@ export async function updateGraphOccurrenceContent(token: string, saved: GraphOc
   const verify = async () => {
     for (const wait of [0, 200, 400, 800]) {
       if (wait) await delay(wait, undefined, { signal });
-      const value = await read().catch(() => null);
+      const value = await read().catch(error => { if (providerDeferral(error)) throw error; return null; });
       if (value && matches(value)) return value;
     }
     return null;
@@ -78,12 +79,12 @@ export async function updateGraphOccurrenceContent(token: string, saved: GraphOc
   const current = await read();
   if (!same(current.family, saved.baseline) || !same(microsoftMeetingContentEvidence(current.native, saved.identity.selfAddress, saved.context.masterID), baseline)) fail();
   if (matches(current)) return { kind: "observed" as const, observation: current.family! };
-  await mark();
+  await reserveProviderMutation({ url: transport.path(saved.targetID), method: "PATCH" }, mark);
   try {
     const response = await fetch(transport.path(saved.targetID), { method: "PATCH", headers: { ...transport.headers, "Content-Type": "application/json", "If-Match": baseline.etag }, body: JSON.stringify(patch), signal, redirect: "error" });
     if (response.status === 412) return { kind: "rejected" as const };
     if (response.status === 400 && saved.request.patch.time) {
-      const error = await response.json().catch(() => null);
+      const error = await response.json().catch(error => { if (providerDeferral(error)) throw error; return null; });
       if (error?.error?.code === "ErrorOccurrenceCrossingBoundary") return { kind: "rejected" as const };
     }
     if (response.status !== 200) return unknown();
@@ -95,5 +96,5 @@ export async function updateGraphOccurrenceContent(token: string, saved: GraphOc
     const after = await verify();
     if (!after) return unknown();
     return { kind: "observed" as const, observation: after.family! };
-  } catch { return unknown(); }
+  } catch (error) { if (providerDeferral(error)) throw error; return unknown(); }
 }

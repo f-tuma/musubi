@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "kind": "MUSU-41_SOURCE_LOCAL_ACCEPTANCE",
+  "testedSourceHead": "722d9f04ba934f7175b04422599189a5cf476180",
+  "testedSourceTree": "c7915c4d3923734a8d3d69888898924f85139561",
+  "finalPrApproval": "pending independent review of the final fixture/documentation/evidence commit; prior0c7 approval not reused for changed head",
+  "publication": "pending current-head CI and squash/main verification",
+  "deployment": "not performed; later joint step",
+  "files": [
+    {
+      "path": "active-budget-source.json",
+      "bytes": 9211,
+      "sha256": "fdb0e70eccdfbfdb842a1909131db7afa0017de17f6de16a3c09e4cf3781a1d2"
+    },
+    {
+      "path": "api-installed-summary.json",
+      "bytes": 18141,
+      "sha256": "e72f33f9a5a384c0d37a6212dbcf9f43c39f74b607d4565e422a8da31bf968a9"
+    },
+    {
+      "path": "behavior-summary.json",
+      "bytes": 2096,
+      "sha256": "6ec6358700c7068bb77090a910a4dc7388cae53e62d974d8bf5dfab93197615d"
+    },
+    {
+      "path": "browser-summary.json",
+      "bytes": 4921,
+      "sha256": "39fc91c361871ffc9a4f1d99478acc541758be6aca3435f488f6afe0f5061329"
+    },
+    {
+      "path": "ci-fixture-correction.json",
+      "bytes": 2248,
+      "sha256": "9bf124c23934b5ef5a463de5e85c372743c90b995d5ac8f8dc8b2ce2c00e2597"
+    },
+    {
+      "path": "ci-fixture-qa-retirement.json",
+      "bytes": 552,
+      "sha256": "b2dd4e0c53ea0684a94eff4f78a282e148431a2fdffeb3afc7fb71b194f54d8b"
+    },
+    {
+      "path": "ci-fixture-source-binding.json",
+      "bytes": 740,
+      "sha256": "1863871aff2b014c0a11fe14295759a6d2b74a418a414f2d2072af7dd093721f"
+    },
+    {
+      "path": "db-checkpoint-summary.json",
+      "bytes": 2508,
+      "sha256": "c09df8b591096574e5761b1cac674e2e636fc60546ab7106046b34f0b1f66ca6"
+    },
+    {
+      "path": "diagnostic-history.json",
+      "bytes": 2759,
+      "sha256": "915feb064f15b1cc41bdfb0db9816e46db4170c1b7a1a1d0587644293f4529d3"
+    },
+    {
+      "path": "historical-installed-failure.json",
+      "bytes": 2877,
+      "sha256": "3bcc1efe13c89e21d4a7c01776369c633a73cd940cd4da663dc11369517b623a"
+    },
+    {
+      "path": "qa-retirement.json",
+      "bytes": 611,
+      "sha256": "05897a0e7a27f0172c0e3dbf13fb862c32116700b5babd964dca7525c57aba75"
+    },
+    {
+      "path": "reference-installed-summary.json",
+      "bytes": 17577,
+      "sha256": "ca5092a55af50174176c2381b406698c2e80f1d79075fff7da845dfd7ada4735"
+    },
+    {
+      "path": "source-manifest.json",
+      "bytes": 28643,
+      "sha256": "92d183ba722967a6ec6fbcda494a6f3464f81426197161dd5ad58aa76269ced3"
+    },
+    {
+      "path": "source-review.json",
+      "bytes": 6998,
+      "sha256": "de953af47159f7f7848dbfe11d810ccacee1e6a6e8f674b0f1d912de44e5a431"
+    },
+    {
+      "path": "workspace-check.json",
+      "bytes": 653,
+      "sha256": "8e2f0b14394778c959af269b9481b2fd4c791ed38ecaa9d4298fa4d268018b6c"
+    }
+  ],
+  "correctiveFixtureHead": "23afedd8a219087d19065847421577a24001c05f"
+}

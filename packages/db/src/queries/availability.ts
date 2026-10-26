@@ -1,19 +1,21 @@
+import { withSyncReadTransaction } from "./read-work-transaction";
+import type { SyncReadWorkExecution } from "./read-work-transaction";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "..";
 import { account, availabilityAccounts, availabilitySources } from "../schema";
 import { ForbiddenError, BadRequestError, GOOGLE_AVAILABILITY_SCOPE, AvailabilitySelectionSchema } from "@musubi/types";
 export const googleAvailabilityScope = (scope: string | null) => (scope ?? "").split(/[\s,]+/).some(value => [GOOGLE_AVAILABILITY_SCOPE, "https://www.googleapis.com/auth/calendar.freebusy", "https://www.googleapis.com/auth/calendar.readonly", "https://www.googleapis.com/auth/calendar"].includes(value));
 export type AvailabilityDiscovery = { accountID: string; generation: number; epoch: string };
-export async function beginAvailabilityDiscovery(userID: string, nativeAccountID: string): Promise<AvailabilityDiscovery | undefined> {
-  return db.transaction(async tx => {
+export async function beginAvailabilityDiscovery(userID: string, nativeAccountID: string, readWork?: SyncReadWorkExecution): Promise<AvailabilityDiscovery | undefined> {
+  return withSyncReadTransaction(readWork, async tx => {
     const [owner] = await tx.select().from(account).where(and(eq(account.userId, userID), eq(account.providerId, "google"), eq(account.accountId, nativeAccountID))).for("share");
     if (!owner?.refreshToken || owner.syncStatus !== "active") return;
     const [fence] = await tx.insert(availabilityAccounts).values({ accountID: owner.id, generation: 1 }).onConflictDoUpdate({ target: availabilityAccounts.accountID, set: { generation: sql`${availabilityAccounts.generation} + 1` } }).returning();
     return fence;
   });
 }
-export async function reconcileAvailabilitySources(userID: string, context: AvailabilityDiscovery, sources: { externalId: string; name: string }[], accountLabel: string) {
-  return db.transaction(async tx => {
+export async function reconcileAvailabilitySources(userID: string, context: AvailabilityDiscovery, sources: { externalId: string; name: string }[], accountLabel: string, readWork?: SyncReadWorkExecution) {
+  return withSyncReadTransaction(readWork, async tx => {
     const [owner] = await tx.select().from(account).where(and(eq(account.id, context.accountID), eq(account.userId, userID), eq(account.providerId, "google"))).for("share");
     const [fence] = await tx.select().from(availabilityAccounts).where(eq(availabilityAccounts.accountID, context.accountID)).for("update");
     if (!owner?.refreshToken || owner.syncStatus !== "active" || fence?.generation !== context.generation || fence.epoch !== context.epoch) return false;

@@ -39,6 +39,14 @@ test("native Graph version preserves only its original nonempty weak ETag", () =
     assert.equal(nativeMicrosoftEtag(value), null);
 });
 
+test("host dispatch refusal survives Graph read and mutation catches without native evidence", async () => {
+  const refusal = new Error("fixture budget refusal"), f = fixture([]);
+  f.ports.http.dispatch = async () => { throw refusal; }; f.ports.http.isDispatchDeferred = value => value === refusal;
+  await assert.rejects(f.provider.readForDelete(target), value => value === refusal);
+  await assert.rejects(f.provider.delete(input), value => value === refusal);
+  assert.equal(f.calls.length, 0); assert.equal(f.metrics.length, 0);
+});
+
 test("delivery and verification exact reads retain native JSON and the distinct legacy Prefer headers", async () => {
   const f = fixture([response(native), response(native)]);
   const observed = await f.provider.readForDelete(target);
@@ -226,7 +234,9 @@ test("aborted credentials, authority fences and in-flight requests cannot dispat
   const inflight = fixture([]), during = new AbortController();
   inflight.ports.http.fetch = async (_url, init) => { assert.notEqual(init.signal, during.signal); during.abort(); return response({}, 204); };
   await assert.rejects(inflight.provider.delete(input, during.signal), error("provider-write-failed", "unconfirmed"));
-  assert.equal(inflight.metrics[0]!.status, "aborted");
+  // The raw HTTP span observed 204. The later operation guard still rejects
+  // cancellation; host work after headers cannot rewrite that HTTP receipt.
+  assert.equal(inflight.metrics[0]!.status, 204);
 });
 
 test("native observation snapshots do not retain mutable HTTP objects or invoke accessors", async () => {

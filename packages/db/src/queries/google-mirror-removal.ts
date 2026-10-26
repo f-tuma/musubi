@@ -1,3 +1,5 @@
+import { withSyncReadTransaction } from "./read-work-transaction";
+import type { SyncReadWorkExecution } from "./read-work-transaction";
 import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { db } from "..";
 import { account, caldavAccounts, calendarEvents, calendarMembers, events, externalCalendars } from "../schema";
@@ -12,9 +14,10 @@ export async function removeGoogleCalendarMirrors(
   accountID: string,
   candidates: { sourceID: string; calendarID: string; externalCalendarID: string }[],
   provider: "google" | "microsoft" | "caldav" = "google",
+  readWork?: SyncReadWorkExecution,
 ) {
   if (!candidates.length) return { calendarIDs: [], userIDs: [] };
-  return db.transaction(async tx => {
+  return withSyncReadTransaction(readWork, async tx => {
     await lockCalendarLifecycle(tx, candidates.map(source => source.calendarID), "exclusive");
     const sources = await tx.select().from(externalCalendars).where(and(
       eq(externalCalendars.provider, provider), eq(externalCalendars.userID, userID),

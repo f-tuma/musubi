@@ -92,14 +92,30 @@ export async function startOutlookMove(actorID: string, id: string) {
   });
 }
 export async function claimOutlookMove(id: string) {
-  const [row] = await db.update(outlookMoves).set({ updatedAt: new Date(), leaseToken: randomUUID(), leaseUntil: sql`clock_timestamp() + interval '90 seconds'` }).where(and(eq(outlookMoves.id, id), eq(outlookMoves.status, "running"), sql`(${outlookMoves.leaseUntil} is null or ${outlookMoves.leaseUntil} < clock_timestamp())`)).returning();
-  return row;
+  return db.transaction(async tx => {
+    const [candidate] = await tx.select({ id: outlookMoves.id }).from(outlookMoves).where(eq(outlookMoves.id, id)).for("update", { skipLocked: true });
+    if (!candidate) return undefined;
+    const [row] = await tx.update(outlookMoves).set({ updatedAt: sql`clock_timestamp()`, leaseToken: randomUUID(), leaseUntil: sql`clock_timestamp() + interval '90 seconds'` }).where(and(eq(outlookMoves.id, id), eq(outlookMoves.status, "running"), sql`${outlookMoves.nextAttemptAt} <= clock_timestamp()`, sql`(${outlookMoves.leaseUntil} is null or ${outlookMoves.leaseUntil} <= clock_timestamp())`)).returning();
+    return row;
+  });
 }
 export async function releaseOutlookMove(row: OutlookMoveRow) {
   await db.update(outlookMoves).set({ leaseToken: null, leaseUntil: null }).where(and(eq(outlookMoves.id, row.id), eq(outlookMoves.leaseToken, row.leaseToken!)));
 }
 export async function pendingOutlookMoves() {
-  return db.select({ id: outlookMoves.id }).from(outlookMoves).where(eq(outlookMoves.status, "running")).orderBy(outlookMoves.updatedAt).limit(4);
+  return db.select({ id: outlookMoves.id }).from(outlookMoves).where(and(eq(outlookMoves.status, "running"),
+    sql`${outlookMoves.nextAttemptAt} <= clock_timestamp()`, sql`(${outlookMoves.leaseUntil} is null or ${outlookMoves.leaseUntil} <= clock_timestamp())`)).orderBy(outlookMoves.nextAttemptAt, outlookMoves.updatedAt, outlookMoves.id).limit(4);
+}
+/** Pre-dispatch control deferral never rewrites the first unfinished child or
+ * turns a provider budget refusal into a permanent move stop. */
+export async function deferOutlookMove(row: OutlookMoveRow, retryAtMs: number) {
+  if (!Number.isSafeInteger(retryAtMs) || retryAtMs < 0 || retryAtMs > 253402300799999) throw new TypeError("Invalid move retry time.");
+  return db.transaction(async tx => {
+    await tx.select({ id: outlookMoves.id }).from(outlookMoves).where(eq(outlookMoves.id, row.id)).for("update");
+    return (await tx.update(outlookMoves).set({ nextAttemptAt: sql`greatest(${outlookMoves.nextAttemptAt}, ${new Date(retryAtMs).toISOString()}::timestamptz)`,
+      leaseToken: null, leaseUntil: null, updatedAt: sql`clock_timestamp()` }).where(and(eq(outlookMoves.id, row.id), eq(outlookMoves.status, "running"),
+      eq(outlookMoves.leaseToken, row.leaseToken!), sql`${outlookMoves.leaseUntil}>clock_timestamp()`)).returning({ id: outlookMoves.id })).length === 1;
+  });
 }
 export async function stopOutlookMove(row: OutlookMoveRow, eventID: string, uncertain = false) {
   await db.transaction(async tx => {

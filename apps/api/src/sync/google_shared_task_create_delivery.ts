@@ -1,3 +1,4 @@
+import { reserveProviderMutation } from "./provider_budget";
 import { randomUUID } from "node:crypto";
 import {
   assertPinnedOutboxSource, assertTaskOutboxDeliverySource, getTaskOutboxPredecessorEvidence,
@@ -55,6 +56,14 @@ export async function deliverSharedGoogleTaskCreate(row: TaskOutboxRow & { recon
   const finish = async (outcome: RuntimeTaskCreateFinishOutcome) => {
     record(outcome.facts);
     const info = outcome.error;
+    if (info.deferral) {
+      const uncertain = row.reconciling || outcome.facts.possibleDispatch || outcome.facts.provider.kind === "accepted" || outcome.facts.provider.kind === "uncertain";
+      await finishTaskOutbox(row.id, token, uncertain ? "unconfirmed" : "retry", "provider-budget-deferred", {
+        uncertain, nextAttemptAt: new Date(info.deferral.retryAtMs), ...(resultRef ? { resultRef } : {}),
+
+      });
+      return;
+    }
     if (info.code === "task-not-needed") {
       await finishTaskOutbox(row.id, token, "not-needed", null, { uncertain: false });
       return;
@@ -122,9 +131,12 @@ export async function deliverSharedGoogleTaskCreate(row: TaskOutboxRow & { recon
       onReadAuthenticationRejected: signal => native().ports.accountSession.onReadAuthenticationRejected!(signal),
     },
     async beforeMutation(_request, signal) {
+      return reserveProviderMutation({ url: `https://tasks.googleapis.com/tasks/v1/lists/${encodeURIComponent(_request.target.taskListId)}/tasks`, method: "POST" }, async () => {
       signal.throwIfAborted();
       if (!await renewTaskOutboxLease(row.id, token) || !await admitted(false, signal)) throw taskError("task-source-read-only");
       signal.throwIfAborted();
+
+      });
     },
     async recordEvidence(facts, signal) { record(facts); signal.throwIfAborted(); },
     async ack(evidence, signal) {
@@ -136,7 +148,9 @@ export async function deliverSharedGoogleTaskCreate(row: TaskOutboxRow & { recon
     },
     finish, observationId: randomUUID,
   }, {
-    http: { fetch: (url, init) => native().ports.http.fetch(url, init) },
+    http: { fetch: (url, init) => native().ports.http.fetch(url, init),
+      dispatch: (request, send) => native().ports.http.dispatch?.(request, send) ?? send(),
+      isDispatchDeferred: error => native().ports.http.isDispatchDeferred?.(error) ?? false },
     clock: { nowEpochMs: () => native().ports.clock.nowEpochMs(), nowMonotonicMs: () => native().ports.clock.nowMonotonicMs() },
     telemetry: { record: metric => native().ports.telemetry.record(metric) },
   }, MUSUBI_TASK_CREATE_POLICY, options));

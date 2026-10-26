@@ -9,6 +9,7 @@ import { logger } from "@musubi/config";
 import { encryptSecret } from "../sync/crypto";
 import { createCaldavClient } from "../sync/caldav_client";
 import { syncUser } from "../sync/engine";
+import { withPreconnectionBudgetScope } from "../sync/provider_budget";
 
 export async function handlerConnectCaldav(req: Request, res: Response) {
   // Trim: pasted app-specific passwords routinely carry a trailing space/newline
@@ -22,8 +23,10 @@ export async function handlerConnectCaldav(req: Request, res: Response) {
 
   // Verify credentials by attempting discovery before storing anything.
   try {
-    const client = await createCaldavClient(serverUrl, username, password);
-    await client.fetchCalendars();
+    await withPreconnectionBudgetScope("caldav", async () => {
+      const client = await createCaldavClient(serverUrl, username, password);
+      await client.fetchCalendars();
+    });
   } catch (err) {
     logger.warn("caldav.connect.discovery_failed", {
       userId: req.user!.id,

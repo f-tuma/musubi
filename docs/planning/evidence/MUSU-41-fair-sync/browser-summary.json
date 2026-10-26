@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-10-26T20:11:50.964249+00:00",
+  "scope": "Renewed final running web UI after the fixture-only DAV CI correction and both owned QA servers retired; production/UI bytes remain identical to722d. API fixtures prove rendered UI only.",
+  "sourceHead": "23afedd8a219087d19065847421577a24001c05f",
+  "sourceTree": "6459ce82dbcff2b625a406b2df630e7dae61d0e7",
+  "productionAndUiBytesUnchangedAfterSourceCommit": true,
+  "passed": 22,
+  "failed": 0,
+  "first22CaseAttempt": true,
+  "durationSeconds": 41.9,
+  "origin": "http://127.0.0.1:3000",
+  "browser": "Existing Playwright Chromium",
+  "browserRoutingReason": "Browser plugin not available; existing repository Playwright setup used.",
+  "command": "pnpm --filter @musubi/web exec playwright test e2e/behavior.spec.ts e2e/month-read.spec.ts --grep 'JSON behavior|K13 Google RSVP editor preserves retry|K13 CalDAV RSVP editor preserves retry|K13 Graph one-off RSVP editor preserves retry|K14 personal reminder conflict confirmation|K14 CalDAV event alarm editor preserves retry|Outlook selected occurrence move|Google organizer explicit update' --workers=2 --output=/tmp/musu41-ci-fix-final-browser",
+  "viewports": [
+    {
+      "width": 1280,
+      "height": 900,
+      "theme": "light"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "theme": "dark",
+      "scope": "task JSON cases"
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "theme": "dark",
+      "scope": "specialized month cases"
+    }
+  ],
+  "flow": "Task preserve/conflict/readonly/cancel; Google/Graph/DAV RSVP retry; reminder/alarm conflict; organizer update; partial/stopped occurrence move",
+  "checks": {
+    "meaningfulRenderedContent": true,
+    "routeAndAccessibleControls": true,
+    "expectedMutationBodiesAndRetryIdentities": true,
+    "noUnexpectedConsoleErrorsOrPageErrors": true,
+    "noFrameworkOverlay": true,
+    "taskHorizontalOverflow": false,
+    "screenshotsVisuallyInspected": 4,
+    "documentTitleProbe": {
+      "title": "Musubi",
+      "url": "http://127.0.0.1:3000/login",
+      "meaningfulLoginControl": true,
+      "pageErrors": [],
+      "boundary": "web-only fixture, separate from real-auth API proof"
+    },
+    "consoleWarningsExhaustivelyCaptured": false
+  },
+  "identityProbeNotes": "Fresh isolated owned-server probe uses the actual Continue control; title Musubi, login route and page errors passed on first attempt. The earlier source722 browser/identity checkpoint remains in Git0c7 and its original raw artifacts are unchanged.",
+  "visualReview": "Readable desktop task details and narrow dark preserved draft; sticky footer/scroll area intact. RSVP controls fit; stopped move result clearly distinguishes moved/not moved without overlap. No UI source/style changes.",
+  "qaCleanup": "qa-retirement.json verifies55444 initial proof; ci-fixture-qa-retirement.json verifies55445 correction; both empty owned servers removed before this web run; user55437 untouched.",
+  "artifacts": [
+    {
+      "path": "/tmp/musu41-ci-fix-final-browser.log",
+      "bytes": 7274,
+      "sha256": "407b317be08bc6069ec8b2a3d10d4c638d0e0bf66acdb42d4fbb031f5bd7c366"
+    },
+    {
+      "path": "/tmp/musu41-ci-fix-final-browser-inventory.log",
+      "bytes": 2505,
+      "sha256": "5a5a6ab92ebd0ae752d180964af9b2de5143058688edcbaaa19a04adc79c3972"
+    },
+    {
+      "path": "/tmp/musu41-ci-fix-browser-identity.json",
+      "bytes": 187,
+      "sha256": "4c7a3c3436748a28d490dbc9c429731d6a64651c68f358abdbdd0bd1aa4f4339"
+    },
+    {
+      "path": "/tmp/musu41-ci-fix-browser-identity-final.log",
+      "bytes": 56,
+      "sha256": "5391c306f54bb51155fb9a16a3831c978ce7bf87c5d4b380bcab299f12017a69"
+    },
+    {
+      "path": "/tmp/musu41-ci-fix-final-browser/evidence-task-desktop.png",
+      "bytes": 70744,
+      "sha256": "5416642ae34c1cf096cceb5c913433ef3529ab43928521721da46bafebb180d4",
+      "visuallyInspected": true
+    },
+    {
+      "path": "/tmp/musu41-ci-fix-final-browser/evidence-task-narrow.png",
+      "bytes": 30878,
+      "sha256": "b40515641b786aa7f752a2aa51fdfeefec7a01e76007f6f6afb7c8c6a7afc87e",
+      "visuallyInspected": true
+    },
+    {
+      "path": "/tmp/musu41-ci-fix-final-browser/evidence-google-rsvp-narrow.png",
+      "bytes": 12180,
+      "sha256": "efc91944a5647f8065fa82562fd9022d8b6cedb1792afe7e0d4a458f5844db1c",
+      "visuallyInspected": true
+    },
+    {
+      "path": "/tmp/musu41-ci-fix-final-browser/evidence-move-result-narrow.png",
+      "bytes": 38768,
+      "sha256": "d8500c7d414cacc568a88dafdeacfffc70e12564c7149946b927e37acef67412",
+      "visuallyInspected": true
+    }
+  ],
+  "publication": "No PR/current-head CI/main or deployment evidence claimed here.",
+  "supersededBrowserReport": {
+    "gitHead": "0c7a7d6d36e83e4316e5df21e3ec545d897297a1",
+    "path": "docs/planning/evidence/MUSU-41-fair-sync/browser-summary.json",
+    "rawArtifactsPreserved": true
+  }
+}

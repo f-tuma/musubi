@@ -8,7 +8,8 @@
     "./migrate": "./src/migrate.ts"
   },
   "scripts": {
-    "test": "tsx src/schema.test.ts && tsx src/queries/settings.test.ts"
+    "test": "tsx src/schema.test.ts && tsx src/queries/settings.test.ts",
+    "test:scheduling": "tsx src/queries/sync-scheduling.integration.test.ts"
   },
   "keywords": [],
   "author": "frgtn.dev",

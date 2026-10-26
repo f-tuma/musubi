@@ -7,7 +7,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "tsx src/index.test.ts && tsx src/logger.test.ts"
+    "test": "tsx src/index.test.ts && tsx src/logger.test.ts && tsx src/provider-budget.test.ts"
   },
   "keywords": [],
   "author": "frgtn.dev",

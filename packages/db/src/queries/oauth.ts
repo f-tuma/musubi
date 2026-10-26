@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { account, db, externalCalendars } from "../index";
 import type { GoogleCheck } from "@musubi/types";
 import type { DbTransaction } from "./calendars";
@@ -116,6 +116,22 @@ export async function getOAuthCredentials(userID: string, provider: string, acco
     ));
 
   return row;
+}
+
+/** Minimal current budget identity, without credential material. Logical OAuth
+ * addresses are not unique in this schema: ambiguity is unavailable, never an
+ * arbitrary first row. Exact scope is evidence, not capability authorization:
+ * availability-only/profile calls have their own native/source scope gates.
+ * Execution still revalidates after credential waits. */
+export async function getOwnedOAuthBudgetBinding(userID: string, provider: string, accountID: string) {
+  if (!["google", "microsoft"].includes(provider)) return null;
+  const rows = await db.select({ id: account.id, generation: account.syncReadGeneration,
+    scope: account.scope, status: account.syncStatus,
+    hasRefreshToken: sql<boolean>`coalesce(length(${account.refreshToken}),0)>0`,
+  }).from(account).where(and(eq(account.userId, userID), eq(account.providerId, provider), eq(account.accountId, accountID))).limit(2);
+  const row = rows[0];
+  if (rows.length !== 1 || !row?.hasRefreshToken || row.status !== "active") return null;
+  return { ...row, userID, provider, accountID };
 }
 
 type OAuthCredentialSnapshot = NonNullable<Awaited<ReturnType<typeof getOAuthCredentials>>>;

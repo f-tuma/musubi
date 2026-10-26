@@ -1,3 +1,4 @@
+import { reserveProviderMutation } from "./provider_budget";
 import { randomUUID } from "node:crypto";
 import {
   assertPinnedOutboxSource, completeEventOutbox, finishEventOutbox, getEventOutboxExpectedRef,
@@ -56,6 +57,14 @@ export async function deliverSharedMicrosoftDelete(row: EventOutboxRow & { recon
   };
   const finish = async (outcome: MicrosoftRuntimeDeleteFinishOutcome) => {
     const info = outcome.error, observeOnly = info.code === "runtime-possible-dispatch-present";
+    if (info.deferral) {
+      const uncertain = row.reconciling || outcome.facts.possibleDispatch || outcome.facts.provider.kind === "accepted" || outcome.facts.provider.kind === "uncertain";
+      await finishEventOutbox(row.id, token, uncertain ? "unconfirmed" : "retry", "provider-budget-deferred", {
+        uncertain, nextAttemptAt: new Date(info.deferral.retryAtMs),
+
+      });
+      return;
+    }
     record(outcome.facts, outcome.status === "conflict" || observeOnly);
     let error: unknown = outcome.cause;
     if (info.code === "account-session-changed") error = new EventWriteError("event-write", "unknown");
@@ -114,14 +123,19 @@ export async function deliverSharedMicrosoftDelete(row: EventOutboxRow & { recon
       signal.throwIfAborted(); native().normalizeObservation(read); signal.throwIfAborted();
     },
     beforeMutation: async (_request, signal) => {
+      return reserveProviderMutation({ url: `https://graph.microsoft.com/v1.0/me/calendars/${encodeURIComponent(_request.target.calendarId)}/events/${encodeURIComponent(_request.target.eventId)}`, method: "DELETE" }, async () => {
       signal.throwIfAborted();
       if (!await renewEventOutboxLease(row.id, token)) throw new ProviderEventWriteError("provider-write-failed");
       await checkDestination(signal); signal.throwIfAborted();
+
+      });
     },
     async recordEvidence(facts, signal) { signal.throwIfAborted(); record(facts); },
     ack, finish, observationId: randomUUID,
   }, {
-    http: { fetch: (url, init) => native().ports.http.fetch(url, init) },
+    http: { fetch: (url, init) => native().ports.http.fetch(url, init),
+      dispatch: (request, send) => native().ports.http.dispatch?.(request, send) ?? send(),
+      isDispatchDeferred: error => native().ports.http.isDispatchDeferred?.(error) ?? false },
     clock: { nowEpochMs: () => native().ports.clock.nowEpochMs(), nowMonotonicMs: () => native().ports.clock.nowMonotonicMs() },
     telemetry: { record: metric => native().ports.telemetry.record(metric) },
   }, MUSUBI_DELETE_POLICY, options));

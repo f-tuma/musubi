@@ -1,3 +1,4 @@
+import type { BudgetDeferral } from "./provider-budget";
 import type {
   GoogleAccountSession, GoogleEventTarget, GoogleNativeEvent, GoogleNativeReadEvidence, GoogleNativeUpdateEvidence, GooglePersonalUpdate, GoogleProviderPorts,
 } from "@musubi/provider-google";
@@ -53,6 +54,7 @@ export interface GooglePersonalUpdatePolicy {
 }
 export type RuntimePhase = "decode" | "credentials" | "recovery-read" | "preflight" | "mutation" | "readback" | "evidence" | "ack" | "finish";
 export interface RuntimeErrorInfo {
+  readonly deferral?: BudgetDeferral;
   readonly code: string;
   readonly outcome: "not-written" | "unconfirmed";
   readonly phase: RuntimePhase;

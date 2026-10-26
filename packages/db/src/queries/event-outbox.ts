@@ -169,15 +169,18 @@ export function unresolvedEventOutbox() {
   ))`;
 }
 
-/** Shared by claims and monitoring: waiting predecessors/active leases are not due. */
-export function eligibleEventOutbox() {
-  return sql`${eventOutbox.nextAttemptAt} <= clock_timestamp() and (
-    ${eventOutbox.status} in ('pending', 'retry', 'unconfirmed') or
-    (${eventOutbox.status} = 'attempting' and (${eventOutbox.leaseUntil} is null or ${eventOutbox.leaseUntil} <= clock_timestamp()))
-  ) and (${eventOutbox.predecessorID} is null or exists (
+/** Ordering eligibility without timing, also reused for future wake hints. */
+export function schedulableEventOutbox() {
+  return sql`${eventOutbox.status} in ('pending','retry','unconfirmed','attempting')
+  and (${eventOutbox.predecessorID} is null or exists (
     select 1 from event_outbox predecessor where predecessor.id = ${eventOutbox.predecessorID}
     and predecessor.status in ('completed', 'not-needed')
   ))`;
+}
+/** Shared by claims and monitoring: waiting predecessors/active leases are not due. */
+export function eligibleEventOutbox() {
+  return sql`${schedulableEventOutbox()} and ${eventOutbox.nextAttemptAt} <= clock_timestamp()
+    and (${eventOutbox.status} <> 'attempting' or ${eventOutbox.leaseUntil} is null or ${eventOutbox.leaseUntil} <= clock_timestamp())`;
 }
 
 export async function getDueEventOutboxIDs(limit = 50) {

@@ -1,3 +1,4 @@
+import { reserveProviderMutation } from "./provider_budget";
 import { randomUUID } from "node:crypto";
 import { assertPinnedOutboxSource, assertTaskOutboxDeliverySource, getTaskOutboxPredecessorEvidence, setTaskOutboxProjection,
   renewTaskOutboxLease, acceptTaskOutboxDelivery, finishTaskOutbox, getTaskOutbox, prepareTaskOutboxPredecessorResolution,
@@ -41,6 +42,14 @@ export async function deliverSharedGoogleTaskDelete(row: TaskOutboxRow & { recon
   };
   const finish = async (outcome: RuntimeTaskDeleteFinishOutcome) => {
     record(outcome.facts); const info = outcome.error;
+    if (info.deferral) {
+      const uncertain = row.reconciling || outcome.facts.possibleDispatch || outcome.facts.provider.kind === "accepted" || outcome.facts.provider.kind === "uncertain";
+      await finishTaskOutbox(row.id, token, uncertain ? "unconfirmed" : "retry", "provider-budget-deferred", {
+        uncertain, nextAttemptAt: new Date(info.deferral.retryAtMs), ...(resultRef ? { resultRef } : {}),
+
+      });
+      return;
+    }
     if (info.code === "task-not-needed") {
       const observed = outcome.facts.remote.kind === "conflict" ? native().normalizeObservation(outcome.facts.remote.read) : null;
       await finishTaskOutbox(row.id, token, "not-needed", null, { uncertain: false,
@@ -112,8 +121,11 @@ export async function deliverSharedGoogleTaskDelete(row: TaskOutboxRow & { recon
       recoverRejectedRead: (connection, rejected, signal) => native().ports.accountSession.recoverRejectedRead!(connection, rejected, signal),
       onReadAuthenticationRejected: signal => native().ports.accountSession.onReadAuthenticationRejected!(signal) },
     async beforeMutation(_request, signal) {
+      return reserveProviderMutation({ url: `https://tasks.googleapis.com/tasks/v1/lists/${encodeURIComponent(_request.target.taskListId)}/tasks/${encodeURIComponent(_request.target.taskId)}`, method: "DELETE" }, async () => {
       signal.throwIfAborted(); if (!await renewTaskOutboxLease(row.id, token) || !await admitted(false, signal)) throw taskError("task-source-read-only"); signal.throwIfAborted();
       if (predecessorAddress && !await assertTaskOutboxPredecessorResolution(row, token, predecessorAddress, signal)) throw taskError("task-projection-unavailable");
+
+      });
     },
     async recordEvidence(facts, signal) { signal.throwIfAborted(); record(facts); },
     async ack(evidence, signal) {
@@ -131,7 +143,9 @@ export async function deliverSharedGoogleTaskDelete(row: TaskOutboxRow & { recon
     },
     finish, observationId: randomUUID,
   }, {
-    http: { fetch: (url, init) => native().ports.http.fetch(url, init) },
+    http: { fetch: (url, init) => native().ports.http.fetch(url, init),
+      dispatch: (request, send) => native().ports.http.dispatch?.(request, send) ?? send(),
+      isDispatchDeferred: error => native().ports.http.isDispatchDeferred?.(error) ?? false },
     clock: { nowEpochMs: () => native().ports.clock.nowEpochMs(), nowMonotonicMs: () => native().ports.clock.nowMonotonicMs() },
     telemetry: { record: metric => native().ports.telemetry.record(metric) },
   }, MUSUBI_TASK_DELETE_POLICY, options));
