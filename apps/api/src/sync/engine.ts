@@ -7,6 +7,7 @@ import { SYNC_PROFILE_V1, SyncCoverageSchema, hasKnownEventTime, EventWriteError
 import { config, logger } from "@musubi/config";
 import {
   type SyncReadWorkExecution,
+  getEventOutboxRow,
   getDueEventOutboxIDs,
   getDueTaskOutboxIDs, getTaskMirrorReadCalendars,
   listGraphFamilyContexts, type GraphFamilyContext, type GraphFamilyObservation,
@@ -113,7 +114,11 @@ export async function prepareTaskWrites(task: Task, actions: readonly { calendar
       // A pending CREATE may not yet have an address. The immutable predecessor
       // resolves it in the executor; preflight never sends a speculative POST.
       if (action !== "delete" || external) await withDeliveryDeadline(signal => adapter.assertTaskWrite!(source.userID, source.accountID, source.externalCalendarID, { task, action: action === "update" && !external ? "create" : action, external: external ?? undefined, projection, secondary, signal }));
-    } catch (error) { errorCode = error instanceof ProviderTaskWriteError ? error.code : "task-write-failed"; }
+    } catch (error) {
+      // No provider validation result exists for a scheduler/budget refusal.
+      // Keep the frozen projection; the real executor must preflight it again.
+      if (!providerDeferral(error)) errorCode = error instanceof ProviderTaskWriteError ? error.code : "task-write-failed";
+    }
     prepared.push({ ...captured, providerProjection: { version: 1, projection, baseline, patch, ...(errorCode ? { errorCode } : {}) } });
   }
   return prepared;
@@ -1113,7 +1118,11 @@ export async function prepareEventWrites(
               action === "update" && external ? "completed" : "not-needed";
             continue;
           }
-          const stored = await deliverEventOutbox(outboxID, getAdapter);
+          let stored: Awaited<ReturnType<typeof getEventOutboxRow>> | undefined;
+          if (syncWorkCoordinatorEnabled()) {
+            await submitSyncWork({ family: "event-delivery", id: outboxID });
+            stored = await getEventOutboxRow(outboxID);
+          } else stored = await deliverEventOutbox(outboxID, getAdapter);
           if (stored?.resultRef) receipt.externalEventID = stored.resultRef.externalEventId;
           if (stored?.status === "completed" || stored?.status === "not-needed") {
             receipt.status = stored.status;

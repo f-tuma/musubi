@@ -32,6 +32,11 @@ const proofSources = [
   "packages/db/src/queries/caldav.ts", "packages/db/src/queries/caldav-alarms.ts",
   "packages/provider-caldav/src/network.ts",
   "apps/api/src/sync/read_attempt.ts", "packages/db/src/queries/external.ts", "packages/db/src/queries/source-read.ts",
+  "packages/db/src/queries/tasks.ts", "packages/db/src/queries/events.ts", "packages/db/src/queries/event-outbox.ts",
+  "packages/db/src/queries/event-outbox-delivery.ts",
+  "apps/api/src/sync/event_delivery.ts", "apps/api/src/sync/google_shared_delivery.ts",
+  "apps/api/src/sync/adapters/google_provider_bridge.ts", "packages/sync-runtime/src/google-personal-update.ts",
+  "packages/provider-google/src/index.ts",
 ];
 async function sourceHashes() {
   const hashes: Record<string, string> = {}, root = new URL("../../../../", import.meta.url);
@@ -88,6 +93,12 @@ async function main() {
   let taskFailure = false, tokenHold: ReturnType<typeof deferred> | undefined, tokenEntered: ReturnType<typeof deferred> | undefined;
   let aHold: ReturnType<typeof deferred> | undefined, aEntered: ReturnType<typeof deferred> | undefined;
   let faultRemote: Record<string, unknown> | undefined;
+  let preparedTaskRemote: Record<string, unknown> | undefined;
+  const preparedEventRemote = { id: "event-logical", etag: '"event-accepted"', status: "confirmed", summary: "Before pooled closure",
+    description: null, location: null, start: { dateTime: "2026-10-26T09:00:00.000Z" },
+    end: { dateTime: "2026-10-26T10:00:00.000Z" }, organizer: { self: true }, attendees: [] };
+  let capturePreparedEvent = false, currentWorkSignal: (() => AbortSignal | undefined) | undefined;
+  const preparedEventSignals: (AbortSignal | undefined)[] = [];
   const alarmData = ["BEGIN:VCALENDAR", "VERSION:2.0", "BEGIN:VEVENT", "UID:alarm-one", "DTSTART;TZID=Europe/Prague:20261026T090000",
     "DTEND;TZID=Europe/Prague:20261026T100000", "SUMMARY:Alarm fixture", "BEGIN:VALARM", "ACTION:DISPLAY", "TRIGGER:-PT15M",
     "DESCRIPTION:Private alarm", "END:VALARM", "END:VEVENT", "END:VCALENDAR", ""].join("\r\n");
@@ -96,7 +107,8 @@ async function main() {
     res.once("close", () => { activeHTTP--; });
     const url = new URL(req.url!, "http://fixture.test");
     const token = req.headers.authorization?.replace(/^Bearer /, "") ?? "";
-    const who = token.endsWith("-b") ? "b" : token.endsWith("-c") ? "c" : token.endsWith("-d") ? "d" : token.endsWith("-e") ? "e" : "a";
+    const who = token.endsWith("-b") ? "b" : token.endsWith("-c") ? "c" : token.endsWith("-d") ? "d" : token.endsWith("-e") ? "e"
+      : token.endsWith("-f") ? "f" : token.endsWith("-g") ? "g" : "a";
     const json = (value: unknown, status = 200, headers: Record<string, string> = {}) => {
       trace.push({ account: who, method: req.method!, path: url.pathname + url.search, status });
       res.writeHead(status, { "content-type": "application/json", ...headers }); res.end(JSON.stringify(value));
@@ -122,7 +134,21 @@ async function main() {
         return json({ access_token: "fresh-a", expires_in: 3600 });
       }
       if (token === "stale-a") return json({}, 401);
-      assert.ok(["access-a", "fresh-a", "access-b", "access-c", "access-d", "access-e"].includes(token));
+      assert.ok(["access-a", "fresh-a", "access-b", "access-c", "access-d", "access-e", "access-f", "access-g"].includes(token));
+      if (url.pathname === "/tasks/v1/lists/prepared-list/tasks" && req.method === "POST") {
+        let body = ""; for await (const chunk of req) body += chunk;
+        preparedTaskRemote = { ...JSON.parse(body), id: "prepared-task", etag: '"prepared-created"' };
+        return json({ id: "prepared-task", etag: '"prepared-created"' }, 201);
+      }
+      if (url.pathname === "/calendar/v3/calendars/event-calendar/events/event-logical") {
+        assert.equal(who, "g");
+        if (req.method === "GET") return json(preparedEventRemote);
+        assert.equal(req.method, "PATCH"); assert.equal(req.headers["if-match"], preparedEventRemote.etag);
+        let body = ""; for await (const chunk of req) body += chunk;
+        assert.deepEqual(JSON.parse(body), { summary: "After pooled closure" });
+        Object.assign(preparedEventRemote, JSON.parse(body), { etag: '"event-written"' });
+        return json(preparedEventRemote);
+      }
       if (url.pathname === "/tasks/v1/lists/fault-list/tasks" && req.method === "POST") {
         let body = ""; for await (const chunk of req) body += chunk;
         faultRemote = { id: "fault-task", ...JSON.parse(body), etag: '"fault-created"' };
@@ -133,6 +159,12 @@ async function main() {
         { "retry-after": url.searchParams.get("hint") === "unsupported" ? "999999999999999999999999999999" : "not-a-provider-date" });
       if (url.pathname === "/calendar/v3/probe") return json({ healthy: true });
       if (url.pathname === "/tasks/v1/users/@me/lists/fault-list") return json({ id: "fault-list" });
+      if (url.pathname === "/tasks/v1/users/@me/lists/prepared-list") return json({ id: "prepared-list" });
+      if (url.pathname === "/tasks/v1/lists/prepared-list/tasks/prepared-task") {
+        assert.ok(preparedTaskRemote, "Readback follows the actual prepared native CREATE");
+        return json(preparedTaskRemote);
+      }
+      if (url.pathname === "/calendar/v3/users/me/calendarList/event-calendar") return json({ id: "event-calendar", accessRole: "owner" });
       if (url.pathname === "/tasks/v1/lists/fault-list/tasks/fault-task") {
         assert.ok(faultRemote, "Readback follows the accepted native CREATE");
         return json({ error: { message: "Known readback throttle" } }, 429, { "retry-after": "60" });
@@ -170,6 +202,7 @@ async function main() {
     const origin = `http://127.0.0.1:${(fixture.address() as { port: number }).port}`;
     globalThis.fetch = (input, init) => {
       const url = new URL(input instanceof Request ? input.url : String(input));
+      if (capturePreparedEvent) preparedEventSignals.push(currentWorkSignal?.());
       if (url.origin === origin && url.pathname.startsWith("/dav/")) return realFetch(input, init);
       assert.ok(["www.googleapis.com", "tasks.googleapis.com", "oauth2.googleapis.com"].includes(url.hostname), "No live provider requests");
       return realFetch(`${origin}${url.pathname}${url.search}`, init);
@@ -181,17 +214,18 @@ async function main() {
     const { config } = await import("@musubi/config");
     const budget = await import("./provider_budget");
     const work = await import("./work_coordinator");
+    currentWorkSignal = work.currentSyncWorkSignal;
     const engine = await import("./engine");
     const { getOAuthAccessToken } = await import("./oauth");
     const metrics = await import("./provider_http_metrics");
     stopBudget = budget.stopProviderBudget; stopCoordinator = work.stopSyncWorkCoordinator;
-    const owners = { a: `budget-a-${randomUUID()}`, b: `budget-b-${randomUUID()}`, c: `budget-c-${randomUUID()}`, d: `budget-d-${randomUUID()}`, e: `budget-e-${randomUUID()}` };
-    const accounts = { a: "account-a", b: "account-b", c: "account-c", d: "account-d", e: "account-e" };
-    const physical = { a: randomUUID(), b: randomUUID(), c: randomUUID(), d: randomUUID(), e: randomUUID() };
-    for (const who of ["a", "b", "c", "d", "e"] as const) {
+    const owners = { a: `budget-a-${randomUUID()}`, b: `budget-b-${randomUUID()}`, c: `budget-c-${randomUUID()}`, d: `budget-d-${randomUUID()}`, e: `budget-e-${randomUUID()}`, f: `budget-f-${randomUUID()}`, g: `budget-g-${randomUUID()}` };
+    const accounts = { a: "account-a", b: "account-b", c: "account-c", d: "account-d", e: "account-e", f: "account-f", g: "account-g" };
+    const physical = { a: randomUUID(), b: randomUUID(), c: randomUUID(), d: randomUUID(), e: randomUUID(), f: randomUUID(), g: randomUUID() };
+    for (const who of ["a", "b", "c", "d", "e", "f", "g"] as const) {
       await s.db.insert(s.user).values({ id: owners[who], name: `Budget ${who}`, email: `${owners[who]}@example.test` });
       await s.db.insert(s.account).values({ id: physical[who], userId: owners[who], providerId: "google", accountId: accounts[who],
-        scope: `${s.CALENDAR_SCOPE.google}${who === "d" ? `,${s.TASK_SCOPE.google}` : ""}`, refreshToken: "fixture-refresh-a", accessToken: `access-${who}`, accessTokenExpiresAt: new Date(Date.now() + 3600_000) });
+        scope: `${s.CALENDAR_SCOPE.google}${who === "d" || who === "f" ? `,${s.TASK_SCOPE.google}` : ""}`, refreshToken: "fixture-refresh-a", accessToken: `access-${who}`, accessTokenExpiresAt: new Date(Date.now() + 3600_000) });
     }
     engine.initializeSyncEngine(["pull"]);
     await budget.bootstrapProviderBudget({ onRecovered: work.kickSyncWork });
@@ -350,6 +384,94 @@ async function main() {
     assert.ok((await s.loadActiveProviderCooldowns()).rows.some(row => row.scope.key === faultKey && row.minimumRemainingMs > 0));
     assert.equal((await s.getTaskOutbox(operationID))!.resultRef?.externalTaskId, "fault-task");
 
+    // A budget refusal during the actual request preflight is not a provider
+    // validation verdict. Canonical/outbox admission must freeze the projection
+    // without poisoning every future executor retry with task-write-failed.
+    const preparedHome = await s.createCalendar({ creatorID: owners.f, name: "Prepared task home", color: "#112233" });
+    const [preparedSource] = await s.db.insert(s.externalCalendars).values({ calendarID: preparedHome.id, provider: "google", userID: owners.f,
+      accountID: accounts.f, externalCalendarID: "musubi-google-task-list:prepared-list", supportsEvents: false, supportsTasks: true }).returning();
+    const preparedTask = TaskSchema.parse({ id: randomUUID(), creatorID: owners.f, calendarID: preparedHome.id, originCalendarID: preparedHome.id,
+      calendarIDs: [preparedHome.id], title: "Prepared after budget hold", description: "Retain frozen content", status: "needs-action" });
+    const preparedKey = s.providerBudgetScopeKey(config.api.providerBudgetNamespace,
+      { dimension: "account", provider: "google", physicalAccountRowID: physical.f });
+    await s.extendProviderCooldowns([{ notBeforeEpochMs: Date.now() + 60_000, scopes: [{ dimension: "account", key: preparedKey }] }]);
+    budget.stopProviderBudget(); await budget.bootstrapProviderBudget({ onRecovered: work.kickSyncWork });
+    const beforePreparedPreflight = trace.length;
+    const preparedTaskWrites = await deadline(engine.prepareTaskWrites(preparedTask, [{ calendarID: preparedHome.id, action: "create" }]), "Deferred task request preflight", 5000);
+    assert.equal(trace.length, beforePreparedPreflight);
+    assert.equal(preparedTaskWrites.length, 1);
+    const frozenProjection = preparedTaskWrites[0]!.providerProjection;
+    assert.ok(frozenProjection); assert.equal(frozenProjection.errorCode, undefined);
+    assert.equal(frozenProjection.projection.title, preparedTask.title);
+    assert.equal(frozenProjection.baseline, null); assert.deepEqual(frozenProjection.patch, frozenProjection.projection);
+    const providerRejected = await engine.prepareTaskWrites({ ...preparedTask, originCalendarID: randomUUID(), recurrence: "FREQ=DAILY" },
+      [{ calendarID: preparedHome.id, action: "create" }]);
+    assert.equal(providerRejected[0]!.providerProjection!.errorCode, "task-recurrence-projection-unsupported", "Real provider validation remains immutable");
+    assert.equal(trace.length, beforePreparedPreflight);
+    const preparedMutation = randomUUID();
+    const admittedTask = await s.createTask(preparedTask, { actorID: owners.f, mutationID: preparedMutation, preparedDestinations: preparedTaskWrites });
+    assert.equal(admittedTask.id, preparedTask.id); assert.equal(admittedTask.title, preparedTask.title);
+    const preparedIDs = await s.getTaskMutationOutboxIDs(owners.f, preparedMutation);
+    assert.equal(preparedIDs.length, 1); const preparedTaskID = preparedIDs[0]!.id;
+    const savedPrepared = (await s.getTaskOutbox(preparedTaskID))!;
+    assert.equal(savedPrepared.status, "pending"); assert.equal(savedPrepared.errorCode, null);
+    assert.deepEqual(savedPrepared.payload.providerProjection, frozenProjection);
+    assert.equal(trace.length, beforePreparedPreflight);
+    const otherCooldowns = (await s.db.select().from(s.providerBudgetCooldowns)).filter(row => row.scopeKey !== preparedKey).sort((a, b) => a.scopeKey.localeCompare(b.scopeKey));
+    const removedCooldown = await s.db.delete(s.providerBudgetCooldowns).where(eq(s.providerBudgetCooldowns.scopeKey, preparedKey)).returning();
+    assert.equal(removedCooldown.length, 1, "Only this fixture's verified physical account gate is cleared");
+    assert.deepEqual((await s.db.select().from(s.providerBudgetCooldowns)).sort((a, b) => a.scopeKey.localeCompare(b.scopeKey)), otherCooldowns);
+    budget.stopProviderBudget(); await budget.bootstrapProviderBudget({ onRecovered: work.kickSyncWork });
+    const beforePreparedDelivery = trace.length;
+    await deadline(engine.deliverTaskOutbox(preparedTaskID), "Admitted task retries preflight after budget hold");
+    const completedPrepared = (await s.getTaskOutbox(preparedTaskID))!;
+    assert.equal(completedPrepared.status, "completed"); assert.equal(completedPrepared.uncertain, false); assert.equal(completedPrepared.errorCode, null);
+    assert.equal(completedPrepared.resultRef?.externalTaskId, "prepared-task"); assert.equal(completedPrepared.resultRef?.etag, '"prepared-created"');
+    assert.deepEqual(completedPrepared.payload.providerProjection, frozenProjection, "Executor cannot rewrite the admitted projection");
+    assert.deepEqual(trace.slice(beforePreparedDelivery).map(row => [row.account, row.method, row.status]), [["f", "GET", 200], ["f", "POST", 201], ["f", "GET", 200]]);
+    const [preparedMapping] = await s.db.select().from(s.externalTasks).where(eq(s.externalTasks.taskID, preparedTask.id));
+    assert.equal(preparedMapping!.externalCalendarLinkID, preparedSource!.id); assert.equal(preparedMapping!.externalTaskID, "prepared-task");
+    assert.equal(preparedMapping!.etag, '"prepared-created"'); assert.equal((await s.getTask(preparedTask.id))!.title, preparedTask.title);
+
+    // The durable request closure must queue the whole operation. Capture the
+    // existing coordinator capability at the native HTTP dependency port: one
+    // shared signal across all leaves distinguishes a whole operation from
+    // separately pooled SDK leaves, including the cold first dispatch wait.
+    const { EventSchema } = await import("@musubi/types");
+    const preparedEventCalendar = await s.createCalendar({ creatorID: owners.g, name: "Prepared event", color: "#112233" });
+    await s.db.insert(s.externalCalendars).values({ calendarID: preparedEventCalendar.id, provider: "google", userID: owners.g,
+      accountID: accounts.g, externalCalendarID: "event-calendar", providerAccessRole: "owner", providerAccessRevision: 1 });
+    const preparedEvent = EventSchema.parse({ id: randomUUID(), creatorID: owners.g, organizer: owners.g, calendars: [preparedEventCalendar.id],
+      originCalendarID: preparedEventCalendar.id, title: preparedEventRemote.summary, description: null, location: null, color: "#112233",
+      start: preparedEventRemote.start.dateTime, end: preparedEventRemote.end.dateTime, isAllDay: false, isCanceled: false });
+    await s.createEvent(preparedEvent, preparedEvent.calendars);
+    const [preparedEventMapping] = await s.db.insert(s.externalEvents).values({ provider: "google", eventID: preparedEvent.id, calendarID: preparedEventCalendar.id,
+      externalCalendarID: "event-calendar", externalEventID: "event-logical", etag: preparedEventRemote.etag }).returning();
+    const preparedEventNext = { ...preparedEvent, title: "After pooled closure" };
+    const deliverPreparedEvent = await deadline(engine.prepareEventWrites([{ action: "update", event: preparedEventNext, previous: preparedEvent,
+      patch: { title: preparedEventNext.title }, calendarIDs: [preparedEventCalendar.id] }], { actorID: owners.g, mutationID: randomUUID() }), "Prepare durable event request");
+    assert.equal(deliverPreparedEvent.outbox.length, 1);
+    const eventCommit = await s.patchEventAndCalendarLinks(preparedEvent.id, 1, { title: preparedEventNext.title }, false, deliverPreparedEvent.outbox);
+    assert.equal(eventCommit.status, "saved"); assert.ok(eventCommit.changed);
+    budget.stopProviderBudget(); await budget.bootstrapProviderBudget({ onRecovered: work.kickSyncWork });
+    const beforePreparedEvent = trace.length;
+    capturePreparedEvent = true;
+    let eventReceipts: Awaited<ReturnType<typeof deliverPreparedEvent>>;
+    try { eventReceipts = await deadline(deliverPreparedEvent("update", eventCommit.event.revision), "Whole-operation prepared event delivery"); }
+    finally { capturePreparedEvent = false; }
+    assert.deepEqual(trace.slice(beforePreparedEvent).map(row => [row.account, row.method, row.status]), [["g", "GET", 200], ["g", "GET", 200], ["g", "PATCH", 200]]);
+    assert.equal(preparedEventSignals.length, 3); assert.ok(preparedEventSignals.every(signal => signal instanceof AbortSignal));
+    assert.equal(new Set(preparedEventSignals).size, 1, "All leaves must retain the same whole-operation coordinator capability");
+    assert.equal(eventReceipts.length, 1); assert.equal(eventReceipts[0]!.status, "completed"); assert.equal(eventReceipts[0]!.externalEventID, "event-logical");
+    const deliveredEvent = (await s.getEventOutboxRow(deliverPreparedEvent.outbox[0]!.id!))!;
+    assert.equal(deliveredEvent.status, "completed"); assert.equal(deliveredEvent.uncertain, false);
+    assert.equal(deliveredEvent.resultRef?.externalEventId, "event-logical"); assert.equal(deliveredEvent.resultRef?.etag, '"event-written"');
+    assert.equal((await s.db.select().from(s.externalEvents).where(eq(s.externalEvents.id, preparedEventMapping!.id)))[0]!.etag, '"event-written"');
+    assert.equal(preparedEventRemote.summary, preparedEventNext.title);
+    const beforeRepeatedClosure = trace.length;
+    assert.deepEqual(await deliverPreparedEvent("update", eventCommit.event.revision), eventReceipts);
+    assert.equal(trace.length, beforeRepeatedClosure, "The completed prepared closure cannot send again");
+
     // Untrusted malformed headers cannot close the shared persistence gate.
     // A syntactically valid unrepresentable hint quarantines only its verified
     // physical account; it does not manufacture an application-wide quota.
@@ -480,6 +602,8 @@ async function main() {
       pages: { discoveryA: 4, collectionA: 5, repeatedPageZero: false }, cold401: { gets401: 1, tokenPosts: 1, retryGet: true },
       leaderCancellationSharedRefresh: true, optionalTasksRepeatedStrict: true, persistedCooldownChildNoSend: true,
       acceptedCreateReadback429SqlFault: { nativeStatus: 201, readbackStatus: 429, durableStatus: "unconfirmed", retainedResponseAddress: true, failClosedThenRecovered: true },
+      taskPreflightBudgetDeferral: { noSavedValidationPoison: true, realCanonicalAdmission: true, frozenProjectionRetained: true, actualRetryCompleted: true, realValidationErrorRetained: true },
+      preparedEventDurableClosure: { wholeOperationCapability: true, nativeMethods: ["GET", "GET", "PATCH"], completedReceipt: true, repeatedClosureNoSend: true },
       malformedHints: { invalidIgnored: true, unsupportedPhysicalAccountQuarantine: true, healthyBProgress: true },
       alarmPreviewLinkUserScope: true, coordinatorClosedDuringCredentialWaitNoSend: true,
       stoppedPrequeueIdentityCannotAttachToReactivatedBudget: true,
