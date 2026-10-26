@@ -1,8 +1,8 @@
 # MUSU-40 · Google Task causal UPDATE/DELETE
 
 Navazuje na samostatný [CREATE gate](MUSU-40-google-task-create.md), v main
-přes PR #383. Tento gate je rozpracovaný: source, instalované upgrade/crash
-důkazy a poslední běžící aplikace mají vlastní ověření. Celá C08 zůstává
+přes PR #383. Tento gate má dokončené lokální source, installed upgrade/crash
+a poslední running-app ověření; PR/current-head CI tvoří další samostatný gate. Celá C08 zůstává
 otevřená podle [family inventory](MUSU-40-family-inventory.md); CREATE s vlastním
 předchůdcem, VTODO/To Do a specialized rodiny se tím nepovažují za převedené.
 Nasazení zůstává společným navazujícím krokem.
@@ -135,6 +135,84 @@ contracts, peers a query-runtime kontroly prošly. Po následném source review
 se znovu spouštějí dotčené testy a typecheck; jejich původní zelený běh se
 nezaměňuje za důkaz nově upravených řádků.
 
-Installed image/upgrade/crash a browser evidence následují po schválení přesného
-zdrojového stromu. Žádná registry publication, live-provider certifikace ani
-produkční rollout tím nejsou doložené.
+## Schválený source a instalované obrazy
+
+Nezávislý reviewer výslovně schválil SOURCE APPROVE + IMAGE CLEAR pro tree
+`5fcb8dc5efcec18f4d7ba9ac4cc53cbe4f41d401`. Větev byla rebasována na main
+`e8b4037c4aa2c275647d292d4200924b8d0f8dc2`; source head
+`a143002c45bf8e5a5eaf2fc3817fac430eba9c6b` má přesně stejný schválený strom.
+Po freeze se mění jen planning dokumenty a evidence JSON mimo oba COPY
+contexty. Další task compatibility implementace je výhradně v odděleném
+worktree, nikoli v ověřovaném checkoutu.
+
+[Installed API souhrn](evidence/MUSU-40-google-task-causal/api-installed-summary.json)
+zachycuje přesnou shodu 893 context files s approved/current/frozen bytes.
+454 production/support souborů tvoří 452 skutečných production sources a dva
+behavior helpers; 34 test/behavior paths mají dva průniky, celkem tedy 486
+unikátních source paths ověřených také přímo v instalovaném obrazu. Image běží jako node, bez source mounts, bez skutečných
+externích účtů, SMTP či push. Z prázdné DB prošlo 86 migrací, default encoder
+ON bez override a 17 skutečných Better Auth/signup/login/cookie-session a
+canonical CRUD kontrol se standardním Origin. Z instalovaného obrazu prošlo
+11 suites: 310 číslovaných regresí (154 nových + 156 retained) a čtyři původní
+task gates. Vlastní pooly zavřené, nula sessions, nonce DB odstraněné bez FORCE.
+
+API OCI index je
+`sha256:53acf598b7f025892f4147245617ebb8cbb2e2b60f517906d352cb4b7ce032cc`,
+amd64 manifest
+`sha256:b0ad6c2200bf04996017a036ea4c6cb3d193adc89c071009cce4bbc6a88f39af`
+a config `sha256:fa32b496aa37da8f2f5b0f266b9711a3744a0c7636d1f9600ce1bcbe2b589fd1`.
+38 raw artifact párů hash/délka bylo nezávisle ověřeno; retained OCI archive
+umožnil také přímou kontrolu všech blob digestů a 486 instalovaných source
+paths z image layers.
+
+[Installed reference souhrn](evidence/MUSU-40-google-task-causal/reference-installed-summary.json)
+má přesnou shodu 252 context / 221 TS+SQL / 121 production souborů a 30 named
+packages bez Musubi DB/auth/config/mobile/Better Auth closure. Nejde o jedenáctý
+endpoint profile: zachovává deset existujících profilů a přidává queued-intent
+mode. Starý CREATE image byl nově ověřen z uložených OCI blobů; vytvořil jedenáct
+nedokončených operací napříč deseti profily, včetně obou task DELETE větví.
+Upgrade dokončil všechny operace, zachoval celé staré rows/history/epochs a
+všech 28 původních table/index OIDs. Pět nových queue relations je vykázáno
+samostatně. Opakované populated migrace zachovaly i intent/resolution bytes.
+
+Custom installed probe prošel 17 případy, 220 skutečnými production CLI
+invocations a 166 native fixture HTTP requests. Sedm skutečných container
+SIGKILL má exit137: tři staré task hranice a čtyři nové causal hranice.
+Samostatný celý installed corpus prošel 161 pure / 207 storage / 287 process
+případy; jeho nové causal process případy zahrnují dalších deset skutečných
+child-process SIGKILL. CLI-kill a corpus-kill důkazy se nezaměňují. Neznámý
+CREATE bez ID ponechá oba successors čekat bez dalšího HTTP nebo nového POST.
+Tři očekávané CLI exit1 refusal výsledky jsou výslovně oddělené od selhání.
+
+Reference OCI index je
+`sha256:f744adf9517cb5b80f798c9fa3ae4274b35aaa0a42bda32dbc48bf072192a533`,
+amd64 manifest
+`sha256:0aefe1980b5cfd3325c9c78d2205e6948630d86d6e61df55b0d3f6680035fc32`
+a config `sha256:20c65232ba6df199f1157b43c384e4440471fa20abbf894da9fcddd7cdb8b667`.
+490 raw artifact párů a samostatný raw manifest hash/délka jsou nezávisle
+ověřené. Celé reference image archives byly po stream-hash odstraněné;
+retained OCI descriptors, source manifests a command receipts toto omezení
+výslovně zachovávají. Index/manifest/config se nezaměňují s registry RepoDigest.
+
+## Poslední běžící aplikace
+
+[Browser a cleanup souhrn](evidence/MUSU-40-google-task-causal/browser-summary.json)
+zachycuje první a úspěšný běh 8/8 za 13.4 s, desktop 1280×900/light a
+390×844/dark. Route/Tasks region, editace s rich daty, conflict draft, readonly
+mirror a cancel DELETE prošly na obou šířkách. Nebyl neočekávaný page/console
+error, framework overlay ani horizontal overflow; exact fixture409 diagnostic
+zůstává povolený jen v příslušném conflict případu. Oba screenshoty jsou
+vizuálně ověřené.
+
+Oba installed autoři nejdřív ukončili veškerou DB/Docker/native práci. Vlastní
+causal PG kontejner i port55443 byly ověřeně odstraněné v11:45:52 UTC; browser
+dokončil běh v11:46:23 UTC. User QA na55437 zůstalo zachované. Až po tomto
+běhu vzniklo oddělené QA následující compatibility fáze; není součástí tohoto
+cleanup tvrzení. Celkem bylo znovu ověřeno 532 top-level raw artifact párů plus
+samostatný reference manifest.
+
+Browser používá HTTP/auth fixtures, které neprokazují real authentication/DB
+nebo provider. Skutečný installed auth/DB/native-fixture rozsah je uvedený
+samostatně výše. Lokální image a upgrade nejsou registry publication, live
+provider certifikace, binary rollback ani produkční rollout. Nasazení zůstává
+společným navazujícím krokem po dokončení celé implementace.
