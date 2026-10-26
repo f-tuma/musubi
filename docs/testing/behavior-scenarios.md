@@ -8,6 +8,7 @@ fixtures supply its dependencies at the existing boundaries.
 pnpm test:behavior --list
 pnpm test:behavior --suite google-delete --scenario already-absent --json
 pnpm test:behavior --suite google-create --scenario fresh-create --json
+pnpm test:behavior --suite google-rsvp-delivery --scenario started-unchanged-is-read-only --json
 pnpm test:behavior --suite google-task-update --scenario fresh-title-update --json
 pnpm test:behavior --suite google-task-delete --scenario fresh-delete --json
 pnpm test:behavior --suite google-task-create --scenario fresh-create --json
@@ -44,6 +45,7 @@ not committed. The root runner can also be called as
 | `microsoft-create` | Admitted Graph transaction/body, bounded CREATE runtime, native permission/POST/scoped listing and candidate identity | Host persistence/lease/normalization/credential ports, ordered HTTP responses and clock | None |
 | `caldav-delete` | Admitted DAV DELETE codec, runtime, real XML/ICS parsing, privilege/organizer preflight and conditional DELETE | Host persistence/lease/credential ports, DNS, pinned HTTP leaf responses and clock | None |
 | `caldav-create` | Admitted full ICS/URL/UID, CREATE runtime, bind ACL/conditional PUT and exact resource recovery | Host persistence/lease/normalization/credential ports, DNS, pinned HTTP leaf responses and clock | None |
+| `google-rsvp-delivery` | Actual Google RSVP native adapter, primary identity, minimal conditional PATCH and full desired observation | Strict ordered HTTP receipts, authorized-token callback and private before-write callback; no DB fallback | None; no DB authority or native-network claim |
 | `task-delivery` | Actual existing task executor, codec/decoder, stored patch selection, recovery and ACK/finish arguments | Existing DB/config module exports and adapter data receipts via test-only Node module mocks | None; no DB/native HTTP claim |
 | `task-inspector` | React inspector/editor, capability checks, task serializer and HTTP client | Seeded context and HTTP receipts | None; Vitest/jsdom |
 | Browser confirmation | Running web app, router, task queries/cache and inspector/editor; same JSON commands and receipts | Auth/API responses at the browser HTTP boundary | Web dev server and Chromium |
@@ -239,3 +241,23 @@ network handlers become useful across more Node/browser fixtures.
 [fast-check commands](https://fast-check.dev/docs/advanced/model-based-testing/)
 are an option for generated, replayable action sequences. Neither is required for
 these explicit scenarios; introducing another test platform has no benefit here.
+
+
+Google RSVP native scenarios distinguish possible dispatch, full result
+observation and unknown notification delivery. A fresh typed private intent may
+attempt one PATCH only after its host commits the permanent started marker.
+Started and markerless historical intents recover with GET only. Historical
+markerless queued operations also hold even if never attempted; this is a
+conservative upgrade policy, not evidence that they were sent. A manual retry
+keeps that same policy. An explicit resolution with a fresh native preview and a
+new operation ID is a separate admission and receives its own fresh permission.
+
+The independent `google_rsvp_barrier.integration.test.ts` gate in
+`test:db:events` uses actual PostgreSQL transactions, closed loopback native HTTP
+and owned child processes. It proves original-claim/source/grant/lease fences,
+real lock-wait cancellation, marker COMMIT with a lost or cancelled reply, and
+SIGKILL restart at dispatch/readback/ACK boundaries. It requires a migrated test
+database and does not use Git or an historical executor. These source tests are
+separate from image, deployment and live-provider evidence. Rollout must retire
+old workers before new workers consume historical pending intents: an old
+worker does not enforce the new private sidecar.

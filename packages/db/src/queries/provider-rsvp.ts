@@ -12,7 +12,7 @@ import {
   ForbiddenError,
   EventTimeModelSchema, type EventTimeModel,
   ProviderEventStateSchema,
-  CaldavRsvpDeliverySchema, GraphRsvpDispatchSchema, microsoftRsvpTargetDesiredState, ProviderRsvpInstanceSchema, ProviderRsvpEditSchema, providerRsvpDesiredState, caldavRsvpDesiredState, type ProviderRsvpInstance, type ProviderRsvpEdit, type ProviderRsvpIntent, type Event,
+  GoogleRsvpDeliverySchema, googleRsvpDeliveryPolicy, CaldavRsvpDeliverySchema, GraphRsvpDispatchSchema, microsoftRsvpTargetDesiredState, ProviderRsvpInstanceSchema, ProviderRsvpEditSchema, providerRsvpDesiredState, caldavRsvpDesiredState, type ProviderRsvpInstance, type ProviderRsvpEdit, type ProviderRsvpIntent, type Event,
 } from "@musubi/types";
 import { config } from "@musubi/config";
 import { db } from "..";
@@ -247,7 +247,7 @@ async function rsvpTransaction(
     if (prepared.baseline.id !== mapping.externalEventID || prepared.baseline.etag !== mapping.etag)
       throw new BadRequestError("RSVP provider identity changed.");
     if (request.provider === "microsoft" && (request.scope === "series") !== Array.isArray(prepared.baseline.series)) throw new EventWriteError("event-write", "unsupported");
-    const rsvp: ProviderRsvpIntent = { request, ...(request.provider === "caldav" ? { caldavDelivery: CaldavRsvpDeliverySchema.parse({ kind: "caldav-rsvp-at-most-once", version: 1 }) } : {}), baseline: prepared.baseline, nativeTime: prepared.nativeTime, ...(instance ? { instance } : {}), ...(graphOccurrence ? { graphOccurrence } : {}), baselineState: state, desiredState, mappingID: mapping.id };
+    const rsvp: ProviderRsvpIntent = { request, ...(request.provider === "google" ? { googleDelivery: GoogleRsvpDeliverySchema.parse({ kind: "google-rsvp-at-most-once", version: 1 }) } : {}), ...(request.provider === "caldav" ? { caldavDelivery: CaldavRsvpDeliverySchema.parse({ kind: "caldav-rsvp-at-most-once", version: 1 }) } : {}), baseline: prepared.baseline, nativeTime: prepared.nativeTime, ...(instance ? { instance } : {}), ...(graphOccurrence ? { graphOccurrence } : {}), baselineState: state, desiredState, mappingID: mapping.id };
     const id = randomUUID();
     await appendEventOutbox(tx, snapshot, [
       {
@@ -379,4 +379,86 @@ export async function markCaldavRsvpDispatched(row: import("./event-outbox").Eve
       .where(and(eq(eventOutbox.id, row.id), eq(eventOutbox.status, "attempting"), eq(eventOutbox.leaseToken, row.leaseToken!), sql`${eventOutbox.leaseUntil} > clock_timestamp()`, sql`${eventOutbox.payload} = ${JSON.stringify(row.payload)}::jsonb`, sql`${eventOutbox.payload}->'rsvp'->'caldavDelivery'->'startedAt' is null`)).returning({ id: eventOutbox.id });
     return !!marked;
   });
+}
+
+
+/** Snapshot all original data before yielding. Native history has no new size or
+ * depth limits; accessors, callbacks and prototypes cannot become authority. */
+function snapshotGoogleRsvpClaim<T>(input: T): T {
+  const active = new Set<object>();
+  const stack: { source: object; target: object; keys: (string | symbol)[]; index: number }[] = [];
+  const allocate = (value: unknown): unknown => {
+    if (value === null || typeof value !== "object") {
+      if (["function", "symbol", "bigint"].includes(typeof value)) throw new TypeError("Invalid Google RSVP claim");
+      return value;
+    }
+    if (Object.getPrototypeOf(value) === Date.prototype) {
+      if (Reflect.ownKeys(value).length) throw new TypeError("Invalid Google RSVP claim");
+      return new Date(Date.prototype.getTime.call(value));
+    }
+    if (active.has(value) || (!Array.isArray(value) && ![Object.prototype, null].includes(Object.getPrototypeOf(value)))) throw new TypeError("Invalid Google RSVP claim");
+    const target: object = Array.isArray(value) ? new Array(Object.getOwnPropertyDescriptor(value, "length")!.value) : {};
+    active.add(value);
+    stack.push({ source: value, target, keys: Reflect.ownKeys(value), index: 0 });
+    return target;
+  };
+  const result = allocate(input);
+  while (stack.length) {
+    const frame = stack[stack.length - 1]!;
+    if (frame.index === frame.keys.length) { active.delete(frame.source); stack.pop(); continue; }
+    const key = frame.keys[frame.index++]!;
+    if (Array.isArray(frame.source) && key === "length") continue;
+    const descriptor = Object.getOwnPropertyDescriptor(frame.source, key)!;
+    if (typeof key !== "string" || !("value" in descriptor) || !descriptor.enumerable) throw new TypeError("Invalid Google RSVP claim");
+    const value = allocate(descriptor.value);
+    Object.defineProperty(frame.target, key, { value, enumerable: true, writable: true, configurable: true });
+  }
+  return result as T;
+}
+function googleRsvpClaimBasis(row: import("./event-outbox").EventOutboxRow & { reconciling?: boolean }) {
+  // Lease renewal is allowed; every other persisted byte belongs to this claim.
+  const { leaseUntil: _leaseUntil, updatedAt: _updatedAt, reconciling: _reconciling, ...basis } = row;
+  return basis;
+}
+/** Commit permission for ONE Google attendee PATCH, never an acceptance or
+ * notification receipt. Refusal, timeout, manual retry and process death retain
+ * this marker forever. No HTTP operation may run inside this transaction. */
+export async function markGoogleRsvpDispatched(input: import("./event-outbox").EventOutboxRow, signal?: AbortSignal): Promise<boolean> {
+  const claimed = snapshotGoogleRsvpClaim(input);
+  const policy = googleRsvpDeliveryPolicy(claimed.payload.rsvp);
+  const request = ProviderRsvpEditSchema.safeParse(claimed.payload.rsvp?.request);
+  if (!config.api.providerRsvpEditsEnabled || claimed.provider !== "google" || claimed.action !== "update" || claimed.status !== "attempting" || !claimed.leaseToken || claimed.actorID !== claimed.userID || !request.success || request.data.provider !== "google" || request.data.expectedRevision !== claimed.revision || policy.observeOnly || !policy.delivery) return false;
+  const original = googleRsvpClaimBasis(claimed);
+  const sameClaim = (current: import("./event-outbox").EventOutboxRow) => isDeepStrictEqual(googleRsvpClaimBasis(current), original);
+  signal?.throwIfAborted();
+  const marked = await db.transaction(async tx => {
+    // A substituted caller must not borrow the actual row's source or locks.
+    const [address] = await tx.select().from(eventOutbox).where(eq(eventOutbox.id, claimed.id));
+    signal?.throwIfAborted();
+    if (!address || !sameClaim(address)) return false;
+    await lockUserLifecycle(tx, [claimed.userID], "shared"); signal?.throwIfAborted();
+    await lockCalendarLifecycle(tx, [claimed.calendarID], "shared"); signal?.throwIfAborted();
+    if (claimed.payload.rsvp!.instance) {
+      await tx.select({ id: events.id }).from(events).where(eq(events.id, claimed.payload.rsvp!.instance.seriesID)).for("update"); signal?.throwIfAborted();
+    }
+    await tx.select({ id: events.id }).from(events).where(eq(events.id, claimed.eventID)).for("update"); signal?.throwIfAborted();
+    const [current] = await tx.select().from(eventOutbox).where(eq(eventOutbox.id, claimed.id)).for("update"); signal?.throwIfAborted();
+    if (!current || !sameClaim(current) || !(await hasProviderRsvpSource(current, tx, true))) return false;
+    signal?.throwIfAborted();
+    const [source] = await tx.select({ role: externalCalendars.providerAccessRole }).from(externalCalendars).where(eq(externalCalendars.id, current.externalCalendarLinkID)).for("share"); signal?.throwIfAborted();
+    if (!source || (source.role !== null && source.role !== "owner")) return false;
+    const [grant] = await tx.select().from(account).where(and(eq(account.userId, current.userID), eq(account.providerId, "google"), eq(account.accountId, current.accountID))).for("share"); signal?.throwIfAborted();
+    if (!grant || grant.syncStatus !== "active" || !grant.refreshToken || !hasProviderSyncScopes("google", grant.scope ?? "") || !config.api.providerRsvpEditsEnabled) return false;
+    // The UPDATE rechecks the database clock after every lock/pool wait. A late
+    // abort throws out of the callback and rolls back an uncommitted marker.
+    const marker = GoogleRsvpDeliverySchema.parse({ ...policy.delivery, startedAt: new Date().toISOString() });
+    const [row] = await tx.update(eventOutbox).set({ payload: { ...current.payload, rsvp: { ...current.payload.rsvp!, googleDelivery: marker } }, uncertain: true, updatedAt: new Date() })
+      .where(and(eq(eventOutbox.id, claimed.id), eq(eventOutbox.status, "attempting"), eq(eventOutbox.leaseToken, claimed.leaseToken!), sql`${eventOutbox.leaseUntil} > clock_timestamp()`, sql`${eventOutbox.payload} = ${JSON.stringify(claimed.payload)}::jsonb`, sql`${eventOutbox.payload}->'rsvp'->'googleDelivery'->'startedAt' is null`)).returning({ id: eventOutbox.id });
+    signal?.throwIfAborted();
+    return !!row;
+  });
+  // Cancellation during COMMIT can leave a permanent possible-send marker, but
+  // must never let the native callback proceed to HTTP after the deadline.
+  signal?.throwIfAborted();
+  return marked;
 }

@@ -15,6 +15,7 @@ const SUITES = {
   "microsoft-create": "packages/sync-runtime/src/behavior/microsoft-create.json",
   "caldav-delete": "packages/sync-runtime/src/behavior/caldav-delete.json",
   "caldav-create": "packages/sync-runtime/src/behavior/caldav-create.json",
+  "google-rsvp-delivery": "apps/api/src/sync/behavior/google-rsvp-delivery.json",
   "task-delivery": "apps/api/src/sync/behavior/task-delivery.json",
   "event-delivery": "apps/api/src/sync/behavior/event-delivery.json",
   "task-inspector": "apps/web/src/tests/behavior/task-inspector.json",
@@ -162,7 +163,7 @@ async function runSuite(selection, options, { root, execute, env }) {
       child = await execute(process.execPath, ["--import", "tsx", join(root, "packages/sync-runtime/src/behavior", entry), "--json",
         ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });
       results = runtimeResults(child.stdout, selection);
-    } else if (["task-delivery", "event-delivery"].includes(selection.name)) {
+    } else if (["task-delivery", "event-delivery", "google-rsvp-delivery"].includes(selection.name)) {
       child = await execute(process.execPath, ["--experimental-test-module-mocks", "--experimental-default-type=module", "--import", "tsx",
         join(root, `apps/api/src/sync/behavior/${selection.name}-cli.ts`), "--json",
         ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });

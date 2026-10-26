@@ -36,6 +36,7 @@ export type ProviderRsvpIntent = {
   baselineState: ProviderEventState;
   desiredState: ProviderEventState;
   mappingID: string;
+  googleDelivery?: z.infer<typeof GoogleRsvpDeliverySchema>;
   caldavDelivery?: z.infer<typeof CaldavRsvpDeliverySchema>;
   graphDispatch?: { kind: "graph-rsvp-dispatch"; version: 1; startedAt: string; acceptedAt?: string };
 };
@@ -133,3 +134,23 @@ export type MicrosoftRsvpConfirmation = { baselineHash: string; observedResponse
 /** Durable permission for at most one CalDAV scheduling PUT. Missing legacy
  * policy and a started policy permit read-only recovery, never another PUT. */
 export const CaldavRsvpDeliverySchema = z.object({ kind: z.literal("caldav-rsvp-at-most-once"), version: z.literal(1), startedAt: z.iso.datetime().optional() }).strict();
+
+/** Private permission for one Google attendee PATCH. Missing historical policy
+ * is always read-only, including old never-attempted queued operations. */
+export const GoogleRsvpDeliverySchema = z.object({ kind: z.literal("google-rsvp-at-most-once"), version: z.literal(1), startedAt: z.iso.datetime().optional() }).strict();
+export function googleRsvpDeliveryPolicy(intent: unknown): { observeOnly: boolean; delivery?: z.infer<typeof GoogleRsvpDeliverySchema> } {
+  if (intent === null || typeof intent !== "object" || ![Object.prototype, null].includes(Object.getPrototypeOf(intent))) throw new TypeError("Invalid Google RSVP intent");
+  const descriptor = Object.getOwnPropertyDescriptor(intent, "googleDelivery");
+  if (!descriptor) return { observeOnly: true };
+  if (!("value" in descriptor) || !descriptor.enumerable) throw new TypeError("Invalid Google RSVP delivery policy");
+  const value: unknown = descriptor.value;
+  if (value === null || typeof value !== "object" || ![Object.prototype, null].includes(Object.getPrototypeOf(value))) throw new TypeError("Invalid Google RSVP delivery policy");
+  const data: Record<string, unknown> = {};
+  for (const key of Reflect.ownKeys(value)) {
+    const field = Object.getOwnPropertyDescriptor(value, key)!;
+    if (typeof key !== "string" || !["kind", "version", "startedAt"].includes(key) || !("value" in field) || !field.enumerable || !["string", "number"].includes(typeof field.value)) throw new TypeError("Invalid Google RSVP delivery policy");
+    data[key] = field.value;
+  }
+  const delivery = GoogleRsvpDeliverySchema.parse(data);
+  return { observeOnly: delivery.startedAt !== undefined, delivery };
+}

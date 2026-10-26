@@ -18,7 +18,7 @@ import {
   type ResolveEventDeliveryRequest,
   type ProviderReminderEdit, type ProviderReminderInstanceIntent, ProviderReminderEditSchema, providerReminderDesiredState,
   type ProviderRsvpIntent, type ProviderRsvpInstance,
-  ProviderRsvpEditSchema, providerRsvpDesiredState,
+  GoogleRsvpDeliverySchema, ProviderRsvpEditSchema, providerRsvpDesiredState,
   type ProviderEventState,
 } from "@musubi/types";
 import { db } from "..";
@@ -724,7 +724,7 @@ export async function commitEventDeliveryResolution(
         payload: {
           event: canonical,
           patch: proof.patch,
-          ...(proof.rsvp ? { rsvp: { ...proof.rsvp.intent, request: { ...proof.rsvp.intent.request, operationID: request.mutationId, expectedRevision: current.localRevision!, expectedStateVersion: providerStateVersion({ id: current.mapping!.id, etag: proof.ref!.etag ?? null, providerState: proof.rsvp.intent.baselineState })! } } } : {}),
+          ...(proof.rsvp ? { rsvp: { ...proof.rsvp.intent, googleDelivery: GoogleRsvpDeliverySchema.parse({ kind: "google-rsvp-at-most-once", version: 1 }), request: { ...proof.rsvp.intent.request, operationID: request.mutationId, expectedRevision: current.localRevision!, expectedStateVersion: providerStateVersion({ id: current.mapping!.id, etag: proof.ref!.etag ?? null, providerState: proof.rsvp.intent.baselineState })! } } } : {}),
           ...(proof.reminder?.instance ? { reminderInstance: { ...proof.reminder.instance, request: { ...proof.reminder.instance.request, operationID: request.mutationId, expectedRevision: current.localRevision!, expectedStateVersion: providerStateVersion({ id: current.mapping!.id, etag: proof.ref!.etag ?? null, providerState: proof.reminder.state })! } } } : {}),
           ...(proof.reminder && !proof.reminder.instance ? { reminderEdit: { ...proof.reminder.intent, operationID: request.mutationId, expectedRevision: current.localRevision!, expectedStateVersion: proof.reminder.stateVersion } } : {}),
           ...(proof.caldavSeries ? { caldavSeries: proof.caldavSeries } : {}),

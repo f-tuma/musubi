@@ -7,7 +7,7 @@ import type { GoogleRsvpEvidence } from "./google_rsvp";
 async function main() {
   assert.equal(process.env.ENVIRONMENT, "test");
   const before = { id: "event/id", etag: '\"v1\"', status: "confirmed", summary: "Meeting", start: { date: "2026-09-08" }, end: { date: "2026-09-09" }, organizer: { email: "host@example.test" }, attendees: [{ email: "guest@example.test", self: true, responseStatus: "needsAction", comment: "keep" }, { email: "other@example.test", responseStatus: "accepted" }], conferenceData: { conferenceId: "keep" }, reminders: { useDefault: true } };
-  let remote: typeof before & { recurringEventId?: string; originalStartTime?: { date: string } } = structuredClone(before), mode = "normal", patches = 0, reads = 0, tokens = 0;
+  let remote: typeof before & { recurringEventId?: string; originalStartTime?: { date: string } } = structuredClone(before), mode = "normal", patches = 0, reads = 0, tokens = 0, started = false;
   let primary: any = { id: "guest@example.test", primary: true, accessRole: "owner" };
   const server = createServer(async (req, res) => {
     assert.equal(req.headers.authorization, "Bearer synthetic-rsvp-token");
@@ -53,13 +53,13 @@ async function main() {
   const adapter = googleRsvpMethods(async (user, account) => { assert.equal(user, "user"); assert.equal(account, "account"); tokens++; return "synthetic-rsvp-token"; });
   const ref = { externalEventId: before.id, etag: before.etag };
   const read = () => adapter.readRsvp!("user", "account", "guest@example.test", ref, "accepted");
-  const write = (evidence: GoogleRsvpEvidence) => adapter.writeRsvp!("user", "account", "guest@example.test", evidence, { sendUpdates: "all" });
+  const write = (evidence: GoogleRsvpEvidence) => adapter.writeRsvp!("user", "account", "guest@example.test", evidence, { sendUpdates: "all", observeOnly: started }, undefined, async () => { assert.equal(started, false); started = true; });
   try {
     config.api.providerRsvpEditsEnabled = false;
     await assert.rejects(read); assert.equal(tokens, 0); assert.equal(reads, 0);
     config.api.providerRsvpEditsEnabled = true;
     for (const scenario of ["normal", "body-error", "lost", "applied-503", "unapplied", "race", "changed-after"]) {
-      mode = "normal"; remote = structuredClone(before); patches = 0;
+      mode = "normal"; remote = structuredClone(before); patches = 0; started = false;
       const evidence = await read(); mode = scenario;
       if (scenario === "normal" || scenario === "body-error") {
         assert.deepEqual(await write(evidence), { etag: '\"v2\"', recovered: false, notificationDelivery: "unknown" });
@@ -69,12 +69,12 @@ async function main() {
         await assert.rejects(() => write(evidence)); assert.equal(patches, 1);
         mode = "normal";
         if (scenario === "lost" || scenario === "applied-503") { assert.equal((await write(evidence)).recovered, true); assert.equal(patches, 1); }
-        else if (scenario === "unapplied") { assert.equal((await write(evidence)).recovered, false); assert.equal(patches, 2); }
+        else if (scenario === "unapplied") { await assert.rejects(() => write(evidence)); assert.equal(patches, 1); }
         else { await assert.rejects(() => write(evidence)); assert.equal(patches, 1); }
       }
     }
     for (const scenario of ["normal", "lost", "applied-503", "race", "changed-after"]) {
-      mode = "normal"; patches = 0;
+      mode = "normal"; patches = 0; started = false;
       remote = { ...structuredClone(before), recurringEventId: "master", originalStartTime: { date: "2026-09-07" } };
       const occurrence = { externalSeriesID: "master", originalStart: { kind: "date" as const, value: "2026-09-07" } };
       await assert.rejects(read); assert.equal(patches, 0);
@@ -98,7 +98,7 @@ async function main() {
       } else await assert.rejects(() => write(evidence));
       assert.equal(patches, 1);
     }
-    mode = "normal"; remote = structuredClone(before); patches = 0;
+    mode = "normal"; remote = structuredClone(before); patches = 0; started = false;
     const evidence = await read();
     remote.attendees[1]!.responseStatus = "declined"; // Even a broken unchanged ETag cannot hide native drift.
     await assert.rejects(() => write(evidence)); assert.equal(patches, 0);

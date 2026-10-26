@@ -44,18 +44,29 @@ export function googleRsvpMethods(getAuthorizedToken: (user: string, account: st
       return googleRsvpEvidence(current, { eventId: ref.externalEventId, etag: current?.etag ?? "", authenticatedCopyEmail: ctx.email, occurrence }, response);
     },
     async writeRsvp(user, account, calendar, evidence, policy, signal, beforeWrite) {
-      if (policy.sendUpdates !== "all") throw new EventWriteError("event-write", "unsupported");
+      // Policy is private host evidence. Missing permission is read-only; never
+      // evaluate getters or inherit dispatch permission from a prototype.
+      const descriptors = Object.getOwnPropertyDescriptors(policy);
+      if (![Object.prototype, null].includes(Object.getPrototypeOf(policy)) || Reflect.ownKeys(policy).some(key => typeof key !== "string" || !["sendUpdates", "observeOnly"].includes(key)) || Object.values(descriptors).some(field => !("value" in field) || !field.enumerable) || descriptors.sendUpdates?.value !== "all" || (descriptors.observeOnly && typeof descriptors.observeOnly.value !== "boolean")) throw new EventWriteError("event-write", "unsupported");
+      const observeOnly = descriptors.observeOnly?.value !== false;
       const ref = { externalEventId: evidence.baseline.id, etag: evidence.baseline.etag };
+      // Own the accepted version, response and original slot before token refresh
+      // or HTTP yields to a mutable caller. Fresh primary identity is re-proven
+      // below; neither stored patch nor selfEmail grants authority.
+      const accepted = googleRsvpEvidence(evidence.baseline, { eventId: ref.externalEventId, etag: ref.etag, authenticatedCopyEmail: calendar, occurrence: evidence.occurrence }, evidence.response);
       const ctx = await context(user, account, calendar, ref, signal);
-      // Rebuild the minimal payload; a stored patch or selfEmail is not trusted.
-      const intent = googleRsvpEvidence(evidence.baseline, { eventId: ref.externalEventId, etag: ref.etag, authenticatedCopyEmail: ctx.email, occurrence: evidence.occurrence }, evidence.response);
+      const intent = googleRsvpEvidence(accepted.baseline, { eventId: ref.externalEventId, etag: ref.etag, authenticatedCopyEmail: ctx.email, occurrence: accepted.occurrence }, accepted.response);
       const current = await ctx.read();
       try {
         const confirmed = confirmGoogleRsvp(current, intent);
         return { ...confirmed, recovered: true, notificationDelivery: "unknown" as const };
-      } catch { /* An unchanged baseline may still permit one conditional PATCH. */ }
+      } catch { /* Full observation is required even after provider acceptance. */ }
+      if (observeOnly) throw new ProviderEventWriteError("provider-write-failed", "unconfirmed");
       if (!isDeepStrictEqual(current, intent.baseline)) throw new ProviderEventWriteError("provider-conflict");
-      await beforeWrite?.();
+      // A native helper cannot grant durable permission. The host must commit
+      // its permanent started marker before the first possible PATCH.
+      if (!beforeWrite) throw new ProviderEventWriteError("provider-write-failed");
+      await beforeWrite();
       signal?.throwIfAborted();
       let result: Response;
       try {
