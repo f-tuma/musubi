@@ -25,7 +25,10 @@ account unavailable over the supported timestamp domain; no earlier certified
 retry is claimed. A MAX-domain cooldown has an explicit local hold: its durable
 control timestamp stays MAX under fractional monotonic clocks and wall-clock
 steps, and reaching that timestamp does not turn the hold into admission.
-Ordinary cooldowns retain their conservative monotonic expiry. Unknown
+Ordinary cooldowns retain their conservative monotonic expiry. If wall-clock
+drift projects their control retry beyond the supported domain, only that
+serialized timestamp is capped at MAX; admission still waits for the original
+monotonic deadline and then permits the finite cooldown to expire. Unknown
 preconnection identity never creates a guessed tenant.
 
 The API gives shared OAuth refresh an independent 30-second deadline including

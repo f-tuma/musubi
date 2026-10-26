@@ -128,6 +128,18 @@
       }
     },
     {
+      "id": "finite-boundary-cooldown-clocks",
+      "title": "Finite boundary cooldowns cap control eligibility and still expire independently",
+      "expected": {
+        "refusals": 12,
+        "capped": 6,
+        "finiteExpired": 4,
+        "aSends": 4,
+        "bSends": 12,
+        "metrics": 16
+      }
+    },
+    {
       "id": "max-cooldown-fractional-clocks",
       "title": "MAX account holds preserve exact eligibility across fractional and stepped clocks",
       "expected": {

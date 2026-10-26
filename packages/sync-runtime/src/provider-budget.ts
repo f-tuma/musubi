@@ -134,7 +134,10 @@ export function createProviderBudget(options: ProviderBudgetOptions) {
     // MAX is an unavailable-through-domain hold, not a duration to round-trip
     // through fractional monotonic time. Keep its exact durable control value
     // while the independent admission gate stays closed, even after clock jumps.
-    return dimensions.length ? { retryAtMs: supportedDomainHold ? MAX_BUDGET_EPOCH_MS : epoch + Math.ceil(retry), blockedDimensions: dimensions, reason } : undefined;
+    // A finite cooldown can also project beyond the supported epoch after a
+    // wall-clock step. Cap only this control timestamp; its monotonic deadline
+    // remains the admission authority and can still expire normally.
+    return dimensions.length ? { retryAtMs: supportedDomainHold ? MAX_BUDGET_EPOCH_MS : Math.min(MAX_BUDGET_EPOCH_MS, epoch + Math.ceil(retry)), blockedDimensions: dimensions, reason } : undefined;
   }
   function raiseCooldown(key: string, untilMonotonicMs: number, supportedDomainHold: boolean, mono: number) {
     const prior = cooldowns.get(key);

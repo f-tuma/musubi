@@ -117,6 +117,37 @@ export async function runFairWorkScenario(scenario: FairWorkScenario): Promise<R
     summary = await parkedPages();
   } else if (scenario.id === "park-until-auxiliary-cold-chain") {
     summary = await auxiliaryColdChain();
+  } else if (scenario.id === "finite-boundary-cooldown-clocks") {
+    const max = 253_402_300_799_999, initialEpoch = 1_800_000_000_000;
+    const parsed = parseProviderRetryAfter("Fri, 31 Dec 9999 23:59:59 GMT", initialEpoch);
+    assert(parsed.kind === "supported"); assert.equal(parsed.notBeforeEpochMs, max - 999);
+    let refusals = 0, capped = 0, aSends = 0, bSends = 0, metrics = 0;
+    for (const target of [max - 1, parsed.notBeforeEpochMs]) for (const source of ["hydrated", "observed"]) {
+      let epoch = initialEpoch, mono = 0.2, expired = false, expectedDue = max;
+      const rows = [{ scope: scope("A"), notBeforeEpochMs: target, minimumRemainingMs: target - initialEpoch }];
+      const budget = createProviderBudget({ limit: () => undefined, clock: { nowEpochMs: () => epoch, nowMonotonicMs: () => mono },
+        cooldowns: { loadActive: async () => source === "hydrated" ? rows : [], extend: async () => rows },
+        retryPersistenceMs: 1000, reservationLifetimeMs: 1000, schedule: () => () => {} });
+      await budget.ready(); if (source === "observed") await budget.observeCooldown({ scopes: [scope("A")], notBeforeEpochMs: target });
+      const coordinator = createFairWorkCoordinator<string>({ capacity: 2, nowMs: () => epoch, schedule: () => () => {}, host: { async execute(c) {
+        try { await dispatchNativeHttp(budget.decorate(() => leaf(c.accountFairnessKey), () => {}), `https://fixture.test/${c.accountFairnessKey}`, {},
+          async () => { if (c.accountFairnessKey === "A") { assert(expired, "A must not send before its independent deadline"); aSends++; } else bSends++;
+            return new Response(null, { status: 200 }); }, { nowMonotonicMs: () => mono }, () => { metrics++; }); return settled; }
+        catch (error) { assert(error instanceof ProviderDispatchDeferred); refusals++; assert.equal(error.deferral.reason, "cooldown");
+          assert.equal(error.deferral.retryAtMs, expectedDue); if (error.deferral.retryAtMs === max) capped++;
+          return { kind: "deferred", retryAtMs: error.deferral.retryAtMs, changedCalendarIDs: [] }; }
+      } } });
+      try {
+        for (const [index, clock] of [{ epoch: initialEpoch + 2, mono: 0.2 + 0.1, due: target === max - 1 ? max : target + 2 },
+          { epoch: initialEpoch + 2000, mono: 0.4, due: max }, { epoch: initialEpoch - 1000, mono: 0.5, due: target - 1000 }].entries()) {
+          epoch = clock.epoch; mono = clock.mono; expectedDue = clock.due;
+          assert.deepEqual((await Promise.all([coordinator.submit(candidate(`A-${index}`, "A")), coordinator.submit(candidate(`B-${index}`, "B"))])).map(result => result.kind), ["deferred", "settled"]);
+        }
+        epoch = initialEpoch + 2000; mono = target - initialEpoch + 1; expired = true;
+        assert.equal((await coordinator.submit(candidate("A-expired", "A"))).kind, "settled");
+      } finally { coordinator.close(); budget.close(); }
+    }
+    summary = { refusals, capped, finiteExpired: aSends, aSends, bSends, metrics };
   } else if (scenario.id === "max-cooldown-fractional-clocks") {
     const until = 253_402_300_799_999, initialEpoch = 1_800_000_000_000;
     let refusals = 0, sends = 0, metrics = 0; const due: number[] = [];

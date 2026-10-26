@@ -74,6 +74,26 @@ test("ordinary cooldown retains the conservative monotonic duration and still ex
     mono = 1500.2; assert.doesNotThrow(() => budget.admit(leaf));
   } finally { budget.close(); }
 });
+test("finite boundary cooldown serialization is capped without converting it into a MAX hold", async () => {
+  const max = 253_402_300_799_999, initialEpoch = 1_800_000_000_000;
+  const date = parseProviderRetryAfter("Fri, 31 Dec 9999 23:59:59 GMT", initialEpoch);
+  assert.equal(date.kind, "supported"); assert(date.kind === "supported"); assert.equal(date.notBeforeEpochMs, max - 999);
+  for (const target of [max - 1, date.notBeforeEpochMs]) {
+    let epoch = initialEpoch, mono = 0.2;
+    const budget = createProviderBudget({ limit: () => undefined, clock: { nowEpochMs: () => epoch, nowMonotonicMs: () => mono },
+      cooldowns: { loadActive: async () => [{ scope, notBeforeEpochMs: target, minimumRemainingMs: target - initialEpoch }], extend: async () => [] },
+      retryPersistenceMs: 1000, reservationLifetimeMs: 1000 });
+    await budget.ready();
+    try {
+      epoch = initialEpoch + 2000; mono = 0.2 + 0.1;
+      assert.throws(() => budget.admit(leaf), (error: unknown) => error instanceof ProviderDispatchDeferred && error.deferral.retryAtMs === max);
+      epoch = initialEpoch - 1000; mono = 0.4;
+      assert.throws(() => budget.admit(leaf), (error: unknown) => error instanceof ProviderDispatchDeferred && error.deferral.retryAtMs === target - 1000);
+      epoch = initialEpoch + 2000; mono = target - initialEpoch + 1;
+      assert.doesNotThrow(() => budget.admit(leaf));
+    } finally { budget.close(); }
+  }
+});
 test("request during active work runs a later host claim instead of joining the captured generation", async () => {
   const gate = deferred<void>(), firstStarted = deferred<void>(); let calls = 0;
   const c: WorkCandidate<string> = { key: "work", accountFairnessKey: "account", laneKey: "stream", family: "pull", dueAtMs: 0, orderKey: "1", collisionKeys: ["resource"], hostRef: "work" };
