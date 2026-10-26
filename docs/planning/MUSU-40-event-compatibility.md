@@ -1,6 +1,8 @@
 # MUSU-40 · Remaining event lifecycle
 
-Source extraction and acceptance are in progress. This is shared host
+This records the pre-policy extraction and the following Google RSVP policy
+change. Combined source acceptance passes; installed and final publication
+gates remain in progress. This is shared host
 compatibility, not native package portability, new provider support, installed
 proof, publication or deployment.
 
@@ -50,19 +52,31 @@ set it without a current write. It is distinct from complete writer fulfillment,
 concrete native acceptance callbacks, durable possible-notification markers and
 notification delivery, which remains unknown.
 
-Google RSVP has an explicit open C08 policy gap. This parity extraction preserves
+At the immutable pre-policy extraction checkpoints, Google RSVP had an explicit
+C08 policy gap. That historical parity extraction preserved
 its actual desired-result GET first, followed by another original strong
 If-Match PATCH with `sendUpdates=all` when the entire current object still equals
 the saved baseline, even on a reconciling row. Graph RSVP's permanent
 `graphDispatch` and DAV's missing/started historical `caldavDelivery` retain their
 existing observe-only policies. An irreversible Google barrier belongs to the
-separate following policy gate; this extraction does not claim blanket no-resend.
+separate following policy gate; historical parity is not a blanket no-resend claim.
+
+The combined source now includes that separate policy gate. New Google RSVP
+admissions carry a strict private `googleDelivery` sidecar. The host consumes
+its write permission durably before PATCH, under the original current claim,
+source, privacy and OAuth grant. Started and markerless legacy operations only
+observe; same-intent manual retry never synthesizes permission. A fully desired
+observation may complete, while notification delivery stays unknown. False
+marker authority and an ambiguous COMMIT remain different uncertainty facts.
 
 Event ACK cancellation also retains existing host API capability. Ordinary
 legacy completion did not pass its optional AbortSignal; specialized completion
 APIs expose no signal parameter. A runtime guard before entry does not prove
-rollback during an already entered DB lock/pool wait. Actual DB evidence and any
-separate host fix must resolve that acceptance gap.
+rollback during an already entered DB lock/pool wait. This is a retained host
+capability limitation, not a new cancellation guarantee. Existing lease/source
+and committed-ACK authority remain in force. The protected bounded portable
+Google route retains its separate waiting-ACK rollback guarantee; task ACK has
+its own independently proved signal guards.
 
 Graph move planning/admission remains host-owned: at most 20 unique IDs sorted
 by original slot, one first unfinished child per tick, exact full-family ACK,
@@ -73,7 +87,7 @@ DAV scoped writes retain following truncation, RDATE/EXDATE/RRULE/date/time and
 conversion/occurrence scopes, complete resource bytes and the narrow existing
 iCloud eligibility; first-slot whole deletion stays a separate family.
 
-Fast evidence uses the actual API executor with data-only dependency receipts:
+Historical extraction evidence uses the actual API executor with data-only dependency receipts:
 75 JSON scenarios cover every specialized family/provider, generic actions,
 feature refusals, original slots, recovery and current native policies. Production
 pure projection/RSVP/version helpers are exercised directly. The 33 runtime tests
@@ -82,12 +96,23 @@ authority; 24 actual API-host probes cover descriptor-safe native/projector
 ingress, factory plan snapshots, occurrence baseline/slot isolation and mutable Dates. A retained native
 projector mutation scenario verifies the saved projection and canonical
 milliseconds. The 13 JSON harness checks fail closed. These fixtures do not establish
-SQL, real OAuth or provider HTTP behavior.
+SQL, real OAuth or provider HTTP behavior. The combined policy source increases
+these to 90 executor scenarios, 35 runtime tests, 29 actual-host probes and 17
+harness checks, with a separate 40-case Google RSVP native JSON suite. The full
+fast inventory is 556 cases across thirteen suites. Canonical `pnpm check`
+passes. Combined checkpoint `06d08da` passed all twenty new-only programs with
+the default native reader clock: 1,168 delivery observations and 13,056
+controlled native HTTP requests. The following harness addendum controls only
+Graph CREATE's existing read-clock argument; production bytes are unchanged.
 
-Historical native acceptance explicitly replays immutable old/new production
+Historical native acceptance explicitly replays immutable pre-policy old/new production
 executors with retained real assertion-bearing native fixture programs, exact
 wire and scoped durable states; process evidence is separate. Routine CI uses a
 bounded independent new-only native corpus without Git history, plus a manifest
 test requiring all actual families to retain their existing default native DB
 gates. Installed source/auth/upgrade/crash and final browser evidence remain
-separate from source acceptance and the final C08 cross-family audit.
+separate from source acceptance and the final C08 cross-family audit. Historical
+differential commands require their declared pre-policy checkpoint: the current
+Google policy deliberately changes the old second-PATCH expectation. Composite
+historical cohorts retain their actual source/harness identities and any
+controlled native read-clock profile; they are not one uniform-harness run.
