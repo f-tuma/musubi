@@ -17,7 +17,7 @@ export async function deliverReferenceTaskDelete(store: ReferenceTaskDeleteRunne
   if (!taskIdentity(operationId) || !Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > SYNC_RUNTIME_TIMEOUT_MS || !Number.isSafeInteger(heartbeatMs) || heartbeatMs < 1 || heartbeatMs > SYNC_RUNTIME_HEARTBEAT_MS ||
     options.attemptId !== undefined && !taskIdentity(options.attemptId) || options.checkpoint !== undefined && typeof options.checkpoint !== "function" ||
     typeof ports?.http?.fetch !== "function" || typeof ports?.clock?.nowEpochMs !== "function" || typeof ports?.clock?.nowMonotonicMs !== "function" || typeof ports?.telemetry?.record !== "function") throw new TypeError("Invalid reference task DELETE runner options");
-  options.signal?.throwIfAborted(); const attemptId = options.attemptId ?? randomUUID(), claimed = await store.claimDelete(operationId, attemptId);
+  options.signal?.throwIfAborted(); const attemptId = options.attemptId ?? randomUUID(), claimed = await store.claimDelete(operationId, attemptId, options.signal);
   if (!claimed) return { status: "unclaimed" as const, operationId, attemptId };
   const claim = Object.freeze(structuredClone(claimed));
   if (claim.endpointProfile !== REFERENCE_TASK_DELETE_PROFILE || claim.binding.kind !== "task" || claim.binding.provider !== "google" || claim.binding.action !== "delete") {

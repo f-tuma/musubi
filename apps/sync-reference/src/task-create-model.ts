@@ -2,6 +2,7 @@ import type { GoogleTaskProjection } from "@musubi/provider-google";
 import type { ReferenceCapture, ReferenceStatus } from "./model.js";
 import type { SyncDeliveryReceipt, SyncOperationRowBinding } from "@musubi/types";
 import type { ReferenceTaskAdmission, ReferenceTaskContent, ReferenceTaskSeed } from "./task-model.js";
+import type { ReferenceTaskCompletion } from "./task-intent-model.js";
 
 /** A new destination reservation has neither a provider ID nor native version. */
 export interface ReferenceTaskCreateSeed extends Omit<ReferenceTaskSeed, "endpointProfile" | "taskId" | "etag" | "baseline"> {
@@ -25,6 +26,7 @@ export interface ReferenceTaskCreateOperation {
   provider: "google"; endpointProfile: "google-task-create-v1"; action: "create";
   status: ReferenceStatus; payload: unknown; capture: ReferenceCapture; dispatchPossible: boolean;
   createResponse: ReferenceTaskCreateResponse; receipt: SyncDeliveryReceipt;
+  completion?: ReferenceTaskCompletion;
   canonical: { content: ReferenceTaskContent; lifecycle: "active" | "tombstoned"; revision: number; generation: number };
   binding: { taskListId: string; taskId: string | null; active: boolean; sourceGeneration: number;
     etag: string | null; baseline: GoogleTaskProjection | null; destinationLifecycle: "reserved" | "present" | "absent";

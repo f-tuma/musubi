@@ -1,7 +1,7 @@
 import type { Pool, PoolClient } from "pg";
 import { parseNativeWritePlanV1, matchesPinnedProjectionV1 } from "@musubi/sync-codec";
 import { googleTaskProjectionFromNative, parseGoogleTaskProjection, isStrictGoogleNativeTask, type GoogleTaskAccountSession } from "@musubi/provider-google";
-import { supportsGoogleTaskUpdateEnvelope, supportsGoogleTaskDeleteEnvelope, supportsGoogleTaskCreateEnvelope, type RuntimeTaskNativeFacts, type RuntimeTaskCompletionEvidence, type GoogleTaskSavedProjection, type RuntimeTaskDeleteNativeFacts, type RuntimeTaskCreateNativeFacts } from "@musubi/sync-runtime";
+import { supportsGoogleTaskUpdateEnvelope, supportsGoogleTaskDeleteEnvelope, supportsGoogleTaskCreateEnvelope, type RuntimeTaskNativeFacts, type RuntimeTaskCompletionEvidence, type GoogleTaskSavedProjection, type RuntimeTaskDeleteNativeFacts, type RuntimeTaskCreateNativeFacts, type GoogleTaskPredecessorAddress } from "@musubi/sync-runtime";
 import { decodeSyncOperationPayload, SyncDeliveryReceiptSchema, SyncErrorSchema, SyncJsonObjectSchema, type SyncDeliveryReceipt, type SyncOperationRowBinding } from "@musubi/types";
 import { assertCredentialKey, decryptCredential, encryptCredential } from "./crypto.js";
 import { initialReceipt, jsonEqual } from "./admission.js";
@@ -12,6 +12,9 @@ import { acceptedTaskDeleteEnvelope, REFERENCE_TASK_DELETE_PROFILE, taskDeleteAd
 import type { ReferenceTaskDeleteAdmission, ReferenceTaskDeleteClaim, ReferenceTaskDeleteOperation, ReferenceTaskDeleteObservation } from "./task-delete-model.js";
 import { acceptedTaskCreateEnvelope, REFERENCE_TASK_CREATE_PROFILE, taskCreateAdmissionFingerprint, taskCreateAcceptedStatus } from "./task-create-admission.js";
 import type { ReferenceTaskCreateSeed, ReferenceTaskCreateAdmission, ReferenceTaskCreateClaim, ReferenceTaskCreateOperation, ReferenceTaskCreateObservation, ReferenceTaskCreateResponse } from "./task-create-model.js";
+import { taskOperationBinding, reserveTaskOperationIdentity, hasWaitingTaskIntent, enqueueTaskIntent, activateTaskIntent, inspectTaskIntent, taskPredecessorBasis, taskIntentsInstalled } from "./task-intent-store.js";
+import type { ReferenceTaskQueuedUpdate, ReferenceTaskQueuedDelete, ReferenceTaskIntent, ReferenceTaskCompletion, ReferenceTaskResolutionBasis } from "./task-intent-model.js";
+import { taskCompletion } from "./task-intent-admission.js";
 
 type Row = Record<string, any>;
 interface Locked { operation: Row; connection: Row; object: Row; binding: Row }
@@ -32,11 +35,7 @@ function capture(op: Row) {
   return { acceptedRevision: Number(op.accepted_revision), connectionGeneration: Number(op.connection_generation), sourceGeneration: Number(op.source_generation),
     privacyGeneration: Number(op.privacy_generation), canonicalGeneration: Number(op.canonical_generation) };
 }
-function binding(op: Row): SyncOperationRowBinding {
-  return { kind: "task", action: op.action, operationId: op.id, commandId: op.command_id, hostObjectId: op.object_id, provider: op.provider,
-    connectionId: op.connection_id, collectionId: op.task_list_id, resourceId: op.task_id, acceptedRevision: Number(op.accepted_revision),
-    sourceEpoch: { sourceId: op.binding_id, generation: Number(op.source_generation) }, privacyEpoch: String(op.privacy_generation) };
-}
+const binding = (op: Row): SyncOperationRowBinding => taskOperationBinding(op);
 function deleteBaseline(op: Row) {
   const decoded = decodeSyncOperationPayload(op.payload, binding(op), { supports: supportsGoogleTaskDeleteEnvelope });
   if (decoded.kind !== "pinned-v1" || op.provider !== "google" || op.action !== "delete" || op.endpoint_profile !== REFERENCE_TASK_DELETE_PROFILE ||
@@ -106,15 +105,58 @@ export class ReferenceTaskStore {
   private owned(rows: Locked, claim: { attemptId: string }): boolean {
     return rows.operation.status === "running" && rows.operation.lease_attempt_id === claim.attemptId && rows.operation.lease_live === true;
   }
-  private current(rows: Locked, action: "update" | "delete" = "update"): boolean {
+  private current(rows: Locked, action: "update" | "delete" = "update", resolved?: ReferenceTaskResolutionBasis): boolean {
     const { connection: conn, object, binding: target, operation: op } = rows;
     return !!conn && !!object && !!target && conn.provider === "google" && conn.status === "active" && conn.credential_ciphertext != null && conn.credential_live === true && taskWriteAllowed(conn.scope) &&
       op.provider === "google" && op.action === action && op.endpoint_profile === (action === "delete" ? REFERENCE_TASK_DELETE_PROFILE : REFERENCE_TASK_UPDATE_PROFILE) && target.active &&
       (target.destination_lifecycle ?? "present") === "present" && object.canonical_lifecycle === (action === "delete" ? "tombstoned" : "active") &&
       Number(conn.generation) === Number(op.connection_generation) && Number(object.revision) === Number(op.accepted_revision) &&
-      Number(object.privacy_generation) === Number(op.privacy_generation) && Number(object.lifecycle_generation) === Number(op.canonical_generation) && Number(target.source_generation) === Number(op.source_generation) &&
-      target.connection_id === op.connection_id && target.object_id === op.object_id && target.task_list_id === op.task_list_id && target.task_id === op.task_id &&
+      Number(object.privacy_generation) === Number(op.privacy_generation) && Number(object.lifecycle_generation) === Number(op.canonical_generation) && Number(target.source_generation) === (resolved?.effectiveSourceGeneration ?? Number(op.source_generation)) &&
+      target.connection_id === op.connection_id && target.object_id === op.object_id && target.task_list_id === op.task_list_id && target.task_id === (resolved?.taskId ?? op.task_id) &&
       target.etag === op.accepted_etag && jsonEqual(target.baseline, action === "delete" ? op.delete_accepted_baseline : op.saved_projection?.baseline);
+  }
+  private async currentFor(client: PoolClient, rows: Locked, claim: ClaimIdentity, action: "update" | "delete" = "update"): Promise<boolean> {
+    let resolved: ReferenceTaskResolutionBasis | undefined;
+    if (rows.operation.predecessor_operation_id) {
+      try { resolved = await taskPredecessorBasis(client, rows.operation, rows.binding); }
+      catch (error) { if (error instanceof ReferenceHoldError) return false; throw error; }
+      if (!jsonEqual(resolved, rows.operation.resolution_basis)) return false;
+    }
+    // An ancestry read can wait too. Current authority always uses a new DB clock.
+    const clock = (await client.query("SELECT lease_until>clock_timestamp() AS lease_live,$2::timestamptz>clock_timestamp() AS credential_live FROM reference_task_operations WHERE id=$1", [rows.operation.id, rows.connection?.expires_at])).rows[0];
+    rows.operation.lease_live = clock.lease_live; if (rows.connection) rows.connection.credential_live = clock.credential_live;
+    return this.owned(rows, claim) && this.current(rows, action, resolved);
+  }
+  private predecessorAddress(rows: Locked, claim: ClaimIdentity): GoogleTaskPredecessorAddress | undefined {
+    const basis = rows.operation.resolution_basis as ReferenceTaskResolutionBasis | null | undefined;
+    return rows.operation.predecessor_operation_id && basis ? { kind: "predecessor-task-reference", operationId: rows.operation.id, attemptId: claim.attemptId,
+      predecessorOperationId: basis.predecessorOperationId, evidenceOperationId: basis.evidenceOperationId, taskId: basis.taskId, validator: basis.validator,
+      projectionBaseline: basis.projectionBaseline, witness: basis.witness } : undefined;
+  }
+  private async acknowledge(client: PoolClient, rows: Locked, claim: ClaimIdentity, completion: ReferenceTaskCompletion): Promise<void> {
+    const captured = taskCompletion(completion);
+    const result = Object.hasOwn(rows.operation, "completion_evidence")
+      ? await client.query("UPDATE reference_task_operations SET status='acked',lease_attempt_id=NULL,lease_until=NULL,completion_evidence=$3 WHERE id=$1 AND lease_attempt_id=$2 AND status='running' AND lease_until>clock_timestamp() AND EXISTS(SELECT 1 FROM reference_connections c WHERE c.id=reference_task_operations.connection_id AND c.expires_at>clock_timestamp())", [claim.operationId, claim.attemptId, captured])
+      : await client.query("UPDATE reference_task_operations SET status='acked',lease_attempt_id=NULL,lease_until=NULL WHERE id=$1 AND lease_attempt_id=$2 AND status='running' AND lease_until>clock_timestamp() AND EXISTS(SELECT 1 FROM reference_connections c WHERE c.id=reference_task_operations.connection_id AND c.expires_at>clock_timestamp())", [claim.operationId, claim.attemptId]);
+    if (result.rowCount !== 1) throw new TaskAckLeaseExpired();
+  }
+  async queueUpdate(input: ReferenceTaskQueuedUpdate, signal?: AbortSignal): Promise<ReferenceTaskIntent> {
+    // Snapshot before acquiring a pool/lock; nested accessors are refused.
+    const fields = taskFields(input, ["bindingId", "expectedRevision", "commandId", "operationId", "predecessorOperationId", "patch"]);
+    const saved = { ...fields, patch: Object.freeze(validateTaskPatch(fields.patch)) } as unknown as ReferenceTaskQueuedUpdate;
+    await this.transaction(client => enqueueTaskIntent(client, "update", saved), signal); return this.inspectIntent(saved.operationId);
+  }
+  async queueDelete(input: ReferenceTaskQueuedDelete, signal?: AbortSignal): Promise<ReferenceTaskIntent> {
+    const saved = Object.freeze(taskFields(input, ["bindingId", "expectedRevision", "commandId", "operationId", "predecessorOperationId"])) as unknown as ReferenceTaskQueuedDelete;
+    await this.transaction(client => enqueueTaskIntent(client, "delete", saved), signal); return this.inspectIntent(saved.operationId);
+  }
+  async inspectIntent(operationId: string): Promise<ReferenceTaskIntent> {
+    const intent = await inspectTaskIntent(this.pool, operationId);
+    return intent.status === "waiting" ? intent : { ...intent, execution: intent.action === "delete" ? await this.inspectDeleteOperation(operationId) : await this.inspectOperation(operationId) };
+  }
+  async intentExists(operationId: string): Promise<boolean> {
+    if (!(await this.pool.query("SELECT to_regclass('reference_task_intents') IS NOT NULL AS ready")).rows[0].ready) return false;
+    return !!(await this.pool.query("SELECT 1 FROM reference_task_intents WHERE id=$1", [operationId])).rowCount;
   }
   private currentCreate(rows: Locked): boolean {
     const { connection: conn, object, binding: target, operation: op } = rows;
@@ -154,12 +196,13 @@ export class ReferenceTaskStore {
       const target = (await client.query("SELECT * FROM reference_task_bindings WHERE id=$1 FOR UPDATE", [input.bindingId])).rows[0];
       const existing = (await client.query("SELECT * FROM reference_task_operations WHERE connection_id=$1 AND command_id=$2 FOR UPDATE", [target.connection_id, input.commandId])).rows[0];
       if (existing) { if (existing.fingerprint !== fingerprint) throw new ReferenceHoldError("task-command-reused"); return; }
+      await reserveTaskOperationIdentity(client, { operationId: input.operationId, commandId: input.commandId, connectionId: target.connection_id });
       const valid = conn && (await client.query("SELECT $1::timestamptz>clock_timestamp() AS valid", [conn.expires_at])).rows[0].valid;
       if (!conn || conn.provider !== "google" || conn.status !== "active" || !conn.credential_ciphertext || !valid || !taskWriteAllowed(conn.scope) || !target.active || object.canonical_lifecycle !== "active") throw new ReferenceHoldError("task-source-unavailable");
       if (target.destination_lifecycle !== "reserved" || target.create_profile !== REFERENCE_TASK_CREATE_PROFILE || target.create_operation_id !== input.operationId ||
         target.task_id !== null || target.etag !== null || target.baseline !== null) throw new ReferenceHoldError("task-create-reservation-unavailable");
       if (Number(object.revision) !== input.expectedRevision) throw new ReferenceHoldError("task-revision-conflict");
-      if ((await client.query("SELECT 1 FROM reference_task_operations WHERE binding_id=$1 AND status<>'acked'", [input.bindingId])).rowCount) throw new ReferenceHoldError("task-causal-barrier");
+      if ((await client.query("SELECT 1 FROM reference_task_operations WHERE binding_id=$1 AND status<>'acked'", [input.bindingId])).rowCount || await hasWaitingTaskIntent(client, input.bindingId)) throw new ReferenceHoldError("task-causal-barrier");
       const epochs = { acceptedRevision: input.expectedRevision + 1, connectionGeneration: Number(conn.generation), sourceGeneration: Number(target.source_generation), privacyGeneration: Number(object.privacy_generation), canonicalGeneration: Number(object.lifecycle_generation) };
       const envelope = acceptedTaskCreateEnvelope(input, validateTaskContent(object.content), { objectId: object.id, connectionId: conn.id, taskListId: target.task_list_id, capture: epochs });
       await client.query("UPDATE reference_task_objects SET revision=$2 WHERE id=$1", [object.id, epochs.acceptedRevision]);
@@ -201,10 +244,11 @@ export class ReferenceTaskStore {
       const target = (await client.query("SELECT * FROM reference_task_bindings WHERE id=$1 FOR UPDATE", [input.bindingId])).rows[0];
       const existing = (await client.query("SELECT * FROM reference_task_operations WHERE connection_id=$1 AND command_id=$2 FOR UPDATE", [target.connection_id, input.commandId])).rows[0];
       if (existing) { if (existing.fingerprint !== fingerprint) throw new ReferenceHoldError("task-command-reused"); return; }
+      await reserveTaskOperationIdentity(client, { operationId: input.operationId, commandId: input.commandId, connectionId: target.connection_id });
       if (conn) conn.credential_live = (await client.query("SELECT $1::timestamptz>clock_timestamp() AS valid", [conn.expires_at])).rows[0].valid;
       if (!conn || conn.provider !== "google" || conn.status !== "active" || !conn.credential_ciphertext || !conn.credential_live || !taskWriteAllowed(conn.scope) || !target.active || (target.destination_lifecycle ?? "present") !== "present" || object.canonical_lifecycle !== "active") throw new ReferenceHoldError("task-source-unavailable");
       if (Number(object.revision) !== input.expectedRevision) throw new ReferenceHoldError("task-revision-conflict");
-      if ((await client.query("SELECT 1 FROM reference_task_operations WHERE binding_id=$1 AND status<>'acked'", [input.bindingId])).rowCount) throw new ReferenceHoldError("task-causal-barrier");
+      if ((await client.query("SELECT 1 FROM reference_task_operations WHERE binding_id=$1 AND status<>'acked'", [input.bindingId])).rowCount || await hasWaitingTaskIntent(client, input.bindingId)) throw new ReferenceHoldError("task-causal-barrier");
       if (!taskStrongEtag(target.etag)) throw new ReferenceHoldError("task-validator-unavailable");
       const content = validateTaskContent({ ...validateTaskContent(object.content), ...input.patch });
       const epochs = { acceptedRevision: input.expectedRevision + 1, connectionGeneration: Number(conn.generation), sourceGeneration: Number(target.source_generation), privacyGeneration: Number(object.privacy_generation), canonicalGeneration: Number(object.lifecycle_generation) };
@@ -233,10 +277,11 @@ export class ReferenceTaskStore {
       const target = (await client.query("SELECT * FROM reference_task_bindings WHERE id=$1 FOR UPDATE", [input.bindingId])).rows[0];
       const existing = (await client.query("SELECT * FROM reference_task_operations WHERE connection_id=$1 AND command_id=$2 FOR UPDATE", [target.connection_id, input.commandId])).rows[0];
       if (existing) { if (existing.fingerprint !== fingerprint) throw new ReferenceHoldError("task-command-reused"); return; }
+      await reserveTaskOperationIdentity(client, { operationId: input.operationId, commandId: input.commandId, connectionId: target.connection_id });
       const valid = conn && (await client.query("SELECT $1::timestamptz>clock_timestamp() AS valid", [conn.expires_at])).rows[0].valid;
       if (!conn || conn.provider !== "google" || conn.status !== "active" || !conn.credential_ciphertext || !valid || !taskWriteAllowed(conn.scope) || !target.active || target.destination_lifecycle !== "present" || object.canonical_lifecycle !== "active") throw new ReferenceHoldError("task-source-unavailable");
       if (Number(object.revision) !== input.expectedRevision) throw new ReferenceHoldError("task-revision-conflict");
-      if ((await client.query("SELECT 1 FROM reference_task_operations WHERE binding_id=$1 AND status<>'acked'", [input.bindingId])).rowCount) throw new ReferenceHoldError("task-causal-barrier");
+      if ((await client.query("SELECT 1 FROM reference_task_operations WHERE binding_id=$1 AND status<>'acked'", [input.bindingId])).rowCount || await hasWaitingTaskIntent(client, input.bindingId)) throw new ReferenceHoldError("task-causal-barrier");
       if (!taskStrongEtag(target.etag)) throw new ReferenceHoldError("task-validator-unavailable");
       const baseline = validateTaskBaseline(target.baseline), content = validateTaskContent(object.content);
       const epochs = { acceptedRevision: input.expectedRevision + 1, connectionGeneration: Number(conn.generation), sourceGeneration: Number(target.source_generation), privacyGeneration: Number(object.privacy_generation), canonicalGeneration: Number(object.lifecycle_generation) + 1 };
@@ -253,36 +298,41 @@ export class ReferenceTaskStore {
     return this.inspectDeleteOperation(row.id);
   }
   async operationAction(operationId: string): Promise<"create" | "update" | "delete"> {
-    const row = (await this.pool.query("SELECT action,endpoint_profile FROM reference_task_operations WHERE id=$1", [operationId])).rows[0];
+    let row = (await this.pool.query("SELECT action,endpoint_profile FROM reference_task_operations WHERE id=$1", [operationId])).rows[0];
+    if (!row && (await this.pool.query("SELECT to_regclass('reference_task_intents') IS NOT NULL AS ready")).rows[0].ready) {
+      const intent = (await this.pool.query("SELECT action FROM reference_task_intents WHERE id=$1", [operationId])).rows[0];
+      if (intent) row = { ...intent, endpoint_profile: "google-task-" + intent.action + "-v1" };
+    }
     if (!row) throw new ReferenceHoldError("task-operation-missing");
     if (row.action === "update" && row.endpoint_profile === REFERENCE_TASK_UPDATE_PROFILE || row.action === "delete" && row.endpoint_profile === REFERENCE_TASK_DELETE_PROFILE || row.action === "create" && row.endpoint_profile === REFERENCE_TASK_CREATE_PROFILE) return row.action;
     throw new ReferenceHoldError("task-profile-unavailable");
   }
   async inspectDeleteOperation(operationId: string): Promise<ReferenceTaskDeleteOperation> {
-    const op = (await this.pool.query(`SELECT o.*,t.content,t.revision,t.canonical_lifecycle,t.lifecycle_generation,b.active,b.source_generation AS binding_generation,b.etag,b.baseline,b.destination_lifecycle
+    const op = (await this.pool.query(`SELECT o.*,t.content,t.revision,t.canonical_lifecycle,t.lifecycle_generation,b.active,b.source_generation AS binding_generation,b.task_id AS binding_task_id,b.etag,b.baseline,b.destination_lifecycle
       FROM reference_task_operations o JOIN reference_task_objects t ON t.id=o.object_id JOIN reference_task_bindings b ON b.id=o.binding_id WHERE o.id=$1`, [operationId])).rows[0];
     if (!op) throw new ReferenceHoldError("task-operation-missing");
     if (op.action !== "delete" || op.endpoint_profile !== REFERENCE_TASK_DELETE_PROFILE) throw new ReferenceHoldError("task-delete-port-required");
     return { operationId: op.id, commandId: op.command_id, bindingId: op.binding_id, objectId: op.object_id, provider: "google", endpointProfile: REFERENCE_TASK_DELETE_PROFILE, action: "delete", status: op.status,
       payload: op.payload, capture: capture(op), acceptedBaseline: op.delete_accepted_baseline, dispatchPossible: op.dispatch_possible,
-      deleteResponse: { acceptedStatus: op.delete_acceptance_status, responseAbsenceStatus: op.delete_response_absence_status }, receipt: receipt(op.receipt),
+      deleteResponse: { acceptedStatus: op.delete_acceptance_status, responseAbsenceStatus: op.delete_response_absence_status }, receipt: receipt(op.receipt), ...(op.predecessor_operation_id ? { predecessorOperationId: op.predecessor_operation_id, resolution: op.resolution_basis } : {}), ...(op.completion_evidence ? { completion: op.completion_evidence } : {}),
       canonical: { content: op.content, lifecycle: op.canonical_lifecycle, revision: Number(op.revision), generation: Number(op.lifecycle_generation) },
-      binding: { taskListId: op.task_list_id, taskId: op.task_id, active: op.active, sourceGeneration: Number(op.binding_generation), etag: op.etag, baseline: op.baseline, destinationLifecycle: op.destination_lifecycle },
+      binding: { taskListId: op.task_list_id, taskId: op.binding_task_id, active: op.active, sourceGeneration: Number(op.binding_generation), etag: op.etag, baseline: op.baseline, destinationLifecycle: op.destination_lifecycle },
       leaseAttemptId: op.lease_attempt_id, leaseUntil: op.lease_until?.toISOString() ?? null };
   }
   async prepareDelete(supplied: ClaimIdentity, signal?: AbortSignal) {
     const claim = claimIdentity(supplied);
     return this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId); signal?.throwIfAborted();
-      if (!this.owned(locked, claim) || !this.current(locked, "delete")) throw new ReferenceHoldError("task-authority-changed");
-      return { acceptedEtag: locked.operation.accepted_etag as string, baseline: deleteBaseline(locked.operation) };
+      if (!await this.currentFor(client, locked, claim, "delete")) throw new ReferenceHoldError("task-authority-changed");
+      const predecessorAddress = this.predecessorAddress(locked, claim);
+      return { acceptedEtag: locked.operation.accepted_etag as string, baseline: deleteBaseline(locked.operation), ...(predecessorAddress ? { predecessorAddress } : {}) };
     }, signal);
   }
   async getDeleteSession(supplied: ReferenceTaskDeleteClaim, signal?: AbortSignal): Promise<GoogleTaskAccountSession> {
     const claim = claimIdentity(supplied);
     const session = await this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId); signal?.throwIfAborted();
-      if (!this.owned(locked, claim) || !this.current(locked, "delete")) throw new ReferenceHoldError("task-authority-changed");
+      if (!await this.currentFor(client, locked, claim, "delete")) throw new ReferenceHoldError("task-authority-changed");
       deleteBaseline(locked.operation);
       return { connectionId: locked.connection.id, connectionGeneration: String(locked.connection.generation),
         accessToken: decryptCredential(this.credentialKey, locked.connection.id, locked.connection.credential_ciphertext), taskWriteAllowed: true };
@@ -327,7 +377,7 @@ export class ReferenceTaskStore {
     if (fields.kind !== "exact-absence" || !["initial-read", "writer-read", "readback"].includes(fields.source as string) || read.kind !== "absent" || !taskDeleteResponseAbsenceStatus(read.status)) throw new ReferenceHoldError("invalid-task-delete-absence");
     return this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId); signal?.throwIfAborted();
-      if (!this.owned(locked, claim) || !this.current(locked, "delete")) return false;
+      if (!await this.currentFor(client, locked, claim, "delete")) return false;
       deleteBaseline(locked.operation);
       const proof = receipt(locked.operation.receipt);
       if (proof.remote.kind !== "confirmed" || proof.provider.kind === "pending" ||
@@ -336,19 +386,20 @@ export class ReferenceTaskStore {
       // Keep historical ETag/baseline, active grant and source epoch. Absence is
       // the scoped delivery result, not a source retirement/resurrection flow.
       await client.query("UPDATE reference_task_bindings SET destination_lifecycle='absent' WHERE id=$1", [locked.binding.id]);
-      const completed = await client.query("UPDATE reference_task_operations SET status='acked',lease_attempt_id=NULL,lease_until=NULL WHERE id=$1 AND lease_attempt_id=$2 AND status='running' AND lease_until>clock_timestamp() AND EXISTS(SELECT 1 FROM reference_connections c WHERE c.id=reference_task_operations.connection_id AND c.expires_at>clock_timestamp())", [claim.operationId, claim.attemptId]);
-      if (completed.rowCount !== 1) throw new TaskAckLeaseExpired(); return true;
+      await this.acknowledge(client, locked, claim, { version: 1, kind: "absent", operationId: claim.operationId, attemptId: claim.attemptId,
+        observationId: proof.remote.observationId, taskId: locked.operation.resolution_basis?.taskId ?? locked.operation.task_id,
+        sourceGeneration: Number(locked.binding.source_generation), status: read.status as 404 | 410 }); return true;
     }, signal).catch(error => { if (error instanceof TaskAckLeaseExpired) return false; throw error; });
   }
   async inspectOperation(operationId: string): Promise<ReferenceTaskOperation> {
-    const op = (await this.pool.query(`SELECT o.*,t.content,t.revision,t.canonical_lifecycle,t.lifecycle_generation,b.active,b.source_generation AS binding_generation,b.etag,b.baseline,to_jsonb(b)->>'destination_lifecycle' AS destination_lifecycle
+    const op = (await this.pool.query(`SELECT o.*,t.content,t.revision,t.canonical_lifecycle,t.lifecycle_generation,b.active,b.source_generation AS binding_generation,b.task_id AS binding_task_id,b.etag,b.baseline,to_jsonb(b)->>'destination_lifecycle' AS destination_lifecycle
       FROM reference_task_operations o JOIN reference_task_objects t ON t.id=o.object_id JOIN reference_task_bindings b ON b.id=o.binding_id WHERE o.id=$1`, [operationId])).rows[0];
     if (!op) throw new ReferenceHoldError("task-operation-missing");
     if (op.action !== "update" || op.endpoint_profile !== REFERENCE_TASK_UPDATE_PROFILE) throw new ReferenceHoldError("task-update-port-required");
     return { operationId: op.id, commandId: op.command_id, bindingId: op.binding_id, objectId: op.object_id, provider: "google", endpointProfile: REFERENCE_TASK_UPDATE_PROFILE, action: "update", status: op.status,
-      payload: op.payload, capture: capture(op), saved: op.saved_projection, dispatchPossible: op.dispatch_possible, acceptedStatus: op.native_acceptance_status, receipt: receipt(op.receipt),
+      payload: op.payload, capture: capture(op), saved: op.saved_projection, dispatchPossible: op.dispatch_possible, acceptedStatus: op.native_acceptance_status, receipt: receipt(op.receipt), ...(op.predecessor_operation_id ? { predecessorOperationId: op.predecessor_operation_id, resolution: op.resolution_basis } : {}), ...(op.completion_evidence ? { completion: op.completion_evidence } : {}),
       canonical: { content: op.content, lifecycle: op.canonical_lifecycle, revision: Number(op.revision), generation: Number(op.lifecycle_generation) },
-      binding: { taskListId: op.task_list_id, taskId: op.task_id, active: op.active, sourceGeneration: Number(op.binding_generation), etag: op.etag, baseline: op.baseline, destinationLifecycle: op.destination_lifecycle ?? "present" },
+      binding: { taskListId: op.task_list_id, taskId: op.binding_task_id, active: op.active, sourceGeneration: Number(op.binding_generation), etag: op.etag, baseline: op.baseline, destinationLifecycle: op.destination_lifecycle ?? "present" },
       leaseAttemptId: op.lease_attempt_id, leaseUntil: op.lease_until?.toISOString() ?? null };
   }
   async inspectCreateOperation(operationId: string): Promise<ReferenceTaskCreateOperation> {
@@ -358,15 +409,16 @@ export class ReferenceTaskStore {
     if (!op) throw new ReferenceHoldError("task-operation-missing");
     if (op.action !== "create" || op.endpoint_profile !== REFERENCE_TASK_CREATE_PROFILE) throw new ReferenceHoldError("task-create-port-required");
     return { operationId: op.id, commandId: op.command_id, bindingId: op.binding_id, objectId: op.object_id, provider: "google", endpointProfile: REFERENCE_TASK_CREATE_PROFILE, action: "create", status: op.status,
-      payload: op.payload, capture: capture(op), dispatchPossible: op.dispatch_possible, createResponse: createResponse(op), receipt: receipt(op.receipt),
+      payload: op.payload, capture: capture(op), dispatchPossible: op.dispatch_possible, createResponse: createResponse(op), receipt: receipt(op.receipt), ...(op.predecessor_operation_id ? { predecessorOperationId: op.predecessor_operation_id, resolution: op.resolution_basis } : {}), ...(op.completion_evidence ? { completion: op.completion_evidence } : {}),
       canonical: { content: op.content, lifecycle: op.canonical_lifecycle, revision: Number(op.revision), generation: Number(op.lifecycle_generation) },
       binding: { taskListId: op.task_list_id, taskId: op.binding_task_id, active: op.active, sourceGeneration: Number(op.binding_generation), etag: op.etag, baseline: op.baseline,
         destinationLifecycle: op.destination_lifecycle, createOperationId: op.create_operation_id, createProfile: op.create_profile },
       leaseAttemptId: op.lease_attempt_id, leaseUntil: op.lease_until?.toISOString() ?? null };
   }
-  private async claimFor(operationId: string, attemptId: string, action: "create" | "update" | "delete") {
+  private async claimFor(operationId: string, attemptId: string, action: "create" | "update" | "delete", signal?: AbortSignal) {
     if (![operationId, attemptId].every(taskIdentity)) throw new Error("Invalid reference task attempt identity");
     return this.transaction(async client => {
+      if (!await activateTaskIntent(client, operationId, signal)) return null;
       const locked = await this.locked(client, operationId), op = locked.operation;
       if (op.action !== action || op.endpoint_profile !== (action === "create" ? REFERENCE_TASK_CREATE_PROFILE : action === "delete" ? REFERENCE_TASK_DELETE_PROFILE : REFERENCE_TASK_UPDATE_PROFILE)) throw new ReferenceHoldError("task-action-port-required");
       if (["acked", "conflict"].includes(op.status) || op.lease_live || op.not_before && (await client.query("SELECT $1::timestamptz>clock_timestamp() AS delayed", [op.not_before])).rows[0].delayed) return null;
@@ -377,26 +429,28 @@ export class ReferenceTaskStore {
       else if (Object.hasOwn(op, "delete_acceptance_status")) await client.query("INSERT INTO reference_task_attempts(id,operation_id,receipt,recovery,native_acceptance_status,delete_acceptance_status,delete_response_absence_status) VALUES($1,$2,$3,$4,$5,$6,$7)", [attemptId, operationId, saved, op.dispatch_possible, op.native_acceptance_status, op.delete_acceptance_status, op.delete_response_absence_status]);
       else await client.query("INSERT INTO reference_task_attempts(id,operation_id,receipt,recovery,native_acceptance_status) VALUES($1,$2,$3,$4,$5)", [attemptId, operationId, saved, op.dispatch_possible, op.native_acceptance_status]);
       await client.query("UPDATE reference_task_operations SET status='running',lease_attempt_id=$2,lease_until=clock_timestamp()+interval '120 seconds',receipt=$3,not_before=NULL WHERE id=$1", [operationId, attemptId, saved]);
+      if (op.predecessor_operation_id && !(await client.query("SELECT lease_attempt_id=$2 AND status='running' AND lease_until>clock_timestamp() AND EXISTS(SELECT 1 FROM reference_connections c WHERE c.id=reference_task_operations.connection_id AND c.expires_at>clock_timestamp()) AS valid FROM reference_task_operations WHERE id=$1", [operationId, attemptId])).rows[0].valid)
+        throw new ReferenceHoldError("task-intent-claim-authority-changed");
       return { op, saved };
-    });
+    }, signal);
   }
-  async claim(operationId: string, attemptId: string): Promise<ReferenceTaskClaim | null> {
-    const row = await this.claimFor(operationId, attemptId, "update"); if (!row) return null;
+  async claim(operationId: string, attemptId: string, signal?: AbortSignal): Promise<ReferenceTaskClaim | null> {
+    const row = await this.claimFor(operationId, attemptId, "update", signal); if (!row) return null;
     const { op, saved } = row;
     return { operationId, attemptId, endpointProfile: op.endpoint_profile, payload: op.payload, binding: binding(op), capture: capture(op),
       locator: { connectionId: op.connection_id, taskListId: op.task_list_id, taskId: op.task_id }, acceptedEtag: op.accepted_etag,
       saved: op.saved_projection, receipt: saved, recovery: op.dispatch_possible, acceptedStatus: op.native_acceptance_status };
   }
-  async claimDelete(operationId: string, attemptId: string): Promise<ReferenceTaskDeleteClaim | null> {
-    const row = await this.claimFor(operationId, attemptId, "delete"); if (!row) return null;
+  async claimDelete(operationId: string, attemptId: string, signal?: AbortSignal): Promise<ReferenceTaskDeleteClaim | null> {
+    const row = await this.claimFor(operationId, attemptId, "delete", signal); if (!row) return null;
     const { op, saved } = row;
     return { operationId, attemptId, endpointProfile: op.endpoint_profile, payload: op.payload, binding: binding(op), capture: capture(op),
       locator: { connectionId: op.connection_id, taskListId: op.task_list_id, taskId: op.task_id }, acceptedEtag: op.accepted_etag,
       acceptedBaseline: op.delete_accepted_baseline, receipt: saved, recovery: op.dispatch_possible,
       deleteResponse: { acceptedStatus: op.delete_acceptance_status, responseAbsenceStatus: op.delete_response_absence_status } };
   }
-  async claimCreate(operationId: string, attemptId: string): Promise<ReferenceTaskCreateClaim | null> {
-    const row = await this.claimFor(operationId, attemptId, "create"); if (!row) return null;
+  async claimCreate(operationId: string, attemptId: string, signal?: AbortSignal): Promise<ReferenceTaskCreateClaim | null> {
+    const row = await this.claimFor(operationId, attemptId, "create", signal); if (!row) return null;
     const { op, saved } = row;
     return { operationId, attemptId, endpointProfile: op.endpoint_profile, payload: op.payload, binding: binding(op), capture: capture(op),
       locator: { connectionId: op.connection_id, taskListId: op.task_list_id, taskId: null }, receipt: saved, recovery: op.dispatch_possible, createResponse: createResponse(op) };
@@ -500,9 +554,12 @@ export class ReferenceTaskStore {
       if (!jsonEqual(target, projected) || response.responseAddress?.taskId !== observation.taskId) throw new ReferenceHoldError("task-create-observation-conflict");
       if (!locked.operation.dispatch_possible || response.acceptedStatus === null || !["accepted", "uncertain"].includes(proof.provider.kind) || proof.remote.kind !== "confirmed") throw new ReferenceHoldError("task-create-confirmation-missing");
       if ((await client.query("SELECT id FROM reference_task_bindings WHERE connection_id=$1 AND task_list_id=$2 AND task_id=$3 AND id<>$4", [locked.operation.connection_id, locked.operation.task_list_id, observation.taskId, locked.binding.id])).rowCount) throw new ReferenceHoldError("task-create-scope-occupied");
-      await client.query("UPDATE reference_task_bindings SET task_id=$2,etag=$3,baseline=$4,destination_lifecycle='present' WHERE id=$1", [locked.binding.id, observation.taskId, observation.validator, projected]);
-      const completed = await client.query("UPDATE reference_task_operations SET status='acked',lease_attempt_id=NULL,lease_until=NULL WHERE id=$1 AND lease_attempt_id=$2 AND status='running' AND lease_until>clock_timestamp() AND EXISTS(SELECT 1 FROM reference_connections c WHERE c.id=reference_task_operations.connection_id AND c.expires_at>clock_timestamp())", [claim.operationId, claim.attemptId]);
-      if (completed.rowCount !== 1) throw new TaskAckLeaseExpired(); return true;
+      const adopted = (await client.query("UPDATE reference_task_bindings SET task_id=$2,etag=$3,baseline=$4,destination_lifecycle='present' WHERE id=$1 RETURNING source_generation", [locked.binding.id, observation.taskId, observation.validator, projected])).rows[0];
+      const from = Number(locked.binding.source_generation), to = Number(adopted.source_generation);
+      if (to !== from + 1) throw new ReferenceHoldError("task-create-adoption-epoch-changed");
+      await this.acknowledge(client, locked, claim, { version: 1, kind: "present", operationId: claim.operationId, attemptId: claim.attemptId,
+        observationId: proof.remote.observationId, taskId: observation.taskId, sourceGeneration: to, validator: observation.validator, projectionBaseline: projected,
+        adoption: { operationId: claim.operationId, from, to } }); return true;
     }, signal).catch(error => { if (error instanceof TaskAckLeaseExpired) return false; throw error; });
   }
   async renew(supplied: ClaimIdentity, signal?: AbortSignal): Promise<boolean> {
@@ -516,15 +573,15 @@ export class ReferenceTaskStore {
     const claim = claimIdentity(supplied);
     return this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId); signal?.throwIfAborted();
-      if (!this.owned(locked, claim) || !this.current(locked)) throw new ReferenceHoldError("task-authority-changed");
-      const saved = savedProjection(locked.operation); return { acceptedEtag: locked.operation.accepted_etag as string, baseline: saved.baseline, saved };
+      if (!await this.currentFor(client, locked, claim)) throw new ReferenceHoldError("task-authority-changed");
+      const saved = savedProjection(locked.operation), predecessorAddress = this.predecessorAddress(locked, claim); return { acceptedEtag: locked.operation.accepted_etag as string, baseline: saved.baseline, saved, ...(predecessorAddress ? { predecessorAddress } : {}) };
     }, signal);
   }
   async getSession(supplied: ReferenceTaskClaim, signal?: AbortSignal): Promise<GoogleTaskAccountSession> {
     const claim = claimIdentity(supplied);
     const session = await this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId); signal?.throwIfAborted();
-      if (!this.owned(locked, claim) || !this.current(locked)) throw new ReferenceHoldError("task-authority-changed");
+      if (!await this.currentFor(client, locked, claim)) throw new ReferenceHoldError("task-authority-changed");
       savedProjection(locked.operation);
       return { connectionId: locked.connection.id, connectionGeneration: String(locked.connection.generation), scope: locked.connection.scope,
         accessToken: decryptCredential(this.credentialKey, locked.connection.id, locked.connection.credential_ciphertext), taskWriteAllowed: true };
@@ -538,7 +595,7 @@ export class ReferenceTaskStore {
     const claim = claimIdentity(supplied);
     return this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId); signal?.throwIfAborted();
-      if (!this.owned(locked, claim) || !this.current(locked, action)) throw new ReferenceHoldError("task-authority-changed");
+      if (!await this.currentFor(client, locked, claim, action)) throw new ReferenceHoldError("task-authority-changed");
       if (action === "delete") {
         deleteBaseline(locked.operation);
         if (locked.operation.delete_acceptance_status != null || locked.operation.delete_response_absence_status != null) throw new ReferenceHoldError("task-delete-observe-only");
@@ -588,9 +645,9 @@ export class ReferenceTaskStore {
     if (!projected || !jsonEqual(projected, observation.projection)) throw new ReferenceHoldError("invalid-task-observation");
     return this.transaction(async client => {
       const locked = await this.locked(client, claim.operationId); signal?.throwIfAborted();
-      if (!this.owned(locked, claim) || !this.current(locked)) return false;
+      if (!await this.currentFor(client, locked, claim)) return false;
       const saved = savedProjection(locked.operation);
-      if (observation.read.task.id !== locked.operation.task_id || !jsonEqual(saved, observation.saved) || !jsonEqual(saved.projection, observation.projection)) throw new ReferenceHoldError("task-observation-conflict");
+      if (observation.read.task.id !== (locked.operation.resolution_basis?.taskId ?? locked.operation.task_id) || !jsonEqual(saved, observation.saved) || !jsonEqual(saved.projection, observation.projection)) throw new ReferenceHoldError("task-observation-conflict");
       const proof = receipt(locked.operation.receipt), attempt = (await client.query("SELECT recovery FROM reference_task_attempts WHERE id=$1 AND operation_id=$2", [claim.attemptId, claim.operationId])).rows[0];
       const emptyMask = Object.keys(saved.patch).length === 0 && proof.provider.kind === "not-dispatched" && !locked.operation.dispatch_possible;
       const fulfilledAfterRejection = proof.provider.kind === "rejected" && locked.operation.dispatch_possible && attempt?.recovery === true;
@@ -599,8 +656,9 @@ export class ReferenceTaskStore {
       await client.query("UPDATE reference_task_bindings SET etag=$2,baseline=$3 WHERE id=$1", [locked.binding.id, observation.validator, projected]);
       // Last DB-clock lease check after every awaited mapping write. Throwing
       // makes false settlement roll back the provisional mapping too.
-      const completed = await client.query("UPDATE reference_task_operations SET status='acked',lease_attempt_id=NULL,lease_until=NULL WHERE id=$1 AND lease_attempt_id=$2 AND status='running' AND lease_until>clock_timestamp() AND EXISTS(SELECT 1 FROM reference_connections c WHERE c.id=reference_task_operations.connection_id AND c.expires_at>clock_timestamp())", [claim.operationId, claim.attemptId]);
-      if (completed.rowCount !== 1) throw new TaskAckLeaseExpired(); return true;
+      await this.acknowledge(client, locked, claim, { version: 1, kind: "present", operationId: claim.operationId, attemptId: claim.attemptId,
+        observationId: proof.remote.observationId, taskId: observation.read.task.id, sourceGeneration: Number(locked.binding.source_generation),
+        validator: observation.validator, projectionBaseline: projected }); return true;
     }, signal).catch(error => { if (error instanceof TaskAckLeaseExpired) return false; throw error; });
   }
   async finish(supplied: ClaimIdentity, status: "hold" | "conflict", details: { code?: string; retryAfterMs?: number } = {}): Promise<boolean> {

@@ -1,8 +1,12 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import { admitTaskOperationInTransaction } from "./operation-admission";
+import { assertPinnedOutboxSourceInTransaction } from "./operation-admission";
+import { decodeTaskOutboxOperation } from "./outbox-operation";
+import { lockCalendarLifecycle } from "./calendar-lifecycle";
 import { retireKnownUnwrittenOutboxInTransaction } from "./outbox-causal-retirement";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
-import { TaskSchema, ForbiddenError, type Task } from "@musubi/types";
+import { TaskSchema, ForbiddenError, SyncOperationCaptureSchema, type Task } from "@musubi/types";
 import { db } from "..";
 import { externalCalendars, externalTasks, taskOutbox, tasks } from "../schema";
 import type { DbTransaction } from "./calendars";
@@ -19,6 +23,9 @@ export const TASK_OUTBOX_LEASE_MS = 120_000;
 
 export class TaskSourceChangedError extends Error {
   constructor() { super("The task destination changed. Refresh before retrying; no changes were saved."); }
+}
+export class TaskOutboxPredecessorError extends Error {
+  constructor() { super("Task delivery predecessor evidence does not match its captured source."); }
 }
 
 /** A receipt without either response evidence or uncertainty is proven to have
@@ -236,29 +243,60 @@ export async function assertTaskOutboxSourceInTransaction(tx: DbTransaction, row
 async function resolveTaskOutboxPredecessorEvidence(row: TaskOutboxRow, read: (id: string) => Promise<TaskOutboxRow | undefined>) {
   let predecessorID = row.predecessorID, matchingPredecessorSource = true;
   let originalMappingBaseline: Record<string, unknown> | null | undefined;
+  const lineage: TaskOutboxRow[] = [];
+  let evidence: TaskOutboxRow | undefined;
   const visited = new Set<string>([row.id]);
+  const current = decodeTaskOutboxOperation(row);
+  if (current.kind === "blocked") throw new TaskOutboxPredecessorError();
+  const capture = (value: TaskOutboxRow) => {
+    if (!Object.prototype.hasOwnProperty.call(value.payload, "operationCapture")) return undefined;
+    const parsed = SyncOperationCaptureSchema.safeParse(value.payload.operationCapture);
+    if (!parsed.success) throw new TaskOutboxPredecessorError();
+    return parsed.data;
+  };
+  const captured = capture(row);
   while (predecessorID) {
-    if (visited.has(predecessorID)) throw new Error("Task delivery predecessor cycle.");
+    if (visited.has(predecessorID)) throw new TaskOutboxPredecessorError();
     visited.add(predecessorID);
     const previous = await read(predecessorID);
-    if (!previous || !["completed", "not-needed"].includes(previous.status)) break;
+    if (!previous || !["completed", "not-needed"].includes(previous.status)) throw new TaskOutboxPredecessorError();
     matchingPredecessorSource &&= previous.taskID === row.taskID && previous.calendarID === row.calendarID &&
       previous.externalCalendarLinkID === row.externalCalendarLinkID && previous.provider === row.provider && previous.userID === row.userID &&
       previous.accountID === row.accountID && previous.externalCalendarID === row.externalCalendarID &&
       previous.providerAccessRevision === row.providerAccessRevision && previous.retiredGeneration === row.retiredGeneration;
-    if (matchingPredecessorSource && previous.externalTaskID === row.externalTaskID && previous.expectedEtag === row.expectedEtag &&
+    // ACK refusal is too late to protect a foreign native task. Every caller,
+    // including the legacy dispatcher, must reject a broken scope before it
+    // receives any ancestor address or projection.
+    if (!matchingPredecessorSource) throw new TaskOutboxPredecessorError();
+    const ancestor = decodeTaskOutboxOperation(previous);
+    if (ancestor.kind === "blocked") throw new TaskOutboxPredecessorError();
+    // Transitional v0 rows can retain a real capture even without an envelope.
+    // Validate every present capture; an absent legacy capture stays absent.
+    const prior = capture(previous);
+    if (captured && prior && !isDeepStrictEqual(captured, prior)) throw new TaskOutboxPredecessorError();
+    lineage.push(previous);
+    if (!evidence && matchingPredecessorSource && previous.externalTaskID === row.externalTaskID && previous.expectedEtag === row.expectedEtag &&
         previous.icalUid === row.icalUid) {
       if (Object.prototype.hasOwnProperty.call(previous.payload, "projectionBaseline")) originalMappingBaseline = previous.payload.projectionBaseline ?? null;
       else if (previous.payload.dispatchProjection) originalMappingBaseline = previous.payload.dispatchProjection.baseline;
     }
-    if (previous.resultRef) return { ref: previous.resultRef, projectionBaseline: previous.remoteSnapshot, hasPredecessorEvidence: true, matchingPredecessorSource, originalMappingBaseline };
+    if (!evidence && previous.resultRef) evidence = previous;
     predecessorID = previous.predecessorID;
   }
+  if (evidence) return { ref: evidence.resultRef!, projectionBaseline: evidence.remoteSnapshot, hasPredecessorEvidence: true,
+    matchingPredecessorSource, originalMappingBaseline, lineage, evidenceOperationId: evidence.id, noTask: false };
+  const terminal = lineage[lineage.length - 1];
   return { ref: { externalTaskId: row.externalTaskID, etag: row.expectedEtag, icalUid: row.icalUid },
-    projectionBaseline: row.payload.projectionBaseline ?? null, hasPredecessorEvidence: false, matchingPredecessorSource: false, originalMappingBaseline };
+    projectionBaseline: row.payload.projectionBaseline ?? null, hasPredecessorEvidence: false, matchingPredecessorSource: false, originalMappingBaseline, lineage,
+    evidenceOperationId: terminal?.id ?? null,
+    noTask: !!terminal && predecessorID === null && terminal.action === "create" && terminal.status === "not-needed" &&
+      lineage.every(previous => !previous.uncertain && previous.externalTaskID === null && previous.expectedEtag === null && previous.icalUid === null &&
+        previous.resultRef === null && previous.remoteSnapshot === null) };
 }
 export async function getTaskOutboxPredecessorEvidence(row: TaskOutboxRow) {
-  const { ref, projectionBaseline } = await resolveTaskOutboxPredecessorEvidence(row, getTaskOutbox);
+  const snapshot = structuredClone(row);
+  const { ref, projectionBaseline, hasPredecessorEvidence, noTask } = await resolveTaskOutboxPredecessorEvidence(snapshot, getTaskOutbox);
+  if (snapshot.predecessorID && snapshot.externalTaskID === null && !hasPredecessorEvidence && !noTask) throw new TaskOutboxPredecessorError();
   return { ref, projectionBaseline };
 }
 /** ACK uses the same paired predecessor rule inside its own transaction. The
@@ -272,6 +310,147 @@ export async function getTaskOutboxPredecessorEvidenceInTransaction(tx: DbTransa
 /** Resolve a successor's address from proven evidence, never a new CREATE. */
 export async function getTaskOutboxExpectedRef(row: TaskOutboxRow) {
   return (await getTaskOutboxPredecessorEvidence(row)).ref;
+}
+
+type TaskPredecessorRef = { externalTaskId: string; etag: string | null; icalUid: string | null };
+/** DB-owned evidence. Structurally matches the shared runtime union without a
+ * DB-to-runtime/provider dependency or exposed ancestor DTOs. */
+export type TaskOutboxPredecessorResolution = {
+  operationId: string; attemptId: string; predecessorOperationId: string; evidenceOperationId: string; witness: string;
+} & ({ kind: "predecessor-task-reference"; taskId: string; validator: string | null; projectionBaseline: Readonly<Record<string, unknown>> | null } |
+  { kind: "predecessor-no-task" });
+interface TaskPredecessorBasis {
+  version: 1; kind: TaskOutboxPredecessorResolution["kind"]; operationId: string; predecessorOperationId: string;
+  evidenceOperationId: string; witness: string; ref: TaskPredecessorRef | null; projectionBaseline: Record<string, unknown> | null;
+  historyProfile: "captured-v1" | "legacy-compatible";
+}
+const jsonCopy = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+function semanticHash(value: unknown) {
+  return createHash("sha256").update(JSON.stringify(value, (_key, item) => item && typeof item === "object" && !Array.isArray(item)
+    ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) : item)).digest("hex");
+}
+function semanticTaskRow(row: TaskOutboxRow, ancestor: boolean) {
+  const field = (key: keyof TaskOutboxRow["payload"]) => Object.prototype.hasOwnProperty.call(row.payload, key) ? [true, row.payload[key]] : [false];
+  return { id: row.id, actorID: row.actorID, mutationID: row.mutationID, position: row.position, createdAt: row.createdAt,
+    taskID: row.taskID, revision: row.revision, predecessorID: row.predecessorID, calendarID: row.calendarID,
+    externalCalendarLinkID: row.externalCalendarLinkID, provider: row.provider, userID: row.userID, accountID: row.accountID,
+    externalCalendarID: row.externalCalendarID, externalTaskID: row.externalTaskID, expectedEtag: row.expectedEtag, icalUid: row.icalUid,
+    providerAccessRevision: row.providerAccessRevision, retiredGeneration: row.retiredGeneration, action: row.action,
+    task: field("task"), capture: field("operationCapture"), envelope: field("operationEnvelope"), projectionBaseline: field("projectionBaseline"), providerProjection: field("providerProjection"),
+    ...(ancestor ? { dispatchProjection: field("dispatchProjection"), dispatchResolution: field("dispatchResolution"),
+      dispatchProjectionWitness: field("dispatchProjectionWitness"), status: row.status, uncertain: row.uncertain, resultRef: row.resultRef, remoteSnapshot: row.remoteSnapshot } : {}) };
+}
+function publicTaskResolution(basis: TaskPredecessorBasis, token: string): TaskOutboxPredecessorResolution {
+  const common = { operationId: basis.operationId, attemptId: token, predecessorOperationId: basis.predecessorOperationId,
+    evidenceOperationId: basis.evidenceOperationId, witness: basis.witness };
+  if (basis.kind === "predecessor-no-task") return { ...common, kind: basis.kind };
+  const tag = basis.ref!.etag;
+  // A weak/missing historical native tag is retained in the private pair. It
+  // supplies no conditional authority but must not block DELETE GET absence.
+  const validator = typeof tag === "string" && /^"[\x21\x23-\x7e\x80-\xff]*"$/.test(tag) ? tag : null;
+  return { ...common, kind: basis.kind, taskId: basis.ref!.externalTaskId, validator, projectionBaseline: jsonCopy(basis.projectionBaseline) };
+}
+async function taskPredecessorBasis(tx: DbTransaction, row: TaskOutboxRow, signal?: AbortSignal): Promise<TaskPredecessorBasis> {
+  if (row.provider !== "google" || row.externalTaskID !== null || !row.predecessorID || !["update", "delete"].includes(row.action)) throw new TaskOutboxPredecessorError();
+  const decoded = decodeTaskOutboxOperation(row); if (decoded.kind !== "pinned-v1" || decoded.envelope.serializer.id !== "google-task") throw new TaskOutboxPredecessorError();
+  const predecessor = await resolveTaskOutboxPredecessorEvidence(row, async id => {
+    signal?.throwIfAborted(); const [previous] = await tx.select().from(taskOutbox).where(eq(taskOutbox.id, id)).for("share"); signal?.throwIfAborted(); return previous;
+  });
+  if (!predecessor.evidenceOperationId || !predecessor.hasPredecessorEvidence && !predecessor.noTask) throw new TaskOutboxPredecessorError();
+  let ref: TaskPredecessorRef | null = null;
+  if (predecessor.hasPredecessorEvidence) {
+    const value = predecessor.ref;
+    if (typeof value.externalTaskId !== "string" || !value.externalTaskId || value.etag != null && typeof value.etag !== "string" || value.icalUid != null && typeof value.icalUid !== "string") throw new TaskOutboxPredecessorError();
+    ref = { externalTaskId: value.externalTaskId, etag: value.etag ?? null, icalUid: value.icalUid ?? null };
+  }
+  const projectionBaseline = predecessor.hasPredecessorEvidence ? predecessor.projectionBaseline : null;
+  if (projectionBaseline !== null && (typeof projectionBaseline !== "object" || Array.isArray(projectionBaseline))) throw new TaskOutboxPredecessorError();
+  return { version: 1, kind: ref ? "predecessor-task-reference" : "predecessor-no-task", operationId: row.id, predecessorOperationId: row.predecessorID,
+    evidenceOperationId: predecessor.evidenceOperationId, ref, projectionBaseline: jsonCopy(projectionBaseline),
+    witness: semanticHash([semanticTaskRow(row, false), ...predecessor.lineage.map(previous => semanticTaskRow(previous, true))]),
+    historyProfile: predecessor.lineage.every(previous => decodeTaskOutboxOperation(previous).kind === "pinned-v1") ? "captured-v1" : "legacy-compatible" };
+}
+function validTaskCausalProjection(row: TaskOutboxRow, basis: TaskPredecessorBasis, requireWitness: boolean) {
+  const saved = row.payload.dispatchProjection;
+  if (!saved) return row.payload.dispatchProjectionWitness === undefined;
+  if (basis.projectionBaseline !== null && !isDeepStrictEqual(saved.baseline, basis.projectionBaseline)) return false;
+  const witness = semanticHash([basis.witness, saved]);
+  return row.payload.dispatchProjectionWitness === undefined ? !requireWitness : row.payload.dispatchProjectionWitness === witness;
+}
+function taskPreparationSidecars(row: TaskOutboxRow) {
+  return (["dispatchProjection", "dispatchResolution", "dispatchProjectionWitness"] as const).map(key =>
+    Object.prototype.hasOwnProperty.call(row.payload, key) ? [true, row.payload[key]] : [false]);
+}
+async function withTaskCausalClaim<T>(claimed: TaskOutboxRow, token: string, signal: AbortSignal | undefined, body: (tx: DbTransaction, row: TaskOutboxRow) => Promise<T>, preparation?: ReturnType<typeof taskPreparationSidecars>): Promise<T> {
+  const id = claimed.id, original = semanticTaskRow(claimed, false);
+  const sameAdmission = (current: TaskOutboxRow) => isDeepStrictEqual(semanticTaskRow(current, false), original) &&
+    (preparation === undefined || isDeepStrictEqual(taskPreparationSidecars(current), preparation));
+  signal?.throwIfAborted();
+  return db.transaction(async tx => {
+    const [address] = await tx.select().from(taskOutbox).where(eq(taskOutbox.id, id));
+    // A fresh lookup cannot redefine the admission already decoded by the
+    // runtime, or redirect its locks to a newly substituted calendar/task.
+    if (!address || !sameAdmission(address)) throw new TaskOutboxPredecessorError();
+    await lockCalendarLifecycle(tx, [address.calendarID], "shared");
+    await tx.select({ id: tasks.id }).from(tasks).where(eq(tasks.id, address.taskID)).for("update");
+    const [row] = await tx.select().from(taskOutbox).where(taskOutboxLeaseGuard(id, token)).for("update"); signal?.throwIfAborted();
+    if (!row || !sameAdmission(row) ||
+        !await assertTaskOutboxSourceInTransaction(tx, row, { allowDeletedTask: true }) || !await assertPinnedOutboxSourceInTransaction(tx, row, true)) throw new TaskOutboxPredecessorError();
+    const result = await body(tx, row); signal?.throwIfAborted();
+    if (!(await tx.select({ id: taskOutbox.id }).from(taskOutbox).where(taskOutboxLeaseGuard(id, token))).length) throw new TaskOutboxPredecessorError();
+    return result;
+  });
+}
+/** First preparation binds every preexisting sidecar to the original claim,
+ * including absence. It runs once per claimed runtime attempt: callers reuse
+ * its returned proof for projection/assertion, rather than refreshing an old
+ * claim DTO after this attempt's progress. Fresh retry claims remain supported.
+ * Leases/attempt IDs never enter the immutable basis. */
+export async function prepareTaskOutboxPredecessorResolution(row: TaskOutboxRow, token: string, signal?: AbortSignal) {
+  const claimed = structuredClone(row), id = claimed.id;
+  return withTaskCausalClaim(claimed, token, signal, async (tx, current) => {
+    const basis = await taskPredecessorBasis(tx, current, signal), stored = current.payload.dispatchResolution;
+    if (stored !== undefined && !isDeepStrictEqual(stored, basis) || !validTaskCausalProjection(current, basis, stored !== undefined)) throw new TaskOutboxPredecessorError();
+    if (stored === undefined) {
+      const payload = { ...current.payload, dispatchResolution: basis, ...(current.payload.dispatchProjection ? {
+        dispatchProjectionWitness: semanticHash([basis.witness, current.payload.dispatchProjection]) } : {}) };
+      await tx.update(taskOutbox).set({ payload }).where(taskOutboxLeaseGuard(id, token));
+    }
+    return { predecessorAddress: publicTaskResolution(basis, token), expectedRef: jsonCopy(basis.ref), projectionBaseline: jsonCopy(basis.projectionBaseline),
+      saved: current.payload.dispatchProjection, historyProfile: basis.historyProfile };
+  }, taskPreparationSidecars(claimed));
+}
+export async function assertTaskOutboxPredecessorResolutionInTransaction(tx: DbTransaction, row: TaskOutboxRow, token: string,
+  supplied?: TaskOutboxPredecessorResolution, signal?: AbortSignal) {
+  try {
+    const basis = await taskPredecessorBasis(tx, row, signal);
+    return isDeepStrictEqual(row.payload.dispatchResolution, basis) && validTaskCausalProjection(row, basis, true) &&
+      (supplied === undefined || isDeepStrictEqual(supplied, publicTaskResolution(basis, token)));
+  } catch (error) { signal?.throwIfAborted(); if (error instanceof TaskOutboxPredecessorError) return false; throw error; }
+}
+export async function assertTaskOutboxPredecessorResolution(row: TaskOutboxRow, token: string, supplied: TaskOutboxPredecessorResolution, signal?: AbortSignal) {
+  const claimed = structuredClone(row), proof = jsonCopy(supplied);
+  return withTaskCausalClaim(claimed, token, signal, (tx, current) => assertTaskOutboxPredecessorResolutionInTransaction(tx, current, token, proof, signal));
+}
+/** Bind the existing write-once mask to the same immutable causal basis. A NULL
+ * historical baseline may use the first native read under the existing profile;
+ * after persistence neither that baseline nor its mask can be silently changed. */
+export async function setTaskOutboxCausalProjection(row: TaskOutboxRow, token: string, supplied: TaskOutboxPredecessorResolution,
+  projection: NonNullable<TaskOutboxRow["payload"]["dispatchProjection"]>, signal?: AbortSignal) {
+  const claimed = structuredClone(row), id = claimed.id, proof = jsonCopy(supplied), saved = jsonCopy(projection);
+  return withTaskCausalClaim(claimed, token, signal, async (tx, current) => {
+    if (!await assertTaskOutboxPredecessorResolutionInTransaction(tx, current, token, proof, signal)) throw new TaskOutboxPredecessorError();
+    const basis = current.payload.dispatchResolution as TaskPredecessorBasis;
+    if (current.payload.dispatchProjection) {
+      if (!isDeepStrictEqual(current.payload.dispatchProjection, saved)) throw new TaskOutboxPredecessorError();
+      return jsonCopy(current.payload.dispatchProjection);
+    }
+    if (basis.projectionBaseline !== null && !isDeepStrictEqual(saved.baseline, basis.projectionBaseline)) throw new TaskOutboxPredecessorError();
+    const payload = { ...current.payload, dispatchProjection: saved, dispatchProjectionWitness: semanticHash([basis.witness, saved]) };
+    if (decodeTaskOutboxOperation({ ...current, payload }).kind !== "pinned-v1") throw new TaskOutboxPredecessorError();
+    await tx.update(taskOutbox).set({ payload }).where(taskOutboxLeaseGuard(id, token));
+    return saved;
+  });
 }
 
 export function taskOutboxSnapshot(task: typeof tasks.$inferSelect, calendars: string[]) {

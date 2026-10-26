@@ -1094,6 +1094,9 @@ export const taskOutbox = pgTable("task_outbox", {
     projectionBaseline?: Record<string, unknown> | null;
     providerProjection?: { version: 1; projection: Record<string, unknown>; patch: Record<string, unknown>; baseline: Record<string, unknown> | null; errorCode?: string };
     dispatchProjection?: { version: 1; projection: Record<string, unknown>; patch: Record<string, unknown>; baseline: Record<string, unknown> | null; errorCode?: string };
+    /** Host-only immutable causal resolution; never rewrites the v1 locator. */
+    dispatchResolution?: unknown;
+    dispatchProjectionWitness?: string;
   }>().notNull(),
   status: text("status").$type<"pending" | "attempting" | "completed" | "not-needed" | "conflict" | "not-written" | "unconfirmed" | "retry" | "blocked" | "cancelled">().notNull().default("pending"),
   attempts: integer("attempts").notNull().default(0),

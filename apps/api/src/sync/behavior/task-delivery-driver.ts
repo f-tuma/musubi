@@ -104,6 +104,10 @@ function unexpected(name: string): never {
   throw error;
 }
 const dbExports = {
+  TaskOutboxPredecessorError: class extends Error {},
+  prepareTaskOutboxPredecessorResolution() { return unexpected("causal-resolution"); },
+  assertTaskOutboxPredecessorResolution() { return unexpected("causal-revalidation"); },
+  setTaskOutboxCausalProjection() { return unexpected("causal-projection"); },
   claimTaskOutbox(id: string) { const fixture = port("db.claim"); if (id !== OPERATION_ID) return unexpected("claim-identity"); return fixture.row; },
   decodeTaskOutboxOperation(row: TaskOutboxRow) { port("db.decode"); return realDecode(row); },
   assertPinnedOutboxSource(_row: unknown, allowDeleted: boolean) { port(`db.pinned:${allowDeleted}`); return true; },

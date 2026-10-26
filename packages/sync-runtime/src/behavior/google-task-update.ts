@@ -10,7 +10,6 @@ export { ScenarioFailure } from "./google-delete";
 const OPERATION_ID = "abcdef01-abcd-4000-8000-abcdefabcdef";
 const TASK_ID = "abcdef01-abcd-4000-8000-abcdefabcdea";
 const TARGET = { connectionId: "physical-account", connectionGeneration: "1", taskListId: "native/list", taskId: "native/task" };
-const PATH = "/tasks/v1/lists/native%2Flist/tasks/native%2Ftask";
 const TASK_INPUT = { id: TASK_ID, creatorID: "fixture-owner", calendarID: "fixture-home", revision: 2, title: "Admitted title", description: "Notes", status: "in-process",
   due: "2026-10-20T14:30:00.123Z", start: "2026-10-19T10:00:00.456Z", priority: 2, percentComplete: 37 };
 type Json = null | string | number | boolean | Json[] | { [key: string]: Json };
@@ -27,7 +26,8 @@ export interface GoogleTaskUpdateSummary {
 export interface GoogleTaskUpdateScenario {
   id: string; title: string; policy: "musubi" | "reference"; recovery: boolean; priorProvider: "not-dispatched" | "uncertain" | "accepted";
   acceptedEtag: string | null; priorAcceptedStatus?: 200 | 201 | 204; baseline: Projection | null;
-  savedPatch?: Record<string, Json>; taskOverrides?: Record<string, Json>; readRecovery?: boolean;
+  savedPatch?: Record<string, Json>; taskOverrides?: Record<string, Json>; readRecovery?: boolean; deferred?: boolean;
+  predecessorProof?: Record<string, Json> | null; nativeTaskId?: string;
   exchanges: Exchange[]; expected: GoogleTaskUpdateSummary;
 }
 export interface GoogleTaskUpdateSuite { schemaVersion: 1; driver: "google-task-update"; scenarios: GoogleTaskUpdateScenario[] }
@@ -71,14 +71,16 @@ function summary(value: unknown) {
 export function parseGoogleTaskUpdateSuite(value: unknown): GoogleTaskUpdateSuite {
   if (!SyncJsonValueSchema.safeParse(value).success) invalid();
   const suite = object(value, ["schemaVersion", "driver", "scenarios"]);
-  if (suite.schemaVersion !== 1 || suite.driver !== "google-task-update" || !Array.isArray(suite.scenarios) || !suite.scenarios.length || suite.scenarios.length > 64) invalid();
+  if (suite.schemaVersion !== 1 || suite.driver !== "google-task-update" || !Array.isArray(suite.scenarios) || !suite.scenarios.length || suite.scenarios.length > 128) invalid();
   const ids = new Set<string>();
   for (const raw of suite.scenarios as unknown[]) {
-    const item = object(raw, ["id", "title", "policy", "recovery", "priorProvider", "acceptedEtag", "baseline", "exchanges", "expected"], ["priorAcceptedStatus", "savedPatch", "taskOverrides", "readRecovery"]);
+    const item = object(raw, ["id", "title", "policy", "recovery", "priorProvider", "acceptedEtag", "baseline", "exchanges", "expected"], ["priorAcceptedStatus", "savedPatch", "taskOverrides", "readRecovery", "deferred", "predecessorProof", "nativeTaskId"]);
     if (typeof item.id !== "string" || !/^[a-z][a-z0-9-]{0,79}$/.test(item.id) || ids.has(item.id)) invalid(); ids.add(item.id as string);
     if (typeof item.title !== "string" || !item.title.length || item.title.length > 160 || /[\u0000-\u001f\u007f]/.test(item.title)) invalid();
     choice(item.policy, ["musubi", "reference"]); choice(item.priorProvider, ["not-dispatched", "uncertain", "accepted"]);
-    if (typeof item.recovery !== "boolean" || item.readRecovery !== undefined && typeof item.readRecovery !== "boolean" || !item.recovery && item.priorProvider !== "not-dispatched") invalid();
+    if (typeof item.recovery !== "boolean" || item.readRecovery !== undefined && typeof item.readRecovery !== "boolean" || item.deferred !== undefined && typeof item.deferred !== "boolean" || !item.recovery && item.priorProvider !== "not-dispatched") invalid();
+    if (item.predecessorProof !== undefined && !item.deferred || item.nativeTaskId !== undefined && (!item.deferred || typeof item.nativeTaskId !== "string" || !item.nativeTaskId || item.nativeTaskId.length > 8192)) invalid();
+    if (item.predecessorProof != null && (typeof item.predecessorProof !== "object" || Array.isArray(item.predecessorProof))) invalid();
     if (item.acceptedEtag !== null && (typeof item.acceptedEtag !== "string" || item.acceptedEtag.length > 128)) invalid();
     if (item.priorAcceptedStatus !== undefined) { choice(item.priorAcceptedStatus, [200, 201, 204]); if (item.priorProvider !== "accepted") invalid(); }
     if (item.baseline !== null) projection(item.baseline);
@@ -115,21 +117,28 @@ export async function runGoogleTaskUpdateScenario(input: GoogleTaskUpdateScenari
   const encoded = encodeTaskV1("google", task, undefined, { action: "update", operationId: OPERATION_ID, acceptedAt: "2026-10-25T12:00:00.000Z" });
   const admitted = encoded.admittedProjection.data as GoogleTaskProjection;
   const envelope = SyncOperationEnvelopeSchema.parse({ schemaVersion: 1, profileVersion: "sync-profile-v1", operation: { kind: "task", action: "update", version: 1 }, commandId: "fixture-command", operationId: OPERATION_ID, hostObjectId: TASK_ID,
-    locator: { provider: "google", connectionId: "logical-account", collectionId: TARGET.taskListId, resourceId: TARGET.taskId },
+    locator: { provider: "google", connectionId: "logical-account", collectionId: TARGET.taskListId, resourceId: scenario.deferred ? null : TARGET.taskId },
+    ...(scenario.deferred ? { predecessorOperationId: "fixture-create" } : {}),
     sourceEpoch: { sourceId: "fixture-source", generation: 1 }, acceptedRevision: 2, privacyEpoch: "task:0", allowedSideEffects: ["provider-content-write"], ...encoded });
   const saved = scenario.savedPatch === undefined ? undefined : { projection: admitted, baseline: scenario.baseline!, patch: scenario.savedPatch };
+  const originalEnvelope = JSON.stringify(envelope);
+  const nativeTaskId = scenario.nativeTaskId ?? TARGET.taskId;
+  const predecessorProof = scenario.predecessorProof === undefined ? { kind: "predecessor-task-reference", operationId: OPERATION_ID, attemptId: "fixture-attempt",
+    predecessorOperationId: "fixture-create", evidenceOperationId: "fixture-create", taskId: nativeTaskId, validator: scenario.acceptedEtag,
+    projectionBaseline: scenario.baseline, witness: "fixture-complete-scoped-lineage" } : scenario.predecessorProof;
   const queue = structuredClone(scenario.exchanges), methods: string[] = [], redirects: (string | null)[] = [], bodies: (Json | null)[] = [], ifMatch: (string | null)[] = [], tokens: string[] = [], metrics: GoogleTaskRequestMetric[] = [];
   const acks: { kind: string; projection: Json; validator: string }[] = [], finishes: string[] = [];
   let sessions = 0, recoveries = 0, mutationMarks = 0, time = 0, preparedPatch: Json | null = null, fatal: ScenarioFailure | undefined;
   const session = (connection: { connectionId: string; connectionGeneration: string }, token = "fixture-initial-token") => ({ ...connection, accessToken: token, taskWriteAllowed: true });
   const policy: GoogleTaskUpdatePolicy = { nativeProfile: scenario.policy === "musubi" ? "existing-google" : "strict-reference", readback: scenario.policy === "musubi" ? "saved-patch" : "full-target", ambiguousRecovery: scenario.policy === "musubi" ? "deferred" : "within-attempt" };
   const result = await runClaimedGoogleTaskUpdate({ operationId: OPERATION_ID, attemptId: "fixture-attempt", payload: { operationEnvelope: envelope },
-    binding: { kind: "task", action: "update", operationId: OPERATION_ID, commandId: "fixture-command", hostObjectId: TASK_ID, provider: "google", connectionId: "logical-account", collectionId: TARGET.taskListId, resourceId: TARGET.taskId, acceptedRevision: 2, predecessorOperationId: null },
-    collectionIdentity: "native", nativeTarget: TARGET, acceptedEtag: scenario.acceptedEtag,
+    binding: { kind: "task", action: "update", operationId: OPERATION_ID, commandId: "fixture-command", hostObjectId: TASK_ID, provider: "google", connectionId: "logical-account", collectionId: TARGET.taskListId, resourceId: scenario.deferred ? null : TARGET.taskId, acceptedRevision: 2, predecessorOperationId: scenario.deferred ? "fixture-create" : null },
+    collectionIdentity: "native", nativeTarget: { ...TARGET, taskId: scenario.deferred ? null : TARGET.taskId }, acceptedEtag: scenario.acceptedEtag,
     recovery: { required: scenario.recovery, possibleDispatch: scenario.recovery }, priorProvider: scenario.priorProvider === "accepted" ? { kind: "accepted", validator: null } : { kind: scenario.priorProvider },
     ...(scenario.priorAcceptedStatus === undefined ? {} : { priorAcceptedStatus: scenario.priorAcceptedStatus }),
   }, {
-    async prepare() { return { acceptedEtag: scenario.acceptedEtag, baseline: scenario.baseline, ...(saved ? { saved } : {}) }; },
+    async prepare() { return { acceptedEtag: scenario.acceptedEtag, baseline: scenario.baseline, ...(saved ? { saved } : {}),
+      ...(scenario.deferred && predecessorProof !== null ? { predecessorAddress: predecessorProof as unknown as import("../google-task-address-ports").GoogleTaskPredecessorResolution } : {}) }; },
     async prepareProjection(input) { const resolved = input.saved ?? { projection: input.target, baseline: input.baseline, patch: diffGoogleTaskProjection(input.baseline, input.target) }; preparedPatch = structuredClone(resolved.patch) as Json; return resolved; },
     renew: async () => true,
     accountSession: { open: async connection => { sessions++; return session(connection); },
@@ -142,7 +151,7 @@ export async function runGoogleTaskUpdateScenario(input: GoogleTaskUpdateScenari
     http: { async fetch(url, init) {
       const headers = new Headers(init.headers), method = init.method ?? "GET", exchange = queue.shift();
       methods.push(method); redirects.push(init.redirect ?? null); bodies.push(init.body === undefined ? null : JSON.parse(String(init.body))); ifMatch.push(headers.get("If-Match")); tokens.push(headers.get("Authorization") === "Bearer fixture-recovered-token" ? "recovered" : "initial");
-      if (url !== "https://tasks.googleapis.com" + PATH || !exchange || exchange.method !== method) { fatal ??= new ScenarioFailure("exchange-mismatch", "An unplanned native task request was dispatched."); throw fatal; }
+      if (url !== `https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/${encodeURIComponent(nativeTaskId)}` || !exchange || exchange.method !== method) { fatal ??= new ScenarioFailure("exchange-mismatch", "An unplanned native task request was dispatched."); throw fatal; }
       if (exchange.error) throw new TypeError("fixture lost reply");
       const response = new Response(exchange.rawBody !== undefined ? exchange.rawBody : exchange.body === null && [204, 205, 304].includes(exchange.status!) ? null : JSON.stringify(exchange.body), { status: exchange.status, headers: exchange.headers });
       if (exchange.responseUrl) Object.defineProperty(response, "url", { value: exchange.responseUrl === "exact" ? url : "https://example.invalid/unexpected" });
@@ -151,6 +160,7 @@ export async function runGoogleTaskUpdateScenario(input: GoogleTaskUpdateScenari
     } }, clock: { nowEpochMs: () => Date.parse("2026-10-25T12:00:00.000Z"), nowMonotonicMs: () => ++time }, telemetry: { record(metric) { metrics.push(metric); } },
   }, policy);
   if (fatal) throw fatal;
+  if (JSON.stringify(envelope) !== originalEnvelope) throw new ScenarioFailure("expectation-mismatch", "The original task envelope was rewritten during delivery.");
   if (queue.length) throw new ScenarioFailure("unconsumed-exchange", "Planned native task responses were not consumed.");
   const observed: GoogleTaskUpdateSummary = { status: result.status, methods, redirects, bodies, ifMatch, tokens, sessions, recoveries, mutationMarks, metrics: metrics.map(item => item.status), preparedPatch,
     ackKinds: acks.map(item => item.kind), ackProjection: acks[0]?.projection ?? null, ackValidators: acks.map(item => item.validator), finishStatuses: finishes,

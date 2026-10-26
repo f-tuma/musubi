@@ -1,0 +1,623 @@
+{
+  "schemaVersion": 1,
+  "scope": "Local installed API Google Task causal deferred-address UPDATE/DELETE gate with retained standalone CREATE, UPDATE, DELETE and task ACK regressions; no publication, deployment or live-provider certification.",
+  "status": "passed",
+  "createdAt": "2026-10-26T11:37:12.660132+00:00",
+  "gitHeadAtBuild": "a143002c45bf8e5a5eaf2fc3817fac430eba9c6b",
+  "approvedStagedTreeAtBuild": "5fcb8dc5efcec18f4d7ba9ac4cc53cbe4f41d401",
+  "imageTag": "musubi-c08-google-task-causal-api:proof",
+  "dockerImageInspectId": "sha256:53acf598b7f025892f4147245617ebb8cbb2e2b60f517906d352cb4b7ce032cc",
+  "localBuildIndexDigest": "sha256:53acf598b7f025892f4147245617ebb8cbb2e2b60f517906d352cb4b7ce032cc",
+  "platformManifestDigest": "sha256:b0ad6c2200bf04996017a036ea4c6cb3d193adc89c071009cce4bbc6a88f39af",
+  "imageConfigDigest": "sha256:fa32b496aa37da8f2f5b0f266b9711a3744a0c7636d1f9600ce1bcbe2b589fd1",
+  "platform": {
+    "os": "linux",
+    "architecture": "amd64"
+  },
+  "dockerIdentityNote": "OCI index, linux/amd64 manifest and config identify different layers and are independently hashed archive blobs. No registry publication or RepoDigest claim.",
+  "sourceFingerprint": "eb9ef04053b1b83fd41a2168b1e4a2fde24e22fe6f29bb03a3f18ed767d89f66",
+  "sourceContextFiles": 893,
+  "sourceFingerprintScope": "Exact approved credential-free COPY context: 893 tracked/staged files. No workspace env, ignored dependencies, data, credentials or source mounts; sorted path/SHA256/byte-length inventory is hashed.",
+  "productionSourceFingerprint": "ece7987ce9f6b2a6e68f1ccb63ef78624ca82c655f84b7becf04af0d0d24687d",
+  "productionSourceHashParity": {
+    "checkedFiles": 454,
+    "mismatches": [],
+    "scope": "Production/support classification; explicit behavior-helper overlap is counted once in the unique total."
+  },
+  "sourceInventoryCounts": {
+    "productionSupportFiles": 454,
+    "actualProductionFiles": 452,
+    "testBehaviorFiles": 34,
+    "overlapFiles": [
+      "apps/api/src/sync/behavior/task-delivery-cli.ts",
+      "apps/api/src/sync/behavior/task-delivery-driver.ts"
+    ],
+    "uniqueCheckedFiles": 486,
+    "scopeNote": "Production/support and test/behavior classes may overlap; uniqueCheckedFiles counts each path once. These are dynamic file counts, separate from executed suite/case counts."
+  },
+  "approvedTreeContextHashParity": {
+    "checkedFiles": 893,
+    "mismatches": []
+  },
+  "contextChangesAfterBuild": [],
+  "startup": {
+    "port": 49981,
+    "environment": "test",
+    "deploymentMode": "single-replica",
+    "logLevel": "info",
+    "externalSyncIntervalMin": 0,
+    "externalDeliveryRecoveryMode": "disabled",
+    "syncOperationV1EncoderEnabled": true,
+    "syncOperationProfileVersion": "sync-profile-v1",
+    "timestamp": "2026-10-26T11:34:28.847Z",
+    "level": "info",
+    "message": "server.started"
+  },
+  "emptyDatabaseBeforeBoot": {
+    "tables": 0
+  },
+  "emptyDatabaseMigrations": {
+    "applied": 86,
+    "sourceJournalEntries": 86,
+    "lastTag": "0085_graph_read_coverage",
+    "lastHashMatchesSource": true
+  },
+  "effectiveConfiguration": {
+    "encoder": true,
+    "encoderOverridePresent": false,
+    "environment": "test",
+    "nodeEnvironment": "production",
+    "externalSyncIntervalMin": 0,
+    "deliveryRecoveryMode": "disabled",
+    "smtpConfigured": false,
+    "pushConfigured": false,
+    "workspaceEnvPresent": false
+  },
+  "runtime": {
+    "user": "node",
+    "sourceBindMounts": 0,
+    "mounts": []
+  },
+  "providerIsolation": {
+    "externalAccounts": 0,
+    "caldavAccounts": 0,
+    "externalCalendars": 0,
+    "eventOutboxRows": 0,
+    "taskOutboxRows": 0
+  },
+  "cleanup": {
+    "containerRemoved": true,
+    "nonceDatabaseDropped": true,
+    "containerAbsentVerified": true,
+    "nonceDatabaseAbsentVerified": true,
+    "rootPostgresStillRunning": true
+  },
+  "httpChecks": {
+    "status": "passed",
+    "checks": 17,
+    "categories": {
+      "publicHealthAndCapabilities": 2,
+      "unauthenticatedAccessDenied": 1,
+      "realSignUpLoginAndCookieSession": 3,
+      "authenticatedCanonicalCalendarAndEventChecks": 11
+    },
+    "results": [
+      {
+        "label": "health",
+        "status": 200,
+        "category": "publicHealthAndCapabilities"
+      },
+      {
+        "label": "public capabilities",
+        "status": 200,
+        "category": "publicHealthAndCapabilities"
+      },
+      {
+        "label": "unauthenticated access denied",
+        "status": 401,
+        "category": "unauthenticatedAccessDenied"
+      },
+      {
+        "label": "real signup",
+        "status": 200,
+        "category": "realSignUpLoginAndCookieSession"
+      },
+      {
+        "label": "real password login",
+        "status": 200,
+        "category": "realSignUpLoginAndCookieSession"
+      },
+      {
+        "label": "real cookie session",
+        "status": 200,
+        "category": "realSignUpLoginAndCookieSession"
+      },
+      {
+        "label": "calendar create",
+        "status": 201,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "calendar list",
+        "status": 200,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "calendar detail",
+        "status": 200,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "event create",
+        "status": 201,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "idempotent exact create replay",
+        "status": 202,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "event read",
+        "status": 200,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "event revision CAS",
+        "status": 200,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "stale event revision refusal",
+        "status": 409,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "event readback",
+        "status": 200,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "event delete",
+        "status": 200,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "calendar delete",
+        "status": 200,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      }
+    ],
+    "auth": {
+      "syntheticEmailDomain": "example.invalid",
+      "signup": true,
+      "passwordLogin": true,
+      "cookieSession": true,
+      "authBypass": false,
+      "dbSeedChanges": false
+    },
+    "providerScope": {
+      "configuredExternalAccounts": 0,
+      "liveProviderRequests": false,
+      "externalCaldavCreateNotExercised": true
+    },
+    "scopeNote": "17 final canonical assertions use real Better Auth signup/login/cookie session and CRUD in an empty migrated DB. Same-origin Origin header is present normally. Readiness requests and any separately retained failed harness attempts are not additional successful checks. No auth bypass or DB seeding."
+  },
+  "installedTaskRegressionCorpus": {
+    "scope": "Seven numbered installed PG/native HTTP files (154 new causal and 156 retained cases) plus four retained task gates, in eleven separate fixture containers. Owned fixture native HTTP only. Canonical production-layout smoke remains separate.",
+    "status": "passed",
+    "suites": [
+      {
+        "file": "packages/db/src/queries/task-causal.integration.test.ts",
+        "numberedCases": 71,
+        "legacySuiteGate": false,
+        "exitCode": 0,
+        "log": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-task-causal.integration.test.log",
+        "ownedContainerAbsentVerified": true,
+        "poolCleanup": {
+          "ownedPoolsClosed": 2,
+          "remainingNonceDatabaseSessions": 0,
+          "dropDatabaseUsedForce": false,
+          "status": "passed"
+        }
+      },
+      {
+        "file": "apps/api/src/sync/google_task_causal_delivery.integration.test.ts",
+        "numberedCases": 83,
+        "legacySuiteGate": false,
+        "exitCode": 0,
+        "log": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-google_task_causal_delivery.integration.test.log",
+        "ownedContainerAbsentVerified": true,
+        "poolCleanup": {
+          "ownedPoolsClosed": 1,
+          "remainingNonceDatabaseSessions": 0,
+          "dropDatabaseUsedForce": false,
+          "status": "passed"
+        }
+      },
+      {
+        "file": "apps/api/src/sync/google_shared_task_create_delivery.integration.test.ts",
+        "numberedCases": 62,
+        "legacySuiteGate": false,
+        "exitCode": 0,
+        "log": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-google_shared_task_create_delivery.integration.test.log",
+        "ownedContainerAbsentVerified": true,
+        "poolCleanup": {
+          "ownedPoolsClosed": 2,
+          "remainingNonceDatabaseSessions": 0,
+          "dropDatabaseUsedForce": false,
+          "status": "passed"
+        }
+      },
+      {
+        "file": "apps/api/src/sync/google_shared_task_delete_delivery.integration.test.ts",
+        "numberedCases": 46,
+        "legacySuiteGate": false,
+        "exitCode": 0,
+        "log": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-google_shared_task_delete_delivery.integration.test.log",
+        "ownedContainerAbsentVerified": true,
+        "poolCleanup": {
+          "ownedPoolsClosed": 2,
+          "remainingNonceDatabaseSessions": 0,
+          "dropDatabaseUsedForce": false,
+          "status": "passed"
+        }
+      },
+      {
+        "file": "apps/api/src/sync/google_shared_task_update_delivery.integration.test.ts",
+        "numberedCases": 29,
+        "legacySuiteGate": false,
+        "exitCode": 0,
+        "log": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-google_shared_task_update_delivery.integration.test.log",
+        "ownedContainerAbsentVerified": true,
+        "poolCleanup": {
+          "ownedPoolsClosed": 2,
+          "remainingNonceDatabaseSessions": 0,
+          "dropDatabaseUsedForce": false,
+          "status": "passed"
+        }
+      },
+      {
+        "file": "packages/db/src/queries/task-ack.integration.test.ts",
+        "numberedCases": 15,
+        "legacySuiteGate": false,
+        "exitCode": 0,
+        "log": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-task-ack.integration.test.log",
+        "ownedContainerAbsentVerified": true
+      },
+      {
+        "file": "apps/api/src/sync/task_ack_delivery.integration.test.ts",
+        "numberedCases": 4,
+        "legacySuiteGate": false,
+        "exitCode": 0,
+        "log": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-task_ack_delivery.integration.test.log",
+        "ownedContainerAbsentVerified": true,
+        "poolCleanup": {
+          "ownedPoolsClosed": 2,
+          "remainingNonceDatabaseSessions": 0,
+          "dropDatabaseUsedForce": false,
+          "status": "passed"
+        }
+      },
+      {
+        "file": "packages/db/src/queries/tasks.integration.test.ts",
+        "numberedCases": null,
+        "legacySuiteGate": true,
+        "exitCode": 0,
+        "log": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-tasks.integration.test.log",
+        "ownedContainerAbsentVerified": true
+      },
+      {
+        "file": "apps/api/src/sync/shared_tasks.integration.test.ts",
+        "numberedCases": null,
+        "legacySuiteGate": true,
+        "exitCode": 0,
+        "log": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-shared_tasks.integration.test.log",
+        "ownedContainerAbsentVerified": true
+      },
+      {
+        "file": "apps/api/src/sync/task_delivery.integration.test.ts",
+        "numberedCases": null,
+        "legacySuiteGate": true,
+        "exitCode": 0,
+        "log": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-task_delivery.integration.test.log",
+        "ownedContainerAbsentVerified": true
+      },
+      {
+        "file": "apps/api/src/sync/optional_tasks.integration.test.ts",
+        "numberedCases": null,
+        "legacySuiteGate": true,
+        "exitCode": 0,
+        "log": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-optional_tasks.integration.test.log",
+        "ownedContainerAbsentVerified": true
+      }
+    ],
+    "migrations": 86,
+    "totalNumberedRegressions": 310,
+    "newCausalCases": 154,
+    "retainedNumberedRegressions": 156,
+    "existingSuiteGates": 4,
+    "testCreatedNonceDatabaseCleanup": {
+      "unretiredNewDatabaseCount": 0,
+      "prefixes": [
+        "task_causal_",
+        "google_task_create_",
+        "google_task_delete_",
+        "google_task_update_",
+        "task_ack_"
+      ]
+    },
+    "testWiring": {
+      "workspaceEnvRead": false,
+      "sourceBindMounts": 0,
+      "privateNetworkPolicy": "Explicit fixture-only loopback for existing CalDAV/HTTP tests",
+      "socialCredentialsConfigured": false,
+      "smtpConfigured": false,
+      "pushConfigured": false,
+      "testPathAliases": "A test-only tmpfs /packages contains symlinks to installed @musubi packages; canonical production-layout smoke is separate and has no aliases."
+    },
+    "cleanup": {
+      "ownedContainersAbsentVerified": true,
+      "nonceDatabaseDropped": true,
+      "nonceDatabaseAbsentVerified": true,
+      "rootPostgresStillRunning": true
+    },
+    "numberedCaseGroups": {
+      "task-causal.integration.test.ts": 71,
+      "google_task_causal_delivery.integration.test.ts": 83,
+      "google_shared_task_create_delivery.integration.test.ts": 62,
+      "google_shared_task_delete_delivery.integration.test.ts": 46,
+      "google_shared_task_update_delivery.integration.test.ts": 29,
+      "task-ack.integration.test.ts": 15,
+      "task_ack_delivery.integration.test.ts": 4
+    },
+    "testSourceHashParity": {
+      "checkedFiles": 34,
+      "mismatches": []
+    }
+  },
+  "confirmedSourceRedProvenance": [
+    {
+      "artifact": "/tmp/musu40-task-causal-foreign-update-red.log",
+      "description": "Actual pre-fix invalid persisted task lineage dispatched PATCH before ACK refusal.",
+      "scope": "Source pre-fix persisted-storage corruption fixture; not an installed failure or public API exploit claim."
+    },
+    {
+      "artifact": "/tmp/musu40-task-causal-foreign-delete-red.log",
+      "description": "Actual pre-fix invalid persisted task lineage dispatched DELETE before ACK refusal.",
+      "scope": "Source pre-fix persisted-storage corruption fixture; not an installed failure or public API exploit claim."
+    },
+    {
+      "artifact": "/tmp/musu40-task-causal-v0-capture-red.log",
+      "description": "Actual pre-fix DB preparation accepted a present mismatched v0 physical capture.",
+      "scope": "Source pre-fix persisted-storage corruption fixture; not an installed failure or public API exploit claim."
+    },
+    {
+      "artifact": "/tmp/musu40-task-causal-original-claim-red.log",
+      "description": "Actual pre-fix DB preparation accepted actor/position drift from the original claim.",
+      "scope": "Source pre-fix persisted-storage corruption fixture; not an installed failure or public API exploit claim."
+    },
+    {
+      "artifact": "/tmp/musu40-task-causal-null-history-mask-db-red.log",
+      "description": "Actual pre-fix DB preparation accepted a changed claimed mask with historical NULL baseline.",
+      "scope": "Source pre-fix persisted-storage corruption fixture; not an installed failure or public API exploit claim."
+    },
+    {
+      "artifact": "/tmp/musu40-task-causal-claimed-sidecars-removal-red.log",
+      "description": "Actual pre-fix DB preparation accepted removal of claimed resolution/witness and changed ancestor address.",
+      "scope": "Source pre-fix persisted-storage corruption fixture; not an installed failure or public API exploit claim."
+    },
+    {
+      "artifact": "/tmp/musu40-task-causal-null-history-mask-http-red.log",
+      "description": "Actual pre-fix shared native GET recovery falsely completed while native title remained Before after a claimed mask was changed to an empty patch.",
+      "scope": "Source pre-fix persisted-storage corruption fixture; not an installed failure or public API exploit claim."
+    }
+  ],
+  "sourceVerificationSummary": "/tmp/musu40-task-causal-db-api-source-sidecars-final.json",
+  "priorHarnessAttempts": [],
+  "limits": [
+    "No registry publication, production rollout, live provider or real external provider account was used.",
+    "API compatibility preserves its prior CREATE address durability floor and known conditional-write policy; no new Google Tasks CAS claim.",
+    "The predecessor witness is trusted host storage evidence, not cryptographic protection against arbitrary database compromise.",
+    "Unavailable v0 physical capture is explicit legacy compatibility; present captures are validated, and strict reference lineage remains separately constrained.",
+    "Production and selected test/behavior byte parity does not claim every hashed test was executed inside this installed corpus.",
+    "Browser fixture evidence and independent reference-host image evidence are separate. C08 remains broader than this Google Tasks gate."
+  ],
+  "artifactVerification": {
+    "status": "passed",
+    "checkedArtifacts": 38,
+    "method": "Re-read SHA256/byte length for every listed raw artifact, independently verify OCI archive identities, and compare approved Git tree/context/current/installed source hashes."
+  },
+  "artifacts": [
+    {
+      "path": "/tmp/musu40-google-task-causal-api-build-20261026113305_095862.json",
+      "sha256": "a4267f263d579900a097e6de4290818a17de6259fd77c4cc3a861340daaa8d71",
+      "bytes": 1340
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-build-20261026113305_095862.log",
+      "sha256": "44e9015f2b2efe512900d8d8332a6136c961b197ea2d44bfab5b680f0875d3f5",
+      "bytes": 4228
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-build-driver.log",
+      "sha256": "3138858cac3ec5aa0ae52fd63827c80d785ff3d2ef72630d96891b8eb61f1c34",
+      "bytes": 140
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-build.py",
+      "sha256": "5d1201b7c548e31c5f28b7bb4ddd9ad3acfc409d71430ae2025e8156e1cd893c",
+      "bytes": 5200
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-common.py",
+      "sha256": "be270875de566d6c1164809aae578953c1990186235c4dc19e2e0a9de4500c4b",
+      "bytes": 8440
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-google_shared_task_create_delivery.integration.test.log",
+      "sha256": "aaeeed7947f2592636740288ed40dd2cdff2778e1df05515973d1192b411e650",
+      "bytes": 4213
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-google_shared_task_delete_delivery.integration.test.log",
+      "sha256": "59873f9b5d9361cb87b33b2b0fa6094a1c72e485fe8555f256fde5b24cdeb843",
+      "bytes": 3316
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-google_shared_task_update_delivery.integration.test.log",
+      "sha256": "c116a12db03bfa7c4d26891138f11ea4010a63916cbb89126094fcf30f1b918d",
+      "bytes": 2227
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-google_task_causal_delivery.integration.test.log",
+      "sha256": "df5fccfa90c199bf2fc86b7d0fc01579b9059f7b7afbeb598d0481f08e1df729",
+      "bytes": 7259
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-migrate.log",
+      "sha256": "52607390f6013e5fa3831e2bde93e5a9fe6cc3b9934e46329f513a8c7416ed49",
+      "bytes": 61
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-optional_tasks.integration.test.log",
+      "sha256": "1746303b254f4166709519322ef45c71af569cb752141f79056690783418276a",
+      "bytes": 3479
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-shared_tasks.integration.test.log",
+      "sha256": "9e253944c922e6600a442104b9a354026029a8d2dff2e7499215afc501cfc7b4",
+      "bytes": 341
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-task-ack.integration.test.log",
+      "sha256": "bf1637da55528a39cb452b2b645c0b5b00dd754550e65242fc6610fd90ec75b5",
+      "bytes": 825
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-task-causal.integration.test.log",
+      "sha256": "b3cb7253a6bd22a9633016f15da0ec2df2f47ae6cab3acd10cc3bbe9c6a74a51",
+      "bytes": 4944
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-task_ack_delivery.integration.test.log",
+      "sha256": "8546685552c319332de9a767bbfd9e6f699bda0ad54b307a6a312999b7c26876",
+      "bytes": 741
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-task_delivery.integration.test.log",
+      "sha256": "3b0ac2d55af9bce34e4da5f2216f1ba13fd8341996f4a458d11234b2c552e63c",
+      "bytes": 354
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd-tasks.integration.test.log",
+      "sha256": "86ab190809122f36df2345a242e5606ca036f2398f01b62f0354b857b9dcca54",
+      "bytes": 93
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-corpus-20261026113502_74bcbd.json",
+      "sha256": "3d233f63950d27cf3692d393eb17441e30a61e8f150ccd22abd1d0008ae8eff2",
+      "bytes": 32299
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-corpus-driver.log",
+      "sha256": "5ca64b1859d3437bd642a5dc002566a1de78f4116e9369dab0785f2d22c45e5f",
+      "bytes": 1436
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-corpus.py",
+      "sha256": "cf818d0e3861c4201b9e3c913dafc22d5e051499412ec9efe0d7135409756796",
+      "bytes": 5053
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-http-20261026113425_6d09a6.json",
+      "sha256": "e4c2bc7ca6af21f9a5aa05270d8d6479aa884546884769962560392b66ca3fff",
+      "bytes": 2790
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-http-smoke.mjs",
+      "sha256": "4d8208ad9e4332c7f256530f04cdb9bb060964597bcea96db52e5139ff6c86f6",
+      "bytes": 5656
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-image-20261026113305_095862.tar",
+      "sha256": "f80f69e6214abc10cb30d9453491dbae4dcb501c4957db75b4fc7dcf9d82178f",
+      "bytes": 76939264
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-probe-driver.log",
+      "sha256": "2dcdd19ee93f9e2d44adb1ecb0c9249c4e373c995ba0ef5a32a4b4900aeebda0",
+      "bytes": 137
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-probe.py",
+      "sha256": "f9ed9c6a93839885fa9cc641d79b84a1fd14bf1c6f3de209ced59e356a31f32b",
+      "bytes": 5400
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-proof-20261026113425_6d09a6.json",
+      "sha256": "56bdbfa5abad0a4c5725cc6b0131cfc7fbfb5619d30b7367a4c775dd43b02db4",
+      "bytes": 4907
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-runtime-20261026113425_6d09a6.log",
+      "sha256": "60e3a5de8a9e12887a71161649b489d16ce45706d66acf23f051e3c0c398635e",
+      "bytes": 6165
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-source-20261026113305_095862.json",
+      "sha256": "325ee5b26e783cd9d05d14b27bcd4f38823f343105eff6b1a5b61d60d2172787",
+      "bytes": 149366
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-state.json",
+      "sha256": "2ca004ca0d8f61a6c6d8288d89fd44d5465e818bc5e0f8cd76dd3d152fa9a3f2",
+      "bytes": 180900
+    },
+    {
+      "path": "/tmp/musu40-google-task-causal-api-summarize.py",
+      "sha256": "331ef09dcaf0645dbfebf2e308a75ee4fcce1b622c2bbe4eccd1d287838ffc13",
+      "bytes": 8941
+    },
+    {
+      "path": "/tmp/musu40-task-causal-claimed-sidecars-removal-red.log",
+      "sha256": "077d4e84d4c4d745de7f80205a85632cb30e253a4e274c7b5d25cc3e49133dd5",
+      "bytes": 1179
+    },
+    {
+      "path": "/tmp/musu40-task-causal-db-api-source-sidecars-final.json",
+      "sha256": "97d7f4fb05cfc71266d7ae79f7d4a06e1fc4abb65d45970211a57b4b1a1af462",
+      "bytes": 5090
+    },
+    {
+      "path": "/tmp/musu40-task-causal-foreign-delete-red.log",
+      "sha256": "ed3f16a78b25f9455309d65bd210bbe2502c57c74241b4cf4bab3876befbf659",
+      "bytes": 1498
+    },
+    {
+      "path": "/tmp/musu40-task-causal-foreign-update-red.log",
+      "sha256": "9547fc1cbed7e44d5c8498233190bcc2ffa016f3e3c7ccd88d0d28917bfcf741",
+      "bytes": 1529
+    },
+    {
+      "path": "/tmp/musu40-task-causal-null-history-mask-db-red.log",
+      "sha256": "329782acbfcec3dc253b96eda7f8e9e6c43a7880df167a5ab96c435bb6e40d21",
+      "bytes": 1178
+    },
+    {
+      "path": "/tmp/musu40-task-causal-null-history-mask-http-red.log",
+      "sha256": "47a2d3ce0dce7968d5cb601912b5f00c9ffeda763036ef9e8f3737b429a90954",
+      "bytes": 1472
+    },
+    {
+      "path": "/tmp/musu40-task-causal-original-claim-red.log",
+      "sha256": "39174b6e1bdc6a8bad49af794bd1f8b0824e592b689f564651cc030c70c5878f",
+      "bytes": 1168
+    },
+    {
+      "path": "/tmp/musu40-task-causal-v0-capture-red.log",
+      "sha256": "78f41ebbb566c7cb535321a7530633a1138c08aadf9dc1c612e5d501982f0312",
+      "bytes": 1093
+    }
+  ]
+}

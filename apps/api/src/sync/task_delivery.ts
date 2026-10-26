@@ -1,5 +1,5 @@
 import { TaskSchema } from "@musubi/types";
-import { claimTaskOutbox, decodeTaskOutboxOperation, assertPinnedOutboxSource, getTaskOutbox, getTaskOutboxPredecessorEvidence, renewTaskOutboxLease, assertTaskOutboxDeliverySource, setTaskOutboxProjection, finishTaskOutbox, acceptTaskOutboxDelivery, type TaskOutboxRow } from "@musubi/db";
+import { claimTaskOutbox, decodeTaskOutboxOperation, assertPinnedOutboxSource, getTaskOutbox, getTaskOutboxPredecessorEvidence, renewTaskOutboxLease, assertTaskOutboxDeliverySource, setTaskOutboxProjection, finishTaskOutbox, acceptTaskOutboxDelivery, TaskOutboxPredecessorError, type TaskOutboxRow } from "@musubi/db";
 import type { CalendarAdapter, ExternalTaskRef, TaskProjection } from "./adapter";
 import { createDeliveryAttempt, deliveryNextAttemptAt, validateDeliveryAttemptOptions, type DeliveryAttemptOptions } from "./delivery_policy";
 import { withProviderCallMetrics } from "./provider_http_metrics";
@@ -51,12 +51,12 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
     if (usesSharedGoogleTaskCreate(pinned, adapter))
       return deliverSharedGoogleTaskCreate(row, pinned, adapter!.googleTaskCreateV1!, options);
   }
-  if (pinned && row.provider === "google" && row.action === "update" && row.externalTaskID) {
+  if (pinned && row.provider === "google" && row.action === "update") {
     const adapter = adapterFor(row.provider);
     if (usesSharedGoogleTaskUpdate(pinned, adapter))
       return deliverSharedGoogleTaskUpdate(row, pinned, adapter!.googleTaskUpdateV1!, options);
   }
-  if (pinned && row.provider === "google" && row.action === "delete" && row.externalTaskID) {
+  if (pinned && row.provider === "google" && row.action === "delete") {
     const adapter = adapterFor(row.provider);
     if (usesSharedGoogleTaskDelete(pinned, adapter))
       return deliverSharedGoogleTaskDelete(row, pinned, adapter!.googleTaskDeleteV1!, options);
@@ -181,7 +181,7 @@ export async function deliverTaskOutbox(id: string, adapterFor: AdapterFor, opti
   } catch (error) {
     // CalDAV preflight uses the common event HTTP validator. Preserve its
     // throttle hint without changing task delivery's persisted error codes.
-    const providerError = error instanceof ProviderTaskWriteError ? error : error instanceof ProviderEventWriteError
+    const providerError = error instanceof TaskOutboxPredecessorError ? new ProviderTaskWriteError("task-provider-conflict") : error instanceof ProviderTaskWriteError ? error : error instanceof ProviderEventWriteError
       ? new ProviderTaskWriteError("task-write-failed", error.outcome, error.providerStatus, error.retryAfterMs) : undefined;
     const code = providerError?.code ?? "task-write-failed";
     const retryableStatus = providerError?.providerStatus === 429 || providerError?.providerStatus === 408 || (providerError?.providerStatus ?? 0) >= 500;

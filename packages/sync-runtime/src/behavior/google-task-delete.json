@@ -6971,6 +6971,1289 @@
         "retry": "after-delay",
         "retryAfterMs": 1000
       }
+    },
+    {
+      "id": "deferred-delete-keeps-null-plan",
+      "title": "A paired predecessor resolves DELETE without rewriting null admission",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 204,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          204
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "provider-response"
+        ],
+        "ackStatuses": [
+          204
+        ],
+        "ackResponseKinds": [
+          "accepted"
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 204,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 204
+      },
+      "deferred": true
+    },
+    {
+      "id": "deferred-delete-strict-reference",
+      "title": "Strict reference consumes the actual paired predecessor and its own native proof",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/task",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 202,
+          "body": null
+        },
+        {
+          "method": "GET",
+          "status": 404,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          "error",
+          "error"
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\"",
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 4,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          202,
+          404
+        ],
+        "preparedPatch": null,
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "ackStatuses": [
+          404
+        ],
+        "ackResponseKinds": [
+          null
+        ],
+        "ackSources": [
+          "readback"
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 202,
+        "responseAbsenceStatus": null,
+        "remoteKind": "absent",
+        "remoteSource": "readback",
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 202
+      },
+      "deferred": true
+    },
+    {
+      "id": "deferred-proof-operation-refused",
+      "title": "Predecessor operation mismatch refuses sessions and HTTP",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [],
+      "expected": {
+        "status": "hold",
+        "methods": [],
+        "redirects": [],
+        "bodyPresent": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-projection-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "predecessorProof": {
+        "kind": "predecessor-task-reference",
+        "operationId": "other-operation",
+        "attemptId": "fixture-attempt",
+        "predecessorOperationId": "fixture-create",
+        "evidenceOperationId": "fixture-create",
+        "taskId": "native/task",
+        "validator": "\"accepted\"",
+        "projectionBaseline": {
+          "title": "Before",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "witness": "fixture-complete-scoped-lineage"
+      },
+      "deferred": true
+    },
+    {
+      "id": "deferred-proof-attempt-refused",
+      "title": "Predecessor attempt mismatch refuses sessions and HTTP",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [],
+      "expected": {
+        "status": "hold",
+        "methods": [],
+        "redirects": [],
+        "bodyPresent": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-projection-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "predecessorProof": {
+        "kind": "predecessor-task-reference",
+        "operationId": "abcdef01-abcd-4000-8000-abcdefabcdef",
+        "attemptId": "other-attempt",
+        "predecessorOperationId": "fixture-create",
+        "evidenceOperationId": "fixture-create",
+        "taskId": "native/task",
+        "validator": "\"accepted\"",
+        "projectionBaseline": {
+          "title": "Before",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "witness": "fixture-complete-scoped-lineage"
+      },
+      "deferred": true
+    },
+    {
+      "id": "deferred-proof-edge-refused",
+      "title": "Predecessor edge mismatch refuses sessions and HTTP",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [],
+      "expected": {
+        "status": "hold",
+        "methods": [],
+        "redirects": [],
+        "bodyPresent": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-projection-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "predecessorProof": {
+        "kind": "predecessor-task-reference",
+        "operationId": "abcdef01-abcd-4000-8000-abcdefabcdef",
+        "attemptId": "fixture-attempt",
+        "predecessorOperationId": "other-predecessor",
+        "evidenceOperationId": "fixture-create",
+        "taskId": "native/task",
+        "validator": "\"accepted\"",
+        "projectionBaseline": {
+          "title": "Before",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "witness": "fixture-complete-scoped-lineage"
+      },
+      "deferred": true
+    },
+    {
+      "id": "deferred-proof-evidence-self-refused",
+      "title": "Predecessor evidence-self mismatch refuses sessions and HTTP",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [],
+      "expected": {
+        "status": "hold",
+        "methods": [],
+        "redirects": [],
+        "bodyPresent": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-projection-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "predecessorProof": {
+        "kind": "predecessor-task-reference",
+        "operationId": "abcdef01-abcd-4000-8000-abcdefabcdef",
+        "attemptId": "fixture-attempt",
+        "predecessorOperationId": "fixture-create",
+        "evidenceOperationId": "abcdef01-abcd-4000-8000-abcdefabcdef",
+        "taskId": "native/task",
+        "validator": "\"accepted\"",
+        "projectionBaseline": {
+          "title": "Before",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "witness": "fixture-complete-scoped-lineage"
+      },
+      "deferred": true
+    },
+    {
+      "id": "deferred-proof-empty-witness-refused",
+      "title": "Predecessor empty-witness mismatch refuses sessions and HTTP",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [],
+      "expected": {
+        "status": "hold",
+        "methods": [],
+        "redirects": [],
+        "bodyPresent": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-projection-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "predecessorProof": {
+        "kind": "predecessor-task-reference",
+        "operationId": "abcdef01-abcd-4000-8000-abcdefabcdef",
+        "attemptId": "fixture-attempt",
+        "predecessorOperationId": "fixture-create",
+        "evidenceOperationId": "fixture-create",
+        "taskId": "native/task",
+        "validator": "\"accepted\"",
+        "projectionBaseline": {
+          "title": "Before",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "witness": ""
+      },
+      "deferred": true
+    },
+    {
+      "id": "deferred-proof-validator-refused",
+      "title": "Predecessor validator mismatch refuses sessions and HTTP",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [],
+      "expected": {
+        "status": "hold",
+        "methods": [],
+        "redirects": [],
+        "bodyPresent": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-projection-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "predecessorProof": {
+        "kind": "predecessor-task-reference",
+        "operationId": "abcdef01-abcd-4000-8000-abcdefabcdef",
+        "attemptId": "fixture-attempt",
+        "predecessorOperationId": "fixture-create",
+        "evidenceOperationId": "fixture-create",
+        "taskId": "native/task",
+        "validator": "\"other\"",
+        "projectionBaseline": {
+          "title": "Before",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "witness": "fixture-complete-scoped-lineage"
+      },
+      "deferred": true
+    },
+    {
+      "id": "deferred-proof-baseline-refused",
+      "title": "Predecessor baseline mismatch refuses sessions and HTTP",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [],
+      "expected": {
+        "status": "hold",
+        "methods": [],
+        "redirects": [],
+        "bodyPresent": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-projection-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "predecessorProof": {
+        "kind": "predecessor-task-reference",
+        "operationId": "abcdef01-abcd-4000-8000-abcdefabcdef",
+        "attemptId": "fixture-attempt",
+        "predecessorOperationId": "fixture-create",
+        "evidenceOperationId": "fixture-create",
+        "taskId": "native/task",
+        "validator": "\"accepted\"",
+        "projectionBaseline": {
+          "title": "Unrelated baseline",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "witness": "fixture-complete-scoped-lineage"
+      },
+      "deferred": true
+    },
+    {
+      "id": "deferred-proof-extra-field-refused",
+      "title": "Predecessor extra-field mismatch refuses sessions and HTTP",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [],
+      "expected": {
+        "status": "hold",
+        "methods": [],
+        "redirects": [],
+        "bodyPresent": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-projection-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "predecessorProof": {
+        "kind": "predecessor-task-reference",
+        "operationId": "abcdef01-abcd-4000-8000-abcdefabcdef",
+        "attemptId": "fixture-attempt",
+        "predecessorOperationId": "fixture-create",
+        "evidenceOperationId": "fixture-create",
+        "taskId": "native/task",
+        "validator": "\"accepted\"",
+        "projectionBaseline": {
+          "title": "Before",
+          "notes": "Notes",
+          "status": "needsAction",
+          "due": "2026-10-20T00:00:00.000Z"
+        },
+        "witness": "fixture-complete-scoped-lineage",
+        "unrecognized": "not-authority"
+      },
+      "deferred": true
+    },
+    {
+      "id": "deferred-proof-required",
+      "title": "Selected null-address operations never fall back when the resolution proof is absent",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [],
+      "expected": {
+        "status": "hold",
+        "methods": [],
+        "redirects": [],
+        "bodyPresent": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-projection-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "predecessorProof": null,
+      "deferred": true
+    },
+    {
+      "id": "deferred-long-native-id",
+      "title": "Existing native generated ID is encoded intact beyond the admission identity limit",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx?#",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx?#",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "GET",
+          "status": 200,
+          "body": {
+            "id": "native/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx?#",
+            "etag": "\"accepted\"",
+            "title": "Before",
+            "notes": "Notes",
+            "status": "needsAction",
+            "due": "2026-10-20T00:00:00.000Z"
+          }
+        },
+        {
+          "method": "DELETE",
+          "status": 204,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "GET",
+          "DELETE"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error",
+          null
+        ],
+        "bodyPresent": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "contentTypes": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          "\"accepted\""
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          200,
+          200,
+          200,
+          204
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "ackKinds": [
+          "provider-response"
+        ],
+        "ackStatuses": [
+          204
+        ],
+        "ackResponseKinds": [
+          "accepted"
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "acceptedStatus": 204,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": true,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": "deleted",
+        "writerResultSource": null,
+        "writerResultStatus": 204
+      },
+      "nativeTaskId": "native/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx?#",
+      "deferred": true
+    },
+    {
+      "id": "deferred-strict-native-id-limit",
+      "title": "Strict reference keeps its explicit returned native ID limit",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": "\"accepted\"",
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [],
+      "expected": {
+        "status": "hold",
+        "methods": [],
+        "redirects": [],
+        "bodyPresent": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-projection-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "nativeTaskId": "native/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx?#",
+      "deferred": true
+    },
+    {
+      "id": "deferred-no-resource",
+      "title": "No-write CREATE history has an explicit zero-native-effect successor outcome",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": null,
+      "baseline": null,
+      "exchanges": [],
+      "expected": {
+        "status": "acked",
+        "methods": [],
+        "redirects": [],
+        "bodyPresent": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "ackKinds": [
+          "predecessor-no-resource"
+        ],
+        "ackStatuses": [
+          null
+        ],
+        "ackResponseKinds": [
+          null
+        ],
+        "ackSources": [
+          null
+        ],
+        "finishStatuses": [],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "predecessorProof": {
+        "kind": "predecessor-no-task",
+        "operationId": "abcdef01-abcd-4000-8000-abcdefabcdef",
+        "attemptId": "fixture-attempt",
+        "predecessorOperationId": "fixture-create",
+        "evidenceOperationId": "fixture-create",
+        "witness": "fixture-complete-no-write-create"
+      },
+      "deferred": true
+    },
+    {
+      "id": "deferred-no-resource-not-reference-absence",
+      "title": "Strict reference refuses to invent GET absence from no-write history",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": null,
+      "baseline": null,
+      "exchanges": [],
+      "expected": {
+        "status": "hold",
+        "methods": [],
+        "redirects": [],
+        "bodyPresent": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "ackKinds": [],
+        "ackStatuses": [],
+        "ackResponseKinds": [],
+        "ackSources": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "unobserved",
+        "remoteSource": null,
+        "possibleDispatch": false,
+        "errorCode": "task-projection-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "predecessorProof": {
+        "kind": "predecessor-no-task",
+        "operationId": "abcdef01-abcd-4000-8000-abcdefabcdef",
+        "attemptId": "fixture-attempt",
+        "predecessorOperationId": "fixture-create",
+        "evidenceOperationId": "fixture-create",
+        "witness": "fixture-complete-no-write-create"
+      },
+      "deferred": true
+    },
+    {
+      "id": "deferred-null-validator-initial-absence",
+      "title": "Actual scoped GET absence can ACK before requiring a conditional mutation validator",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "acceptedEtag": null,
+      "baseline": {
+        "title": "Before",
+        "notes": "Notes",
+        "status": "needsAction",
+        "due": "2026-10-20T00:00:00.000Z"
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "status": 404,
+          "body": null
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodyPresent": [
+          false
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          404
+        ],
+        "preparedPatch": null,
+        "ackKinds": [
+          "exact-absence"
+        ],
+        "ackStatuses": [
+          404
+        ],
+        "ackResponseKinds": [
+          null
+        ],
+        "ackSources": [
+          "initial-read"
+        ],
+        "finishStatuses": [],
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAbsenceStatus": null,
+        "remoteKind": "absent",
+        "remoteSource": "initial-read",
+        "possibleDispatch": false,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "writerResultKind": null,
+        "writerResultSource": null,
+        "writerResultStatus": null
+      },
+      "deferred": true
     }
   ]
 }

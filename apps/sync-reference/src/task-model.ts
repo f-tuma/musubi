@@ -2,6 +2,7 @@ import type { GoogleTaskProjection } from "@musubi/provider-google";
 import type { GoogleTaskSavedProjection, RuntimeTaskAcceptedStatus } from "@musubi/sync-runtime";
 import type { SyncDeliveryReceipt, SyncOperationRowBinding } from "@musubi/types";
 import type { ReferenceCapture, ReferenceStatus } from "./model.js";
+import type { ReferenceTaskCompletion, ReferenceTaskResolutionBasis } from "./task-intent-model.js";
 
 /** Independent richer task truth. Google does not carry doing/time/importance. */
 export interface ReferenceTaskContent {
@@ -21,7 +22,7 @@ export interface ReferenceTaskAdmission {
 export interface ReferenceTaskClaim {
   readonly operationId: string; readonly attemptId: string; readonly endpointProfile: string;
   readonly payload: unknown; readonly binding: SyncOperationRowBinding; readonly capture: ReferenceCapture;
-  readonly locator: { connectionId: string; taskListId: string; taskId: string };
+  readonly locator: { connectionId: string; taskListId: string; taskId: string | null };
   readonly acceptedEtag: string; readonly saved: GoogleTaskSavedProjection;
   readonly receipt: SyncDeliveryReceipt; readonly recovery: boolean; readonly acceptedStatus: RuntimeTaskAcceptedStatus | null;
 }
@@ -30,6 +31,7 @@ export interface ReferenceTaskOperation {
   provider: "google"; endpointProfile: "google-task-update-v1"; action: "update";
   status: ReferenceStatus; payload: unknown; capture: ReferenceCapture; saved: GoogleTaskSavedProjection;
   dispatchPossible: boolean; acceptedStatus: RuntimeTaskAcceptedStatus | null; receipt: SyncDeliveryReceipt;
+  predecessorOperationId?: string; resolution?: ReferenceTaskResolutionBasis; completion?: ReferenceTaskCompletion;
   canonical: { content: ReferenceTaskContent; lifecycle: "active" | "tombstoned"; revision: number; generation: number };
   binding: { taskListId: string; taskId: string; active: boolean; sourceGeneration: number; etag: string; baseline: GoogleTaskProjection; destinationLifecycle?: "present" | "absent" };
   leaseAttemptId: string | null; leaseUntil: string | null;

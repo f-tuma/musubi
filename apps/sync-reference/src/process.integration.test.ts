@@ -109,7 +109,7 @@ async function main() {
     await store.migrate();
     const tables=(await pool.query("SELECT tablename FROM pg_tables WHERE schemaname='public'")).rows.map(row=>row.tablename).sort();
     assert.deepEqual(tables,["reference_attempts","reference_bindings","reference_connections","reference_objects","reference_operations",
-      "reference_task_attempts","reference_task_bindings","reference_task_objects","reference_task_operations"]);
+      "reference_task_attempts","reference_task_bindings","reference_task_intents","reference_task_objects","reference_task_operations"]);
     await fixture("kill-inside-admission",async ids=>{
       const process=child("admit",ids.operationId,ids.admission,"admissionCanonical");await process.stopped;
       assert.equal((await pool.query("SELECT revision FROM reference_objects WHERE id=$1",[ids.objectId])).rows[0].revision,"1");

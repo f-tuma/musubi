@@ -11,6 +11,8 @@ pnpm test:behavior --suite google-create --scenario fresh-create --json
 pnpm test:behavior --suite google-task-update --scenario fresh-title-update --json
 pnpm test:behavior --suite google-task-delete --scenario fresh-delete --json
 pnpm test:behavior --suite google-task-create --scenario fresh-create --json
+pnpm test:behavior --suite google-task-update --scenario deferred-update-keeps-null-admission --json
+pnpm test:behavior --suite google-task-delete --scenario deferred-delete-keeps-null-plan --json
 pnpm test:behavior --suite microsoft-delete --scenario lost-reply-restart-present --json
 pnpm test:behavior --suite microsoft-create --scenario fresh-create --json
 pnpm test:behavior --suite caldav-delete --scenario fresh-delete --json
@@ -35,8 +37,8 @@ not committed. The root runner can also be called as
 | --- | --- | --- | --- |
 | `google-delete` | Claimed delivery runtime, Google provider preflight/conditional DELETE/recovery | Host persistence/lease/credential ports, HTTP responses and clock | None |
 | `google-create` | Admitted codec identity/body, CREATE delivery runtime and provider preflight/write/recovery | Host persistence/lease/credential ports, ordered HTTP responses and clock | None |
-| `google-task-update` | Actual Task codec, claimed task UPDATE kernel, saved field selection and Google Tasks provider | Host preparation/lease/credential/ACK ports, ordered HTTP receipts and clock | None |
-| `google-task-delete` | Actual Task DELETE codec, claimed kernel, scoped reads and native conditional DELETE | Host preparation/lease/credential/ACK ports, ordered native receipts and clock | None |
+| `google-task-update` | Actual Task codec, claimed UPDATE kernel, original NULL causal admission, predecessor proof, saved mask and native provider | Host preparation/lease/credential/ACK ports, ordered HTTP receipts and clock | None |
+| `google-task-delete` | Actual Task DELETE codec, original NULL causal admission, scoped reads, conditional DELETE and explicit no-resource completion | Host preparation/lease/credential/ACK ports, ordered native receipts and clock | None |
 | `google-task-create` | Actual Task CREATE codec, generated-address kernel, list proof, POST and scoped readback | Host preparation/lease/credential/ACK ports, ordered native receipts and clock | None |
 | `microsoft-delete` | Admitted Graph DELETE codec, guarded runtime, native weak version, owned-calendar preflight and exact absence | Host persistence/lease/credential ports, ordered HTTP responses and clock | None |
 | `microsoft-create` | Admitted Graph transaction/body, bounded CREATE runtime, native permission/POST/scoped listing and candidate identity | Host persistence/lease/normalization/credential ports, ordered HTTP responses and clock | None |

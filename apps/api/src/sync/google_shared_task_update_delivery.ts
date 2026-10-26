@@ -3,12 +3,14 @@ import {
   assertPinnedOutboxSource, assertTaskOutboxDeliverySource, getTaskOutboxPredecessorEvidence,
   setTaskOutboxProjection, renewTaskOutboxLease, acceptTaskOutboxDelivery, finishTaskOutbox, getTaskOutbox,
   type TaskOutboxRow,
+  prepareTaskOutboxPredecessorResolution, assertTaskOutboxPredecessorResolution, setTaskOutboxCausalProjection, TaskOutboxPredecessorError,
 } from "@musubi/db";
 import { TaskSchema, SyncOperationCaptureSchema, type SyncOperationEnvelope } from "@musubi/types";
 import { diffGoogleTaskProjection, type GoogleTaskProjection, type GoogleTaskUpdateBody } from "@musubi/provider-google";
 import {
   runClaimedGoogleTaskUpdate, supportsGoogleTaskUpdateEnvelope, SyncRuntimeHostError,
   type GoogleTaskUpdatePolicy, type RuntimeTaskNativeFacts, type RuntimeTaskFinishOutcome, type RuntimeAttemptOptions,
+  type GoogleTaskPredecessorResolution,
 } from "@musubi/sync-runtime";
 import type { CalendarAdapter, ExternalTaskRef, GoogleTaskUpdateV1Bridge, TaskProjection } from "./adapter";
 import { jsonTaskProjection } from "./task_write";
@@ -38,6 +40,7 @@ export async function deliverSharedGoogleTaskUpdate(row: TaskOutboxRow & { recon
   let persisted = row.payload.dispatchProjection;
   let initialBaseline: TaskProjection | null = null;
   let canDispatch = false;
+  let predecessorAddress: GoogleTaskPredecessorResolution | undefined;
   const admitted = async (allowDeleted: boolean, signal: AbortSignal) => {
     signal.throwIfAborted();
     const allowed = await assertTaskOutboxDeliverySource(row, allowDeleted) && await assertPinnedOutboxSource(row, allowDeleted);
@@ -46,8 +49,9 @@ export async function deliverSharedGoogleTaskUpdate(row: TaskOutboxRow & { recon
   const record = (facts: RuntimeTaskNativeFacts) => {
     // Raw accepted HTTP status is attempt-local here. Existing durable task
     // uncertainty remains the restart representation; a null tag is no proof.
-    if (facts.provider.kind === "accepted" && facts.provider.validator)
-      resultRef = { externalTaskId: row.externalTaskID!, etag: facts.provider.validator, icalUid: null };
+    const taskId = expectedRef?.externalTaskId ?? row.externalTaskID;
+    if (facts.provider.kind === "accepted" && facts.provider.validator && taskId)
+      resultRef = { externalTaskId: taskId, etag: facts.provider.validator, icalUid: null };
     if (facts.remote.kind === "confirmed") {
       const observed = native().normalizeObservation(facts.remote.read);
       if (observed) { resultRef = { ...observed.ref }; remoteSnapshot = jsonTaskProjection(observed.projection); }
@@ -97,6 +101,17 @@ export async function deliverSharedGoogleTaskUpdate(row: TaskOutboxRow & { recon
       if (!canDispatch && !row.reconciling) throw new SyncRuntimeHostError({ code: "task-not-needed", outcome: "not-written" });
       const task = TaskSchema.parse(row.payload.task);
       if (task.recurrence) throw taskError("task-recurrence-projection-unsupported");
+      if (row.externalTaskID === null) {
+        try {
+          const prepared = await prepareTaskOutboxPredecessorResolution(row, token, signal);
+          predecessorAddress = prepared.predecessorAddress;
+          expectedRef = Object.freeze(prepared.expectedRef ?? { externalTaskId: null, etag: null, icalUid: null });
+          persisted = prepared.saved; initialBaseline = prepared.projectionBaseline;
+          return { acceptedEtag: predecessorAddress.kind === "predecessor-task-reference" ? predecessorAddress.validator : null,
+            baseline: initialBaseline, dispatchAllowed: canDispatch, predecessorAddress,
+            ...(persisted ? { saved: { projection: persisted.projection, baseline: persisted.baseline, patch: persisted.patch } } : {}) };
+        } catch (error) { if (error instanceof TaskOutboxPredecessorError) throw taskError("task-projection-unavailable"); throw error; }
+      }
       const predecessor = await getTaskOutboxPredecessorEvidence(row); signal.throwIfAborted();
       expectedRef = Object.freeze({ externalTaskId: predecessor.ref.externalTaskId ?? null, etag: predecessor.ref.etag ?? null, icalUid: predecessor.ref.icalUid ?? null });
       if (expectedRef.externalTaskId !== row.externalTaskID) throw taskError("task-projection-unavailable");
@@ -107,6 +122,13 @@ export async function deliverSharedGoogleTaskUpdate(row: TaskOutboxRow & { recon
     },
     async prepareProjection(input, signal) {
       signal.throwIfAborted();
+      if (predecessorAddress) {
+        try {
+          persisted = await setTaskOutboxCausalProjection(row, token, predecessorAddress, persisted ?? { version: 1, projection: input.target,
+            baseline: input.baseline, patch: diffGoogleTaskProjection(input.baseline, input.target) }, signal);
+          return { projection: persisted.projection as GoogleTaskProjection, baseline: persisted.baseline!, patch: persisted.patch as GoogleTaskUpdateBody };
+        } catch (error) { if (error instanceof TaskOutboxPredecessorError) throw taskError("task-projection-unavailable"); throw error; }
+      }
       if (!persisted) {
         persisted = { version: 1, projection: input.target, baseline: input.baseline,
           patch: diffGoogleTaskProjection(input.baseline, input.target) };
@@ -124,6 +146,7 @@ export async function deliverSharedGoogleTaskUpdate(row: TaskOutboxRow & { recon
     async beforeMutation(_request, signal) {
       signal.throwIfAborted();
       if (!await renewTaskOutboxLease(row.id, token) || !await admitted(false, signal)) throw taskError("task-source-read-only");
+      if (predecessorAddress && !await assertTaskOutboxPredecessorResolution(row, token, predecessorAddress, signal)) throw taskError("task-projection-unavailable");
       signal.throwIfAborted();
     },
     async recordEvidence(facts, signal) { signal.throwIfAborted(); record(facts); },
@@ -131,7 +154,7 @@ export async function deliverSharedGoogleTaskUpdate(row: TaskOutboxRow & { recon
       signal.throwIfAborted(); record(evidence.facts);
       const observed = native().normalizeObservation(evidence.read);
       if (!observed) return { kind: "authority-rejected" };
-      const accepted = await acceptTaskOutboxDelivery(row, token, observed, undefined, signal, expectedRef);
+      const accepted = await acceptTaskOutboxDelivery(row, token, observed, undefined, signal, expectedRef, predecessorAddress);
       return { kind: accepted ? "acknowledged" : "authority-rejected" };
     },
     finish, observationId: randomUUID,

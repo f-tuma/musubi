@@ -29,6 +29,9 @@ ALTER TABLE reference_task_operations DROP CONSTRAINT IF EXISTS reference_task_o
 ALTER TABLE reference_task_operations ADD CONSTRAINT reference_task_operations_action_check CHECK(action IN ('create','update','delete'));
 ALTER TABLE reference_task_operations DROP CONSTRAINT IF EXISTS reference_task_operations_endpoint_profile_check;
 ALTER TABLE reference_task_operations ADD CONSTRAINT reference_task_operations_endpoint_profile_check CHECK(endpoint_profile='google-task-'||action||'-v1');
+-- A later immutable intent ledger retains null addressed-successor locators.
+DO $$ BEGIN
+IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='reference_task_operations'::regclass AND conname='reference_task_operations_causal_check') THEN
 ALTER TABLE reference_task_operations DROP CONSTRAINT IF EXISTS reference_task_operations_delete_capture_check;
 ALTER TABLE reference_task_operations ADD CONSTRAINT reference_task_operations_delete_capture_check CHECK(
   action='update' AND task_id IS NOT NULL AND accepted_etag IS NOT NULL AND saved_projection IS NOT NULL AND field_mask IS NOT NULL AND delete_accepted_baseline IS NULL AND
@@ -38,6 +41,8 @@ ALTER TABLE reference_task_operations ADD CONSTRAINT reference_task_operations_d
   action='create' AND task_id IS NULL AND accepted_etag IS NULL AND saved_projection IS NULL AND field_mask IS NULL AND delete_accepted_baseline IS NULL AND
     native_acceptance_status IS NULL AND delete_acceptance_status IS NULL AND delete_response_absence_status IS NULL
 );
+END IF;
+END $$;
 ALTER TABLE reference_task_operations DROP CONSTRAINT IF EXISTS reference_task_operations_create_evidence_check;
 ALTER TABLE reference_task_operations ADD CONSTRAINT reference_task_operations_create_evidence_check CHECK(
   (create_candidate_id IS NULL OR length(create_candidate_id) BETWEEN 1 AND 2048) AND

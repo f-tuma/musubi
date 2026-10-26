@@ -173,10 +173,10 @@ async function main() {
         await db.update(taskOutbox).set({ predecessorID: predecessor, ...(deferredAddress ? { externalTaskID: null, expectedEtag: null } : {}),
           payload: { ...row.payload, operationEnvelope: { ...envelope, predecessorOperationId: predecessor,
             locator: { ...envelope.locator, resourceId: deferredAddress ? null : nativeId } } } }).where(eq(taskOutbox.id, f.id));
-        const result = await f.run(newAdapter); assert.equal(factories, 0);
+        const result = await f.run(newAdapter); assert.equal(factories, deferredAddress ? 1 : 0);
         if (deferredAddress) { assert.equal(result?.status, "completed"); assert.deepEqual(requests.map(r => r.method), ["GET", "GET", "GET", "DELETE"]); }
         else { assert.equal(result?.status, "blocked"); assert.equal(result.errorCode, "task-projection-unavailable"); assert.equal(requests.length, 0); }
-        assert.deepEqual(failures, []); passed++; console.log(`Google task DELETE PG/HTTP: ${deferredAddress ? "deferred address stays legacy" : "changed predecessor cannot readdress pinned DELETE"}: PASS`);
+        assert.deepEqual(failures, []); passed++; console.log(`Google task DELETE PG/HTTP: ${deferredAddress ? "deferred address uses host-proven shared delivery" : "changed predecessor cannot readdress pinned DELETE"}: PASS`);
       } finally { await f.cleanup(); }
     }
     {

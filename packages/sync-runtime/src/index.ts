@@ -1,5 +1,6 @@
 export * from "./ports";
 export * from "./google-task-update-ports";
+export * from "./google-task-address-ports";
 export * from "./google-task-delete-ports";
 export { runClaimedGoogleTaskDelete, supportsGoogleTaskDeleteEnvelope } from "./google-task-delete";
 export { runClaimedGoogleTaskUpdate, supportsGoogleTaskUpdateEnvelope } from "./google-task-update";

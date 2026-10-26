@@ -1,5 +1,14 @@
 # MUSU-40 · Google Task CREATE
 
+Sloučeno přes [PR #383](https://github.com/f-tuma/musubi/pull/383) dne
+26. října 2026 jako `e8b4037c4aa2c275647d292d4200924b8d0f8dc2`.
+Nezávisle schválený head `65cf905faac55d82adad1a98b09b5762f17d72ef`
+prošel všemi 21 current-head jobs v Quality run
+[40306897202](https://github.com/f-tuma/musubi/actions/runs/40306897202),
+completed/success. Fetched main má přesně schválený tree
+`78e3ab59612039f66d06e14753fba12b4a718359`; žádná required kontrola nebyla
+obejita. Publikace ani produkční nasazení tím neproběhly.
+
 Navazuje na [adresovaný DELETE](MUSU-40-google-task-delete.md), sloučený přes
 PR #382 jako `8077ad93494cead098c8101af78d7132266f380e`. Tento samostatný gate
 převádí standalone pinned Google Task CREATE a jeho stejnou operaci při obnově

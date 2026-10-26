@@ -179,9 +179,9 @@ async function main() {
           payload: { ...row.payload, operationEnvelope: { ...admittedEnvelope, predecessorOperationId: predecessor,
             locator: { ...admittedEnvelope.locator, resourceId: null } } } }).where(eq(taskOutbox.id, fixture.id));
         assert.equal((await fixture.run(newAdapter))?.status, "completed");
-        assert.equal(factoryCalls, 0, "Deferred-address successor must use its existing host-only executor");
+        assert.equal(factoryCalls, 1, "Deferred-address successor uses the shared kernel with host-proven lineage");
         assert.deepEqual(requests.map(r => r.method), ["GET", "GET", "GET", "PATCH", "GET"]); assert.deepEqual(failures, []);
-        passed++; console.log("Google task UPDATE PG/HTTP: deferred-address successor stays in existing legacy executor: PASS");
+        passed++; console.log("Google task UPDATE PG/HTTP: deferred-address successor uses host-proven shared delivery: PASS");
       } finally { await fixture.cleanup(); }
     }
     for (const retirement of ["before-dispatch", "before-ack"] as const) {
