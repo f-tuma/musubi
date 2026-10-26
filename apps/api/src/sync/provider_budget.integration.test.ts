@@ -276,12 +276,13 @@ async function main() {
     await assert.rejects(deadline(strict("c"), "Actual 429"));
     const beforeRefusal = trace.length;
     const priorMetrics = await metrics.providerHttpMetricsRegistry.getMetricsAsJSON();
-    const cooldownWaiter = new AbortController();
-    const cooldownCancel = setTimeout(() => cooldownWaiter.abort(new Error("Controlled cooldown waiter cancellation")), 30);
-    const refusal = await metrics.withProviderCallMetrics("google", "event", () => budget.withAccountBudgetScope("google", owners.c, accounts.c,
-      () => metrics.observedProviderFetch("https://www.googleapis.com/calendar/v3/probe"), { signal: cooldownWaiter.signal })).then(() => null, error => error);
-    clearTimeout(cooldownCancel);
-    assert.match(String(refusal), /Controlled cooldown waiter cancellation/); assert.equal(trace.length, beforeRefusal);
+    const refusal = await deadline(metrics.withProviderCallMetrics("google", "event", () => budget.withAccountBudgetScope("google", owners.c, accounts.c,
+      () => metrics.observedProviderFetch("https://www.googleapis.com/calendar/v3/probe"))).then(() => null, error => error), "Long cooldown releases preview", 5000);
+    const cooldownRefusal = budget.providerDeferral(refusal);
+    assert.equal(cooldownRefusal?.reason, "cooldown");
+    assert.ok(cooldownRefusal!.blockedDimensions.includes("account"));
+    assert.ok(cooldownRefusal!.retryAtMs > Date.now() + 15_000);
+    assert.equal(trace.length, beforeRefusal);
     assert.deepEqual(await metrics.providerHttpMetricsRegistry.getMetricsAsJSON(), priorMetrics, "No HTTP metric for a no-send refusal");
     const durable = await s.loadActiveProviderCooldowns();
     assert.ok(durable.rows.some(row => row.scope.dimension === "account" && row.minimumRemainingMs > 0));
