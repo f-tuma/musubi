@@ -1,43 +1,97 @@
 # MUSU-42 / C10 — standalone candidate and conformance
 
-Status: implementation and verification in progress. No technical candidate,
-public release, live-provider certification or deployment is accepted by this
-document yet. C09 is published by PR #388, squash
-`f5004674d774fc55b628497ae6ad16d003c4d680`, whose verified tree equals the
-independently approved `a7d61d272978e54b919dea8f52194b3ed8b4640a` after all
-21 current-head Quality checks passed.
+Implementation and bounded local technical acceptance are complete at source
+`8e5e202c4912748e97c02646a8969a4a02543c3c`, tree
+`dd2c9c7684533f98e898dc3278331c011c313e52`, on 26 October 2026. The
+[evidence packet](evidence/MUSU-42-sync-alpha/packet-manifest.json) records the
+exact source, artifact, installed, database and running-web boundaries. Final PR
+approval, current-head CI, protected source publication and production deployment
+have separate receipts; local tests do not establish those outcomes. C09 is
+published by [PR #388](https://github.com/f-tuma/musubi/pull/388), squash
+`f5004674d774fc55b628497ae6ad16d003c4d680`, after all 21 current-head checks passed.
 
-The C10 artifact contract is a private Node 22/Linux source-ESM snapshot with its
-exact resolved TSX, separate production closure and compiler/test material. It
-does not promise a public npm or plain-Node JavaScript distribution. The
-[alpha packet](../sync-alpha/README.md) states runtime, supported profile,
-compatibility, license/provenance and owner-review boundaries.
+The [alpha packet](../sync-alpha/README.md) defines a private, preinstalled
+Node 22/Linux source-ESM snapshot with exact TSX and separate compiler/test
+material. It includes the six portable libraries and independent PostgreSQL
+reference host. The tested host was Node `v22.23.4`, Linux x64, TSX `4.23.12`,
+pnpm `11.8.0`, with TypeScript `6.0.3` in tooling. The builder ran on host Node;
+`baseImage` is null. This does not certify plain-Node JavaScript, arbitrary npm,
+browser, Deno, Bun, other platforms or a public support/version policy.
 
-The checked-in corpus separates portable deterministic scenarios, independent
-reference PostgreSQL/process fixtures and pure host compatibility. Actual Musubi
-coverage/echo/home storage has a [separate DB gate](../sync-alpha/host-database.md).
-Module entries pin required assertion registrations/completion evidence; a loaded
-module alone cannot establish a passing test. Provider facts come from actual
-production kernels/adapters at existing ports, not a second sync implementation.
+The produced archive is 15,077,985 bytes, SHA-256
+`0d14e058cbe9df9f0ca24dcedd09d9f3eab28cc6b4dad80d7802bd3cb1aa8f88`.
+Its candidate-manifest SHA-256 is
+`20f39cb75fc602c25d2918c2cfa1a08ce06c9b4cf346c8d8fa2a32e54cdb71c0`,
+and payload digest is
+`c5a0fc7544059f489f9fabb3cfe16641bf0a5b2ac0aa3a31d1abda5550c6bf9d`.
+Both the produced directory and a fresh extraction at another location passed
+artifact verification. The full installed corpus ran only against that relocated
+archive. Both directory inventories remained unchanged.
 
-Packaging freezes an exact tracked commit, deploys with the existing frozen
-workspace lock, checks Git→production→test-mirror parity and actual dependency
-resolution, inventories license texts, and creates a reviewable local archive.
-Tooling lives outside runtime import resolution. Candidate verification runs an
-external consumer/typecheck/CLI and reconciles every required conformance ID.
-Parent aliases, missing/skipped/TODO cases, candidate mutation and incomplete
-owned resource cleanup fail the gate. These are implementation requirements;
-final acceptance needs their actual reports.
+Packaging uses an exact tracked Git archive and frozen production/tooling
+deployments. Production source and SQL match Git, and test-mirror production
+bytes come from the actual installed runtime. All 14 owned manifests retain
+source/raw/normalized hashes; each dependency resolves from its importing package
+inside its own closure. Raw generated installation metadata is retained in
+provenance. Eight manager-metadata files are removed from runnable roots rather
+than treated as a relocatable reinstall recipe. The artifact contains 3,589
+verified files and 70 runtime/tooling/mirror package entries.
 
-Independent preparation reviews identified concrete false-PASS and cleanup gaps
-before implementation: sentinel-only assertions, report/output parent symlinks,
-CREATE/journal crash windows, overlong fixture DB names and unreaped descendants.
-Their fixes require real parser, filesystem, process and PostgreSQL proofs.
-All earlier unexecuted proposals remain preparation, never passing evidence.
+| Boundary | Actual result | Source and evidence |
+| --- | --- | --- |
+| Portable source corpus | 427/427 required IDs, zero failure/skip/TODO | Exact `8e5e202`; [source proof](evidence/MUSU-42-sync-alpha/source-conformance-8e5-proof.json) |
+| Pure host compatibility | 211/211 required IDs, zero failure/skip/TODO | Exact `8e5e202`; same proof, independent host lane |
+| External installed consumer | Six package imports, strict typecheck and CLI missing-own-config hold passed with clean home/cwd | [Relocated artifact receipt](evidence/MUSU-42-sync-alpha/artifact-relocated.json) |
+| Installed portable corpus | 427/427, exact candidate/source identity, unchanged inventory | [Installed receipt](evidence/MUSU-42-sync-alpha/installed-deterministic.json) and complete conformance sidecar |
+| Installed PostgreSQL/process corpus | 23/23 required modules, zero failure/skip/TODO, every required cleanup complete | [Installed reference receipt](evidence/MUSU-42-sync-alpha/installed-reference-db.json) and [aggregate proof](evidence/MUSU-42-sync-alpha/installed-candidate-summary.json) |
+| Full workspace and JSON | `pnpm check`; 598/598 scenarios in 17 suites | Historical exact `d3a8867`; [summary](evidence/MUSU-42-sync-alpha/historical-root-d3a-summary.json) |
+| Actual Musubi host storage/native boundary | All six separate host DB programs passed after committed migrations | Historical exact `d3a8867`; [raw receipt](evidence/MUSU-42-sync-alpha/historical-root-d3a-receipt.json) |
+| Running web | Final 22/22, zero automatic retries, 26 fresh retained screenshots; four actual images visually inspected | Exact `8e5e202` full-repository archive; [web summary](evidence/MUSU-42-sync-alpha/browser-summary.json) |
 
-Remaining gates: final fast/types/workspace checks; paired real cross-account
-and cleanup failure-path tests; frozen installed candidate and complete corpus;
-actual host DB gate; applicable running-app confirmation; independent final PR
-approval; all current-head CI checks; protected squash/main verification.
-Public naming/version/license/support/security-contact proposals remain ready
-for owner decision. Production deployment is the requested later joint step.
+The historical workspace/598/host-six results are not relabelled as reruns on
+`8e5e202`. The [source binding](evidence/MUSU-42-sync-alpha/workspace-d3a-to-8e5-binding.json)
+verifies 16 unchanged production, API, frontend, reference source, package,
+lockfile, behavior-runner and CI scopes. The seven changed paths contain only
+packaging/conformance tests and metadata plus the preinstalled-snapshot guide.
+Their final twelve packaging assertions, parser checks and complete source and
+installed corpus passed. All final PR checks remain required for its current head.
+
+The reference corpus calls production stores, kernels, adapters and CLI/process
+paths with sanitized native HTTP fixtures. It includes crash, lease, populated
+upgrade, retirement, owned CREATE adoption, causal work and paired-account
+boundaries. Musubi coverage/echo/home authority has the separate actual host DB
+gate; the pure host lane and standalone CLI are not promoted into a general pull
+engine. Module receipts require named actual assertions/completion evidence and
+independently reconcile required, selected and result IDs.
+
+All 23 reference outer databases reached issuer-zero, plain DROP and verified
+absence. All 22 child journal states were `dropped`, with zero sessions and
+absence; parent recovery was false throughout. The normal fixture journal
+records those child DROP operations, not additional recovery DROP calls by the
+observer. The final inspection found zero nonmaintenance databases and zero
+other client sessions, then closed its own pool. Root retired only its exact QA
+container on port 55446 before browser testing; user QA on 55437 was untargeted.
+Both web attempts reaped their owned groups and left tracked source unchanged.
+
+The first web attempt was 21/22: its trace captured HTTP 504
+`Outdated Optimize Dep` while Vite changed its cold dependency cache and reloaded.
+The failed receipt/log/trace remain [separate evidence](evidence/MUSU-42-sync-alpha/browser-cold-start-failure.json).
+The identical full suite then passed on the populated cache without application,
+assertion or automatic-retry changes. Browser API fixtures do not prove real
+authentication, SQL or provider services; those boundaries are separate.
+
+The original MIT license and copyright remain intact. The actual dependency
+inventory covers 30 production packages, 70 total entries and 21 deduplicated
+license/notice texts. Whole same-package MIT READMEs are retained only when the
+declaration, heading, copyright and complete license clauses are present;
+TypeScript's included third-party notice is retained as well. Missing text still
+fails. This is provenance for owner review, not a legal compatibility opinion.
+
+The ten supported profiles keep concrete provider/API, object, role/grant,
+validator, retry and side-effect limits. Live-provider enforcement, notification
+delivery and deployed behavior remain unestablished. Google CREATE's conservative
+capability descriptor, Graph weak-ETag/non-CAS limits, DAV protocol-fixture scope,
+host-only specialized/legacy families and the C08 barrier-aware rollback floor
+remain explicit. Public naming/version/license/support/private-contact decisions
+are prepared for human review; no registry publication or production rollout was
+performed by this acceptance work. Production activation is the later joint step.

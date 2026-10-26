@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "kind": "musubi-sync-private-alpha",
+  "distribution": "private-local-review-candidate",
+  "publicReleaseApproved": false,
+  "source": {
+    "commit": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+    "head": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+    "tree": "dd2c9c7684533f98e898dc3278331c011c313e52",
+    "archiveSha256": "067c04227ef14b7795c6e61eb62c634a5af0235bad630fbda2dd6ea51adf3433"
+  },
+  "payloadDigest": "c5a0fc7544059f489f9fabb3cfe16641bf0a5b2ac0aa3a31d1abda5550c6bf9d",
+  "fileInventory": "provenance/files.json",
+  "packageInventory": "provenance/installed-packages.json",
+  "runtime": {
+    "nodeMajor": 22,
+    "node": "v22.23.4",
+    "platform": "linux",
+    "architecture": "x64",
+    "pnpm": "11.8.0",
+    "tsx": "4.23.12",
+    "typescript": "6.0.3",
+    "entry": "runtime/src/cli.ts",
+    "sourceEsmWithTsx": true,
+    "plainNodeEsmCertified": false
+  },
+  "conformance": {
+    "root": "conformance",
+    "entry": "scripts/sync-conformance.mjs",
+    "manifest": "apps/sync-reference/conformance/manifest.v1.json",
+    "manifestSha256": "2a7e4e0c1353767818dff2a5083036f0ececb991decedec090ff30ff9e9e6abf",
+    "contract": "sync-conformance-report/v1"
+  },
+  "tooling": {
+    "root": "tooling",
+    "runtimeImportFallbackAllowed": false,
+    "compiler": "node_modules/typescript/bin/tsc",
+    "typeRoots": "node_modules/@types"
+  },
+  "dependencyMetadata": {
+    "normalization": "provenance/workspace-manifest-parity.json",
+    "generatedManager": "provenance/generated-manager-metadata.json",
+    "reinstallSupported": false
+  },
+  "documentation": {
+    "entry": "ARTIFACT-NAVIGATION.md",
+    "record": "provenance/documentation.json",
+    "embeddedOriginals": 19,
+    "unembeddedSourceReferences": 14
+  },
+  "checks": {
+    "ownedImportFiles": 369,
+    "deployedSourceFiles": 134,
+    "toolingProductionSourceFiles": 134,
+    "frozenDeploys": 2,
+    "runtimeReferenceTestSupportExcluded": true,
+    "ambientMusubiEnvironment": false,
+    "externalSymlinks": false
+  },
+  "buildEnvironment": {
+    "kind": "host-node22-linux",
+    "nodeBinarySha256": "069bb745414bf809517f92e079d0a21552c64827be5e0bf0eca040abeadb0611",
+    "baseImage": null
+  },
+  "license": {
+    "original": "LICENSE",
+    "newLicenseChosen": false
+  },
+  "liveProvider": "not-run",
+  "deployed": "not-established"
+}

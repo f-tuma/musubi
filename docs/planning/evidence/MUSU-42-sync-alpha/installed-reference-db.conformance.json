@@ -1,0 +1,896 @@
+{
+  "schemaVersion": 1,
+  "kind": "sync-conformance-report",
+  "mode": "reference-db",
+  "source": {
+    "head": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+    "tree": "dd2c9c7684533f98e898dc3278331c011c313e52"
+  },
+  "candidate": {
+    "root": "/tmp/musu42-relocated-8e5-v1/candidate",
+    "manifestSha256": "20f39cb75fc602c25d2918c2cfa1a08ce06c9b4cf346c8d8fa2a32e54cdb71c0",
+    "archiveSha256": "067c04227ef14b7795c6e61eb62c634a5af0235bad630fbda2dd6ea51adf3433"
+  },
+  "inventory": {
+    "requiredCaseIDs": [
+      "db/reference/store",
+      "db/reference/process",
+      "db/reference/delete",
+      "db/reference/delete-process",
+      "db/reference/create",
+      "db/reference/create-process",
+      "db/reference/graph-delete",
+      "db/reference/graph-delete-process",
+      "db/reference/caldav-delete",
+      "db/reference/caldav-delete-process",
+      "db/reference/graph-create",
+      "db/reference/graph-create-process",
+      "db/reference/caldav-create",
+      "db/reference/caldav-create-process",
+      "db/reference/task-update",
+      "db/reference/task-update-process",
+      "db/reference/task-delete",
+      "db/reference/task-delete-process",
+      "db/reference/task-create",
+      "db/reference/task-create-process",
+      "db/reference/task-intent",
+      "db/reference/task-intent-process",
+      "db/reference/cross-account"
+    ],
+    "selectedCaseIDs": [
+      "db/reference/store",
+      "db/reference/process",
+      "db/reference/delete",
+      "db/reference/delete-process",
+      "db/reference/create",
+      "db/reference/create-process",
+      "db/reference/graph-delete",
+      "db/reference/graph-delete-process",
+      "db/reference/caldav-delete",
+      "db/reference/caldav-delete-process",
+      "db/reference/graph-create",
+      "db/reference/graph-create-process",
+      "db/reference/caldav-create",
+      "db/reference/caldav-create-process",
+      "db/reference/task-update",
+      "db/reference/task-update-process",
+      "db/reference/task-delete",
+      "db/reference/task-delete-process",
+      "db/reference/task-create",
+      "db/reference/task-create-process",
+      "db/reference/task-intent",
+      "db/reference/task-intent-process",
+      "db/reference/cross-account"
+    ]
+  },
+  "results": [
+    {
+      "id": "db/reference/store",
+      "status": "passed",
+      "durationMs": 1450,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_7a3c4d5e0a304ebd_",
+        "outer": "reference_c10_outer_7a1d2555396445ea8ff065db4e0b9a2a",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [],
+        "databases": [],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/process",
+      "status": "passed",
+      "durationMs": 28035,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_f2d130815e8d4a6f_",
+        "outer": "reference_c10_outer_abd6936837784e578a365264c4d257e3",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_f2d130815e8d4a6f_ac248bba127d437ca87e9224a9b4e07c",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_f2d130815e8d4a6f_ac248bba127d437ca87e9224a9b4e07c",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/delete",
+      "status": "passed",
+      "durationMs": 1590,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_e29353c8f8f540ea_",
+        "outer": "reference_c10_outer_79099b88f2ba446091ca38a632246f68",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_e29353c8f8f540ea_5e8c1069c31f4c9d8fb8a7f8c96ed441",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_e29353c8f8f540ea_5e8c1069c31f4c9d8fb8a7f8c96ed441",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/delete-process",
+      "status": "passed",
+      "durationMs": 18181,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_daf993be9fe748e6_",
+        "outer": "reference_c10_outer_b1c67b40feda424ebce59655aab2e392",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_daf993be9fe748e6_da960a6556a64b95bb1632fd5f45b096",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_daf993be9fe748e6_da960a6556a64b95bb1632fd5f45b096",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/create",
+      "status": "passed",
+      "durationMs": 1380,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_3b7e44f0e3f741b6_",
+        "outer": "reference_c10_outer_50f87b6117fa4879bf6233fd3dfc63a8",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_3b7e44f0e3f741b6_cfd2655b7c2c422396a25c2f60a74199",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_3b7e44f0e3f741b6_cfd2655b7c2c422396a25c2f60a74199",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/create-process",
+      "status": "passed",
+      "durationMs": 25143,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_28e07e8f6d9d4b5a_",
+        "outer": "reference_c10_outer_b51d4b35d5f8498e8d378e98de7d8b44",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_28e07e8f6d9d4b5a_cad92e503bd54147afe0974607ec495b",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_28e07e8f6d9d4b5a_cad92e503bd54147afe0974607ec495b",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/graph-delete",
+      "status": "passed",
+      "durationMs": 1323,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_80d9a94e92ce4384_",
+        "outer": "reference_c10_outer_bf1d690daaf441c69cf4473ae472b3ff",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_80d9a94e92ce4384_9be4a90deca64ed8b0173d71fa8c0176",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_80d9a94e92ce4384_9be4a90deca64ed8b0173d71fa8c0176",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/graph-delete-process",
+      "status": "passed",
+      "durationMs": 18125,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_b8280dfc392d4511_",
+        "outer": "reference_c10_outer_f53883f2538e48c88bd5f04002af8f00",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_b8280dfc392d4511_86db4256201d4fae8074d5a726e4d35e",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_b8280dfc392d4511_86db4256201d4fae8074d5a726e4d35e",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/caldav-delete",
+      "status": "passed",
+      "durationMs": 1511,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_e01d17fd8987442b_",
+        "outer": "reference_c10_outer_0589fbaf6b444d0092f21d412276c7dd",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_e01d17fd8987442b_4630a736b58e4290a2e3f39f95c0b675",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_e01d17fd8987442b_4630a736b58e4290a2e3f39f95c0b675",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/caldav-delete-process",
+      "status": "passed",
+      "durationMs": 26958,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_ba9cf616411a4458_",
+        "outer": "reference_c10_outer_5c96b436ed394306a9d49ac2b7a2abea",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_ba9cf616411a4458_74022ae2b6254fa1a2edd53c1fb02096",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_ba9cf616411a4458_74022ae2b6254fa1a2edd53c1fb02096",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/graph-create",
+      "status": "passed",
+      "durationMs": 1676,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_2cda63ae9fb14b42_",
+        "outer": "reference_c10_outer_1bbb4d58af244840841ed0ff41e1c5d2",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_2cda63ae9fb14b42_8a91316c12594a78b2135f04b248e995",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_2cda63ae9fb14b42_8a91316c12594a78b2135f04b248e995",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/graph-create-process",
+      "status": "passed",
+      "durationMs": 28422,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_e5edfddcb2e144b3_",
+        "outer": "reference_c10_outer_3a4058b1b2f446a989ce1a427d15abe6",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_e5edfddcb2e144b3_636c5a4fb8ab417caeaab3bf2b057dab",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_e5edfddcb2e144b3_636c5a4fb8ab417caeaab3bf2b057dab",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/caldav-create",
+      "status": "passed",
+      "durationMs": 1770,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_0ba854a8ecf9499a_",
+        "outer": "reference_c10_outer_62155d8eb0c74d2db1165a5da57b5015",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_0ba854a8ecf9499a_1813eeba3f994e7996bac6ed451acd33",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_0ba854a8ecf9499a_1813eeba3f994e7996bac6ed451acd33",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/caldav-create-process",
+      "status": "passed",
+      "durationMs": 44949,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_b8dc9fb02b9c46d7_",
+        "outer": "reference_c10_outer_9232bd163bbd4db5b4c6c61726520a91",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_b8dc9fb02b9c46d7_69118246b1a7476b8396ef78faba8e9e",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_b8dc9fb02b9c46d7_69118246b1a7476b8396ef78faba8e9e",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/task-update",
+      "status": "passed",
+      "durationMs": 9132,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_73159468672b4be0_",
+        "outer": "reference_c10_outer_31394230004146c7849b648431929b15",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_73159468672b4be0_54f610bb3e024c24b38e37decdd73292",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_73159468672b4be0_54f610bb3e024c24b38e37decdd73292",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/task-update-process",
+      "status": "passed",
+      "durationMs": 16576,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_aa3701d2f9c14c4e_",
+        "outer": "reference_c10_outer_6065e534a573422d9096c0deb1a42a95",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_aa3701d2f9c14c4e_e618cce440844d1e8758af6daccce8b1",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_aa3701d2f9c14c4e_e618cce440844d1e8758af6daccce8b1",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/task-delete",
+      "status": "passed",
+      "durationMs": 7010,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_953a0b563a8c4c2e_",
+        "outer": "reference_c10_outer_451d9e5ff6a949949bebed6a8dd77a48",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_953a0b563a8c4c2e_51a8586fa0594637be71081b0bd58130",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_953a0b563a8c4c2e_51a8586fa0594637be71081b0bd58130",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/task-delete-process",
+      "status": "passed",
+      "durationMs": 27062,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_036915467ffc41a0_",
+        "outer": "reference_c10_outer_f7c7e44778d14859b13ec3c06e8afb21",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_036915467ffc41a0_d91a44d432144ced843fc73acc15d30d",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_036915467ffc41a0_d91a44d432144ced843fc73acc15d30d",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/task-create",
+      "status": "passed",
+      "durationMs": 5048,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_a6339c4004824937_",
+        "outer": "reference_c10_outer_93cef030ecd0480eb55cbe322368179e",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_a6339c4004824937_c0b0698f9a61423bb18b7f6aee90d644",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_a6339c4004824937_c0b0698f9a61423bb18b7f6aee90d644",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/task-create-process",
+      "status": "passed",
+      "durationMs": 5784,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_c92ca0b5055d4e5c_",
+        "outer": "reference_c10_outer_3780fe48817a45d690a50dd06d7cc07b",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_c92ca0b5055d4e5c_fc643312ba364a5f90cb01ec735f1f07",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_c92ca0b5055d4e5c_fc643312ba364a5f90cb01ec735f1f07",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/task-intent",
+      "status": "passed",
+      "durationMs": 6794,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_a379a1e5fae84e5b_",
+        "outer": "reference_c10_outer_d4796a4cc619461987fe8f3de43c056c",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_a379a1e5fae84e5b_ea3037fcba8a4b3686901f018b3e22c9",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_a379a1e5fae84e5b_ea3037fcba8a4b3686901f018b3e22c9",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/task-intent-process",
+      "status": "passed",
+      "durationMs": 10844,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_9d486ae08e2e40a1_",
+        "outer": "reference_c10_outer_de1d78fa8b6d4a66b078a21b70cfe36d",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_9d486ae08e2e40a1_6e83d56dde85452b9a6075fe767af1bc",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_9d486ae08e2e40a1_6e83d56dde85452b9a6075fe767af1bc",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    },
+    {
+      "id": "db/reference/cross-account",
+      "status": "passed",
+      "durationMs": 1045,
+      "exitCode": 0,
+      "skipped": 0,
+      "todo": 0,
+      "cleanup": {
+        "required": true,
+        "completed": true
+      },
+      "cleanupEvidence": {
+        "namespace": "reference_c10_37c4fd15439f4205_",
+        "outer": "reference_c10_outer_2b59b648fc884a639537d85df8b95055",
+        "issuerSessionsZero": true,
+        "journalValid": true,
+        "intents": [
+          {
+            "name": "reference_c10_37c4fd15439f4205_753e6aeac24645ee8507d213577e8926",
+            "state": "dropped"
+          }
+        ],
+        "databases": [
+          {
+            "name": "reference_c10_37c4fd15439f4205_753e6aeac24645ee8507d213577e8926",
+            "state": "dropped",
+            "sessionsZero": true,
+            "plainDrop": false,
+            "absent": true
+          }
+        ],
+        "outerPlainDrop": true,
+        "outerAbsent": true,
+        "recovered": false
+      }
+    }
+  ],
+  "totals": {
+    "required": 23,
+    "selected": 23,
+    "passed": 23,
+    "failed": 0,
+    "skipped": 0,
+    "todo": 0
+  },
+  "status": "passed",
+  "partial": false,
+  "installedRuntime": false,
+  "liveProvider": false,
+  "deployed": false
+}

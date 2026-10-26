@@ -1,0 +1,3916 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-root-source-gates",
+  "source": {
+    "head": "d3a8867bc6fa91334f3787ac91feffb21989bbfd",
+    "tree": "db1be7c150ee9e1f5b128beef2ddedb1e4eeb144",
+    "archiveSha256": "03f413b0ee18b7b96af47227af952400c50bcb05cffabb2f1079f0dfef94c339"
+  },
+  "scope": "Full tracked archive without local dotenv; separately installed frozen workspace dependencies",
+  "root": "/tmp/musu42-root-isolated-d3a8867bc6fa-v3/source",
+  "commands": [
+    {
+      "id": "pinned-pnpm-version",
+      "args": [
+        "pnpm",
+        "--version"
+      ],
+      "exitCode": 0,
+      "log": "/tmp/musu42-root-isolated-d3a8867bc6fa-v3/pinned-pnpm-version.log",
+      "sha256": "b396e3e19de55c61b6773383a0a92ee45dd6cddcbec8a09d731a6f2caefa2c5b"
+    },
+    {
+      "id": "frozen-install",
+      "args": [
+        "pnpm",
+        "install",
+        "--frozen-lockfile",
+        "--store-dir",
+        "/home/flamendrin/workspace/musubi/node_modules/.pnpm-store"
+      ],
+      "exitCode": 0,
+      "log": "/tmp/musu42-root-isolated-d3a8867bc6fa-v3/frozen-install.log",
+      "sha256": "86c8041afa334b02e7ce6d9a7d21361bd3d590ba5b88e45a41810bfa7cccee7f"
+    },
+    {
+      "id": "workspace-check",
+      "args": [
+        "pnpm",
+        "check"
+      ],
+      "exitCode": 0,
+      "log": "/tmp/musu42-root-isolated-d3a8867bc6fa-v3/workspace-check.log",
+      "sha256": "6b9285fb2a2fac50be3780b10341b5e6bd3258cba714ef8150e26b240f15236b"
+    },
+    {
+      "id": "behavior",
+      "args": [
+        "pnpm",
+        "test:behavior",
+        "--json"
+      ],
+      "exitCode": 0,
+      "log": "/tmp/musu42-root-isolated-d3a8867bc6fa-v3/behavior.log",
+      "sha256": "70bb215f2f400e2a6dea40d2b89142aeee7658816f22fe4fb531e9181e5e7714"
+    },
+    {
+      "id": "host-db-migrations",
+      "args": [
+        "pnpm",
+        "db:migrate"
+      ],
+      "exitCode": 0,
+      "log": "/tmp/musu42-root-isolated-d3a8867bc6fa-v3/host-db-migrations.log",
+      "sha256": "c08cc89d87052e8e4b87ec087db5b40c83054f041f5c8f3befddea6d13c5aa62"
+    },
+    {
+      "id": "host-db-1",
+      "args": [
+        "pnpm",
+        "--filter",
+        "@musubi/db",
+        "exec",
+        "tsx",
+        "src/queries/source-read.integration.test.ts"
+      ],
+      "exitCode": 0,
+      "log": "/tmp/musu42-root-isolated-d3a8867bc6fa-v3/host-db-1.log",
+      "sha256": "7f04a90fe01da594056db65eb3d1166ba29cd13c304e731d568ac226e06db01e"
+    },
+    {
+      "id": "host-db-2",
+      "args": [
+        "pnpm",
+        "--filter",
+        "@musubi/api",
+        "exec",
+        "tsx",
+        "src/sync/graph_read_coverage.integration.test.ts"
+      ],
+      "exitCode": 0,
+      "log": "/tmp/musu42-root-isolated-d3a8867bc6fa-v3/host-db-2.log",
+      "sha256": "274091cbde56fc77cdb9292719144a9b14046c54e84150f20782a71ec726c06b"
+    },
+    {
+      "id": "host-db-3",
+      "args": [
+        "pnpm",
+        "--filter",
+        "@musubi/api",
+        "exec",
+        "tsx",
+        "src/sync/shared_tasks.integration.test.ts"
+      ],
+      "exitCode": 0,
+      "log": "/tmp/musu42-root-isolated-d3a8867bc6fa-v3/host-db-3.log",
+      "sha256": "f3ec4a134650c83a321eb01930e31e7a13072cdbfed26b4a99b700675f1892bd"
+    },
+    {
+      "id": "host-db-4",
+      "args": [
+        "pnpm",
+        "--filter",
+        "@musubi/db",
+        "exec",
+        "tsx",
+        "src/queries/task-ack.integration.test.ts"
+      ],
+      "exitCode": 0,
+      "log": "/tmp/musu42-root-isolated-d3a8867bc6fa-v3/host-db-4.log",
+      "sha256": "17251db821b9fecec9fc545b628d3d171e4c936c174e2f518bf9511dc8ef0795"
+    },
+    {
+      "id": "host-db-5",
+      "args": [
+        "pnpm",
+        "--filter",
+        "@musubi/api",
+        "exec",
+        "tsx",
+        "src/sync/operation_admission.integration.test.ts"
+      ],
+      "exitCode": 0,
+      "log": "/tmp/musu42-root-isolated-d3a8867bc6fa-v3/host-db-5.log",
+      "sha256": "6c205320247321d82852602b28d2e9cf10a9e536f414cb3553f0380521024364"
+    },
+    {
+      "id": "host-db-6",
+      "args": [
+        "pnpm",
+        "--filter",
+        "@musubi/api",
+        "exec",
+        "tsx",
+        "src/sync/caldav_shared_create_delivery.integration.test.ts"
+      ],
+      "exitCode": 0,
+      "log": "/tmp/musu42-root-isolated-d3a8867bc6fa-v3/host-db-6.log",
+      "sha256": "847bdc87f97cfef4f9e5880b6fbd86849074bcc54fa902d1c33971d7b38e2909"
+    }
+  ],
+  "liveProvider": false,
+  "deployed": false,
+  "behaviorReport": {
+    "schemaVersion": 1,
+    "suites": [
+      {
+        "suite": "read-attempt",
+        "results": [
+          {
+            "id": "steady-large-pagination",
+            "title": "190 progressing leaves and DB apply exceed 90 seconds without a total pull cap",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "quota-pause-keeps-heartbeats",
+            "title": "Explicit quota pause outlives the idle interval while renewals continue",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "stalled-leaf-idle-aborts",
+            "title": "A stalled native leaf with no progress aborts at the idle deadline",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "stalled-database-idle-aborts",
+            "title": "A stalled DB apply with no progress aborts at the idle deadline",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "lease-loss-during-pause",
+            "title": "Lease refusal aborts paused work without resuming quota wait",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "caller-abort-during-pause",
+            "title": "Caller cancellation aborts paused work without resuming quota wait",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "resume-is-one-shot",
+            "title": "A repeated resume cannot renew the idle deadline twice",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "dispose-closes-work-and-timers",
+            "title": "Disposed work rejects guards and callbacks and releases all timers",
+            "status": "passed",
+            "durationMs": 0
+          }
+        ],
+        "passed": 8,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 186
+      },
+      {
+        "suite": "fair-work",
+        "results": [
+          {
+            "id": "active-deferral-releases-submitters",
+            "title": "Direct submitters receive a running background claim's deferral without waiting until its future due time",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "account-a-429-b-ready",
+            "title": "Account cooldown releases A while ready B dispatches",
+            "status": "passed",
+            "durationMs": 12
+          },
+          {
+            "id": "slow-a-b-progress",
+            "title": "B completes while A native HTTP is outstanding",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "global-capacity-lanes",
+            "title": "One pool rotates lanes and recovery families with bounded pull preference",
+            "status": "passed",
+            "durationMs": 5
+          },
+          {
+            "id": "nested-child-collision",
+            "title": "Nested child inherits a live permit and unrelated collisions wait",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "native-leaf-lifetime",
+            "title": "Actual native send is one shot and excludes host persistence time",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "unused-reservation-refund",
+            "title": "Cancellation before raw dispatch refunds only unused mutation permission",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "accepted-readback-persistence-failure",
+            "title": "Real Task CREATE retains acceptance after readback cooldown SQL failure",
+            "status": "passed",
+            "durationMs": 9
+          },
+          {
+            "id": "restart-shared-cooldown",
+            "title": "Restart starts empty and hydrates a shared account cooldown",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "parked-pages-b-progress",
+            "title": "A native pagination continuation exceeds burst while B completes",
+            "status": "passed",
+            "durationMs": 4
+          },
+          {
+            "id": "park-until-auxiliary-cold-chain",
+            "title": "Four parents and four cold auxiliary refreshes reacquire without deadlock",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "finite-boundary-cooldown-clocks",
+            "title": "Finite boundary cooldowns cap control eligibility and still expire independently",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "max-cooldown-fractional-clocks",
+            "title": "MAX account holds preserve exact eligibility across fractional and stepped clocks",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "long-cooldown-releases-continuations",
+            "title": "Four long account cooldowns release continuations before healthy B runs",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "invalid-retry-after-b-progress",
+            "title": "Malformed Retry-After preserves actual429 without poisoning healthy B",
+            "status": "passed",
+            "durationMs": 0
+          }
+        ],
+        "passed": 15,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 263
+      },
+      {
+        "suite": "caldav-discovery",
+        "results": [
+          {
+            "id": "warm-routes",
+            "title": "A fresh session reuses only owned validated routes",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "authoritative-refresh",
+            "title": "Authoritative discovery bypasses previously cached routes",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "precise-credential-revision",
+            "title": "A microsecond credential revision invalidates routing hints",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "credential-fingerprint",
+            "title": "Changed encrypted credentials invalidate equal-timestamp routing hints",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "owner-account-isolation",
+            "title": "Different owners and physical account rows never share routing material",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "policy-invalidation",
+            "title": "A changed guarded-network policy invalidates routing hints",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "stale-publish",
+            "title": "A slow old discovery cannot replace newer routing material",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "stale-failure",
+            "title": "An old failed attempt cannot evict a newer successful discovery",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "failed-attempt",
+            "title": "An incomplete or cancelled discovery cannot populate a later session",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "expiry",
+            "title": "Routing hints expire at their fixed monotonic deadline",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "bounded-eviction",
+            "title": "Evicted in-flight sessions cannot resurrect an unbounded cache",
+            "status": "passed",
+            "durationMs": 0
+          }
+        ],
+        "passed": 11,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 137
+      },
+      {
+        "suite": "google-delete",
+        "results": [
+          {
+            "id": "conditional-delete",
+            "title": "A matching strong ETag permits exactly one conditional DELETE",
+            "status": "passed",
+            "durationMs": 11
+          },
+          {
+            "id": "already-absent",
+            "title": "Exact native absence settles without issuing a DELETE",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "changed-etag",
+            "title": "A changed native ETag conflicts before any mutation",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "lost-reply-observe",
+            "title": "A lost DELETE reply is observed without repeating the mutation",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "rate-limited-delete",
+            "title": "Rate limiting holds delivery and preserves Retry-After",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "uncertain-retry-rate-limit",
+            "title": "Prior conditional DELETE uncertainty survives a later known 429 rejection",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "accepted-retry-lost-reply",
+            "title": "Earlier native DELETE acceptance survives losing the later conditional retry reply",
+            "status": "passed",
+            "durationMs": 1
+          }
+        ],
+        "passed": 7,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 334
+      },
+      {
+        "suite": "google-update",
+        "results": [
+          {
+            "id": "fresh-reference-title-update",
+            "title": "Reference confirms the exact native readback",
+            "status": "passed",
+            "durationMs": 12
+          },
+          {
+            "id": "fresh-musubi-title-update",
+            "title": "Musubi retains provider response completion policy",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "native-conflict",
+            "title": "A real PATCH conflict cannot ACK",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "accepted-readback-denied",
+            "title": "A denied readback retains the actual accepted PATCH",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "lost-reply-confirmed",
+            "title": "Lost response confirms uncertainty without another PATCH",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "foreign-account-session",
+            "title": "Wrong physical session cannot dispatch native HTTP",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "unknown-envelope",
+            "title": "Unknown envelope version cannot reach credentials or HTTP",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "stale-ack-refused",
+            "title": "Changed host authority preserves acceptance without ACK",
+            "status": "passed",
+            "durationMs": 1
+          }
+        ],
+        "passed": 8,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 349
+      },
+      {
+        "suite": "google-create",
+        "results": [
+          {
+            "id": "fresh-create",
+            "title": "A fresh admitted CREATE sends one exact saved body after ACL preflight",
+            "status": "passed",
+            "durationMs": 12
+          },
+          {
+            "id": "nullable-create-etag",
+            "title": "Musubi accepts a CREATE response without inventing a missing validator",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "recover-matching-create",
+            "title": "A matching owned recovery read acknowledges without another POST",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "recover-absent-same-id",
+            "title": "Exact recovery 404 retries only the same admitted ID and body",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "recover-gone-conflicts",
+            "title": "A retained native 410 cannot authorize another CREATE",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "recover-cancelled-conflicts",
+            "title": "A cancelled owned event cannot be resurrected by CREATE recovery",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "recover-marker-conflicts",
+            "title": "An occupied ID with another operation marker cannot be adopted",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "recover-content-conflicts",
+            "title": "An owned event whose content diverged is a conflict without POST",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "post-conflict-no-recovery",
+            "title": "POST 409 remains a refusal without an automatic lookup or retry",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "rate-limited-create",
+            "title": "CREATE rate limiting preserves Retry-After and sends no second POST",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "lost-reply-reference",
+            "title": "Reference recovery observes an applied CREATE after a lost reply without repeating POST",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-readback",
+            "title": "Reference CREATE requires exact owned content readback after native acceptance",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "uncertain-retry-rate-limit",
+            "title": "Older possible CREATE acceptance survives a later same-ID POST rate limit",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "uncertain-retry-request-timeout",
+            "title": "Older possible CREATE acceptance survives a later same-ID POST timeout rejection",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "uncertain-retry-precondition",
+            "title": "Older possible CREATE acceptance survives a later same-ID POST precondition rejection",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "recover-after-uncertain-retry",
+            "title": "A later matching GET can acknowledge the earlier uncertain CREATE after a retry was rejected",
+            "status": "passed",
+            "durationMs": 1
+          }
+        ],
+        "passed": 16,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 360
+      },
+      {
+        "suite": "google-task-update",
+        "results": [
+          {
+            "id": "fresh-title-update",
+            "title": "Frozen four-field target selects a title-only conditional update",
+            "status": "passed",
+            "durationMs": 11
+          },
+          {
+            "id": "rich-state-and-due-day",
+            "title": "Rich canonical states and deadline clocks keep the same bounded native projection",
+            "status": "passed",
+            "durationMs": 3
+          },
+          {
+            "id": "null-clears",
+            "title": "Nullable notes and due clear only the actual frozen four-field target",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "empty-patch",
+            "title": "No changed native fields still preflight twice and never PATCH",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "recovery-achieved-get-only",
+            "title": "An achieved saved patch reconciles through one GET with a newer native version",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "recovery-unapplied-conditional",
+            "title": "Unapplied recovery preserves original baseline and conditional retry at the same task",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "changed-baseline",
+            "title": "A changed baseline is a conflict before another preflight or PATCH",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "accepted-bad-json",
+            "title": "Accepted HTTP status survives unusable success JSON or version: accepted-bad-json",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "accepted-missing-tag",
+            "title": "Accepted HTTP status survives unusable success JSON or version: accepted-missing-tag",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "accepted-weak-tag",
+            "title": "Accepted HTTP status survives unusable success JSON or version: accepted-weak-tag",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "quoted-empty-tag",
+            "title": "A valid quoted-empty strong ETag remains opaque native response evidence",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "final-read-throttled",
+            "title": "A throttled readback keeps accepted native status and current retry hint",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "prior-uncertain-retry-429",
+            "title": "Older uncertain native evidence survives a current conditional retry refusal",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "prior-accepted-retry-429",
+            "title": "Older accepted native evidence survives a current conditional retry refusal",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "current-weak-tag",
+            "title": "A weak current tag cannot become native present update evidence",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "assigned-docs-task",
+            "title": "Assigned Docs or Spaces tasks never become ordinary writable destinations",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "initial-404",
+            "title": "Initial 404 is UPDATE conflict and never creation or ACK permission",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "initial-410",
+            "title": "Initial 410 is UPDATE conflict and never creation or ACK permission",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "delivery-401-recovery",
+            "title": "Only the concrete rejected delivery GET recovers once after refresh",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "preflight-401-recovery",
+            "title": "The separate delivery preflight GET retains its one refresh recovery",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "writer-get-401-no-retry",
+            "title": "The final writer GET401 is never silently retried",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "patch-401-no-replay",
+            "title": "A rejected PATCH401 is known refusal without authentication replay",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "second-delivery-401-raw-auth",
+            "title": "The second rejected GET keeps the raw host auth floor and invents no Retry-After",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "legacy-malformed-notes",
+            "title": "Existing native notes conversion stays permissive before a bounded repair",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "strict-malformed-notes",
+            "title": "Strict reference explicitly refuses malformed native notes",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "legacy-malformed-due",
+            "title": "Existing native due conversion stays permissive before a bounded repair",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "strict-malformed-due",
+            "title": "Strict reference explicitly refuses malformed native due",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "legacy-any-ok-and-redirect-floor",
+            "title": "Existing any-ok reads and default-follow PATCH response handling remain unchanged",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "musubi-untouched-readback",
+            "title": "Final readback applies the explicit musubi field-comparison policy",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-untouched-readback",
+            "title": "Final readback applies the explicit reference field-comparison policy",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "musubi-lost-reply",
+            "title": "A lost PATCH reply uses explicit musubi observation policy without blind resend",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-lost-reply",
+            "title": "A lost PATCH reply uses explicit reference observation policy without blind resend",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "recovery-achieved-without-old-tag",
+            "title": "Achieved recovery reads and ACKs without inventing an original dispatch tag",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "strict-accepted-missing-tag-readback",
+            "title": "Strict reference repairs an accepted response without a tag by exact GET only",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "legacy-deleted-flag-floor",
+            "title": "Existing Google host preserves its native deleted and hidden flag floor",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "strict-deleted-task",
+            "title": "Strict reference refuses an inactive or malformed deleted native task",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "strict-malformed-deleted",
+            "title": "Strict reference refuses an inactive or malformed deleted native task",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "legacy-malformed-raw-due-floor",
+            "title": "Existing raw due String conversion retains its day-only malformed response floor",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "strict-malformed-raw-due",
+            "title": "Strict native proof refuses raw due garbage even when String projection looks valid",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-update-keeps-null-admission",
+            "title": "Predecessor proof resolves a native address without rewriting the admitted null locator",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "deferred-update-strict-reference",
+            "title": "Strict reference consumes the actual paired predecessor and its own native proof",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "deferred-proof-operation-refused",
+            "title": "Predecessor operation mismatch refuses sessions and HTTP",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "deferred-proof-attempt-refused",
+            "title": "Predecessor attempt mismatch refuses sessions and HTTP",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "deferred-proof-edge-refused",
+            "title": "Predecessor edge mismatch refuses sessions and HTTP",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-proof-evidence-self-refused",
+            "title": "Predecessor evidence-self mismatch refuses sessions and HTTP",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "deferred-proof-empty-witness-refused",
+            "title": "Predecessor empty-witness mismatch refuses sessions and HTTP",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-proof-validator-refused",
+            "title": "Predecessor validator mismatch refuses sessions and HTTP",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "deferred-proof-baseline-refused",
+            "title": "Predecessor baseline mismatch refuses sessions and HTTP",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-proof-extra-field-refused",
+            "title": "Predecessor extra-field mismatch refuses sessions and HTTP",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-proof-required",
+            "title": "Selected null-address operations never fall back when the resolution proof is absent",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-long-native-id",
+            "title": "Existing native generated ID is encoded intact beyond the admission identity limit",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "deferred-strict-native-id-limit",
+            "title": "Strict reference keeps its explicit returned native ID limit",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-no-resource",
+            "title": "No-write CREATE history has an explicit zero-native-effect successor outcome",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-empty-mask",
+            "title": "Deferred address preserves existing empty-mask behavior",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "deferred-recovery-achieved",
+            "title": "Deferred address preserves existing recovery-achieved behavior",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "deferred-recovery-unapplied",
+            "title": "Deferred address preserves existing recovery-unapplied behavior",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "deferred-changed-native-baseline",
+            "title": "Deferred address preserves existing changed-native-baseline behavior",
+            "status": "passed",
+            "durationMs": 1
+          }
+        ],
+        "passed": 57,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 388
+      },
+      {
+        "suite": "google-task-delete",
+        "results": [
+          {
+            "id": "fresh-delete",
+            "title": "Addressed conditional DELETE preserves the three reads and no API readback",
+            "status": "passed",
+            "durationMs": 10
+          },
+          {
+            "id": "initial-404",
+            "title": "Initial scoped 404 needs no accepted tag or native task body",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "initial-410",
+            "title": "Initial scoped 410 needs no accepted tag or native task body",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "preflight-404-then-reappears",
+            "title": "Preflight absence still performs writer GET before conditional DELETE",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "preflight-404-then-absent",
+            "title": "Preflight absence followed by writer absence never dispatches DELETE",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "writer-404-skips-delete",
+            "title": "Only the writer final GET finds absence and no DELETE response is invented",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "delete-response-404",
+            "title": "A DELETE 404 receipt is fulfillment without accepted HTTP or observed GET absence",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "preflight-410-then-reappears",
+            "title": "Preflight absence still performs writer GET before conditional DELETE",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "preflight-410-then-absent",
+            "title": "Preflight absence followed by writer absence never dispatches DELETE",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "writer-410-skips-delete",
+            "title": "Only the writer final GET finds absence and no DELETE response is invented",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "delete-response-410",
+            "title": "A DELETE 410 receipt is fulfillment without accepted HTTP or observed GET absence",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "delete-accepted-200",
+            "title": "Existing DELETE retains native2xx 200 without body parsing or API readback",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "delete-accepted-202",
+            "title": "Existing DELETE retains native2xx 202 without body parsing or API readback",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "delete-accepted-206",
+            "title": "Existing DELETE retains native2xx 206 without body parsing or API readback",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "delete-accepted-299",
+            "title": "Existing DELETE retains native2xx 299 without body parsing or API readback",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-response-202-read-404",
+            "title": "Strict reference requires a fresh exact GET absence after the native DELETE receipt",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "reference-response-206-read-410",
+            "title": "Strict reference requires a fresh exact GET absence after the native DELETE receipt",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-response-404-read-410",
+            "title": "Strict reference requires a fresh exact GET absence after the native DELETE receipt",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-response-410-read-404",
+            "title": "Strict reference requires a fresh exact GET absence after the native DELETE receipt",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-202-still-present",
+            "title": "Native202 remains accepted evidence while a present readback prevents reference ACK",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "legacy-absence-metadata-floor",
+            "title": "Existing Google keeps its native absence metadata handling",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "strict-absence-scope-refused",
+            "title": "Strict reference refuses ambiguous redirected or partial404 proof",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "weak-current-tag",
+            "title": "Native task identity, strong version and assigned-source guards run before DELETE",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "wrong-native-id",
+            "title": "Native task identity, strong version and assigned-source guards run before DELETE",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "assigned-docs",
+            "title": "Native task identity, strong version and assigned-source guards run before DELETE",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "assigned-chat",
+            "title": "Native task identity, strong version and assigned-source guards run before DELETE",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "missing-old-tag-present",
+            "title": "A present task cannot replace the original missing or weak accepted version",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "weak-old-tag-present",
+            "title": "A present task cannot replace the original missing or weak accepted version",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "changed-current-version",
+            "title": "A successful GET cannot adopt a newer native version for DELETE",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "changed-baseline",
+            "title": "Changed native content cannot silently rebase the accepted DELETE baseline",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "delete-408",
+            "title": "Known DELETE refusals and unknown outcomes preserve their actual current status and hint",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "delete-412",
+            "title": "Known DELETE refusals and unknown outcomes preserve their actual current status and hint",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "delete-429",
+            "title": "Known DELETE refusals and unknown outcomes preserve their actual current status and hint",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "delete-500",
+            "title": "Known DELETE refusals and unknown outcomes preserve their actual current status and hint",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "prior-uncertain-current-429",
+            "title": "Prior uncertain facts remain separate from a current known DELETE429",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "prior-accepted-current-429",
+            "title": "Prior accepted facts remain separate from a current known DELETE429",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "prior-accepted-current-404",
+            "title": "A current DELETE404 keeps the earlier native2xx sidecar and records separate absence receipt",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-known-response-present",
+            "title": "Reference known-response recovery observes a still-present task without another DELETE",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "prior-accepted-lost-reply",
+            "title": "An unknown current DELETE cannot be mislabeled with only an older native rejection",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "prior-uncertain-lost-reply",
+            "title": "An unknown current DELETE cannot be mislabeled with only an older native rejection",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "prior-rejected-lost-reply",
+            "title": "An unknown current DELETE cannot be mislabeled with only an older native rejection",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-lost-reply-absent",
+            "title": "Lost DELETE reply can finish only after exact scoped GET absence",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-lost-reply-present",
+            "title": "A still-present task after a lost reply never causes a second DELETE in this attempt",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "recovery-initial-absence",
+            "title": "Restart recovery finds absence with one GET and invents no successful DELETE response",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "prior-rejection-absence",
+            "title": "Current verified absence fulfills DELETE without rewriting historical rejection into acceptance",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "initial-401-recovers",
+            "title": "Only the concrete initial delivery GET recovers after one401",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "preflight-401-recovers",
+            "title": "The separate permission read retains its one GET401 recovery",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "writer-get-401-no-retry",
+            "title": "The immediate pre-DELETE GET401 never refreshes or dispatches DELETE",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "delete-401-no-replay",
+            "title": "A rejected DELETE401 never triggers mutation authentication replay",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "double-read-401-raw-auth",
+            "title": "Second rejected delivery GET keeps the raw host auth error and drops invented hints",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "legacy-malformed-notes",
+            "title": "Existing native notes values remain part of the accepted baseline without fake mutation body",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "strict-malformed-notes",
+            "title": "Strict reference refuses malformed native notes before DELETE",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "legacy-deleted-flag-floor",
+            "title": "Existing Google keeps its historical deleted flag floor",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "strict-deleted-not-absence",
+            "title": "A native deleted:true200 is out of strict scope, never fabricated GET absence",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "legacy-any-ok-and-default-redirect",
+            "title": "Existing any-ok GETs and default-follow DELETE response floor remain unchanged",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-response-202-readback-429",
+            "title": "A failed exact readback preserves the native response kind and current hint",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-response-404-readback-429",
+            "title": "A failed exact readback preserves the native response kind and current hint",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "prior-absence-current-accepted",
+            "title": "A later native2xx does not erase an older DELETE absence receipt",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "prior-rejection-current-read-429",
+            "title": "A current read failure keeps the historical rejection hint separate",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-delete-keeps-null-plan",
+            "title": "A paired predecessor resolves DELETE without rewriting null admission",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "deferred-delete-strict-reference",
+            "title": "Strict reference consumes the actual paired predecessor and its own native proof",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "deferred-proof-operation-refused",
+            "title": "Predecessor operation mismatch refuses sessions and HTTP",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-proof-attempt-refused",
+            "title": "Predecessor attempt mismatch refuses sessions and HTTP",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-proof-edge-refused",
+            "title": "Predecessor edge mismatch refuses sessions and HTTP",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-proof-evidence-self-refused",
+            "title": "Predecessor evidence-self mismatch refuses sessions and HTTP",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-proof-empty-witness-refused",
+            "title": "Predecessor empty-witness mismatch refuses sessions and HTTP",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-proof-validator-refused",
+            "title": "Predecessor validator mismatch refuses sessions and HTTP",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-proof-baseline-refused",
+            "title": "Predecessor baseline mismatch refuses sessions and HTTP",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-proof-extra-field-refused",
+            "title": "Predecessor extra-field mismatch refuses sessions and HTTP",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-proof-required",
+            "title": "Selected null-address operations never fall back when the resolution proof is absent",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-long-native-id",
+            "title": "Existing native generated ID is encoded intact beyond the admission identity limit",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "deferred-strict-native-id-limit",
+            "title": "Strict reference keeps its explicit returned native ID limit",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "deferred-no-resource",
+            "title": "No-write CREATE history has an explicit zero-native-effect successor outcome",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-no-resource-not-reference-absence",
+            "title": "Strict reference refuses to invent GET absence from no-write history",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "deferred-null-validator-initial-absence",
+            "title": "Actual scoped GET absence can ACK before requiring a conditional mutation validator",
+            "status": "passed",
+            "durationMs": 1
+          }
+        ],
+        "passed": 75,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 377
+      },
+      {
+        "suite": "google-task-create",
+        "results": [
+          {
+            "id": "fresh-create",
+            "title": "Fresh CREATE sends the admitted four fields and confirms its generated address",
+            "status": "passed",
+            "durationMs": 8
+          },
+          {
+            "id": "reference-fresh-create",
+            "title": "Reference CREATE records raw acceptance and candidate before confirming native content",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "musubi-lost-reply-no-address",
+            "title": "Lost POST reply has no safe address and never causes another POST",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "musubi-missing-response-id",
+            "title": "Accepted HTTP without a generated task ID stays unconfirmed",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "musubi-empty-204",
+            "title": "Accepted204 is recorded before its empty success body fails JSON parsing",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "musubi-malformed-success-json",
+            "title": "Malformed success JSON retains raw acceptance without inventing an address",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-lost-reply-no-address",
+            "title": "Lost POST reply has no safe address and never causes another POST",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-missing-response-id",
+            "title": "Accepted HTTP without a generated task ID stays unconfirmed",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-empty-204",
+            "title": "Accepted204 is recorded before its empty success body fails JSON parsing",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-malformed-success-json",
+            "title": "Malformed success JSON retains raw acceptance without inventing an address",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "musubi-weak-response-tag",
+            "title": "API keeps its complete-writer-return boundary after a weak response tag",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-weak-response-tag-recovers",
+            "title": "Reference independently GET-confirms a captured ID after a weak response tag",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "post-412",
+            "title": "Native POST rejection retains its status and Retry-After without recovery replay",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "post-429",
+            "title": "Native POST rejection retains its status and Retry-After without recovery replay",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "post-408",
+            "title": "Native POST rejection retains its status and Retry-After without recovery replay",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "post-503-uncertain",
+            "title": "POST503 is uncertain and cannot be repeated without a captured address",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "post-401-never-auth-replays",
+            "title": "POST401 does not use the GET authentication recovery hook",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "list-401-recovers-once",
+            "title": "One concrete task-list GET401 refreshes and retries only that GET",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "second-get-401-stops",
+            "title": "A second GET401 preserves the host authentication error and adds no retry hint",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "musubi-restart-known-address",
+            "title": "Restart recovery GETs only the retained response address and confirms the entire target",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-restart-known-address",
+            "title": "Restart recovery GETs only the retained response address and confirms the entire target",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "musubi-restart-no-address",
+            "title": "An archived attempt with no generated address issues zero HTTP requests",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "reference-restart-no-address",
+            "title": "An archived attempt with no generated address issues zero HTTP requests",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "possible-dispatch-without-required-recovery",
+            "title": "A possible-dispatch marker alone forbids another CREATE POST",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "restart-absence-404",
+            "title": "A captured CREATE address becoming absent does not authorize another POST",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "restart-absence-410",
+            "title": "A captured CREATE address becoming absent does not authorize another POST",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "restart-requires-full-target",
+            "title": "Recovery ignores a narrow saved mask and requires the full admitted target",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "musubi-fresh-saved-mask",
+            "title": "Saved-mask API and full-target reference readback retain their separate comparison policies",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-fresh-saved-mask",
+            "title": "Saved-mask API and full-target reference readback retain their separate comparison policies",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "musubi-any-ok-read-floor",
+            "title": "API preserves its any-ok task-list and task GET response floor",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-rejects-partial-list",
+            "title": "Strict list preflight refuses a partial success before POST",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-refuses-post-redirect",
+            "title": "Strict POST preserves raw acceptance while refusing redirected candidate identity",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "musubi-default-post-redirect",
+            "title": "API retains the original default POST redirect behavior",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "prefixed-musubi-collection",
+            "title": "Musubi unwraps exactly one task-list locator prefix",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "prefix-confusion-blocked",
+            "title": "A native prefixed list ID cannot be silently unwrapped as a different collection",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "selected-extra-body-field",
+            "title": "A selected malformed CREATE envelope cannot fall back to another writer",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "selected-projection-disagrees",
+            "title": "A selected malformed CREATE envelope cannot fall back to another writer",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "selected-unknown-serializer",
+            "title": "A selected malformed CREATE envelope cannot fall back to another writer",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "selected-resource-id",
+            "title": "A selected malformed CREATE envelope cannot fall back to another writer",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "ack-authority-rejected",
+            "title": "Exact readback cannot bypass the host final authority decision",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "late-cancel-after-valid-post-json",
+            "title": "Cancellation as POST JSON resolves retains only candidate evidence before writer return",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "late-cancel-after-readback",
+            "title": "Cancellation after confirmed readback cannot perform a late host ACK",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-cancel-after-acceptance",
+            "title": "Reference retains durable raw acceptance while cancellation prevents later parsing",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "dispatch-authority-removed",
+            "title": "Removed dispatch authority prevents every CREATE HTTP request",
+            "status": "passed",
+            "durationMs": 0
+          }
+        ],
+        "passed": 44,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 369
+      },
+      {
+        "suite": "microsoft-delete",
+        "results": [
+          {
+            "id": "fresh-delete",
+            "title": "Musubi guarded DELETE retains nine calls and verifies exact absence",
+            "status": "passed",
+            "durationMs": 15
+          },
+          {
+            "id": "fresh-reference-delete",
+            "title": "Reference uses one guarded preflight and requires exact 404",
+            "status": "passed",
+            "durationMs": 4
+          },
+          {
+            "id": "exact-absence",
+            "title": "Initial exact scoped 404 completes without credentials for a mutation",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "owned-preflight-absence",
+            "title": "Late event 404 is accepted after owned writable calendar checks",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "missing-weak-version",
+            "title": "Missing native weak version conflicts and captures a fresh comparison",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "changed-weak-version",
+            "title": "Changed native weak version conflicts and captures a fresh comparison",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "gone-is-not-absence",
+            "title": "Graph 410 is not deletion evidence",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "cancelled-is-present",
+            "title": "Cancelled resource remains present and cannot enter personal DELETE",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "lost-reply-deferred",
+            "title": "Musubi saves uncertainty and defers observation after a lost DELETE reply",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "lost-reply-reference-present",
+            "title": "Reference observes a retained event after a lost reply without resending",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "lost-reply-restart-present",
+            "title": "Restart observes the unchanged event once and never repeats DELETE",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "restart-absent",
+            "title": "Restart preserves uncertain acceptance while exact 404 settles the operation",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "accepted-verification-denied",
+            "title": "Verification denial retains independently persisted DELETE 204 acceptance",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "accepted-verification-retained",
+            "title": "Accepted DELETE with a retained event stays unconfirmed without retry",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "rate-limited-delete",
+            "title": "DELETE 429 retains rejection and Retry-After after possible dispatch",
+            "status": "passed",
+            "durationMs": 4
+          },
+          {
+            "id": "rate-limited-restart-present",
+            "title": "After 429 a present event still grants no automatic resend authority",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "resolution-first-attempt-send",
+            "title": "A fresh admitted explicit comparison allows exactly its first attempt to send",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "resolution-second-attempt-observe",
+            "title": "A retried explicit resolution only observes even at its accepted weak version",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "accepted-read-write-gap",
+            "title": "Fixture accepts a concurrent post-read edit despite the best effort If-Match",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "delete-404-still-verifies",
+            "title": "DELETE 404 acceptance still requires a separate exact verification GET",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "lost-reply-reference-absent",
+            "title": "Reference confirms exact absence after a lost reply without inventing acceptance",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "changed-final-preflight",
+            "title": "Second Musubi guard sees a changed version and never dispatches DELETE",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "accepted-verification-gone",
+            "title": "Verification 410 preserves accepted mutation but cannot supply scoped absence",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "resolution-uncertain-rate-limit",
+            "title": "Explicit first-attempt resolution keeps earlier uncertainty after a known 429",
+            "status": "passed",
+            "durationMs": 2
+          }
+        ],
+        "passed": 24,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 423
+      },
+      {
+        "suite": "microsoft-create",
+        "results": [
+          {
+            "id": "fresh-create",
+            "title": "Musubi creates once after its original calendar permission check",
+            "status": "passed",
+            "durationMs": 13
+          },
+          {
+            "id": "fresh-null-etag",
+            "title": "Musubi preserves null native CREATE ETag without DELETE narrowing",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "fresh-empty-etag",
+            "title": "Musubi preserves empty native CREATE ETag without DELETE narrowing",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "fresh-arbitrary-etag",
+            "title": "Musubi preserves arbitrary native CREATE ETag without DELETE narrowing",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "fresh-strong-etag",
+            "title": "Musubi preserves strong native CREATE ETag without DELETE narrowing",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "legacy-any-success-preflight",
+            "title": "Legacy permission check accepts successful partial status and default-follow alias",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "permission-denied",
+            "title": "Denied calendar permission stops CREATE before dispatch",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "preflight-rate-limit",
+            "title": "Calendar Retry-After is preserved without sending POST",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "preflight-malformed-json",
+            "title": "Legacy malformed permission JSON retains raw host retry classification",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "post-409-not-written",
+            "title": "Known POST 409 rejection never triggers a correlation GET",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "post-408-not-written",
+            "title": "Known POST 408 rejection never triggers a correlation GET",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "post-rate-limit",
+            "title": "POST 429 remains known rejection with exact Retry-After",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "post-server-error",
+            "title": "POST server error remains uncertain without a resend",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "lost-reply-musubi",
+            "title": "Musubi defers correlation after losing the single POST response",
+            "status": "passed",
+            "durationMs": 3
+          },
+          {
+            "id": "accepted-malformed-json",
+            "title": "Malformed successful POST body is uncertain native delivery",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "accepted-missing-id",
+            "title": "Successful POST without a native ID is uncertain delivery",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "unexpected-success-status",
+            "title": "Unexpected successful POST status retains possible acceptance",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "recover-matching-create",
+            "title": "Complete marker listing recovers the existing native ID without POST",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "recover-empty-etag",
+            "title": "Musubi recovery retains empty native ETag after host normalization",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "recover-missing-no-repost",
+            "title": "A complete missing correlation listing never authorizes another POST",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "listing-404-not-absence",
+            "title": "Listing 404 is not native absence or replay authority",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "listing-410-not-absence",
+            "title": "Listing 410 is not native absence or replay authority",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "duplicate-marker",
+            "title": "Multiple candidates with the same marker are a conflict",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "listing-loop",
+            "title": "A repeated listing URL is refused before a second dispatch",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "unsafe-next-link",
+            "title": "An out-of-scope next link is refused without leaking credentials",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "partial-listing",
+            "title": "Partial successful listing is not complete correlation evidence",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "pagination-complete",
+            "title": "Candidate is acknowledged only after every scoped page is consumed",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "candidate-then-denied-page",
+            "title": "A candidate before an unreadable later page cannot be adopted",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "cancelled-candidate",
+            "title": "Cancelled or recurring selected candidate blocks CREATE recovery",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "recurring-candidate",
+            "title": "Cancelled or recurring selected candidate blocks CREATE recovery",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "different-content",
+            "title": "Marker match with different content never ACKs the admitted event",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "host-normalizer-failure",
+            "title": "Malformed selected native content reaches the actual normalization port",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "unprojectable-candidate",
+            "title": "Malformed selected date cannot establish the admitted projection",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-fresh-weak-etag",
+            "title": "Reference fresh CREATE requires full correlated personal readback with weak ETag",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-fresh-null-etag",
+            "title": "Reference fresh CREATE requires full correlated personal readback with null ETag",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-raw-post-validator",
+            "title": "Reference preserves raw POST validator before independent weak-tag readback",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-readback-strong-etag",
+            "title": "Reference refuses unusable strong readback validator after recording native acceptance",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-readback-empty-etag",
+            "title": "Reference refuses unusable empty readback validator after recording native acceptance",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-candidate-id-changed",
+            "title": "Readback marker cannot replace the native ID already accepted by POST",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-verification-denied",
+            "title": "Accepted POST fact survives later correlation permission failure",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-verification-missing",
+            "title": "Missing marker after accepted POST remains hold without a second POST",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "lost-reply-reference",
+            "title": "Reference correlates one lost POST response without resending",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "lost-reply-reference-missing",
+            "title": "Reference missing correlation after lost POST remains observe-only",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "restart-accepted-candidate",
+            "title": "Restart retains accepted candidate ID and reads only its complete correlation",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "restart-candidate-id-changed",
+            "title": "Restart cannot adopt a different ID sharing the original operation marker",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-attendee-refusal",
+            "title": "Strict personal readback refuses a meeting candidate after preserving POST acceptance",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-owner-refusal",
+            "title": "Strict reference requires the current connected calendar owner",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-redirected-listing",
+            "title": "Strict reference never treats redirected readback as correlation proof",
+            "status": "passed",
+            "durationMs": 3
+          },
+          {
+            "id": "legacy-null-listing-item",
+            "title": "Legacy malformed correlation data retains raw parser/accessor failure",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "legacy-malformed-listing-json",
+            "title": "Legacy malformed correlation data retains raw parser/accessor failure",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "restart-uncertain-candidate",
+            "title": "Restart retains a correlated candidate ID without inventing POST acceptance",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "restart-uncertain-candidate-changed",
+            "title": "Restart refuses a different unique candidate after earlier uncertain correlation",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-ignored-text-prefer",
+            "title": "Accepted POST survives an HTML readback that ignores the strict text preference",
+            "status": "passed",
+            "durationMs": 1
+          }
+        ],
+        "passed": 53,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 390
+      },
+      {
+        "suite": "caldav-delete",
+        "results": [
+          {
+            "id": "fresh-delete",
+            "title": "Musubi conditional DAV DELETE preserves four native calls",
+            "status": "passed",
+            "durationMs": 18
+          },
+          {
+            "id": "reference-exact-absence",
+            "title": "Reference persists acceptance then requires a separate exact 404 readback",
+            "status": "passed",
+            "durationMs": 4
+          },
+          {
+            "id": "owned-organizer-delete",
+            "title": "Owned organizer without attendees adds principal and address-set proof",
+            "status": "passed",
+            "durationMs": 3
+          },
+          {
+            "id": "initial-absence",
+            "title": "Initial resource 404 completes before ACL or mutation",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "preflight-404-is-error",
+            "title": "Resource disappearing during preflight remains unknown and cannot ACK",
+            "status": "passed",
+            "durationMs": 3
+          },
+          {
+            "id": "gone-is-not-absence",
+            "title": "HTTP 410 is not DAV absence evidence",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "cancelled-conflicts",
+            "title": "Cancelled native resource conflicts and cannot be settled as absence",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "missing-strong-version",
+            "title": "Current native validator never replaces the admitted strong baseline",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "changed-strong-version",
+            "title": "Current native validator never replaces the admitted strong baseline",
+            "status": "passed",
+            "durationMs": 4
+          },
+          {
+            "id": "changed-preflight-version",
+            "title": "Changed preflight version conflicts and captures a current comparison",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "lost-reply-deferred",
+            "title": "Musubi retains uncertainty after a raw lost DELETE reply without reading again",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "uncertain-conditional-replay",
+            "title": "Uncertain recovery may repeat only the same UID URL and accepted conditional guard",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "uncertain-restart-absence",
+            "title": "Exact 404 settles recovery while retaining uncertainty rather than inventing acceptance",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "lost-reply-reference-absence",
+            "title": "Reference confirms absence after a lost reply with one DELETE only",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "lost-reply-reference-present",
+            "title": "Reference retains uncertain mutation separately from a present-resource conflict",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "request-timeout-rejected",
+            "title": "Known rejection and possible acceptance retain provider-specific DAV classifications",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "rate-limited-delete",
+            "title": "Known rejection and possible acceptance retain provider-specific DAV classifications",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "server-failure-uncertain",
+            "title": "Known rejection and possible acceptance retain provider-specific DAV classifications",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "stale-conditional-rejected",
+            "title": "DELETE 412 never upgrades to an unconditional write",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "accepted-readback-denied",
+            "title": "A failed reference readback cannot erase captured native acceptance",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "multiple-uids-legacy",
+            "title": "Existing generic profile preserves legacy native extras behind host admission gates",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "multiple-uids-reference",
+            "title": "Strict reference profile explicitly refuses additional native event scope",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "orphan-attendee-legacy",
+            "title": "Existing generic profile preserves legacy native extras behind host admission gates",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "orphan-attendee-reference",
+            "title": "Strict reference profile explicitly refuses additional native event scope",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "guarded-read-alias",
+            "title": "Generic read follows its guarded native alias while saved URL remains unchanged",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "cross-origin-auth-stripped",
+            "title": "Every redirect hop is checked and Authorization never crosses origins",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "guarded-delete-alias",
+            "title": "Generic DELETE redirect retains the exact If-Match and method at each hop",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-refuses-alias",
+            "title": "Reference exact-resource policy refuses a redirect without changing generic policy",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "conditional-303-never-gets",
+            "title": "A conditional DELETE can never become an apparently successful GET",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "dns-private-denied",
+            "title": "Any private DNS answer refuses dispatch before the first native HTTP hop",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "wrong-native-uid",
+            "title": "A native UID mismatch cannot be adopted from a fresh GET",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "nested-component-reference",
+            "title": "Strict reference refuses a second VEVENT hidden inside the selected event",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "uncertain-retry-rate-limit",
+            "title": "Prior native uncertain DELETE fact survives a later retry failure",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "accepted-retry-lost-reply",
+            "title": "Prior native accepted DELETE fact survives a later retry failure",
+            "status": "passed",
+            "durationMs": 1
+          }
+        ],
+        "passed": 34,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 363
+      },
+      {
+        "suite": "caldav-create",
+        "results": [
+          {
+            "id": "fresh-create",
+            "title": "Musubi checks collection bind then sends the exact saved conditional CREATE once",
+            "status": "passed",
+            "durationMs": 22
+          },
+          {
+            "id": "fresh-missing-etag",
+            "title": "PUT acceptance retains missing ETag under native strong-or-null policy",
+            "status": "passed",
+            "durationMs": 4
+          },
+          {
+            "id": "fresh-weak-etag",
+            "title": "PUT acceptance retains weak ETag under native strong-or-null policy",
+            "status": "passed",
+            "durationMs": 3
+          },
+          {
+            "id": "fresh-quoted-empty-etag",
+            "title": "PUT acceptance retains quoted-empty ETag under native strong-or-null policy",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "fresh-no-slash-collection",
+            "title": "Existing CREATE preserves exact no-slash collection identity and derived URL",
+            "status": "passed",
+            "durationMs": 3
+          },
+          {
+            "id": "long-resource-admission-boundary",
+            "title": "Native helper preserves derived long URL while existing v1 admission holds it before ports",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "fresh-query-collection",
+            "title": "Existing CREATE preserves exact query collection identity and derived URL",
+            "status": "passed",
+            "durationMs": 4
+          },
+          {
+            "id": "fresh-hash-collection",
+            "title": "Existing hash collection retains exact ACL authority refusal without sending PUT",
+            "status": "passed",
+            "durationMs": 3
+          },
+          {
+            "id": "known-resource-binding",
+            "title": "CREATE also validates an already captured exact native resource binding",
+            "status": "passed",
+            "durationMs": 3
+          },
+          {
+            "id": "acl-denied",
+            "title": "Missing create privileges never imply permission to PUT",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "acl-malformed",
+            "title": "Missing create privileges never imply permission to PUT",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "acl-rate-limit",
+            "title": "Transient collection ACL Retry-After blocks PUT",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "put-412-not-written",
+            "title": "Conditional PUT 412 never triggers same-attempt GET or adoption",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "put-408-not-written",
+            "title": "Conditional PUT 408 never triggers same-attempt GET or adoption",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "put-429-not-written",
+            "title": "Conditional PUT 429 never triggers same-attempt GET or adoption",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "put-unexpected-success",
+            "title": "Possible conditional PUT acceptance remains uncertain without an internal retry",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "put-server-error",
+            "title": "Possible conditional PUT acceptance remains uncertain without an internal retry",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "lost-reply-musubi",
+            "title": "Possible conditional PUT acceptance remains uncertain without an internal retry",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "recover-matching-create",
+            "title": "Exact planned resource recovers matching UID and content without PUT",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "recover-missing-etag",
+            "title": "Musubi matching recovery can ACK a native null strong validator",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "recover-404-conditional-retry",
+            "title": "Only exact recovery 404 permits fresh bind ACL and the same conditional body",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "recover-404-acl-denied",
+            "title": "Recovery absence cannot substitute for current collection create permission",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "recover-410-no-retry",
+            "title": "Gone is not conditional CREATE retry proof",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "uncertain-retry-412",
+            "title": "Earlier possible PUT acceptance remains uncertain after a later conditional rejection",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "accepted-retry-rate-limit",
+            "title": "Prior accepted PUT remains recorded when a later allowed retry is rate-limited",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "cancelled-candidate",
+            "title": "Cancelled exact resource cannot establish active CREATE completion",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "normalizer-before-cancel",
+            "title": "Malformed cancelled resource reaches the mandatory host normalization port first",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "wrong-provider-uid",
+            "title": "Exact resource with wrong native UID never becomes retry or adoption proof",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "partial-resource",
+            "title": "Partial successful resource response is not full CREATE evidence",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "changed-content",
+            "title": "Matching planned UID does not hide changed canonical content",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "extra-uid-existing",
+            "title": "Existing native compatibility uses an explicitly declared host projection fixture",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "orphan-attendee-existing",
+            "title": "Existing native compatibility uses an explicitly declared host projection fixture",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "wrong-host-projection",
+            "title": "A fixture host projection cannot bypass the actual kernel content comparison",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-fresh-strong",
+            "title": "Reference records native PUT acceptance before exact strong readback",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "reference-fresh-missing-put",
+            "title": "Reference records native PUT acceptance before exact strong readback",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "reference-fresh-quoted-empty",
+            "title": "Reference records native PUT acceptance before exact strong readback",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "reference-readback-404",
+            "title": "Readback 404 after PUT is conflict and cannot send a second PUT",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "reference-readback-410",
+            "title": "Accepted PUT survives later 410 verification failure",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-organizer",
+            "title": "Strict reference refuses unsupported recovered native shape without principal discovery",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-nested-event",
+            "title": "Strict reference refuses unsupported recovered native shape without principal discovery",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-method",
+            "title": "Strict reference refuses unsupported recovered native shape without principal discovery",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "lost-reply-reference",
+            "title": "Reference observes one lost PUT reply and ACKs exact matching strong evidence",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "lost-reply-reference-404",
+            "title": "Immediate readback absence after lost PUT never authorizes another PUT",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "reference-null-readback",
+            "title": "Strict reference keeps acceptance but refuses a missing strong readback validator",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "put-redirect-301",
+            "title": "Existing guarded PUT redirect preserves saved body and condition at every hop",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "put-redirect-307",
+            "title": "Existing guarded PUT redirect preserves saved body and condition at every hop",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "put-303-refused",
+            "title": "Conditional PUT can never become an apparent successful GET",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "recovery-alias-existing",
+            "title": "Existing guarded GET alias preserves original stored URL and UID",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-alias-refused",
+            "title": "Strict reference refuses a redirected exact-resource recovery",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "mixed-private-dns",
+            "title": "Mixed public and loopback DNS answers deny dispatch before any leaf call",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-embedded-timezone",
+            "title": "Resource-owned VTIMEZONE produces exact UTC projection without ambient registration",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "raw-preflight-network",
+            "title": "Existing preflight transport failure retains raw host retry floor",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reference-ambient-tzid-no-definition",
+            "title": "Explicit non-UTC TZID without a resource definition cannot establish CREATE completion",
+            "status": "passed",
+            "durationMs": 1
+          }
+        ],
+        "passed": 53,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 471
+      },
+      {
+        "suite": "google-rsvp-delivery",
+        "results": [
+          {
+            "id": "started-unchanged-is-read-only",
+            "title": "A possible prior dispatch never resends an unchanged Google RSVP baseline",
+            "status": "passed",
+            "durationMs": 5
+          },
+          {
+            "id": "fresh-patch-exact-wire",
+            "title": "Fresh permission preserves minimal attendee PATCH and original validator",
+            "status": "passed",
+            "durationMs": 4
+          },
+          {
+            "id": "desired-observation-needs-no-permission",
+            "title": "Desired full native observation confirms without another dispatch",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "missing-before-write-port-refuses-patch",
+            "title": "Fresh native policy cannot dispatch without durable host permission",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "marker-commit-failure-refuses-patch",
+            "title": "A failed host marker transaction cannot be ignored",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "fresh-native-drift-refuses-patch",
+            "title": "Even an unchanged ETag cannot hide unrelated native drift",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "read-only-native-drift-holds",
+            "title": "Read-only recovery requires the entire desired native observation",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "raw-429-never-resends",
+            "title": "Raw 429 refusal retains read-only recovery even when not applied",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "raw-408-never-resends",
+            "title": "Raw 408 refusal retains read-only recovery even when not applied",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "raw-400-never-resends",
+            "title": "Raw 400 refusal retains read-only recovery even when not applied",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "raw-401-never-resends",
+            "title": "Raw 401 refusal retains read-only recovery even when not applied",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "raw-403-never-resends",
+            "title": "Raw 403 refusal retains read-only recovery even when not applied",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "raw-404-never-resends",
+            "title": "Raw 404 refusal retains read-only recovery even when not applied",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "raw-409-never-resends",
+            "title": "Raw 409 refusal retains read-only recovery even when not applied",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "raw-412-never-resends",
+            "title": "Raw 412 refusal retains read-only recovery even when not applied",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "raw-500-never-resends",
+            "title": "Raw 500 refusal retains read-only recovery even when not applied",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "raw-503-never-resends",
+            "title": "Raw 503 refusal retains read-only recovery even when not applied",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "lost-desired-get-only",
+            "title": "lost recovers by full desired GET without repeating PATCH",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "applied-503-desired-get-only",
+            "title": "applied-503 recovers by full desired GET without repeating PATCH",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "truncated-success-desired-get-only",
+            "title": "truncated-success recovers by full desired GET without repeating PATCH",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "instance-original-slot-is-preserved",
+            "title": "An occurrence response retains the original native series and civil slot",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "credential-cannot-grant-mutable-policy",
+            "title": "Credential refresh cannot change owned read-only dispatch policy",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "credential-cannot-rebind-native-evidence",
+            "title": "Credential refresh cannot change original native identity response or occurrence slot",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "invalid-getter-policy-precedes-credentials",
+            "title": "Invalid getter native policy fails before credentials",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "invalid-prototype-policy-precedes-credentials",
+            "title": "Invalid prototype native policy fails before credentials",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "evidence-getter-before-credentials",
+            "title": "Native evidence accessors are refused without evaluation before credentials",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "evidence-id-getter-before-credentials",
+            "title": "Whole native evidence refuses id-getter before credentials",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "evidence-etag-getter-before-credentials",
+            "title": "Whole native evidence refuses etag-getter before credentials",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "evidence-nested-getter-before-credentials",
+            "title": "Whole native evidence refuses nested-getter before credentials",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "evidence-response-getter-before-credentials",
+            "title": "Whole native evidence refuses response-getter before credentials",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "evidence-patch-getter-before-credentials",
+            "title": "Whole native evidence refuses patch-getter before credentials",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "evidence-occurrence-getter-before-credentials",
+            "title": "Whole native evidence refuses occurrence-getter before credentials",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "evidence-slot-getter-before-credentials",
+            "title": "Whole native evidence refuses slot-getter before credentials",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "evidence-prototype-before-credentials",
+            "title": "Whole native evidence refuses prototype before credentials",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "evidence-baseline-prototype-before-credentials",
+            "title": "Whole native evidence refuses baseline-prototype before credentials",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "evidence-slot-prototype-before-credentials",
+            "title": "Whole native evidence refuses slot-prototype before credentials",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "evidence-function-before-credentials",
+            "title": "Whole native evidence refuses function before credentials",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "evidence-cycle-before-credentials",
+            "title": "Whole native evidence refuses cycle before credentials",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "credential-cannot-mutate-nested-baseline",
+            "title": "Credentials cannot mutate owned native nested-baseline",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "credential-cannot-mutate-original-slot",
+            "title": "Credentials cannot mutate owned native original-slot",
+            "status": "passed",
+            "durationMs": 0
+          }
+        ],
+        "passed": 40,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 729
+      },
+      {
+        "suite": "task-delivery",
+        "results": [
+          {
+            "id": "saved-title-update",
+            "title": "Actual task executor selects the saved title mask and reads before ACK",
+            "status": "passed",
+            "durationMs": 9
+          },
+          {
+            "id": "ack-signal-forwarded",
+            "title": "The real executor forwards its same AbortSignal to the ACK port",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "achieved-recovery-read-only",
+            "title": "Already achieved saved fields reconcile through one read and ACK",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "empty-mask-no-mutation",
+            "title": "An empty saved field mask reads and authorizes without a mutation",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "changed-baseline-conflict",
+            "title": "A changed native baseline cannot authorize a write or ACK",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "ack-cancelled-wait",
+            "title": "The actual ACK port receives the attempt signal and cancels its wait",
+            "status": "passed",
+            "durationMs": 31
+          },
+          {
+            "id": "false-ack-after-write",
+            "title": "A false ACK after accepted mutation remains unconfirmed",
+            "status": "passed",
+            "durationMs": 3
+          },
+          {
+            "id": "false-ack-empty-mask",
+            "title": "A false ACK without dispatch retries without manufacturing uncertainty",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "captured-predecessor-version",
+            "title": "ACK receives the resolved old version captured before a mutable read port",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "create-recovery-ack-signal",
+            "title": "An addressed CREATE recovery forwards signal and an unresolved old ref to ACK",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "create-readback-ack-signal",
+            "title": "Fresh CREATE readback uses the same guarded ACK port",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "delete-absence-ack-signal",
+            "title": "Scoped DELETE absence forwards captured reference and signal to ACK",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "delete-write-ack-signal",
+            "title": "Accepted DELETE forwards signal and the captured old reference to ACK",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "cancelled-create-recovery-ack-signal",
+            "title": "Cancelled ACK wait: An addressed CREATE recovery forwards signal and an unresolved old ref to ACK",
+            "status": "passed",
+            "durationMs": 31
+          },
+          {
+            "id": "cancelled-delete-absence-ack-signal",
+            "title": "Cancelled ACK wait: Scoped DELETE absence forwards captured reference and signal to ACK",
+            "status": "passed",
+            "durationMs": 31
+          },
+          {
+            "id": "cancelled-achieved-recovery-read-only",
+            "title": "Cancelled ACK wait: Already achieved saved fields reconcile through one read and ACK",
+            "status": "passed",
+            "durationMs": 35
+          },
+          {
+            "id": "cancelled-empty-mask-no-mutation",
+            "title": "Cancelled ACK wait: An empty saved field mask reads and authorizes without a mutation",
+            "status": "passed",
+            "durationMs": 32
+          },
+          {
+            "id": "cancelled-delete-write-ack-signal",
+            "title": "Cancelled ACK wait: Accepted DELETE forwards signal and the captured old reference to ACK",
+            "status": "passed",
+            "durationMs": 32
+          },
+          {
+            "id": "late-read-after-timeout-no-ack",
+            "title": "A late adapter readback after timeout cannot reach ACK",
+            "status": "passed",
+            "durationMs": 32
+          },
+          {
+            "id": "google-create-predecessor-present",
+            "title": "Google CREATE with a paired predecessor reads the original object before creating",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-create-predecessor-absent",
+            "title": "Google CREATE with proven absent predecessor has no invented old address",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-create-recovery-full-target",
+            "title": "CREATE recovery rejects unrelated drift even when the saved title mask is achieved",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-update-recovery-exact-saved-mask",
+            "title": "UPDATE recovery ACKs its exact saved title mask and preserves other observed fields",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-create-recovery-unknown-id",
+            "title": "Google uncertain CREATE with no response address stays read-only",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "todo-home-weak-etag-update",
+            "title": "To Do home UPDATE preserves weak native validators and rich admitted fields",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "todo-secondary-update-refused",
+            "title": "To Do secondary UPDATE retains the native conditional-write refusal",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "todo-home-create-response-address",
+            "title": "To Do home CREATE keeps the captured response address for readback",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "todo-create-recovery-known-address",
+            "title": "To Do uncertain CREATE reads only its captured response address",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "todo-create-recovery-unknown-address",
+            "title": "To Do uncertain CREATE cannot invent an address or resend",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "todo-secondary-delete-refused",
+            "title": "To Do secondary DELETE retains the native conditional-write refusal",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "vtodo-full-resource-update",
+            "title": "VTODO UPDATE carries the full pinned resource and original URL UID validator pair",
+            "status": "passed",
+            "durationMs": 3
+          },
+          {
+            "id": "vtodo-deterministic-create-recovery",
+            "title": "VTODO uncertain CREATE recovers at the original task UUID URL and UID",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "vtodo-original-strong-tag-conflict",
+            "title": "VTODO current strong validator cannot replace the captured original validator",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "vtodo-weak-tag-native-refusal",
+            "title": "VTODO weak validators remain a native preflight refusal",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-v0-home-recurrence",
+            "title": "Legacy Google home recurrence reaches the existing writer without v1 encoding",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "todo-v0-home-recurrence",
+            "title": "Legacy To Do home recurrence reaches its original writer unchanged",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-v0-secondary-recurrence-refused",
+            "title": "Legacy google secondary non-delete recurrence remains refused",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "microsoft-v0-secondary-recurrence-refused",
+            "title": "Legacy microsoft secondary non-delete recurrence remains refused",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "google-v0-oversize-title",
+            "title": "Legacy title outside v1 admission budgets retains its original native writer floor",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "vtodo-v0-historical-native-uid",
+            "title": "Legacy VTODO keeps its historical native UID and full canonical content",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "legacy-delete-without-task-address",
+            "title": "Legacy DELETE without a remote task address ACKs absence without native writes",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "todo-delete-native-already-absent",
+            "title": "A fulfilled native DELETE can have no dispatch when its internal read finds absence",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "source-revoked-before-read",
+            "title": "Source revocation before initial provider reads blocks the operation",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "privacy-generation-changed-before-read",
+            "title": "Pinned privacy generation change blocks before native reads",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "source-retired-before-fresh-dispatch",
+            "title": "Retired fresh source finishes not-needed before mapping and native reads",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "lease-lost-at-mutation-callback",
+            "title": "Lease loss at the native callback prevents a task mutation",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "source-revoked-at-mutation-callback",
+            "title": "Source revocation at the native callback prevents a task mutation",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "privacy-changed-at-mutation-callback",
+            "title": "Privacy generation change at the native callback prevents a task mutation",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "fulfilled-writer-readback-rejection",
+            "title": "A complete native writer fulfillment remains durable across a rejected readback",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "recovery-achieved-after-source-retirement",
+            "title": "Achieved saved-mask recovery ACKs read-only after dispatch permission is retired",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "pinned-native-plan-holds",
+            "title": "Malformed selected pinned native-plan holds before compatibility mapping",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "pinned-serializer-holds",
+            "title": "Malformed selected pinned serializer holds before compatibility mapping",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "cancelled-before-mutation-callback",
+            "title": "A native mutation callback after timeout cannot renew or dispatch",
+            "status": "passed",
+            "durationMs": 31
+          },
+          {
+            "id": "vtodo-full-resource-create",
+            "title": "VTODO CREATE carries its deterministic task UID full resource and admitted native precision",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "vtodo-retained-delete-pair",
+            "title": "VTODO DELETE ACK retains the original full URL UID and strong validator",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "todo-delete-no-dispatch-false-ack",
+            "title": "Native DELETE fulfillment remains distinct from dispatch when its ACK loses the claim",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "legacy-saved-mask-no-reprojection",
+            "title": "Legacy saved mask and target win without invoking the current projector",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "native-writer-definite-rejection",
+            "title": "Native dispatched rejection remains not-written until a writer has fulfilled",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "vtodo-v0-long-native-address",
+            "title": "Legacy VTODO native URL and UID retain values outside pinned address budgets",
+            "status": "passed",
+            "durationMs": 1
+          }
+        ],
+        "passed": 59,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 953
+      },
+      {
+        "suite": "event-delivery",
+        "results": [
+          {
+            "id": "legacy-delete-no-address",
+            "title": "Actual legacy event executor ACKs a missing local address without native dispatch",
+            "status": "passed",
+            "durationMs": 10
+          },
+          {
+            "id": "google-generic-create",
+            "title": "google generic create",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "google-generic-update",
+            "title": "google generic update",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-generic-delete-absence",
+            "title": "google generic delete absence",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-generic-known-time-refused",
+            "title": "google generic known time refused",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "microsoft-generic-create",
+            "title": "microsoft generic create",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "microsoft-generic-update",
+            "title": "microsoft generic update",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "microsoft-generic-delete-absence",
+            "title": "microsoft generic delete absence",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "microsoft-generic-known-time-refused",
+            "title": "microsoft generic known time refused",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "caldav-generic-create",
+            "title": "caldav generic create",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "caldav-generic-update",
+            "title": "caldav generic update",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "caldav-generic-delete-absence",
+            "title": "caldav generic delete absence",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "caldav-generic-known-time-refused",
+            "title": "caldav generic known time refused",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "legacy-all-day-generic-preserved",
+            "title": "legacy all day generic preserved",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "graph-content-mark-accept-ack",
+            "title": "graph content mark accept ack",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "graph-meeting-cancellation-mark-accept",
+            "title": "graph meeting cancellation mark accept",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-organizer-distinct-marker-acceptance",
+            "title": "google organizer distinct marker acceptance",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-organizer-uncertain-observe-only",
+            "title": "google organizer uncertain observe only",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "microsoft-organizer-distinct-marker-acceptance",
+            "title": "microsoft organizer distinct marker acceptance",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "microsoft-organizer-uncertain-observe-only",
+            "title": "microsoft organizer uncertain observe only",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "caldav-organizer-distinct-marker-acceptance",
+            "title": "caldav organizer distinct marker acceptance",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "caldav-organizer-uncertain-observe-only",
+            "title": "caldav organizer uncertain observe only",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "graph-series-deletion-complete-proof",
+            "title": "graph series deletion complete proof",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "graph-series-create-whole-family-ack",
+            "title": "graph series create whole family ack",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "dav-alarm-resource-proof",
+            "title": "dav alarm resource proof",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "dav-split-source",
+            "title": "dav split source",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "dav-split-creation",
+            "title": "dav split creation",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "dav-series-whole-delete",
+            "title": "dav series whole delete",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "dav-series-following-resource-write",
+            "title": "dav series following resource write",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-occurrence-achieved-read-only",
+            "title": "google occurrence achieved read only",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "google-rsvp-reconciling-desired",
+            "title": "Google legacy reconciling desired result confirms through actual native GET-only",
+            "status": "passed",
+            "durationMs": 13
+          },
+          {
+            "id": "google-rsvp-reconciling-baseline",
+            "title": "Google legacy reconciling baseline now holds GET-only under permanent no-resend policy",
+            "status": "passed",
+            "durationMs": 4
+          },
+          {
+            "id": "graph-rsvp-fresh-marker",
+            "title": "graph rsvp fresh marker",
+            "status": "passed",
+            "durationMs": 40
+          },
+          {
+            "id": "graph-rsvp-observe-only",
+            "title": "graph rsvp observe only",
+            "status": "passed",
+            "durationMs": 9
+          },
+          {
+            "id": "dav-rsvp-fresh",
+            "title": "dav rsvp fresh",
+            "status": "passed",
+            "durationMs": 25
+          },
+          {
+            "id": "dav-rsvp-started",
+            "title": "dav rsvp started",
+            "status": "passed",
+            "durationMs": 5
+          },
+          {
+            "id": "dav-rsvp-legacy",
+            "title": "dav rsvp legacy",
+            "status": "passed",
+            "durationMs": 5
+          },
+          {
+            "id": "google-reminder-off-write",
+            "title": "google reminder off write",
+            "status": "passed",
+            "durationMs": 3
+          },
+          {
+            "id": "google-reminder-achieved",
+            "title": "google reminder achieved",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-reminder-instance-original-slot",
+            "title": "google reminder instance original slot",
+            "status": "passed",
+            "durationMs": 6
+          },
+          {
+            "id": "microsoft-graph-occurrence-content-feature-disabled",
+            "title": "microsoft graph occurrence content feature disabled",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "microsoft-graph-meeting-cancellation-feature-disabled",
+            "title": "microsoft graph meeting cancellation feature disabled",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "google-organizer-feature-disabled",
+            "title": "google organizer feature disabled",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "microsoft-organizer-feature-disabled",
+            "title": "microsoft organizer feature disabled",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "caldav-organizer-feature-disabled",
+            "title": "caldav organizer feature disabled",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "microsoft-graph-series-deletion-feature-disabled",
+            "title": "microsoft graph series deletion feature disabled",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "microsoft-graph-series-create-feature-disabled",
+            "title": "microsoft graph series create feature disabled",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "caldav-caldav-alarm-feature-disabled",
+            "title": "caldav caldav alarm feature disabled",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "caldav-caldav-split-feature-disabled",
+            "title": "caldav caldav split feature disabled",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "caldav-caldav-series-deletion-feature-disabled",
+            "title": "caldav caldav series deletion feature disabled",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "caldav-caldav-series-feature-disabled",
+            "title": "caldav caldav series feature disabled",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "google-google-occurrence-feature-disabled",
+            "title": "google google occurrence feature disabled",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-rsvp-feature-disabled",
+            "title": "google rsvp feature disabled",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "microsoft-rsvp-feature-disabled",
+            "title": "microsoft rsvp feature disabled",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "caldav-rsvp-feature-disabled",
+            "title": "caldav rsvp feature disabled",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-reminder-edit-feature-disabled",
+            "title": "google reminder edit feature disabled",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "google-reminder-instance-feature-disabled",
+            "title": "google reminder instance feature disabled",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reserved-timeedit-legacy-generic",
+            "title": "Reserved key keeps its existing legacy generic behavior",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "reserved-graphoccurrence-legacy-generic",
+            "title": "Reserved key keeps its existing legacy generic behavior",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "actual-family-priority-content-before-organizer",
+            "title": "Actual branch priority selects Graph content before organizer",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "generic-native-preflight-cannot-poison-owned-event",
+            "title": "Native preflight cannot replace owned original canonical values",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-generic-delete-write",
+            "title": "google generic delete write",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-generic-update-achieved-recovery",
+            "title": "google generic update achieved recovery",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "microsoft-generic-delete-write",
+            "title": "microsoft generic delete write",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "microsoft-generic-update-achieved-recovery",
+            "title": "microsoft generic update achieved recovery",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "caldav-generic-delete-write",
+            "title": "caldav generic delete write",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "caldav-generic-update-achieved-recovery",
+            "title": "caldav generic update achieved recovery",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "legacy-create-recovery-without-identity-holds",
+            "title": "legacy create recovery without identity holds",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "google-generated-create-recovers-read-only",
+            "title": "google generated create recovers read only",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "graph-unknown-create-outcome-holds",
+            "title": "graph unknown create outcome holds",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "graph-uncertain-delete-present-never-replays",
+            "title": "graph uncertain delete present never replays",
+            "status": "passed",
+            "durationMs": 0
+          },
+          {
+            "id": "generic-conflict-observes-current-without-adopting-validator",
+            "title": "generic conflict observes current without adopting validator",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "pinned-present-malformed-never-legacy-fallback",
+            "title": "pinned present malformed never legacy fallback",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "legacy-projection-saved-before-source-check",
+            "title": "legacy projection saved before source check",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "native-projector-retained-object-cannot-poison-saved-projection",
+            "title": "Native projector retained object mutation cannot change saved projection or canonical milliseconds",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "google-rsvp-host-native-fresh-unstarted",
+            "title": "Fresh Google RSVP crosses actual host runtime and native adapter with durable permission",
+            "status": "passed",
+            "durationMs": 5
+          },
+          {
+            "id": "google-rsvp-host-native-started-hold",
+            "title": "Started Google intent holds even when generic uncertainty was cleared",
+            "status": "passed",
+            "durationMs": 3
+          },
+          {
+            "id": "google-rsvp-host-native-legacy-queued-hold",
+            "title": "Never-attempted markerless historical queue cannot synthesize fresh permission",
+            "status": "passed",
+            "durationMs": 3
+          },
+          {
+            "id": "google-rsvp-host-native-started-desired",
+            "title": "Full desired native GET confirms started intent without marking again",
+            "status": "passed",
+            "durationMs": 3
+          },
+          {
+            "id": "google-rsvp-host-native-fresh-preoauth-retry",
+            "title": "Typed unstarted intent remains eligible after pre-send claim or OAuth retry",
+            "status": "passed",
+            "durationMs": 3
+          },
+          {
+            "id": "google-rsvp-host-native-marker-false",
+            "title": "Conclusive false marker preserves known no-send and refuses native PATCH",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "google-rsvp-host-native-marker-ack-lost",
+            "title": "Lost marker acknowledgement remains uncertain and refuses native PATCH",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "google-rsvp-host-native-source-refused",
+            "title": "Fresh source refusal before marker remains conclusive no-send",
+            "status": "passed",
+            "durationMs": 2
+          },
+          {
+            "id": "google-rsvp-host-native-invalid-null",
+            "title": "Malformed Google null sidecar settles inside attempt before credentials",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-rsvp-host-native-invalid-version",
+            "title": "Malformed Google version sidecar settles inside attempt before credentials",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-rsvp-host-native-invalid-acceptance",
+            "title": "Malformed Google acceptance sidecar settles inside attempt before credentials",
+            "status": "passed",
+            "durationMs": 1
+          },
+          {
+            "id": "google-rsvp-host-native-cancel-credentials",
+            "title": "Closed Google attempt refuses continuations after credentials",
+            "status": "passed",
+            "durationMs": 32
+          },
+          {
+            "id": "google-rsvp-host-native-cancel-marker",
+            "title": "Closed Google attempt refuses continuations after marker",
+            "status": "passed",
+            "durationMs": 31
+          },
+          {
+            "id": "google-rsvp-host-native-cancel-patch-response",
+            "title": "Closed Google attempt refuses continuations after patch-response",
+            "status": "passed",
+            "durationMs": 31
+          },
+          {
+            "id": "google-rsvp-host-native-cancel-readback",
+            "title": "Closed Google attempt refuses continuations after readback",
+            "status": "passed",
+            "durationMs": 33
+          }
+        ],
+        "passed": 90,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 1330
+      },
+      {
+        "suite": "task-inspector",
+        "results": [
+          {
+            "id": "edit-preserves-content",
+            "title": "Editing a title preserves notes, recurrence, progress and revision fences",
+            "status": "passed",
+            "durationMs": 419.07375
+          },
+          {
+            "id": "conflict-keeps-draft",
+            "title": "A rejected save retains the user's draft for reconciliation",
+            "status": "passed",
+            "durationMs": 189.57783200000017
+          },
+          {
+            "id": "mirror-is-readonly",
+            "title": "A shared mirror cannot edit canonical content or completion",
+            "status": "passed",
+            "durationMs": 17.402918
+          },
+          {
+            "id": "cancel-delete-keeps-task",
+            "title": "Canceling deletion sends no mutation and returns to the task",
+            "status": "passed",
+            "durationMs": 84.2105019999999
+          }
+        ],
+        "passed": 4,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 3825
+      }
+    ],
+    "passed": 598,
+    "failed": 0,
+    "errors": 0,
+    "durationMs": 11263
+  },
+  "hostDatabase": {
+    "database": "c10host_78534e23bf7445cf803d2137bf86b718",
+    "port": 55446,
+    "createExitCode": 0,
+    "create": "{\"database\":\"c10host_78534e23bf7445cf803d2137bf86b718\",\"absentBeforeCreate\":true}\n{\"created\":\"c10host_78534e23bf7445cf803d2137bf86b718\"}",
+    "createStderr": "",
+    "testExitCode": 0,
+    "cleanupExitCode": 0,
+    "cleanup": "{\"database\":\"c10host_78534e23bf7445cf803d2137bf86b718\",\"zeroSessions\":true,\"plainDrop\":true,\"remaining\":0}",
+    "cleanupStderr": ""
+  },
+  "trackedInputChanges": [],
+  "sourceStillCurrent": true
+}

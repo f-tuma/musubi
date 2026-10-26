@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "sync-alpha-archived-package-manager-diagnostic",
+  "sourceCommit": "d5402b174e5f1b5f4bd7913499bc7d726105825c",
+  "node": "v22.23.4",
+  "fullBuild": false,
+  "repositoryEdits": false,
+  "archivedPackageManager": "pnpm@11.8.0",
+  "archiveSha256": "d22437299d786adda567a906721f89b83ae394b58cbd1de041c00cd44c434778",
+  "inheritedEnvironmentKeys": [
+    "CI",
+    "HOME",
+    "LANG",
+    "PATH",
+    "TMPDIR",
+    "TZ",
+    "XDG_CACHE_HOME",
+    "XDG_CONFIG_HOME",
+    "XDG_DATA_HOME"
+  ],
+  "status": "passed",
+  "actualPnpmVersion": "11.8.0",
+  "ownedTemporaryDirectoryRemoved": true
+}

@@ -1,0 +1,2151 @@
+[
+  {
+    "path": "LICENSE",
+    "kind": "file",
+    "size": 1068,
+    "mode": 420,
+    "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832"
+  },
+  {
+    "path": "apps/sync-reference/Dockerfile",
+    "kind": "file",
+    "size": 954,
+    "mode": 420,
+    "sha256": "0195325f073df1540800b397eb77ee0e26150b55225cf88b5e8881702cd108c6"
+  },
+  {
+    "path": "apps/sync-reference/README.md",
+    "kind": "file",
+    "size": 48960,
+    "mode": 420,
+    "sha256": "b13a7a579e89432e0e5d59e5b1f006358ecc96f3640e6c02668cece2119b25ea"
+  },
+  {
+    "path": "apps/sync-reference/conformance/cleanup.integration.test.mjs",
+    "kind": "file",
+    "size": 5300,
+    "mode": 420,
+    "sha256": "16f0e3d01ce2b9794c897b2d9058d5cbff0d2a9b9b3cece7991e62df9d1570dd"
+  },
+  {
+    "path": "apps/sync-reference/conformance/database-fixture.mjs",
+    "kind": "file",
+    "size": 7166,
+    "mode": 420,
+    "sha256": "d57893b72073c3c8c5e0272984277e8cb856fe06d37b7aecaee45ef3214af17d"
+  },
+  {
+    "path": "apps/sync-reference/conformance/database-name.ts",
+    "kind": "file",
+    "size": 595,
+    "mode": 420,
+    "sha256": "2fd424022d9b55d1d14f8537b7ab5e8cfdf90c22806966cd1e6144ae9b84ae5e"
+  },
+  {
+    "path": "apps/sync-reference/conformance/db-journal.mjs",
+    "kind": "file",
+    "size": 5262,
+    "mode": 420,
+    "sha256": "2b15aeb29064010dfcc748dc4ace9f61b5928f7f5d694a6415c67d5c053e0961"
+  },
+  {
+    "path": "apps/sync-reference/conformance/db-journal.test.mjs",
+    "kind": "file",
+    "size": 2243,
+    "mode": 420,
+    "sha256": "3c2bbd10e6b1596b9db0b91c55a1181566606d145002bf19785f14ed497118bd"
+  },
+  {
+    "path": "apps/sync-reference/conformance/manifest.v1.json",
+    "kind": "file",
+    "size": 202937,
+    "mode": 420,
+    "sha256": "2a7e4e0c1353767818dff2a5083036f0ececb991decedec090ff30ff9e9e6abf"
+  },
+  {
+    "path": "apps/sync-reference/conformance/module.mjs",
+    "kind": "file",
+    "size": 1167,
+    "mode": 420,
+    "sha256": "ecf0a923415910617200f55fdb0692f49d6c670223de0fb0cd587dc31376c3a3"
+  },
+  {
+    "path": "apps/sync-reference/conformance/node-reporter.mjs",
+    "kind": "file",
+    "size": 1565,
+    "mode": 420,
+    "sha256": "d52b920e3ba780c7d2489ebd9e1270f73e01dd99ad684c1781a207988f601712"
+  },
+  {
+    "path": "apps/sync-reference/conformance/process-group.mjs",
+    "kind": "file",
+    "size": 3114,
+    "mode": 420,
+    "sha256": "c34d0f4d1ad43e3446968801664a302ca2ce4f6a51c0efe967fb49b0644b1644"
+  },
+  {
+    "path": "apps/sync-reference/conformance/process-group.test.mjs",
+    "kind": "file",
+    "size": 1746,
+    "mode": 420,
+    "sha256": "5c0f54a35acb4c272f4e38a776e94ca749803f4d03af3c80c0c614c7b69442a7"
+  },
+  {
+    "path": "apps/sync-reference/conformance/report.schema.json",
+    "kind": "file",
+    "size": 4801,
+    "mode": 420,
+    "sha256": "d413784f4ae8bf0090cf66adc103183d43056809f00bff57463dadc6f53f3e95"
+  },
+  {
+    "path": "apps/sync-reference/conformance/runner.test.mjs",
+    "kind": "file",
+    "size": 9467,
+    "mode": 420,
+    "sha256": "d769ab2a8ee1c6a7c2c89d5d51b35adee677ba87d6a364558833b8d88eeb27ee"
+  },
+  {
+    "path": "apps/sync-reference/package.json",
+    "kind": "file",
+    "size": 2276,
+    "mode": 420,
+    "sha256": "c6452951f4a556b2029644848c47bc7f014a829cdd39ebe535bb740997e3ba7a"
+  },
+  {
+    "path": "apps/sync-reference/src/admission.test.ts",
+    "kind": "file",
+    "size": 4206,
+    "mode": 420,
+    "sha256": "96dad327fecc68aede0f9c4fd0c0ad91dd5c74c70efce35c182a92df8a6a8e05"
+  },
+  {
+    "path": "apps/sync-reference/src/admission.ts",
+    "kind": "file",
+    "size": 22187,
+    "mode": 420,
+    "sha256": "4ba19132e922fca1ed760a39bea52993cfbace3ddeb2806aa6b8b6a73633a08e"
+  },
+  {
+    "path": "apps/sync-reference/src/caldav-create-process.integration.test.ts",
+    "kind": "file",
+    "size": 25928,
+    "mode": 420,
+    "sha256": "fd3cfe187f43d1bcf45926ea38a9b72ec51407894643fcc7649102d82fd1c25b"
+  },
+  {
+    "path": "apps/sync-reference/src/caldav-create.integration.test.ts",
+    "kind": "file",
+    "size": 26108,
+    "mode": 420,
+    "sha256": "30366972825c4104b16a525421a6e341fa1f38ed3e29d83028546c934a3ffe44"
+  },
+  {
+    "path": "apps/sync-reference/src/caldav-create.test.ts",
+    "kind": "file",
+    "size": 14102,
+    "mode": 420,
+    "sha256": "d448406893266edbd57ff0b00887c5b8652a0a7114cccbff5c954cf5140a4219"
+  },
+  {
+    "path": "apps/sync-reference/src/caldav-delete-process.integration.test.ts",
+    "kind": "file",
+    "size": 18354,
+    "mode": 420,
+    "sha256": "a994060486a9f95a3409630e9d7583329bdaff266b501febb7dfe613299947ba"
+  },
+  {
+    "path": "apps/sync-reference/src/caldav-delete.integration.test.ts",
+    "kind": "file",
+    "size": 16869,
+    "mode": 420,
+    "sha256": "f97b0711cb1ec3a5920a5018c590906175bc7c6ad1e79b0c8d2d577a4f2780ba"
+  },
+  {
+    "path": "apps/sync-reference/src/caldav-delete.test.ts",
+    "kind": "file",
+    "size": 14541,
+    "mode": 420,
+    "sha256": "0701929ef65edeb5ce738d02754627041bf62badb83a27a50b81ad0e84dd0011"
+  },
+  {
+    "path": "apps/sync-reference/src/cli.ts",
+    "kind": "file",
+    "size": 10499,
+    "mode": 420,
+    "sha256": "9d10455ed0f04b00aceed8249f7648b062bb715d70853559de5f038b809af54a"
+  },
+  {
+    "path": "apps/sync-reference/src/create-process.integration.test.ts",
+    "kind": "file",
+    "size": 19751,
+    "mode": 420,
+    "sha256": "f77fb7298a0d0c1fcfed96d7d5698e46a8f4a2d4a871550c3575e174e2ad7096"
+  },
+  {
+    "path": "apps/sync-reference/src/create.integration.test.ts",
+    "kind": "file",
+    "size": 20889,
+    "mode": 420,
+    "sha256": "18392bea7d59ac2e3e74c02b8697b7eca2212677831595d2f7cc5c2fe9b7995e"
+  },
+  {
+    "path": "apps/sync-reference/src/create.test.ts",
+    "kind": "file",
+    "size": 11702,
+    "mode": 420,
+    "sha256": "7c891c08c457fa732c8b05aa1514d8e74a339797b1a9c2f5da02daa8a183342a"
+  },
+  {
+    "path": "apps/sync-reference/src/cross-account.integration.test.ts",
+    "kind": "file",
+    "size": 12232,
+    "mode": 420,
+    "sha256": "6183d2290c1cf053e7df3e3bc8777b414728655a218f9cad5c4d229582291bba"
+  },
+  {
+    "path": "apps/sync-reference/src/crypto.ts",
+    "kind": "file",
+    "size": 2713,
+    "mode": 420,
+    "sha256": "c0ada3c80f472d39c1b0115f1553878c0cd2d75e75ff4d856a00988230632d68"
+  },
+  {
+    "path": "apps/sync-reference/src/delete-process.integration.test.ts",
+    "kind": "file",
+    "size": 13585,
+    "mode": 420,
+    "sha256": "a8f937c318cf5a654b97c4e4d52f1b61828a6caadac4650c8532279713248b27"
+  },
+  {
+    "path": "apps/sync-reference/src/delete.integration.test.ts",
+    "kind": "file",
+    "size": 20379,
+    "mode": 420,
+    "sha256": "3cffd71c34db0957b390599cd8a773314e5b9b4d0e0a0da08ad907c17666189d"
+  },
+  {
+    "path": "apps/sync-reference/src/delete.test.ts",
+    "kind": "file",
+    "size": 9972,
+    "mode": 420,
+    "sha256": "8b4e502b127bc5df94803c7e8363c68544ed88f3fa473f1674a28b7fb2d34b4e"
+  },
+  {
+    "path": "apps/sync-reference/src/graph-create-process.integration.test.ts",
+    "kind": "file",
+    "size": 20308,
+    "mode": 420,
+    "sha256": "4a583e99f71861f07be4bab6f41b557e2084925e935f60ee109d028dd4714939"
+  },
+  {
+    "path": "apps/sync-reference/src/graph-create.integration.test.ts",
+    "kind": "file",
+    "size": 20557,
+    "mode": 420,
+    "sha256": "c61d4137da028f5d9a1985c9aa72a0bf6e5d631ec0dca41c625322267584f221"
+  },
+  {
+    "path": "apps/sync-reference/src/graph-create.test.ts",
+    "kind": "file",
+    "size": 13712,
+    "mode": 420,
+    "sha256": "f49cb0864007e53e368734427e48b594a66f9b1328b1ba8e213fd55688df8665"
+  },
+  {
+    "path": "apps/sync-reference/src/graph-delete-process.integration.test.ts",
+    "kind": "file",
+    "size": 16197,
+    "mode": 420,
+    "sha256": "28d1e9535cf09ed3f08a8502935853a771c7d97b018c82539f43173b5f10ca32"
+  },
+  {
+    "path": "apps/sync-reference/src/graph-delete.integration.test.ts",
+    "kind": "file",
+    "size": 16803,
+    "mode": 420,
+    "sha256": "9eeb732fae81779d1066c0f8dfacd9c33a444b57054b8ee76359490299159ec8"
+  },
+  {
+    "path": "apps/sync-reference/src/graph-delete.test.ts",
+    "kind": "file",
+    "size": 10755,
+    "mode": 420,
+    "sha256": "a803bb9058d10d8540fc5f2c729927194299044a959d308c0a4c91f4665400d7"
+  },
+  {
+    "path": "apps/sync-reference/src/model.ts",
+    "kind": "file",
+    "size": 7074,
+    "mode": 420,
+    "sha256": "6ae8dae3350fc9b8dee86b08e554ab9c51b4880ec266507461506e3f475dd7c0"
+  },
+  {
+    "path": "apps/sync-reference/src/process.integration.test.ts",
+    "kind": "file",
+    "size": 16285,
+    "mode": 420,
+    "sha256": "c6fc86c0d1fc03d18ef97d3a3dd61df4cb8f796986bc31b9c685145524206016"
+  },
+  {
+    "path": "apps/sync-reference/src/process_fixture.child.ts",
+    "kind": "file",
+    "size": 7101,
+    "mode": 420,
+    "sha256": "c1d41570f43da03fc81b31a2b629b51c930fc6e0afcb0814c0cb0b957064596c"
+  },
+  {
+    "path": "apps/sync-reference/src/runner.test.ts",
+    "kind": "file",
+    "size": 25070,
+    "mode": 420,
+    "sha256": "8d89eef7d6a9cdd4b2bb51ea4058ee056e4d2a44d13311366fb8944de1b1a9d3"
+  },
+  {
+    "path": "apps/sync-reference/src/runner.ts",
+    "kind": "file",
+    "size": 40327,
+    "mode": 420,
+    "sha256": "83c572574aa6cec4b8569f579e08be6872321c5bc18f5c9e05fdcb821e635455"
+  },
+  {
+    "path": "apps/sync-reference/src/schema-caldav-create.sql",
+    "kind": "file",
+    "size": 4171,
+    "mode": 420,
+    "sha256": "ecf041f5aac5e74307cdf071a78d52147b96fef7017c5a0d5711a1c5c1cc0bda"
+  },
+  {
+    "path": "apps/sync-reference/src/schema-caldav-delete.sql",
+    "kind": "file",
+    "size": 4831,
+    "mode": 420,
+    "sha256": "25ba52ff9a8405ca11e52f2bb966ef8d8439a90e8533dcb2940a298bc5005147"
+  },
+  {
+    "path": "apps/sync-reference/src/schema-create.sql",
+    "kind": "file",
+    "size": 2812,
+    "mode": 420,
+    "sha256": "408716f9c6328acf15487092a26abf39989f9fa7f0338d93e5ad94cdbf97b3cb"
+  },
+  {
+    "path": "apps/sync-reference/src/schema-delete.sql",
+    "kind": "file",
+    "size": 3588,
+    "mode": 420,
+    "sha256": "88beb578eb55eff8fe88f18f3adb21e145d949cf7d41e6193c3eae9bce433091"
+  },
+  {
+    "path": "apps/sync-reference/src/schema-google-task-create.sql",
+    "kind": "file",
+    "size": 9151,
+    "mode": 420,
+    "sha256": "892c389afeced9711dc69fb70c27596c8f5de403c65d9b571cf62b1c73452b55"
+  },
+  {
+    "path": "apps/sync-reference/src/schema-google-task-delete.sql",
+    "kind": "file",
+    "size": 3607,
+    "mode": 420,
+    "sha256": "0cf0dced059ec55dd24a79497676878962fbacbd5c7712a5bb494f80b0b32f6b"
+  },
+  {
+    "path": "apps/sync-reference/src/schema-google-task-intents.sql",
+    "kind": "file",
+    "size": 5718,
+    "mode": 420,
+    "sha256": "15e1be247fb0bb9d5085f44dda0743a43ca10596200a3cc13a7a1b14c4094e96"
+  },
+  {
+    "path": "apps/sync-reference/src/schema-google-task-update.sql",
+    "kind": "file",
+    "size": 7482,
+    "mode": 420,
+    "sha256": "28e768f9efeec5d0459246c76de572a63f0a9ece7181ed2007588ade0a12b72d"
+  },
+  {
+    "path": "apps/sync-reference/src/schema-graph-create.sql",
+    "kind": "file",
+    "size": 8959,
+    "mode": 420,
+    "sha256": "e0da1c682fd4c662be133c8e8d5182841b466b4f4677811e4bac7d0681605d8a"
+  },
+  {
+    "path": "apps/sync-reference/src/schema-graph-delete.sql",
+    "kind": "file",
+    "size": 3492,
+    "mode": 420,
+    "sha256": "e7b238fa03785d5d5525cb037bb7387567ee8483d181d9fde3561babdc5bf96f"
+  },
+  {
+    "path": "apps/sync-reference/src/schema.sql",
+    "kind": "file",
+    "size": 6335,
+    "mode": 420,
+    "sha256": "c7b5eb61721d05f1b6ad4aae98609893fc3bed899d88db1398bc69273c661ead"
+  },
+  {
+    "path": "apps/sync-reference/src/store.integration.test.ts",
+    "kind": "file",
+    "size": 34208,
+    "mode": 420,
+    "sha256": "d37b08c92c037a3012f04d17acfa7d7ca7e70f857d85e8267af1c7f074c40078"
+  },
+  {
+    "path": "apps/sync-reference/src/store.ts",
+    "kind": "file",
+    "size": 99660,
+    "mode": 420,
+    "sha256": "012f365819950702c5e3a8539576129a1fd3c510ab785be6e54ccb56dbd99820"
+  },
+  {
+    "path": "apps/sync-reference/src/task-admission.test.ts",
+    "kind": "file",
+    "size": 6676,
+    "mode": 420,
+    "sha256": "eba06e4d4b47aa572608b257180767e1ee3f8626b41b65e805b044e601e3d17e"
+  },
+  {
+    "path": "apps/sync-reference/src/task-admission.ts",
+    "kind": "file",
+    "size": 7709,
+    "mode": 420,
+    "sha256": "08758ede321924ece37ab9b7077e86549a7bd5bff8c32cc67c7990407011e5cf"
+  },
+  {
+    "path": "apps/sync-reference/src/task-create-admission.ts",
+    "kind": "file",
+    "size": 2833,
+    "mode": 420,
+    "sha256": "67823189f612a303331e173a73f4f1896ac4ce594e06decc1ce214d09875b0d6"
+  },
+  {
+    "path": "apps/sync-reference/src/task-create-model.ts",
+    "kind": "file",
+    "size": 2538,
+    "mode": 420,
+    "sha256": "48628e0cda285c80d25cc59ff46d39a6b6d3842f38ac85145ff50216bdb7db7f"
+  },
+  {
+    "path": "apps/sync-reference/src/task-create-process-fixture.child.ts",
+    "kind": "file",
+    "size": 3705,
+    "mode": 420,
+    "sha256": "a279081a0fc346dc96061d5b6a362dbae37c8758a22cc53048b3915850c891ff"
+  },
+  {
+    "path": "apps/sync-reference/src/task-create-process.integration.test.ts",
+    "kind": "file",
+    "size": 16670,
+    "mode": 420,
+    "sha256": "13e74af5cf1f131a1b0c57d516de85195be5848272766acf1f22204878e9765a"
+  },
+  {
+    "path": "apps/sync-reference/src/task-create-runner.test.ts",
+    "kind": "file",
+    "size": 4681,
+    "mode": 420,
+    "sha256": "b133adb79cfa886e7507a0681635fb6f159cfbc8b7f45f92970b3e0f3094d784"
+  },
+  {
+    "path": "apps/sync-reference/src/task-create-runner.ts",
+    "kind": "file",
+    "size": 6013,
+    "mode": 420,
+    "sha256": "158be55cb6a003baa26804f0d684e514132e1139b1af6a2cd50cbdce585944b3"
+  },
+  {
+    "path": "apps/sync-reference/src/task-create.integration.test.ts",
+    "kind": "file",
+    "size": 24503,
+    "mode": 420,
+    "sha256": "e27cea6139698f631eaa48c9038c8b450b84b413a05f86ce1be44d1b2ab13099"
+  },
+  {
+    "path": "apps/sync-reference/src/task-create.test.ts",
+    "kind": "file",
+    "size": 3180,
+    "mode": 420,
+    "sha256": "dab47a94ccc4c409d1d84bcefc6306b2f6142380da8cfd8fbd15ada66abddf2f"
+  },
+  {
+    "path": "apps/sync-reference/src/task-delete-admission.ts",
+    "kind": "file",
+    "size": 2865,
+    "mode": 420,
+    "sha256": "c6df07723561f2b18f8fa4e8ef5c9b95112c8778779b6d60b425e123281a8bc5"
+  },
+  {
+    "path": "apps/sync-reference/src/task-delete-model.ts",
+    "kind": "file",
+    "size": 1406,
+    "mode": 420,
+    "sha256": "7f15daeadf68a693bc4d827a9ef73c22eb9e5cb7600746d1a1c38629f0362206"
+  },
+  {
+    "path": "apps/sync-reference/src/task-delete-process.integration.test.ts",
+    "kind": "file",
+    "size": 19228,
+    "mode": 420,
+    "sha256": "93fd7efa6d66bb33558cb4fb5b90be30ecf893f23b5cef198227931243be0d6d"
+  },
+  {
+    "path": "apps/sync-reference/src/task-delete-runner.test.ts",
+    "kind": "file",
+    "size": 4603,
+    "mode": 420,
+    "sha256": "0b04439d92ad1a8287d78bc94e799194949f8f72c139a163bc532386f31efe87"
+  },
+  {
+    "path": "apps/sync-reference/src/task-delete-runner.ts",
+    "kind": "file",
+    "size": 6228,
+    "mode": 420,
+    "sha256": "d4be534e35e22d8d13b4f19fcd1dfeb210fc2b4160b5d303b8bcf5f4b0ed09b9"
+  },
+  {
+    "path": "apps/sync-reference/src/task-delete.integration.test.ts",
+    "kind": "file",
+    "size": 24764,
+    "mode": 420,
+    "sha256": "98eead8e6d5d29772184dd5f13305d5c6e92ae509a7aef1f7778377cb03f4d6b"
+  },
+  {
+    "path": "apps/sync-reference/src/task-delete.test.ts",
+    "kind": "file",
+    "size": 3112,
+    "mode": 420,
+    "sha256": "724c392e6eb55931b73761c6fe89a32c6991af7b182524ad67a2e82f6fdd073f"
+  },
+  {
+    "path": "apps/sync-reference/src/task-intent-admission.ts",
+    "kind": "file",
+    "size": 6185,
+    "mode": 420,
+    "sha256": "e6af76b58f675b4d3f1e99c95f5a6f306def870c6fed70d805cfb9741ff5d0ae"
+  },
+  {
+    "path": "apps/sync-reference/src/task-intent-model.ts",
+    "kind": "file",
+    "size": 2141,
+    "mode": 420,
+    "sha256": "6364d30581a6d2de8133b930f4d464421631e6d3a9d2e45d09ab6ae779ab0a03"
+  },
+  {
+    "path": "apps/sync-reference/src/task-intent-process-fixture.child.ts",
+    "kind": "file",
+    "size": 4218,
+    "mode": 420,
+    "sha256": "4d4de07c590f0cde57cfa21842fe1c5267d3ac0fb63a83ea73fe1e835a5f516f"
+  },
+  {
+    "path": "apps/sync-reference/src/task-intent-process.integration.test.ts",
+    "kind": "file",
+    "size": 20653,
+    "mode": 420,
+    "sha256": "17845c7835ee543cd89c5bd7c9d7fa4cdb620a627d2de9872140739a42a68069"
+  },
+  {
+    "path": "apps/sync-reference/src/task-intent-store.ts",
+    "kind": "file",
+    "size": 22687,
+    "mode": 420,
+    "sha256": "cceede5a8f116ff70289fc3a5719721e05d1f35fa91cd58bc3dcfde77c0e5f24"
+  },
+  {
+    "path": "apps/sync-reference/src/task-intent.integration.test.ts",
+    "kind": "file",
+    "size": 33929,
+    "mode": 420,
+    "sha256": "23afebd5bc23319b96cd4b2f3261914a9c11155a6aeb67cb9a6c2734a552edb4"
+  },
+  {
+    "path": "apps/sync-reference/src/task-intent.test.ts",
+    "kind": "file",
+    "size": 5250,
+    "mode": 420,
+    "sha256": "a20c2cbe24dac9ef75ef61f02370f459a26983a2fb4041550e2e61df34e49f27"
+  },
+  {
+    "path": "apps/sync-reference/src/task-model.ts",
+    "kind": "file",
+    "size": 2700,
+    "mode": 420,
+    "sha256": "64dd90d086748e43d573fb57131243496f4504ade153a560dc36345ee6a125af"
+  },
+  {
+    "path": "apps/sync-reference/src/task-process-fixture.child.ts",
+    "kind": "file",
+    "size": 3690,
+    "mode": 420,
+    "sha256": "56bd4d4478e5abe935ec0b60d16b3275d114709a8b7574731344c94198724720"
+  },
+  {
+    "path": "apps/sync-reference/src/task-runner.test.ts",
+    "kind": "file",
+    "size": 4614,
+    "mode": 420,
+    "sha256": "b56c2aeb599ac50e9f5d955cfecfd3f52c1668bea26ac0097b8f193bfe357cb5"
+  },
+  {
+    "path": "apps/sync-reference/src/task-runner.ts",
+    "kind": "file",
+    "size": 6562,
+    "mode": 420,
+    "sha256": "6a79e2c126ab99b446bf867a5993ad08f6b517dced14cb3127230316f46b21f5"
+  },
+  {
+    "path": "apps/sync-reference/src/task-store.ts",
+    "kind": "file",
+    "size": 81624,
+    "mode": 420,
+    "sha256": "3fe8f0925ecde6636ae52493dc0aaf711c9e7b50ffcc2228fd6f75dcf3b0a83a"
+  },
+  {
+    "path": "apps/sync-reference/src/task-update-process.integration.test.ts",
+    "kind": "file",
+    "size": 18022,
+    "mode": 420,
+    "sha256": "ddd376162dd4b3b5a6952a50eec611171ce6abd05970939d1fc974768d9724f3"
+  },
+  {
+    "path": "apps/sync-reference/src/task-update.integration.test.ts",
+    "kind": "file",
+    "size": 32322,
+    "mode": 420,
+    "sha256": "74a30c1e9323b86c9bd755e89b509e2e0e7f303c3a24e438a9d7749c16659051"
+  },
+  {
+    "path": "apps/sync-reference/tsconfig.json",
+    "kind": "file",
+    "size": 294,
+    "mode": 420,
+    "sha256": "6ed9929435bc944fa2ab7cbb8a5c406d58de6f1cf73c0e596c19f3b63a70412f"
+  },
+  {
+    "path": "docs/protocol/sync-operation-v1.md",
+    "kind": "file",
+    "size": 18280,
+    "mode": 420,
+    "sha256": "88f64c1f1de7390f745ff87c8cb6147459c33929959eca50157989ba89bac86b"
+  },
+  {
+    "path": "docs/protocol/sync-profile-v1.md",
+    "kind": "file",
+    "size": 18759,
+    "mode": 420,
+    "sha256": "685f628ab38670328f6d9c3c42a44b7a5fbb5bdc9de95ff2b058b8584a456564"
+  },
+  {
+    "path": "docs/research/nylas/10-source-inventory.md",
+    "kind": "file",
+    "size": 27836,
+    "mode": 420,
+    "sha256": "b31495ade39c65e17d3fb77d381b4706277c2bada0b9a01192d99bece8dc9f23"
+  },
+  {
+    "path": "docs/research/nylas/references/link-check-2026-10-12.json",
+    "kind": "file",
+    "size": 27008,
+    "mode": 420,
+    "sha256": "6831ab8ef11f6f9a5683813762e1de3c5140ad5c44cc054c62f1122e617cfd33"
+  },
+  {
+    "path": "docs/research/nylas/references/nylas-sitemap-2026-10-12.xml",
+    "kind": "file",
+    "size": 204129,
+    "mode": 420,
+    "sha256": "8ef66e009f2af158a10c75e3d76e5174cdf46bbab86a47f771f8c964d2f99147"
+  },
+  {
+    "path": "docs/research/nylas/references/source-manifest.json",
+    "kind": "file",
+    "size": 269603,
+    "mode": 420,
+    "sha256": "a4c5b75e2b032968ce116143e3c6f8d13fb49351ab8db37e902d9f5cc15e683b"
+  },
+  {
+    "path": "docs/sync-alpha/README.md",
+    "kind": "file",
+    "size": 4625,
+    "mode": 420,
+    "sha256": "0c3913807a9b0ace5acb32eb35ddaefeff97009f2e3c3b85632161a8aab35a5f"
+  },
+  {
+    "path": "docs/sync-alpha/compatibility.md",
+    "kind": "file",
+    "size": 2900,
+    "mode": 420,
+    "sha256": "caf8bad9edffe36410aec5151888ef4a1d51f012b30ea59c05c99e10ee5ca494"
+  },
+  {
+    "path": "docs/sync-alpha/host-database.md",
+    "kind": "file",
+    "size": 2692,
+    "mode": 420,
+    "sha256": "960bc00fa697b1a32797a598add8521a4e5c73939c6076c6fefbd3bf56e485e1"
+  },
+  {
+    "path": "docs/sync-alpha/provenance.md",
+    "kind": "file",
+    "size": 1514,
+    "mode": 420,
+    "sha256": "45f83ba616dc458a64808f4ed344cfe76e1ba15d7fb550330b636e5bde9421d5"
+  },
+  {
+    "path": "docs/sync-alpha/security-and-support.md",
+    "kind": "file",
+    "size": 2889,
+    "mode": 420,
+    "sha256": "d9ad48630633993b4d8a575ab1cb2881f12bf83bb8809c25096995e516b755a5"
+  },
+  {
+    "path": "docs/sync-alpha/supported-matrix.v1.json",
+    "kind": "file",
+    "size": 20791,
+    "mode": 420,
+    "sha256": "a274bb9129e0a3b1b57cc63068a8e9e2b5ba6870c94a2e6b1daa3f0fd351fe46"
+  },
+  {
+    "path": "docs/sync-alpha/supported-profiles.md",
+    "kind": "file",
+    "size": 5910,
+    "mode": 420,
+    "sha256": "7dc8495e1c7e8c601d474e9762bb3f9571f44385e2efb88151bcb1e1aa8fe83f"
+  },
+  {
+    "path": "package.json",
+    "kind": "file",
+    "size": 17012,
+    "mode": 420,
+    "sha256": "884d9a7dc700500c5f2a0b8e5287f3d005b4aefd5013a6a3e1f4bce1abaf9d13"
+  },
+  {
+    "path": "packages/provider-caldav/README.md",
+    "kind": "file",
+    "size": 5475,
+    "mode": 420,
+    "sha256": "04b29781a8a82765528afe950544ba85ba63d362e695c8b2c99b35fd399e07e9"
+  },
+  {
+    "path": "packages/provider-caldav/package.json",
+    "kind": "file",
+    "size": 729,
+    "mode": 420,
+    "sha256": "990191f4c19b6eb40f6049fb4a28fa3476d3bfcece06e0dd7b10841c4f887db9"
+  },
+  {
+    "path": "packages/provider-caldav/src/create.test.ts",
+    "kind": "file",
+    "size": 18299,
+    "mode": 420,
+    "sha256": "b17d03d298c36da01f0d264842a7a6bf03dce6d7e0b8a143ec1029d3f6c19135"
+  },
+  {
+    "path": "packages/provider-caldav/src/create.ts",
+    "kind": "file",
+    "size": 13882,
+    "mode": 420,
+    "sha256": "17602a8e328c62d9be9d555fedaa6e9129ba15188b3a7f3c67b594106ec3e12a"
+  },
+  {
+    "path": "packages/provider-caldav/src/dav-privileges.ts",
+    "kind": "file",
+    "size": 5774,
+    "mode": 420,
+    "sha256": "b8a56d6facf7f6f026d1276ec5a695dd40e941e2d877e7da83f75f19529c2f64"
+  },
+  {
+    "path": "packages/provider-caldav/src/dav-properties.ts",
+    "kind": "file",
+    "size": 18947,
+    "mode": 420,
+    "sha256": "f6fd04a42bb8931c47f149cda1939b74152ec431d399303e32d3a04bacff046a"
+  },
+  {
+    "path": "packages/provider-caldav/src/http-dispatch.ts",
+    "kind": "file",
+    "size": 1992,
+    "mode": 420,
+    "sha256": "5af62f481bf5c52a504462efea0e6ff6eb33ded26ae55efcb6e1598d3326e12f"
+  },
+  {
+    "path": "packages/provider-caldav/src/index.test.ts",
+    "kind": "file",
+    "size": 26962,
+    "mode": 420,
+    "sha256": "5f98aa2cc9c203289b19b7f65f77b57063feebad40f2c5805656354fddd87589"
+  },
+  {
+    "path": "packages/provider-caldav/src/index.ts",
+    "kind": "file",
+    "size": 12232,
+    "mode": 420,
+    "sha256": "23086681e8d2b6a436aa473dc65c72df802c696e214ed50d4cc2630a04b94ba7"
+  },
+  {
+    "path": "packages/provider-caldav/src/native-etag.ts",
+    "kind": "file",
+    "size": 249,
+    "mode": 420,
+    "sha256": "ebfe1019d7af4ce7723f99f925a1c7d8217a42df594a66ef29133b40eefb3053"
+  },
+  {
+    "path": "packages/provider-caldav/src/native-event.ts",
+    "kind": "file",
+    "size": 6499,
+    "mode": 420,
+    "sha256": "982e9647889252967546a4aef7251f2af14f11f5f750381b1aab4667bf999c8d"
+  },
+  {
+    "path": "packages/provider-caldav/src/network-origin.ts",
+    "kind": "file",
+    "size": 3447,
+    "mode": 420,
+    "sha256": "78371b2c0d37c22243f53ac7669d51f8fcdc6d004d175091441ded8c6684db7a"
+  },
+  {
+    "path": "packages/provider-caldav/src/network.ts",
+    "kind": "file",
+    "size": 4589,
+    "mode": 420,
+    "sha256": "55ee2d4e0b8e8b479e6251a75fb1958164b912ea1dd9a0e782a1cf768c646936"
+  },
+  {
+    "path": "packages/provider-caldav/src/types.ts",
+    "kind": "file",
+    "size": 5322,
+    "mode": 420,
+    "sha256": "badbb637e1922dc969a51b43381c83c3b312c8f0e927761d4b54518eae130f5c"
+  },
+  {
+    "path": "packages/provider-google/README.md",
+    "kind": "file",
+    "size": 5562,
+    "mode": 420,
+    "sha256": "344dbdf802f11220a52277c6f00b953c8210754dbe9d59233415b51e30a422fc"
+  },
+  {
+    "path": "packages/provider-google/package.json",
+    "kind": "file",
+    "size": 370,
+    "mode": 420,
+    "sha256": "e626909d52736f8ae11b279c2a0c70ee6ecc5e421ae9915562b567ba19bb407c"
+  },
+  {
+    "path": "packages/provider-google/src/create.test.ts",
+    "kind": "file",
+    "size": 16710,
+    "mode": 420,
+    "sha256": "f62f60ee19cd75c13c165082c0f374b5b13d6d7187f19a7fe457f856094ae6dd"
+  },
+  {
+    "path": "packages/provider-google/src/delete.test.ts",
+    "kind": "file",
+    "size": 9073,
+    "mode": 420,
+    "sha256": "11a1f0105e916666da99031c88f54cfd973f8462e325329b113d1b4744c876d6"
+  },
+  {
+    "path": "packages/provider-google/src/etag.ts",
+    "kind": "file",
+    "size": 246,
+    "mode": 420,
+    "sha256": "c7dfff7a8c1253c30f23c41ae6e6048f91e0ce4cd76e8e70998212c183c16a80"
+  },
+  {
+    "path": "packages/provider-google/src/http-dispatch.ts",
+    "kind": "file",
+    "size": 1992,
+    "mode": 420,
+    "sha256": "5af62f481bf5c52a504462efea0e6ff6eb33ded26ae55efcb6e1598d3326e12f"
+  },
+  {
+    "path": "packages/provider-google/src/index.test.ts",
+    "kind": "file",
+    "size": 20663,
+    "mode": 420,
+    "sha256": "021d596df7184e5c074d65e4f7735c601f4e0921db902fd97341503b1f8ef360"
+  },
+  {
+    "path": "packages/provider-google/src/index.ts",
+    "kind": "file",
+    "size": 34429,
+    "mode": 420,
+    "sha256": "52cd14888c9bb0eee4469b603e134b12eab8b29fa8b71a43e459e65430b673e7"
+  },
+  {
+    "path": "packages/provider-google/src/task-create-types.ts",
+    "kind": "file",
+    "size": 1867,
+    "mode": 420,
+    "sha256": "34eefc86d74cdb2b6d4abd6d74e8d7f2d08858fb5b995c9adc29db606a8f5005"
+  },
+  {
+    "path": "packages/provider-google/src/task-create.test.ts",
+    "kind": "file",
+    "size": 21978,
+    "mode": 420,
+    "sha256": "0d579c52ab780271a902b279bc50231d12647a5e594fb1f1e75ba88254a3e26b"
+  },
+  {
+    "path": "packages/provider-google/src/task-create.ts",
+    "kind": "file",
+    "size": 11011,
+    "mode": 420,
+    "sha256": "4a981bc323a48c327e52ada540dbdb08b5536cebd8e0568738f891691e4cc524"
+  },
+  {
+    "path": "packages/provider-google/src/task-delete-types.ts",
+    "kind": "file",
+    "size": 2942,
+    "mode": 420,
+    "sha256": "ec2a7ccbc7e90392598d452bb995331ea48b9113067e3514b563fb15254deb0e"
+  },
+  {
+    "path": "packages/provider-google/src/task-delete.test.ts",
+    "kind": "file",
+    "size": 15079,
+    "mode": 420,
+    "sha256": "84a2df4047833ab29f585711424f34b84ebc79b9f1d17854216378499da7c73d"
+  },
+  {
+    "path": "packages/provider-google/src/task-delete.ts",
+    "kind": "file",
+    "size": 4529,
+    "mode": 420,
+    "sha256": "9df724d9d3eb096e8b19a081b5a06065719e828b35e983d0ff0e6798e813f570"
+  },
+  {
+    "path": "packages/provider-google/src/task-projection.ts",
+    "kind": "file",
+    "size": 7128,
+    "mode": 420,
+    "sha256": "1052ad2f12005a61f2d9099b7229147ab1ad0d442737adf19d91e1c0decb1268"
+  },
+  {
+    "path": "packages/provider-google/src/task-transport.ts",
+    "kind": "file",
+    "size": 8143,
+    "mode": 420,
+    "sha256": "ff5462aa8ab74dfbf35ac501aee866a04e5036763e7e0dbd705cc423fcdad990"
+  },
+  {
+    "path": "packages/provider-google/src/task-types.ts",
+    "kind": "file",
+    "size": 4608,
+    "mode": 420,
+    "sha256": "4df53ef465d559e5ccf3158bafd59db1aab8143fe647afe80134c3fb8cd85458"
+  },
+  {
+    "path": "packages/provider-google/src/task-update.test.ts",
+    "kind": "file",
+    "size": 18644,
+    "mode": 420,
+    "sha256": "136aa5c2df658ed4ddd42415c0ae18a8ac631ea16e4cdccfa5cf47aa75edece1"
+  },
+  {
+    "path": "packages/provider-google/src/task-update.ts",
+    "kind": "file",
+    "size": 4297,
+    "mode": 420,
+    "sha256": "ef5f625cf07acdfb98fc5048f7d9a008a43016086a2e8df6b56ff978fb7ae916"
+  },
+  {
+    "path": "packages/provider-google/src/types.ts",
+    "kind": "file",
+    "size": 7556,
+    "mode": 420,
+    "sha256": "24dd6ed261cdac77e6cf3cee1ed60e7333e3df24671df13cdd0de1d5223f8e1e"
+  },
+  {
+    "path": "packages/provider-microsoft/README.md",
+    "kind": "file",
+    "size": 3403,
+    "mode": 420,
+    "sha256": "4af1b5c9b8c63cc6213608e57e1144854ea4ba85be1452787dbf4e18b2a1e375"
+  },
+  {
+    "path": "packages/provider-microsoft/package.json",
+    "kind": "file",
+    "size": 417,
+    "mode": 420,
+    "sha256": "8dc49e4250d95e4983abb8d5162d2e65830940e5238987980889d93e291d2082"
+  },
+  {
+    "path": "packages/provider-microsoft/src/create.test.ts",
+    "kind": "file",
+    "size": 19973,
+    "mode": 420,
+    "sha256": "59498c8eb6971f5590151b205e0e3ec33551215a165878a277764f9ea6753606"
+  },
+  {
+    "path": "packages/provider-microsoft/src/create.ts",
+    "kind": "file",
+    "size": 15071,
+    "mode": 420,
+    "sha256": "cbe3b40d62711eb82a4fd128fb860abf1cbc2b160029eb0731521eda2a41ce1a"
+  },
+  {
+    "path": "packages/provider-microsoft/src/http-dispatch.ts",
+    "kind": "file",
+    "size": 1992,
+    "mode": 420,
+    "sha256": "5af62f481bf5c52a504462efea0e6ff6eb33ded26ae55efcb6e1598d3326e12f"
+  },
+  {
+    "path": "packages/provider-microsoft/src/index.test.ts",
+    "kind": "file",
+    "size": 22624,
+    "mode": 420,
+    "sha256": "9fcb7856cff94c490bebd8ae27bfdc098bdfd45aa796fc24b9c119728147d350"
+  },
+  {
+    "path": "packages/provider-microsoft/src/index.ts",
+    "kind": "file",
+    "size": 15135,
+    "mode": 420,
+    "sha256": "0b071dd020d460e26be468e1a600ad1102b730d84ce4a37c0ad93e9e85759d92"
+  },
+  {
+    "path": "packages/provider-microsoft/src/types.ts",
+    "kind": "file",
+    "size": 5901,
+    "mode": 420,
+    "sha256": "85191dcdf336061f872adda3ad72f042cc3833ab63b2c18231e7531890cf97f6"
+  },
+  {
+    "path": "packages/sync-codec/README.md",
+    "kind": "file",
+    "size": 2086,
+    "mode": 420,
+    "sha256": "ddca258aad1147530e0ab2e203864fdaba908f49fdee22ccdc36d31b63e4a989"
+  },
+  {
+    "path": "packages/sync-codec/package.json",
+    "kind": "file",
+    "size": 410,
+    "mode": 420,
+    "sha256": "58f9d2d899e46fbbf01ba95a0f40e67fbaeb2b02b6cd01b3631a42ee6ca5d93f"
+  },
+  {
+    "path": "packages/sync-codec/src/caldav_resource.ts",
+    "kind": "file",
+    "size": 4589,
+    "mode": 420,
+    "sha256": "661436594b6e8099a574f144099aa1007efc0c2b5d2589d192014e55af5a10af"
+  },
+  {
+    "path": "packages/sync-codec/src/index.test.ts",
+    "kind": "file",
+    "size": 12875,
+    "mode": 420,
+    "sha256": "541343bee8560623fcea3f2ca6d6a68a2f57613ee5b9db0568945e8350a2192d"
+  },
+  {
+    "path": "packages/sync-codec/src/index.ts",
+    "kind": "file",
+    "size": 20830,
+    "mode": 420,
+    "sha256": "885d85ddc289f898741af6850d5b79ef3f52356cb7fef8cdfcb318c29fc3c72e"
+  },
+  {
+    "path": "packages/sync-codec/src/native_plan.ts",
+    "kind": "file",
+    "size": 10731,
+    "mode": 420,
+    "sha256": "fa5bc905c26e17be580605bbb42d43c94f44a6a5420c7e0be9d7fdcd65e8819b"
+  },
+  {
+    "path": "packages/sync-codec/src/projection.ts",
+    "kind": "file",
+    "size": 9034,
+    "mode": 420,
+    "sha256": "02389a49222a077aba065c0bb7c3899a11ddbac43cf43e5028dc235bb0033df6"
+  },
+  {
+    "path": "packages/sync-codec/src/recurrence.ts",
+    "kind": "file",
+    "size": 3803,
+    "mode": 420,
+    "sha256": "ff5bfb8a3f53a310eb7aa185e4f03de982917267a9c37d3443786945ec8d3344"
+  },
+  {
+    "path": "packages/sync-codec/src/recurrence_dates.ts",
+    "kind": "file",
+    "size": 764,
+    "mode": 420,
+    "sha256": "d9b661dde4f248fd071a63d43e6ba0e243e5cbe5d404e719b6900dda151adb7e"
+  },
+  {
+    "path": "packages/sync-runtime/README.md",
+    "kind": "file",
+    "size": 4665,
+    "mode": 420,
+    "sha256": "ef1471064e6d6a2967b1398f78b5931cc980fb568523099a8e5918b80efba6c7"
+  },
+  {
+    "path": "packages/sync-runtime/package.json",
+    "kind": "file",
+    "size": 3139,
+    "mode": 420,
+    "sha256": "bc0490a0f08afc03b67bc410ec47434c2c60f8ec2247bad84ba7f42b84a6e2f7"
+  },
+  {
+    "path": "packages/sync-runtime/src/attempt.ts",
+    "kind": "file",
+    "size": 2996,
+    "mode": 420,
+    "sha256": "ce9f3f10d426672e76c4fbefd206079589119503edb028994b7f0a11af73e32b"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/caldav-create-cli.ts",
+    "kind": "file",
+    "size": 2918,
+    "mode": 420,
+    "sha256": "c8a3ffc1fb6f42c691a11397e18be2d50c270eca81f9846e51c2dc003acdd3db"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/caldav-create-harness.test.ts",
+    "kind": "file",
+    "size": 9205,
+    "mode": 420,
+    "sha256": "03fca02b07fe09ac0ca55689d58af42a31e018ca66a6a6b8383c44ee76a1c927"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/caldav-create.json",
+    "kind": "file",
+    "size": 176602,
+    "mode": 420,
+    "sha256": "7acd9e4c3b761b0c50f6749b9208d6e8d81c48ed935f964d62409f35bbfaceb5"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/caldav-create.ts",
+    "kind": "file",
+    "size": 22652,
+    "mode": 420,
+    "sha256": "8d4b929e9c19622dabcdf85add7210dd693c03120546ce971521e951d46d9d21"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/caldav-delete-cli.ts",
+    "kind": "file",
+    "size": 2918,
+    "mode": 420,
+    "sha256": "5bc232426e0d697294269bea71147152343fa1026c92a4bbb4136ce04520f372"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/caldav-delete-harness.test.ts",
+    "kind": "file",
+    "size": 8817,
+    "mode": 420,
+    "sha256": "b139a1a576fd9f750992e88f57647f94cc7e11416096ad98de50f923b83bdf2e"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/caldav-delete.json",
+    "kind": "file",
+    "size": 136718,
+    "mode": 420,
+    "sha256": "116c9372eddf141ff887ecc2678a0cedd4d07c6cf0a0d0da978290f9851496bb"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/caldav-delete.ts",
+    "kind": "file",
+    "size": 18311,
+    "mode": 420,
+    "sha256": "f2cfd2cb072ef7c4e31652a7d50976d9649d1569b47154af71fa8a36c639e463"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/cli.ts",
+    "kind": "file",
+    "size": 2930,
+    "mode": 420,
+    "sha256": "8229088d4da8be5faa9b6104dc3635c567053e4cdc806dd6bdb2d941f1b6a590"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/create-cli.ts",
+    "kind": "file",
+    "size": 2894,
+    "mode": 420,
+    "sha256": "282adb510e66d47705cb596a5c3a7ebf41e9c6a13a44ee550be226697b324c12"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/create-harness.test.ts",
+    "kind": "file",
+    "size": 6888,
+    "mode": 420,
+    "sha256": "30a6b984dcbe626ee9688e10d56a7b94f290d7ee29b7fd88829e7aedf8235106"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/fair-work-cli.ts",
+    "kind": "file",
+    "size": 2119,
+    "mode": 420,
+    "sha256": "32474675bea500602a972b1f0038a045f76f58b423e4ec4558f89e61af40084f"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/fair-work.json",
+    "kind": "file",
+    "size": 4801,
+    "mode": 420,
+    "sha256": "fbcb491f24b88f525d9511bfdff7aae1fd84edd0f04c361b5749ffdc6572b015"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/fair-work.ts",
+    "kind": "file",
+    "size": 30124,
+    "mode": 420,
+    "sha256": "7bc1e267af5c1b2bfb01714e17b1f5dcb2928daec5335921ea95125a7bf7c58f"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-create.json",
+    "kind": "file",
+    "size": 29410,
+    "mode": 420,
+    "sha256": "2c65a31e6cb60a137a1a0fc2d1b2b2987c797d408a839fd58981be3dc02ed13d"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-create.ts",
+    "kind": "file",
+    "size": 15758,
+    "mode": 420,
+    "sha256": "81c08909c6399aa5d62a4c901c605ec64f6915229b57e66b4cbbd4a68f826368"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-delete.json",
+    "kind": "file",
+    "size": 16355,
+    "mode": 420,
+    "sha256": "1d92ac85153a394ee6cba5675681fb77814f6c40d63678bc8d8a5e9b1ae1553a"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-delete.ts",
+    "kind": "file",
+    "size": 14686,
+    "mode": 420,
+    "sha256": "14e66287b9b12768dc8ab8be8cb5e7038632624136b2516d1f24c6adfb0116d0"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-task-create-cli.ts",
+    "kind": "file",
+    "size": 2954,
+    "mode": 420,
+    "sha256": "ad102fc4eaa16ecde9b41dbae83567d4d6063fbb8c173e34ef2264d0ad0ab083"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-task-create-harness.test.ts",
+    "kind": "file",
+    "size": 5545,
+    "mode": 420,
+    "sha256": "781e3f004ea0c4d551c5ffb3998676dbe334632e460712db67d756a50c7423b7"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-task-create.json",
+    "kind": "file",
+    "size": 131492,
+    "mode": 420,
+    "sha256": "493b4901214fb4e3ba5c6389358affdadab02cac690c6d4aeff2738a90a81017"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-task-create.ts",
+    "kind": "file",
+    "size": 24750,
+    "mode": 420,
+    "sha256": "01a70c7612beffddcf669ef5fae642d63f5b7a02474634c8974a7abc6e743b84"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-task-delete-cli.ts",
+    "kind": "file",
+    "size": 2954,
+    "mode": 420,
+    "sha256": "a87b8004bff876f5e7c266a32ecaec0556f49005e2b5a2a36157aee0d35a441e"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-task-delete-harness.test.ts",
+    "kind": "file",
+    "size": 3651,
+    "mode": 420,
+    "sha256": "9900a63617985f70f267427d6f684bec40b20e5fa7b8fd9b19306840f0ff9168"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-task-delete.json",
+    "kind": "file",
+    "size": 223656,
+    "mode": 420,
+    "sha256": "4f9654f32b4a3559aec807862144518a1590c3935f2b9e3776767f27dfac61c8"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-task-delete.ts",
+    "kind": "file",
+    "size": 23383,
+    "mode": 420,
+    "sha256": "358917be17944ce58c439e3182e128813a064cabc086033f682510f4dcece777"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-task-update-cli.ts",
+    "kind": "file",
+    "size": 2954,
+    "mode": 420,
+    "sha256": "84f7d25efaa5abdc559a8e7d89d7eb0d301016651e9734af9faa1ce4b603d6c7"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-task-update-harness.test.ts",
+    "kind": "file",
+    "size": 3675,
+    "mode": 420,
+    "sha256": "154428824edc6ae798a865a0005ed1a490c0a816174a2c75680dd72748dc3139"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-task-update.json",
+    "kind": "file",
+    "size": 170245,
+    "mode": 420,
+    "sha256": "37eafdf5504bdff0eeadf6ca8a9f2203a4ebaa5a984819246626eba8bddb6dc9"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-task-update.ts",
+    "kind": "file",
+    "size": 19811,
+    "mode": 420,
+    "sha256": "7c6867c86b3dfd0e4446ba25a52507296e05f1dd62b3a3673fa652d1644c39ff"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-update-cli.ts",
+    "kind": "file",
+    "size": 2918,
+    "mode": 420,
+    "sha256": "c0e6e26319ee32cc8cc1a08c29377895042a59751bc85ce9ddf6f61921c24418"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-update-harness.test.ts",
+    "kind": "file",
+    "size": 2365,
+    "mode": 420,
+    "sha256": "d84e08bd7bb45f3e43b6fb1ce6a15c40eb17d82e6e588b1ae8fef6ccbc00dced"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-update.json",
+    "kind": "file",
+    "size": 15381,
+    "mode": 420,
+    "sha256": "58d39bac2dbecceffd639af91636aec50a9d2e4cf810dd63c27f7879f6218952"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/google-update.ts",
+    "kind": "file",
+    "size": 11378,
+    "mode": 420,
+    "sha256": "3fe3f9d01fc1a798918d08023156afeae304f6fa833f58db6756a7dd97cebcc3"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/harness.test.ts",
+    "kind": "file",
+    "size": 4490,
+    "mode": 420,
+    "sha256": "067f07c88ddb0be1fa3a8e33acf71fcb054ac430dc87adc0666490c65743f81a"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/microsoft-create-cli.ts",
+    "kind": "file",
+    "size": 2942,
+    "mode": 420,
+    "sha256": "0e61ecbe42eb0fac551ef5c13941e9c3b7d7606f26b5871cc7748e2ffd319532"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/microsoft-create-harness.test.ts",
+    "kind": "file",
+    "size": 8892,
+    "mode": 420,
+    "sha256": "7d72df27e0eb40927e127fc75593a73ed58d8901d117adc78996d6a0a6a6daae"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/microsoft-create.json",
+    "kind": "file",
+    "size": 196077,
+    "mode": 420,
+    "sha256": "9fbfda15f4d9d0a7f78faead1c7c9120e334baa4fbfa090e83cf0eb2015d332c"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/microsoft-create.ts",
+    "kind": "file",
+    "size": 22402,
+    "mode": 420,
+    "sha256": "7ce74ffa6acf9dbe05abc38a521f2b9a405248ae34d9e5cc36e3e188fbe6b87e"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/microsoft-delete-cli.ts",
+    "kind": "file",
+    "size": 2942,
+    "mode": 420,
+    "sha256": "4255096f7211c4989e638ed1f6208f7f15629ec76f152e6d079d8d96802a2aed"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/microsoft-delete-harness.test.ts",
+    "kind": "file",
+    "size": 8298,
+    "mode": 420,
+    "sha256": "0185567e5d6a6f86438ac6486abc780355ba49638135b80a835e0c9a211a0e54"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/microsoft-delete.json",
+    "kind": "file",
+    "size": 135696,
+    "mode": 420,
+    "sha256": "bc636ab2e844a7df433c73de5c8d00b047e72ed494be18c76c86b6fc126fda3d"
+  },
+  {
+    "path": "packages/sync-runtime/src/behavior/microsoft-delete.ts",
+    "kind": "file",
+    "size": 18543,
+    "mode": 420,
+    "sha256": "6507cf72d675653a4738df89922169f49f4a93a7f5931c5629178eeb5639c51d"
+  },
+  {
+    "path": "packages/sync-runtime/src/caldav-create-ports.ts",
+    "kind": "file",
+    "size": 5697,
+    "mode": 420,
+    "sha256": "3bf414745d9662235f8a689f2391b439515e8b2f5972bb923990bbfce36b65eb"
+  },
+  {
+    "path": "packages/sync-runtime/src/caldav-create-trace.ts",
+    "kind": "file",
+    "size": 3345,
+    "mode": 420,
+    "sha256": "91ebc2ebb1799ccfb37e2a34b9820ec1296fa2478521fa5b0a6316630801df06"
+  },
+  {
+    "path": "packages/sync-runtime/src/caldav-create.test.ts",
+    "kind": "file",
+    "size": 19439,
+    "mode": 420,
+    "sha256": "2043aaaa296287444ab6197814e0da74c6da35b0a176f83352b31eb470df75f0"
+  },
+  {
+    "path": "packages/sync-runtime/src/caldav-delete-ports.ts",
+    "kind": "file",
+    "size": 5277,
+    "mode": 420,
+    "sha256": "32beb2acdfb979e6e3c8cc34df077dcb7ba2e98a78169c4b4ad29ee3f8f8483e"
+  },
+  {
+    "path": "packages/sync-runtime/src/caldav-delete-trace.ts",
+    "kind": "file",
+    "size": 2709,
+    "mode": 420,
+    "sha256": "abeadcee2330d0b56b2b5841139f8a6ddaa94a2d9a5ffcbbdf4c86491a6a96a2"
+  },
+  {
+    "path": "packages/sync-runtime/src/caldav-delete.test.ts",
+    "kind": "file",
+    "size": 15665,
+    "mode": 420,
+    "sha256": "971eb583a7a700ec9b594d2e0346bf7dd32dc8ea70154a9daa124e8e72ac69e6"
+  },
+  {
+    "path": "packages/sync-runtime/src/caldav-personal-create.ts",
+    "kind": "file",
+    "size": 22425,
+    "mode": 420,
+    "sha256": "715af79b85afa467058e4b941fe22cedf129a5bbe5bb22d45cdfb65a5e72a72a"
+  },
+  {
+    "path": "packages/sync-runtime/src/caldav-personal-delete.ts",
+    "kind": "file",
+    "size": 22698,
+    "mode": 420,
+    "sha256": "e635706738c60cf728fe66345e47ff8821b84f9c85403e2e35ffd60413fea606"
+  },
+  {
+    "path": "packages/sync-runtime/src/create-ports.ts",
+    "kind": "file",
+    "size": 4875,
+    "mode": 420,
+    "sha256": "02a3b7546a77232708efcaf682b09f887578640e46a78b373c3d8db589686a10"
+  },
+  {
+    "path": "packages/sync-runtime/src/create-trace.ts",
+    "kind": "file",
+    "size": 3306,
+    "mode": 420,
+    "sha256": "dbc335be6b215a2a296e8ffb9b7e6023507ea12050a9e0b94030e9afeb228066"
+  },
+  {
+    "path": "packages/sync-runtime/src/create.test.ts",
+    "kind": "file",
+    "size": 18556,
+    "mode": 420,
+    "sha256": "4b874a803d948625f71074cc618d4381b4e1000a13f26bbee087dc06832d1653"
+  },
+  {
+    "path": "packages/sync-runtime/src/delete-ports.ts",
+    "kind": "file",
+    "size": 4744,
+    "mode": 420,
+    "sha256": "4d9b95f34e36bf805530b522fe6436200c333b2bee0f32b7bd956094d1fcf251"
+  },
+  {
+    "path": "packages/sync-runtime/src/delete-trace.ts",
+    "kind": "file",
+    "size": 3360,
+    "mode": 420,
+    "sha256": "4a56ab29c2b71e1e9b6db964bf2972066ba6a3486d69ea35576c4dbc2ad7f695"
+  },
+  {
+    "path": "packages/sync-runtime/src/delete.test.ts",
+    "kind": "file",
+    "size": 24870,
+    "mode": 420,
+    "sha256": "763c356cf71560fd0995aeaa2edd9d0e4bf62c4f4c61d93690c1cc081bfc4f82"
+  },
+  {
+    "path": "packages/sync-runtime/src/event-compatibility-ports.ts",
+    "kind": "file",
+    "size": 8252,
+    "mode": 420,
+    "sha256": "2b8a3aab28eb9f693c4a096b4731e0c408006fddac7bbfb3627c537d992a6896"
+  },
+  {
+    "path": "packages/sync-runtime/src/event-compatibility-types.ts",
+    "kind": "file",
+    "size": 1836,
+    "mode": 420,
+    "sha256": "c484e06f3c1524a0f0eaa1f3c4b5349fbdf74814527583c166c08c15b4b4bb2b"
+  },
+  {
+    "path": "packages/sync-runtime/src/event-compatibility.test.ts",
+    "kind": "file",
+    "size": 17502,
+    "mode": 420,
+    "sha256": "617ecefb230204ab0e167373cf49eac6c590c8e7c28ea800eafc0602090e9a70"
+  },
+  {
+    "path": "packages/sync-runtime/src/event-compatibility.ts",
+    "kind": "file",
+    "size": 19462,
+    "mode": 420,
+    "sha256": "bb7e196f4155a0923e4d77c56dbe51e72cef665ac1c994159ce41fabf7ec7980"
+  },
+  {
+    "path": "packages/sync-runtime/src/fair-work.test.ts",
+    "kind": "file",
+    "size": 14912,
+    "mode": 420,
+    "sha256": "8aee28c7327737a90c768747c693a20f9cbc4b0bb71416d80390db260357e16b"
+  },
+  {
+    "path": "packages/sync-runtime/src/fair-work.ts",
+    "kind": "file",
+    "size": 18101,
+    "mode": 420,
+    "sha256": "69d4f6d0c328d65018ca4562b506cfe75b015a16095efc1d5c986c89f16a963d"
+  },
+  {
+    "path": "packages/sync-runtime/src/google-personal-create.ts",
+    "kind": "file",
+    "size": 20023,
+    "mode": 420,
+    "sha256": "29b93340f6ac0381aecd42f365e9e1da8068a5dd6d86323e5ab3abaf8349085b"
+  },
+  {
+    "path": "packages/sync-runtime/src/google-personal-delete.ts",
+    "kind": "file",
+    "size": 21681,
+    "mode": 420,
+    "sha256": "a59d59911365dfe3b7f9cbf5a29ffab4d5e73fe1af4fa0868cae1647f63fdd53"
+  },
+  {
+    "path": "packages/sync-runtime/src/google-personal-update.ts",
+    "kind": "file",
+    "size": 23187,
+    "mode": 420,
+    "sha256": "934d24c746c4e599db18783fd8ae2543fbeb803f4a05781b891e39c13006b56e"
+  },
+  {
+    "path": "packages/sync-runtime/src/google-task-address-ports.ts",
+    "kind": "file",
+    "size": 1609,
+    "mode": 420,
+    "sha256": "5d14ea9066a1074fef8eb5a3ef7fea6f2020ddb991f05406d3ed80e2de4cc716"
+  },
+  {
+    "path": "packages/sync-runtime/src/google-task-causal.test.ts",
+    "kind": "file",
+    "size": 13930,
+    "mode": 420,
+    "sha256": "8c23ec6bf0047efb49cccbd0a4befe5bfd01eecb3abbfe5b09486ca6d02196ae"
+  },
+  {
+    "path": "packages/sync-runtime/src/google-task-create-ports.ts",
+    "kind": "file",
+    "size": 4364,
+    "mode": 420,
+    "sha256": "2408534fa0c8dcd8a305232d6d9b71925f21bc7c0bb2e9ad214da0ace6440b3a"
+  },
+  {
+    "path": "packages/sync-runtime/src/google-task-create.test.ts",
+    "kind": "file",
+    "size": 17101,
+    "mode": 420,
+    "sha256": "f58b095e00bb69e50c71ccdaea1401bc7e03f854ec3869b64edaef0d83d46973"
+  },
+  {
+    "path": "packages/sync-runtime/src/google-task-create.ts",
+    "kind": "file",
+    "size": 19791,
+    "mode": 420,
+    "sha256": "2adc3c911e4351e0a7b2cf55190a48d7b810e64cb146b08165fa5e106d0a1722"
+  },
+  {
+    "path": "packages/sync-runtime/src/google-task-delete-ports.ts",
+    "kind": "file",
+    "size": 5239,
+    "mode": 420,
+    "sha256": "4ffcca0004eb369647c4a87818c997c0a161c0be3afd7e2fe90b17ee2d9d402f"
+  },
+  {
+    "path": "packages/sync-runtime/src/google-task-delete.test.ts",
+    "kind": "file",
+    "size": 13435,
+    "mode": 420,
+    "sha256": "c4912cdfd7553201670da6820ac793ae10a2bc14e0701afed078c330cd12e4c4"
+  },
+  {
+    "path": "packages/sync-runtime/src/google-task-delete.ts",
+    "kind": "file",
+    "size": 19875,
+    "mode": 420,
+    "sha256": "edd464d0dddd493b7565a6dc4b6435a10ccf2eb8362ab793205bd0d3c393a567"
+  },
+  {
+    "path": "packages/sync-runtime/src/google-task-update-ports.ts",
+    "kind": "file",
+    "size": 4241,
+    "mode": 420,
+    "sha256": "869534c108e7fcd871deae6c53525565d22178d291f1cd9b6a356948fed5d587"
+  },
+  {
+    "path": "packages/sync-runtime/src/google-task-update.test.ts",
+    "kind": "file",
+    "size": 11535,
+    "mode": 420,
+    "sha256": "42ffd16a98527881fecd2d8799789a7b6b99d9812c9b063230c717f686d36106"
+  },
+  {
+    "path": "packages/sync-runtime/src/google-task-update.ts",
+    "kind": "file",
+    "size": 20261,
+    "mode": 420,
+    "sha256": "06a7ec9545a8933ed2ace6c0afe86bfb327b9bc9429f0678e330041e946d0500"
+  },
+  {
+    "path": "packages/sync-runtime/src/http-dispatch.ts",
+    "kind": "file",
+    "size": 1056,
+    "mode": 420,
+    "sha256": "dd893cdf98cb1683529fc17dd69c062aa66228ceca7f250366b9fe1c4e779b2e"
+  },
+  {
+    "path": "packages/sync-runtime/src/index.test.ts",
+    "kind": "file",
+    "size": 26002,
+    "mode": 420,
+    "sha256": "e9ed198da951f6916350fc554152b85685c6e8ee341a7dd0011d188443179487"
+  },
+  {
+    "path": "packages/sync-runtime/src/index.ts",
+    "kind": "file",
+    "size": 2174,
+    "mode": 420,
+    "sha256": "4c2a395cd7ee136e109b221607583a11c182d1592cb38891a4b3678fcad4ec1d"
+  },
+  {
+    "path": "packages/sync-runtime/src/microsoft-create-ports.ts",
+    "kind": "file",
+    "size": 6066,
+    "mode": 420,
+    "sha256": "66c5a24153cf726ca0cc2e5bf16e86ee8d943ce1fc5d9b6d1dd1fbac776e521d"
+  },
+  {
+    "path": "packages/sync-runtime/src/microsoft-create-trace.ts",
+    "kind": "file",
+    "size": 5048,
+    "mode": 420,
+    "sha256": "da606914f1e0d5660c9912d76a3b6974b4b7b740a6d2f21d0a85a1f01c57bb98"
+  },
+  {
+    "path": "packages/sync-runtime/src/microsoft-create.test.ts",
+    "kind": "file",
+    "size": 19169,
+    "mode": 420,
+    "sha256": "37bec70fe45318462a30e29cb833c93b9131e3ed6839147a9fd20d5c015e8143"
+  },
+  {
+    "path": "packages/sync-runtime/src/microsoft-delete-ports.ts",
+    "kind": "file",
+    "size": 5408,
+    "mode": 420,
+    "sha256": "012533184449590b087c6032b19b371b8dc0d4244cb2b904fa6f4aaeeb76bcbc"
+  },
+  {
+    "path": "packages/sync-runtime/src/microsoft-delete-trace.ts",
+    "kind": "file",
+    "size": 2748,
+    "mode": 420,
+    "sha256": "ad4c465f31d703f6c98ec1dc40f09b102dc40ec28f9012c9ff2b963c6f67a72f"
+  },
+  {
+    "path": "packages/sync-runtime/src/microsoft-delete.test.ts",
+    "kind": "file",
+    "size": 14032,
+    "mode": 420,
+    "sha256": "51817475a72395588f8a68c481987204bbd67fb93db5b0919768875a250b13b9"
+  },
+  {
+    "path": "packages/sync-runtime/src/microsoft-personal-create.ts",
+    "kind": "file",
+    "size": 21924,
+    "mode": 420,
+    "sha256": "b634f2d27cf1aa5bb3d779034823cbbfb8288eea75000a434c2449155c7d836f"
+  },
+  {
+    "path": "packages/sync-runtime/src/microsoft-personal-delete.ts",
+    "kind": "file",
+    "size": 24042,
+    "mode": 420,
+    "sha256": "bbf944c7d014fa88c75b7337acf0d9e75835bea7f975db65daeac2d487b2a08c"
+  },
+  {
+    "path": "packages/sync-runtime/src/ports.ts",
+    "kind": "file",
+    "size": 7715,
+    "mode": 420,
+    "sha256": "05d8f3bd83ceacc5061624e63e16bfb3a8386137adfab2dadc4caacc79bd6c35"
+  },
+  {
+    "path": "packages/sync-runtime/src/provider-budget.ts",
+    "kind": "file",
+    "size": 17178,
+    "mode": 420,
+    "sha256": "0e4e96d47ce20752a361b46872f21c20e18d29db8b2ac7a1fa080516cc092e47"
+  },
+  {
+    "path": "packages/sync-runtime/src/task-address.ts",
+    "kind": "file",
+    "size": 5102,
+    "mode": 420,
+    "sha256": "12cdacc777ea7db3f4bdf88659d881d8c85a8b2314e376c3cd8b6732b14cb9ba"
+  },
+  {
+    "path": "packages/sync-runtime/src/task-compatibility-data.ts",
+    "kind": "file",
+    "size": 2644,
+    "mode": 420,
+    "sha256": "f155490152e4b70e53c0667725bf428662485ac0425a326f56e062e09630b78b"
+  },
+  {
+    "path": "packages/sync-runtime/src/task-compatibility-ports.ts",
+    "kind": "file",
+    "size": 6019,
+    "mode": 420,
+    "sha256": "de8d70d6f2fc3e8ae15d78a94c8cd9b0d363ed5c5fad516bbe42f774e0973509"
+  },
+  {
+    "path": "packages/sync-runtime/src/task-compatibility.test.ts",
+    "kind": "file",
+    "size": 10395,
+    "mode": 420,
+    "sha256": "18684e6edb357605ad0a83c64f05abc1811c69791d95ca4b7cd26ce54306f5a0"
+  },
+  {
+    "path": "packages/sync-runtime/src/task-compatibility.ts",
+    "kind": "file",
+    "size": 8089,
+    "mode": 420,
+    "sha256": "c7ec6326ae0a5249ec9e25204d77215a5cff3f2610c6943787609c91d68c9da3"
+  },
+  {
+    "path": "packages/sync-runtime/src/task-data.ts",
+    "kind": "file",
+    "size": 3508,
+    "mode": 420,
+    "sha256": "68a94322af7609ace42ffc5ffe5a13e7226e32be859ce66f7d12a6c30040fa9b"
+  },
+  {
+    "path": "packages/sync-runtime/src/task-native-data.ts",
+    "kind": "file",
+    "size": 2450,
+    "mode": 420,
+    "sha256": "dd93c64c0a956caf180eea59dbb1ce1a69b5f1fdc99cec33719f82f8558b2db4"
+  },
+  {
+    "path": "packages/sync-runtime/src/task-projection.ts",
+    "kind": "file",
+    "size": 905,
+    "mode": 420,
+    "sha256": "930ca88b16933307ec16888a454070b0af049283c27ccc292e239a4deefe6692"
+  },
+  {
+    "path": "packages/sync-runtime/src/trace.ts",
+    "kind": "file",
+    "size": 5373,
+    "mode": 420,
+    "sha256": "df75db9c38769ca75ebfa02479f4a2e27e9f0b607cc7f544dd81ee49e48bbd3f"
+  },
+  {
+    "path": "packages/sync-runtime/tsconfig.json",
+    "kind": "file",
+    "size": 281,
+    "mode": 420,
+    "sha256": "6e8e3174f4042bcc298849b4b00edf95e4ddd2e4ead5225f1fb82db9ae411de8"
+  },
+  {
+    "path": "packages/types/contracts/wire.json",
+    "kind": "file",
+    "size": 211451,
+    "mode": 420,
+    "sha256": "e6a550b323e3fa2edfa7ea3509a849d975525f1934378ce237d034ce955f485f"
+  },
+  {
+    "path": "packages/types/package.json",
+    "kind": "file",
+    "size": 701,
+    "mode": 420,
+    "sha256": "565bbb77f8e3fcd8f0190cb397c914c0c97434019d37106666e66395e0304dca"
+  },
+  {
+    "path": "packages/types/src/announcement.test.ts",
+    "kind": "file",
+    "size": 5433,
+    "mode": 420,
+    "sha256": "00c71c4dd78401a711419fd94261bdc5b6b20525f88a2d44da33eabd457c8442"
+  },
+  {
+    "path": "packages/types/src/announcement.ts",
+    "kind": "file",
+    "size": 5848,
+    "mode": 420,
+    "sha256": "1aa3875660d4264d03252aabb6df74892ea41ffeabddca742cdd93ca32fa4fcd"
+  },
+  {
+    "path": "packages/types/src/availability.ts",
+    "kind": "file",
+    "size": 1981,
+    "mode": 420,
+    "sha256": "3263d1e8336e911af8758acb95840866093d8e5fb677768c77c6baa9b2c3f799"
+  },
+  {
+    "path": "packages/types/src/calendar.ts",
+    "kind": "file",
+    "size": 5168,
+    "mode": 420,
+    "sha256": "55fd0b3cda6c68fcd55926761559b26da320f0cc0488c9d1cb32ee0808bb889a"
+  },
+  {
+    "path": "packages/types/src/errors.ts",
+    "kind": "file",
+    "size": 1340,
+    "mode": 420,
+    "sha256": "e123734a19ae74a114d1b17ef18f9c9a7dfc910359f7d52b727047b34bc4e915"
+  },
+  {
+    "path": "packages/types/src/event-scope.ts",
+    "kind": "file",
+    "size": 2923,
+    "mode": 420,
+    "sha256": "683c5d38fa919d91d982dd4b2d393fd1ed16108b174d783e296b0efa63222a05"
+  },
+  {
+    "path": "packages/types/src/event.test.ts",
+    "kind": "file",
+    "size": 5343,
+    "mode": 420,
+    "sha256": "c68637e0509ce13351995ca0b7eec6aeb8280819c9a0e06d82a8e046912c8a1c"
+  },
+  {
+    "path": "packages/types/src/event.ts",
+    "kind": "file",
+    "size": 10009,
+    "mode": 420,
+    "sha256": "66e14ed0ea69e34ed3969fc39a119b210a86ea8e1b7bc237996b720bbdbee17f"
+  },
+  {
+    "path": "packages/types/src/event_delivery.ts",
+    "kind": "file",
+    "size": 6749,
+    "mode": 420,
+    "sha256": "595032f13e1ba5451efcc9a319fa54e3f3de611d40a075849bebf7183f43f080"
+  },
+  {
+    "path": "packages/types/src/event_time.test.ts",
+    "kind": "file",
+    "size": 5270,
+    "mode": 420,
+    "sha256": "2f202e8e7ba37e177884a871f0206599b43b7cb2d4b87aa61037497f22b757a9"
+  },
+  {
+    "path": "packages/types/src/event_time.ts",
+    "kind": "file",
+    "size": 4659,
+    "mode": 420,
+    "sha256": "ca62874eeb798f9119a1c7ed9e418ed5a073acd40b48f162d5c02f6dbd2ff6d0"
+  },
+  {
+    "path": "packages/types/src/federation.ts",
+    "kind": "file",
+    "size": 1316,
+    "mode": 420,
+    "sha256": "40477cf549001c09bd985ebe3171a4495274c92672a3a89512380b87ef5f65f7"
+  },
+  {
+    "path": "packages/types/src/google.ts",
+    "kind": "file",
+    "size": 183,
+    "mode": 420,
+    "sha256": "b2506165591c62a6412aa2812f70048f694d8a2cfb4a23fc8668813c27a470df"
+  },
+  {
+    "path": "packages/types/src/icloud-rsvp.test.ts",
+    "kind": "file",
+    "size": 1434,
+    "mode": 420,
+    "sha256": "603df68cc060d0a2ee5ecee691bdf38d45519145eeada7328ea7de0bd0f70a6b"
+  },
+  {
+    "path": "packages/types/src/index.ts",
+    "kind": "file",
+    "size": 923,
+    "mode": 420,
+    "sha256": "09dbfbfffaf6f6d56bc84640114dd4683fddf262b2f659ce271beda30cdec7da"
+  },
+  {
+    "path": "packages/types/src/invite.ts",
+    "kind": "file",
+    "size": 1729,
+    "mode": 420,
+    "sha256": "dbaa5899bb254ff90586dd6a905ea0603fa4e79b1e27fc6a2c8eff369107e84f"
+  },
+  {
+    "path": "packages/types/src/outlook-move.ts",
+    "kind": "file",
+    "size": 1745,
+    "mode": 420,
+    "sha256": "8b7e01c0181a6b3d1430971ee8e2e5cffdaeab7fb94645650cf9ae881ab59943"
+  },
+  {
+    "path": "packages/types/src/pages.ts",
+    "kind": "file",
+    "size": 7825,
+    "mode": 420,
+    "sha256": "6fe0338045bb68886b9bc5d3777ae19ab05a39e325b4b40b94907cf804e7b089"
+  },
+  {
+    "path": "packages/types/src/permissions.ts",
+    "kind": "file",
+    "size": 945,
+    "mode": 420,
+    "sha256": "778800d8adc3149aaa19a8ea2bb023ecbb974c14d81940e0957be79250fa62e2"
+  },
+  {
+    "path": "packages/types/src/provider-event-state.ts",
+    "kind": "file",
+    "size": 3948,
+    "mode": 420,
+    "sha256": "cd1942ac182aa69800f521ae9d343bfe2ed5f6028984de80fb80ed49bb93e768"
+  },
+  {
+    "path": "packages/types/src/provider-organizer.ts",
+    "kind": "file",
+    "size": 11045,
+    "mode": 420,
+    "sha256": "ffa81488f35aefab971696d56020e5f34d47720e436ee4f5624434935a046e84"
+  },
+  {
+    "path": "packages/types/src/provider-reminders.ts",
+    "kind": "file",
+    "size": 3161,
+    "mode": 420,
+    "sha256": "529a5fc19926f45ddee005dd534f031201ccc1ef0d35d3521efc3e3a52569404"
+  },
+  {
+    "path": "packages/types/src/provider-rsvp.ts",
+    "kind": "file",
+    "size": 11518,
+    "mode": 420,
+    "sha256": "31e58903bcbc645db279fa78e27379a625d48f25224f2846a4f48b1a3128b641"
+  },
+  {
+    "path": "packages/types/src/reminder.ts",
+    "kind": "file",
+    "size": 4421,
+    "mode": 420,
+    "sha256": "81329a3aa559e284f7a9a249794a9e0c7a775aa938b0e8b83f97884a2c7ec04f"
+  },
+  {
+    "path": "packages/types/src/reminder_options.test.ts",
+    "kind": "file",
+    "size": 2689,
+    "mode": 420,
+    "sha256": "bdf8d4201a7d8467674d0d3c44ea0b5ae09af32a9f473b419dd2acb90d8e6e74"
+  },
+  {
+    "path": "packages/types/src/reminder_options.ts",
+    "kind": "file",
+    "size": 5273,
+    "mode": 420,
+    "sha256": "7a94ebdfa64bb271c9c8595a328cd380ba11745128078aeed27d7212b75e374a"
+  },
+  {
+    "path": "packages/types/src/settings.test.ts",
+    "kind": "file",
+    "size": 2613,
+    "mode": 420,
+    "sha256": "6433fd36de63187a16ecdee2387f0e28cb0df42d9b16b0b37fed31f9578312af"
+  },
+  {
+    "path": "packages/types/src/settings.ts",
+    "kind": "file",
+    "size": 4752,
+    "mode": 420,
+    "sha256": "470c6fca350d66fce1e5b5bebbfdd9e25bc9d51c1ebc15613acfe4a07bca63be"
+  },
+  {
+    "path": "packages/types/src/sync_operation.test.ts",
+    "kind": "file",
+    "size": 10991,
+    "mode": 420,
+    "sha256": "267e656efeef155a2ed02eac032f1d4616f3164885d7adcfbecb4393732c3a7a"
+  },
+  {
+    "path": "packages/types/src/sync_operation.ts",
+    "kind": "file",
+    "size": 15123,
+    "mode": 420,
+    "sha256": "7c20e53e547ecbb8257cb9eb13b4f6b642f94d6e9c442e225881bdddc401a51d"
+  },
+  {
+    "path": "packages/types/src/sync_protocol.test.ts",
+    "kind": "file",
+    "size": 15020,
+    "mode": 420,
+    "sha256": "654e12f3c58c2c370be7fbecfdb07bcc47ff639b29f94bd56d3e931caf3f6cba"
+  },
+  {
+    "path": "packages/types/src/sync_protocol.ts",
+    "kind": "file",
+    "size": 19838,
+    "mode": 420,
+    "sha256": "f6b7466dc9b83a71f6423d8aab94ca3f83c9fe7da81e5e266cb8c6c6c3de5be9"
+  },
+  {
+    "path": "packages/types/src/task.test.ts",
+    "kind": "file",
+    "size": 2275,
+    "mode": 420,
+    "sha256": "4880fa47c093b27f5556d1191fc2d00bac9b1ebeae2d525d0ba14dac55e71a63"
+  },
+  {
+    "path": "packages/types/src/task.ts",
+    "kind": "file",
+    "size": 6498,
+    "mode": 420,
+    "sha256": "ec34702fe06964babb5a6c845a4697610102ffff067a2979b0510485700f7376"
+  },
+  {
+    "path": "packages/types/src/user.ts",
+    "kind": "file",
+    "size": 213,
+    "mode": 420,
+    "sha256": "d5ae1ab51230f0b138992353b27fa8296e744baf5f88d83511775007ac1c9e58"
+  },
+  {
+    "path": "packages/types/src/version.ts",
+    "kind": "file",
+    "size": 2105,
+    "mode": 420,
+    "sha256": "233db0b3f90ad1f53a9a073b133562f65657e602d2bfe2b49587fe9f38d99443"
+  },
+  {
+    "path": "packages/types/src/wire.test.ts",
+    "kind": "file",
+    "size": 6752,
+    "mode": 420,
+    "sha256": "037c7a22d09b886e5f71c959f23856e12682d73be75ac7090c9883a081507678"
+  },
+  {
+    "path": "packages/types/src/wire.ts",
+    "kind": "file",
+    "size": 7145,
+    "mode": 420,
+    "sha256": "2ed0329834c0c414ab8ce1b589dea4f8dd60fc28b38b522b73ece9b20069af81"
+  },
+  {
+    "path": "packages/types/src/wire_contract.ts",
+    "kind": "file",
+    "size": 5687,
+    "mode": 420,
+    "sha256": "95d91b786333468cf68a5374ad489b50595e0b00f6512b4cd5ab2d1fd012bb53"
+  },
+  {
+    "path": "patches/query-string@7.1.3.patch",
+    "kind": "file",
+    "size": 465,
+    "mode": 420,
+    "sha256": "fe47b885269a14c517ab79b9f7e5d0b46666cf13e5a80856685262c20aa00da5"
+  },
+  {
+    "path": "pnpm-lock.yaml",
+    "kind": "file",
+    "size": 877432,
+    "mode": 420,
+    "sha256": "53d9ba813121f0ff8431d98d2e4b117b3d738348252e909bc96c3f87c56388dd"
+  },
+  {
+    "path": "pnpm-workspace.yaml",
+    "kind": "file",
+    "size": 1674,
+    "mode": 420,
+    "sha256": "79f6112599e4139ef46dee6a845487430ae2b8ac496a8b9ebae55aac18c523bb"
+  },
+  {
+    "path": "scripts/package-sync-alpha.mjs",
+    "kind": "file",
+    "size": 23875,
+    "mode": 420,
+    "sha256": "402244570c943ff9d59b671a287978759dd52a3e50cfc932a9169c6723edeb7b"
+  },
+  {
+    "path": "scripts/sync-alpha-common.mjs",
+    "kind": "file",
+    "size": 31238,
+    "mode": 420,
+    "sha256": "45302857d110e6d48c01dd14b7808496534d683e1f8d9a9f710b80925b582a6a"
+  },
+  {
+    "path": "scripts/sync-alpha.test.mjs",
+    "kind": "file",
+    "size": 21380,
+    "mode": 420,
+    "sha256": "eb385b7a0f4a069b2fe7246d737e348c8dfb7f4bc5e4e294e6520c302afed90b"
+  },
+  {
+    "path": "scripts/sync-conformance.mjs",
+    "kind": "file",
+    "size": 17457,
+    "mode": 420,
+    "sha256": "2b33fca46b371ebcf79d5fdb3ba691d923e3d791a38a172b11e5d202bfaad335"
+  },
+  {
+    "path": "scripts/verify-sync-alpha.mjs",
+    "kind": "file",
+    "size": 17220,
+    "mode": 420,
+    "sha256": "63d89fe7c03d5b4ef8b2f9ed0a960251bf2c15837c0bb353edfa933b62feb4b4"
+  },
+  {
+    "path": "turbo.json",
+    "kind": "file",
+    "size": 368,
+    "mode": 420,
+    "sha256": "65704ebaa383e52d79cfb076d34bb579bf8f4d1329f7f7ba591c4f69319ae849"
+  }
+]

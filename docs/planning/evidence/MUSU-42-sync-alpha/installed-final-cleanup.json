@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "sync-alpha-installed-final-cleanup",
+  "sourceHead": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+  "server": "owned-local-postgresql-55446",
+  "mutation": "none",
+  "remainingOwnedDatabases": [],
+  "otherClientSessions": 0,
+  "status": "passed",
+  "inspectionPoolEnded": true,
+  "originalBundleUnchanged": true,
+  "relocatedBundleUnchanged": true
+}

@@ -1,0 +1,279 @@
+{
+  "schemaVersion": 1,
+  "kind": "musubi-c10-local-technical-acceptance-packet",
+  "status": "local-technical-acceptance-complete",
+  "implementationSource": {
+    "head": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+    "tree": "dd2c9c7684533f98e898dc3278331c011c313e52"
+  },
+  "artifact": {
+    "archiveBytes": 15077985,
+    "archiveSha256": "0d14e058cbe9df9f0ca24dcedd09d9f3eab28cc6b4dad80d7802bd3cb1aa8f88",
+    "payloadDigest": "c5a0fc7544059f489f9fabb3cfe16641bf0a5b2ac0aa3a31d1abda5550c6bf9d",
+    "candidateManifestSha256": "20f39cb75fc602c25d2918c2cfa1a08ce06c9b4cf346c8d8fa2a32e54cdb71c0",
+    "selectedPackagingSourceArchiveSha256": "067c04227ef14b7795c6e61eb62c634a5af0235bad630fbda2dd6ea51adf3433",
+    "fullRepositoryWebSourceArchiveSha256": "cb14f7c79aaef6854c278fdc1e44dfba9b53e9bfeef26f4050824f11959a6c93",
+    "artifactFiles": 3589,
+    "installedPackageEntries": 70,
+    "producedRoot": "/tmp/musu42-candidate-8e5-v1/candidate",
+    "relocatedRoot": "/tmp/musu42-relocated-8e5-v1/candidate"
+  },
+  "runtimeContract": {
+    "kind": "private-preinstalled-source-ESM-snapshot",
+    "node": "v22.23.4",
+    "nodeMajor": 22,
+    "platform": "linux",
+    "arch": "x64",
+    "tsx": "4.23.12",
+    "pnpm": "11.8.0",
+    "typescriptTooling": "6.0.3",
+    "buildBaseImage": null,
+    "plainNodeJavaScriptOrPublicNpmContract": false
+  },
+  "acceptance": {
+    "sourcePortableRequiredPassed": 427,
+    "sourcePureHostRequiredPassed": 211,
+    "installedPortableRequiredPassed": 427,
+    "installedReferenceDatabaseModulesRequiredPassed": 23,
+    "failed": 0,
+    "skipped": 0,
+    "todo": 0,
+    "referenceCleanup": "23 outer issuer-zero/plain DROP/absent;22 child journal states dropped with zero sessions/absence; parent recovery false",
+    "workspaceAndHostHistory": {
+      "sourceHead": "d3a8867bc6fa91334f3787ac91feffb21989bbfd",
+      "pnpmCheck": "passed",
+      "jsonScenarios": 598,
+      "jsonSuites": 17,
+      "actualHostDatabasePrograms": 6,
+      "currentSourceBinding": "workspace-d3a-to-8e5-binding.json",
+      "rerunOnImplementationHead": false
+    },
+    "runningWeb": {
+      "sourceHead": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+      "requiredPassed": 22,
+      "automaticRetries": 0,
+      "manualAttempts": 2,
+      "retainedFreshScreenshots": 26,
+      "imagesActuallyViewed": 4,
+      "coldFirstAttempt": "browser-cold-start-failure.json",
+      "finalReceipt": "browser-final.json",
+      "sourceChanged": false,
+      "ownedGroupsReaped": true
+    },
+    "ownedQaContainerRetired": true
+  },
+  "licenses": {
+    "runtimePackages": 30,
+    "allRuntimeToolingMirrorEntries": 70,
+    "uniquePackageNames": 34,
+    "deduplicatedRetainedLicenseNoticeTexts": 21,
+    "evidence": "candidate-dependencies.json",
+    "scope": "Actual declared metadata and retained texts; owner compatibility/distribution review remains separate"
+  },
+  "pathInterpretation": "Verbatim raw receipts retain their original local paths and source identities. Dependency/source/file inventories are relative to their recorded candidate/provenance context, not this repository directory. The private local archive contains the actual retained notice texts.",
+  "files": [
+    {
+      "path": "archive-relocation.json",
+      "bytes": 827,
+      "sha256": "620b7f42b05e4357c7f70031247d16fcb76e1dfbb18d7f68819037858aea0ddc"
+    },
+    {
+      "path": "artifact-produced.json",
+      "bytes": 1297,
+      "sha256": "13b39ce15123b2dc0cfc7f9d2abcc6be8e11e0ea5bb512a1d8f0ad332dd542f5"
+    },
+    {
+      "path": "artifact-relocated.json",
+      "bytes": 1297,
+      "sha256": "13b39ce15123b2dc0cfc7f9d2abcc6be8e11e0ea5bb512a1d8f0ad332dd542f5"
+    },
+    {
+      "path": "browser-cold-start-failure.json",
+      "bytes": 1952,
+      "sha256": "e866d3eb8690ed294e8db2cf18f9a6b5814f1e3589e866e9facf234148af9ac1"
+    },
+    {
+      "path": "browser-final.json",
+      "bytes": 25396,
+      "sha256": "2425ec1460118a02b0261c779aa93de677e58de3d8a343c814774b2068269538"
+    },
+    {
+      "path": "browser-identity.json",
+      "bytes": 152,
+      "sha256": "f9ae00ec10ba7f7ce7e7315a1c4405dd79d1320888eac697d04625c470a5be52"
+    },
+    {
+      "path": "browser-summary.json",
+      "bytes": 4230,
+      "sha256": "fb25702e32082955554f852f142c43e857c4f13bee116d89ff3ce113e89f857f"
+    },
+    {
+      "path": "candidate-dependencies.json",
+      "bytes": 50902,
+      "sha256": "1a5c91ffc6da0ffd3dc008ff01be0d226bd41d6a9749db903d7165524557b758"
+    },
+    {
+      "path": "candidate-file-inventory.json",
+      "bytes": 759279,
+      "sha256": "c268669ae89ff1a3985326da677f6d0a1f3cac793e4f802b64066b7dd6efa354"
+    },
+    {
+      "path": "candidate-manager-relocations.json",
+      "bytes": 2145,
+      "sha256": "4b623d93b4f219c70317418d9727da42de2f5306576e9dfa099daaa4a4085086"
+    },
+    {
+      "path": "candidate-manifest-normalization.json",
+      "bytes": 39955,
+      "sha256": "a94c91f350eaa1c10b14d93f1caa801f56ee02412a64b51f440c79a8195b5a89"
+    },
+    {
+      "path": "candidate-manifest.json",
+      "bytes": 2336,
+      "sha256": "20f39cb75fc602c25d2918c2cfa1a08ce06c9b4cf346c8d8fa2a32e54cdb71c0"
+    },
+    {
+      "path": "candidate-production-parity.json",
+      "bytes": 946,
+      "sha256": "dd3a98fac8b2ef02878cf80e965fb3ded02948acb14b03a63e9c3947039f358f"
+    },
+    {
+      "path": "candidate-source-inventory.json",
+      "bytes": 63157,
+      "sha256": "e8dabe3c9feab2d2823ed208dcec49308ee29b65ef1dc0bed9b2a17b55bc66cb"
+    },
+    {
+      "path": "diagnostic-history.json",
+      "bytes": 3494,
+      "sha256": "fc331b4e07a969b73566585bc0b5b96b8537a9ea1b8a07e22cbafd005e2c1e49"
+    },
+    {
+      "path": "historical-d3a-raw-deployed-reference-manifest.json",
+      "bytes": 2752,
+      "sha256": "e52037a22001601155d2dbbe19a8f74c6a4b3d9b48d24262048afd3e2e72196a"
+    },
+    {
+      "path": "historical-index.json",
+      "bytes": 3205,
+      "sha256": "34714394f61d958f0c62dbdc9b53f9b7b44d752dd91800cae76586afa64d4b29"
+    },
+    {
+      "path": "historical-pnpm-archive-diagnostic.json",
+      "bytes": 618,
+      "sha256": "2500b32f3a4b978b71e038bae724c5af1a8999a90248c2d9447e96ad8d757d08"
+    },
+    {
+      "path": "historical-root-d3a-receipt.json",
+      "bytes": 141882,
+      "sha256": "31c4844d9cabbbd07549e01b951bec10a041331c8d1011631b3b61d453883373"
+    },
+    {
+      "path": "historical-root-d3a-summary.json",
+      "bytes": 1387,
+      "sha256": "25259e843a16d3e705ea5c6c65a521b57eab0183da63ab56b089d92ddcfec76b"
+    },
+    {
+      "path": "historical-source-d3a-proof.json",
+      "bytes": 9362,
+      "sha256": "ad1a9a6b036ae80637bd0dfe96b9cb05503d55bb22a9ba390027d443851c3d4c"
+    },
+    {
+      "path": "historical-source-d3a-review.md",
+      "bytes": 3289,
+      "sha256": "0ef973276272ef4308866084a0cadc2e7bf5d16e3cb61f7cb20b93b0ae85e70f"
+    },
+    {
+      "path": "historical-source-d540-findings.md",
+      "bytes": 7222,
+      "sha256": "5192e3d7c2fdd5d41bcbc771f3b0726c2b345717386c3d8c444ab222bbc11b2f"
+    },
+    {
+      "path": "historical-source-deterministic-d3a.json",
+      "bytes": 132150,
+      "sha256": "ecf40ba6e5011244a6fdc2c6a5f5e3887ce59942a7a65ecb224d9624e114eedb"
+    },
+    {
+      "path": "historical-source-host-d3a.json",
+      "bytes": 74588,
+      "sha256": "5538fe2c0dad0eb25570c0f2af059c6d3af688ae3041c045642425a375c1f7cc"
+    },
+    {
+      "path": "installed-candidate-summary.json",
+      "bytes": 3335,
+      "sha256": "d6ccd4cb26f68672160b280165a1d596f46cd821539fb3c96e3bd22312a9fe9a"
+    },
+    {
+      "path": "installed-deterministic.conformance.json",
+      "bytes": 132244,
+      "sha256": "9d9527aca8d9728ecfe67dd7eb417b0ffdbb7b2a2bad9e87bd473ac665cfaa2d"
+    },
+    {
+      "path": "installed-deterministic.json",
+      "bytes": 1460,
+      "sha256": "753267d2a1cbc5576041f8dc924d2f88bb71986a4106433c3bbc7c8f76ad5a03"
+    },
+    {
+      "path": "installed-final-cleanup.json",
+      "bytes": 384,
+      "sha256": "c8e9ec36be468c6ed0f2742f9c9ae2fd34247677fccdc56b0d33d16d036eedaa"
+    },
+    {
+      "path": "installed-reference-db.conformance.json",
+      "bytes": 25302,
+      "sha256": "978ee0331d900b0fd4bb7b73b951db9a64c471f6e9ed4e8b04c3e9d87b13c3c3"
+    },
+    {
+      "path": "installed-reference-db.json",
+      "bytes": 1457,
+      "sha256": "b48896c5b5a13ea44ef1033f3ec22c3544baf2c9d7ae526a9e680dde3e7c4a10"
+    },
+    {
+      "path": "package-receipt.json",
+      "bytes": 4800,
+      "sha256": "4a1305ee8fc825c7ad4887502c2738baf12385fbe902f0d267ab954c0e1730f1"
+    },
+    {
+      "path": "qa-pre-retirement.json",
+      "bytes": 607,
+      "sha256": "ce40e0a0f6529017c7ecc8e12f0021a1981ff5c91084bec03795b2ddd62529b9"
+    },
+    {
+      "path": "qa-retirement.json",
+      "bytes": 976,
+      "sha256": "6f271a52dfd6a059aa4780d5ae0aef5ba58b453eb1b12e7acf874c4e4c7601a0"
+    },
+    {
+      "path": "source-8e5-review.md",
+      "bytes": 3516,
+      "sha256": "f17ae5be736df61ce5860c84b6e2777e1031241295b238db652bb611a07b1d7b"
+    },
+    {
+      "path": "source-conformance-8e5-proof.json",
+      "bytes": 10547,
+      "sha256": "18745ea3163e669123848a4768518862df8bcb6cb57e5ab1a0e1b8b7630d736e"
+    },
+    {
+      "path": "source-deterministic-8e5.json",
+      "bytes": 132150,
+      "sha256": "8b689d013cebe258092dd2acd779a0eff4c247b1dcfb088ac0d4b7bc89df4644"
+    },
+    {
+      "path": "source-host-8e5.json",
+      "bytes": 74588,
+      "sha256": "b3f7b991278fe846024651e99c6eeccf0a2e76b2dc02545791a5f7ed3c487d69"
+    },
+    {
+      "path": "workspace-d3a-to-8e5-binding.json",
+      "bytes": 4770,
+      "sha256": "40508d3032075b8d789a6f7b3b8ef4485461dc5ad2abef4b7d04737bda2909ce"
+    }
+  ],
+  "publication": {
+    "finalPrReview": "separate exact-head receipt required before PR",
+    "currentHeadCi": "all required checks must pass before protected squash",
+    "sourceMerge": "separate expected-head and approved-tree verification",
+    "publicRegistryPublished": false,
+    "productionDeployed": false
+  },
+  "technicalAcceptanceComplete": true
+}

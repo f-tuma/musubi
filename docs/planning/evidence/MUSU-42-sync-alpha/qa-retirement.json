@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-owned-qa-retirement",
+  "at": "2026-10-26T21:45:05.156767+00:00",
+  "containerId": "583009b39a4bc307712fd8c18f99ef290e43118663388c0f773e7d31605b1fd2",
+  "port": 55446,
+  "preRetirementProof": "/tmp/musu42-qa-pre-retirement.json",
+  "preRetirementSha256": "ce40e0a0f6529017c7ecc8e12f0021a1981ff5c91084bec03795b2ddd62529b9",
+  "nondefaultDatabases": 0,
+  "otherClientSessions": 0,
+  "probePoolClosed": true,
+  "stop": {
+    "args": [
+      "docker",
+      "stop",
+      "--time",
+      "20",
+      "583009b39a4bc307712fd8c18f99ef290e43118663388c0f773e7d31605b1fd2"
+    ],
+    "exitCode": 0
+  },
+  "remove": {
+    "forced": false,
+    "exitCode": 0
+  },
+  "absenceCheck": {
+    "dockerInspectExitCode": 1,
+    "result": "no such object for exact owned container ID"
+  },
+  "containerAbsent": true,
+  "databaseBackendsTerminated": false,
+  "userQa55437NotTargeted": true,
+  "beforeFinalRunningBrowser": true,
+  "productionDeployed": false
+}

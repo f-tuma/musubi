@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "kind": "sync-alpha-verification",
+  "status": "passed",
+  "source": {
+    "commit": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+    "head": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+    "tree": "dd2c9c7684533f98e898dc3278331c011c313e52",
+    "archiveSha256": "067c04227ef14b7795c6e61eb62c634a5af0235bad630fbda2dd6ea51adf3433"
+  },
+  "candidate": {
+    "payloadDigest": "c5a0fc7544059f489f9fabb3cfe16641bf0a5b2ac0aa3a31d1abda5550c6bf9d",
+    "manifestSha256": "20f39cb75fc602c25d2918c2cfa1a08ce06c9b4cf346c8d8fa2a32e54cdb71c0"
+  },
+  "runtime": {
+    "node": "v22.23.4",
+    "tsx": "4.23.12",
+    "typescript": "6.0.3",
+    "platform": "linux",
+    "architecture": "x64"
+  },
+  "checks": [
+    {
+      "id": "external-consumer-import",
+      "status": "passed"
+    },
+    {
+      "id": "external-consumer-typecheck",
+      "status": "passed"
+    },
+    {
+      "id": "installed-cli-no-ambient-config",
+      "status": "passed"
+    }
+  ],
+  "artifactFiles": 3589,
+  "installedPackageEntries": 70,
+  "cleanHomeAndCwd": true,
+  "ambientMusubiEnvironment": false,
+  "conformance": {
+    "mode": "reference-db",
+    "status": "passed",
+    "required": 23,
+    "passed": 23,
+    "cleanupCompleted": true,
+    "receiptSha256": "978ee0331d900b0fd4bb7b73b951db9a64c471f6e9ed4e8b04c3e9d87b13c3c3"
+  },
+  "hostCompatibility": "not-run",
+  "liveProvider": "not-run",
+  "deployed": "not-established",
+  "publicPublication": "not-performed"
+}

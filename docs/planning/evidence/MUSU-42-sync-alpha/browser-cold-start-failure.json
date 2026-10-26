@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-first-running-web-cold-optimizer-failure",
+  "source": {
+    "head": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+    "tree": "dd2c9c7684533f98e898dc3278331c011c313e52",
+    "archiveSha256": "cb14f7c79aaef6854c278fdc1e44dfba9b53e9bfeef26f4050824f11959a6c93"
+  },
+  "required": 22,
+  "passed": 21,
+  "failed": 1,
+  "failedCase": "JSON behavior edit-preserves-content: desktop",
+  "failureBoundary": "Vite dev dependency optimization reload; stale optimized React runtime request returned HTTP504 Outdated Optimize Dep",
+  "networkFailures": [
+    {
+      "url": "http://127.0.0.1:3006/node_modules/.vite/deps/react_jsx-runtime.js?v=bc38143a",
+      "status": 504,
+      "statusText": "Outdated Optimize Dep"
+    }
+  ],
+  "receipt": "/tmp/musu42-root-isolated-8e5e202c4912-ui-v1/final-browser-8e5e202c4912-518c08e919de/receipt.json",
+  "receiptSha256": "5ca3f07eb035507dcfc9b6c194b4a385baef84f9d8a545bdc1c749896d765b03",
+  "serverLog": "/tmp/musu42-root-isolated-8e5e202c4912-ui-v1/final-browser-8e5e202c4912-518c08e919de/server.log",
+  "serverLogSha256": "f264e4fd66433b7488e371417b929431c0ae047855ae8f82ca3b19eaa567fd04",
+  "interactionLog": "/tmp/musu42-root-isolated-8e5e202c4912-ui-v1/final-browser-8e5e202c4912-518c08e919de/interactions.log",
+  "interactionLogSha256": "376581387c58a2de6c2eac4093bf1d4a854a552b2594a23deb008127a9684a37",
+  "trace": "/tmp/musu42-root-isolated-8e5e202c4912-ui-v1/final-browser-8e5e202c4912-518c08e919de/playwright/behavior-JSON-behavior-edit-preserves-content-desktop-chromium/trace.zip",
+  "traceSha256": "91ff83350ea5b5c18403360ddffde950e9b2b01c55879ce8436622d98b55cfae",
+  "ownedGroupsReaped": true,
+  "trackedInputChanges": [],
+  "nextAction": "Repeat unchanged 22-case corpus on the now-populated Vite optimizer cache; do not alter application/test assertions or enable automatic retries. Preserve this failed attempt.",
+  "accepted": false,
+  "productionDeployed": false
+}

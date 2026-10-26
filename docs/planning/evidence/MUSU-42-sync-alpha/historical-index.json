@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-historical-source-gates-preparation",
+  "source": {
+    "head": "d3a8867bc6fa91334f3787ac91feffb21989bbfd",
+    "tree": "db1be7c150ee9e1f5b128beef2ddedb1e4eeb144"
+  },
+  "scope": "Historical exact-source proofs before further packaging metadata fixes. Not final installed candidate acceptance. Earlier d540 review/pnpm diagnostic identify their own original sources.",
+  "files": [
+    {
+      "path": "historical-source-d3a-proof.json",
+      "sha256": "ad1a9a6b036ae80637bd0dfe96b9cb05503d55bb22a9ba390027d443851c3d4c",
+      "originalPath": "/tmp/musu42-source-conformance-d3a-proof.json",
+      "bytes": 9362
+    },
+    {
+      "path": "historical-source-deterministic-d3a.json",
+      "sha256": "ecf40ba6e5011244a6fdc2c6a5f5e3887ce59942a7a65ecb224d9624e114eedb",
+      "originalPath": "/tmp/musu42-source-deterministic-d3a-v1.json",
+      "bytes": 132150
+    },
+    {
+      "path": "historical-source-host-d3a.json",
+      "sha256": "5538fe2c0dad0eb25570c0f2af059c6d3af688ae3041c045642425a375c1f7cc",
+      "originalPath": "/tmp/musu42-source-host-d3a-v1.json",
+      "bytes": 74588
+    },
+    {
+      "path": "historical-root-d3a-summary.json",
+      "sha256": "25259e843a16d3e705ea5c6c65a521b57eab0183da63ab56b089d92ddcfec76b",
+      "originalPath": "/tmp/musu42-root-source-d3a-final-summary.json",
+      "bytes": 1387
+    },
+    {
+      "path": "historical-root-d3a-receipt.json",
+      "sha256": "31c4844d9cabbbd07549e01b951bec10a041331c8d1011631b3b61d453883373",
+      "originalPath": "/tmp/musu42-root-isolated-d3a8867bc6fa-v3/receipt.json",
+      "bytes": 141882
+    },
+    {
+      "path": "historical-source-d3a-review.md",
+      "sha256": "0ef973276272ef4308866084a0cadc2e7bf5d16e3cb61f7cb20b93b0ae85e70f",
+      "originalPath": "/tmp/musu42-exact-source-d3a886-review.md",
+      "bytes": 3289
+    },
+    {
+      "path": "historical-source-d540-findings.md",
+      "sha256": "5192e3d7c2fdd5d41bcbc771f3b0726c2b345717386c3d8c444ab222bbc11b2f",
+      "originalPath": "/tmp/musu42-exact-source-d540-review.md",
+      "bytes": 7222
+    },
+    {
+      "path": "historical-pnpm-archive-diagnostic.json",
+      "sha256": "2500b32f3a4b978b71e038bae724c5af1a8999a90248c2d9447e96ad8d757d08",
+      "originalPath": "/tmp/musu42-pnpm-archive-diagnostic-v1.json",
+      "bytes": 618
+    },
+    {
+      "path": "historical-d3a-raw-deployed-reference-manifest.json",
+      "sha256": "e52037a22001601155d2dbbe19a8f74c6a4b3d9b48d24262048afd3e2e72196a",
+      "originalPath": "/tmp/musu42-candidate-d3a-v1/candidate/runtime/package.json",
+      "bytes": 2752
+    }
+  ],
+  "sourceGates": {
+    "deterministicRequiredIDs": 427,
+    "pureHostRequiredIDs": 211,
+    "workspaceCheck": "passed",
+    "jsonScenarios": 598,
+    "jsonSuites": 17,
+    "actualHostDBPrograms": 6,
+    "cleanup": "own nonce, issuer/target zero, plain DROP, absent",
+    "trackedSourceChanged": false
+  },
+  "packagingStatus": "Failed at deployed manifest metadata normalization after both frozen deploys; no candidate PASS, no installed runtime conformance claim. Raw deployed manifest retained byte-for-byte.",
+  "installedCandidateAccepted": false,
+  "liveProvider": false,
+  "deployed": false
+}
