@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "currentHead": "23afedd8a219087d19065847421577a24001c05f",
+  "currentTree": "6459ce82dbcff2b625a406b2df630e7dae61d0e7",
+  "installedBuildSource": "722d9f04ba934f7175b04422599189a5cf476180",
+  "apiBuildContextFiles": 959,
+  "identicalCurrentFiles": 958,
+  "differences": [
+    {
+      "path": "apps/api/src/sync/caldav_discovery_material.integration.test.ts",
+      "imageBuildSha256": "ce50131cd06db71ccdf3407c9b47f468fd06240f9485d0f7a71071e2c2b84b26",
+      "currentSha256": "6cb0b650af3853f92ca2f3e62ad8963f6d515aa813a9a90e70d19b71f0c1d8eb"
+    }
+  ],
+  "onlyChangedContextFileIsTestOnly": true,
+  "productionSourceAndBudgetHarnessUnchanged": true,
+  "oldInstalled723FileParityNotRelabeledAsCurrentHead": true
+}

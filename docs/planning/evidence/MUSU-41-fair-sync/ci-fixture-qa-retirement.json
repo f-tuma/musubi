@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-10-26T20:09:14.211161+00:00",
+  "ownedContainer": "musubi-c09-ci-dav-20261026",
+  "expectedContainerID": "048c4faebbb01ecd5c818b705a3527a96900d623fd7349a9118c0765c747e23e",
+  "port": 55445,
+  "databaseStateBeforeStop": {
+    "databases": [],
+    "otherDatabaseSessions": 0
+  },
+  "containerStoppedRemovedAbsent": true,
+  "forceDropOrBackendTermination": false,
+  "userQa55437": "untouched",
+  "scope": "Only the owned CI DAV fixture repair server; retired after red/green proof and before renewed final web QA."
+}

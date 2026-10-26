@@ -3,7 +3,7 @@
   "kind": "MUSU-41_SOURCE_LOCAL_ACCEPTANCE",
   "testedSourceHead": "722d9f04ba934f7175b04422599189a5cf476180",
   "testedSourceTree": "c7915c4d3923734a8d3d69888898924f85139561",
-  "finalPrApproval": "pending independent exact final documentation/evidence commit review",
+  "finalPrApproval": "pending independent review of the final fixture/documentation/evidence commit; prior0c7 approval not reused for changed head",
   "publication": "pending current-head CI and squash/main verification",
   "deployment": "not performed; later joint step",
   "files": [
@@ -24,8 +24,23 @@
     },
     {
       "path": "browser-summary.json",
-      "bytes": 4611,
-      "sha256": "e1c26c4dae8b9eba857cd89380a5def1029b860d43493fa496abb434479a96bd"
+      "bytes": 4921,
+      "sha256": "39fc91c361871ffc9a4f1d99478acc541758be6aca3435f488f6afe0f5061329"
+    },
+    {
+      "path": "ci-fixture-correction.json",
+      "bytes": 2248,
+      "sha256": "9bf124c23934b5ef5a463de5e85c372743c90b995d5ac8f8dc8b2ce2c00e2597"
+    },
+    {
+      "path": "ci-fixture-qa-retirement.json",
+      "bytes": 552,
+      "sha256": "b2dd4e0c53ea0684a94eff4f78a282e148431a2fdffeb3afc7fb71b194f54d8b"
+    },
+    {
+      "path": "ci-fixture-source-binding.json",
+      "bytes": 740,
+      "sha256": "1863871aff2b014c0a11fe14295759a6d2b74a418a414f2d2072af7dd093721f"
     },
     {
       "path": "db-checkpoint-summary.json",
@@ -34,8 +49,8 @@
     },
     {
       "path": "diagnostic-history.json",
-      "bytes": 2314,
-      "sha256": "c9e5e99c73b5f18261b3d0f9ece3e2dc18c640b6f373a2f3253fbce966d6e6dc"
+      "bytes": 2759,
+      "sha256": "915feb064f15b1cc41bdfb0db9816e46db4170c1b7a1a1d0587644293f4529d3"
     },
     {
       "path": "historical-installed-failure.json",
@@ -67,5 +82,6 @@
       "bytes": 653,
       "sha256": "8e2f0b14394778c959af269b9481b2fd4c791ed38ecaa9d4298fa4d268018b6c"
     }
-  ]
+  ],
+  "correctiveFixtureHead": "23afedd8a219087d19065847421577a24001c05f"
 }

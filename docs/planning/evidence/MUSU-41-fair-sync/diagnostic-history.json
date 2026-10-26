@@ -49,6 +49,14 @@
         "bytes": 4940,
         "sha256": "af7c5ece0838692d53c1f433e38043ca299fe1acca05f62762f2ac51077af25d"
       }
+    },
+    {
+      "source": "0c7a7d6d36e83e4316e5df21e3ec545d897297a1",
+      "failure": "CI DAV fixture changed only SQL eligibility while process-local failure backoff remained valid.",
+      "classification": "test-only clock/lifetime assumption; production source722 approval remains valid",
+      "fixedBy": "23afedd8a219087d19065847421577a24001c05f",
+      "evidence": "ci-fixture-correction.json",
+      "newCurrentHeadCiRequired": true
     }
   ],
   "finalSourceApproval": "source-review.json",

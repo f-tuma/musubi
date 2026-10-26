@@ -134,8 +134,9 @@ Google RSVP private marker boundary.
 ## Completed local evidence and its limits
 
 The [source review](evidence/MUSU-41-fair-sync/source-review.json) approves the
-exact source above and its 134-file committed/disk manifest. Later evidence-only
-commits do not change the image-build source. The normal `pnpm check` passed on
+exact source above and its 134-file committed/disk manifest. Later documentation
+and one fixture-only coordinator-restart correction do not change production
+source or the budget integration harness. The normal `pnpm check` passed on
 that clean source: type checks, unit tests and lint executed; unchanged
 web and docs build outputs reused their existing build cache. All **590 JSON
 scenarios in sixteen suites** passed with no failures or errors. The new pool,
@@ -149,6 +150,7 @@ their existing dependency ports.
 | Installed API | [Fresh image](evidence/MUSU-41-fair-sync/api-installed-summary.json): 959 captured COPY files, 723 unique installed parity files, 179 installed packages, complete OCI blob/layer checks; unchanged production-layout server, non-root and zero mounts, 87 fresh migrations and 17 real HTTP checks including signup/login/cookie authentication and canonical CAS. Separate byte-equal installed test mirror reaches the actual 47-file budget receipt |
 | Installed reference | [Fresh image](evidence/MUSU-41-fair-sync/reference-installed-summary.json): 272 COPY files, 239 TS/SQL files and ten behavior manifests checked, 30 packages, no host DB/auth/config packages; canonical CLI empty/repeat migration with only REFERENCE settings, 161 pure, 207 storage and 287 native process cases; installed fair-work JSON 15 and unit 15 pass |
 | Wider DB regressions | [Composite checkpoint](evidence/MUSU-41-fair-sync/db-checkpoint-summary.json): the aggregate completed the preceding host/reference corpus, then stopped on an incorrect explicit encoder flag in the root test environment. A fresh owned-DB continuation with the required unset flag passed all 101 actual-default admission cases and the remaining shared-runtime suites. The aggregate spans source checkpoints and is not relabelled as a uniform final-head PASS |
+| CI fixture correction | [Actual red/green PG proof](evidence/MUSU-41-fair-sync/ci-fixture-correction.json): the first PR CI run passed twenty jobs and failed DAV's test-only SQL expiry while its one-second process-local refusal hint remained valid. The unchanged failure was reproduced; restarting only the test coordinator after expiring its owned row passed the same native/DB assertions, API typecheck and production deferral JSON. No production limit, timeout or fence changed |
 | Running web app | [Browser report](evidence/MUSU-41-fair-sync/browser-summary.json): 22 real-rendered cases on desktop light and narrow dark layouts; task preserve/conflict/readonly/cancel, Google/Graph/DAV RSVP retry, reminder/alarm conflict, organizer update and partial/stopped occurrence move. API fixtures prove rendered behavior; real authentication/SQL/native boundaries have the separate evidence above |
 
 Native API integration observed at most **two concurrent actual HTTP requests**.
@@ -168,9 +170,22 @@ claim at eligibility. `722d9f0` fixes it while retaining the existing successful
 old-capture/new-generation test. The final installed API and reference images
 were rebuilt and retested; no historical PASS or failed image is relabelled.
 
+The later CI correction is four added lines in the DAV integration test at
+`23afedd8a219087d19065847421577a24001c05f`. It explicitly makes the final complete
+absence inventory run after coordinator restart; it does not claim same-instance
+expiry after changing only SQL time. [Source binding](evidence/MUSU-41-fair-sync/ci-fixture-source-binding.json)
+checks all 959 installed-API build inputs: 958 still match, and the sole difference
+is that test file. The original installed 723-file parity remains bound to
+`722d9f0`; it is not relabelled as the newer fixture. All production source and the
+actual installed budget harness remain unchanged. Final web QA was repeated
+after the correction: 22 cases passed in 41.9 seconds, plus title/route identity
+and four fresh visually reviewed screenshots. The failed first CI run remains
+failed; a new current-head run is required before merge.
+
 All local proof databases were nonce-owned and removed after zero-session checks
-using plain DROP. The root C09 PostgreSQL server was retired after all native/DB
-checks and before final web QA; user QA on 55437 was untouched. Source/installed
+using plain DROP. Both root-owned servers (the initial C09 proof on 55444 and the
+corrective DAV proof on 55445) were retired after their native/DB checks and
+before the renewed final web QA; user QA on 55437 was untouched. Source/installed
 manifests and raw artifact digests are indexed in the evidence packet. No
 registry publication or production deployment occurred. The overall conversion
 continues with C10's reproducible standalone candidate/conformance packet after

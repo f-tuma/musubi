@@ -62,7 +62,11 @@ a warm complete resource fetch takes four, and the composed initial sync takes
 eleven. Fresh ACL denial takes seven calls and reads no private resources.
 It verifies exact cursor/dirty ACK, credential rotation and mid-request changes,
 private event/task retirement and restoration, incomplete discovery, persisted
-deferral with zero-HTTP immediate retry, and complete absence removal. It also
+deferral with zero-HTTP immediate retry, and complete absence removal. For the
+last removal check, the fixture expires only its owned SQL due time and restarts
+the coordinator: SQL time adjustment does not expire a valid in-memory refusal
+hint. This proves fresh guarded inventory after coordinator restart, not
+same-instance clock expiry. It also
 holds account A's actual response while B finishes a full sync, and enqueues
 another A discovery during that pull: another real discovery and collection ACK
 must run. Equal native IDs in the two accounts retain separate canonical rows.
