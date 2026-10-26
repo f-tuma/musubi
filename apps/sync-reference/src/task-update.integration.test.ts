@@ -32,6 +32,8 @@ async function fixture(patch: Record<string, unknown> = { name: "New title" }) {
 }
 async function claimed(patch?: Record<string, unknown>) { const f = await fixture(patch); const operation = await store.admitUpdate(f.input); const claim = await store.claim(operation.operationId, randomUUID()); assert(claim); return { ...f, operation, claim }; }
 function observation(claim: ReferenceTaskClaim, changes: Record<string, unknown> = {}) {
+  assert.equal(typeof claim.locator.taskId, "string");
+  if (claim.locator.taskId === null) throw new Error("Addressed fixture required");
   const target = claim.saved.projection, task = { id: claim.locator.taskId, ...target, etag: '"after"', ...changes };
   return { validator: task.etag, projection: { title: task.title, notes: task.notes, status: task.status, due: task.due }, read: { kind: "present" as const, task, etag: task.etag }, saved: claim.saved };
 }

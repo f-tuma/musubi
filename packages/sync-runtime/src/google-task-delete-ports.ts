@@ -1,7 +1,8 @@
 import type { SyncOperationRowBinding } from "@musubi/types";
-import type { GoogleTaskDelete, GoogleTaskDeleteProviderPorts, GoogleTaskDeleteAcceptedStatus, GoogleNativeTaskDeleteReadEvidence, GoogleNativeTaskDeleteEvidence, GoogleTaskTarget } from "@musubi/provider-google";
+import type { GoogleTaskDelete, GoogleTaskDeleteProviderPorts, GoogleTaskDeleteAcceptedStatus, GoogleNativeTaskDeleteReadEvidence, GoogleNativeTaskDeleteEvidence } from "@musubi/provider-google";
 import type { RuntimeProviderFact, RuntimeErrorInfo, RuntimeAckResult, RuntimeCheckpoint, RuntimeTraceEntry, RuntimeAttemptOptions } from "./ports";
 import type { GoogleTaskSavedProjection } from "./google-task-update-ports";
+import type { GoogleTaskClaimTarget, GoogleTaskPreparation, GoogleTaskPredecessorNoTask } from "./google-task-address-ports";
 
 export interface GoogleTaskDeletePolicy {
   readonly completion: "provider-response" | "exact-absence";
@@ -32,7 +33,7 @@ export interface ClaimedGoogleTaskDelete {
   readonly attemptId: string;
   readonly payload: unknown;
   readonly binding: SyncOperationRowBinding;
-  readonly nativeTarget: GoogleTaskTarget;
+  readonly nativeTarget: GoogleTaskClaimTarget;
   readonly collectionIdentity: "native" | "musubi-google-task-list";
   readonly acceptedEtag: unknown;
   readonly recovery: { readonly required: boolean; readonly possibleDispatch: boolean };
@@ -41,6 +42,7 @@ export interface ClaimedGoogleTaskDelete {
   readonly priorResponseAbsenceStatus?: 404 | 410 | null;
 }
 export type RuntimeTaskDeleteCompletionEvidence =
+  | { readonly kind: "predecessor-no-resource"; readonly proof: GoogleTaskPredecessorNoTask; readonly facts: RuntimeTaskDeleteNativeFacts }
   | { readonly kind: "provider-response"; readonly response: { readonly kind: "accepted"; readonly status: GoogleTaskDeleteAcceptedStatus } | { readonly kind: "absent"; readonly status: 404 | 410 }; readonly facts: RuntimeTaskDeleteNativeFacts }
   | { readonly kind: "exact-absence"; readonly source: RuntimeTaskDeleteAbsenceSource; readonly read: Extract<GoogleNativeTaskDeleteReadEvidence, { kind: "absent" }>; readonly facts: RuntimeTaskDeleteNativeFacts };
 export interface RuntimeTaskDeleteFinishOutcome {
@@ -51,7 +53,7 @@ export interface RuntimeTaskDeleteFinishOutcome {
   readonly cause?: unknown;
 }
 export interface GoogleTaskDeleteHostPorts {
-  prepare(signal: AbortSignal): Promise<{ acceptedEtag: unknown; baseline: unknown; saved?: unknown; dispatchAllowed?: boolean }>;
+  prepare(signal: AbortSignal): Promise<GoogleTaskPreparation>;
   /** Optional existing Musubi write-once dispatch projection port. A DELETE
    * reference admission has its own original baseline, not a fake UPDATE mask. */
   prepareProjection?(input: { readonly observedProjection: Readonly<Record<string, unknown>>;

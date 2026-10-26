@@ -11,7 +11,7 @@ an unknown native address and adopts it only after an exact full-target readback
 
 This is an extraction fixture and CLI. It is not the future Calendar Relay
 service. It has no account onboarding, OAuth refresh, scheduler, public API,
-meeting/recurrence support or pending task address dependencies. Google event CREATE reserves a new personal, nonrecurring timed event using an immutable operation UUID and exact UTC time endpoints. Google DELETE targets an existing exact native address with a strong accepted validator. Microsoft DELETE uses its original native weak ETag for a guarded preflight, with observe-only recovery and no CAS guarantee. Only `name`, `notes` and
+meeting/recurrence support or task hierarchy. Google event CREATE reserves a new personal, nonrecurring timed event using an immutable operation UUID and exact UTC time endpoints. Google DELETE targets an existing exact native address with a strong accepted validator. Microsoft DELETE uses its original native weak ETag for a guarded preflight, with observe-only recovery and no CAS guarantee. Only `name`, `notes` and
 `place` can be changed on an existing personal nonrecurring timed event. The
 accepted time endpoints use canonical UTC instants and remain unchanged.
 
@@ -58,6 +58,8 @@ stdin return a safe error code.
 | `admit-task-create` | `{bindingId, expectedRevision, commandId, operationId}` | Commit canonical CAS and the real full Task CREATE codec body for that exact reservation |
 | `admit-task-update` | `{bindingId, expectedRevision, commandId, operationId, patch}` | Commit task canonical CAS, full original codec target, baseline and sorted field mask; this reference helper requires a lowercase UUID operation ID |
 | `admit-task-delete` | `{bindingId, expectedRevision, commandId, operationId}` | Tombstone canonical content and capture one original-address DELETE with a null body and separate baseline; lowercase UUID required |
+| `queue-task-update` | `{bindingId, expectedRevision, commandId, operationId, predecessorOperationId, patch}` | Save immutable future content and a null-address codec UPDATE behind the current CREATE/intent tail; canonical materialization waits for activation |
+| `queue-task-delete` | `{bindingId, expectedRevision, commandId, operationId, predecessorOperationId}` | Save a terminal future tombstone and null-body DELETE without invalidating the pending CREATE |
 | `deliver-task` | `{operationId}` | Claim and run the registered Google Task CREATE, UPDATE or DELETE profile |
 | `show-task` | `{operationId}` | Inspect task content, capture, native baseline and receipt without credentials |
 
@@ -442,7 +444,8 @@ frozen together. A title-only change sends only title. A rich-only change may
 have an empty mask and confirm through reads with no PATCH or invented native
 acceptance. The original strong ETag and baseline are never rebased from a new
 remote version. There is one unfinished operation per binding, including HOLD
-and conflict; no predecessor graph or resolution/supersession feature is added.
+and conflict. The bounded intent queue below keeps waiting work outside that
+execution ledger; general resolution and supersession are not provided.
 
 The reference policy deliberately requires **all four target fields** to match
 an exact strong-tagged readback. If a concurrent actor changes untouched notes
@@ -602,12 +605,80 @@ provisional adoption on expiry, cancellation or false settlement. Canonical
 doing/time/importance remain intact. DELETE's later absence ACK still preserves
 that addressed epoch and historical native ETag/baseline.
 
-Only serial CREATE→UPDATE→DELETE after each ACK is supported. Successor
-admission captures the adopted native ID, new source epoch and real ETag/baseline
-together in its row and immutable envelope. Pending successors with deferred
-addresses, cancellation/supersession, hierarchy, recurrence and other task
-providers remain separate gates. The final additive migration preserves all nine
+Addressed admission remains serial after each ACK. It captures the adopted
+native ID, new source epoch and real ETag/baseline together. The intent queue
+below additionally accepts bounded successors while CREATE is pending.
+Cancellation/supersession, hierarchy, recurrence and other task providers remain
+separate gates. The CREATE migration preserves all nine
 older profiles and their histories, sidecars, epochs and 28 table/index OIDs,
 including repeated full-chain migration over unresolved reservations and adopted
 CREATE rows. Source/installed fixture proof, registry publication, production
 deployment and full C08 acceptance remain distinct.
+
+## Queued Google Task successors
+
+`queue-task-update` and `queue-task-delete` apply to an admitted, still-reserved
+Google Task CREATE. Every command names the exact current predecessor and the
+expected requested revision. A linear queue may contain UPDATEs followed by one
+terminal DELETE. IDs and command keys share the task namespace; mismatches,
+forks, cycles and commands after DELETE refuse atomically.
+
+This reference host defers canonical materialization. After CREATE admission at
+revision 2, queueing UPDATE 3 and DELETE 4 leaves the materialized canonical row at
+revision 2, active. The immutable queue stores the requested rich content,
+lifecycle, future revision/generation, original reservation capture and real
+codec envelope. `show-task` exposes both the original intent and materialized
+state, plus execution evidence after activation. Musubi's immediate canonical
+mutation policy is separate; this queue does not claim that API behavior.
+
+The original queued envelope has `resourceId:null`, the exact predecessor UUID,
+the full frozen target (or DELETE's null body), and reservation source epoch 1.
+It is never re-encoded, filled with a guessed ID or relabelled as epoch 2.
+Waiting intents have no execution row, lease or attempt. Their separate table
+retains the existing one-unfinished-operation binding index and all 28 original
+table/index OIDs. New intent-table/index OIDs are additive.
+
+Delivery activates an intent only after its immediate predecessor actually ACKs.
+Under connection → canonical → binding → operation locks it verifies the full
+scoped lineage and the exact root CREATE's owned reserved→present transition,
+from captured generation `g` to exactly `g+1` (normally 1→2). Retirement/regrant
+ABA, another creation, collection/account changes and arbitrary newer epochs
+cannot supply this authority. Activation checks the predecessor's write-once
+completion ID, real readback ETag and full projection as one pair and requires
+the current binding to match it. It then atomically materializes the saved
+canonical revision/lifecycle, inserts one execution row and claims it. Lock-wait
+cancellation, expired credentials or failed final claim settlement roll back
+materialization and the operation together.
+
+CREATE and UPDATE ACK record paired present completion evidence in the same
+transaction as mapping and ACK. DELETE records actual scoped absence. Existing
+historical ACKs are not backfilled from mutable mappings. The separate
+resolution basis stores ordered semantic lineage digests, the exact adoption
+and the final pair. Each ancestor receipt must match its owned completion attempt,
+operation and committed local revision; its preserved provider outcome participates
+in the witness, including rejected UPDATE recovery or an empty-mask read. The
+SHA256 witness excludes the current mutable attempt receipt, lease and credential
+bytes. It is immutable and recomputed before credentials, dispatch
+and ACK. The portable runtime receives only the current attempt's typed
+predecessor proof from host preparation. It has no mapping or ancestor-query
+authority. UPDATE's sparse mask and DELETE's baseline are frozen from that real
+paired completion at activation; no fictional baseline or UPDATE mask is used.
+
+An unknown CREATE or one without a usable response ID keeps every successor
+waiting, without HTTP or another POST. UPDATE never turns a missing address into
+CREATE. This reference does not implement no-write cancellation or a
+`not-needed` CREATE: DELETE waits for a real present CREATE ACK and subsequently
+requires its own scoped GET absence. The API's separate zero-HTTP
+`predecessor-no-resource` completion is not claimed here. A rich-only UPDATE can
+ACK a real GET without PATCH or native acceptance, then supply its actual
+completion pair to DELETE. Absence ACK retains the active grant, historical
+ETag/baseline and addressed source epoch.
+
+The final additive migration is repeatable over waiting and activated queues,
+all ten earlier profiles, populated CREATE reservations/adoptions and their
+complete histories. Old executables cannot process queue commands; only serial
+forward migration and worker replacement are supported. Pure codec cases,
+PostgreSQL lineage/authority/rollback cases and native HTTP/CLI/SIGKILL cases
+exercise the actual production store and shared runners. Installed extraction,
+publication, deployment, live providers and full C08 acceptance remain separate
+evidence.

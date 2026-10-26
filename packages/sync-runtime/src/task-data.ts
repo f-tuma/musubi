@@ -1,5 +1,6 @@
 import { parseGoogleTaskProjection, parseGoogleTaskPatch, diffGoogleTaskProjection, sameGoogleTaskProjection, type GoogleTaskProjection } from "@musubi/provider-google";
 import type { GoogleTaskSavedProjection } from "./google-task-update-ports";
+import { copyNativeTaskEvidence } from "./task-native-data";
 
 export function own(value: unknown, key: string): unknown {
   if (!value || typeof value !== "object" || Array.isArray(value) || ![Object.prototype, null].includes(Object.getPrototypeOf(value))) throw new Error("Invalid task data.");
@@ -36,14 +37,14 @@ export function projection(value: unknown): GoogleTaskProjection {
   return copy(parsed);
 }
 export function baseline(value: unknown): Readonly<Record<string, unknown>> {
-  const item = copy(value);
+  const item = copyNativeTaskEvidence(value);
   if (!item || typeof item !== "object" || Array.isArray(item) || Object.keys(item).sort().join(",") !== "due,notes,status,title") throw new Error("Invalid task baseline.");
   return item as Readonly<Record<string, unknown>>;
 }
 export function savedProjection(value: unknown, target: GoogleTaskProjection): GoogleTaskSavedProjection {
-  const item = copy(value);
+  const item = copyNativeTaskEvidence(value);
   const admitted = projection(own(item, "projection")), before = baseline(own(item, "baseline")), patch = parseGoogleTaskPatch(own(item, "patch"));
   if (!patch || !sameTask(admitted, target) || !sameTask(patch, diffGoogleTaskProjection(before, target))) throw new Error("Invalid task saved mask.");
-  return copy({ projection: admitted, baseline: before, patch });
+  return copyNativeTaskEvidence({ projection: admitted, baseline: before, patch });
 }
 export const sameTask = (left: object, right: object) => sameGoogleTaskProjection(left as Readonly<Record<string, unknown>>, right as Readonly<Record<string, unknown>>);

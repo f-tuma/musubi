@@ -24,7 +24,7 @@ export async function deliverReferenceTaskUpdate(store: ReferenceTaskRunnerStore
     options.checkpoint !== undefined && typeof options.checkpoint !== "function" || typeof ports?.http?.fetch !== "function" ||
     typeof ports?.clock?.nowEpochMs !== "function" || typeof ports?.clock?.nowMonotonicMs !== "function" || typeof ports?.telemetry?.record !== "function") throw new TypeError("Invalid reference task runner options");
   options.signal?.throwIfAborted();
-  const attemptId = options.attemptId ?? randomUUID(), claimed = await store.claim(operationId, attemptId);
+  const attemptId = options.attemptId ?? randomUUID(), claimed = await store.claim(operationId, attemptId, options.signal);
   if (!claimed) return { status: "unclaimed" as const, operationId, attemptId };
   const claim = Object.freeze(structuredClone(claimed));
   if (claim.endpointProfile !== REFERENCE_TASK_UPDATE_PROFILE || claim.binding.kind !== "task" || claim.binding.provider !== "google" || claim.binding.action !== "update") {

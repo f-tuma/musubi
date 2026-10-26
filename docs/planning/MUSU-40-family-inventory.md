@@ -20,8 +20,9 @@ Nasazení zůstává společným navazujícím krokem po implementaci a ověřen
 | Task ACK | Main, PR #380 | Current locked claim, DB-clock lease, cancellation, mapping CAS a rollback |
 | Google Task addressed UPDATE | Main, PR #381 | Saved mask, původní ID/tag/baseline, samostatný reference ledger |
 | Google Task addressed DELETE | Main, PR #382 | Raw DELETE response versus scoped GET absence; retained binding/history |
-| Google Task CREATE | Samostatná implementace a acceptance | Generated ID; unknown/no-ID HOLD; API parity a strict reference mají oddělené důkazy |
-| Google causal address | Čeká | CREATE→UPDATE i CREATE→DELETE; spárované predecessor ID/tag/baseline; také CREATE s předchůdcem |
+| Google Task CREATE | Main, PR #383 | Generated ID; unknown/no-ID HOLD; API parity a strict reference mají oddělené důkazy |
+| Google causal UPDATE/DELETE | Implementace a acceptance probíhá | [Causal gate](MUSU-40-google-task-causal.md): immutable NULL admission, spárované predecessor ID/tag/baseline a vlastní reference queue |
+| Google CREATE s předchůdcem | Čeká | Samostatná lineage/recurrence compatibility; chybějící adresa successor UPDATE se nikdy nezmění v nový CREATE |
 | VTODO UPDATE/DELETE | Čeká | Úplný resource, URL/UID, silný ETag, privilege proof, maska a původní baseline |
 | VTODO CREATE/causal flow | Čeká | Task-UUID URL/UID, If-None-Match, read-only uncertain recovery a retained deletion |
 | To Do CREATE | Čeká | Existující home/independent-copy chování, response-address-only recovery |

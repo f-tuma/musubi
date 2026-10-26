@@ -14,6 +14,9 @@ const unknownField = structuredClone(suite); (unknownField.scenarios[0]!.exchang
 const invalidMethod = structuredClone(suite); (invalidMethod.scenarios[0]!.exchanges[0] as unknown as Record<string, unknown>).method = "DELETE"; invalid(invalidMethod);
 const invalidExpectedMethod = structuredClone(suite); invalidExpectedMethod.scenarios[0]!.expected.methods[0] = "POST"; invalid(invalidExpectedMethod);
 const invalidCanonical = structuredClone(suite); invalidCanonical.scenarios[0]!.taskOverrides = { due: "not-a-date" }; invalid(invalidCanonical);
+for (const patch of [{ deferred: "true" }, { predecessorProof: null }, { nativeTaskId: "missing-null-admission" }, { deferred: true, nativeTaskId: "" }, { deferred: true, predecessorProof: [] }]) {
+  const invalidPredecessor = structuredClone(suite); Object.assign(invalidPredecessor.scenarios[0]!, patch); invalid(invalidPredecessor);
+}
 let invoked = false; const getter = structuredClone(suite);
 Object.defineProperty(getter.scenarios[0]!, "recovery", { enumerable: true, get() { invoked = true; return false; } }); invalid(getter); assert.equal(invoked, false);
 const wrongExpected = structuredClone(suite.scenarios[0]!); wrongExpected.expected.sessions++;

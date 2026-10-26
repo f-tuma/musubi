@@ -1,7 +1,7 @@
 import {
   createGoogleTaskUpdateProvider, GoogleTaskProviderError, strongGoogleEtag,
   googleTaskProjectionFromNative, achievesGoogleTaskPatch,
-  type GoogleTaskProjection, type GoogleTaskUpdate, type GoogleNativeTaskReadEvidence,
+  type GoogleTaskProjection, type GoogleTaskUpdate, type GoogleNativeTaskReadEvidence, type GoogleTaskTarget,
 } from "@musubi/provider-google";
 import { decodeSyncOperationPayload, SyncOperationRowBindingSchema, SyncErrorSchema, type SyncOperationEnvelope } from "@musubi/types";
 import { matchesPinnedProjectionV1, parseNativeWritePlanV1 } from "@musubi/sync-codec";
@@ -13,12 +13,14 @@ import type {
 } from "./google-task-update-ports";
 
 import { own, copy, identity, projection, baseline, savedProjection, sameTask } from "./task-data";
+import { claimedTaskTarget, preparedTaskTarget } from "./task-address";
+import { copyNativeTaskEvidence as nativeCopy } from "./task-native-data";
 
 /** Nominal selection deliberately does not inspect the mask, validator or plan.
  * Once selected, malformed admitted data must HOLD rather than use a legacy writer. */
 export function supportsGoogleTaskUpdateEnvelope(envelope: SyncOperationEnvelope): boolean {
   return envelope.operation.kind === "task" && envelope.operation.action === "update" && envelope.locator.provider === "google" &&
-    typeof envelope.locator.resourceId === "string" && envelope.locator.resourceId.length > 0 &&
+    (typeof envelope.locator.resourceId === "string" && envelope.locator.resourceId.length > 0 || envelope.locator.resourceId === null && !!envelope.predecessorOperationId) &&
     envelope.serializer.id === "google-task" && envelope.serializer.version === 1;
 }
 class TaskFailure extends Error {
@@ -54,7 +56,7 @@ export async function runClaimedGoogleTaskUpdate(input: ClaimedGoogleTaskUpdate,
   let operationId = "invalid-operation", attemptId = "invalid-attempt", phase: RuntimePhase = "decode", acknowledged = false;
   let facts: RuntimeTaskNativeFacts = { provider: { kind: "not-dispatched" }, remote: { kind: "unobserved" }, possibleDispatch: false };
   const trace: RuntimeTraceEntry[] = [];
-  let snapshot: { target: ClaimedGoogleTaskUpdate["nativeTarget"]; projection: GoogleTaskProjection; acceptedEtag: unknown; recovery: boolean; policy: GoogleTaskUpdatePolicy };
+  let snapshot: { target: ClaimedGoogleTaskUpdate["nativeTarget"]; envelope: SyncOperationEnvelope; projection: GoogleTaskProjection; acceptedEtag: unknown; recovery: boolean; policy: GoogleTaskUpdatePolicy };
   try {
     operationId = identity(own(input, "operationId")); attemptId = identity(own(input, "attemptId"));
     const recovery = copy(own(input, "recovery"));
@@ -77,19 +79,11 @@ export async function runClaimedGoogleTaskUpdate(input: ClaimedGoogleTaskUpdate,
     if (status != null && (![200, 201, 204].includes(status) || priorKind !== "accepted")) throw new Error("Invalid task accepted status.");
     facts = copy({ provider, remote: { kind: "unobserved" }, possibleDispatch, ...(status == null ? {} : { acceptedStatus: status }) });
     const binding = SyncOperationRowBindingSchema.parse(copy(own(input, "binding")));
-    const decoded = decodeSyncOperationPayload(copy(own(input, "payload")), binding, { supports: supportsGoogleTaskUpdateEnvelope });
+    const decoded = decodeSyncOperationPayload(nativeCopy(own(input, "payload")), binding, { supports: supportsGoogleTaskUpdateEnvelope });
     if (decoded.kind !== "pinned-v1") throw new TaskFailure({ code: decoded.kind === "blocked" ? decoded.code : "runtime-legacy-unsupported", outcome: "not-written", phase });
     const envelope = decoded.envelope;
-    const nativeTarget = copy(own(input, "nativeTarget"));
-    const target = { connectionId: identity(own(nativeTarget, "connectionId")), connectionGeneration: identity(own(nativeTarget, "connectionGeneration")),
-      taskListId: identity(own(nativeTarget, "taskListId")), taskId: identity(own(nativeTarget, "taskId")) };
-    const collectionIdentity = own(input, "collectionIdentity");
-    const physicalCollection = collectionIdentity === "native" ? envelope.locator.collectionId :
-      collectionIdentity === "musubi-google-task-list" && envelope.locator.collectionId.startsWith("musubi-google-task-list:")
-        ? envelope.locator.collectionId.slice("musubi-google-task-list:".length) : null;
-    if (operationId !== envelope.operationId || target.taskId !== envelope.locator.resourceId ||
-        target.taskListId !== physicalCollection ||
-        envelope.allowedSideEffects.length !== 1 || envelope.allowedSideEffects[0] !== "provider-content-write")
+    const target = claimedTaskTarget(own(input, "nativeTarget"), envelope, own(input, "collectionIdentity"));
+    if (operationId !== envelope.operationId || envelope.allowedSideEffects.length !== 1 || envelope.allowedSideEffects[0] !== "provider-content-write")
       throw new TaskFailure({ code: "operation-envelope-binding-mismatch", outcome: "not-written", phase });
     const plan = parseNativeWritePlanV1(envelope.serializer, "update", "task", envelope.nativePlan.data);
     const targetProjection = projection(envelope.admittedProjection.data);
@@ -99,35 +93,36 @@ export async function runClaimedGoogleTaskUpdate(input: ClaimedGoogleTaskUpdate,
     if (!["strict-reference", "existing-google"].includes(own(policy, "nativeProfile") as string) ||
         !["saved-patch", "full-target"].includes(own(policy, "readback") as string) ||
         !["deferred", "within-attempt"].includes(own(policy, "ambiguousRecovery") as string)) throw new Error("Invalid task policy.");
-    snapshot = copy({ target, projection: targetProjection, acceptedEtag: own(input, "acceptedEtag") ?? null, recovery: required, policy });
+    snapshot = copy({ target, envelope, projection: targetProjection, acceptedEtag: own(input, "acceptedEtag") ?? null, recovery: required, policy });
   } catch (error) {
     const info = error instanceof TaskFailure ? error.info : { code: "runtime-task-plan-unavailable", outcome: "not-written" as const, phase };
     await host.finish({ status: "hold", error: info, facts });
     return copy({ status: "hold", operationId, attemptId, facts, error: info, trace: [{ decision: "hold", phase }] });
   }
   const attempt = createRuntimeAttempt(signal => host.renew(signal), bounds);
+  let target: GoogleTaskTarget;
   let saved: GoogleTaskSavedProjection;
   let provider: ReturnType<typeof createGoogleTaskUpdateProvider>;
   const persist = async () => { attempt.guard(); const previous = phase; phase = "evidence";
-    try { await host.recordEvidence(copy(facts), attempt.signal); attempt.guard(); } finally { phase = previous; } };
+    try { await host.recordEvidence(nativeCopy(facts), attempt.signal); attempt.guard(); } finally { phase = previous; } };
   const checkpoint = async (point: Parameters<NonNullable<GoogleTaskUpdateHostPorts["checkpoint"]>>[0]) => { attempt.guard(); await host.checkpoint?.(point, attempt.signal); attempt.guard(); };
   const observe = (read: GoogleNativeTaskReadEvidence, confirmed: boolean) => {
     const projected = read.kind === "present" ? googleTaskProjectionFromNative(read.task) : null;
-    facts = copy({ ...facts, remote: { kind: confirmed ? "confirmed" : "conflict", observationId: identity(host.observationId()), read, projection: projected } });
+    facts = nativeCopy({ ...facts, remote: { kind: confirmed ? "confirmed" : "conflict", observationId: identity(host.observationId()), read, projection: projected } });
     trace.push({ decision: confirmed ? "confirmed" : "conflict", phase });
   };
   const achieved = (observed: Readonly<Record<string, unknown>>) => snapshot.policy.readback === "full-target"
     ? sameTask(snapshot.projection, observed) : achievesGoogleTaskPatch(observed, saved.patch);
   const complete = async (read: Extract<GoogleNativeTaskReadEvidence, { kind: "present" }>) => {
     attempt.guard(); observe(read, true); await persist(); await checkpoint("afterReadback"); phase = "ack";
-    const result = await host.ack(copy({ kind: "exact-readback", validator: read.etag,
+    const result = await host.ack(nativeCopy({ kind: "exact-readback", validator: read.etag,
       projection: googleTaskProjectionFromNative(read.task), read, saved, facts }), attempt.signal);
     if (result.kind === "acknowledged") { acknowledged = true; trace.push({ decision: "acknowledged", phase: "ack" }); return; }
     attempt.guard(); throw new TaskFailure({ code: "runtime-ack-authority-changed", outcome: "not-written", phase: "ack" });
   };
   const verify = async () => {
     attempt.guard(); phase = "readback";
-    const read = await provider.readForUpdate(snapshot.target, attempt.signal); attempt.guard();
+    const read = await provider.readForUpdate(target, attempt.signal); attempt.guard();
     if (read.kind === "present" && achieved(googleTaskProjectionFromNative(read.task))) { await complete(read); return; }
     observe(read, false); await persist();
     throw new TaskFailure({ code: "task-write-failed", outcome: "unconfirmed", phase: "readback" });
@@ -138,6 +133,9 @@ export async function runClaimedGoogleTaskUpdate(input: ClaimedGoogleTaskUpdate,
   try {
     await attempt.run(async () => {
       const prepared = await host.prepare(attempt.signal); attempt.guard();
+      const resolved = preparedTaskTarget(snapshot.target, snapshot.envelope, operationId, attemptId, prepared, snapshot.policy.nativeProfile);
+      if (resolved.kind === "no-resource") throw new TaskFailure({ code: "task-version-unavailable", outcome: "not-written", phase });
+      target = resolved.target;
       const dispatchDescriptor = Object.getOwnPropertyDescriptor(prepared, "dispatchAllowed");
       if (dispatchDescriptor && (!("value" in dispatchDescriptor) || typeof dispatchDescriptor.value !== "boolean")) throw new Error("Invalid task dispatch authority.");
       const dispatchAllowed = dispatchDescriptor ? dispatchDescriptor.value as boolean : true;
@@ -163,23 +161,23 @@ export async function runClaimedGoogleTaskUpdate(input: ClaimedGoogleTaskUpdate,
             accountCall(() => host.accountSession.recoverRejectedRead!(connection, token, signal)) } : {}) },
         async beforeMutation(request, signal) {
           attempt.guard(); await host.beforeMutation(request, signal!); attempt.guard();
-          phase = "mutation"; currentDispatched = true; facts = copy({ ...facts, possibleDispatch: true }); trace.push({ decision: "dispatch", phase });
+          phase = "mutation"; currentDispatched = true; facts = nativeCopy({ ...facts, possibleDispatch: true }); trace.push({ decision: "dispatch", phase });
           await checkpoint("beforeDispatch");
         },
         async onAcceptedResponse(receipt, signal) {
           // The native response is known before JSON/tag parsing or a failing
           // persistence callback. It cannot be revoked by later verification.
           acceptedThisAttempt = true;
-          facts = copy({ ...facts, possibleDispatch: true, provider: { kind: "accepted", validator: null }, acceptedStatus: receipt.status });
+          facts = nativeCopy({ ...facts, possibleDispatch: true, provider: { kind: "accepted", validator: null }, acceptedStatus: receipt.status });
           attempt.guard(); signal?.throwIfAborted(); await persist(); await checkpoint("afterAcceptance");
         },
       }, { nativeProfile: snapshot.policy.nativeProfile });
       phase = snapshot.recovery ? "recovery-read" : "preflight";
-      const current = await provider.readForUpdate(snapshot.target, attempt.signal); attempt.guard();
+      const current = await provider.readForUpdate(target, attempt.signal); attempt.guard();
       if (current.kind !== "present") { observe(current, false); throw new TaskFailure({ code: "task-provider-conflict", outcome: "not-written", phase }); }
-      const observedProjection = copy(googleTaskProjectionFromNative(current.task));
+      const observedProjection = nativeCopy(googleTaskProjectionFromNative(current.task));
       const originalBaseline = initialSaved?.baseline ?? preparedBaseline ?? observedProjection;
-      saved = savedProjection(await host.prepareProjection(copy({ observedProjection, target: snapshot.projection, baseline: originalBaseline,
+      saved = savedProjection(await host.prepareProjection(nativeCopy({ observedProjection, target: snapshot.projection, baseline: originalBaseline,
         ...(initialSaved ? { saved: initialSaved } : {}) }), attempt.signal), snapshot.projection);
       attempt.guard();
       if (!sameTask(saved.baseline, originalBaseline) || initialSaved && !sameTask(saved.patch, initialSaved.patch)) throw new Error("Invalid task prepared mask.");
@@ -190,7 +188,7 @@ export async function runClaimedGoogleTaskUpdate(input: ClaimedGoogleTaskUpdate,
       }
       const acceptedEtag = strongGoogleEtag(effectiveEtag);
       if (!acceptedEtag) throw new TaskFailure({ code: "task-version-unavailable", outcome: "not-written", phase: "preflight" });
-      const update: GoogleTaskUpdate = copy({ target: snapshot.target, acceptedEtag, body: saved.patch, operationId, attemptId, serializer: { id: "google-task", version: 1 } });
+      const update: GoogleTaskUpdate = nativeCopy({ target: target, acceptedEtag, body: saved.patch, operationId, attemptId, serializer: { id: "google-task", version: 1 } });
       phase = "preflight"; trace.push({ decision: "preflight", phase });
       await provider.preflightUpdate(update, attempt.signal); attempt.guard();
       if (!Object.keys(saved.patch).length) { await complete(current); return; }
@@ -200,15 +198,15 @@ export async function runClaimedGoogleTaskUpdate(input: ClaimedGoogleTaskUpdate,
       try {
         const written = await provider.update(update, attempt.signal); attempt.guard();
         if (written.kind !== "written") throw new TaskFailure({ code: "task-write-failed", outcome: "unconfirmed", phase: "mutation" });
-        facts = copy({ ...facts, provider: { kind: "accepted", validator: written.etag } }); trace.push({ decision: "accepted", phase: "mutation" });
+        facts = nativeCopy({ ...facts, provider: { kind: "accepted", validator: written.etag } }); trace.push({ decision: "accepted", phase: "mutation" });
         await persist();
       } catch (error) {
         let info = failure(error, error instanceof TaskFailure ? error.info.phase : phase);
         if (acceptedThisAttempt && info.outcome === "not-written") info = { ...info, outcome: "unconfirmed" };
         if (currentDispatched && info.outcome === "unconfirmed" && facts.provider.kind !== "accepted")
-          facts = copy({ ...facts, provider: { kind: "uncertain" } });
+          facts = nativeCopy({ ...facts, provider: { kind: "uncertain" } });
         if (facts.possibleDispatch && info.outcome === "unconfirmed" && snapshot.policy.ambiguousRecovery === "within-attempt") {
-          if (facts.provider.kind !== "accepted") facts = copy({ ...facts, provider: { kind: "uncertain" } });
+          if (facts.provider.kind !== "accepted") facts = nativeCopy({ ...facts, provider: { kind: "uncertain" } });
           await persist(); await checkpoint("afterUncertain"); await verify(); return;
         }
         throw new TaskFailure(info, error);
@@ -219,18 +217,18 @@ export async function runClaimedGoogleTaskUpdate(input: ClaimedGoogleTaskUpdate,
     if (!acknowledged) {
       const info = failure(error, phase);
       if (currentDispatched && info.outcome === "unconfirmed" && facts.provider.kind !== "accepted")
-        facts = copy({ ...facts, provider: { kind: "uncertain" } });
-      if (currentDispatched && info.phase === "mutation" && info.outcome === "not-written" && info.providerStatus !== undefined && facts.provider.kind !== "accepted" && facts.provider.kind !== "uncertain") facts = copy({ ...facts, provider: rejected(info) });
-      else if (facts.possibleDispatch && facts.provider.kind === "not-dispatched") facts = copy({ ...facts, provider: { kind: "uncertain" } });
+        facts = nativeCopy({ ...facts, provider: { kind: "uncertain" } });
+      if (currentDispatched && info.phase === "mutation" && info.outcome === "not-written" && info.providerStatus !== undefined && facts.provider.kind !== "accepted" && facts.provider.kind !== "uncertain") facts = nativeCopy({ ...facts, provider: rejected(info) });
+      else if (facts.possibleDispatch && facts.provider.kind === "not-dispatched") facts = nativeCopy({ ...facts, provider: { kind: "uncertain" } });
       const interrupted = attempt.signal.aborted ? failure(attempt.signal.reason, info.phase) : info;
       terminal = { status: interrupted.code === "task-provider-conflict" ? "conflict" : "hold", error: interrupted, facts,
         ...(interrupted.retryAfterMs === undefined ? {} : { retryAfterMs: interrupted.retryAfterMs }), cause: error instanceof TaskFailure ? error.cause : error };
       trace.push({ decision: terminal.status, phase: interrupted.phase });
     }
   } finally { attempt.close(); }
-  if (acknowledged) return copy({ status: "acked", operationId, attemptId, facts, trace });
+  if (acknowledged) return nativeCopy({ status: "acked", operationId, attemptId, facts, trace });
   terminal ??= { status: "hold", error: { code: "task-write-failed", outcome: "not-written", phase }, facts };
-  await host.finish({ ...terminal, facts: copy(terminal.facts) });
-  if (acknowledged) return copy({ status: "acked", operationId, attemptId, facts, trace });
-  return copy({ status: terminal.status, operationId, attemptId, facts: terminal.facts, error: terminal.error, trace });
+  await host.finish({ ...terminal, facts: nativeCopy(terminal.facts) });
+  if (acknowledged) return nativeCopy({ status: "acked", operationId, attemptId, facts, trace });
+  return nativeCopy({ status: terminal.status, operationId, attemptId, facts: terminal.facts, error: terminal.error, trace });
 }

@@ -97,7 +97,8 @@ export class ReferenceStore {
     const taskUpdate = await readFile(new URL("./schema-google-task-update.sql", import.meta.url), "utf8");
     const taskDelete = await readFile(new URL("./schema-google-task-delete.sql", import.meta.url), "utf8");
     const taskCreate = await readFile(new URL("./schema-google-task-create.sql", import.meta.url), "utf8");
-    await this.transaction(async client => { await client.query(sql); await client.query(forward); await client.query(create); await client.query(graph); await client.query(caldav); await client.query(graphCreate); await client.query(caldavCreate); await client.query(taskUpdate); await client.query(taskDelete); await client.query(taskCreate); });
+    const taskIntents = await readFile(new URL("./schema-google-task-intents.sql", import.meta.url), "utf8");
+    await this.transaction(async client => { await client.query(sql); await client.query(forward); await client.query(create); await client.query(graph); await client.query(caldav); await client.query(graphCreate); await client.query(caldavCreate); await client.query(taskUpdate); await client.query(taskDelete); await client.query(taskCreate); await client.query(taskIntents); });
   }
   private async transaction<T>(body: (client: PoolClient) => Promise<T>, signal?: AbortSignal): Promise<T> {
     signal?.throwIfAborted();

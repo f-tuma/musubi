@@ -33,9 +33,9 @@ async function confirmed(claim: ReferenceTaskCreateClaim, candidateValidator: st
   return observed;
 }
 const tables = ["reference_connections", "reference_objects", "reference_bindings", "reference_operations", "reference_attempts", "reference_task_objects", "reference_task_bindings", "reference_task_operations", "reference_task_attempts"];
-const newColumns = ["create_operation_id", "create_profile", "create_candidate_id", "create_candidate_validator", "create_acceptance_status"];
+const newColumns = ["create_operation_id", "create_profile", "create_candidate_id", "create_candidate_validator", "create_acceptance_status", "predecessor_operation_id", "queued_intent_id", "resolution_basis", "completion_evidence"];
 async function rows(legacy = false) { const result: Record<string, unknown> = {}; for (const table of tables) result[table] = (await pool.query(`SELECT * FROM ${table} ORDER BY id`)).rows.map(row => legacy && table.startsWith("reference_task_") ? Object.fromEntries(Object.entries(row).filter(([key]) => !newColumns.includes(key))) : row); return result; }
-const oids = async () => (await pool.query("SELECT relname,oid FROM pg_class WHERE relname LIKE 'reference_%' AND relkind IN ('r','i') ORDER BY relname")).rows;
+const oids = async () => (await pool.query("SELECT relname,oid FROM pg_class WHERE relname LIKE 'reference_%' AND relname NOT LIKE 'reference_task_intents%' AND relkind IN ('r','i') ORDER BY relname")).rows;
 let oldRows: unknown, oldOids: unknown;
 before(async () => {
   await admin.query(`CREATE DATABASE "${name}"`);

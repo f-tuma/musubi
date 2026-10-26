@@ -1,8 +1,9 @@
 import type {
-  GoogleTaskTarget, GoogleTaskProjection, GoogleTaskUpdateBody, GoogleTaskUpdate,
+  GoogleTaskProjection, GoogleTaskUpdateBody, GoogleTaskUpdate,
   GoogleNativeTaskReadEvidence, GoogleTaskProviderPorts,
 } from "@musubi/provider-google";
 import type { SyncOperationRowBinding } from "@musubi/types";
+import type { GoogleTaskClaimTarget, GoogleTaskPreparation } from "./google-task-address-ports";
 import type {
   RuntimeProviderFact, RuntimeAttemptOptions, RuntimeErrorInfo, RuntimeAckResult,
   RuntimeCheckpoint, RuntimeTraceEntry,
@@ -36,7 +37,7 @@ export interface ClaimedGoogleTaskUpdate {
   readonly attemptId: string;
   readonly payload: unknown;
   readonly binding: SyncOperationRowBinding;
-  readonly nativeTarget: GoogleTaskTarget;
+  readonly nativeTarget: GoogleTaskClaimTarget;
   readonly collectionIdentity: "native" | "musubi-google-task-list";
   readonly acceptedEtag: unknown;
   readonly recovery: { readonly required: boolean; readonly possibleDispatch: boolean };
@@ -59,7 +60,7 @@ export interface RuntimeTaskFinishOutcome {
   readonly cause?: unknown;
 }
 export interface GoogleTaskUpdateHostPorts {
-  prepare(signal: AbortSignal): Promise<{ acceptedEtag: unknown; baseline: unknown; saved?: unknown; dispatchAllowed?: boolean }>;
+  prepare(signal: AbortSignal): Promise<GoogleTaskPreparation>;
   /** Persist once at the existing host preparation boundary. Returned mask and
    * baseline are validated against the immutable admitted target by the kernel. */
   prepareProjection(input: {

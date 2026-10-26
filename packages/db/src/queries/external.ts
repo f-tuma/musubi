@@ -10,7 +10,7 @@ import { expandRecurringEvents } from "@musubi/calendar";
 import { TaskSchema, ProviderReminderEditSchema, ProviderEventStateSchema, type ProviderEventState, type ProviderSettingTimeEvidence, hasKnownEventTime, BadRequestError, EventTimeModelSchema, OccurrenceStartSchema, type EventTimeModel, type OccurrenceStart } from "@musubi/types";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import { appendTaskOutbox, prepareTaskOutboxInTransaction, finishTaskOutboxInTransaction, assertTaskOutboxSourceInTransaction, taskOutboxLeaseGuard, getTaskOutboxPredecessorEvidenceInTransaction, type TaskOutboxRow } from "./task-outbox";
+import { appendTaskOutbox, prepareTaskOutboxInTransaction, finishTaskOutboxInTransaction, assertTaskOutboxSourceInTransaction, taskOutboxLeaseGuard, getTaskOutboxPredecessorEvidenceInTransaction, assertTaskOutboxPredecessorResolutionInTransaction, TaskOutboxPredecessorError, type TaskOutboxRow, type TaskOutboxPredecessorResolution } from "./task-outbox";
 import { assertLegacyEventTimePatch } from "./event-time-write";
 import { appendEventOutbox, reserveEventMutation, type EventOutboxIntent } from "./event-outbox";
 import { retainPendingEventPull, retainUnmappedCreatePull, retainUnsupportedEventPull } from "./event-outbox-pull";
@@ -1778,7 +1778,7 @@ function sameTaskAcknowledgementRef(a: TaskAcknowledgementExpectedRef | null | u
 export async function acceptTaskOutboxDelivery(row: TaskOutboxRow, leaseToken: string,
   evidence: { ref: { externalTaskId: string; etag?: string | null; icalUid?: string | null }; projection: Record<string, unknown> } | null,
   deletionRef?: { externalTaskId: string; etag?: string | null; icalUid?: string | null }, signal?: AbortSignal,
-  expectedRef?: TaskAcknowledgementExpectedRef | null) {
+  expectedRef?: TaskAcknowledgementExpectedRef | null, expectedResolution?: TaskOutboxPredecessorResolution) {
   // Copy caller-owned evidence before any pool/lock wait. Only the identifier is
   // read from its row DTO; every authority/scope field comes from the locked row.
   const operationID = row.id, observation = evidence === null ? null : {
@@ -1789,6 +1789,7 @@ export async function acceptTaskOutboxDelivery(row: TaskOutboxRow, leaseToken: s
   };
   const deletedRef = deletionRef === undefined ? undefined : structuredClone(deletionRef);
   const suppliedExpected = expectedRef === undefined ? undefined : structuredClone(expectedRef);
+  const suppliedResolution = expectedResolution === undefined ? undefined : structuredClone(expectedResolution);
   signal?.throwIfAborted();
   try {
     return await db.transaction(async tx => {
@@ -1817,12 +1818,16 @@ export async function acceptTaskOutboxDelivery(row: TaskOutboxRow, leaseToken: s
           await settle("blocked", "task-source-changed", { ...proof, uncertain: !observation && row.uncertain });
           return false;
         }
-        const predecessor = await getTaskOutboxPredecessorEvidenceInTransaction(tx, row);
-        const expected = normalizedTaskAcknowledgementRef(predecessor.ref);
         const conflict = async () => {
           await settle("conflict", "task-provider-conflict", { ...proof, uncertain: true });
           return false;
         };
+        if ((suppliedResolution !== undefined || row.payload.dispatchResolution !== undefined) &&
+            !await assertTaskOutboxPredecessorResolutionInTransaction(tx, row, leaseToken, suppliedResolution, signal)) return conflict();
+        let predecessor: Awaited<ReturnType<typeof getTaskOutboxPredecessorEvidenceInTransaction>>;
+        try { predecessor = await getTaskOutboxPredecessorEvidenceInTransaction(tx, row); }
+        catch (error) { if (error instanceof TaskOutboxPredecessorError) return conflict(); throw error; }
+        const expected = normalizedTaskAcknowledgementRef(predecessor.ref);
         if (predecessor.hasPredecessorEvidence && !predecessor.matchingPredecessorSource) return conflict();
         if (suppliedExpected !== undefined && !sameTaskAcknowledgementRef(suppliedExpected, expected)) return conflict();
         const pinnedUid = decoded.kind === "pinned-v1" && row.provider === "caldav" && typeof decoded.envelope.nativePlan.data.uid === "string"

@@ -5,11 +5,11 @@ import type { GoogleTaskDelete, GoogleTaskDeleteProviderPorts, GoogleNativeTaskD
   GoogleNativeTaskDeletePreflight, GoogleNativeTaskDeleteEvidence, GoogleNativeTaskDeleteResponse } from "./task-delete-types";
 import type { GoogleTaskTarget } from "./task-types";
 
-function deleteInput(value: unknown): GoogleTaskDelete {
+function deleteInput(value: unknown, allowNativeId: boolean): GoogleTaskDelete {
   const item = taskExact(value, ["target", "acceptedEtag", "operationId", "attemptId", "serializer"]);
   const serializer = taskExact(item.serializer, ["id", "version"]);
   if (serializer.id !== "google-task" || serializer.version !== 1) throw new GoogleTaskProviderError("task-projection-unavailable");
-  return Object.freeze({ target: snapshotGoogleTaskTarget(item.target), acceptedEtag: requireGoogleTaskEtag(item.acceptedEtag),
+  return Object.freeze({ target: snapshotGoogleTaskTarget(item.target, allowNativeId), acceptedEtag: requireGoogleTaskEtag(item.acceptedEtag),
     operationId: taskIdentity(item.operationId), attemptId: taskIdentity(item.attemptId),
     serializer: Object.freeze({ id: "google-task" as const, version: 1 as const }) });
 }
@@ -20,12 +20,12 @@ export function createGoogleTaskDeleteProvider(ports: GoogleTaskDeleteProviderPo
   const { strict, session, request, read, invalidScope } = createGoogleTaskTransport<"DELETE">(ports, options, true);
   return {
     async readForDelete(input: GoogleTaskTarget, signal?: AbortSignal, mode: "delivery" | "mutation-preflight" = "delivery"): Promise<GoogleNativeTaskDeleteReadEvidence> {
-      const scope = snapshotGoogleTaskTarget(input);
+      const scope = snapshotGoogleTaskTarget(input, !strict);
       if (mode !== "delivery" && mode !== "mutation-preflight") throw new GoogleTaskProviderError("task-projection-unavailable");
       return read(scope, await session(scope, signal), signal, mode);
     },
     async preflightDelete(input: GoogleTaskDelete, signal?: AbortSignal): Promise<GoogleNativeTaskDeletePreflight> {
-      const accepted = deleteInput(input), current = await session(accepted.target, signal);
+      const accepted = deleteInput(input, !strict), current = await session(accepted.target, signal);
       const evidence = await read(accepted.target, current, signal, "delivery");
       // The existing API continues to the writer's final fresh GET even here.
       if (evidence.kind === "absent") return evidence;
@@ -33,7 +33,7 @@ export function createGoogleTaskDeleteProvider(ports: GoogleTaskDeleteProviderPo
       return { kind: "allowed", read: evidence };
     },
     async delete(input: GoogleTaskDelete, signal?: AbortSignal): Promise<GoogleNativeTaskDeleteEvidence> {
-      const accepted = deleteInput(input), current = await session(accepted.target, signal);
+      const accepted = deleteInput(input, !strict), current = await session(accepted.target, signal);
       const evidence = await read(accepted.target, current, signal, "mutation-preflight");
       if (evidence.kind === "absent") return { kind: "absent", status: evidence.status, source: "writer-read" };
       if (evidence.etag !== accepted.acceptedEtag) throw new GoogleTaskProviderError("task-provider-conflict");

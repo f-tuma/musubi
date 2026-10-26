@@ -15,10 +15,11 @@ export function taskIdentity(value: unknown): string {
   if (typeof value !== "string" || !value || value.length > 2048) throw invalid();
   return value;
 }
-export function snapshotGoogleTaskTarget(value: unknown): GoogleTaskTarget {
+export function snapshotGoogleTaskTarget(value: unknown, allowNativeId = false): GoogleTaskTarget {
   const item = taskExact(value, ["connectionId", "connectionGeneration", "taskListId", "taskId"]);
+  if (typeof item.taskId !== "string" || !item.taskId || !allowNativeId && item.taskId.length > 2048) throw invalid();
   const scope = { connectionId: taskIdentity(item.connectionId), connectionGeneration: taskIdentity(item.connectionGeneration),
-    taskListId: taskIdentity(item.taskListId), taskId: taskIdentity(item.taskId) };
+    taskListId: taskIdentity(item.taskListId), taskId: item.taskId };
   try { encodeURIComponent(scope.taskListId); encodeURIComponent(scope.taskId); } catch { throw invalid(); }
   return Object.freeze(scope);
 }

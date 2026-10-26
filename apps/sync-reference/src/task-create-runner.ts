@@ -19,7 +19,7 @@ export async function deliverReferenceTaskCreate(store: ReferenceTaskCreateRunne
     options.attemptId !== undefined && !taskIdentity(options.attemptId) || options.checkpoint !== undefined && typeof options.checkpoint !== "function" ||
     typeof ports?.http?.fetch !== "function" || typeof ports?.clock?.nowEpochMs !== "function" || typeof ports?.clock?.nowMonotonicMs !== "function" || typeof ports?.telemetry?.record !== "function") throw new TypeError("Invalid reference task CREATE runner options");
   options.signal?.throwIfAborted();
-  const attemptId = options.attemptId ?? randomUUID(), claimed = await store.claimCreate(operationId, attemptId);
+  const attemptId = options.attemptId ?? randomUUID(), claimed = await store.claimCreate(operationId, attemptId, options.signal);
   if (!claimed) return { status: "unclaimed" as const, operationId, attemptId };
   const claim = Object.freeze(structuredClone(claimed));
   if (claim.endpointProfile !== REFERENCE_TASK_CREATE_PROFILE || claim.binding.kind !== "task" || claim.binding.provider !== "google" || claim.binding.action !== "create") {
