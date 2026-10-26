@@ -179,6 +179,25 @@ hranice výše. Žádný skutečný Google účet, live provider mutation, publi
 nebo produkční rollout tím nebyl provedený. Zůstávají zachované vlastněné raw
 logy a screenshoty mimo repo; committed JSON souhrny nesou jejich hashe/délky.
 
+### CI rozložení databázových sad
+
+První PR head `508c7986388ee65036f04b08e3d1046faed77497` narazil v
+Quality run [40304802546](https://github.com/f-tuma/musubi/actions/runs/40304802546)
+na desetiminutový limit třetího databázového shardu. Poslední zalogovaná
+suite dokončila všech 29 UPDATE případů i úklid poolů; nešlo o věcné selhání
+assertion. Tento běh není zelený merge důkaz.
+
+Váhy `scripts/ci-db-timings.json` jsou přepočtené existujícím provenance
+importérem z nezměněných artefaktů úspěšného run
+[40224381725](https://github.com/f-tuma/musubi/actions/runs/40224381725),
+head `27cb73f6e5c9f60a7224479f1bb995b0f5a845b0`, attempt1. Import ověřuje
+každý report proti jeho skutečně vybraným sadám; obsahuje 133 naměřených
+sad, tři nové používají dosavadní fallback. Všech 136 sad se stále spouští
+právě jednou. Odhadované váhy čtyř shardů jsou 404693/404532/404661/404641 ms;
+nejde o garanci naměřeného CI času. Limit, kontroly a věcné assertions se
+nemění. Timing soubor i tento dokument leží mimo oba schválené image COPY
+contexty, takže installed source a finální browser důkaz zůstávají beze změny.
+
 ## Vendor a rozsah tvrzení
 
 [Google tasks.insert](https://developers.google.com/workspace/tasks/reference/rest/v1/tasks/insert)
