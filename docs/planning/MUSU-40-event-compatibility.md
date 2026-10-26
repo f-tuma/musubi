@@ -1,10 +1,11 @@
 # MUSU-40 · Remaining event lifecycle
 
 This records the pre-policy extraction and the following Google RSVP policy
-change. Combined source acceptance passes; installed and final publication
-gates remain in progress. This is shared host
-compatibility, not native package portability, new provider support, installed
-proof, publication or deployment.
+change. Combined source, local-installed and final application/browser acceptance
+pass in the bounded scope of the [C08 audit](MUSU-40-acceptance.md). Final PR/tree
+review, current-head checks and main verification remain pending. The lifecycle
+is shared host compatibility with its existing provider capability floor;
+registry publication and production deployment remain separate.
 
 The immutable old executor is `event_delivery.ts` at
 `8ea0d3bfe193abd701e06c15d19b5d312bdd2290`, SHA256
@@ -68,6 +69,9 @@ source, privacy and OAuth grant. Started and markerless legacy operations only
 observe; same-intent manual retry never synthesizes permission. A fully desired
 observation may complete, while notification delivery stays unknown. False
 marker authority and an ambiguous COMMIT remain different uncertainty facts.
+An explicit new resolution operation may receive a fresh sidecar under its own
+fresh baseline/source/actor guards; it does not reset permission on the original
+consumed or markerless operation. Recovery of that original row stays read-only.
 
 Event ACK cancellation also retains existing host API capability. Ordinary
 legacy completion did not pass its optional AbortSignal; specialized completion

@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-10-26T17:02:08.055573+00:00",
+  "scope": "Final running web UI after all bounded backend/installed/upgrade/reference QA and rootQA retirement. HTTP/API fixtures prove UI only; actual auth/DB/native proof is separate.",
+  "sourceHead": "d50152b569e47d3ce8ee90c6db1050db699a6f05",
+  "passed": 22,
+  "failed": 0,
+  "firstAttempt": true,
+  "durationSeconds": 38.6,
+  "command": "pnpm --filter @musubi/web exec playwright test e2e/behavior.spec.ts e2e/month-read.spec.ts --grep 'JSON behavior|K13 Google RSVP editor preserves retry|K13 CalDAV RSVP editor preserves retry|K13 Graph one-off RSVP editor preserves retry|K14 personal reminder conflict confirmation|K14 CalDAV event alarm editor preserves retry|Outlook selected occurrence move|Google organizer explicit update' --workers=2 --output=/tmp/musu40-event-final-browser",
+  "flow": "Task editor/preserve/conflict/readonly/cancel; Google/Graph/DAV RSVP retry; reminder/alarm conflict; organizer update; partial/stopped occurrence move",
+  "origin": "http://127.0.0.1:3000",
+  "browser": "Existing Playwright Chromium",
+  "browserRoutingReason": "Browser plugin not available; existing repository Playwright setup used.",
+  "viewports": [
+    {
+      "width": 1280,
+      "height": 900,
+      "theme": "light"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "theme": "dark",
+      "scope": "task JSON cases"
+    },
+    {
+      "width": 390,
+      "height": 900,
+      "theme": "dark",
+      "scope": "specialized month cases"
+    }
+  ],
+  "checks": {
+    "meaningfulRenderedContent": true,
+    "routeAndAccessibleControls": true,
+    "expectedRequestMutationBodiesAndRetryIDs": true,
+    "noUnexpectedConsoleOrPageErrors": true,
+    "noFrameworkOverlay": true,
+    "taskHorizontalOverflow": false,
+    "screenshotsVisuallyInspected": 4,
+    "documentTitleExplicitlyAsserted": false
+  },
+  "visualReview": "Task forms and preserved draft readable in light desktop/dark narrow views; sticky narrow footer and scroll area intact. RSVP controls fit narrow screen; partial move result clearly separates moved/not-moved without overlap. No UI source/style changes.",
+  "qaCleanup": "/tmp/musu40-event-qa-retired.json verifies owned root server removed and0sessions beforebrowser; userQA55437 untouched.",
+  "rawArtifacts": [
+    {
+      "path": "/tmp/musu40-event-final-browser.log",
+      "bytes": 7274,
+      "sha256": "93f0e20ad94c3d00dd09cc589a069e3dfa593de797af360e4511063d5d2fea3c"
+    },
+    {
+      "path": "/tmp/musu40-event-final-browser-inventory.log",
+      "bytes": 2118,
+      "sha256": "e2a30e340cdda292c13b3f8f7cca650c477f1b018a276d975795a8a0cd7e1809"
+    },
+    {
+      "path": "/tmp/musu40-event-qa-retired.json",
+      "bytes": 632,
+      "sha256": "01fbc5d8ae6d604fe1f44861440303c3fec67b11f5affd553e71d02a9295a466"
+    },
+    {
+      "path": "/tmp/musu40-event-final-browser/evidence-task-desktop.png",
+      "bytes": 83637,
+      "sha256": "025fb27fc5f0aa16cc94c83a9aa8206267f4721d9c1781667a85f2eb9a91b0cd",
+      "visuallyInspected": true
+    },
+    {
+      "path": "/tmp/musu40-event-final-browser/evidence-task-narrow.png",
+      "bytes": 30878,
+      "sha256": "b40515641b786aa7f752a2aa51fdfeefec7a01e76007f6f6afb7c8c6a7afc87e",
+      "visuallyInspected": true
+    },
+    {
+      "path": "/tmp/musu40-event-final-browser/evidence-google-rsvp-narrow.png",
+      "bytes": 12180,
+      "sha256": "efc91944a5647f8065fa82562fd9022d8b6cedb1792afe7e0d4a458f5844db1c",
+      "visuallyInspected": true
+    },
+    {
+      "path": "/tmp/musu40-event-final-browser/evidence-move-result-narrow.png",
+      "bytes": 38768,
+      "sha256": "d8500c7d414cacc568a88dafdeacfffc70e12564c7149946b927e37acef67412",
+      "visuallyInspected": true
+    }
+  ],
+  "publication": "No PR/current-head CI/main or production evidence claimed by this report."
+}

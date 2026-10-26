@@ -13,6 +13,11 @@ Každá podporovaná větev musí mít explicitní lifecycle a ověřenou parity
 zbývající compatibility či unsupported profil se nesmí označit za portable.
 Nasazení zůstává společným navazujícím krokem po implementaci a ověření.
 
+Implementace a lokální acceptance C08 jsou dokončené v rozsahu
+[závěrečného auditu](MUSU-40-acceptance.md). Přijetí finálního PR, current-head
+CI a squash/main ověření stále čekají; image důkazy zůstávají připnuté ke skutečným
+source checkpointům. Celý core cíl pokračuje C09 a C10.
+
 ## Rodiny a pořadí
 
 | Gate | Stav | Hranice |
@@ -28,22 +33,22 @@ Nasazení zůstává společným navazujícím krokem po implementaci a ověřen
 | VTODO CREATE/causal flow | Main, PR #385; source/installed/app/CI ověřeno | Task-UUID URL/UID, If-None-Match, read-only uncertain recovery a retained deletion |
 | To Do CREATE | Main, PR #385; source/installed/app/CI ověřeno | Existující home/independent-copy chování, response-address-only recovery |
 | To Do UPDATE/DELETE | Main, PR #385; source/installed/app/CI ověřeno | Zachovat home chování a odmítnutí secondary live writes; portable conditionality zůstává neprokázaná |
-| Generic event leftovers | Shared-host source; čeká installed/final gate | [Event lifecycle](MUSU-40-event-compatibility.md): Google/Graph/DAV CREATE/UPDATE/DELETE a dosavadní all-day/legacy time profily; known-time se odmítá |
-| Google one-off reminders | Shared-host source; čeká installed/final gate | `reminderEdit`: defaults/off/custom s ochranou ostatního contentu |
-| Google instance reminders | Shared-host source; čeká installed/final gate | `reminderInstance`: exact stored original slot; off/custom, nikoli nové defaults |
-| DAV alarms | Shared-host source; čeká installed/final gate | `caldavAlarm`: povolený jednoduchý DISPLAY alarm; zachovat ostatní resource bytes |
-| Google personal occurrence | Shared-host source; čeká installed/final gate | `googleOccurrence`: generated/stored zoned/all-day edit/cancel, původní slot a master |
-| DAV scoped resource | Shared-host source; čeká installed/final gate | `caldavSeries` update/occurrence/restore a `caldavSeriesDeletion` celého resource |
-| DAV following split | Shared-host source; čeká installed/final gate | `caldavSplit`: dva journaled kroky, bez slepého opakování po nejasném výsledku |
-| Graph family CREATE/adoption | Shared-host source; čeká installed/final gate | `graphSeriesCreate`: bounded finite family, transaction correlation, complete ACK |
-| Graph family DELETE | Shared-host source; čeká installed/final gate | `graphSeriesDeletion`: scope/survivor proof, read-only uncertain recovery |
-| Graph occurrence/series content/time | Shared-host source; čeká installed/final gate | `graphOccurrenceContent`: personal/organizer, původní sloty, exceptions, cancellation a time-model hranice |
-| Graph move coordinator | Retained host a shared child; čeká installed/final gate | Nejvýše 20 unique children seřazených podle original start; jeden child za tick, stop/partial journal a pozdní ACK neobnoví zastavené children |
-| Organizer Google/Graph/DAV | Shared-host source; čeká installed/final gate | `organizer`: durable possible-notification marker, oddělená acceptance a outcome, no resend |
-| Graph recurring meeting cancel | Shared-host source; čeká installed/final gate | `graphMeetingCancellation`: finite family/occurrence a existující reprezentace, nikoli CAS |
-| RSVP Google/Graph/DAV | Shared-host source; čeká installed/final gate | `rsvp`: actor, baseline, original slot, imported/tracked family; Graph/DAV permanent observe-only markers, Google samostatný permanentní gate níže |
-| Google RSVP uncertain recovery barrier | Source/PG/native/process ověřeno; čeká installed/final gate | Typovaný private marker před jediným PATCH, exact claim/source/grant/lease; veškerá markerless historie včetně nikdy neodeslané fronty používá GET-only HOLD, retry marker neobnovuje; notification delivery zůstává unknown |
-| Závěrečný cross-family audit | Čeká | Úplnost podporovaných větví, explicitní legacy/unsupported matrix, upgrade/crash/installed/UI a nezávislá revize |
+| Generic event leftovers | Shared host; source/installed/app PASS, čeká PR/CI | [Event lifecycle](MUSU-40-event-compatibility.md): Google/Graph/DAV CREATE/UPDATE/DELETE a dosavadní all-day/legacy time profily; known-time se odmítá |
+| Google one-off reminders | Shared host; source/installed/app PASS, čeká PR/CI | `reminderEdit`: defaults/off/custom s ochranou ostatního contentu |
+| Google instance reminders | Shared host; source/installed/app PASS, čeká PR/CI | `reminderInstance`: exact stored original slot; off/custom, nikoli nové defaults |
+| DAV alarms | Shared host; source/installed/app PASS, čeká PR/CI | `caldavAlarm`: povolený jednoduchý DISPLAY alarm; zachovat ostatní resource bytes |
+| Google personal occurrence | Shared host; source/installed/app PASS, čeká PR/CI | `googleOccurrence`: generated/stored zoned/all-day edit/cancel, původní slot a master |
+| DAV scoped resource | Shared host; source/installed/app PASS, čeká PR/CI | `caldavSeries` update/occurrence/restore a `caldavSeriesDeletion` celého resource |
+| DAV following split | Shared host; source/installed/app PASS, čeká PR/CI | `caldavSplit`: dva journaled kroky, bez slepého opakování po nejasném výsledku |
+| Graph family CREATE/adoption | Shared host; source/installed/app PASS, čeká PR/CI | `graphSeriesCreate`: bounded finite family, transaction correlation, complete ACK |
+| Graph family DELETE | Shared host; source/installed/app PASS, čeká PR/CI | `graphSeriesDeletion`: scope/survivor proof, read-only uncertain recovery |
+| Graph occurrence/series content/time | Shared host; source/installed/app PASS, čeká PR/CI | `graphOccurrenceContent`: personal/organizer, původní sloty, exceptions, cancellation a time-model hranice |
+| Graph move coordinator | Retained host a shared child; source/installed/app PASS, čeká PR/CI | Nejvýše 20 unique children seřazených podle original start; jeden child za tick, stop/partial journal a pozdní ACK neobnoví zastavené children |
+| Organizer Google/Graph/DAV | Shared host; source/installed/app PASS, čeká PR/CI | `organizer`: durable possible-notification marker, oddělená acceptance a outcome, no resend |
+| Graph recurring meeting cancel | Shared host; source/installed/app PASS, čeká PR/CI | `graphMeetingCancellation`: finite family/occurrence a existující reprezentace, nikoli CAS |
+| RSVP Google/Graph/DAV | Shared host; source/installed/app PASS, čeká PR/CI | `rsvp`: actor, baseline, original slot, imported/tracked family; Graph/DAV permanent observe-only markers, Google samostatný permanentní gate níže |
+| Google RSVP uncertain recovery barrier | Source/PG/native/process/installed/app PASS; čeká PR/CI | Typovaný private marker před jediným PATCH, exact claim/source/grant/lease; veškerá markerless historie včetně nikdy neodeslané fronty používá GET-only HOLD, retry marker neobnovuje; notification delivery zůstává unknown |
+| Závěrečný cross-family audit | Implementace/local acceptance PASS; čeká finální revize/PR/CI/main | Úplnost podporovaných větví, explicitní legacy/unsupported matrix, upgrade/crash/installed/UI a nezávislá revize |
 
 Top-level `timeEdit` a `graphOccurrence` jsou reserved selection/admission guard keys,
 nikoli další implementované writer rodiny. Skutečný occurrence content používá
@@ -52,12 +57,28 @@ Jejich dosavadní selection/refusal chování musí zůstat zachované.
 
 Historická event parity zůstává připnuta k pre-policy source checkpointu.
 Google permanentní no-resend je samostatná úmyslná změna původního conditional
-retry profilu; source důkazy nenahrazují čekající installed/final ověření.
+retry profilu. [Závěrečný audit](MUSU-40-acceptance.md) váže dokončenou source,
+local-installed, upgrade a app/browser acceptance; finální revize/PR/CI/main
+zůstávají otevřené. Registry publikace ani produkční nasazení neproběhly.
 
 Tabulka nezavádí podporu Google/To Do recurrence, task move/hierarchy/reorder,
 nových meeting scopes nebo dosud nepodporovaných časových modelů. Existující
 home recurrence a odmítnutí více lossy provider projekcí se musí zachovat.
 Portable To Do UPDATE/DELETE se nepovyšuje na CAS na základě Google testů.
+
+Samostatný reference host má deset skutečných endpoint profilů: Google event
+CREATE/UPDATE/DELETE, Graph event CREATE/DELETE, DAV event CREATE/DELETE a Google
+Task CREATE/UPDATE/DELETE. Generic Graph/DAV UPDATE, specialized event rodiny,
+VTODO a To Do zůstávají explicitní host compatibility; tato extrakce jim
+nepřidává portable podporu.
+
+Legacy/specialized event ACK zachovává host capability floor: guard před vstupem
+do dokončení neprokazuje cancellation rollback během již zahájeného SQL
+pool/lock wait. Task ACK a bounded portable Google route mají vlastní silnější
+ověřené signal/rollback záruky. Tento retained limit se neplete s povinnou Google
+RSVP no-resend politikou, kterou nový permanentní gate řeší. Same-intent retry
+neobnovuje permission; explicitní nová resolution operace může dostat nový
+sidecar až pod vlastními fresh baseline/source/actor guards.
 
 ## Důkazy a zdroje
 

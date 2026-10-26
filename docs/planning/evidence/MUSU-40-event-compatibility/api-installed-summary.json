@@ -1,0 +1,404 @@
+{
+  "schemaVersion": 1,
+  "status": "verified-installed-controller-and-separate-canonical-api",
+  "launcher": {
+    "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/launcher-receipt.json",
+    "sha256": "bcda38804a8b3ddbe0df3cce59c7291cdbe4dd499b74ed3aa979c80155e039c0",
+    "bytes": 12098
+  },
+  "controller": {
+    "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/installed-controller.json",
+    "sha256": "ebcb60a74b396a7b17a07f1d3a338713a12cf48088816ea8ff14a1d983877b35",
+    "bytes": 17221
+  },
+  "approvedHead": "d50152b569e47d3ce8ee90c6db1050db699a6f05",
+  "approvedTree": "bbab7fd1b1d90527e997a728b6c99667b06e5dce",
+  "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+  "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+  "image": {
+    "index": "sha256:4b93de02c626d630f4688af453b26552fcbb6f7e5cb80572759624a79d54f375",
+    "platform": "sha256:64b3d033c769fa0b672ddca3629f7732140315e47d5182c0591e9ee0cc7fe149",
+    "config": "sha256:59fb4071f5bcde425bb4b6ca95abbc3beacb06de242dcb1dc4f9045c76fd693b",
+    "buildState": {
+      "path": "/tmp/musu40-event-api-build-state-frozen-d501.json",
+      "sha256": "a58943253bce2329ed7225dd8b1b0f5ecf7ebe373be233565fb87979c18be326",
+      "bytes": 199326
+    },
+    "copyContextFiles": 922,
+    "uniqueHashesVerified": 691
+  },
+  "eventPrograms": [
+    {
+      "label": "new",
+      "deliveries": 26,
+      "nativeLogicalRequests": 0,
+      "actualRelayRequests": 0,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/generic-new.json",
+        "sha256": "ffd6fd06ba96b9acdc7e8426535a0b900e592fb992d7b86b0907dd49eb89f0f7",
+        "bytes": 1615615
+      },
+      "suite": "generic"
+    },
+    {
+      "label": "new",
+      "deliveries": 18,
+      "nativeLogicalRequests": 78,
+      "actualRelayRequests": 58,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/generic-native-new.json",
+        "sha256": "feeac20cc80ccdad171643aca8bf883f5597c8f832446a4b67bb68d024eb48e3",
+        "bytes": 637028
+      },
+      "suite": "generic-native"
+    },
+    {
+      "label": "new",
+      "deliveries": 53,
+      "nativeLogicalRequests": 156,
+      "actualRelayRequests": 156,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/google-reminders-new.json",
+        "sha256": "741a9af5b6e48d085569bf5fa656cfe9ee6969c22899033a7c5b5d65831299dd",
+        "bytes": 2227604
+      },
+      "suite": "google-reminders"
+    },
+    {
+      "label": "new",
+      "deliveries": 52,
+      "nativeLogicalRequests": 152,
+      "actualRelayRequests": 152,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/google-instance-reminders-new.json",
+        "sha256": "e201dfdd8cba0fd8898a153de694e6fbf8cbab1d51f0269c455c733a52c30872",
+        "bytes": 2707989
+      },
+      "suite": "google-instance-reminders"
+    },
+    {
+      "label": "new",
+      "deliveries": 27,
+      "nativeLogicalRequests": 393,
+      "actualRelayRequests": 393,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/google-occurrence-new.json",
+        "sha256": "df20664dc664016f2a7237e44efed28c7ab23dcee7af1c4aaa436c14945bfd27",
+        "bytes": 1656303
+      },
+      "suite": "google-occurrence"
+    },
+    {
+      "label": "new",
+      "deliveries": 544,
+      "nativeLogicalRequests": 3795,
+      "actualRelayRequests": 0,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/dav-resource-new.json",
+        "sha256": "de6e09ba9f0cae0e4b942a7e1afa2a4f2b99661b002d81f6a4dda5c3d9bafbd8",
+        "bytes": 60633961
+      },
+      "suite": "dav-resource"
+    },
+    {
+      "label": "new",
+      "deliveries": 43,
+      "nativeLogicalRequests": 357,
+      "actualRelayRequests": 0,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/dav-alarms-new.json",
+        "sha256": "cd9a81067333d4f17755e7689dcbce6c863808ab4896ac014c3d74f3afc5fe8e",
+        "bytes": 2107778
+      },
+      "suite": "dav-alarms"
+    },
+    {
+      "label": "new",
+      "deliveries": 41,
+      "nativeLogicalRequests": 316,
+      "actualRelayRequests": 316,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/graph-create-new.json",
+        "sha256": "cf9c5db6ce6cb725c627cfed89ac62da402ad5c65a5ba06483d531dceffdda11",
+        "bytes": 2391536
+      },
+      "suite": "graph-create"
+    },
+    {
+      "label": "new",
+      "deliveries": 24,
+      "nativeLogicalRequests": 277,
+      "actualRelayRequests": 277,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/graph-delete-new.json",
+        "sha256": "3c3cf276e86d116c0a0a6a011697d3d1e2623547687f8c0aa018c415de44c927",
+        "bytes": 3767316
+      },
+      "suite": "graph-delete"
+    },
+    {
+      "label": "new",
+      "deliveries": 29,
+      "nativeLogicalRequests": 1115,
+      "actualRelayRequests": 1115,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/graph-content-new.json",
+        "sha256": "37b27892730d8a3103b613104755c25e4e61b44df8c166840ce77f82eab6b59a",
+        "bytes": 6926564
+      },
+      "suite": "graph-content"
+    },
+    {
+      "label": "new",
+      "deliveries": 37,
+      "nativeLogicalRequests": 2102,
+      "actualRelayRequests": 2102,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/graph-series-content-new.json",
+        "sha256": "4886c100b67a2d014313d222d1c35fb84bba5cd068351a2633881b9b90118bc1",
+        "bytes": 10558443
+      },
+      "suite": "graph-series-content"
+    },
+    {
+      "label": "new",
+      "deliveries": 35,
+      "nativeLogicalRequests": 556,
+      "actualRelayRequests": 556,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/graph-meeting-cancel-new.json",
+        "sha256": "9688a8cb172fd3ca2200b5c0c32d110b45523efef70641531c20a7ab9127b679",
+        "bytes": 5846101
+      },
+      "suite": "graph-meeting-cancel"
+    },
+    {
+      "label": "new",
+      "deliveries": 63,
+      "nativeLogicalRequests": 264,
+      "actualRelayRequests": 264,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/google-organizer-new.json",
+        "sha256": "6d967750a323980af1c840e0b0c938a85f24d0645b0d86117c60947ec73079a7",
+        "bytes": 16541871
+      },
+      "suite": "google-organizer"
+    },
+    {
+      "label": "new",
+      "deliveries": 10,
+      "nativeLogicalRequests": 61,
+      "actualRelayRequests": 61,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/graph-organizer-new.json",
+        "sha256": "60fa38fc33de757e8c23736f094ef8d9f119ecad26a9ce323beddfd62936f6e8",
+        "bytes": 505264
+      },
+      "suite": "graph-organizer"
+    },
+    {
+      "label": "new",
+      "deliveries": 35,
+      "nativeLogicalRequests": 681,
+      "actualRelayRequests": 0,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/dav-organizer-new.json",
+        "sha256": "dff9076e7ceca9c43ad00faa3fefab0a2f01b9637aefd5753f9e42deff6b4541",
+        "bytes": 2155355
+      },
+      "suite": "dav-organizer"
+    },
+    {
+      "label": "new",
+      "deliveries": 21,
+      "nativeLogicalRequests": 135,
+      "actualRelayRequests": 135,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/google-rsvp-new.json",
+        "sha256": "c6da1d76aef577fbac072a16aa166ca8aa27397bf7c051a05d51f0643b801585",
+        "bytes": 1146309
+      },
+      "suite": "google-rsvp"
+    },
+    {
+      "label": "new",
+      "deliveries": 4,
+      "nativeLogicalRequests": 14,
+      "actualRelayRequests": 14,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/google-rsvp-recovery-new.json",
+        "sha256": "f37e4559064cb9624a9ed257eea06c56ec580f33c0ee69363613ad1dd4b5ab77",
+        "bytes": 288417
+      },
+      "suite": "google-rsvp-recovery"
+    },
+    {
+      "label": "new",
+      "deliveries": 39,
+      "nativeLogicalRequests": 247,
+      "actualRelayRequests": 247,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/graph-rsvp-new.json",
+        "sha256": "805919e303586f1287bb3f622e7aa95fe9f82e4483a875140170732c738f9922",
+        "bytes": 2173778
+      },
+      "suite": "graph-rsvp"
+    },
+    {
+      "label": "new",
+      "deliveries": 30,
+      "nativeLogicalRequests": 617,
+      "actualRelayRequests": 0,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/dav-rsvp-new.json",
+        "sha256": "1c2b5422985a0b53415c33d452a5eb2b0ac84b85e67cbb436ee1f20da84e73ef",
+        "bytes": 2129990
+      },
+      "suite": "dav-rsvp"
+    },
+    {
+      "label": "new",
+      "deliveries": 37,
+      "nativeLogicalRequests": 1740,
+      "actualRelayRequests": 1740,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-event-installed-controller-evidence-20261026163750_5287efcc/event-full/graph-move-new.json",
+        "sha256": "ee21e7d1163ee7bb2479f01bb7da3fa429454d5bc695fac3b7a6fc19f30fcd4a",
+        "bytes": 17664000
+      },
+      "suite": "graph-move"
+    }
+  ],
+  "eventTotals": {
+    "deliveries": 1168,
+    "nativeLogicalRequests": 13056,
+    "actualRelayRequests": 7586
+  },
+  "retained": {
+    "task": {
+      "schemaVersion": 1,
+      "suite": "task-compatibility-pg-native",
+      "mode": "new-only",
+      "cases": 33,
+      "crashPairedCases": 0,
+      "crashPhases": []
+    },
+    "pinned": "unchanged fixture assertions passed",
+    "googleCases": 58,
+    "googleProcessCheckpointCases": 5,
+    "eventStreamingProcessEvidence": "Separate source proof; this event controller run explicitly disables process mode",
+    "canonicalApiAuthSmoke": "Separate unmodified-layout zero-mount gate"
+  },
+  "layout": {
+    "controllerSourceBindMounts": 0,
+    "controllerTestMounts": [
+      "/tools:ro",
+      "/evidence:rw"
+    ],
+    "immutableAppPlusByteIdenticalMirror": {
+      "installedApiUnchanged": true,
+      "mirroredApiUnchanged": true,
+      "installedWorkspaceSourcesUnchanged": true,
+      "installedMigrationsUnchanged": true,
+      "compilerUnchanged": true
+    },
+    "compilerIsSeparateReadOnlyTestTool": true
+  },
+  "canonicalApi": {
+    "artifact": {
+      "path": "/tmp/musu40-event-compatibility-api-proof-20261026163751_fc6808.json",
+      "sha256": "3d064997e55adc26c54e8ca267f2e206ec04bafebc942d026087b26c4d260a7e",
+      "bytes": 4910
+    },
+    "httpChecks": 17,
+    "migrations": 86,
+    "runtime": {
+      "user": "node",
+      "sourceBindMounts": 0,
+      "mounts": []
+    },
+    "encoderDefaultOn": true,
+    "realAuthBypass": false,
+    "cleanup": {
+      "containerRemoved": true,
+      "nonceDatabaseDropped": true,
+      "containerAbsentVerified": true,
+      "nonceDatabaseAbsentVerified": true,
+      "rootPostgresStillRunning": true
+    }
+  },
+  "cleanup": {
+    "containerAbsentVerified": true,
+    "sessionsBeforeDrop": 0,
+    "droppedDatabases": [
+      "event_ic_20261026163750_5287efcc"
+    ],
+    "forceUsed": false,
+    "scope": "Unique proof role ownership only; no global nonce-prefix sweep or backend termination",
+    "databasesBeforeDrop": [
+      "event_ic_20261026163750_5287efcc"
+    ],
+    "roleAbsentVerified": true
+  },
+  "qualification": "Controlled installed evidence only; Google58 five SIGKILL/restarts distinct from source event16 streaming pairs; canonical application17 uses unchanged /app and zero mounts"
+}

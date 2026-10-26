@@ -1,0 +1,199 @@
+{
+  "schemaVersion": 1,
+  "status": "verified-independent-installed-reference",
+  "sourceContext": {
+    "approvedStagedTree": "ee9e4ddb69202bda123c3f8652967c753c344d07",
+    "gitHead": "06d08da12ca88593d61540b2f67a37fd69de4779",
+    "createdAt": "2026-10-26T16:21:16.089878+00:00",
+    "imageTag": "musubi-c08-event-compatibility-reference:proof",
+    "oldImageTag": "musubi-c08-task-compatibility-reference:proof",
+    "expectedOldImageId": "sha256:a7817d7854db0cf88df7a53ca6983fa05ba01702496ab0f9f4a0e64ca2b3a995",
+    "expectedOldPlatformManifestDigest": "sha256:9adaf703f16c6e64fae9061042345b5c6f12ddec40251e02db966c7c493edadc",
+    "expectedOldImageConfigDigest": "sha256:85aecbff98c3625cfe40c11c1eeace00b5ca7ccb1ab6d78186c42b0ffcd86f90",
+    "context": "/tmp/musu40-event-compatibility-reference-context",
+    "files": 261,
+    "fingerprint": "5589982948e74e938fc576a310fa2442567f6cb1c2bbd81db9dadebaac5d1cac",
+    "sourceBindMounts": 0,
+    "scope": "Exact approved staged COPY closure; excludes env/data/node_modules/build output/symlinks; no registry publication or production deployment."
+  },
+  "currentCopyEquality": {
+    "pathsVerified": 261,
+    "allCurrentEqual06ApprovedEqualFrozen": true,
+    "deltaOverlap": [],
+    "fingerprint": "5589982948e74e938fc576a310fa2442567f6cb1c2bbd81db9dadebaac5d1cac"
+  },
+  "image": {
+    "archive": {
+      "path": "/tmp/musu40-event-compatibility-reference-evidence/image-local-oci.tar",
+      "bytes": 65107968,
+      "sha256": "8a71e7f3b85267c9febba242026088ae913d6921146d94f165c72b3668e3b9c9",
+      "streamHashed": true,
+      "retained": true,
+      "note": "Archive retained for independent OCI layer verification."
+    },
+    "imageTag": "musubi-c08-event-compatibility-reference:proof",
+    "dockerImageInspectId": "sha256:74f3770efa4d2054704f15ae6ba8babf1e67e3460c9ba49e6860f25851b4498f",
+    "platform": {
+      "os": "linux",
+      "architecture": "amd64"
+    },
+    "localBuildIndexDigest": "sha256:74f3770efa4d2054704f15ae6ba8babf1e67e3460c9ba49e6860f25851b4498f",
+    "platformManifestDigest": "sha256:8b7d78860c0f54b0b302df2fc5bcebc306727e03f38eb5b10e2313addc3c8984",
+    "imageConfigDigest": "sha256:dcace29445a293273086e86278185fb634b8ce557957b92df6d4cd4f21a5107a",
+    "note": "Local OCI index, platform manifest and config are distinct; no registry publication."
+  },
+  "attestation": {
+    "checkedFiles": 230,
+    "productionFiles": 128,
+    "mismatches": [],
+    "namedPackages": 30,
+    "forbiddenNamesChecked": [
+      "@musubi/auth",
+      "@musubi/config",
+      "@musubi/db",
+      "@musubi/mobile",
+      "better-auth",
+      "expo",
+      "react-native",
+      "typescript"
+    ],
+    "forbiddenNamesPresent": [],
+    "runtimeUser": "node",
+    "readOnlyFilesystem": true,
+    "sourceMounts": 0
+  },
+  "artifact": {
+    "path": "/tmp/musu40-event-compatibility-reference-evidence/artifact-attestation.json",
+    "sha256": "a0d9653eb4058f53aff9e8d09350a9395ded260a9b72529bdb754fb50a02bab9",
+    "bytes": 386
+  },
+  "upgradeProof": {
+    "artifact": {
+      "path": "/tmp/musu40-event-compatibility-reference-evidence/installed-reference-proof.json",
+      "sha256": "949949d1208ee44ce3d8320b6cdf2d3e177f0fb332d1ee2a68d99930ac9bea4a",
+      "bytes": 80285
+    },
+    "cases": 17,
+    "cliCommands": 219,
+    "nativeFixtureRequests": 166,
+    "profiles": [
+      "google/event/create",
+      "google/event/update",
+      "google/event/delete",
+      "microsoft/event/create",
+      "microsoft/event/delete",
+      "caldav/event/create",
+      "caldav/event/delete",
+      "google/task/create",
+      "google/task/update",
+      "google/task/delete"
+    ],
+    "oldPendingOperations": 11,
+    "oldOidsPreserved": 28,
+    "queueRelationsRetained": 5,
+    "addedEndpointProfiles": false
+  },
+  "installedCorpus": {
+    "status": "passed",
+    "pureCases": 161,
+    "storageCases": 207,
+    "nativeProcessCases": 287,
+    "nativeProcessFamilyCounts": {
+      "Reference process fixture": 30,
+      "Reference DELETE process fixture": 18,
+      "Reference CREATE process fixture": 22,
+      "Reference Graph guarded DELETE process": 17,
+      "Reference CalDAV conditional DELETE process": 28,
+      "Reference Graph CREATE process": 31,
+      "Reference CalDAV conditional CREATE process": 42,
+      "Reference Task process": 25,
+      "Reference Task DELETE process": 31,
+      "Reference Task CREATE process": 24,
+      "Reference Task intent process": 19
+    },
+    "sourceApprovedExpectedCounts": {
+      "pure": 161,
+      "storage": 207,
+      "nativeProcess": 287
+    },
+    "countsComputedFromActualOutput": true,
+    "runs": [
+      {
+        "script": "test",
+        "log": "installed-pure.log",
+        "name": "musu40-event-compat-ref-corpus-c257462e-89b9-4733-9e67-0a92847b3e2a",
+        "code": 0,
+        "signal": null,
+        "durationMs": 7038,
+        "image": "musubi-c08-event-compatibility-reference:proof",
+        "sourceMounts": 0,
+        "readOnlyFilesystem": true,
+        "parentNonceDatabase": "reference_installed_event_compat_corpus_c225999042664a07ae8b4bdc627f5a11",
+        "configuration": [
+          "REFERENCE_DATABASE_URL",
+          "REFERENCE_CREDENTIAL_KEY",
+          "ENVIRONMENT=test (test harness only)",
+          "npm_config_cache",
+          "npm_config_update_notifier=false"
+        ]
+      },
+      {
+        "script": "test:db",
+        "log": "installed-db-process.log",
+        "name": "musu40-event-compat-ref-corpus-5ccccaac-b513-45a3-b57e-79f07569f9f0",
+        "code": 0,
+        "signal": null,
+        "durationMs": 323298,
+        "image": "musubi-c08-event-compatibility-reference:proof",
+        "sourceMounts": 0,
+        "readOnlyFilesystem": true,
+        "parentNonceDatabase": "reference_installed_event_compat_corpus_c225999042664a07ae8b4bdc627f5a11",
+        "configuration": [
+          "REFERENCE_DATABASE_URL",
+          "REFERENCE_CREDENTIAL_KEY",
+          "ENVIRONMENT=test (test harness only)",
+          "npm_config_cache",
+          "npm_config_update_notifier=false"
+        ]
+      }
+    ],
+    "harnessNote": "ENVIRONMENT=test belongs only to installed test harnesses; actual production CLI proof uses only REFERENCE configuration and bounded test HTTP preload."
+  },
+  "cleanup": [
+    {
+      "database": "reference_installed_event_compat_8f115261abb04346a8ddf10c9ad334d2",
+      "dropped": true,
+      "remainingOwnedNonceDatabases": [],
+      "remainingOwnedContainers": [],
+      "rootOwnedQaPgDisposition": "left running for root cleanup; no other author container touched"
+    },
+    {
+      "parentCorpusDatabase": "reference_installed_event_compat_corpus_c225999042664a07ae8b4bdc627f5a11",
+      "dropped": true,
+      "remainingOwnedNonceDatabases": [],
+      "referenceDatabasesBefore": [],
+      "referenceDatabasesAfter": [],
+      "plainDropWithoutForce": true,
+      "otherDatabaseRowsUntouched": true
+    }
+  ],
+  "qualification": "Existing ten endpoint profiles only: Google eventC/U/D, Microsoft eventC/D, CalDAV eventC/D, Google taskC/U/D. No generic Microsoft/DAV UPDATE, meetings/recurrence/VTODO/ToDo portability inferred. Reference source06 COPY remains equal d501 by independent261path check.",
+  "finalVerification": {
+    "receipt": {
+      "path": "/tmp/musu40-event-compatibility-reference-evidence/cleanup-verified.json",
+      "sha256": "b2e423af6d581522a36f01e90aa51bb51b71ad3b21a5f2b6ec5befdb31033e6f",
+      "bytes": 592
+    },
+    "v2DriverLog": {
+      "path": "/tmp/musu40-event-reference-final-verify-v2-driver.log",
+      "sha256": "9d0bab8c08b135e8f3465c3ded4ec0caea6a0b5cba70bb50878050d0a95507ce",
+      "bytes": 542
+    },
+    "retainedFailedV1DriverLog": {
+      "path": "/tmp/musu40-event-reference-final-verify-driver.log",
+      "sha256": "a32ec400a13d6c0172fe10eab8a2a38a28b66685412330686a918f0a261ef1c4",
+      "bytes": 1146
+    },
+    "qualification": "V1 used an obsolete historical source-root literal. Active-v2 corrected only that literal to canonical root; unchanged verification then passed. Failure remains preserved, not product failure or successful evidence."
+  }
+}

@@ -1,0 +1,323 @@
+{
+  "schemaVersion": 1,
+  "status": "verified-current-policy-default20-source",
+  "artifact": {
+    "path": "/tmp/musu40-google-rsvp-assembly-current20-receipt.json",
+    "sha256": "fe863e7b61bbdf7b2f7ad157e89b4362b7ae2d009744d3e16626705f74fa8690",
+    "bytes": 12936
+  },
+  "head": "06d08da12ca88593d61540b2f67a37fd69de4779",
+  "tree": "ee9e4ddb69202bda123c3f8652967c753c344d07",
+  "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+  "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+  "programs": [
+    {
+      "label": "new",
+      "deliveries": 26,
+      "nativeLogicalRequests": 0,
+      "actualRelayRequests": 0,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/generic-new.json",
+        "sha256": "714f1b525fd5ce192bccbea0435cdc28ce0f31d1517f560a66a32c97e94395ad",
+        "bytes": 1615796
+      },
+      "suite": "generic"
+    },
+    {
+      "label": "new",
+      "deliveries": 18,
+      "nativeLogicalRequests": 78,
+      "actualRelayRequests": 58,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/generic-native-new.json",
+        "sha256": "c464555ee2a186e7fb0ef51293439a2938efb9006fa2bf3c3fb251dc67412e1a",
+        "bytes": 636990
+      },
+      "suite": "generic-native"
+    },
+    {
+      "label": "new",
+      "deliveries": 53,
+      "nativeLogicalRequests": 156,
+      "actualRelayRequests": 156,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/google-reminders-new.json",
+        "sha256": "9f6bdff1f4de52d1d50c68ba302cb7baa2b6446d797fce7b4921105d97f13417",
+        "bytes": 2227980
+      },
+      "suite": "google-reminders"
+    },
+    {
+      "label": "new",
+      "deliveries": 52,
+      "nativeLogicalRequests": 152,
+      "actualRelayRequests": 152,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/google-instance-reminders-new.json",
+        "sha256": "330f2af8dc3e0af1d3368e11b8d68a4418a488e13c54f5cb6c7e5ee19e31bc72",
+        "bytes": 2708094
+      },
+      "suite": "google-instance-reminders"
+    },
+    {
+      "label": "new",
+      "deliveries": 27,
+      "nativeLogicalRequests": 393,
+      "actualRelayRequests": 393,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/google-occurrence-new.json",
+        "sha256": "bcb287eb2dd06635436072c79b58756905cc018016f8bbc7d96b03406581074e",
+        "bytes": 1656303
+      },
+      "suite": "google-occurrence"
+    },
+    {
+      "label": "new",
+      "deliveries": 544,
+      "nativeLogicalRequests": 3795,
+      "actualRelayRequests": 0,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/dav-resource-new.json",
+        "sha256": "380213a3e7a097baa03caf398e6484526b3059547171c4156571e354d43df15f",
+        "bytes": 60634088
+      },
+      "suite": "dav-resource"
+    },
+    {
+      "label": "new",
+      "deliveries": 43,
+      "nativeLogicalRequests": 357,
+      "actualRelayRequests": 0,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/dav-alarms-new.json",
+        "sha256": "a90d2eff0fba53854b6069a82fca393714e32c283125d56b5316159c287d87ba",
+        "bytes": 2107783
+      },
+      "suite": "dav-alarms"
+    },
+    {
+      "label": "new",
+      "deliveries": 41,
+      "nativeLogicalRequests": 316,
+      "actualRelayRequests": 316,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/graph-create-new.json",
+        "sha256": "e141d437c5e9735cecf3c9a0878194e9e0d97a846dd52a92afcf7216f50c7a1f",
+        "bytes": 2148802
+      },
+      "suite": "graph-create"
+    },
+    {
+      "label": "new",
+      "deliveries": 24,
+      "nativeLogicalRequests": 277,
+      "actualRelayRequests": 277,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/graph-delete-new.json",
+        "sha256": "4e82971dcfb00e5790d1fdabed283b2732e3345e48b6316ebd4d8621d979e6dc",
+        "bytes": 3767235
+      },
+      "suite": "graph-delete"
+    },
+    {
+      "label": "new",
+      "deliveries": 29,
+      "nativeLogicalRequests": 1115,
+      "actualRelayRequests": 1115,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/graph-content-new.json",
+        "sha256": "f3f1135c7aa489367dd905aec62c9c23e4ff26a79bc70563823564d1171cfb78",
+        "bytes": 6926591
+      },
+      "suite": "graph-content"
+    },
+    {
+      "label": "new",
+      "deliveries": 37,
+      "nativeLogicalRequests": 2102,
+      "actualRelayRequests": 2102,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/graph-series-content-new.json",
+        "sha256": "9bd2ee1b9d527cdaac3aee7461049227f61cbe0b4f0734583b2bb0c16e7a563b",
+        "bytes": 10558453
+      },
+      "suite": "graph-series-content"
+    },
+    {
+      "label": "new",
+      "deliveries": 35,
+      "nativeLogicalRequests": 556,
+      "actualRelayRequests": 556,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/graph-meeting-cancel-new.json",
+        "sha256": "22c273fb19604547e0d13c53195184cf2b4ae1d5eba89f45ed12334b2163a599",
+        "bytes": 5846079
+      },
+      "suite": "graph-meeting-cancel"
+    },
+    {
+      "label": "new",
+      "deliveries": 63,
+      "nativeLogicalRequests": 264,
+      "actualRelayRequests": 264,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/google-organizer-new.json",
+        "sha256": "1f8a3f45b4b5cfad65119aaf1d154056a4a2a5e9715c3ec8c7b667b305d28476",
+        "bytes": 16535743
+      },
+      "suite": "google-organizer"
+    },
+    {
+      "label": "new",
+      "deliveries": 10,
+      "nativeLogicalRequests": 61,
+      "actualRelayRequests": 61,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/graph-organizer-new.json",
+        "sha256": "db5e2eb39306f807ec55e8bde8fddb33caca04c0f8f3b55b8a0d2d21d6caaebf",
+        "bytes": 505241
+      },
+      "suite": "graph-organizer"
+    },
+    {
+      "label": "new",
+      "deliveries": 35,
+      "nativeLogicalRequests": 681,
+      "actualRelayRequests": 0,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/dav-organizer-new.json",
+        "sha256": "6899292e41a08d84d2395011c443d3e8beac12a65e46e0842f1877bb4da9f3b8",
+        "bytes": 2155387
+      },
+      "suite": "dav-organizer"
+    },
+    {
+      "label": "new",
+      "deliveries": 21,
+      "nativeLogicalRequests": 135,
+      "actualRelayRequests": 135,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/google-rsvp-new.json",
+        "sha256": "ec555ba84dd09913af75cf6ba9699affa79507ab4655f1cf0289def8c7eee307",
+        "bytes": 1146304
+      },
+      "suite": "google-rsvp"
+    },
+    {
+      "label": "new",
+      "deliveries": 4,
+      "nativeLogicalRequests": 14,
+      "actualRelayRequests": 14,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/google-rsvp-recovery-new.json",
+        "sha256": "d8b4927852d002dd36f27d6e99a79f3f7866f9b80f91272289927b990e122ce2",
+        "bytes": 288412
+      },
+      "suite": "google-rsvp-recovery"
+    },
+    {
+      "label": "new",
+      "deliveries": 39,
+      "nativeLogicalRequests": 247,
+      "actualRelayRequests": 247,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/graph-rsvp-new.json",
+        "sha256": "6538aa7160506bbd345357c3c7558a99c71b3fb89edad97f35ac7217c7589f0c",
+        "bytes": 2173791
+      },
+      "suite": "graph-rsvp"
+    },
+    {
+      "label": "new",
+      "deliveries": 30,
+      "nativeLogicalRequests": 617,
+      "actualRelayRequests": 0,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/dav-rsvp-new.json",
+        "sha256": "a201b928641769e21ef2b8b07699f5c942dcb74b15736a81c28506ce2fbbf835",
+        "bytes": 2129966
+      },
+      "suite": "dav-rsvp"
+    },
+    {
+      "label": "new",
+      "deliveries": 37,
+      "nativeLogicalRequests": 1740,
+      "actualRelayRequests": 1740,
+      "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+      "harnessSha256": "fbb3df69ac1a06e62000eb8ec62d9a1538bfaedee698fb98b88aff627ab2be72",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musu40-google-rsvp-assembled-current20-06d08da/graph-move-new.json",
+        "sha256": "0e63180823d44cfa575ab81d9183243a38c4a396dd4ee840e65acaf26bceee19",
+        "bytes": 17664085
+      },
+      "suite": "graph-move"
+    }
+  ],
+  "totals": {
+    "programs": 20,
+    "deliveries": 1168,
+    "nativeRequests": 13056,
+    "reportedOwnedPoolsClosed": 40,
+    "ownedNonceDatabasesDroppedWithoutForce": 20
+  },
+  "qualification": "Strict Google barrier intentional policy delta; source06/fbb execution distinct from current approved219 clock-controlled harness and pre-policy historical cohorts"
+}
