@@ -12,7 +12,7 @@ const deferred = () => { let resolve!: () => void; const promise = new Promise<v
 const content = { name: "Same native identity", notes: "Synthetic notes", place: "Room", beginsAt: "2026-10-25T08:00:00.000Z", endsAt: "2026-10-25T09:00:00.000Z" };
 async function main() {
   assert.equal(process.env.ENVIRONMENT, "test");
-  const adminURL = process.env.REFERENCE_DATABASE_URL; assert.ok(adminURL, "An explicit disposable reference admin database is required");
+  const adminURL = process.env.REFERENCE_DATABASE_URL ?? (process.env.ENVIRONMENT === "test" ? process.env.DATABASE_URL : undefined); assert.ok(adminURL, "An explicit disposable reference admin database is required");
   const name = referenceTestDatabaseName("reference_cross_account_"), url = new URL(adminURL); url.pathname = `/${name}`;
   const admin = new Pool({ connectionString: adminURL, max: 1 }); await admin.query(`CREATE DATABASE "${name}"`);
   console.log(JSON.stringify({ fixture: { database: name, boundary: "paired-independent-reference" } }));
