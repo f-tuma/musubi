@@ -22,7 +22,11 @@ closes dispatch health, and retries through an out-of-pool timer.
 Malformed external Retry-After is unusable provider data, not a global storage
 fault. Unsupported syntactically valid delays hold only the known physical
 account unavailable over the supported timestamp domain; no earlier certified
-retry is claimed. Unknown preconnection identity never creates a guessed tenant.
+retry is claimed. A MAX-domain cooldown has an explicit local hold: its durable
+control timestamp stays MAX under fractional monotonic clocks and wall-clock
+steps, and reaching that timestamp does not turn the hold into admission.
+Ordinary cooldowns retain their conservative monotonic expiry. Unknown
+preconnection identity never creates a guessed tenant.
 
 The API gives shared OAuth refresh an independent 30-second deadline including
 queue time, combines coordinator shutdown, and releases every waiting parent

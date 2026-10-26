@@ -117,6 +117,32 @@ export async function runFairWorkScenario(scenario: FairWorkScenario): Promise<R
     summary = await parkedPages();
   } else if (scenario.id === "park-until-auxiliary-cold-chain") {
     summary = await auxiliaryColdChain();
+  } else if (scenario.id === "max-cooldown-fractional-clocks") {
+    const until = 253_402_300_799_999, initialEpoch = 1_800_000_000_000;
+    let refusals = 0, sends = 0, metrics = 0; const due: number[] = [];
+    for (const source of ["hydrated", "observed"]) {
+      let epoch = initialEpoch, mono = 0.2;
+      const rows = [{ scope: scope("A"), notBeforeEpochMs: until, minimumRemainingMs: until - initialEpoch }];
+      const budget = createProviderBudget({ limit: () => undefined, clock: { nowEpochMs: () => epoch, nowMonotonicMs: () => mono },
+        cooldowns: { loadActive: async () => source === "hydrated" ? rows : [], extend: async () => rows },
+        retryPersistenceMs: 1000, reservationLifetimeMs: 1000, schedule: () => () => {} });
+      await budget.ready(); if (source === "observed") await budget.observeCooldown({ scopes: [scope("A")], notBeforeEpochMs: until });
+      const coordinator = createFairWorkCoordinator<string>({ capacity: 2, nowMs: () => epoch, schedule: () => () => {}, host: { async execute(c) {
+        try { await dispatchNativeHttp(budget.decorate(() => leaf(c.accountFairnessKey), () => {}), `https://fixture.test/${c.accountFairnessKey}`, {},
+          async () => { assert.equal(c.accountFairnessKey, "B"); sends++; return new Response(null, { status: 200 }); },
+          { nowMonotonicMs: () => mono }, () => { metrics++; }); return settled; }
+        catch (error) { assert(error instanceof ProviderDispatchDeferred); refusals++; due.push(error.deferral.retryAtMs);
+          assert.equal(error.deferral.reason, "cooldown"); return { kind: "deferred", retryAtMs: error.deferral.retryAtMs, changedCalendarIDs: [] }; }
+      } } });
+      try {
+        for (const [index, clock] of [{ epoch: initialEpoch + 1, mono: 0.2 + 0.1 }, { epoch: initialEpoch - 1000, mono: 0.4 },
+          { epoch: initialEpoch + 1000, mono: 0.5 }, { epoch: until, mono: until + 1 }].entries()) {
+          epoch = clock.epoch; mono = clock.mono;
+          assert.deepEqual((await Promise.all([coordinator.submit(candidate(`A-${index}`, "A")), coordinator.submit(candidate(`B-${index}`, "B"))])).map(result => result.kind), ["deferred", "settled"]);
+        }
+      } finally { coordinator.close(); budget.close(); }
+    }
+    summary = { refusals, exactDue: due.every(value => value === until), sends, metrics };
   } else if (scenario.id === "long-cooldown-releases-continuations") {
     const until = 253_402_300_799_999;
     const rows = ["A", "B", "C", "D"].map(key => ({ scope: scope(key), notBeforeEpochMs: until, minimumRemainingMs: until }));

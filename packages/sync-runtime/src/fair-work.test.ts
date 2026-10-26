@@ -46,6 +46,34 @@ test("physical account cooldown survives authorization incarnation changes", asy
   const f = budgetFixture(); await f.budget.ready(); await f.budget.observeCooldown({ scopes: [scope], notBeforeEpochMs: 5000 }); f.advance(1000);
   assert.throws(() => f.budget.admit({ ...leaf, incarnationKey: "grant-2" }), (e: unknown) => e instanceof ProviderDispatchDeferred && e.deferral.reason === "cooldown"); f.budget.close();
 });
+test("MAX cooldown remains a supported-domain hold without fractional-clock overflow or early admission", async () => {
+  const max = 253_402_300_799_999, initialEpoch = 1_800_000_000_000;
+  let epoch = initialEpoch, mono = 0.2;
+  const budget = createProviderBudget({ limit: () => undefined, clock: { nowEpochMs: () => epoch, nowMonotonicMs: () => mono },
+    cooldowns: { loadActive: async () => [{ scope, notBeforeEpochMs: max, minimumRemainingMs: max - epoch }], extend: async () => [] },
+    retryPersistenceMs: 1000, reservationLifetimeMs: 1000 });
+  await budget.ready();
+  try {
+    for (const clock of [{ epoch: initialEpoch + 1, mono: 0.2 + 0.1 }, { epoch: initialEpoch - 1000, mono: 0.4 },
+      { epoch: initialEpoch + 1000, mono: 0.5 }, { epoch: max, mono: max + 1 }]) {
+      epoch = clock.epoch; mono = clock.mono;
+      assert.throws(() => budget.admit(leaf), (error: unknown) => error instanceof ProviderDispatchDeferred &&
+        error.deferral.retryAtMs === max && error.deferral.reason === "cooldown");
+    }
+  } finally { budget.close(); }
+});
+test("ordinary cooldown retains the conservative monotonic duration and still expires", async () => {
+  let epoch = 1000, mono = 0.2;
+  const budget = createProviderBudget({ limit: () => undefined, clock: { nowEpochMs: () => epoch, nowMonotonicMs: () => mono },
+    cooldowns: { loadActive: async () => [{ scope, notBeforeEpochMs: 2000, minimumRemainingMs: 1500 }], extend: async () => [] },
+    retryPersistenceMs: 1000, reservationLifetimeMs: 1000 });
+  await budget.ready();
+  try {
+    epoch = 500; mono = 1499.2;
+    assert.throws(() => budget.admit(leaf), (error: unknown) => error instanceof ProviderDispatchDeferred && error.deferral.retryAtMs === 501);
+    mono = 1500.2; assert.doesNotThrow(() => budget.admit(leaf));
+  } finally { budget.close(); }
+});
 test("request during active work runs a later host claim instead of joining the captured generation", async () => {
   const gate = deferred<void>(), firstStarted = deferred<void>(); let calls = 0;
   const c: WorkCandidate<string> = { key: "work", accountFairnessKey: "account", laneKey: "stream", family: "pull", dueAtMs: 0, orderKey: "1", collisionKeys: ["resource"], hostRef: "work" };

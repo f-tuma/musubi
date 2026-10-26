@@ -128,6 +128,16 @@
       }
     },
     {
+      "id": "max-cooldown-fractional-clocks",
+      "title": "MAX account holds preserve exact eligibility across fractional and stepped clocks",
+      "expected": {
+        "refusals": 8,
+        "exactDue": true,
+        "sends": 8,
+        "metrics": 8
+      }
+    },
+    {
       "id": "long-cooldown-releases-continuations",
       "title": "Four long account cooldowns release continuations before healthy B runs",
       "expected": {

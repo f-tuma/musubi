@@ -1,5 +1,6 @@
 import type { HttpDispatchPort, HttpDispatchRequest } from "./http-dispatch";
 
+const MAX_BUDGET_EPOCH_MS = 253_402_300_799_999;
 export type BudgetDimension = "provider" | "application" | "tenant" | "account";
 export interface BudgetScope { readonly key: string; readonly dimension: BudgetDimension }
 export interface BudgetDeferral {
@@ -11,7 +12,7 @@ export class ProviderDispatchDeferred extends Error {
   readonly deferral: BudgetDeferral;
   constructor(deferral: BudgetDeferral) {
     super("Provider dispatch deferred."); this.name = "ProviderDispatchDeferred";
-    if (!Number.isSafeInteger(deferral.retryAtMs) || deferral.retryAtMs < 0 || deferral.retryAtMs > 253_402_300_799_999)
+    if (!Number.isSafeInteger(deferral.retryAtMs) || deferral.retryAtMs < 0 || deferral.retryAtMs > MAX_BUDGET_EPOCH_MS)
       throw new RangeError("Invalid budget eligibility.");
     if (!["credit", "cooldown", "budget-persistence-pending", "work-capacity"].includes(deferral.reason) || !Array.isArray(deferral.blockedDimensions) ||
       deferral.blockedDimensions.some(dimension => !["provider", "application", "tenant", "account"].includes(dimension)))
@@ -58,14 +59,14 @@ export function parseProviderRetryAfter(value: string | null, nowEpochMs: number
   const text = value.trim();
   if (/^\d+$/.test(text)) {
     const delay = Number(text) * 1000, at = nowEpochMs + delay;
-    return Number.isSafeInteger(delay) && Number.isSafeInteger(at) && at >= 0 && at <= 253_402_300_799_999
+    return Number.isSafeInteger(delay) && Number.isSafeInteger(at) && at >= 0 && at <= MAX_BUDGET_EPOCH_MS
       ? { kind: "supported", notBeforeEpochMs: at, minimumDelayMs: delay } : { kind: "unsupported" };
   }
   // HTTP-date permits IMF-fixdate and the two obsolete recipient formats.
   if (!/^(?:[A-Za-z]{3}, \d{2} [A-Za-z]{3} \d{4} \d{2}:\d{2}:\d{2} GMT|[A-Za-z]+, \d{2}-[A-Za-z]{3}-\d{2} \d{2}:\d{2}:\d{2} GMT|[A-Za-z]{3} [A-Za-z]{3} [ \d]\d \d{2}:\d{2}:\d{2} \d{4})$/.test(text)) return { kind: "invalid" };
   const at = Date.parse(text);
   if (!Number.isFinite(at)) return { kind: "invalid" };
-  return Number.isSafeInteger(at) && at >= 0 && at <= 253_402_300_799_999 ? { kind: "supported", notBeforeEpochMs: at } : { kind: "unsupported" };
+  return Number.isSafeInteger(at) && at >= 0 && at <= MAX_BUDGET_EPOCH_MS ? { kind: "supported", notBeforeEpochMs: at } : { kind: "unsupported" };
 }
 export interface ProviderBudgetOptions {
   /** Explicit operator policy, not provider quota discovery. An absent limit disables that dimension. */
@@ -90,7 +91,7 @@ export function createProviderBudget(options: ProviderBudgetOptions) {
     if (!Number.isFinite(value) || value <= 0) throw new RangeError("Invalid budget bounds.");
   const schedule = options.schedule ?? ((run, delay) => { const timer = setTimeout(run, Math.min(2_147_483_647, delay)); return () => clearTimeout(timer); });
   const buckets = new Map<string, { tokens: number; at: number; capacity: number; rate: number }>();
-  const cooldowns = new Map<string, number>(), pending = new Map<string, CooldownObservation>();
+  const cooldowns = new Map<string, { untilMonotonicMs: number; supportedDomainHold: boolean }>(), pending = new Map<string, CooldownObservation>();
   const reservations = new Map<MutationReservation, { identity: string; expires: number; scopes: readonly BudgetScope[];
     debits: readonly { key: string; bucket: NonNullable<ReturnType<typeof bucket>> }[]; used: boolean }>();
   let hydrated = false, blocked = false, nextPersistenceAtMs: number | undefined, flushing: Promise<boolean> | undefined;
@@ -117,15 +118,28 @@ export function createProviderBudget(options: ProviderBudgetOptions) {
     const epoch = options.clock.nowEpochMs(), mono = options.clock.nowMonotonicMs();
     if (closed || !hydrated || blocked) return { reason: "budget-persistence-pending", blockedDimensions: [],
       retryAtMs: nextPersistenceAtMs ?? epoch + options.retryPersistenceMs };
-    let retry = 0, reason: BudgetDeferral["reason"] = "credit";
+    let retry = 0, supportedDomainHold = false, reason: BudgetDeferral["reason"] = "credit";
     const dimensions: BudgetDimension[] = [];
     for (const scope of scopes) {
-      const cooldown = Math.max(0, (cooldowns.get(scopeID(scope)) ?? mono) - mono);
+      const state = cooldowns.get(scopeID(scope));
+      const cooldown = Math.max(0, (state?.untilMonotonicMs ?? mono) - mono);
       const value = credit ? bucket(scope) : undefined;
       const refill = value && value.tokens < 1 ? Math.ceil((1 - value.tokens) / value.rate) : 0;
-      if (cooldown > 0 || refill > 0) { dimensions.push(scope.dimension); retry = Math.max(retry, cooldown, refill); if (cooldown > 0) reason = "cooldown"; }
+      if (state?.supportedDomainHold || cooldown > 0 || refill > 0) {
+        dimensions.push(scope.dimension); retry = Math.max(retry, cooldown, refill);
+        if (state?.supportedDomainHold) supportedDomainHold = true;
+        if (state?.supportedDomainHold || cooldown > 0) reason = "cooldown";
+      }
     }
-    return dimensions.length ? { retryAtMs: epoch + Math.ceil(retry), blockedDimensions: dimensions, reason } : undefined;
+    // MAX is an unavailable-through-domain hold, not a duration to round-trip
+    // through fractional monotonic time. Keep its exact durable control value
+    // while the independent admission gate stays closed, even after clock jumps.
+    return dimensions.length ? { retryAtMs: supportedDomainHold ? MAX_BUDGET_EPOCH_MS : epoch + Math.ceil(retry), blockedDimensions: dimensions, reason } : undefined;
+  }
+  function raiseCooldown(key: string, untilMonotonicMs: number, supportedDomainHold: boolean, mono: number) {
+    const prior = cooldowns.get(key);
+    cooldowns.set(key, { untilMonotonicMs: Math.max(prior?.untilMonotonicMs ?? mono, untilMonotonicMs),
+      supportedDomainHold: supportedDomainHold || prior?.supportedDomainHold === true });
   }
   function admit(leaf: BudgetLeaf) {
     const scopes = uniqueScopes(leaf.scopes), refused = eligibility(scopes, true);
@@ -138,7 +152,7 @@ export function createProviderBudget(options: ProviderBudgetOptions) {
       if (!Number.isFinite(row.notBeforeEpochMs) || !Number.isFinite(row.minimumRemainingMs) || row.minimumRemainingMs < 0)
         throw new TypeError("Invalid durable cooldown snapshot.");
       const key = scopeID(row.scope), until = mono + Math.max(0, row.minimumRemainingMs, row.notBeforeEpochMs - epoch);
-      cooldowns.set(key, Math.max(cooldowns.get(key) ?? mono, until));
+      raiseCooldown(key, until, row.notBeforeEpochMs === MAX_BUDGET_EPOCH_MS, mono);
     }
   }
   function retry() {
@@ -174,7 +188,7 @@ export function createProviderBudget(options: ProviderBudgetOptions) {
     const scopes = uniqueScopes(observation.scopes), epoch = options.clock.nowEpochMs(), mono = options.clock.nowMonotonicMs();
     for (const scope of scopes) {
       const key = scopeID(scope), until = mono + Math.max(0, observation.notBeforeEpochMs - epoch, observation.minimumDelayMs ?? 0);
-      cooldowns.set(key, Math.max(cooldowns.get(key) ?? mono, until));
+      raiseCooldown(key, until, observation.notBeforeEpochMs === MAX_BUDGET_EPOCH_MS, mono);
       const prior = pending.get(key);
       pending.set(key, { scopes: [scope], notBeforeEpochMs: Math.max(prior?.notBeforeEpochMs ?? -Infinity, observation.notBeforeEpochMs),
         minimumDelayMs: Math.max(prior?.minimumDelayMs ?? 0, observation.minimumDelayMs ?? 0) });
