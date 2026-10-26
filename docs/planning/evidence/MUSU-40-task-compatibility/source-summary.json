@@ -1,0 +1,338 @@
+{
+  "schemaVersion": 1,
+  "scope": "Production source, JSON ports, actual PostgreSQL/native fixtures/process kills, and local workspace checks only. Installed, browser, publication and production deployment are separate gates.",
+  "sourceHead": "8ea0d3bfe193abd701e06c15d19b5d312bdd2290",
+  "sourceTree": "440029cb442eab552c595f27b70c623333627a79",
+  "independentSourceApproval": {
+    "approved": true,
+    "imageClear": true,
+    "originalReviewedManifest": {
+      "baselineCommit": "a143002c45bf8e5a5eaf2fc3817fac430eba9c6b",
+      "baselineSourceSha256": "5267f74c671d7ab0a66a5a5c4de9d56b731d71f6ffd9f439ac5c12769c5b90bd",
+      "files": {
+        "apps/api/src/sync/behavior/task-delivery-driver.ts": "6baed83e279393da10b0f48789328e684ae8d0261a0667bb875b947a65a57d24",
+        "apps/api/src/sync/behavior/task-delivery-harness.test.ts": "959ff61465e5c2ddf66a6d227d303fd426712c7105a02af2ca6fb8365903972b",
+        "apps/api/src/sync/behavior/task-delivery.json": "6378bfd1921eb34006c328b49d3392b786a3f5e379a688da7b9549bdd033d1da",
+        "apps/api/src/sync/task_compatibility_delivery.integration.test.ts": "575d3ab57903d3d0d18d7e6709fb09827b79295b9b7274635d319430d2141031",
+        "apps/api/src/sync/task_delivery.ts": "7e821dce901ac1fef0ec21a228e41600597b72606874d0642caf3cb751060254",
+        "apps/api/src/sync/task_write.ts": "bf57afb615827f97c1fce4e2c4f0a728d1e32ff785e0eff40fb7f564e65c28a5",
+        "docs/planning/MUSU-40-family-inventory.md": "e20799bc99187d19f0c9e6dc291106079b704d82edf9b657c1ead843bfef47d7",
+        "docs/planning/MUSU-40-task-compatibility.md": "3e75eb7f6f3ab514a6d815ab944759f2102639a75952345743c8b37eec38bbc2",
+        "package.json": "e49beb6ed68fa0e1c0017e16d6c68ab5bfb86a2091148f2a73b6c32a70e52c5d",
+        "packages/sync-runtime/package.json": "08e35eaf7026983442572b450e752da87d76d3e7808d68bc8a0d2538a8a30a98",
+        "packages/sync-runtime/src/index.ts": "f6648c5ee8c59919fff4e44a1382ba6ce4b16ba7170e441824015bb7d2b3fc28",
+        "packages/sync-runtime/src/task-compatibility-data.ts": "f155490152e4b70e53c0667725bf428662485ac0425a326f56e062e09630b78b",
+        "packages/sync-runtime/src/task-compatibility-ports.ts": "de8d70d6f2fc3e8ae15d78a94c8cd9b0d363ed5c5fad516bbe42f774e0973509",
+        "packages/sync-runtime/src/task-compatibility.test.ts": "18684e6edb357605ad0a83c64f05abc1811c69791d95ca4b7cd26ce54306f5a0",
+        "packages/sync-runtime/src/task-compatibility.ts": "c7ec6326ae0a5249ec9e25204d77215a5cff3f2610c6943787609c91d68c9da3",
+        "packages/sync-runtime/src/task-projection.ts": "930ca88b16933307ec16888a454070b0af049283c27ccc292e239a4deefe6692",
+        "scripts/ci-shards.test.mjs": "9c9e9db1a0e91393dc8316c316b4247af61401c176998f90507bb16899b4d9e7"
+      }
+    },
+    "rebaseDifferences": "All16 other files byte-identical; only inventory causal status changed to Main PR384. Later planning/evidence/CI-timing files remain outside image COPY contexts."
+  },
+  "fastChecks": {
+    "productionJson": {
+      "suites": 11,
+      "passed": 426,
+      "failed": 0,
+      "errors": 0
+    },
+    "taskDeliveryJson": 59,
+    "taskDeliveryHarness": 15,
+    "compatibilityRuntime": 14,
+    "allRuntimeUnitCases": 121,
+    "runnerAndInventory": 34,
+    "refreshedCiInventory": 11
+  },
+  "sourceNative": {
+    "routineNewOnly": 33,
+    "gitlessRoutine": 33,
+    "historicalNativePairs": 33,
+    "historicalProcessPairs": 24,
+    "actualChildWorkers": 96,
+    "crashPhases": [
+      "raw-native-response",
+      "writer-fulfilled",
+      "readback-observed",
+      "ack-committed"
+    ],
+    "oldExecutor": {
+      "commit": "a143002c45bf8e5a5eaf2fc3817fac430eba9c6b",
+      "sha256": "5267f74c671d7ab0a66a5a5c4de9d56b731d71f6ffd9f439ac5c12769c5b90bd"
+    },
+    "retainedGates": [
+      {
+        "file": "apps/api/src/sync/task_delivery.integration.test.ts",
+        "passed": true,
+        "sessions": 0,
+        "droppedWithoutForce": true
+      },
+      {
+        "file": "apps/api/src/sync/task_ack_delivery.integration.test.ts",
+        "passed": true,
+        "sessions": 0,
+        "droppedWithoutForce": true
+      },
+      {
+        "file": "apps/api/src/task_compatibility.integration.test.ts",
+        "passed": true,
+        "sessions": 0,
+        "droppedWithoutForce": true
+      },
+      {
+        "file": "apps/api/src/sync/pinned_transport.integration.test.ts",
+        "passed": true,
+        "sessions": 0,
+        "droppedWithoutForce": true
+      },
+      {
+        "file": "apps/api/src/sync/optional_tasks.integration.test.ts",
+        "passed": true,
+        "sessions": 0,
+        "droppedWithoutForce": true
+      },
+      {
+        "file": "apps/api/src/sync/microsoft_task_read_completeness.integration.test.ts",
+        "passed": true,
+        "sessions": 0,
+        "droppedWithoutForce": true
+      }
+    ],
+    "cleanup": "All owned pools closed; zero sessions; nonce databases dropped without FORCE."
+  },
+  "workspace": {
+    "command": "ENVIRONMENT=test pnpm check",
+    "exitCode": 0,
+    "includes": [
+      "release metadata",
+      "contracts",
+      "peers",
+      "query runtime",
+      "workspace types",
+      "workspace unit tests",
+      "client/web lint",
+      "registered build tasks"
+    ],
+    "webUnitFiles": 109,
+    "webUnitCases": 841,
+    "lint": "Web zero warnings/errors; client64 existing warnings,0errors.",
+    "build": "Web and docs Turbo tasks passed from cache; API and reference production closure build is separately proven by installed images."
+  },
+  "ci": {
+    "totalDbSuites": 141,
+    "measured": 140,
+    "newSuiteFallbackMs": 15000,
+    "sourceGreenRun": 40319133795,
+    "sourceHead": "451f79ffa1223b88f78c727f2a70199f1380151e",
+    "partitionMs": [
+      396992,
+      397613,
+      397697,
+      396945
+    ],
+    "workflowLimitsUnchanged": true
+  },
+  "rawArtifacts": [
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-final-source-manifest.json",
+      "sha256": "ab236299d31898127b5973e0b6830b4301a60427090ff1d190ba1ee5d27f63b6",
+      "bytes": 2189
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-native-receipts.json",
+      "sha256": "0329086137094d4f6e32c58102299bb16ad076bab08c0ec2d9d3548ef04e1f7c",
+      "bytes": 5579
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-final-source-gates.json",
+      "sha256": "9ea9c1ca327e712655c09746891c030226e350ee3803b929a9290df8a5ecaba5",
+      "bytes": 912
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-final-source-gates.log",
+      "sha256": "f13b878fb6691ee5e216017a9c8807e36c675266c4b343f9d6918f81fcee3960",
+      "bytes": 14918
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-final-gate-0.log",
+      "sha256": "4cc9372da9157c3f3529be74d25979935a3e7ba6fb1f4ea9ed9ca7359e7a05d4",
+      "bytes": 247
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-final-gate-0-migration.log",
+      "sha256": "51721f394deb2e24fd1d87ff9aadc26df7c94f32ed6d710b49f635a2a8bae984",
+      "bytes": 79
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-final-gate-1.log",
+      "sha256": "a9c0666c0300a87b910380120ada7b5f8b886b162879c644f1144194072ab0c2",
+      "bytes": 652
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-final-gate-1-migration.log",
+      "sha256": "51721f394deb2e24fd1d87ff9aadc26df7c94f32ed6d710b49f635a2a8bae984",
+      "bytes": 79
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-final-gate-2.log",
+      "sha256": "29897f9f3779f4e5090a9ce48720bb3648fe8125f6e22981eb646e9ee1418532",
+      "bytes": 2195
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-final-gate-2-migration.log",
+      "sha256": "51721f394deb2e24fd1d87ff9aadc26df7c94f32ed6d710b49f635a2a8bae984",
+      "bytes": 79
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-final-gate-3.log",
+      "sha256": "d8de5da4dae63e51d7bfa96899ec6fada6876bff63b33229dff0672520df5c68",
+      "bytes": 230
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-final-gate-3-migration.log",
+      "sha256": "51721f394deb2e24fd1d87ff9aadc26df7c94f32ed6d710b49f635a2a8bae984",
+      "bytes": 79
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-final-gate-4.log",
+      "sha256": "1bb2fcf6ff56d79ccaad1644757d58a47172307f81da7507330d713bf8007899",
+      "bytes": 3372
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-final-gate-4-migration.log",
+      "sha256": "51721f394deb2e24fd1d87ff9aadc26df7c94f32ed6d710b49f635a2a8bae984",
+      "bytes": 79
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-final-gate-5.log",
+      "sha256": "ccf3903675b4a60a2af529047b8f131dc1a9d3f6b807dd0b8a53e2a4213daf92",
+      "bytes": 6623
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-final-gate-5-migration.log",
+      "sha256": "51721f394deb2e24fd1d87ff9aadc26df7c94f32ed6d710b49f635a2a8bae984",
+      "bytes": 79
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-new-only.log",
+      "sha256": "3806652ecea4c0cc288dd5daadae597bc2c211ce3c99fac0479322e51b4b908c",
+      "bytes": 2860
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-gitless.log",
+      "sha256": "e6fbf7b8225fbe661c6fda9e1c80d8d80c52f6f862d6d714def05f5941b90bd4",
+      "bytes": 2860
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-differential.log",
+      "sha256": "6692f8590e9421052cf0e6dd054e401bb7678fe870149f810c2a6c85b45e7f08",
+      "bytes": 5122
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-root-checks/behavior.json",
+      "sha256": "4710f2ccce19143320bf46956bf921f67691ef9f883c4dff5854fa089fc4b710",
+      "bytes": 64482
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-root-checks/behavior.stderr",
+      "sha256": "f0bb9a0e159fa9fdc53484453b717f766b7b9a8032b47c04d1aabdc64082d386",
+      "bytes": 40
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-root-checks/workspace.log",
+      "sha256": "560d6b17001b3a7a88f4b7b8c59feee3250b76ebe2182f7c0268825ab9f26ef5",
+      "bytes": 336279
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-root-checks/runner.log",
+      "sha256": "969c6ca75aee1984f3ffe6557750b9a30f2d3522e12ce1e95b8ac71c7bc58395",
+      "bytes": 7773
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-root-checks/ci-shards-refreshed.log",
+      "sha256": "36077395d3ce957cf0f05cc9961501505c3422392145dc802094c50aeb85c46c",
+      "bytes": 2554
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-root-checks/preflight.json",
+      "sha256": "41b1052564b263fc3a77499667a26092519437fa022a4414b9505ade4079470d",
+      "bytes": 2398
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-ci-timings/run.json",
+      "sha256": "073d845e6fe069be9ef3d8b7ed06b0b7e9b1637d8b6430c468946f794438c026",
+      "bytes": 11571
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-ci-timings/artifacts.json",
+      "sha256": "95db2f8b176bb0ed1311f16eca1d0a95576c56c80b9256fad457836cb5431438",
+      "bytes": 12008
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-ci-timings/imported.json",
+      "sha256": "119dcaf2f0448f133b572ef23ee995d69dabef642a9a69471249c712b282583f",
+      "bytes": 11725
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-ci-timings/database-timings-1/db-results.json",
+      "sha256": "5942bf2122cb5f427c621e37469381cf06b5f83c38cd20c6ca40b141217ad8dd",
+      "bytes": 4338
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-ci-timings/database-timings-1/selected-tests.txt",
+      "sha256": "845e694e242a0dff1962e71d8a7a66b826b29d64c4dbfcacc9a605c1a89eb0f1",
+      "bytes": 2078
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-ci-timings/database-timings-2/db-results.json",
+      "sha256": "1e05a50557ecfc52c38296b4e39f481a5af77dd75d7304ed68f640a1a667ce0a",
+      "bytes": 4343
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-ci-timings/database-timings-2/selected-tests.txt",
+      "sha256": "926c10e78a8764fbaacbc028005ad61ff35fedbd9794ec21aca504757517a72c",
+      "bytes": 2089
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-ci-timings/database-timings-3/db-results.json",
+      "sha256": "550a24a2c9891f900e11ec6ed03db480fa5e857adce86703cb40f9bfbdf69554",
+      "bytes": 4351
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-ci-timings/database-timings-3/selected-tests.txt",
+      "sha256": "156c782715d245897ab07c66915d7483e9c911c7b992deb1758cefe70c5533d7",
+      "bytes": 2091
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-ci-timings/database-timings-4/db-results.json",
+      "sha256": "e78c88e5c9623830109cb9f8430a89b2c7342a3e9a06b730f1d951a6f17296b7",
+      "bytes": 4314
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-ci-timings/database-timings-4/selected-tests.txt",
+      "sha256": "f3879e4b0cce3a63c8e88a8d32187e21635759928c2d36a1c7846185a2a9f61b",
+      "bytes": 2058
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-final-runtime-tests.log",
+      "sha256": "89f41de3c551de1fec52d3e1ff9eef8a565aae244567968a88606bfc16dcc059",
+      "bytes": 25959
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-final-json-harness.log",
+      "sha256": "408635964cc59babef4c7776527299eee9d0c7b43e324e1c6dede61849c2acf1",
+      "bytes": 336
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-final-ci-shards.log",
+      "sha256": "e41830d5d8d72e046c01213ef8ba3c398222ee6c7a75fc02d60d80dfe1942600",
+      "bytes": 2552
+    },
+    {
+      "path": "/tmp/musubi-c08-task-compatibility-behavior.json",
+      "sha256": "07228a20621f1dc4c071852740396ac9124e919cec4e0627996806bdd567bc77",
+      "bytes": 9353
+    }
+  ]
+}
