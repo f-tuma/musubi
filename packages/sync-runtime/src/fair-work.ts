@@ -69,6 +69,12 @@ export function createFairWorkCoordinator<H>(options: FairWorkOptions<H>) {
     const until = refused.get(candidate.key);
     if (until !== undefined && until <= now()) refused.delete(candidate.key);
     if (until !== undefined && until > candidate.dueAtMs) candidate = { ...candidate, dueAtMs: until };
+    // A descriptor read before the previous claim deferred can arrive after its
+    // completion. Report the known due time rather than retaining its caller
+    // until then; the background candidate still waits for a fresh host claim.
+    if (waiter && until !== undefined && until > now()) {
+      waiter.resolve({ kind: "deferred", retryAtMs: candidate.dueAtMs, changedCalendarIDs: [] }); waiter = undefined;
+    }
     const existing = pending.get(candidate.key);
     if (existing) {
       if (waiter) { if (existing.waiters.length >= 128) { waiter.reject(new ProviderDispatchDeferred({ retryAtMs: now() + 1000, reason: "work-capacity", blockedDimensions: [] })); return; } existing.waiters.push(waiter); }
@@ -78,12 +84,17 @@ export function createFairWorkCoordinator<H>(options: FairWorkOptions<H>) {
     if (pending.size >= maximum) { waiter?.reject(new ProviderDispatchDeferred({ retryAtMs: now() + 1000, reason: "work-capacity", blockedDimensions: [] })); return; }
     pending.set(candidate.key, { candidate: owned(candidate), waiters: waiter ? [waiter] : [], queueKey: candidate.key });
   }
-  function backoff(key: string, until: number) {
+  function backoff(key: string, until: number, result?: Extract<WorkExecutionResult, { kind: "deferred" }>) {
     refused.delete(key); refused.set(key, until);
     const maximum = Math.max(128, (options.candidateLimit ?? 80) * 4);
     while (refused.size > maximum) refused.delete(refused.keys().next().value!);
-    for (const item of pending.values()) if (!item.resume && item.candidate.key === key)
+    for (const item of pending.values()) if (!item.resume && item.candidate.key === key) {
       item.candidate = owned({ ...item.candidate, dueAtMs: Math.max(item.candidate.dueAtMs, until) });
+      // These callers requested a later capture while this claim was active.
+      // Deferral is control information, never an ACK of their newer work.
+      // Keep the queued candidate, but release callers with the exact result.
+      if (result) for (const waiter of item.waiters.splice(0)) waiter.resolve(result);
+    }
   }
   function choose(): Pending<H> | undefined {
     const regular = [...permits.values()].filter(state => !state.item.candidate.auxiliary).length;
@@ -127,7 +138,7 @@ export function createFairWorkCoordinator<H>(options: FairWorkOptions<H>) {
     permits.set(permit, state); for (const key of state.keys) collisions.set(key, permit);
     void Promise.resolve().then(() => options.host.execute(c, permit, controller.signal)).then(result => {
       if (result.kind === "skipped" && ["not-eligible", "lost-lease"].includes(result.reason)) backoff(c.key, now() + 100);
-      else if (result.kind === "deferred") backoff(c.key, result.retryAtMs);
+      else if (result.kind === "deferred") backoff(c.key, result.retryAtMs, result);
       for (const waiter of item.waiters) waiter.resolve(result);
     }, error => {
       backoff(c.key, now() + 1000);

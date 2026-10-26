@@ -3,6 +3,17 @@
   "driver": "fair-work",
   "scenarios": [
     {
+      "id": "active-deferral-releases-submitters",
+      "title": "Direct submitters receive a running background claim's deferral without waiting until its future due time",
+      "expected": {
+        "releasedSubmitters": 3,
+        "exactDue": true,
+        "partialInvalidations": [["partial"], ["partial"]],
+        "executions": 2,
+        "pending": 0
+      }
+    },
+    {
       "id": "account-a-429-b-ready",
       "title": "Account cooldown releases A while ready B dispatches",
       "expected": {

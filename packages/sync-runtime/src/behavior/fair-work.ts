@@ -42,7 +42,31 @@ export async function loadFairWorkSuite() {
 }
 export async function runFairWorkScenario(scenario: FairWorkScenario): Promise<Record<string, unknown>> {
   let summary: Record<string, unknown>;
-  if (scenario.id === "account-a-429-b-ready") {
+  if (scenario.id === "active-deferral-releases-submitters") {
+    const until = 253_402_300_799_999, gate = deferred<void>(), started = deferred<void>();
+    let time = 0, offered = false, executions = 0;
+    const results: WorkExecutionResult[] = [];
+    const coordinator = createFairWorkCoordinator<string>({ capacity: 1, nowMs: () => time, schedule: () => () => {}, host: {
+      candidates: async () => ({ candidates: offered ? [] : (offered = true, [candidate("A")]) }),
+      async execute() { if (++executions === 1) { started.resolve(); await gate.promise;
+        return { kind: "deferred", retryAtMs: until, changedCalendarIDs: ["partial"] }; } return settled; },
+    } });
+    const waiting: Promise<unknown>[] = [];
+    try {
+      coordinator.kick(); await started.promise;
+      for (let i = 0; i < 2; i++) waiting.push(coordinator.submit(candidate("A")).then(result => { results.push(result); }, () => {}));
+      gate.resolve(); await tick();
+      assert.equal(results.length, 2, "A deferred background claim must release both direct submitters");
+      assert(results.every(result => result.kind === "deferred" && result.retryAtMs === until));
+      assert.deepEqual(results.map(result => result.kind === "skipped" ? [] : result.changedCalendarIDs), [["partial"], ["partial"]]);
+      waiting.push(coordinator.submit(candidate("A")).then(result => { results.push(result); }, () => {}));
+      await tick(); assert.equal(results.length, 3, "A stale descriptor after backoff must return its future eligibility");
+      assert.equal(executions, 1, "No duplicate claim may execute before eligibility");
+      time = until; coordinator.kick(); await tick();
+      summary = { releasedSubmitters: results.length, exactDue: results.every(result => result.kind === "deferred" && result.retryAtMs === until),
+        partialInvalidations: results.slice(0, 2).map(result => result.kind === "skipped" ? [] : result.changedCalendarIDs), executions, pending: coordinator.snapshot().pending };
+    } finally { gate.resolve(); coordinator.close(); await Promise.all(waiting); }
+  } else if (scenario.id === "account-a-429-b-ready") {
     const f = fixture(); await f.budget.ready(); await f.budget.observeCooldown({ scopes: [scope("A")], notBeforeEpochMs: 5000 });
     const calls: string[] = [];
     const coordinator = createFairWorkCoordinator<string>({ capacity: 2, nowMs: () => 0, host: { async execute(c) {

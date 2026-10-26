@@ -11,6 +11,11 @@ account and advisory collision holds, then reacquires fairly. There are at most
 headroom remains available for refresh dependencies. New regular overload is an
 explicit typed deferral. One regular account cannot fill the parked set or the
 bounded pending queue. Only one child can borrow a parent permit at a time.
+Direct callers queued behind a running claim receive its exact deferral promptly,
+including partial invalidations. The future background candidate remains queued.
+A descriptor arriving after backoff also returns its known eligibility without
+retaining the caller. A successful older capture still requires a later host
+claim for newer requested generations; deferral never acknowledges those writes.
 
 `provider-budget.ts` accepts private host-issued physical-account scope keys and
 explicit operator limits. Unknown tenant identity supplies no tenant scope.
