@@ -211,3 +211,16 @@ the original historical artifact.
 
 The harness and these source receipts are separate from image publication,
 installation, browser verification and deployment evidence.
+
+The CalDAV alarm version has a separate, narrowly bound fixture witness. Its
+actual production hash input is the seven-element tuple `[link ID, mapping ID,
+resource URL, ETag, UID, event revision, complete before ICS]`. The worker calls
+the real `caldavAlarmVersion` and independently verifies that exact raw tuple.
+Only the resource URL's already-recorded owned fixture origin becomes its
+server alias for a derived comparison hash; the raw suffix, encoding, query,
+fragment, identifiers, validator, revision and every before-resource byte stay
+exact. The derived value is permitted only at that operation's rooted alarm
+request version and its copied resolution version, which must equal the same
+current raw alarm witness. Native lookalikes, unrelated resolution fields and
+other version producers receive no exception. Raw receipts remain unchanged,
+and an altered or unproven raw/copied witness is refused.

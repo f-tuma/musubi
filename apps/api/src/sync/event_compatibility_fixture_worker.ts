@@ -7,7 +7,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { Readable } from "node:stream";
 import { fork, type ChildProcess } from "node:child_process";
-import { EVENT_COMPATIBILITY_TABLES, eventCompatibilityFamily, eventCompatibilityProductionFingerprint, eventCompatibilityHarnessFingerprint, eventCompatibilityNormalizedWitnessInput, type EventCompatibilityWitness, type EventCompatibilityEchoObservation, type EventCompatibilitySerializerClock } from "./event_compatibility_fixture_manifest";
+import { EVENT_COMPATIBILITY_TABLES, eventCompatibilityFamily, eventCompatibilityProductionFingerprint, eventCompatibilityHarnessFingerprint, eventCompatibilityNormalizedWitnessInput, eventCompatibilityAlarmWitnessInput, eventCompatibilityNormalizedAlarmWitnessInput, eventCompatibilityDataHash, type EventCompatibilityWitness, type EventCompatibilityEchoObservation, type EventCompatibilitySerializerClock, type EventCompatibilityAlarmWitness } from "./event_compatibility_fixture_manifest";
 
 type Plain = null | boolean | number | string | Plain[] | { [key: string]: Plain };
 type Row = Record<string, unknown>;
@@ -395,10 +395,32 @@ async function main() {
     if (processReceipt) { for (const row of [processReceipt.before, processReceipt.checkpoint, processReceipt.afterKill, processReceipt.afterRestart]) collectSerializerClock(row);
       for (const state of [processReceipt.checkpointState, processReceipt.afterKillState, processReceipt.finalState]) for (const row of state.event_outbox ?? []) collectSerializerClock(row); }
   } catch (error) { failure ??= error; }
+  const alarmWitnesses = new Map<string, EventCompatibilityAlarmWitness>();
+  const alarmVersion = (require("@musubi/db") as { caldavAlarmVersion: (context: unknown, before: string) => string }).caldavAlarmVersion;
+  const collectAlarmWitness = (row: Row | null | undefined) => {
+    if (!row || row.provider !== "caldav") return;
+    const payload = row.payload as Row | undefined, intent = payload?.caldavAlarm as { context: Parameters<typeof eventCompatibilityAlarmWitnessInput>[0]; before: string; request: { expectedStateVersion: string } } | undefined;
+    if (!intent) return;
+    const input = eventCompatibilityAlarmWitnessInput(intent.context, intent.before), rawHash = intent.request.expectedStateVersion, recomputedRawHash = alarmVersion(intent.context, intent.before);
+    assert.equal(rawHash, recomputedRawHash, "Actual production CalDAV alarm hash must prove its complete raw admission input");
+    assert.equal(eventCompatibilityDataHash(input), rawHash, "Independently prove the exact seven-element raw producer tuple");
+    const resolution = payload?.resolution as { expectedReminderStateVersion?: string } | undefined;
+    if (resolution?.expectedReminderStateVersion !== undefined) assert.equal(resolution.expectedReminderStateVersion, rawHash, "Copied resolution witness must equal this exact current alarm admission");
+    const normalized = eventCompatibilityNormalizedAlarmWitnessInput(input, origins);
+    const context = { ...intent.context, mapping: { ...intent.context.mapping, ref: { ...intent.context.mapping.ref, externalEventId: normalized[2] } } };
+    const normalizedHash = alarmVersion(context, intent.before); assert.equal(eventCompatibilityDataHash(normalized), normalizedHash);
+    const proof = { operationId: String(row.id), input, rawHash, recomputedRawHash, normalizedHash };
+    const previous = alarmWitnesses.get(proof.operationId); if (previous) assert.deepEqual(proof, previous); alarmWitnesses.set(proof.operationId, proof);
+  };
+  try {
+    for (const record of records) { collectAlarmWitness(record.before); collectAlarmWitness(record.after); collectAlarmWitness(record.returned as Row | null); for (const row of record.state.event_outbox ?? []) collectAlarmWitness(row); }
+    if (processReceipt) { for (const row of [processReceipt.before, processReceipt.checkpoint, processReceipt.afterKill, processReceipt.afterRestart]) collectAlarmWitness(row);
+      for (const state of [processReceipt.checkpointState, processReceipt.afterKillState, processReceipt.finalState]) for (const row of state.event_outbox ?? []) collectAlarmWitness(row); }
+  } catch (error) { failure ??= error; }
   const productionEnd = await eventCompatibilityProductionFingerprint(root), sourceStable = productionStart.sha256 === productionEnd.sha256;
   const harnessEnd = await eventCompatibilityHarnessFingerprint(root), harnessStable = harnessEnd.sha256 === harnessManifest.sha256;
   await writeFile(output, JSON.stringify({ schemaVersion: 1, label, sourceSha256, harnessSha256, harnessManifest, harnessEnd, harnessStable, executorSourceSha256, productionStart, productionEnd, sourceStable,
-    records, wire, relayWire, origins, witnesses: [...witnesses.values()], serializerClocks: [...serializerClocks.values()], echoObservations, ...(processReceipt ? { processReceipt, processRuntime, processTransport } : {}), ownedPoolsClosed: ownedPools.size, passed: failure === undefined }, null, 2));
+    records, wire, relayWire, origins, witnesses: [...witnesses.values()], serializerClocks: [...serializerClocks.values()], alarmWitnesses: [...alarmWitnesses.values()], echoObservations, ...(processReceipt ? { processReceipt, processRuntime, processTransport } : {}), ownedPoolsClosed: ownedPools.size, passed: failure === undefined }, null, 2));
   if (!sourceStable && process.env.MUSUBI_EVENT_COMPATIBILITY_ALLOW_INTERMEDIATE !== "1") throw new Error("Production source changed during this fixture; receipt is intermediate, not final acceptance");
   if (!harnessStable && process.env.MUSUBI_EVENT_COMPATIBILITY_ALLOW_INTERMEDIATE !== "1") throw new Error("Fixture or harness source changed during this fixture; receipt is intermediate, not final acceptance");
   if (failure) throw failure;

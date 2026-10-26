@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { EVENT_COMPATIBILITY_FIXTURES, eventCompatibilityFamily, eventCompatibilityFixtureSource, eventCompatibilityDataHash, eventCompatibilityNormalizedWitnessInput, eventCompatibilityGeneratedClockResource, type EventCompatibilitySerializerClock } from "./event_compatibility_fixture_manifest";
+import { EVENT_COMPATIBILITY_FIXTURES, eventCompatibilityFamily, eventCompatibilityFixtureSource, eventCompatibilityDataHash, eventCompatibilityNormalizedWitnessInput, eventCompatibilityGeneratedClockResource, eventCompatibilityAlarmWitnessInput, eventCompatibilityNormalizedAlarmWitnessInput, type EventCompatibilitySerializerClock, type EventCompatibilityAlarmWitness } from "./event_compatibility_fixture_manifest";
 import { normalizeEventCompatibilityReceipt } from "./event_compatibility_delivery.integration.test";
 
 async function main() {
@@ -120,6 +120,39 @@ async function main() {
   assert.throws(() => normalizeEventCompatibilityReceipt(wrongBody), /whole recomputed native serializer resource/);
   const recurrenceResource = desiredResource.replace("UID:owned-uid", "UID:owned-uid\r\nRECURRENCE-ID:20261026T101112Z");
   assert.equal(eventCompatibilityGeneratedClockResource(recurrenceResource, clock), recurrenceResource, "An unowned recurrence component never gains a generated-clock exception");
+  const alarmFixture = (resourceUrl = "http://127.0.0.1:12345/collection/alarm.ics", values: { linkID?: string; mappingID?: string; uid?: string; etag?: string; revision?: number; before?: string } = {}) => {
+    const origins = [{ origin: new URL(resourceUrl).origin, alias: "<owned-fixture-origin:2>" }];
+    const context = { link: { id: values.linkID ?? "link-id", userID: "actor", accountID: "account", externalCalendarID: `${origins[0]!.origin}/collection/` },
+      mapping: { id: values.mappingID ?? "mapping-id", ref: { externalEventId: resourceUrl, etag: values.etag ?? '"native-tag"', icalUid: values.uid ?? "native-uid" } },
+      event: { id: "event-id", revision: values.revision ?? 1, start: "2026-10-26T10:11:12.123Z", originalStart: { kind: "instant", value: "2026-10-26T10:11:12.123Z" } } };
+    const before = values.before ?? desiredResource, input = eventCompatibilityAlarmWitnessInput(context, before), rawHash = eventCompatibilityDataHash(input);
+    const alarm: EventCompatibilityAlarmWitness = { operationId: "alarm-operation", input, rawHash, recomputedRawHash: rawHash, normalizedHash: eventCompatibilityDataHash(eventCompatibilityNormalizedAlarmWitnessInput(input, origins)) };
+    return { ...receipt, origins, wire: [], alarmWitnesses: [alarm], records: [{ ...first, id: alarm.operationId, family: "caldavAlarm", before: { id: alarm.operationId, provider: "caldav", payload: {
+      caldavAlarm: { context, before, request: { expectedStateVersion: rawHash } }, resolution: { expectedReminderStateVersion: rawHash, exactPolicy: "alarm" } } } }] };
+  };
+  const alarm = alarmFixture();
+  assert.deepEqual(normalizeEventCompatibilityReceipt(alarm), normalizeEventCompatibilityReceipt(alarmFixture("http://127.0.0.1:23456/collection/alarm.ics")), "Only the already-owned fixture origin changes the derived alarm version");
+  for (const resource of ["http://127.0.0.1:12345/collection/other.ics", "http://127.0.0.1:12345/collection/alarm.ics?exact=one", "http://127.0.0.1:12345/collection/alarm.ics#slot=%7Bexact%7D"]) {
+    assert.notDeepEqual(normalizeEventCompatibilityReceipt(alarm), normalizeEventCompatibilityReceipt(alarmFixture(resource)), "Every native resource suffix, path, query and fragment remains exact");
+  }
+  for (const values of [{ linkID: "changed-link" }, { mappingID: "changed-map" }, { uid: "changed-uid" }, { etag: '"changed-tag"' }, { revision: 2 },
+    { before: desiredResource.replace("DTSTAMP:20261026T120000Z", "DTSTAMP:20261027T120000Z") }, { before: desiredResource.replace("X-PRIVATE", "X-private") }, { before: desiredResource.replace("Folded", "Changed native content") }]) {
+    assert.notDeepEqual(normalizeEventCompatibilityReceipt(alarm), normalizeEventCompatibilityReceipt(alarmFixture(undefined, values)), "The alarm native tuple and complete before ICS remain evidence");
+  }
+  const badAlarmRaw = structuredClone(alarm); badAlarmRaw.alarmWitnesses[0]!.rawHash = "0".repeat(64); badAlarmRaw.alarmWitnesses[0]!.recomputedRawHash = "0".repeat(64);
+  assert.throws(() => normalizeEventCompatibilityReceipt(badAlarmRaw), /raw seven-element/);
+  const badAlarmField = structuredClone(alarm); badAlarmField.records[0]!.before!.payload.caldavAlarm.request.expectedStateVersion = "0".repeat(64); assert.throws(() => normalizeEventCompatibilityReceipt(badAlarmField));
+  const badAlarmCopy = structuredClone(alarm); badAlarmCopy.records[0]!.before!.payload.resolution.expectedReminderStateVersion = "0".repeat(64); assert.throws(() => normalizeEventCompatibilityReceipt(badAlarmCopy), /copied alarm resolution/);
+  const wrongAlarmOperation = structuredClone(alarm); wrongAlarmOperation.alarmWitnesses[0]!.operationId = "another-operation"; assert.throws(() => normalizeEventCompatibilityReceipt(wrongAlarmOperation), /operation-owned/);
+  const unownedAlarm = structuredClone(alarm); unownedAlarm.origins = []; assert.throws(() => normalizeEventCompatibilityReceipt(unownedAlarm), /unowned resource/);
+  const unchangedBefore = eventCompatibilityNormalizedAlarmWitnessInput(alarm.alarmWitnesses[0]!.input, alarm.origins); assert.equal(unchangedBefore[6], desiredResource);
+  const changedSource = structuredClone(alarm); changedSource.records[0]!.before!.payload.caldavAlarm.context.link.userID = "another-actor";
+  assert.notDeepEqual(normalizeEventCompatibilityReceipt(alarm), normalizeEventCompatibilityReceipt(changedSource), "Unhashed actor/source authority fields still compare exactly");
+  const ordinaryResolution = { ...receipt, origins: alarm.origins, alarmWitnesses: alarm.alarmWitnesses, records: [{ ...first, id: "alarm-operation", before: { id: "alarm-operation", provider: "google", payload: { resolution: { expectedReminderStateVersion: "unrelated-hash" }, rsvp: { baseline: { payload: { caldavAlarm: { request: { expectedStateVersion: "native-hash" } } } } } } } }] };
+  const otherResolution = structuredClone(ordinaryResolution); otherResolution.records[0]!.before!.payload.resolution.expectedReminderStateVersion = "changed-unrelated-hash";
+  assert.notDeepEqual(normalizeEventCompatibilityReceipt(ordinaryResolution), normalizeEventCompatibilityReceipt(otherResolution));
+  const otherNativeHash = structuredClone(ordinaryResolution); otherNativeHash.records[0]!.before!.payload.rsvp.baseline.payload.caldavAlarm.request.expectedStateVersion = "changed-native-hash";
+  assert.notDeepEqual(normalizeEventCompatibilityReceipt(ordinaryResolution), normalizeEventCompatibilityReceipt(otherNativeHash), "Native nested alarm lookalikes never gain witness permission");
   console.log(`Event compatibility fixture source: ${EVENT_COMPATIBILITY_FIXTURES.length} assertion-bearing programs, priority and strict normalization: PASS`);
 }
 void main().catch(error => { console.error(error); process.exitCode = 1; });

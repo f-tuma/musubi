@@ -7,7 +7,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
 import { EVENT_COMPATIBILITY_BASELINE, EVENT_COMPATIBILITY_BASELINE_SHA256, EVENT_COMPATIBILITY_FIXTURES, EVENT_COMPATIBILITY_CI_FIXTURES, EVENT_COMPATIBILITY_PROCESS_FIXTURES, EVENT_COMPATIBILITY_PROCESS_PHASES, EVENT_COMPATIBILITY_TABLES,
-  eventCompatibilityFixtureSource, eventCompatibilityDataHash, eventCompatibilityNormalizedWitnessInput, eventCompatibilityGeneratedClockResource, type EventCompatibilityWitness, type EventCompatibilityEchoObservation, type EventCompatibilitySerializerClock, type EventFixtureSuite } from "./event_compatibility_fixture_manifest";
+  eventCompatibilityFixtureSource, eventCompatibilityDataHash, eventCompatibilityNormalizedWitnessInput, eventCompatibilityGeneratedClockResource, eventCompatibilityAlarmWitnessInput, eventCompatibilityNormalizedAlarmWitnessInput, type EventCompatibilityWitness, type EventCompatibilityEchoObservation, type EventCompatibilitySerializerClock, type EventCompatibilityAlarmWitness, type EventFixtureSuite } from "./event_compatibility_fixture_manifest";
 
 type Value = null | boolean | number | string | Value[] | { [key: string]: Value };
 type RecordRow = { id: string; family: string; fixtureCase?: string; before: Record<string, unknown> | null; returned: unknown; after: Record<string, unknown> | null;
@@ -35,6 +35,24 @@ export function normalizeEventCompatibilityReceipt(receipt: FixtureReceipt) {
   const recordRowPath = new RegExp(`^${recordRowRoot}$`);
   const sqlRowPath = new RegExp(`^${stateRoot}\\.(?:${EVENT_COMPATIBILITY_TABLES.join("|")})\\[\\]$`);
   const movePath = (suffix: string) => { let pattern = movePaths.get(suffix); if (!pattern) { pattern = new RegExp(`^${stateRoot}\\.outlook_moves\\[\\]\\.journal\\.${suffix}$`); movePaths.set(suffix, pattern); } return pattern; };
+  const alarmWitnesses = new Map<string, EventCompatibilityAlarmWitness>();
+  const alarmRows = new WeakMap<object, string>();
+  for (const proof of (receipt as FixtureReceipt & { alarmWitnesses?: EventCompatibilityAlarmWitness[] }).alarmWitnesses ?? []) {
+    assert.equal(proof.recomputedRawHash, proof.rawHash, "The actual production alarm version must match its raw admission");
+    assert.equal(eventCompatibilityDataHash(proof.input), proof.rawHash, "Independently verify the exact raw seven-element alarm tuple");
+    assert.equal(eventCompatibilityDataHash(eventCompatibilityNormalizedAlarmWitnessInput(proof.input, receipt.origins)), proof.normalizedHash, "Only the receipt-owned resource origin may derive an alarm comparison version");
+    assert(!alarmWitnesses.has(proof.operationId)); alarmWitnesses.set(proof.operationId, proof);
+  }
+  const registerAlarmRow = (row: Record<string, unknown> | null | undefined) => {
+    if (!row || row.provider !== "caldav") return;
+    const payload = row.payload as Record<string, unknown> | undefined, intent = payload?.caldavAlarm as { context: Parameters<typeof eventCompatibilityAlarmWitnessInput>[0]; before: string; request: { expectedStateVersion: string } } | undefined;
+    if (!intent) return;
+    const proof = alarmWitnesses.get(String(row.id)); assert(proof, "A current alarm intent must retain its actual operation-owned raw witness proof");
+    assert.deepEqual(eventCompatibilityAlarmWitnessInput(intent.context, intent.before), proof.input); assert.equal(intent.request.expectedStateVersion, proof.rawHash);
+    const resolution = payload?.resolution as { expectedReminderStateVersion?: string } | undefined;
+    if (resolution?.expectedReminderStateVersion !== undefined) assert.equal(resolution.expectedReminderStateVersion, proof.rawHash, "The copied alarm resolution value must equal this exact current operation's raw witness");
+    alarmRows.set(row, proof.operationId);
+  };
   const serializerClocks = new Map<string, EventCompatibilitySerializerClock>();
   for (const proof of (receipt as FixtureReceipt & { serializerClocks?: EventCompatibilitySerializerClock[] }).serializerClocks ?? []) {
     assert.equal(proof.serializer, "caldavOrganizerDesired"); assert.equal(proof.verified, true);
@@ -57,10 +75,15 @@ export function normalizeEventCompatibilityReceipt(receipt: FixtureReceipt) {
     }
   };
   for (const record of receipt.records) {
+    registerAlarmRow(record.before); registerAlarmRow(record.after); registerAlarmRow(record.returned as Record<string, unknown> | null);
+    for (const row of record.state.event_outbox ?? []) registerAlarmRow(row);
+    if (record.cohort) { registerAlarmRow(record.cohort.after); for (const row of record.cohort.state.event_outbox ?? []) registerAlarmRow(row); }
     registerSerializerRow(record.before); registerSerializerRow(record.after); registerSerializerRow(record.returned as Record<string, unknown> | null);
     for (const row of record.state.event_outbox ?? []) registerSerializerRow(row); registerWire(record.id, record.wireStart, record.wireEnd);
   }
   if (receipt.processReceipt) { const process = receipt.processReceipt;
+    for (const row of [process.before, process.checkpoint, process.afterKill, process.afterRestart]) registerAlarmRow(row);
+    for (const state of [process.checkpointState, process.afterKillState, process.finalState]) for (const row of state.event_outbox ?? []) registerAlarmRow(row);
     for (const row of [process.before, process.checkpoint, process.afterKill, process.afterRestart]) registerSerializerRow(row);
     for (const state of [process.checkpointState, process.afterKillState, process.finalState]) for (const row of state.event_outbox ?? []) registerSerializerRow(row);
     registerWire(process.operationId, process.wireStart, process.wireEnd);
@@ -118,20 +141,25 @@ export function normalizeEventCompatibilityReceipt(receipt: FixtureReceipt) {
     if (outboxPath("payload\\.operationEnvelope\\.operation").test(parent)) return key === "acceptedAt";
     return false;
   };
-  const visit = (input: unknown, path = "", key = "", parent = "", operationId?: string, wireIndex?: number): Value => {
+  const visit = (input: unknown, path = "", key = "", parent = "", operationId?: string, wireIndex?: number, alarmOperationId?: string): Value => {
     if (input === undefined) return "<undefined>";
     if (input === null || typeof input === "boolean" || typeof input === "number") return input;
     if (typeof input === "string") {
       if (hostClock(parent, key)) return "<host-metadata>";
+      if (alarmOperationId && (outboxPath("payload\\.caldavAlarm\\.request\\.expectedStateVersion").test(path) || outboxPath("payload\\.resolution\\.expectedReminderStateVersion").test(path))) {
+        const proof = alarmWitnesses.get(alarmOperationId);
+        assert(proof && input === proof.rawHash, "Only this operation's proven raw alarm witness may use the derived comparison"); return proof.normalizedHash;
+      }
       if (outboxPath("payload\\.(?:graphOccurrenceContent|graphMeetingCancellation)\\.request\\.expectedSeriesVersion").test(path) || movePath("(?:request\\.expectedVersion|initial\\.version)").test(path)) {
         const normalized = witnesses.get(input); assert(normalized, "A raw altered/unproven Graph request witness cannot be removed from parity"); return normalized;
       }
       return replaceOrigin(input);
     }
-    if (Array.isArray(input)) return input.map((value, index) => visit(value, `${path}[]`, "", "", operationId, path === "wire" ? index : wireIndex));
+    if (Array.isArray(input)) return input.map((value, index) => visit(value, `${path}[]`, "", "", operationId, path === "wire" ? index : wireIndex, alarmOperationId));
     assert(input && typeof input === "object");
     const row = input as Record<string, unknown>;
     const owner = outboxPath().test(path) && typeof row.id === "string" ? row.id : operationId;
+    const alarmOwner = outboxPath().test(path) ? alarmRows.get(row) : alarmOperationId;
     return Object.fromEntries(Object.entries(input)
       .sort(([left], [right]) => left.localeCompare(right)).map(([name, value]) => {
         const next = path ? `${path}.${name}` : name;
@@ -151,7 +179,7 @@ export function normalizeEventCompatibilityReceipt(receipt: FixtureReceipt) {
           return [name, visit({ scopedCommittedEchoMembers: echoSets.get(row.id) }, next, name, path)];
         }
         if (name === "responseHeaders" && value && /^wire\[\]$/.test(path)) return [name, Object.fromEntries(Object.entries(value as Record<string, unknown>).filter(([header]) => !["date", "connection", "keep-alive"].includes(header.toLowerCase())).map(([header, item]) => [header, visit(item, `${next}.${header}`, header, next)]))];
-        return [name, visit(value, next, name, path, owner, wireIndex)];
+        return [name, visit(value, next, name, path, owner, wireIndex, alarmOwner)];
       }));
   };
   const seen = new Set<number>(), settledRecords: unknown[] = [];

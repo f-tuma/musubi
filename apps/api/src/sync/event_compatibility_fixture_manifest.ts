@@ -41,6 +41,19 @@ export const EVENT_COMPATIBILITY_PROCESS_PHASES = ["before-native-send", "raw-na
 export type EventCompatibilityWitness = { kind: "graph-content" | "graph-cancellation" | "graph-move"; rawHash: string; recomputedRawHash: string; normalizedHash: string; input: unknown };
 export type EventCompatibilityEchoObservation = { sequence: number; operationId: string; fixtureCase: "delete-sweep-echo"; evidence: Record<string, unknown>; ownership: Record<string, unknown>; mapping: Record<string, unknown>; updateSql: string; rowCount: number; committed: true };
 export type EventCompatibilitySerializerClock = { operationId: string; resourceUrl: string; uid: string; stamp: string; desiredResource: string; resourceSha256: string; serializer: "caldavOrganizerDesired"; verified: true; generatedProperty: boolean };
+export type EventCompatibilityAlarmWitness = { operationId: string; rawHash: string; recomputedRawHash: string; normalizedHash: string; input: [string, string, string, string, string, number, string] };
+/** The alarm producer hashes this exact tuple. Only its owned fixture origin
+ * varies between independently provisioned old/new fixture servers. */
+export function eventCompatibilityAlarmWitnessInput(context: { link: { id: string }; mapping: { id: string; ref: { externalEventId: string; etag: string; icalUid: string } }; event: { revision: number } }, before: string): EventCompatibilityAlarmWitness["input"] {
+  return [context.link.id, context.mapping.id, context.mapping.ref.externalEventId, context.mapping.ref.etag, context.mapping.ref.icalUid, context.event.revision, before];
+}
+export function eventCompatibilityNormalizedAlarmWitnessInput(input: EventCompatibilityAlarmWitness["input"], origins: { origin: string; alias: string }[]): EventCompatibilityAlarmWitness["input"] {
+  assert.equal(input.length, 7); assert(input.slice(0, 5).every(value => typeof value === "string")); assert.equal(typeof input[5], "number"); assert.equal(typeof input[6], "string");
+  const resource = new URL(input[2]), owned = origins.find(value => value.origin === resource.origin);
+  assert(owned && input[2].startsWith(owned.origin) && !resource.username && !resource.password, "An alarm witness cannot alias an unowned resource origin");
+  const suffix = input[2].slice(owned.origin.length); assert(!suffix || /^[/?#]/.test(suffix), "The owned origin must end at the resource authority boundary");
+  return [input[0], input[1], owned.alias + suffix, input[3], input[4], input[5], input[6]];
+}
 /** A comparison-only resource copy. Ownership comes from an actual serializer
  * proof plus the operation/resource wire binding, never VCALENDAR enclosure. */
 export function eventCompatibilityGeneratedClockResource(resource: string, proof: EventCompatibilitySerializerClock): string {
