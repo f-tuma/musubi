@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { lstat, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, symlink, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { canonicalNewPath, execute, parseArguments, requiredCases, requireArchivedPackageManager, sha256, stripReferenceTestSupport } from "./sync-alpha-common.mjs";
+import { dirname, join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { GENERATED_MANAGER_PATHS, canonicalNewPath, execute, parseArguments, planDeployedManifest, planGeneratedManagerMetadata,
+  requiredCases, requireArchivedPackageManager, sha256, stripReferenceTestSupport } from "./sync-alpha-common.mjs";
 import { validateConformance } from "./verify-sync-alpha.mjs";
 
 const mode = "reference-db", root = "/owned/candidate", manifestSha256 = "a".repeat(64), source = { commit: "b".repeat(40), tree: "c".repeat(40) };
@@ -14,6 +17,24 @@ function receipt() {
     inventory: { requiredCaseIDs: expectedCaseIDs, selectedCaseIDs: expectedCaseIDs },
     results: [{ id: expectedCaseIDs[0], status: "passed", durationMs: 1, exitCode: 0, skipped: 0, todo: 0, cleanup: { required: true, completed: true } }],
     totals: { required: 1, selected: 1, passed: 1, failed: 0, skipped: 0, todo: 0 }, installedRuntime: false, liveProvider: false, deployed: false };
+}
+async function manifestFixture() {
+  const directory = await mkdtemp(join(tmpdir(), "sync-alpha-manifest-test-")), sourceRoot = join(directory, "source"), runtimeRoot = join(directory, "runtime"), toolingRoot = join(directory, "tooling");
+  const original = join(sourceRoot, "packages/sync-runtime"), deployed = join(runtimeRoot, "node_modules/@musubi/sync-runtime"), toolingImporter = join(toolingRoot, "node_modules/@musubi/sync-runtime");
+  async function pkg(path, value) { await mkdir(path, { recursive: true }); await writeFile(join(path, "package.json"), `${JSON.stringify(value, null, 2)}\n`); await writeFile(join(path, "index.js"), "export const fixture = true;\n"); }
+  const source = { name: "@musubi/sync-runtime", private: true, type: "module", main: "index.js", description: "owned fixture metadata",
+    dependencies: { "dep-a": "^1.0.0", "@musubi/types": "workspace:*" }, devDependencies: { "tool-dep": "^3.0.0" } };
+  const typesSource = join(sourceRoot, "packages/types"), typesTarget = join(runtimeRoot, "node_modules/@musubi/types");
+  const types = { name: "@musubi/types", private: true, type: "module", main: "index.js" };
+  await pkg(original, source); await pkg(typesSource, types); await pkg(typesTarget, types);
+  const raw = structuredClone(source); raw.dependencies["dep-a"] = "1.2.3";
+  raw.dependencies["@musubi/types"] = `@musubi/types@${pathToFileURL(typesSource).href}`; raw.devDependencies["tool-dep"] = "3.1.2"; raw.optionalDependencies = {};
+  await pkg(deployed, raw); await pkg(toolingImporter, source);
+  for (const [path, name, version] of [[join(deployed, "node_modules/dep-a"), "dep-a", "1.2.3"], [join(runtimeRoot, "node_modules/dep-a"), "dep-a", "9.0.0"],
+    [join(toolingImporter, "node_modules/tool-dep"), "tool-dep", "3.1.2"], [join(toolingRoot, "node_modules/tool-dep"), "tool-dep", "9.0.0"]]) await pkg(path, { name, version, main: "index.js" });
+  await mkdir(join(original, "src")); await writeFile(join(original, "src/schema.sql"), "-- original SQL fixture\n");
+  return { directory, source, raw, typesSource, typesTarget, pkg, input: { original, deployed, sourceRoot, closureRoot: runtimeRoot, closureKind: "runtime", toolingRoot, toolingImporter,
+    workspaceLocations: new Map([["@musubi/types", { original: typesSource, deployed: typesTarget }]]) } };
 }
 test("packaging option parser refuses unknown, repeated and missing values", () => {
   assert.deepEqual({ ...parseArguments(["--ref", "a"], ["--ref"]) }, { "--ref": "a" });
@@ -29,6 +50,51 @@ test("package manager pin is validated from archived source without inherited co
     await assert.rejects(requireArchivedPackageManager(directory, async () => ({ stdout: Buffer.from("12.4.2\n") })), /Exact pinned pnpm/);
     await writeFile(join(directory, "package.json"), JSON.stringify({ private: true, packageManager: "pnpm@12.4.2" }));
     await assert.rejects(requireArchivedPackageManager(directory, () => { throw new Error("Must not execute before source pin validation"); }), /Source package manager pin/);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+test("deployed manifest normalization binds importer-specific versions and relocatable workspace targets", async () => {
+  const fixture = await manifestFixture();
+  try {
+    const sourceBefore = await readFile(join(fixture.input.original, "package.json")), sqlBefore = await readFile(join(fixture.input.original, "src/schema.sql"));
+    const plan = await planDeployedManifest(fixture.input), normalized = JSON.parse(plan.normalizedBytes);
+    assert.equal(normalized.dependencies["dep-a"], "1.2.3"); assert.equal(normalized.devDependencies["tool-dep"], "3.1.2");
+    assert.equal(normalized.dependencies["@musubi/types"], "file:../types"); assert.equal(normalized.description, fixture.source.description);
+    assert.equal(plan.record.edges.find(edge => edge.name === "dep-a").resolution.target, "node_modules/@musubi/sync-runtime/node_modules/dep-a");
+    assert.equal(plan.record.edges.find(edge => edge.name === "tool-dep").resolution.closure, "tooling");
+    assert.deepEqual(await readFile(plan.path), plan.rawBytes); assert.equal(plan.record.sourceSha256, sha256(sourceBefore));
+    await writeFile(plan.path, plan.normalizedBytes);
+    assert.deepEqual(await readFile(join(fixture.input.original, "package.json")), sourceBefore); assert.deepEqual(await readFile(join(fixture.input.original, "src/schema.sql")), sqlBefore);
+    const moved = join(fixture.directory, "relocated-runtime"); await rename(fixture.input.closureRoot, moved); await rm(fixture.input.sourceRoot, { recursive: true });
+    const owner = join(moved, "node_modules/@musubi/sync-runtime"), value = JSON.parse(await readFile(join(owner, "package.json")));
+    assert.equal(await realpath(resolve(owner, value.dependencies["@musubi/types"].slice(5))), await realpath(join(moved, "node_modules/@musubi/types")));
+    assert.equal(createRequire(join(owner, "package.json")).resolve("@musubi/types"), join(moved, "node_modules/@musubi/types/index.js"));
+  } finally { await rm(fixture.directory, { recursive: true, force: true }); }
+});
+test("deployed manifest normalization rejects wrong versions, workspace origins and installed targets", async () => {
+  const changes = [async fixture => { fixture.raw.dependencies["dep-a"] = "2.0.0"; await writeFile(join(fixture.input.deployed, "package.json"), JSON.stringify(fixture.raw)); },
+    async fixture => { fixture.source.dependencies["dep-a"] = "1.0.0"; await writeFile(join(fixture.input.original, "package.json"), JSON.stringify(fixture.source)); },
+    async fixture => { fixture.raw.dependencies["@musubi/types"] = "@musubi/types@file:///outside/types"; await writeFile(join(fixture.input.deployed, "package.json"), JSON.stringify(fixture.raw)); },
+    async fixture => { await fixture.pkg(fixture.typesTarget, { name: "@musubi/sync-codec", private: true, main: "index.js" }); },
+    async fixture => { fixture.input.workspaceLocations.get("@musubi/types").deployed = fixture.input.toolingImporter; },
+    async fixture => { await rm(join(fixture.input.deployed, "package.json")); await symlink(join(fixture.input.original, "package.json"), join(fixture.input.deployed, "package.json")); },
+    async fixture => { await rm(join(fixture.input.deployed, "node_modules/dep-a"), { recursive: true }); await rm(join(fixture.input.closureRoot, "node_modules/dep-a"), { recursive: true });
+      await fixture.pkg(join(fixture.input.toolingImporter, "node_modules/dep-a"), { name: "dep-a", version: "1.2.3", main: "index.js" }); }];
+  for (const change of changes) {
+    const fixture = await manifestFixture();
+    try { await change(fixture); const before = await readFile(join(fixture.input.original, "package.json"));
+      await assert.rejects(planDeployedManifest(fixture.input)); assert.deepEqual(await readFile(join(fixture.input.original, "package.json")), before);
+    } finally { await rm(fixture.directory, { recursive: true, force: true }); }
+  }
+});
+test("generated deployment metadata is planned only for fixed regular owned paths", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "sync-alpha-manager-metadata-test-"));
+  try {
+    for (const path of GENERATED_MANAGER_PATHS) { await mkdir(dirname(join(directory, path)), { recursive: true }); await writeFile(join(directory, path), `raw:${path}\n`); }
+    const plans = await planGeneratedManagerMetadata(directory, "runtime"); assert.equal(plans.length, 4);
+    for (const plan of plans) { assert.equal(plan.record.to, `provenance/generated-manager/${plan.record.from}`); assert.equal(sha256(await readFile(plan.path)), plan.record.sha256); }
+    const path = join(directory, GENERATED_MANAGER_PATHS[0]), outside = join(directory, "dependency-owned.yaml");
+    await writeFile(outside, "do not change\n"); await rm(path); await symlink(outside, path);
+    await assert.rejects(planGeneratedManagerMetadata(directory, "runtime"), /regular/); assert.equal(await readFile(outside, "utf8"), "do not change\n");
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 test("new output paths reject real parent aliases into candidate/checkout and existing dangling leaves", async () => {

@@ -2909,6 +2909,9 @@
       "requiredNodeCases": [
         "packaging option parser refuses unknown, repeated and missing values",
         "package manager pin is validated from archived source without inherited configuration",
+        "deployed manifest normalization binds importer-specific versions and relocatable workspace targets",
+        "deployed manifest normalization rejects wrong versions, workspace origins and installed targets",
+        "generated deployment metadata is planned only for fixed regular owned paths",
         "new output paths reject real parent aliases into candidate/checkout and existing dangling leaves",
         "owned process groups stop and reap descendants on timeout or output overflow",
         "production runtime excludes declared reference conformance support and retains CLI source",

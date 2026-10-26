@@ -61,7 +61,7 @@ test("every module rejects a loaded sentinel without its actual assertion eviden
 test("expanded causal cases and external packaging names are required individually", () => {
   for (const id of ["unit/sync-runtime/task-causal", "unit/alpha-packaging"]) {
     const entry = manifest.entries.find(e => e.id === id);
-    assert.equal(entry.requiredNodeCases.length, id.endsWith("task-causal") ? 48 : 7);
+    assert.equal(entry.requiredNodeCases.length, id.endsWith("task-causal") ? 48 : 10);
     const report = { schemaVersion: 1, kind: "sync-conformance-node-result", skipped: 0, todo: 0, failures: 0,
       cases: [...entry.requiredNodeCases.map(name => ({ name, status: "passed", skipped: 0, todo: 0 })),
         { name: `module-loaded:${entry.id}`, status: "passed", skipped: 0, todo: 0 }], supplemental: [], passedLogCases: [], completionMarkers: [] };

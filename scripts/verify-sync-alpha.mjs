@@ -1,8 +1,8 @@
-import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { PINS, WORKSPACES, canonicalNewPath, cleanEnvironment, execute, files, inside, loadTool, parseArguments,
+import { GENERATED_MANAGER_PATHS, OWNED_NAMES, PINS, WORKSPACES, absent, canonicalNewPath, cleanEnvironment, execute, files, inside, loadTool, parseArguments,
   readJson, requiredCases, requireThat, sha256, writeJson } from "./sync-alpha-common.mjs";
 
 const TOOL_ROOT = fileURLToPath(new URL("../", import.meta.url));
@@ -75,6 +75,35 @@ export async function verifySyncAlpha(args) {
       sha256(await readFile(join(root, "provenance", license.text))) === license.sha256, "Collected installed license text differs.");
   }
   requireThat(sha256(await readFile(join(root, "provenance/source.tar"))) === manifest.source.archiveSha256, "Exact git source archive differs.");
+  requireThat(manifest.dependencyMetadata?.normalization === "provenance/workspace-manifest-parity.json" &&
+    manifest.dependencyMetadata.generatedManager === "provenance/generated-manager-metadata.json" && manifest.dependencyMetadata.reinstallSupported === false,
+    "Unsupported installed dependency metadata policy.");
+  const sourceFiles = await readJson(join(root, "provenance/source-files.json")), normalized = await readJson(join(root, manifest.dependencyMetadata.normalization));
+  requireThat(Array.isArray(normalized) && normalized.length === OWNED_NAMES.size * 2 && new Set(normalized.map(item => `${item.closure}:${item.name}`)).size === normalized.length,
+    "Owned manifest normalization inventory differs.");
+  for (const item of normalized) {
+    requireThat(OWNED_NAMES.has(item.name) && ["runtime", "tooling"].includes(item.closure) && typeof item.manifest === "string" && item.manifest.startsWith(`${item.closure}/`) &&
+      inside(join(root, item.closure), resolve(root, item.manifest)), "Owned manifest normalization path differs.");
+    const sourcePath = item.name === "@musubi/sync-reference" ? "apps/sync-reference/package.json" : `packages/${item.name.slice("@musubi/".length)}/package.json`;
+    requireThat(item.sourceManifest === sourcePath && sourceFiles.filter(entry => entry.path === sourcePath && entry.sha256 === item.sourceSha256).length === 1,
+      "Original manifest source hash differs.");
+    requireThat(item.rawManifest === `deployed-manifests/${item.closure}/${item.name.slice("@musubi/".length)}.raw.json` &&
+      sha256(await readFile(join(root, "provenance", item.rawManifest))) === item.rawDeploySha256 &&
+      ((await lstat(join(root, "provenance", item.rawManifest))).mode & 0o777) === item.rawMode, "Raw deployment manifest proof differs.");
+    const path = join(root, item.manifest), info = await lstat(path);
+    requireThat(info.isFile() && !info.isSymbolicLink() && inside(await realpath(join(root, item.closure)), await realpath(path)) &&
+      sha256(await readFile(path)) === item.normalizedSha256 && (await readJson(path)).name === item.name, "Normalized installed manifest differs.");
+  }
+  const manager = await readJson(join(root, manifest.dependencyMetadata.generatedManager));
+  const managerPaths = ["runtime", "tooling"].flatMap(kind => GENERATED_MANAGER_PATHS.map(path => `${kind}/${path}`));
+  requireThat(manager.schemaVersion === 1 && manager.reinstallSupported === false && Array.isArray(manager.files) && manager.files.length === managerPaths.length &&
+    new Set(manager.files.map(item => item.from)).size === managerPaths.length, "Generated manager inventory differs.");
+  for (const item of manager.files) {
+    requireThat(managerPaths.includes(item.from) && item.to === `provenance/generated-manager/${item.from}`, "Unexpected manager metadata relocation.");
+    await absent(join(root, item.from)); const path = join(root, item.to), info = await lstat(path), bytes = await readFile(path);
+    requireThat(info.isFile() && !info.isSymbolicLink() && bytes.length === item.bytes && sha256(bytes) === item.sha256 && (info.mode & 0o777) === item.mode,
+      "Retained raw manager metadata differs.");
+  }
   const runtime = join(root, "runtime"), conformance = join(root, "conformance"), tooling = join(root, "tooling"), checks = [];
   requireThat((await readJson(join(runtime, "package.json"))).private === true && (await readJson(join(runtime, "node_modules/tsx/package.json"))).version === PINS.tsx &&
     (await readJson(join(tooling, "node_modules/typescript/package.json"))).version === PINS.typescript, "Installed private runtime/tool pins differ.");

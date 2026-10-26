@@ -13,6 +13,14 @@ source commit/tree, archive/image digests and installed file/dependency manifest
 The current candidate builder uses host Node 22, not a container base image;
 its manifest records that fact separately from the convenience Docker images.
 
+The archive is a preinstalled snapshot. Keep its layout intact and execute it
+with the bundled TSX loader. Recreate dependencies by rebuilding from committed
+source and its lockfile; fresh package installation inside the snapshot is
+outside this contract. Provenance retains original lock/workspace/patch inputs
+and raw generated deployment metadata. Dependency metadata normalization records
+source/raw/normalized hashes, exact installed versions and bounded relative
+workspace targets. Production source and SQL retain their original bytes.
+
 The independent host uses its own PostgreSQL ledger and encrypted credential
 store. Its runtime configuration is `REFERENCE_DATABASE_URL`,
 `REFERENCE_CREDENTIAL_KEY` and optional `REFERENCE_ALLOW_PRIVATE_NETWORK`.

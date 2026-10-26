@@ -3,6 +3,8 @@ import { createHash } from "node:crypto";
 import { copyFile, lstat, mkdir, readFile, readdir, readlink, realpath, rm, writeFile } from "node:fs/promises";
 import { builtinModules, createRequire } from "node:module";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { pathToFileURL } from "node:url";
+import { isDeepStrictEqual } from "node:util";
 
 export const PINS = Object.freeze({ nodeMajor: 22, pnpm: "11.8.0", tsx: "4.23.12", typescript: "6.0.3" });
 export const WORKSPACES = Object.freeze(["types", "sync-codec", "provider-google", "provider-microsoft", "provider-caldav", "sync-runtime"]);
@@ -33,6 +35,118 @@ export async function requireArchivedPackageManager(source, run) {
   requireThat((await readJson(join(source, "package.json"))).packageManager === `pnpm@${PINS.pnpm}`, "Source package manager pin changed.");
   const result = await run("pnpm-version", "pnpm", ["--version"], { cwd: source });
   requireThat(result.stdout.toString("utf8").trim() === PINS.pnpm, "Exact pinned pnpm is required.");
+}
+const DEPENDENCY_TABLES = ["dependencies", "optionalDependencies", "peerDependencies", "devDependencies"];
+function permitsInstalledVersion(specifier, version) {
+  const pattern = /^(\^|~)?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+  const source = pattern.exec(specifier), installed = pattern.exec(version);
+  if (!source || !installed || installed[1]) return false;
+  const before = source.slice(2).map(Number), after = installed.slice(2).map(Number);
+  if (![...before, ...after].every(Number.isSafeInteger)) return false;
+  const atLeast = after[0] > before[0] || after[0] === before[0] && (after[1] > before[1] || after[1] === before[1] && after[2] >= before[2]);
+  if (!source[1]) return isDeepStrictEqual(before, after);
+  if (source[1] === "~") return after[0] === before[0] && after[1] === before[1] && atLeast;
+  return atLeast && after[0] === before[0] && (before[0] > 0 || after[1] === before[1] && (before[1] > 0 || after[2] === before[2]));
+}
+async function resolveInstalledPackage(importer, name, boundary, metadataOnly) {
+  requireThat(/^(?:@[a-z0-9._-]+\/)?[a-z0-9][a-z0-9._-]*$/i.test(name), "Invalid declared package identity.");
+  const physicalBoundary = await realpath(boundary), physicalImporter = await realpath(importer);
+  requireThat(inside(physicalBoundary, physicalImporter), "Importing package is outside its declared closure.");
+  const require = createRequire(join(physicalImporter, "package.json"));
+  if (metadataOnly) {
+    for (const location of require.resolve.paths(name) ?? []) {
+      const path = join(location, name, "package.json"); if (!inside(physicalBoundary, path)) continue;
+      let actual; try { actual = await realpath(path); } catch (error) { if (error.code === "ENOENT") continue; throw error; }
+      requireThat(inside(physicalBoundary, actual), "Development metadata resolves outside corresponding tooling closure.");
+      const manifest = await readJson(actual); requireThat(manifest.name === name, "Installed dependency name differs from its edge.");
+      return { directory: dirname(actual), manifest };
+    }
+    throw new Error("Development dependency metadata is missing from corresponding tooling importer.");
+  }
+  const entry = await realpath(require.resolve(name)); requireThat(inside(physicalBoundary, entry), "Production dependency resolves outside actual installed closure.");
+  let directory = dirname(entry);
+  while (inside(physicalBoundary, directory)) {
+    let manifest; try { manifest = await readJson(join(directory, "package.json")); } catch (error) { if (error.code !== "ENOENT") throw error; }
+    if (manifest?.name !== undefined) {
+      requireThat(manifest.name === name, "Installed dependency name differs from its edge.");
+      return { directory, manifest };
+    }
+    const parent = dirname(directory); if (parent === directory) break; directory = parent;
+  }
+  throw new Error("Installed dependency manifest is missing.");
+}
+/** Plan only. Caller preserves raw bytes and validates every owner before applying metadata writes. */
+export async function planDeployedManifest({ original, deployed, sourceRoot, closureRoot, closureKind, toolingRoot, toolingImporter, workspaceLocations }) {
+  requireThat(["runtime", "tooling"].includes(closureKind), "Unknown installed closure kind.");
+  const physicalSource = await realpath(sourceRoot), physicalClosure = await realpath(closureRoot), physicalDeployed = await realpath(deployed);
+  requireThat(inside(physicalSource, await realpath(original)) && inside(physicalClosure, physicalDeployed), "Owned manifest is outside its declared source/closure.");
+  const sourceLeaf = await lstat(join(original, "package.json")), rawLeaf = await lstat(join(physicalDeployed, "package.json"));
+  requireThat(sourceLeaf.isFile() && !sourceLeaf.isSymbolicLink() && rawLeaf.isFile() && !rawLeaf.isSymbolicLink(), "Owned manifest leaves must be regular non-symlink files.");
+  const sourceBytes = await readFile(join(original, "package.json")), rawBytes = await readFile(join(physicalDeployed, "package.json"));
+  const source = JSON.parse(sourceBytes), raw = JSON.parse(rawBytes), normalized = structuredClone(raw), edges = [];
+  requireThat(OWNED_NAMES.has(source.name) && raw.name === source.name, "Only matching owned manifests may normalize.");
+  const nonDependencies = value => Object.fromEntries(Object.entries(value).filter(([key]) => !DEPENDENCY_TABLES.includes(key)));
+  requireThat(isDeepStrictEqual(nonDependencies(source), nonDependencies(raw)), "Deployment changed non-dependency workspace manifest fields.");
+  requireThat(inside(await realpath(toolingRoot), await realpath(toolingImporter)), "Development metadata importer is outside tooling closure.");
+  const toolingLeaf = await lstat(join(toolingImporter, "package.json"));
+  requireThat(toolingLeaf.isFile() && !toolingLeaf.isSymbolicLink() && (await readJson(join(toolingImporter, "package.json"))).name === source.name,
+    "Development metadata importer is not the corresponding owned tooling package.");
+  for (const table of DEPENDENCY_TABLES) {
+    const before = source[table] ?? {}, after = raw[table] ?? {};
+    requireThat(before && after && typeof before === "object" && typeof after === "object" && !Array.isArray(before) && !Array.isArray(after), "Invalid dependency table.");
+    requireThat(Object.keys(after).every(name => Object.hasOwn(before, name)), "Deployment added an undeclared dependency.");
+    for (const [name, sourceSpecifier] of Object.entries(before)) {
+      if (table === "devDependencies" && !Object.hasOwn(after, name)) { edges.push({ table, name, sourceSpecifier, rawSpecifier: null, normalizedSpecifier: null, rationale: "development-edge-omitted" }); continue; }
+      requireThat(typeof sourceSpecifier === "string" && typeof after[name] === "string", "Deployment omitted or changed a declared dependency.");
+      const development = table === "devDependencies", importer = development ? toolingImporter : deployed;
+      const boundary = development ? toolingRoot : closureRoot;
+      const target = await resolveInstalledPackage(importer, name, boundary, development);
+      const resolution = { closure: development ? "tooling" : closureKind, importer: relative(await realpath(boundary), await realpath(importer)),
+        target: relative(await realpath(boundary), target.directory), version: target.manifest.version ?? null };
+      let specifier, rationale;
+      if (sourceSpecifier === "workspace:*") {
+        requireThat(!development || closureKind === "tooling", "Runtime development workspace edges require an explicit supported policy.");
+        const expected = workspaceLocations.get(name);
+        requireThat(OWNED_NAMES.has(name) && expected, "Unknown declared workspace edge.");
+        const sourcePath = join(sourceRoot, name === "@musubi/sync-reference" ? "apps/sync-reference" : `packages/${name.slice("@musubi/".length)}`);
+        requireThat(await realpath(expected.original) === await realpath(sourcePath) && inside(physicalSource, await realpath(sourcePath)), "Workspace edge is outside exact archived owned source.");
+        requireThat((await readJson(join(sourcePath, "package.json"))).name === name, "Archived workspace identity differs from edge.");
+        requireThat(after[name] === "workspace:*" || after[name] === `${name}@${pathToFileURL(sourcePath).href}`, "Raw workspace reference differs from exact archived path/name.");
+        const installedTarget = await realpath(expected.deployed);
+        requireThat(inside(physicalClosure, installedTarget) && installedTarget === target.directory, "Workspace edge resolves to a wrong installed target.");
+        const path = relative(physicalDeployed, installedTarget).split(sep).join("/");
+        requireThat(path && !isAbsolute(path), "Invalid installed relative workspace edge.");
+        specifier = `file:${path.startsWith(".") ? path : `./${path}`}`;
+        requireThat(await realpath(resolve(physicalDeployed, specifier.slice(5))) === installedTarget, "Normalized workspace edge is not relocatable within its closure.");
+        rationale = "exact-archived-workspace-to-actual-installed-relative-target";
+      } else {
+        const version = target.manifest.version;
+        requireThat(typeof version === "string" && permitsInstalledVersion(sourceSpecifier, version), "Installed version violates supported original dependency pin/range.");
+        requireThat(after[name] === sourceSpecifier || after[name] === version, "Raw external dependency differs from source or exact installed version.");
+        specifier = version; rationale = "importer-resolved-installed-version-within-original-pin";
+      }
+      normalized[table][name] = specifier;
+      edges.push({ table, name, sourceSpecifier, rawSpecifier: after[name], normalizedSpecifier: specifier, resolution, rationale });
+    }
+  }
+  requireThat(isDeepStrictEqual(nonDependencies(raw), nonDependencies(normalized)), "Normalization changed non-dependency fields.");
+  const normalizedBytes = Buffer.from(`${JSON.stringify(normalized, null, 2)}\n`);
+  return { path: join(physicalDeployed, "package.json"), rawBytes, normalizedBytes, record: { name: source.name, closure: closureKind,
+    sourceManifest: relative(physicalSource, join(await realpath(original), "package.json")).split(sep).join("/"),
+    manifest: `${closureKind}/${relative(physicalClosure, join(physicalDeployed, "package.json")).split(sep).join("/")}`,
+    sourceSha256: sha256(sourceBytes), rawDeploySha256: sha256(rawBytes), normalizedSha256: sha256(normalizedBytes), rawMode: rawLeaf.mode & 0o777, edges } };
+}
+export const GENERATED_MANAGER_PATHS = Object.freeze(["pnpm-lock.yaml", "pnpm-workspace.yaml", "node_modules/.modules.yaml", "node_modules/.pnpm/lock.yaml"]);
+export async function planGeneratedManagerMetadata(root, closureKind) {
+  requireThat(["runtime", "tooling"].includes(closureKind), "Unknown installed closure kind.");
+  const physicalRoot = await realpath(root), result = [];
+  for (const relativePath of GENERATED_MANAGER_PATHS) {
+    const path = join(physicalRoot, relativePath), info = await lstat(path);
+    requireThat(info.isFile() && !info.isSymbolicLink() && await realpath(path) === path, "Generated manager metadata must be an exact regular closure-owned file.");
+    const rawBytes = await readFile(path), from = `${closureKind}/${relativePath}`, to = `provenance/generated-manager/${from}`;
+    result.push({ path, rawBytes, record: { from, to, sha256: sha256(rawBytes), bytes: rawBytes.length, mode: info.mode & 0o777 } });
+  }
+  return result;
 }
 export async function writeJson(path, value) { await mkdir(dirname(path), { recursive: true }); await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, { flag: "wx" }); }
 export function requiredCases(manifest, mode) {

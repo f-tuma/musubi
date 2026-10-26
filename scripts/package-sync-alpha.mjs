@@ -1,9 +1,10 @@
-import { cp, mkdir, mkdtemp, readFile, readdir, readlink, rm, stat, symlink } from "node:fs/promises";
+import { chmod, cp, mkdir, mkdtemp, readFile, readdir, readlink, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { ARCHIVE_PATHS, DOCUMENT_PATHS, OWNED_NAMES, PINS, WORKSPACES, auditOwnedImports, canonicalNewPath, cleanEnvironment, execute, files, inside,
-  inventoryPackages, isRuntimeTest, loadTool, parseArguments, readJson, requiredCases, requireThat, requireArchivedPackageManager, sha256, stripReferenceTestSupport, writeJson } from "./sync-alpha-common.mjs";
+import { ARCHIVE_PATHS, DOCUMENT_PATHS, PINS, WORKSPACES, auditOwnedImports, canonicalNewPath, cleanEnvironment, execute, files, inside,
+  inventoryPackages, isRuntimeTest, loadTool, parseArguments, planDeployedManifest, planGeneratedManagerMetadata, readJson, requiredCases,
+  requireThat, requireArchivedPackageManager, sha256, stripReferenceTestSupport, writeJson } from "./sync-alpha-common.mjs";
 
 const REPOSITORY = fileURLToPath(new URL("../", import.meta.url));
 async function packageRoot(runtime, name) {
@@ -16,30 +17,11 @@ async function packageRoot(runtime, name) {
 async function stripRuntimeTests(root) {
   for (const entry of await files(root)) if (entry.kind === "file" && isRuntimeTest(entry.path)) await rm(join(root, entry.path));
 }
-async function verifySourceParity(original, deployed) {
+async function verifySourceParity(original, deployed, includesTests = false) {
   const expected = (await files(join(original, "src"))).filter(entry => !isRuntimeTest(entry.path));
-  const actual = await files(join(deployed, "src"));
+  const actual = (await files(join(deployed, "src"))).filter(entry => !includesTests || !isRuntimeTest(entry.path));
   requireThat(JSON.stringify(actual) === JSON.stringify(expected), "Deployed first-party source or SQL differs from exact archive.");
   return expected.length;
-}
-async function manifestParity(original, deployed) {
-  const sourceBytes = await readFile(join(original, "package.json")), installedBytes = await readFile(join(deployed, "package.json"));
-  const source = JSON.parse(sourceBytes), installed = JSON.parse(installedBytes), tables = ["dependencies", "optionalDependencies", "peerDependencies", "devDependencies"], normalized = [];
-  const main = value => Object.fromEntries(Object.entries(value).filter(([key]) => !tables.includes(key)));
-  requireThat(JSON.stringify(main(source)) === JSON.stringify(main(installed)), "Deployment changed non-dependency workspace manifest fields.");
-  for (const table of tables) {
-    const before = source[table] ?? {}, after = installed[table] ?? {};
-    requireThat(Object.keys(after).every(name => Object.hasOwn(before, name)), "Deployment added an undeclared workspace dependency.");
-    for (const [name, specifier] of Object.entries(before)) {
-      if (table === "devDependencies" && !Object.hasOwn(after, name)) { normalized.push({ table, name, change: "development-edge-omitted" }); continue; }
-      requireThat(Object.hasOwn(after, name), "Deployment omitted a declared production dependency.");
-      if (after[name] !== specifier) {
-        requireThat(specifier === "workspace:*" && OWNED_NAMES.has(name) && typeof after[name] === "string", "Deployment changed a non-workspace dependency pin.");
-        normalized.push({ table, name, from: specifier, to: after[name] });
-      }
-    }
-  }
-  return { name: source.name, sourceSha256: sha256(sourceBytes), installedSha256: sha256(installedBytes), normalized };
 }
 async function makeTestMirror(original, deployed, mirror, archiveOnlyDirectories = []) {
   await mkdir(dirname(mirror), { recursive: true });
@@ -151,10 +133,40 @@ export async function packageSyncAlpha(args) {
     const excludedReferenceSupport = await stripReferenceTestSupport(runtime);
     for (const entry of excludedReferenceSupport.files) requireThat(sourceFiles.some(sourceFile => sourceFile.path === `apps/sync-reference/conformance/${entry.path}` && sourceFile.sha256 === entry.sha256),
       "Excluded deployed test support differs from exact archive.");
-    let deployedSourceFiles = await verifySourceParity(join(source, "apps/sync-reference"), runtime);
-    const manifests = [await manifestParity(join(source, "apps/sync-reference"), runtime)];
-    for (const name of WORKSPACES) deployedSourceFiles += await verifySourceParity(join(source, "packages", name), await packageRoot(runtime, `@musubi/${name}`));
-    for (const name of WORKSPACES) manifests.push(await manifestParity(join(source, "packages", name), await packageRoot(runtime, `@musubi/${name}`)));
+    const owners = [{ name: "@musubi/sync-reference", original: join(source, "apps/sync-reference"), deployed: runtime, toolingImporter: tooling },
+      ...await Promise.all(WORKSPACES.map(async name => ({ name: `@musubi/${name}`, original: join(source, "packages", name),
+        deployed: await packageRoot(runtime, `@musubi/${name}`), toolingImporter: await packageRoot(tooling, `@musubi/${name}`) })))];
+    let deployedSourceFiles = 0, toolingProductionSourceFiles = 0; const sourceParity = [];
+    for (const owner of owners) {
+      const runtimeFiles = await verifySourceParity(owner.original, owner.deployed), toolingFiles = await verifySourceParity(owner.original, owner.toolingImporter, true);
+      deployedSourceFiles += runtimeFiles; toolingProductionSourceFiles += toolingFiles;
+      sourceParity.push({ name: owner.name, runtimeFiles, toolingProductionSubsetFiles: toolingFiles });
+    }
+    const runtimeLocations = new Map(owners.map(owner => [owner.name, { original: owner.original, deployed: owner.deployed }]));
+    const toolingLocations = new Map(owners.map(owner => [owner.name, { original: owner.original, deployed: owner.toolingImporter }]));
+    const manifestPlans = [];
+    for (const owner of owners) {
+      const shared = { original: owner.original, sourceRoot: source, toolingRoot: tooling, toolingImporter: owner.toolingImporter };
+      manifestPlans.push(await planDeployedManifest({ ...shared, deployed: owner.deployed, closureRoot: runtime, closureKind: "runtime", workspaceLocations: runtimeLocations }));
+      manifestPlans.push(await planDeployedManifest({ ...shared, deployed: owner.toolingImporter, closureRoot: tooling, closureKind: "tooling", workspaceLocations: toolingLocations }));
+    }
+    const managerPlans = [...await planGeneratedManagerMetadata(runtime, "runtime"), ...await planGeneratedManagerMetadata(tooling, "tooling")];
+    // Validate all owners first, then preserve every raw input before metadata-only mutation.
+    for (const plan of manifestPlans) requireThat(sha256(await readFile(plan.path)) === plan.record.rawDeploySha256, "Raw deployed manifest changed before normalization.");
+    const provenance = join(bundle, "provenance"); await mkdir(provenance);
+    for (const plan of manifestPlans) {
+      plan.record.rawManifest = `deployed-manifests/${plan.record.closure}/${plan.record.name.slice("@musubi/".length)}.raw.json`;
+      const path = join(provenance, plan.record.rawManifest); await mkdir(dirname(path), { recursive: true });
+      await writeFile(path, plan.rawBytes, { flag: "wx" }); await chmod(path, plan.record.rawMode);
+    }
+    for (const plan of managerPlans) {
+      requireThat(sha256(await readFile(plan.path)) === plan.record.sha256, "Raw manager metadata changed before preservation.");
+      const path = join(bundle, plan.record.to); await mkdir(dirname(path), { recursive: true });
+      await writeFile(path, plan.rawBytes, { flag: "wx" }); await chmod(path, plan.record.mode);
+    }
+    for (const plan of manifestPlans) await writeFile(plan.path, plan.normalizedBytes);
+    for (const plan of managerPlans) await rm(plan.path);
+    const manifests = manifestPlans.map(plan => plan.record);
     const conformance = join(bundle, "conformance"); await mkdir(conformance);
     await aliasProductionDependencies(runtime, conformance);
     await writeJson(join(conformance, "package.json"), { name: "musubi-sync-alpha-conformance", private: true, type: "module", packageManager: `pnpm@${PINS.pnpm}`,
@@ -174,11 +186,12 @@ export async function packageSyncAlpha(args) {
     for (const name of DOCUMENT_PATHS) {
       await mkdir(dirname(join(bundle, name)), { recursive: true }); await cp(join(source, name), join(bundle, name));
     }
-    const provenance = join(bundle, "provenance"); await mkdir(provenance);
     for (const name of ["pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json"]) await cp(join(source, name), join(provenance, name));
     await cp(join(source, "patches"), join(provenance, "patches"), { recursive: true });
     await cp(sourceTar, join(provenance, "source.tar")); await writeJson(join(provenance, "source-files.json"), sourceFiles);
     await writeJson(join(provenance, "workspace-manifest-parity.json"), manifests);
+    await writeJson(join(provenance, "production-source-parity.json"), { schemaVersion: 1, toolingComparison: "production src/SQL subset; test material retained", owners: sourceParity });
+    await writeJson(join(provenance, "generated-manager-metadata.json"), { schemaVersion: 1, reinstallSupported: false, files: managerPlans.map(plan => plan.record) });
     await writeJson(join(provenance, "test-support.json"), { schemaVersion: 1, runtimeExclusions: [excludedReferenceSupport],
       archiveOnlyMirrors: mirroredReferenceSupport, productionCodeExceptionAllowed: false });
     await cp(join(source, "docs/research/nylas/10-source-inventory.md"), join(provenance, "research-source-inventory.md"));
@@ -211,9 +224,10 @@ export async function packageSyncAlpha(args) {
       conformance: { root: "conformance", entry: "scripts/sync-conformance.mjs", manifest: "apps/sync-reference/conformance/manifest.v1.json",
         manifestSha256: sha256(await readFile(corpusPath)), contract: "sync-conformance-report/v1" },
       tooling: { root: "tooling", runtimeImportFallbackAllowed: false, compiler: "node_modules/typescript/bin/tsc", typeRoots: "node_modules/@types" },
+      dependencyMetadata: { normalization: "provenance/workspace-manifest-parity.json", generatedManager: "provenance/generated-manager-metadata.json", reinstallSupported: false },
       documentation: { entry: "ARTIFACT-NAVIGATION.md", record: "provenance/documentation.json", embeddedOriginals: documentation.originalDocuments.length,
         unembeddedSourceReferences: documentation.externalSourceReferences.length },
-      checks: { ownedImportFiles: importedFiles, deployedSourceFiles, frozenDeploys: 2, runtimeReferenceTestSupportExcluded: true, ambientMusubiEnvironment: false, externalSymlinks: false },
+      checks: { ownedImportFiles: importedFiles, deployedSourceFiles, toolingProductionSourceFiles, frozenDeploys: 2, runtimeReferenceTestSupportExcluded: true, ambientMusubiEnvironment: false, externalSymlinks: false },
       buildEnvironment: { kind: "host-node22-linux", nodeBinarySha256: sha256(await readFile(process.execPath)), baseImage: null },
       license: { original: "LICENSE", newLicenseChosen: false }, liveProvider: "not-run", deployed: "not-established" };
     await writeJson(join(bundle, "candidate.json"), manifest);
