@@ -160,6 +160,10 @@
           "errorCode": {
             "type": "string",
             "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "cleanupEvidence": {
+            "type": "object",
+            "description": "Sanitized owned-fixture allocation/reconciliation facts, retained after temporary logs are removed."
           }
         },
         "additionalProperties": false

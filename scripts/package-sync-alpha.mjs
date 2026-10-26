@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { ARCHIVE_PATHS, DOCUMENT_PATHS, OWNED_NAMES, PINS, WORKSPACES, auditOwnedImports, canonicalNewPath, cleanEnvironment, execute, files, inside,
-  inventoryPackages, isRuntimeTest, loadTool, parseArguments, readJson, requiredCases, requireThat, sha256, stripReferenceTestSupport, writeJson } from "./sync-alpha-common.mjs";
+  inventoryPackages, isRuntimeTest, loadTool, parseArguments, readJson, requiredCases, requireThat, requireArchivedPackageManager, sha256, stripReferenceTestSupport, writeJson } from "./sync-alpha-common.mjs";
 
 const REPOSITORY = fileURLToPath(new URL("../", import.meta.url));
 async function packageRoot(runtime, name) {
@@ -125,7 +125,6 @@ export async function packageSyncAlpha(args) {
     requireThat(await git("source-type", ["cat-file", "-t", ref]) === "commit", "Source must identify a commit.");
     const tree = await git("source-tree", ["rev-parse", `${ref}^{tree}`]), timestamp = await git("source-time", ["show", "-s", "--format=%ct", ref]);
     requireThat(/^[a-f0-9]{40}$/.test(tree) && /^\d+$/.test(timestamp), "Invalid source provenance.");
-    requireThat((await run("pnpm-version", "pnpm", ["--version"])).stdout.toString("utf8").trim() === PINS.pnpm, "Exact pinned pnpm is required.");
     requireThat((await run("tar-version", "tar", ["--version"])).stdout.toString("utf8").startsWith("tar (GNU tar)"), "Deterministic packaging requires GNU tar.");
     const sourceTar = join(work, "source.tar"), source = join(work, "source"); await mkdir(source);
     await git("source-archive", ["archive", "--format=tar", `--output=${sourceTar}`, ref, "--", ...ARCHIVE_PATHS]);
@@ -134,7 +133,7 @@ export async function packageSyncAlpha(args) {
     for (const name of ["package-sync-alpha.mjs", "verify-sync-alpha.mjs", "sync-alpha-common.mjs"]) {
       requireThat(sha256(await readFile(new URL(name, import.meta.url))) === sha256(await readFile(join(source, "scripts", name))), "Packaging tooling differs from exact archived source.");
     }
-    requireThat((await readJson(join(source, "package.json"))).packageManager === `pnpm@${PINS.pnpm}`, "Source package manager pin changed.");
+    await requireArchivedPackageManager(source, run);
     const reference = await readJson(join(source, "apps/sync-reference/package.json"));
     requireThat(reference.private === true && reference.type === "module", "Reference candidate must remain private ESM.");
     for (const name of WORKSPACES) requireThat((await readJson(join(source, "packages", name, "package.json"))).private === true, "Workspace candidate must remain private.");

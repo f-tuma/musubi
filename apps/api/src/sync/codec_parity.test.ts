@@ -130,6 +130,8 @@ assert.equal(parseNativeWritePlanV1({ id: "microsoft-personal-event", version: 1
 assert.equal(parseNativeWritePlanV1(davUpdate.serializer, "update", "event", { ...davUpdate.nativePlan.data, replacementComponent: davUpdate.nativePlan.data.replacementComponent.replace("END:VEVENT", "ATTENDEE:mailto:someone@example.test\r\nEND:VEVENT") }), undefined);
 
 async function runHostParity() {
+const { installHostFixture } = await import("./behavior/host-fixture-env.mjs");
+await installHostFixture();
 // Test-only legacy adapters provide independent parity evidence; runtime package imports none.
 process.env.DATABASE_URL ??= "postgres://user:pass@localhost:5432/test";
 process.env.ENVIRONMENT ??= "test";

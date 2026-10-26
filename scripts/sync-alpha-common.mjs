@@ -29,6 +29,11 @@ export async function readJson(path) {
   const bytes = await readFile(path); requireThat(bytes.length <= 8_000_000, "JSON exceeds bounded size.");
   return JSON.parse(bytes.toString("utf8"));
 }
+export async function requireArchivedPackageManager(source, run) {
+  requireThat((await readJson(join(source, "package.json"))).packageManager === `pnpm@${PINS.pnpm}`, "Source package manager pin changed.");
+  const result = await run("pnpm-version", "pnpm", ["--version"], { cwd: source });
+  requireThat(result.stdout.toString("utf8").trim() === PINS.pnpm, "Exact pinned pnpm is required.");
+}
 export async function writeJson(path, value) { await mkdir(dirname(path), { recursive: true }); await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, { flag: "wx" }); }
 export function requiredCases(manifest, mode) {
   requireThat(manifest?.schemaVersion === 1 && Array.isArray(manifest.entries), "Unsupported conformance manifest.");

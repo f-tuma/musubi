@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { lstat, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { canonicalNewPath, execute, parseArguments, requiredCases, sha256, stripReferenceTestSupport } from "./sync-alpha-common.mjs";
+import { canonicalNewPath, execute, parseArguments, requiredCases, requireArchivedPackageManager, sha256, stripReferenceTestSupport } from "./sync-alpha-common.mjs";
 import { validateConformance } from "./verify-sync-alpha.mjs";
 
 const mode = "reference-db", root = "/owned/candidate", manifestSha256 = "a".repeat(64), source = { commit: "b".repeat(40), tree: "c".repeat(40) };
@@ -18,6 +18,18 @@ function receipt() {
 test("packaging option parser refuses unknown, repeated and missing values", () => {
   assert.deepEqual({ ...parseArguments(["--ref", "a"], ["--ref"]) }, { "--ref": "a" });
   for (const args of [["--other", "a"], ["--ref"], ["--ref", "--other"], ["--ref", "a", "--ref", "b"]]) assert.throws(() => parseArguments(args, ["--ref"]));
+});
+test("package manager pin is validated from archived source without inherited configuration", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "sync-alpha-manager-test-"));
+  try {
+    const calls = [], run = async (...args) => { calls.push(args); return { stdout: Buffer.from("11.8.0\n") }; };
+    await writeFile(join(directory, "package.json"), JSON.stringify({ private: true, packageManager: "pnpm@11.8.0" }));
+    await requireArchivedPackageManager(directory, run);
+    assert.deepEqual(calls, [["pnpm-version", "pnpm", ["--version"], { cwd: directory }]]);
+    await assert.rejects(requireArchivedPackageManager(directory, async () => ({ stdout: Buffer.from("12.4.2\n") })), /Exact pinned pnpm/);
+    await writeFile(join(directory, "package.json"), JSON.stringify({ private: true, packageManager: "pnpm@12.4.2" }));
+    await assert.rejects(requireArchivedPackageManager(directory, () => { throw new Error("Must not execute before source pin validation"); }), /Source package manager pin/);
+  } finally { await rm(directory, { recursive: true, force: true }); }
 });
 test("new output paths reject real parent aliases into candidate/checkout and existing dangling leaves", async () => {
   const directory = await mkdtemp(join(tmpdir(), "sync-alpha-path-test-"));

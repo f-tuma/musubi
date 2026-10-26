@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { resolve, relative, dirname, isAbsolute, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { executeOwned, installOwnedShutdown } from "../apps/sync-reference/conformance/process-group.mjs";
-import { referenceFixture } from "../apps/sync-reference/conformance/database-fixture.mjs";
+import { referenceFixture, ReferenceBootstrapError } from "../apps/sync-reference/conformance/database-fixture.mjs";
 const SOURCE_ROOT = fileURLToPath(new URL("../", import.meta.url));
 const MANIFEST = "apps/sync-reference/conformance/manifest.v1.json";
 const MODES = ["deterministic", "reference-db", "host-compat"];
@@ -80,6 +80,13 @@ export function decodeModuleReport(output, entry) {
   }
   return value;
 }
+export function failedEntryResults(entry, error, durationMs) {
+  const bootstrap = error instanceof ReferenceBootstrapError;
+  return caseIDs([entry]).map(id => ({ id, status: "failed", durationMs, exitCode: null, skipped: 0, todo: 0,
+    cleanup: bootstrap ? error.cleanup : null,
+    ...(bootstrap ? { cleanupEvidence: error.cleanupEvidence } : {}),
+    errorCode: error instanceof ConformanceError || bootstrap ? error.code : "entry-unavailable" }));
+}
 export const execute = executeOwned;
 
 async function resolveFile(root, path) { if (!localPath(path)) fail("invalid-file-path"); let actual; try { actual = await realpath(resolve(root, path)); } catch { fail("missing-required-file"); }
@@ -114,18 +121,22 @@ async function runCorpus(options, { root = SOURCE_ROOT, run = execute, env = pro
       if (entry.mode === "reference-db") { fixture = await referenceFixture(env, directory); Object.assign(childEnv, fixture.env); }
       if (entry.mode === "host-compat") for (const key of ["ENVIRONMENT", "DATABASE_URL", "REFERENCE_DATABASE_URL"]) if (env[key] !== undefined) childEnv[key] = env[key];
       if (shutdown.interrupted) fail("runner-interrupted");
-      const args = entry.kind === "json" ? [...(entry.nodeArgs ?? []), "--import", "tsx", resolve(root, entry.file), "--json", ...(options.scenario ? ["--scenario", entry.scenarios[0]] : [])] :
-        [...(entry.nodeArgs ?? []), "--import", "tsx", "--test", `--test-reporter=${pathToFileURL(resolve(root, "apps/sync-reference/conformance/node-reporter.mjs")).href}`, resolve(root, "apps/sync-reference/conformance/module.mjs")];
+      const flags = [...(entry.nodeArgs ?? [])];
+      if (entry.mode === "host-compat" && !flags.includes("--experimental-test-module-mocks")) flags.unshift("--experimental-test-module-mocks");
+      const launch = [...flags, "--import", "tsx", ...(entry.mode === "host-compat" ? ["--import", pathToFileURL(await resolveFile(root, "apps/api/src/sync/behavior/host-fixture-preload.mjs")).href] : [])];
+      const args = entry.kind === "json" ? [...launch, resolve(root, entry.file), "--json", ...(options.scenario ? ["--scenario", entry.scenarios[0]] : [])] :
+        [...launch, "--test", `--test-reporter=${pathToFileURL(resolve(root, "apps/sync-reference/conformance/node-reporter.mjs")).href}`, resolve(root, "apps/sync-reference/conformance/module.mjs")];
       const child = await run(process.execPath, args, { cwd: root, env: childEnv, timeoutMs: entry.timeoutMs });
       if (child.exitCode !== 0 || child.groupReaped !== true) fail("child-exit-failed");
       if (entry.kind === "json") results = decodeJsonReport(child.stdout, entry);
       else { decodeModuleReport(child.stdout, entry); results = [{ id: entry.id, status: "passed", durationMs: Math.round(performance.now() - started), exitCode: child.exitCode, skipped: 0, todo: 0, cleanup: null }]; }
-    } catch (error) { results = caseIDs([entry]).map(id => ({ id, status: "failed", durationMs: Math.round(performance.now() - started), exitCode: null, skipped: 0, todo: 0, cleanup: null, errorCode: error instanceof ConformanceError ? error.code : "entry-unavailable" })); }
+    } catch (error) { results = failedEntryResults(entry, error, Math.round(performance.now() - started)); if (error instanceof ReferenceBootstrapError) cleanup = error.cleanup; }
     finally {
       try { if (fixture) cleanup = await fixture.cleanup(); } catch { cleanup = { required: true, completed: false }; }
+      try { const facts = JSON.parse(await readFile(join(directory, "cleanup-facts.json"), "utf8")); for (const result of results ?? []) result.cleanupEvidence = facts; } catch { /* Missing evidence never turns a failed cleanup into PASS. */ }
       await rm(directory, { recursive: true, force: true });
     }
-    for (const result of results) { if (cleanup) { result.cleanup = cleanup; if (!cleanup.completed) { result.status = "failed"; result.errorCode = "cleanup-incomplete"; } } report.results.push(result); }
+    for (const result of results) { if (cleanup) { result.cleanup = cleanup; if (!cleanup.completed) { result.status = "failed"; result.errorCode ??= "cleanup-incomplete"; } } report.results.push(result); }
   }
   report.totals.passed = report.results.filter(r => r.status === "passed").length; report.totals.failed = report.results.filter(r => r.status === "failed").length;
   if (report.results.length !== report.totals.selected || report.totals.failed) report.status = "failed";

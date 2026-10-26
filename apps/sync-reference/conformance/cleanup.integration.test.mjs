@@ -33,3 +33,27 @@ const name=referenceTestDatabaseName('reference_cleanup_probe_');await pool.quer
     assert.equal(facts.databases[0].plainDrop, true); assert.equal(facts.databases[0].absent, true);
   } finally { if (fixture && !cleanup) await fixture.cleanup(); await rm(directory, { recursive: true, force: true }); shutdown.dispose(); }
 });
+test("lost outer CREATE response reconciles only its exact own name after the original issuer closes", async () => {
+  assert.equal(process.env.ENVIRONMENT, "test"); assert.ok(process.env.REFERENCE_DATABASE_URL);
+  const { Pool } = await import("pg"), original = Pool.prototype.query, directory = await mkdtemp(join(tmpdir(), "sync-outer-create-loss-"));
+  let created, observed;
+  Pool.prototype.query = async function(...args) {
+    const statement = typeof args[0] === "string" ? args[0] : args[0]?.text;
+    const outer = /^CREATE DATABASE "(reference_c10_outer_[a-f0-9]{32})"$/.exec(statement ?? "");
+    const result = await original.apply(this, args);
+    if (outer && !created) { created = outer[1]; throw new Error("Owned lost response after committed outer CREATE"); }
+    return result;
+  };
+  try {
+    await assert.rejects(referenceFixture(process.env, directory), error => {
+      observed = error; return error.code === "db-bootstrap-allocation-failed";
+    });
+    assert.ok(created); const facts = observed.cleanupEvidence;
+    assert.equal(facts.name, created); assert.equal(facts.absentBefore, true); assert.equal(facts.createAttempted, true);
+    assert.equal(facts.issuerGone, true); assert.equal(facts.sessionsZero, true); assert.equal(facts.plainDrop, true); assert.equal(facts.absent, true); assert.equal(facts.reconciled, true);
+    assert.deepEqual(observed.cleanup, { required: true, completed: false }, "A recovered failed allocation remains failed");
+    assert.deepEqual(JSON.parse(await readFile(join(directory, "bootstrap-cleanup-facts.json"), "utf8")), facts);
+    await rm(directory, { recursive: true, force: true });
+    assert.equal(JSON.parse(JSON.stringify(observed.cleanupEvidence)).absent, true, "Evidence survives removal of the temporary journal directory");
+  } finally { Pool.prototype.query = original; await rm(directory, { recursive: true, force: true }); }
+});
