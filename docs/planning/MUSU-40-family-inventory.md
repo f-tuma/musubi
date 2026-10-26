@@ -21,12 +21,12 @@ Nasazení zůstává společným navazujícím krokem po implementaci a ověřen
 | Google Task addressed UPDATE | Main, PR #381 | Saved mask, původní ID/tag/baseline, samostatný reference ledger |
 | Google Task addressed DELETE | Main, PR #382 | Raw DELETE response versus scoped GET absence; retained binding/history |
 | Google Task CREATE | Main, PR #383 | Generated ID; unknown/no-ID HOLD; API parity a strict reference mají oddělené důkazy |
-| Google causal UPDATE/DELETE | Source/local-installed/app gate ověřen; čeká PR/CI | [Causal gate](MUSU-40-google-task-causal.md): immutable NULL admission, spárované predecessor ID/tag/baseline a vlastní reference queue |
-| Google CREATE s předchůdcem | Čeká | Samostatná lineage/recurrence compatibility; chybějící adresa successor UPDATE se nikdy nezmění v nový CREATE |
-| VTODO UPDATE/DELETE | Čeká | Úplný resource, URL/UID, silný ETag, privilege proof, maska a původní baseline |
-| VTODO CREATE/causal flow | Čeká | Task-UUID URL/UID, If-None-Match, read-only uncertain recovery a retained deletion |
-| To Do CREATE | Čeká | Existující home/independent-copy chování, response-address-only recovery |
-| To Do UPDATE/DELETE | Čeká compatibility extrakce | Zachovat home chování a odmítnutí secondary live writes; portable conditionality zůstává neprokázaná |
+| Google causal UPDATE/DELETE | Main, PR #384 | [Causal gate](MUSU-40-google-task-causal.md): immutable NULL admission, spárované predecessor ID/tag/baseline a vlastní reference queue |
+| Google CREATE s předchůdcem | Host-only source parity; čeká review/installed | [Compatibility lifecycle](MUSU-40-task-compatibility.md); chybějící adresa successor UPDATE se nikdy nezmění v nový CREATE |
+| VTODO UPDATE/DELETE | Host-only source parity; čeká review/installed | Úplný resource, URL/UID, silný ETag, privilege proof, maska a původní baseline |
+| VTODO CREATE/causal flow | Host-only source parity; čeká review/installed | Task-UUID URL/UID, If-None-Match, read-only uncertain recovery a retained deletion |
+| To Do CREATE | Host-only source parity; čeká review/installed | Existující home/independent-copy chování, response-address-only recovery |
+| To Do UPDATE/DELETE | Host-only source parity; čeká review/installed | Zachovat home chování a odmítnutí secondary live writes; portable conditionality zůstává neprokázaná |
 | Generic event leftovers | Čeká audit lifecycle | Graph/DAV personal UPDATE a dosavadní all-day/legacy time profily; žádné nové generic known-time writes |
 | Google one-off reminders | Čeká | `reminderEdit`: defaults/off/custom s ochranou ostatního contentu |
 | Google instance reminders | Čeká | `reminderInstance`: exact stored original slot; off/custom, nikoli nové defaults |

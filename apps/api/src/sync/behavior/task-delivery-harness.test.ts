@@ -16,6 +16,12 @@ invalid(getter); assert.equal(evaluated, false, "fixture validation must never e
 const badIdentity = structuredClone(suite); const firstRead = badIdentity.scenarios[0]!.adapter[0]!;
 if (firstRead.method === "readTask" && firstRead.result) (firstRead.result.ref as { externalTaskId: string }).externalTaskId = "other-task";
 invalid(badIdentity);
+const ignoredFault = structuredClone(suite);
+ignoredFault.scenarios[0]!.row.operationVersion = "v0"; ignoredFault.scenarios[0]!.row.envelopeFault = "native-plan";
+invalid(ignoredFault);
+const tooMany = structuredClone(suite);
+tooMany.scenarios = Array.from({ length: 97 }, (_, index) => ({ ...structuredClone(suite.scenarios[0]!), id: `bounded-${index}` }));
+invalid(tooMany);
 
 const wrongExpected = structuredClone(suite.scenarios[0]!); wrongExpected.expected.ackCalls = 0;
 await assert.rejects(() => runTaskDeliveryScenario(wrongExpected), error => error instanceof TaskDeliveryScenarioFailure && error.code === "expectation-mismatch"); negativeChecks++;
@@ -23,6 +29,12 @@ const missingReceipt = structuredClone(suite.scenarios[0]!); missingReceipt.adap
 await assert.rejects(() => runTaskDeliveryScenario(missingReceipt), error => error instanceof TaskDeliveryScenarioFailure && error.code === "unexpected-port"); negativeChecks++;
 const extraReceipt = structuredClone(suite.scenarios[0]!); extraReceipt.adapter.push({ method: "assertTaskWrite" });
 await assert.rejects(() => runTaskDeliveryScenario(extraReceipt), error => error instanceof TaskDeliveryScenarioFailure && error.code === "unconsumed-port"); negativeChecks++;
+const extraAuthority = structuredClone(suite.scenarios[0]!); extraAuthority.ports = { renew: [true, true] };
+await assert.rejects(() => runTaskDeliveryScenario(extraAuthority), error => error instanceof TaskDeliveryScenarioFailure && error.code === "unconsumed-port"); negativeChecks++;
+const wrongNativePlan = structuredClone(suite.scenarios.find(scenario => scenario.id === "vtodo-full-resource-update")!);
+const nativeWrite = wrongNativePlan.adapter.find(step => step.method === "pushTaskUpdate");
+if (nativeWrite?.method === "pushTaskUpdate") nativeWrite.caldavPlan!.resourceIncludes.push("UNADMITTED-RESOURCE-BYTES");
+await assert.rejects(() => runTaskDeliveryScenario(wrongNativePlan), error => error instanceof TaskDeliveryScenarioFailure && error.code === "unexpected-port"); negativeChecks++;
 const concurrent = await Promise.allSettled([runTaskDeliveryScenario(suite.scenarios[0]!), runTaskDeliveryScenario(suite.scenarios[0]!)]);
 assert.equal(concurrent[0]!.status, "fulfilled");
 assert.equal(concurrent[1]!.status, "rejected");

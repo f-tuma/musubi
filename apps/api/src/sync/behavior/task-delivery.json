@@ -2376,6 +2376,5620 @@
         },
         "finishSnapshot": null
       }
+    },
+    {
+      "id": "google-create-predecessor-present",
+      "title": "Google CREATE with a paired predecessor reads the original object before creating",
+      "row": {
+        "action": "create",
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "google",
+        "predecessor": true,
+        "predecessorRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        }
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskCreate",
+          "result": {
+            "externalTaskId": "response-task",
+            "etag": "\"written\"",
+            "icalUid": null
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "response-task",
+              "etag": "\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskCreate",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskCreate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "response-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "google-create-predecessor-absent",
+      "title": "Google CREATE with proven absent predecessor has no invented old address",
+      "row": {
+        "action": "create",
+        "reconciling": false,
+        "projectionBaseline": null,
+        "dispatchProjection": null,
+        "provider": "google",
+        "predecessor": true,
+        "predecessorRef": {
+          "externalTaskId": null,
+          "etag": null,
+          "icalUid": null
+        }
+      },
+      "adapter": [
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskCreate",
+          "result": {
+            "externalTaskId": "native-task",
+            "etag": "\"written\"",
+            "icalUid": null
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskCreate",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "assertTaskWrite",
+          "pushTaskCreate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": null,
+          "patch": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": null,
+          "etag": null,
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "google-create-recovery-full-target",
+      "title": "CREATE recovery rejects unrelated drift even when the saved title mask is achieved",
+      "row": {
+        "action": "create",
+        "reconciling": true,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "provider": "google",
+        "predecessor": true,
+        "predecessorRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "resultRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        }
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Remote drift",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "unconfirmed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask"
+        ],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "task-create-unconfirmed",
+            "uncertain": true
+          }
+        ],
+        "returnedStatus": "unconfirmed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "google-update-recovery-exact-saved-mask",
+      "title": "UPDATE recovery ACKs its exact saved title mask and preserves other observed fields",
+      "row": {
+        "reconciling": true,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "action": "update"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"newer\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Remote drift",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask"
+        ],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Remote drift",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"newer\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "google-create-recovery-unknown-id",
+      "title": "Google uncertain CREATE with no response address stays read-only",
+      "row": {
+        "action": "create",
+        "reconciling": true,
+        "projectionBaseline": null,
+        "dispatchProjection": null,
+        "provider": "google",
+        "resultRef": null
+      },
+      "adapter": [],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "unconfirmed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "task-create-unconfirmed",
+            "uncertain": true
+          }
+        ],
+        "returnedStatus": "unconfirmed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "todo-home-weak-etag-update",
+      "title": "To Do home UPDATE preserves weak native validators and rich admitted fields",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "body": {
+            "content": "Notes",
+            "contentType": "text"
+          },
+          "dueDateTime": {
+            "dateTime": "2026-10-20T14:30:00.123",
+            "timeZone": "UTC"
+          },
+          "importance": "high",
+          "startDateTime": {
+            "dateTime": "2026-10-19T10:00:00.456",
+            "timeZone": "UTC"
+          },
+          "status": "inProgress",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "microsoft",
+        "externalRef": {
+          "externalTaskId": "native-task",
+          "etag": "W/\"accepted\"",
+          "icalUid": null
+        }
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "W/\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "body": {
+                "content": "Notes",
+                "contentType": "text"
+              },
+              "dueDateTime": {
+                "dateTime": "2026-10-20T14:30:00.123",
+                "timeZone": "UTC"
+              },
+              "importance": "high",
+              "startDateTime": {
+                "dateTime": "2026-10-19T10:00:00.456",
+                "timeZone": "UTC"
+              },
+              "status": "inProgress",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "W/\"written\""
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "W/\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "body": {
+                "content": "Notes",
+                "contentType": "text"
+              },
+              "dueDateTime": {
+                "dateTime": "2026-10-20T14:30:00.123",
+                "timeZone": "UTC"
+              },
+              "importance": "high",
+              "startDateTime": {
+                "dateTime": "2026-10-19T10:00:00.456",
+                "timeZone": "UTC"
+              },
+              "status": "inProgress",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "body": {
+              "content": "Notes",
+              "contentType": "text"
+            },
+            "dueDateTime": {
+              "dateTime": "2026-10-20T14:30:00.123",
+              "timeZone": "UTC"
+            },
+            "importance": "high",
+            "startDateTime": {
+              "dateTime": "2026-10-19T10:00:00.456",
+              "timeZone": "UTC"
+            },
+            "status": "inProgress",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "body": {
+              "content": "Notes",
+              "contentType": "text"
+            },
+            "dueDateTime": {
+              "dateTime": "2026-10-20T14:30:00.123",
+              "timeZone": "UTC"
+            },
+            "importance": "high",
+            "startDateTime": {
+              "dateTime": "2026-10-19T10:00:00.456",
+              "timeZone": "UTC"
+            },
+            "status": "inProgress",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": {
+          "body": {
+            "content": "Notes",
+            "contentType": "text"
+          },
+          "dueDateTime": {
+            "dateTime": "2026-10-20T14:30:00.123",
+            "timeZone": "UTC"
+          },
+          "importance": "high",
+          "startDateTime": {
+            "dateTime": "2026-10-19T10:00:00.456",
+            "timeZone": "UTC"
+          },
+          "status": "inProgress",
+          "title": "Admitted title"
+        },
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "W/\"accepted\"",
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "body": {
+            "content": "Notes",
+            "contentType": "text"
+          },
+          "dueDateTime": {
+            "dateTime": "2026-10-20T14:30:00.123",
+            "timeZone": "UTC"
+          },
+          "importance": "high",
+          "startDateTime": {
+            "dateTime": "2026-10-19T10:00:00.456",
+            "timeZone": "UTC"
+          },
+          "status": "inProgress",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "W/\"written\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "W/\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null,
+        "writeTask": {
+          "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+          "creatorID": "fixture-owner",
+          "calendarID": "fixture-calendar",
+          "originCalendarID": "fixture-calendar",
+          "revision": 2,
+          "title": "Admitted title",
+          "description": "Notes",
+          "status": "in-process",
+          "due": "2026-10-20T14:30:00.123Z",
+          "start": "2026-10-19T10:00:00.456Z",
+          "completedAt": null,
+          "priority": 2,
+          "percentComplete": 37,
+          "sequence": 4,
+          "url": "https://example.invalid/task",
+          "isAllDay": false
+        },
+        "preflightSecondary": false
+      },
+      "inspect": [
+        "writeTask",
+        "preflightSecondary"
+      ]
+    },
+    {
+      "id": "todo-secondary-update-refused",
+      "title": "To Do secondary UPDATE retains the native conditional-write refusal",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "body": {
+            "content": "Notes",
+            "contentType": "text"
+          },
+          "dueDateTime": {
+            "dateTime": "2026-10-20T14:30:00.123",
+            "timeZone": "UTC"
+          },
+          "importance": "high",
+          "startDateTime": {
+            "dateTime": "2026-10-19T10:00:00.456",
+            "timeZone": "UTC"
+          },
+          "status": "inProgress",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "microsoft",
+        "secondary": true,
+        "externalRef": {
+          "externalTaskId": "native-task",
+          "etag": "W/\"accepted\"",
+          "icalUid": null
+        }
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "W/\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "body": {
+                "content": "Notes",
+                "contentType": "text"
+              },
+              "dueDateTime": {
+                "dateTime": "2026-10-20T14:30:00.123",
+                "timeZone": "UTC"
+              },
+              "importance": "high",
+              "startDateTime": {
+                "dateTime": "2026-10-19T10:00:00.456",
+                "timeZone": "UTC"
+              },
+              "status": "inProgress",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite",
+          "error": {
+            "code": "task-conditional-write-unsupported"
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "blocked"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "body": {
+              "content": "Notes",
+              "contentType": "text"
+            },
+            "dueDateTime": {
+              "dateTime": "2026-10-20T14:30:00.123",
+              "timeZone": "UTC"
+            },
+            "importance": "high",
+            "startDateTime": {
+              "dateTime": "2026-10-19T10:00:00.456",
+              "timeZone": "UTC"
+            },
+            "status": "inProgress",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "body": {
+              "content": "Notes",
+              "contentType": "text"
+            },
+            "dueDateTime": {
+              "dateTime": "2026-10-20T14:30:00.123",
+              "timeZone": "UTC"
+            },
+            "importance": "high",
+            "startDateTime": {
+              "dateTime": "2026-10-19T10:00:00.456",
+              "timeZone": "UTC"
+            },
+            "status": "inProgress",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "blocked",
+            "code": "task-conditional-write-unsupported",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "blocked",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null,
+        "preflightSecondary": true
+      },
+      "inspect": [
+        "preflightSecondary"
+      ]
+    },
+    {
+      "id": "todo-home-create-response-address",
+      "title": "To Do home CREATE keeps the captured response address for readback",
+      "row": {
+        "action": "create",
+        "reconciling": false,
+        "projectionBaseline": null,
+        "dispatchProjection": null,
+        "provider": "microsoft"
+      },
+      "adapter": [
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskCreate",
+          "result": {
+            "externalTaskId": "native-task",
+            "etag": "\"written\"",
+            "icalUid": null
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "body": {
+                "content": "Notes",
+                "contentType": "text"
+              },
+              "dueDateTime": {
+                "dateTime": "2026-10-20T14:30:00.123",
+                "timeZone": "UTC"
+              },
+              "importance": "high",
+              "startDateTime": {
+                "dateTime": "2026-10-19T10:00:00.456",
+                "timeZone": "UTC"
+              },
+              "status": "inProgress",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskCreate",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "assertTaskWrite",
+          "pushTaskCreate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "body": {
+              "content": "Notes",
+              "contentType": "text"
+            },
+            "dueDateTime": {
+              "dateTime": "2026-10-20T14:30:00.123",
+              "timeZone": "UTC"
+            },
+            "importance": "high",
+            "startDateTime": {
+              "dateTime": "2026-10-19T10:00:00.456",
+              "timeZone": "UTC"
+            },
+            "status": "inProgress",
+            "title": "Admitted title"
+          },
+          "baseline": null,
+          "patch": {
+            "body": {
+              "content": "Notes",
+              "contentType": "text"
+            },
+            "dueDateTime": {
+              "dateTime": "2026-10-20T14:30:00.123",
+              "timeZone": "UTC"
+            },
+            "importance": "high",
+            "startDateTime": {
+              "dateTime": "2026-10-19T10:00:00.456",
+              "timeZone": "UTC"
+            },
+            "status": "inProgress",
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "body": {
+            "content": "Notes",
+            "contentType": "text"
+          },
+          "dueDateTime": {
+            "dateTime": "2026-10-20T14:30:00.123",
+            "timeZone": "UTC"
+          },
+          "importance": "high",
+          "startDateTime": {
+            "dateTime": "2026-10-19T10:00:00.456",
+            "timeZone": "UTC"
+          },
+          "status": "inProgress",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": null,
+          "etag": null,
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": {
+          "body": {
+            "content": "Notes",
+            "contentType": "text"
+          },
+          "dueDateTime": {
+            "dateTime": "2026-10-20T14:30:00.123",
+            "timeZone": "UTC"
+          },
+          "importance": "high",
+          "startDateTime": {
+            "dateTime": "2026-10-19T10:00:00.456",
+            "timeZone": "UTC"
+          },
+          "status": "inProgress",
+          "title": "Admitted title"
+        },
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "todo-create-recovery-known-address",
+      "title": "To Do uncertain CREATE reads only its captured response address",
+      "row": {
+        "action": "create",
+        "reconciling": true,
+        "projectionBaseline": null,
+        "dispatchProjection": null,
+        "provider": "microsoft",
+        "resultRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        }
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "body": {
+                "content": "Notes",
+                "contentType": "text"
+              },
+              "dueDateTime": {
+                "dateTime": "2026-10-20T14:30:00.123",
+                "timeZone": "UTC"
+              },
+              "importance": "high",
+              "startDateTime": {
+                "dateTime": "2026-10-19T10:00:00.456",
+                "timeZone": "UTC"
+              },
+              "status": "inProgress",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask"
+        ],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "body": {
+            "content": "Notes",
+            "contentType": "text"
+          },
+          "dueDateTime": {
+            "dateTime": "2026-10-20T14:30:00.123",
+            "timeZone": "UTC"
+          },
+          "importance": "high",
+          "startDateTime": {
+            "dateTime": "2026-10-19T10:00:00.456",
+            "timeZone": "UTC"
+          },
+          "status": "inProgress",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": null,
+          "etag": null,
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "todo-create-recovery-unknown-address",
+      "title": "To Do uncertain CREATE cannot invent an address or resend",
+      "row": {
+        "action": "create",
+        "reconciling": true,
+        "projectionBaseline": null,
+        "dispatchProjection": null,
+        "provider": "microsoft",
+        "resultRef": null
+      },
+      "adapter": [],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "unconfirmed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "task-create-unconfirmed",
+            "uncertain": true
+          }
+        ],
+        "returnedStatus": "unconfirmed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "todo-secondary-delete-refused",
+      "title": "To Do secondary DELETE retains the native conditional-write refusal",
+      "row": {
+        "action": "delete",
+        "reconciling": false,
+        "projectionBaseline": {
+          "body": {
+            "content": "Notes",
+            "contentType": "text"
+          },
+          "dueDateTime": {
+            "dateTime": "2026-10-20T14:30:00.123",
+            "timeZone": "UTC"
+          },
+          "importance": "high",
+          "startDateTime": {
+            "dateTime": "2026-10-19T10:00:00.456",
+            "timeZone": "UTC"
+          },
+          "status": "inProgress",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "microsoft",
+        "secondary": true,
+        "externalRef": {
+          "externalTaskId": "native-task",
+          "etag": "W/\"accepted\"",
+          "icalUid": null
+        }
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "W/\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "body": {
+                "content": "Notes",
+                "contentType": "text"
+              },
+              "dueDateTime": {
+                "dateTime": "2026-10-20T14:30:00.123",
+                "timeZone": "UTC"
+              },
+              "importance": "high",
+              "startDateTime": {
+                "dateTime": "2026-10-19T10:00:00.456",
+                "timeZone": "UTC"
+              },
+              "status": "inProgress",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite",
+          "error": {
+            "code": "task-conditional-write-unsupported"
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "blocked"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "body": {
+              "content": "Notes",
+              "contentType": "text"
+            },
+            "dueDateTime": {
+              "dateTime": "2026-10-20T14:30:00.123",
+              "timeZone": "UTC"
+            },
+            "importance": "high",
+            "startDateTime": {
+              "dateTime": "2026-10-19T10:00:00.456",
+              "timeZone": "UTC"
+            },
+            "status": "inProgress",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "body": {
+              "content": "Notes",
+              "contentType": "text"
+            },
+            "dueDateTime": {
+              "dateTime": "2026-10-20T14:30:00.123",
+              "timeZone": "UTC"
+            },
+            "importance": "high",
+            "startDateTime": {
+              "dateTime": "2026-10-19T10:00:00.456",
+              "timeZone": "UTC"
+            },
+            "status": "inProgress",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "blocked",
+            "code": "task-conditional-write-unsupported",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "blocked",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "vtodo-full-resource-update",
+      "title": "VTODO UPDATE carries the full pinned resource and original URL UID validator pair",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "title": "Before",
+          "description": "Notes",
+          "status": "in-process",
+          "start": "2026-10-19T10:00:00.000Z",
+          "due": "2026-10-20T14:30:00.000Z",
+          "isAllDay": false,
+          "completedAt": null,
+          "percentComplete": 37,
+          "priority": 2,
+          "recurrence": null,
+          "relatedTo": null,
+          "sequence": 4,
+          "url": "https://example.invalid/task"
+        },
+        "dispatchProjection": null,
+        "provider": "caldav"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+              "etag": "\"accepted\"",
+              "icalUid": "abcdef01-abcd-4000-8000-abcdefabcdea"
+            },
+            "projection": {
+              "title": "Before",
+              "description": "Notes",
+              "status": "in-process",
+              "start": "2026-10-19T10:00:00.000Z",
+              "due": "2026-10-20T14:30:00.000Z",
+              "isAllDay": false,
+              "completedAt": null,
+              "percentComplete": 37,
+              "priority": 2,
+              "recurrence": null,
+              "relatedTo": null,
+              "sequence": 4,
+              "url": "https://example.invalid/task"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "\"written\""
+          },
+          "caldavPlan": {
+            "uid": "abcdef01-abcd-4000-8000-abcdefabcdea",
+            "resourceIncludes": [
+              "BEGIN:VCALENDAR",
+              "BEGIN:VTODO",
+              "UID:abcdef01-abcd-4000-8000-abcdefabcdea",
+              "DTSTART:20261019T100000Z",
+              "DUE:20261020T143000Z",
+              "PRIORITY:2",
+              "PERCENT-COMPLETE:37",
+              "URL:https://example.invalid/task"
+            ],
+            "properties": [
+              "summary",
+              "description",
+              "status",
+              "dtstart",
+              "due",
+              "completed",
+              "percent-complete",
+              "priority",
+              "sequence",
+              "related-to",
+              "url",
+              "rrule",
+              "rdate",
+              "exdate"
+            ]
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+              "etag": "\"written\"",
+              "icalUid": "abcdef01-abcd-4000-8000-abcdefabcdea"
+            },
+            "projection": {
+              "title": "Admitted title",
+              "description": "Notes",
+              "status": "in-process",
+              "start": "2026-10-19T10:00:00.000Z",
+              "due": "2026-10-20T14:30:00.000Z",
+              "isAllDay": false,
+              "completedAt": null,
+              "percentComplete": 37,
+              "priority": 2,
+              "recurrence": null,
+              "relatedTo": null,
+              "sequence": 4,
+              "url": "https://example.invalid/task"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "title": "Admitted title",
+            "description": "Notes",
+            "status": "in-process",
+            "start": "2026-10-19T10:00:00.000Z",
+            "due": "2026-10-20T14:30:00.000Z",
+            "isAllDay": false,
+            "completedAt": null,
+            "percentComplete": 37,
+            "priority": 2,
+            "recurrence": null,
+            "relatedTo": null,
+            "sequence": 4,
+            "url": "https://example.invalid/task"
+          },
+          "baseline": {
+            "title": "Before",
+            "description": "Notes",
+            "status": "in-process",
+            "start": "2026-10-19T10:00:00.000Z",
+            "due": "2026-10-20T14:30:00.000Z",
+            "isAllDay": false,
+            "completedAt": null,
+            "percentComplete": 37,
+            "priority": 2,
+            "recurrence": null,
+            "relatedTo": null,
+            "sequence": 4,
+            "url": "https://example.invalid/task"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": null,
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "\"accepted\"",
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "title": "Admitted title",
+          "description": "Notes",
+          "status": "in-process",
+          "start": "2026-10-19T10:00:00.000Z",
+          "due": "2026-10-20T14:30:00.000Z",
+          "isAllDay": false,
+          "completedAt": null,
+          "percentComplete": 37,
+          "priority": 2,
+          "recurrence": null,
+          "relatedTo": null,
+          "sequence": 4,
+          "url": "https://example.invalid/task"
+        },
+        "ackRef": {
+          "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+          "etag": "\"written\"",
+          "icalUid": "abcdef01-abcd-4000-8000-abcdefabcdea"
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+          "etag": "\"accepted\"",
+          "icalUid": "abcdef01-abcd-4000-8000-abcdefabcdea"
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null,
+        "writeTask": {
+          "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+          "creatorID": "fixture-owner",
+          "calendarID": "fixture-calendar",
+          "originCalendarID": "fixture-calendar",
+          "revision": 2,
+          "title": "Admitted title",
+          "description": "Notes",
+          "status": "in-process",
+          "due": "2026-10-20T14:30:00.123Z",
+          "start": "2026-10-19T10:00:00.456Z",
+          "completedAt": null,
+          "priority": 2,
+          "percentComplete": 37,
+          "sequence": 4,
+          "url": "https://example.invalid/task",
+          "isAllDay": false
+        },
+        "readRefs": [
+          {
+            "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+            "etag": "\"accepted\"",
+            "icalUid": "abcdef01-abcd-4000-8000-abcdefabcdea"
+          },
+          {
+            "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+            "etag": "\"written\"",
+            "icalUid": "abcdef01-abcd-4000-8000-abcdefabcdea"
+          }
+        ]
+      },
+      "inspect": [
+        "writeTask",
+        "readRefs"
+      ]
+    },
+    {
+      "id": "vtodo-deterministic-create-recovery",
+      "title": "VTODO uncertain CREATE recovers at the original task UUID URL and UID",
+      "row": {
+        "action": "create",
+        "reconciling": true,
+        "projectionBaseline": null,
+        "dispatchProjection": null,
+        "provider": "caldav",
+        "resultRef": null
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "https://fixture.invalid/tasks/abcdef01-abcd-4000-8000-abcdefabcdea.ics",
+              "etag": "\"written\"",
+              "icalUid": "abcdef01-abcd-4000-8000-abcdefabcdea"
+            },
+            "projection": {
+              "title": "Admitted title",
+              "description": "Notes",
+              "status": "in-process",
+              "start": "2026-10-19T10:00:00.000Z",
+              "due": "2026-10-20T14:30:00.000Z",
+              "isAllDay": false,
+              "completedAt": null,
+              "percentComplete": 37,
+              "priority": 2,
+              "recurrence": null,
+              "relatedTo": null,
+              "sequence": 4,
+              "url": "https://example.invalid/task"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask"
+        ],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "title": "Admitted title",
+          "description": "Notes",
+          "status": "in-process",
+          "start": "2026-10-19T10:00:00.000Z",
+          "due": "2026-10-20T14:30:00.000Z",
+          "isAllDay": false,
+          "completedAt": null,
+          "percentComplete": 37,
+          "priority": 2,
+          "recurrence": null,
+          "relatedTo": null,
+          "sequence": 4,
+          "url": "https://example.invalid/task"
+        },
+        "ackRef": {
+          "externalTaskId": "https://fixture.invalid/tasks/abcdef01-abcd-4000-8000-abcdefabcdea.ics",
+          "etag": "\"written\"",
+          "icalUid": "abcdef01-abcd-4000-8000-abcdefabcdea"
+        },
+        "ackExpectedRef": {
+          "externalTaskId": null,
+          "etag": null,
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null,
+        "readRefs": [
+          {
+            "externalTaskId": "https://fixture.invalid/tasks/abcdef01-abcd-4000-8000-abcdefabcdea.ics",
+            "etag": null,
+            "icalUid": "abcdef01-abcd-4000-8000-abcdefabcdea"
+          }
+        ]
+      },
+      "inspect": [
+        "readRefs"
+      ]
+    },
+    {
+      "id": "vtodo-original-strong-tag-conflict",
+      "title": "VTODO current strong validator cannot replace the captured original validator",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "title": "Before",
+          "description": "Notes",
+          "status": "in-process",
+          "start": "2026-10-19T10:00:00.000Z",
+          "due": "2026-10-20T14:30:00.000Z",
+          "isAllDay": false,
+          "completedAt": null,
+          "percentComplete": 37,
+          "priority": 2,
+          "recurrence": null,
+          "relatedTo": null,
+          "sequence": 4,
+          "url": "https://example.invalid/task"
+        },
+        "dispatchProjection": null,
+        "provider": "caldav"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+              "etag": "\"newer\"",
+              "icalUid": "abcdef01-abcd-4000-8000-abcdefabcdea"
+            },
+            "projection": {
+              "title": "Before",
+              "description": "Notes",
+              "status": "in-process",
+              "start": "2026-10-19T10:00:00.000Z",
+              "due": "2026-10-20T14:30:00.000Z",
+              "isAllDay": false,
+              "completedAt": null,
+              "percentComplete": 37,
+              "priority": 2,
+              "recurrence": null,
+              "relatedTo": null,
+              "sequence": 4,
+              "url": "https://example.invalid/task"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "conflict"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "title": "Admitted title",
+            "description": "Notes",
+            "status": "in-process",
+            "start": "2026-10-19T10:00:00.000Z",
+            "due": "2026-10-20T14:30:00.000Z",
+            "isAllDay": false,
+            "completedAt": null,
+            "percentComplete": 37,
+            "priority": 2,
+            "recurrence": null,
+            "relatedTo": null,
+            "sequence": 4,
+            "url": "https://example.invalid/task"
+          },
+          "baseline": {
+            "title": "Before",
+            "description": "Notes",
+            "status": "in-process",
+            "start": "2026-10-19T10:00:00.000Z",
+            "due": "2026-10-20T14:30:00.000Z",
+            "isAllDay": false,
+            "completedAt": null,
+            "percentComplete": 37,
+            "priority": 2,
+            "recurrence": null,
+            "relatedTo": null,
+            "sequence": 4,
+            "url": "https://example.invalid/task"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "conflict",
+            "code": "task-provider-conflict",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "conflict",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "vtodo-weak-tag-native-refusal",
+      "title": "VTODO weak validators remain a native preflight refusal",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "title": "Before",
+          "description": "Notes",
+          "status": "in-process",
+          "start": "2026-10-19T10:00:00.000Z",
+          "due": "2026-10-20T14:30:00.000Z",
+          "isAllDay": false,
+          "completedAt": null,
+          "percentComplete": 37,
+          "priority": 2,
+          "recurrence": null,
+          "relatedTo": null,
+          "sequence": 4,
+          "url": "https://example.invalid/task"
+        },
+        "dispatchProjection": null,
+        "provider": "caldav",
+        "externalRef": {
+          "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+          "etag": "W/\"accepted\"",
+          "icalUid": "abcdef01-abcd-4000-8000-abcdefabcdea"
+        }
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+              "etag": "W/\"accepted\"",
+              "icalUid": "abcdef01-abcd-4000-8000-abcdefabcdea"
+            },
+            "projection": {
+              "title": "Before",
+              "description": "Notes",
+              "status": "in-process",
+              "start": "2026-10-19T10:00:00.000Z",
+              "due": "2026-10-20T14:30:00.000Z",
+              "isAllDay": false,
+              "completedAt": null,
+              "percentComplete": 37,
+              "priority": 2,
+              "recurrence": null,
+              "relatedTo": null,
+              "sequence": 4,
+              "url": "https://example.invalid/task"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite",
+          "error": {
+            "code": "task-version-unavailable"
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "retry"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "title": "Admitted title",
+            "description": "Notes",
+            "status": "in-process",
+            "start": "2026-10-19T10:00:00.000Z",
+            "due": "2026-10-20T14:30:00.000Z",
+            "isAllDay": false,
+            "completedAt": null,
+            "percentComplete": 37,
+            "priority": 2,
+            "recurrence": null,
+            "relatedTo": null,
+            "sequence": 4,
+            "url": "https://example.invalid/task"
+          },
+          "baseline": {
+            "title": "Before",
+            "description": "Notes",
+            "status": "in-process",
+            "start": "2026-10-19T10:00:00.000Z",
+            "due": "2026-10-20T14:30:00.000Z",
+            "isAllDay": false,
+            "completedAt": null,
+            "percentComplete": 37,
+            "priority": 2,
+            "recurrence": null,
+            "relatedTo": null,
+            "sequence": 4,
+            "url": "https://example.invalid/task"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "retry",
+            "code": "task-version-unavailable",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "retry",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "google-v0-home-recurrence",
+      "title": "Legacy Google home recurrence reaches the existing writer without v1 encoding",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "google",
+        "operationVersion": "v0",
+        "legacyProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "task": {
+          "recurrence": "RRULE:FREQ=DAILY;COUNT=3"
+        }
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.source:true",
+          "db.source:false",
+          "db.predecessor",
+          "adapter.projectTask",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.source:false",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": null,
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "\"accepted\"",
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null,
+        "writeTask": {
+          "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+          "creatorID": "fixture-owner",
+          "calendarID": "fixture-calendar",
+          "originCalendarID": "fixture-calendar",
+          "revision": 2,
+          "title": "Admitted title",
+          "description": "Notes",
+          "status": "in-process",
+          "due": "2026-10-20T14:30:00.123Z",
+          "start": "2026-10-19T10:00:00.456Z",
+          "completedAt": null,
+          "priority": 2,
+          "percentComplete": 37,
+          "sequence": 4,
+          "url": "https://example.invalid/task",
+          "isAllDay": false,
+          "recurrence": "RRULE:FREQ=DAILY;COUNT=3"
+        }
+      },
+      "inspect": [
+        "writeTask"
+      ]
+    },
+    {
+      "id": "todo-v0-home-recurrence",
+      "title": "Legacy To Do home recurrence reaches its original writer unchanged",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "body": {
+            "content": "Notes",
+            "contentType": "text"
+          },
+          "dueDateTime": {
+            "dateTime": "2026-10-20T14:30:00.123",
+            "timeZone": "UTC"
+          },
+          "importance": "high",
+          "startDateTime": {
+            "dateTime": "2026-10-19T10:00:00.456",
+            "timeZone": "UTC"
+          },
+          "status": "inProgress",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "microsoft",
+        "operationVersion": "v0",
+        "externalRef": {
+          "externalTaskId": "native-task",
+          "etag": "W/\"accepted\"",
+          "icalUid": null
+        },
+        "legacyProjection": {
+          "body": {
+            "content": "Notes",
+            "contentType": "text"
+          },
+          "dueDateTime": {
+            "dateTime": "2026-10-20T14:30:00.123",
+            "timeZone": "UTC"
+          },
+          "importance": "high",
+          "startDateTime": {
+            "dateTime": "2026-10-19T10:00:00.456",
+            "timeZone": "UTC"
+          },
+          "status": "inProgress",
+          "title": "Admitted title"
+        },
+        "task": {
+          "recurrence": "RRULE:FREQ=DAILY;COUNT=3"
+        }
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "W/\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "body": {
+                "content": "Notes",
+                "contentType": "text"
+              },
+              "dueDateTime": {
+                "dateTime": "2026-10-20T14:30:00.123",
+                "timeZone": "UTC"
+              },
+              "importance": "high",
+              "startDateTime": {
+                "dateTime": "2026-10-19T10:00:00.456",
+                "timeZone": "UTC"
+              },
+              "status": "inProgress",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "W/\"written\""
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "W/\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "body": {
+                "content": "Notes",
+                "contentType": "text"
+              },
+              "dueDateTime": {
+                "dateTime": "2026-10-20T14:30:00.123",
+                "timeZone": "UTC"
+              },
+              "importance": "high",
+              "startDateTime": {
+                "dateTime": "2026-10-19T10:00:00.456",
+                "timeZone": "UTC"
+              },
+              "status": "inProgress",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.source:true",
+          "db.source:false",
+          "db.predecessor",
+          "adapter.projectTask",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.source:false",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "body": {
+              "content": "Notes",
+              "contentType": "text"
+            },
+            "dueDateTime": {
+              "dateTime": "2026-10-20T14:30:00.123",
+              "timeZone": "UTC"
+            },
+            "importance": "high",
+            "startDateTime": {
+              "dateTime": "2026-10-19T10:00:00.456",
+              "timeZone": "UTC"
+            },
+            "status": "inProgress",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "body": {
+              "content": "Notes",
+              "contentType": "text"
+            },
+            "dueDateTime": {
+              "dateTime": "2026-10-20T14:30:00.123",
+              "timeZone": "UTC"
+            },
+            "importance": "high",
+            "startDateTime": {
+              "dateTime": "2026-10-19T10:00:00.456",
+              "timeZone": "UTC"
+            },
+            "status": "inProgress",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": null,
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "W/\"accepted\"",
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "body": {
+            "content": "Notes",
+            "contentType": "text"
+          },
+          "dueDateTime": {
+            "dateTime": "2026-10-20T14:30:00.123",
+            "timeZone": "UTC"
+          },
+          "importance": "high",
+          "startDateTime": {
+            "dateTime": "2026-10-19T10:00:00.456",
+            "timeZone": "UTC"
+          },
+          "status": "inProgress",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "W/\"written\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "W/\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null,
+        "writeTask": {
+          "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+          "creatorID": "fixture-owner",
+          "calendarID": "fixture-calendar",
+          "originCalendarID": "fixture-calendar",
+          "revision": 2,
+          "title": "Admitted title",
+          "description": "Notes",
+          "status": "in-process",
+          "due": "2026-10-20T14:30:00.123Z",
+          "start": "2026-10-19T10:00:00.456Z",
+          "completedAt": null,
+          "priority": 2,
+          "percentComplete": 37,
+          "sequence": 4,
+          "url": "https://example.invalid/task",
+          "isAllDay": false,
+          "recurrence": "RRULE:FREQ=DAILY;COUNT=3"
+        }
+      },
+      "inspect": [
+        "writeTask"
+      ]
+    },
+    {
+      "id": "google-v0-secondary-recurrence-refused",
+      "title": "Legacy google secondary non-delete recurrence remains refused",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "google",
+        "operationVersion": "v0",
+        "secondary": true,
+        "task": {
+          "recurrence": "RRULE:FREQ=DAILY;COUNT=3"
+        }
+      },
+      "adapter": [],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "blocked"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.source:true",
+          "db.source:false",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "blocked",
+            "code": "task-recurrence-projection-unsupported",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "blocked",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "microsoft-v0-secondary-recurrence-refused",
+      "title": "Legacy microsoft secondary non-delete recurrence remains refused",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "body": {
+            "content": "Notes",
+            "contentType": "text"
+          },
+          "dueDateTime": {
+            "dateTime": "2026-10-20T14:30:00.123",
+            "timeZone": "UTC"
+          },
+          "importance": "high",
+          "startDateTime": {
+            "dateTime": "2026-10-19T10:00:00.456",
+            "timeZone": "UTC"
+          },
+          "status": "inProgress",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "microsoft",
+        "operationVersion": "v0",
+        "secondary": true,
+        "task": {
+          "recurrence": "RRULE:FREQ=DAILY;COUNT=3"
+        }
+      },
+      "adapter": [],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "blocked"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.source:true",
+          "db.source:false",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "blocked",
+            "code": "task-recurrence-projection-unsupported",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "blocked",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "google-v0-oversize-title",
+      "title": "Legacy title outside v1 admission budgets retains its original native writer floor",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "google",
+        "operationVersion": "v0",
+        "legacyProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Retained legacy title xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        },
+        "task": {
+          "title": "Retained legacy title xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        }
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Retained legacy title xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.source:true",
+          "db.source:false",
+          "db.predecessor",
+          "adapter.projectTask",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.source:false",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Retained legacy title xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Retained legacy title xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          }
+        },
+        "updatePatch": {
+          "title": "Retained legacy title xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        },
+        "updatePlanBody": null,
+        "updateTaskTitle": "Retained legacy title xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "updateAcceptedEtag": "\"accepted\"",
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Retained legacy title xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "vtodo-v0-historical-native-uid",
+      "title": "Legacy VTODO keeps its historical native UID and full canonical content",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "title": "Before",
+          "description": "Notes",
+          "status": "in-process",
+          "start": "2026-10-19T10:00:00.000Z",
+          "due": "2026-10-20T14:30:00.000Z",
+          "isAllDay": false,
+          "completedAt": null,
+          "percentComplete": 37,
+          "priority": 2,
+          "recurrence": null,
+          "relatedTo": null,
+          "sequence": 4,
+          "url": "https://example.invalid/task"
+        },
+        "dispatchProjection": null,
+        "provider": "caldav",
+        "operationVersion": "v0",
+        "externalRef": {
+          "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+          "etag": "\"accepted\"",
+          "icalUid": "historical-native-uid"
+        },
+        "legacyProjection": {
+          "title": "Admitted title",
+          "description": "Notes",
+          "status": "in-process",
+          "start": "2026-10-19T10:00:00.000Z",
+          "due": "2026-10-20T14:30:00.000Z",
+          "isAllDay": false,
+          "completedAt": null,
+          "percentComplete": 37,
+          "priority": 2,
+          "recurrence": null,
+          "relatedTo": null,
+          "sequence": 4,
+          "url": "https://example.invalid/task"
+        }
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+              "etag": "\"accepted\"",
+              "icalUid": "historical-native-uid"
+            },
+            "projection": {
+              "title": "Before",
+              "description": "Notes",
+              "status": "in-process",
+              "start": "2026-10-19T10:00:00.000Z",
+              "due": "2026-10-20T14:30:00.000Z",
+              "isAllDay": false,
+              "completedAt": null,
+              "percentComplete": 37,
+              "priority": 2,
+              "recurrence": null,
+              "relatedTo": null,
+              "sequence": 4,
+              "url": "https://example.invalid/task"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+              "etag": "\"written\"",
+              "icalUid": "historical-native-uid"
+            },
+            "projection": {
+              "title": "Admitted title",
+              "description": "Notes",
+              "status": "in-process",
+              "start": "2026-10-19T10:00:00.000Z",
+              "due": "2026-10-20T14:30:00.000Z",
+              "isAllDay": false,
+              "completedAt": null,
+              "percentComplete": 37,
+              "priority": 2,
+              "recurrence": null,
+              "relatedTo": null,
+              "sequence": 4,
+              "url": "https://example.invalid/task"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.source:true",
+          "db.source:false",
+          "db.predecessor",
+          "adapter.projectTask",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.source:false",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "title": "Admitted title",
+            "description": "Notes",
+            "status": "in-process",
+            "start": "2026-10-19T10:00:00.000Z",
+            "due": "2026-10-20T14:30:00.000Z",
+            "isAllDay": false,
+            "completedAt": null,
+            "percentComplete": 37,
+            "priority": 2,
+            "recurrence": null,
+            "relatedTo": null,
+            "sequence": 4,
+            "url": "https://example.invalid/task"
+          },
+          "baseline": {
+            "title": "Before",
+            "description": "Notes",
+            "status": "in-process",
+            "start": "2026-10-19T10:00:00.000Z",
+            "due": "2026-10-20T14:30:00.000Z",
+            "isAllDay": false,
+            "completedAt": null,
+            "percentComplete": 37,
+            "priority": 2,
+            "recurrence": null,
+            "relatedTo": null,
+            "sequence": 4,
+            "url": "https://example.invalid/task"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": null,
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "\"accepted\"",
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "title": "Admitted title",
+          "description": "Notes",
+          "status": "in-process",
+          "start": "2026-10-19T10:00:00.000Z",
+          "due": "2026-10-20T14:30:00.000Z",
+          "isAllDay": false,
+          "completedAt": null,
+          "percentComplete": 37,
+          "priority": 2,
+          "recurrence": null,
+          "relatedTo": null,
+          "sequence": 4,
+          "url": "https://example.invalid/task"
+        },
+        "ackRef": {
+          "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+          "etag": "\"written\"",
+          "icalUid": "historical-native-uid"
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+          "etag": "\"accepted\"",
+          "icalUid": "historical-native-uid"
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null,
+        "writeTask": {
+          "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+          "creatorID": "fixture-owner",
+          "calendarID": "fixture-calendar",
+          "originCalendarID": "fixture-calendar",
+          "revision": 2,
+          "title": "Admitted title",
+          "description": "Notes",
+          "status": "in-process",
+          "due": "2026-10-20T14:30:00.123Z",
+          "start": "2026-10-19T10:00:00.456Z",
+          "completedAt": null,
+          "priority": 2,
+          "percentComplete": 37,
+          "sequence": 4,
+          "url": "https://example.invalid/task",
+          "isAllDay": false
+        },
+        "readRefs": [
+          {
+            "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+            "etag": "\"accepted\"",
+            "icalUid": "historical-native-uid"
+          },
+          {
+            "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+            "etag": "\"written\"",
+            "icalUid": "historical-native-uid"
+          }
+        ]
+      },
+      "inspect": [
+        "writeTask",
+        "readRefs"
+      ]
+    },
+    {
+      "id": "legacy-delete-without-task-address",
+      "title": "Legacy DELETE without a remote task address ACKs absence without native writes",
+      "row": {
+        "action": "delete",
+        "reconciling": false,
+        "projectionBaseline": null,
+        "dispatchProjection": null,
+        "provider": "google",
+        "operationVersion": "v0",
+        "externalRef": {
+          "externalTaskId": null,
+          "etag": null,
+          "icalUid": null
+        },
+        "legacyProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        }
+      },
+      "adapter": [],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.source:true",
+          "db.source:false",
+          "db.predecessor",
+          "adapter.projectTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": false,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": {
+          "externalTaskId": null,
+          "etag": null,
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "todo-delete-native-already-absent",
+      "title": "A fulfilled native DELETE can have no dispatch when its internal read finds absence",
+      "row": {
+        "action": "delete",
+        "reconciling": false,
+        "projectionBaseline": {
+          "body": {
+            "content": "Notes",
+            "contentType": "text"
+          },
+          "dueDateTime": {
+            "dateTime": "2026-10-20T14:30:00.123",
+            "timeZone": "UTC"
+          },
+          "importance": "high",
+          "startDateTime": {
+            "dateTime": "2026-10-19T10:00:00.456",
+            "timeZone": "UTC"
+          },
+          "status": "inProgress",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "microsoft",
+        "externalRef": {
+          "externalTaskId": "native-task",
+          "etag": "W/\"accepted\"",
+          "icalUid": null
+        }
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "W/\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "body": {
+                "content": "Notes",
+                "contentType": "text"
+              },
+              "dueDateTime": {
+                "dateTime": "2026-10-20T14:30:00.123",
+                "timeZone": "UTC"
+              },
+              "importance": "high",
+              "startDateTime": {
+                "dateTime": "2026-10-19T10:00:00.456",
+                "timeZone": "UTC"
+              },
+              "status": "inProgress",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskDelete",
+          "skipMutation": true
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskDelete",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskDelete"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "body": {
+              "content": "Notes",
+              "contentType": "text"
+            },
+            "dueDateTime": {
+              "dateTime": "2026-10-20T14:30:00.123",
+              "timeZone": "UTC"
+            },
+            "importance": "high",
+            "startDateTime": {
+              "dateTime": "2026-10-19T10:00:00.456",
+              "timeZone": "UTC"
+            },
+            "status": "inProgress",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "body": {
+              "content": "Notes",
+              "contentType": "text"
+            },
+            "dueDateTime": {
+              "dateTime": "2026-10-20T14:30:00.123",
+              "timeZone": "UTC"
+            },
+            "importance": "high",
+            "startDateTime": {
+              "dateTime": "2026-10-19T10:00:00.456",
+              "timeZone": "UTC"
+            },
+            "status": "inProgress",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "W/\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": {
+          "externalTaskId": "native-task",
+          "etag": "W/\"accepted\"",
+          "icalUid": null
+        },
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "source-revoked-before-read",
+      "title": "Source revocation before initial provider reads blocks the operation",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "google"
+      },
+      "adapter": [],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "blocked"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "blocked",
+            "code": "task-source-changed",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "blocked",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      },
+      "ports": {
+        "source": [
+          false
+        ]
+      }
+    },
+    {
+      "id": "privacy-generation-changed-before-read",
+      "title": "Pinned privacy generation change blocks before native reads",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "google"
+      },
+      "adapter": [],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "blocked"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "blocked",
+            "code": "task-source-changed",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "blocked",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      },
+      "ports": {
+        "source": [
+          true
+        ],
+        "pinned": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "source-retired-before-fresh-dispatch",
+      "title": "Retired fresh source finishes not-needed before mapping and native reads",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "google"
+      },
+      "adapter": [],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "not-needed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "not-needed",
+            "code": null,
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "not-needed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      },
+      "ports": {
+        "source": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "lease-lost-at-mutation-callback",
+      "title": "Lease loss at the native callback prevents a task mutation",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "google"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "\"written\""
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "blocked"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "\"accepted\"",
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "blocked",
+            "code": "task-source-read-only",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "blocked",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      },
+      "ports": {
+        "renew": [
+          false
+        ]
+      }
+    },
+    {
+      "id": "source-revoked-at-mutation-callback",
+      "title": "Source revocation at the native callback prevents a task mutation",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "google"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "\"written\""
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "blocked"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.source:false",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "\"accepted\"",
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "blocked",
+            "code": "task-source-read-only",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "blocked",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      },
+      "ports": {
+        "source": [
+          true,
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "privacy-changed-at-mutation-callback",
+      "title": "Privacy generation change at the native callback prevents a task mutation",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "google"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "\"written\""
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "blocked"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "\"accepted\"",
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "blocked",
+            "code": "task-source-read-only",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "blocked",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      },
+      "ports": {
+        "pinned": [
+          true,
+          true,
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "fulfilled-writer-readback-rejection",
+      "title": "A complete native writer fulfillment remains durable across a rejected readback",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "google"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "readTask",
+          "result": null,
+          "error": {
+            "code": "task-write-failed",
+            "outcome": "not-written",
+            "status": 412
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "unconfirmed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "adapter.readTask",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "\"accepted\"",
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "task-write-failed",
+            "uncertain": true
+          }
+        ],
+        "returnedStatus": "unconfirmed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "recovery-achieved-after-source-retirement",
+      "title": "Achieved saved-mask recovery ACKs read-only after dispatch permission is retired",
+      "row": {
+        "action": "update",
+        "reconciling": true,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "provider": "google"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Remote drift",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask"
+        ],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Remote drift",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      },
+      "ports": {
+        "source": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "pinned-native-plan-holds",
+      "title": "Malformed selected pinned native-plan holds before compatibility mapping",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "google",
+        "envelopeFault": "native-plan",
+        "legacyProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        }
+      },
+      "adapter": [],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "blocked"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "blocked",
+            "code": "operation-envelope-codec-unavailable",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "blocked",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "pinned-serializer-holds",
+      "title": "Malformed selected pinned serializer holds before compatibility mapping",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "google",
+        "envelopeFault": "serializer",
+        "legacyProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        }
+      },
+      "adapter": [],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "blocked"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [],
+        "savedProjection": null,
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "blocked",
+            "code": "delivery-serializer-unavailable",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "blocked",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "cancelled-before-mutation-callback",
+      "title": "A native mutation callback after timeout cannot renew or dispatch",
+      "row": {
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "action": "update"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "\"written\""
+          },
+          "waitForAbortBeforeMutation": true
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "retry"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.finish",
+          "db.get",
+          "fixture.late-mutation-callback"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "\"accepted\"",
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "retry",
+            "code": "task-write-failed",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "retry",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "vtodo-full-resource-create",
+      "title": "VTODO CREATE carries its deterministic task UID full resource and admitted native precision",
+      "row": {
+        "action": "create",
+        "reconciling": false,
+        "projectionBaseline": null,
+        "dispatchProjection": null,
+        "provider": "caldav"
+      },
+      "adapter": [
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskCreate",
+          "result": {
+            "externalTaskId": "https://fixture.invalid/tasks/abcdef01-abcd-4000-8000-abcdefabcdea.ics",
+            "etag": "\"written\"",
+            "icalUid": "abcdef01-abcd-4000-8000-abcdefabcdea"
+          },
+          "caldavPlan": {
+            "uid": "abcdef01-abcd-4000-8000-abcdefabcdea",
+            "resourceIncludes": [
+              "BEGIN:VCALENDAR",
+              "BEGIN:VTODO",
+              "UID:abcdef01-abcd-4000-8000-abcdefabcdea",
+              "DTSTART:20261019T100000Z",
+              "DUE:20261020T143000Z",
+              "PRIORITY:2",
+              "PERCENT-COMPLETE:37",
+              "URL:https://example.invalid/task",
+              "DTSTAMP:20261020T090000Z"
+            ],
+            "properties": [
+              "summary",
+              "description",
+              "status",
+              "dtstart",
+              "due",
+              "completed",
+              "percent-complete",
+              "priority",
+              "sequence",
+              "related-to",
+              "url",
+              "rrule",
+              "rdate",
+              "exdate"
+            ]
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "https://fixture.invalid/tasks/abcdef01-abcd-4000-8000-abcdefabcdea.ics",
+              "etag": "\"written\"",
+              "icalUid": "abcdef01-abcd-4000-8000-abcdefabcdea"
+            },
+            "projection": {
+              "title": "Admitted title",
+              "description": "Notes",
+              "status": "in-process",
+              "start": "2026-10-19T10:00:00.000Z",
+              "due": "2026-10-20T14:30:00.000Z",
+              "isAllDay": false,
+              "completedAt": null,
+              "percentComplete": 37,
+              "priority": 2,
+              "recurrence": null,
+              "relatedTo": null,
+              "sequence": 4,
+              "url": "https://example.invalid/task"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskCreate",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "assertTaskWrite",
+          "pushTaskCreate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "title": "Admitted title",
+            "description": "Notes",
+            "status": "in-process",
+            "start": "2026-10-19T10:00:00.000Z",
+            "due": "2026-10-20T14:30:00.000Z",
+            "isAllDay": false,
+            "completedAt": null,
+            "percentComplete": 37,
+            "priority": 2,
+            "recurrence": null,
+            "relatedTo": null,
+            "sequence": 4,
+            "url": "https://example.invalid/task"
+          },
+          "baseline": null,
+          "patch": {
+            "title": "Admitted title",
+            "description": "Notes",
+            "status": "in-process",
+            "start": "2026-10-19T10:00:00.000Z",
+            "due": "2026-10-20T14:30:00.000Z",
+            "isAllDay": false,
+            "completedAt": null,
+            "percentComplete": 37,
+            "priority": 2,
+            "recurrence": null,
+            "relatedTo": null,
+            "sequence": 4,
+            "url": "https://example.invalid/task"
+          }
+        },
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "title": "Admitted title",
+          "description": "Notes",
+          "status": "in-process",
+          "start": "2026-10-19T10:00:00.000Z",
+          "due": "2026-10-20T14:30:00.000Z",
+          "isAllDay": false,
+          "completedAt": null,
+          "percentComplete": 37,
+          "priority": 2,
+          "recurrence": null,
+          "relatedTo": null,
+          "sequence": 4,
+          "url": "https://example.invalid/task"
+        },
+        "ackRef": {
+          "externalTaskId": "https://fixture.invalid/tasks/abcdef01-abcd-4000-8000-abcdefabcdea.ics",
+          "etag": "\"written\"",
+          "icalUid": "abcdef01-abcd-4000-8000-abcdefabcdea"
+        },
+        "ackExpectedRef": {
+          "externalTaskId": null,
+          "etag": null,
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "vtodo-retained-delete-pair",
+      "title": "VTODO DELETE ACK retains the original full URL UID and strong validator",
+      "row": {
+        "reconciling": false,
+        "projectionBaseline": {
+          "title": "Before",
+          "description": "Notes",
+          "status": "in-process",
+          "start": "2026-10-19T10:00:00.000Z",
+          "due": "2026-10-20T14:30:00.000Z",
+          "isAllDay": false,
+          "completedAt": null,
+          "percentComplete": 37,
+          "priority": 2,
+          "recurrence": null,
+          "relatedTo": null,
+          "sequence": 4,
+          "url": "https://example.invalid/task"
+        },
+        "dispatchProjection": null,
+        "action": "delete",
+        "provider": "caldav"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+              "etag": "\"accepted\"",
+              "icalUid": "abcdef01-abcd-4000-8000-abcdefabcdea"
+            },
+            "projection": {
+              "title": "Before",
+              "description": "Notes",
+              "status": "in-process",
+              "start": "2026-10-19T10:00:00.000Z",
+              "due": "2026-10-20T14:30:00.000Z",
+              "isAllDay": false,
+              "completedAt": null,
+              "percentComplete": 37,
+              "priority": 2,
+              "recurrence": null,
+              "relatedTo": null,
+              "sequence": 4,
+              "url": "https://example.invalid/task"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskDelete"
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskDelete",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskDelete"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "title": "Admitted title",
+            "description": "Notes",
+            "status": "in-process",
+            "start": "2026-10-19T10:00:00.000Z",
+            "due": "2026-10-20T14:30:00.000Z",
+            "isAllDay": false,
+            "completedAt": null,
+            "percentComplete": 37,
+            "priority": 2,
+            "recurrence": null,
+            "relatedTo": null,
+            "sequence": 4,
+            "url": "https://example.invalid/task"
+          },
+          "baseline": {
+            "title": "Before",
+            "description": "Notes",
+            "status": "in-process",
+            "start": "2026-10-19T10:00:00.000Z",
+            "due": "2026-10-20T14:30:00.000Z",
+            "isAllDay": false,
+            "completedAt": null,
+            "percentComplete": 37,
+            "priority": 2,
+            "recurrence": null,
+            "relatedTo": null,
+            "sequence": 4,
+            "url": "https://example.invalid/task"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": {
+          "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+          "etag": "\"accepted\"",
+          "icalUid": "abcdef01-abcd-4000-8000-abcdefabcdea"
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": {
+          "externalTaskId": "https://fixture.invalid/tasks/native-task.ics",
+          "etag": "\"accepted\"",
+          "icalUid": "abcdef01-abcd-4000-8000-abcdefabcdea"
+        },
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "todo-delete-no-dispatch-false-ack",
+      "title": "Native DELETE fulfillment remains distinct from dispatch when its ACK loses the claim",
+      "row": {
+        "action": "delete",
+        "reconciling": false,
+        "projectionBaseline": {
+          "body": {
+            "content": "Notes",
+            "contentType": "text"
+          },
+          "dueDateTime": {
+            "dateTime": "2026-10-20T14:30:00.123",
+            "timeZone": "UTC"
+          },
+          "importance": "high",
+          "startDateTime": {
+            "dateTime": "2026-10-19T10:00:00.456",
+            "timeZone": "UTC"
+          },
+          "status": "inProgress",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "provider": "microsoft",
+        "externalRef": {
+          "externalTaskId": "native-task",
+          "etag": "W/\"accepted\"",
+          "icalUid": null
+        }
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "W/\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "body": {
+                "content": "Notes",
+                "contentType": "text"
+              },
+              "dueDateTime": {
+                "dateTime": "2026-10-20T14:30:00.123",
+                "timeZone": "UTC"
+              },
+              "importance": "high",
+              "startDateTime": {
+                "dateTime": "2026-10-19T10:00:00.456",
+                "timeZone": "UTC"
+              },
+              "status": "inProgress",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskDelete",
+          "skipMutation": true
+        }
+      ],
+      "ack": {
+        "result": false,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "unconfirmed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskDelete",
+          "db.ack",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskDelete"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "body": {
+              "content": "Notes",
+              "contentType": "text"
+            },
+            "dueDateTime": {
+              "dateTime": "2026-10-20T14:30:00.123",
+              "timeZone": "UTC"
+            },
+            "importance": "high",
+            "startDateTime": {
+              "dateTime": "2026-10-19T10:00:00.456",
+              "timeZone": "UTC"
+            },
+            "status": "inProgress",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "body": {
+              "content": "Notes",
+              "contentType": "text"
+            },
+            "dueDateTime": {
+              "dateTime": "2026-10-20T14:30:00.123",
+              "timeZone": "UTC"
+            },
+            "importance": "high",
+            "startDateTime": {
+              "dateTime": "2026-10-19T10:00:00.456",
+              "timeZone": "UTC"
+            },
+            "status": "inProgress",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": null,
+        "updatePlanBody": null,
+        "updateTaskTitle": null,
+        "updateAcceptedEtag": null,
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "W/\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "task-write-failed",
+            "uncertain": true
+          }
+        ],
+        "returnedStatus": "unconfirmed",
+        "createPlanBody": null,
+        "ackDeletionRef": {
+          "externalTaskId": "native-task",
+          "etag": "W/\"accepted\"",
+          "icalUid": null
+        },
+        "finishRef": {
+          "externalTaskId": "native-task",
+          "etag": "W/\"accepted\"",
+          "icalUid": null
+        },
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "legacy-saved-mask-no-reprojection",
+      "title": "Legacy saved mask and target win without invoking the current projector",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "provider": "google",
+        "operationVersion": "v0",
+        "task": {
+          "recurrence": "RRULE:FREQ=DAILY;COUNT=3"
+        }
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"written\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Admitted title"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.source:true",
+          "db.source:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.source:false",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate",
+          "readTask"
+        ],
+        "savedProjection": null,
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": null,
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "\"accepted\"",
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"written\"",
+          "icalUid": null
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "native-task",
+          "etag": "\"accepted\"",
+          "icalUid": null
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null,
+        "writeTask": {
+          "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+          "creatorID": "fixture-owner",
+          "calendarID": "fixture-calendar",
+          "originCalendarID": "fixture-calendar",
+          "revision": 2,
+          "title": "Admitted title",
+          "description": "Notes",
+          "status": "in-process",
+          "due": "2026-10-20T14:30:00.123Z",
+          "start": "2026-10-19T10:00:00.456Z",
+          "completedAt": null,
+          "priority": 2,
+          "percentComplete": 37,
+          "sequence": 4,
+          "url": "https://example.invalid/task",
+          "isAllDay": false,
+          "recurrence": "RRULE:FREQ=DAILY;COUNT=3"
+        }
+      },
+      "inspect": [
+        "writeTask"
+      ]
+    },
+    {
+      "id": "native-writer-definite-rejection",
+      "title": "Native dispatched rejection remains not-written until a writer has fulfilled",
+      "row": {
+        "reconciling": false,
+        "projectionBaseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "dispatchProjection": null,
+        "action": "update"
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "native-task",
+              "etag": "\"accepted\"",
+              "icalUid": null
+            },
+            "projection": {
+              "due": "2026-10-20T00:00:00.000Z",
+              "notes": "Notes",
+              "status": "needsAction",
+              "title": "Before"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "\"written\""
+          },
+          "error": {
+            "code": "task-write-failed",
+            "outcome": "not-written",
+            "status": 400
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "not-written"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.pinned:true",
+          "db.source:true",
+          "db.pinned:true",
+          "db.source:false",
+          "db.pinned:false",
+          "db.predecessor",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.source:false",
+          "db.pinned:false",
+          "db.finish",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          "baseline": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Before"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "\"accepted\"",
+        "ackCalls": 0,
+        "ackSignalPassed": null,
+        "ackSignalSame": null,
+        "ackCancelledWait": false,
+        "ackProjection": null,
+        "ackRef": null,
+        "ackExpectedRef": null,
+        "finishes": [
+          {
+            "status": "not-written",
+            "code": "task-write-failed",
+            "uncertain": false
+          }
+        ],
+        "returnedStatus": "not-written",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null
+      }
+    },
+    {
+      "id": "vtodo-v0-long-native-address",
+      "title": "Legacy VTODO native URL and UID retain values outside pinned address budgets",
+      "row": {
+        "action": "update",
+        "reconciling": false,
+        "projectionBaseline": {
+          "title": "Before",
+          "description": "Notes",
+          "status": "in-process",
+          "start": "2026-10-19T10:00:00.000Z",
+          "due": "2026-10-20T14:30:00.000Z",
+          "isAllDay": false,
+          "completedAt": null,
+          "percentComplete": 37,
+          "priority": 2,
+          "recurrence": null,
+          "relatedTo": null,
+          "sequence": 4,
+          "url": "https://example.invalid/task"
+        },
+        "dispatchProjection": null,
+        "provider": "caldav",
+        "operationVersion": "v0",
+        "externalRef": {
+          "externalTaskId": "https://fixture.invalid/tasks/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.ics",
+          "etag": "\"accepted\"",
+          "icalUid": "legacy-uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"
+        },
+        "legacyProjection": {
+          "title": "Admitted title",
+          "description": "Notes",
+          "status": "in-process",
+          "start": "2026-10-19T10:00:00.000Z",
+          "due": "2026-10-20T14:30:00.000Z",
+          "isAllDay": false,
+          "completedAt": null,
+          "percentComplete": 37,
+          "priority": 2,
+          "recurrence": null,
+          "relatedTo": null,
+          "sequence": 4,
+          "url": "https://example.invalid/task"
+        }
+      },
+      "adapter": [
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "https://fixture.invalid/tasks/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.ics",
+              "etag": "\"accepted\"",
+              "icalUid": "legacy-uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"
+            },
+            "projection": {
+              "title": "Before",
+              "description": "Notes",
+              "status": "in-process",
+              "start": "2026-10-19T10:00:00.000Z",
+              "due": "2026-10-20T14:30:00.000Z",
+              "isAllDay": false,
+              "completedAt": null,
+              "percentComplete": 37,
+              "priority": 2,
+              "recurrence": null,
+              "relatedTo": null,
+              "sequence": 4,
+              "url": "https://example.invalid/task"
+            }
+          }
+        },
+        {
+          "method": "assertTaskWrite"
+        },
+        {
+          "method": "pushTaskUpdate",
+          "result": {
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "readTask",
+          "result": {
+            "ref": {
+              "externalTaskId": "https://fixture.invalid/tasks/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.ics",
+              "etag": "\"written\"",
+              "icalUid": "legacy-uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"
+            },
+            "projection": {
+              "title": "Admitted title",
+              "description": "Notes",
+              "status": "in-process",
+              "start": "2026-10-19T10:00:00.000Z",
+              "due": "2026-10-20T14:30:00.000Z",
+              "isAllDay": false,
+              "completedAt": null,
+              "percentComplete": 37,
+              "priority": 2,
+              "recurrence": null,
+              "relatedTo": null,
+              "sequence": 4,
+              "url": "https://example.invalid/task"
+            }
+          }
+        }
+      ],
+      "ack": {
+        "result": true,
+        "requireSignal": true,
+        "waitForAbort": false,
+        "inspectExpectedRef": true
+      },
+      "returned": {
+        "status": "completed"
+      },
+      "expected": {
+        "boundary": "actual-task-delivery-with-fixture-db-and-adapter-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.source:true",
+          "db.source:false",
+          "db.predecessor",
+          "adapter.projectTask",
+          "adapter.readTask",
+          "db.save-projection",
+          "adapter.assertTaskWrite",
+          "adapter.pushTaskUpdate",
+          "db.renew",
+          "db.source:false",
+          "adapter.readTask",
+          "db.ack",
+          "db.get"
+        ],
+        "adapterCalls": [
+          "readTask",
+          "assertTaskWrite",
+          "pushTaskUpdate",
+          "readTask"
+        ],
+        "savedProjection": {
+          "version": 1,
+          "projection": {
+            "title": "Admitted title",
+            "description": "Notes",
+            "status": "in-process",
+            "start": "2026-10-19T10:00:00.000Z",
+            "due": "2026-10-20T14:30:00.000Z",
+            "isAllDay": false,
+            "completedAt": null,
+            "percentComplete": 37,
+            "priority": 2,
+            "recurrence": null,
+            "relatedTo": null,
+            "sequence": 4,
+            "url": "https://example.invalid/task"
+          },
+          "baseline": {
+            "title": "Before",
+            "description": "Notes",
+            "status": "in-process",
+            "start": "2026-10-19T10:00:00.000Z",
+            "due": "2026-10-20T14:30:00.000Z",
+            "isAllDay": false,
+            "completedAt": null,
+            "percentComplete": 37,
+            "priority": 2,
+            "recurrence": null,
+            "relatedTo": null,
+            "sequence": 4,
+            "url": "https://example.invalid/task"
+          },
+          "patch": {
+            "title": "Admitted title"
+          }
+        },
+        "updatePatch": {
+          "title": "Admitted title"
+        },
+        "updatePlanBody": null,
+        "updateTaskTitle": "Admitted title",
+        "updateAcceptedEtag": "\"accepted\"",
+        "ackCalls": 1,
+        "ackSignalPassed": true,
+        "ackSignalSame": true,
+        "ackCancelledWait": false,
+        "ackProjection": {
+          "title": "Admitted title",
+          "description": "Notes",
+          "status": "in-process",
+          "start": "2026-10-19T10:00:00.000Z",
+          "due": "2026-10-20T14:30:00.000Z",
+          "isAllDay": false,
+          "completedAt": null,
+          "percentComplete": 37,
+          "priority": 2,
+          "recurrence": null,
+          "relatedTo": null,
+          "sequence": 4,
+          "url": "https://example.invalid/task"
+        },
+        "ackRef": {
+          "externalTaskId": "https://fixture.invalid/tasks/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.ics",
+          "etag": "\"written\"",
+          "icalUid": "legacy-uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"
+        },
+        "ackExpectedRef": {
+          "externalTaskId": "https://fixture.invalid/tasks/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.ics",
+          "etag": "\"accepted\"",
+          "icalUid": "legacy-uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"
+        },
+        "finishes": [],
+        "returnedStatus": "completed",
+        "createPlanBody": null,
+        "ackDeletionRef": null,
+        "finishRef": null,
+        "finishSnapshot": null,
+        "writeTask": {
+          "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+          "creatorID": "fixture-owner",
+          "calendarID": "fixture-calendar",
+          "originCalendarID": "fixture-calendar",
+          "revision": 2,
+          "title": "Admitted title",
+          "description": "Notes",
+          "status": "in-process",
+          "due": "2026-10-20T14:30:00.123Z",
+          "start": "2026-10-19T10:00:00.456Z",
+          "completedAt": null,
+          "priority": 2,
+          "percentComplete": 37,
+          "sequence": 4,
+          "url": "https://example.invalid/task",
+          "isAllDay": false
+        },
+        "readRefs": [
+          {
+            "externalTaskId": "https://fixture.invalid/tasks/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.ics",
+            "etag": "\"accepted\"",
+            "icalUid": "legacy-uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"
+          },
+          {
+            "externalTaskId": "https://fixture.invalid/tasks/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.ics",
+            "etag": "\"written\"",
+            "icalUid": "legacy-uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"
+          }
+        ]
+      },
+      "inspect": [
+        "writeTask",
+        "readRefs"
+      ]
     }
   ]
 }

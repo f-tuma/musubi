@@ -31,3 +31,6 @@ export * from "./caldav-create-trace";
 export { runClaimedCaldavPersonalDelete, supportsCaldavPersonalDeleteEnvelope } from "./caldav-personal-delete";
 export * from "./google-task-create-ports";
 export { runClaimedGoogleTaskCreate, supportsGoogleTaskCreateEnvelope } from "./google-task-create";
+export * from "./task-compatibility-ports";
+export { runClaimedTaskCompatibility } from "./task-compatibility";
+export * from "./task-projection";
