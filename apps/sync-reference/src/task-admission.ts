@@ -53,7 +53,7 @@ export function taskAdmissionFingerprint(input: ReferenceTaskAdmission): string 
     Object.entries(patch).sort(([a], [b]) => a.localeCompare(b))])).digest("hex");
 }
 /** This is the actual portable Task codec adapter, with no event times or DB. */
-export function encodeReferenceTask(content: ReferenceTaskContent, objectId: string, operationId: string, action: "update" | "delete" = "update") {
+export function encodeReferenceTask(content: ReferenceTaskContent, objectId: string, operationId: string, action: "create" | "update" | "delete" = "update") {
   const value = validateTaskContent(content);
   const task = TaskSchema.parse({ id: objectId, creatorID: "reference", calendarID: "reference-task-home", title: value.name,
     description: value.notes, status: value.state === "done" ? "completed" : value.state === "doing" ? "in-process" : "needs-action",

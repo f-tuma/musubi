@@ -1,0 +1,2085 @@
+{
+  "schemaVersion": 1,
+  "scope": "local installed independent Google Task CREATE reference gate; preserves nine old profiles; no registry publication, production deployment or full C08 acceptance",
+  "status": "passed",
+  "createdAt": "2026-10-26T09:58:26.961Z",
+  "gitHeadAtBuild": "8077ad93494cead098c8101af78d7132266f380e",
+  "approvedStagedTreeAtBuild": "4daeae14748b2f87df460a01aa87513b431aed8f",
+  "imageTag": "musubi-c08-google-task-create-reference:proof",
+  "oldDockerImageInspectId": "sha256:de63e9850d2d4dbba8fb6b1088fb3cf1a45e378c3fd5e0c526b14c9873e908cf",
+  "dockerImageInspectId": "sha256:58dbf36c53aab92cd5408abad62f0aa7e2c6bac22ac01da91fb639819229477f",
+  "localBuildIndexDigest": "sha256:58dbf36c53aab92cd5408abad62f0aa7e2c6bac22ac01da91fb639819229477f",
+  "platformManifestDigest": "sha256:ee195a07b563bcb597a0f7fd15e5e1bb174d39559538069f99c0c760bcf79dee",
+  "imageConfigDigest": "sha256:a88fc338ff368cd40f736fe34e98362fba890418fcc0289447bc3efd9bdbd09e",
+  "platform": {
+    "os": "linux",
+    "architecture": "amd64"
+  },
+  "dockerIdentityNote": "Local OCI index, platform manifest and config are distinct; no registry publication.",
+  "sourceContextFiles": 241,
+  "sourceContextFingerprint": "c204d402f388bfbd627e5906a9a5704abfe08b9a057d68b381fa4506b5b5b309",
+  "sourceContextScope": "Exact approved staged COPY closure; excludes env/data/node_modules/build output/symlinks; no registry publication or production deployment.",
+  "allSourceFiles": 210,
+  "allSourceFingerprint": "d93ab99724eb2846e32b343306d1004d258c77a42a157ec9182a6a0e84f8aa1f",
+  "productionSourceFiles": 115,
+  "productionSourceFingerprint": "4cb1ce2e30eedb1d95b2380e7855230aeaa5bc18f14f84322216459cfd51742b",
+  "productionSourceFingerprintScope": "Independent reference, types, codec, native Google/Microsoft/CalDAV providers and shared runtime TS/SQL; excludes tests, process fixtures and behavior harnesses.",
+  "installedSourceHashParity": {
+    "checkedFiles": 210,
+    "productionFiles": 115,
+    "mismatches": []
+  },
+  "fullContextInventoryAfterProof": {
+    "frozenFiles": 241,
+    "currentFiles": 241,
+    "byteEqual": true,
+    "addedRemovedOrModified": []
+  },
+  "sourceInventoryAfterProof": {
+    "frozenFiles": 210,
+    "currentFiles": 210,
+    "byteEqual": true,
+    "addedRemovedOrModified": [],
+    "untrackedNonignoredFilesIncluded": true
+  },
+  "installedDependencies": {
+    "namedPackages": 30,
+    "packages": [
+      {
+        "name": "@esbuild/linux-x64",
+        "version": "0.28.2"
+      },
+      {
+        "name": "@musubi/provider-caldav",
+        "version": null
+      },
+      {
+        "name": "@musubi/provider-google",
+        "version": null
+      },
+      {
+        "name": "@musubi/provider-microsoft",
+        "version": null
+      },
+      {
+        "name": "@musubi/sync-codec",
+        "version": null
+      },
+      {
+        "name": "@musubi/sync-reference",
+        "version": null
+      },
+      {
+        "name": "@musubi/sync-runtime",
+        "version": null
+      },
+      {
+        "name": "@musubi/types",
+        "version": null
+      },
+      {
+        "name": "esbuild",
+        "version": "0.28.2"
+      },
+      {
+        "name": "ical.js",
+        "version": "2.2.1"
+      },
+      {
+        "name": "ipaddr.js",
+        "version": "1.9.1"
+      },
+      {
+        "name": "pg",
+        "version": "8.23.0"
+      },
+      {
+        "name": "pg-cloudflare",
+        "version": "1.4.0"
+      },
+      {
+        "name": "pg-connection-string",
+        "version": "2.14.0"
+      },
+      {
+        "name": "pg-int8",
+        "version": "1.0.1"
+      },
+      {
+        "name": "pg-pool",
+        "version": "3.14.0"
+      },
+      {
+        "name": "pg-protocol",
+        "version": "1.16.0"
+      },
+      {
+        "name": "pg-types",
+        "version": "2.2.0"
+      },
+      {
+        "name": "pgpass",
+        "version": "1.0.5"
+      },
+      {
+        "name": "postgres-array",
+        "version": "2.0.0"
+      },
+      {
+        "name": "postgres-bytea",
+        "version": "1.0.1"
+      },
+      {
+        "name": "postgres-date",
+        "version": "1.0.7"
+      },
+      {
+        "name": "postgres-interval",
+        "version": "1.2.0"
+      },
+      {
+        "name": "sax",
+        "version": "1.6.1"
+      },
+      {
+        "name": "split2",
+        "version": "4.2.0"
+      },
+      {
+        "name": "tsx",
+        "version": "4.23.12"
+      },
+      {
+        "name": "undici",
+        "version": "7.29.0"
+      },
+      {
+        "name": "xml-js",
+        "version": "1.6.11"
+      },
+      {
+        "name": "xtend",
+        "version": "4.0.2"
+      },
+      {
+        "name": "zod",
+        "version": "4.4.3"
+      }
+    ],
+    "forbiddenNamesChecked": [
+      "@musubi/auth",
+      "@musubi/config",
+      "@musubi/db",
+      "@musubi/mobile",
+      "better-auth",
+      "expo",
+      "react-native"
+    ],
+    "forbiddenNamesPresent": []
+  },
+  "execution": {
+    "customUpgradeNativeProbe": {
+      "cases": 17,
+      "installedCliInvocations": 117,
+      "nativeFixtureRequests": 94,
+      "newCreateRealContainerSigkillCases": 3,
+      "oldPendingTaskRealContainerSigkillCases": 3,
+      "sigkillExitCodes": [
+        137
+      ]
+    },
+    "fullInstalledCorpus": {
+      "status": "passed",
+      "pureCases": 157,
+      "storageCases": 182,
+      "nativeProcessCases": 268,
+      "nativeProcessFamilyCounts": {
+        "Reference process fixture": 30,
+        "Reference DELETE process fixture": 18,
+        "Reference CREATE process fixture": 22,
+        "Reference Graph guarded DELETE process": 17,
+        "Reference CalDAV conditional DELETE process": 28,
+        "Reference Graph CREATE process": 31,
+        "Reference CalDAV conditional CREATE process": 42,
+        "Reference Task process": 25,
+        "Reference Task DELETE process": 31,
+        "Reference Task CREATE process": 24
+      },
+      "runs": [
+        {
+          "script": "test",
+          "log": "installed-pure.log",
+          "name": "musu40-task-create-corpus-2f755491-6e8a-4724-be8d-ccaa32204b79",
+          "code": 0,
+          "signal": null,
+          "durationMs": 6172,
+          "image": "musubi-c08-google-task-create-reference:proof",
+          "sourceMounts": 0,
+          "readOnlyFilesystem": true,
+          "parentNonceDatabase": "reference_installed_task_create_corpus_5c841c410973478582a3fef3cdee1d95",
+          "configuration": [
+            "REFERENCE_DATABASE_URL",
+            "REFERENCE_CREDENTIAL_KEY",
+            "ENVIRONMENT=test (test harness only)",
+            "npm_config_cache",
+            "npm_config_update_notifier=false"
+          ]
+        },
+        {
+          "script": "test:db",
+          "log": "installed-db-process.log",
+          "name": "musu40-task-create-corpus-7f6a72ee-910c-4d92-86aa-8cd81b667349",
+          "code": 0,
+          "signal": null,
+          "durationMs": 280544,
+          "image": "musubi-c08-google-task-create-reference:proof",
+          "sourceMounts": 0,
+          "readOnlyFilesystem": true,
+          "parentNonceDatabase": "reference_installed_task_create_corpus_5c841c410973478582a3fef3cdee1d95",
+          "configuration": [
+            "REFERENCE_DATABASE_URL",
+            "REFERENCE_CREDENTIAL_KEY",
+            "ENVIRONMENT=test (test harness only)",
+            "npm_config_cache",
+            "npm_config_update_notifier=false"
+          ]
+        }
+      ],
+      "harnessNote": "ENVIRONMENT=test belongs only to installed test harnesses; actual production CLI proof uses only REFERENCE configuration and bounded test HTTP preload."
+    },
+    "runtimeUser": "node",
+    "sourceBindMounts": 0,
+    "readOnlyContainerFilesystem": true,
+    "temporaryFilesystem": "/tmp only",
+    "productionCliConfigurationNames": [
+      "REFERENCE_DATABASE_URL",
+      "REFERENCE_CREDENTIAL_KEY",
+      "REFERENCE_ALLOW_PRIVATE_NETWORK"
+    ],
+    "oldAndNewDeploymentsSerial": true
+  },
+  "upgrade": {
+    "preservedOldFamilies": [
+      "google/event/create",
+      "google/event/update",
+      "google/event/delete",
+      "microsoft/event/create",
+      "microsoft/event/delete",
+      "caldav/event/create",
+      "caldav/event/delete",
+      "google/task/update",
+      "google/task/delete"
+    ],
+    "newFamily": "google/task/create",
+    "oldPendingOperationsDelivered": 10,
+    "oldPendingOperationNote": "Ten pending operations cover nine families: two Task DELETE operations separately preserve actual2xx and absence-only404 native response evidence.",
+    "oldTableAndIndexOidsPreserved": 28,
+    "oldPayloadFingerprints": [
+      {
+        "family": "google",
+        "action": "create",
+        "operationId": "c060eeec-f235-43ba-93f0-33d3b50bd41d",
+        "sha256": "f6ff47ea1e59a48e749cdb171ed27c731d1ec53c6f5357f4628cb41ffd2f13f0"
+      },
+      {
+        "family": "google",
+        "action": "update",
+        "operationId": "ac6c1c50-8a3c-4a6f-a19e-6f971fa93bfd",
+        "sha256": "613d1a4bd04712e846151837d72acbdddd1a89091b8edca65fe05e97713a96e2"
+      },
+      {
+        "family": "google",
+        "action": "delete",
+        "operationId": "35889de6-e1f3-4849-aa6d-0254cd2c293a",
+        "sha256": "39bbbeb53147f677ccf374e23f1bb393f12cc91a73bec8883fbaa7ad5be57fe5"
+      },
+      {
+        "family": "microsoft",
+        "action": "create",
+        "operationId": "62d5cfd7-bed1-42e8-b0fd-bf1877eec49b",
+        "sha256": "c04e3a9a8c9e040042196821acc4fe06d80c9514164b93ec30f22c31a4bbc5f2"
+      },
+      {
+        "family": "microsoft",
+        "action": "delete",
+        "operationId": "97cce0ee-3d16-4460-a235-a054399a9a16",
+        "sha256": "096c91e246b3a8a96122d529f782714a8b7c33c020536cc49517eb9c3560eb8d"
+      },
+      {
+        "family": "caldav",
+        "action": "create",
+        "operationId": "5f8aec36-835f-44b5-af19-306892c0af96",
+        "sha256": "f3a6e0dca9e7019f64e11f5fd0c77cd9dae9203c23c443b3bf94c8e184f83755"
+      },
+      {
+        "family": "caldav",
+        "action": "delete",
+        "operationId": "7fc95558-5d71-4e47-9826-75a9f34a0942",
+        "sha256": "f2afb78cf9403f14ab452cdd7d069da0882427aa5321ef1ae8109ec4a5ecc30d"
+      },
+      {
+        "family": "google-task",
+        "action": "update",
+        "operationId": "6ea1e827-5017-4f20-8c1f-8a4b7a5ca47b",
+        "sha256": "cd14ae77cdd9c75d69716bc4dee2cd6328ec2f4f0322718ff598db8183cf0303"
+      },
+      {
+        "family": "google-task",
+        "action": "delete",
+        "operationId": "c95dfc3a-c847-4722-9c5f-0da2cfc33922",
+        "sha256": "cd180119460fc84cc9f570a6bb6693a0de39bf537c2b2aa344a32590a757378b"
+      },
+      {
+        "family": "google-task",
+        "action": "delete",
+        "operationId": "75dace37-ba25-4d4e-9aea-40bc6423c160",
+        "sha256": "1823fa9cfdcdeaaecbd3abd1c2b13669864b0bb24ac8d6c1a93a08ff5e5ad07f"
+      }
+    ],
+    "oldNativeTaskSidecars": {
+      "updateStatus": 200,
+      "delete2xxStatus": 202,
+      "deleteAbsenceStatus": 404,
+      "tombstoneGeneration": 2,
+      "sourceEpochPreserved": 1
+    },
+    "fullOldHistoryRowsEpochsAndNativeSidecarsPreserved": true,
+    "graphUnknownAdmittedIdAndAdoptedNullValidatorPreserved": true,
+    "populatedFullChainMigrationRepeats": 2
+  },
+  "taskCreatePolicy": {
+    "family": "google/task/create/google-task@1",
+    "referenceProfile": "google-task-create-v1",
+    "nativeProfile": "strict-reference",
+    "completion": "exact-readback",
+    "readback": "full-target",
+    "ambiguousRecovery": "within-attempt",
+    "immutableAdmittedNativeAddress": null,
+    "reservationNativeEtagAndBaseline": null,
+    "nativeAcceptance": "Actual200|201|204 response committed before success JSON parsing, independently of candidate ID.",
+    "candidate": "Assigned response ID committed before native ETag validation; unusable response tag becomes null, never authority.",
+    "recovery": "Sticky possible dispatch forbids every second POST. No ID means HOLD with zero HTTP and no content search; captured ID allows only exact original-list GET.",
+    "adoption": "Strict unassigned/undeleted full-target readback with real strong ETag; atomic binding ID/tag/baseline/presence/source epoch and ACK; original envelope/operation locator remains null.",
+    "successors": "Serial after ACK; adopted native ID + new source epoch + real native tag/baseline captured together. Pending deferred-address portability is a separate gate.",
+    "noFakeUpdateMaskOrBaseline": true,
+    "tasksScopeSeparateFromCalendar": true,
+    "eventFallback": false
+  },
+  "cases": [
+    {
+      "case": "old-nine-profile-image-refuses-new-CREATE-command",
+      "status": "passed",
+      "durationMs": 692,
+      "exitCode": 1
+    },
+    {
+      "case": "all-nine-old-profiles-full-history-sidecars-epochs-and28OIDs-forward-upgrade",
+      "status": "passed",
+      "oldPendingOperations": 10
+    },
+    {
+      "case": "all-ten-old-pending-operations-across-nine-profiles-delivered-with-native-sidecar-truth",
+      "status": "passed"
+    },
+    {
+      "case": "CREATE-real-container-SIGKILL-marker-before-http",
+      "status": "passed",
+      "durationMs": 4256,
+      "termination": {
+        "label": "marker-before-http",
+        "code": 137,
+        "signal": null
+      },
+      "final": {
+        "status": "hold",
+        "provider": "uncertain",
+        "remote": "unobserved",
+        "response": {
+          "acceptedStatus": null,
+          "responseAddress": null
+        },
+        "destinationLifecycle": "reserved",
+        "sourceGeneration": 1,
+        "immutableAdmittedNativeId": null,
+        "canonicalLifecycle": "active"
+      }
+    },
+    {
+      "case": "CREATE-real-container-SIGKILL-raw-status-before-json",
+      "status": "passed",
+      "durationMs": 4343,
+      "termination": {
+        "label": "raw-status-before-json",
+        "code": 137,
+        "signal": null
+      },
+      "final": {
+        "status": "hold",
+        "provider": "accepted",
+        "remote": "unobserved",
+        "response": {
+          "acceptedStatus": 200,
+          "responseAddress": null
+        },
+        "destinationLifecycle": "reserved",
+        "sourceGeneration": 1,
+        "immutableAdmittedNativeId": null,
+        "canonicalLifecycle": "active"
+      }
+    },
+    {
+      "case": "CREATE-real-container-SIGKILL-after-candidate",
+      "status": "passed",
+      "durationMs": 5564,
+      "termination": {
+        "label": "after-candidate",
+        "code": 137,
+        "signal": null
+      },
+      "final": {
+        "status": "acked",
+        "provider": "accepted",
+        "remote": "confirmed",
+        "response": {
+          "acceptedStatus": 200,
+          "responseAddress": {
+            "taskId": "assigned/82a10eee-ed87-4dbb-b472-7593a600d2ef",
+            "validator": "\"created\""
+          }
+        },
+        "destinationLifecycle": "present",
+        "sourceGeneration": 2,
+        "immutableAdmittedNativeId": null,
+        "canonicalLifecycle": "active"
+      }
+    },
+    {
+      "case": "CREATE-early-ID-missing-tag-fresh-GET-adoption",
+      "status": "passed",
+      "durationMs": 2941,
+      "final": {
+        "status": "acked",
+        "provider": "accepted",
+        "remote": "confirmed",
+        "response": {
+          "acceptedStatus": 200,
+          "responseAddress": {
+            "taskId": "assigned/47b68575-12e4-4aa0-a31a-7c0362337721",
+            "validator": null
+          }
+        },
+        "destinationLifecycle": "present",
+        "sourceGeneration": 2,
+        "immutableAdmittedNativeId": null,
+        "canonicalLifecycle": "active"
+      }
+    },
+    {
+      "case": "CREATE-early-ID-weak-tag-fresh-GET-adoption",
+      "status": "passed",
+      "durationMs": 2858,
+      "final": {
+        "status": "acked",
+        "provider": "accepted",
+        "remote": "confirmed",
+        "response": {
+          "acceptedStatus": 200,
+          "responseAddress": {
+            "taskId": "assigned/afa3c2e2-e43e-471c-be63-62c12e516db3",
+            "validator": null
+          }
+        },
+        "destinationLifecycle": "present",
+        "sourceGeneration": 2,
+        "immutableAdmittedNativeId": null,
+        "canonicalLifecycle": "active"
+      }
+    },
+    {
+      "case": "CREATE-lost-no-address-HOLD-never-second-POST",
+      "status": "passed",
+      "durationMs": 3720,
+      "final": {
+        "status": "hold",
+        "provider": "uncertain",
+        "remote": "unobserved",
+        "response": {
+          "acceptedStatus": null,
+          "responseAddress": null
+        },
+        "destinationLifecycle": "reserved",
+        "sourceGeneration": 1,
+        "immutableAdmittedNativeId": null,
+        "canonicalLifecycle": "active"
+      }
+    },
+    {
+      "case": "CREATE-bad-json-no-address-HOLD-never-second-POST",
+      "status": "passed",
+      "durationMs": 3737,
+      "final": {
+        "status": "hold",
+        "provider": "accepted",
+        "remote": "unobserved",
+        "response": {
+          "acceptedStatus": 200,
+          "responseAddress": null
+        },
+        "destinationLifecycle": "reserved",
+        "sourceGeneration": 1,
+        "immutableAdmittedNativeId": null,
+        "canonicalLifecycle": "active"
+      }
+    },
+    {
+      "case": "CREATE-no-id-no-address-HOLD-never-second-POST",
+      "status": "passed",
+      "durationMs": 3797,
+      "final": {
+        "status": "hold",
+        "provider": "accepted",
+        "remote": "unobserved",
+        "response": {
+          "acceptedStatus": 201,
+          "responseAddress": null
+        },
+        "destinationLifecycle": "reserved",
+        "sourceGeneration": 1,
+        "immutableAdmittedNativeId": null,
+        "canonicalLifecycle": "active"
+      }
+    },
+    {
+      "case": "CREATE-429-no-address-HOLD-never-second-POST",
+      "status": "passed",
+      "durationMs": 3782,
+      "final": {
+        "status": "hold",
+        "provider": "rejected",
+        "remote": "unobserved",
+        "response": {
+          "acceptedStatus": null,
+          "responseAddress": null
+        },
+        "destinationLifecycle": "reserved",
+        "sourceGeneration": 1,
+        "immutableAdmittedNativeId": null,
+        "canonicalLifecycle": "active"
+      }
+    },
+    {
+      "case": "CREATE-changed-refuses-adoption",
+      "status": "passed",
+      "durationMs": 2946,
+      "final": {
+        "status": "hold",
+        "provider": "accepted",
+        "remote": "conflict",
+        "response": {
+          "acceptedStatus": 200,
+          "responseAddress": {
+            "taskId": "assigned/c0f2febf-8696-42aa-b0d7-03bdb7839ff5",
+            "validator": "\"created\""
+          }
+        },
+        "destinationLifecycle": "reserved",
+        "sourceGeneration": 1,
+        "immutableAdmittedNativeId": null,
+        "canonicalLifecycle": "active"
+      }
+    },
+    {
+      "case": "CREATE-assigned-refuses-adoption",
+      "status": "passed",
+      "durationMs": 2908,
+      "final": {
+        "status": "hold",
+        "provider": "accepted",
+        "remote": "unobserved",
+        "response": {
+          "acceptedStatus": 200,
+          "responseAddress": {
+            "taskId": "assigned/b76de672-a05e-4a7a-bd3b-457f036779d2",
+            "validator": "\"created\""
+          }
+        },
+        "destinationLifecycle": "reserved",
+        "sourceGeneration": 1,
+        "immutableAdmittedNativeId": null,
+        "canonicalLifecycle": "active"
+      }
+    },
+    {
+      "case": "CREATE-deleted-refuses-adoption",
+      "status": "passed",
+      "durationMs": 3053,
+      "final": {
+        "status": "conflict",
+        "provider": "accepted",
+        "remote": "unobserved",
+        "response": {
+          "acceptedStatus": 200,
+          "responseAddress": {
+            "taskId": "assigned/83779b31-4f1e-41a3-a2ca-05c7e0612971",
+            "validator": "\"created\""
+          }
+        },
+        "destinationLifecycle": "reserved",
+        "sourceGeneration": 1,
+        "immutableAdmittedNativeId": null,
+        "canonicalLifecycle": "active"
+      }
+    },
+    {
+      "case": "serial-CREATE-UPDATE-DELETE-pairs-adopted-address-and-source-epoch",
+      "status": "passed",
+      "durationMs": 7423,
+      "final": {
+        "status": "acked",
+        "provider": "accepted",
+        "remote": "confirmed",
+        "response": {
+          "acceptedStatus": 204,
+          "responseAbsenceStatus": null
+        },
+        "destinationLifecycle": "absent",
+        "sourceGeneration": 2,
+        "immutableAdmittedNativeId": "assigned/e7dd9fc5-6e9a-41e5-af28-bb9b084726d4",
+        "canonicalLifecycle": "tombstoned"
+      }
+    },
+    {
+      "case": "populated-ten-profile-full-migration-repeat-preserves-entire-ledger-and28OIDs",
+      "status": "passed",
+      "durationMs": 1488,
+      "migrationRepeats": 2
+    }
+  ],
+  "cleanup": {
+    "databaseName": "reference_installed_task_create_767111a69e334cb3a24720ce87769736",
+    "dropped": true,
+    "remainingOwnedNonceDatabases": [],
+    "remainingOwnedContainers": [],
+    "rootOwnedQaPgDisposition": "Reference author released QA at its final verification; root subsequently removed the owned QA container and port, preserving user QA.",
+    "verifiedAt": "2026-10-26T09:56:16.967Z",
+    "sourceAndFullContextByteEqual": true,
+    "frozenBuildContextByteEqual": true,
+    "oldAndNewImageIdentitiesUnchanged": true,
+    "parentCorpusDatabase": "reference_installed_task_create_corpus_5c841c410973478582a3fef3cdee1d95",
+    "parentCorpusDropped": true,
+    "rootQaCleanup": {
+      "checkedAt": "2026-10-26T09:56:44.743365+00:00",
+      "ownedPostgresContainerAbsent": true,
+      "ownedPostgresPort55443Absent": true,
+      "remainingOwnedDatabaseNamesBeforeRemoval": [],
+      "userQaContainerRetained": true,
+      "allAuthorsReleasedDatabaseAndBehaviorUse": true,
+      "cleanupCompletedBeforeFinalBrowser": true,
+      "postStopAbsencePolls": 2
+    }
+  },
+  "evidenceDistinctions": {
+    "implementation": "Exact independently approved staged COPY bytes and locally installed image verified.",
+    "publication": "No registry publication or Git merge is established by this proof.",
+    "productionDeployment": "Not performed or established.",
+    "acceptance": "Bounded independent CREATE reference gate, not full C08 or live provider acceptance."
+  },
+  "limits": [
+    "Provider credentials/resources are synthetic owned loopback fixtures. External DNS/TLS/providers, real OAuth and live writes are not exercised.",
+    "Installed production CLI/native provider/shared runtime/encrypted credential ports/PostgreSQL/container SIGKILL are real. The bounded test preload refuses nonfixture native origins and preserves logical native URLs. No source bind mounts or production fixture flags.",
+    "ENVIRONMENT=test belongs only to installed test harnesses; production CLI containers receive REFERENCE configuration only plus bounded test transport preload.",
+    "A possible-dispatch marker without a captured task ID deliberately HOLDs, including a crash before actual POST. No title/content listing search or guessed identity.",
+    "Reference status/address durability, full-target adoption and single-send marker persistence differ from the existing API host persistence boundary; paired API evidence remains separate.",
+    "No pending deferred-address successors, hierarchy/move/assignment/reorder, recurrence, task import, OAuth refresh, resolution/supersession, resurrection, other task providers or fanout is established.",
+    "Old and new workers run serially across forward migration. No downgrade/mixed-version worker contract is claimed.",
+    "Owned nonces and CLI containers are removed. Root subsequently removed its QA PostgreSQL container/port after all authors released use, preserving user QA; the root cleanup record is included."
+  ],
+  "commands": {
+    "captureBuild": "MUSU40_IMAGE_CLEAR_GO=<approved-tree> python3 /tmp/musu40-task-create-reference-prepared/capture-reference.py capture-build --approved-tree <approved-tree>",
+    "attest": "MUSU40_IMAGE_CLEAR_GO=<approved-tree> python3 /tmp/musu40-task-create-reference-prepared/capture-reference.py attest --approved-tree <approved-tree>",
+    "customProbe": "node /tmp/musu40-task-create-reference-prepared/installed-reference-probe.mjs",
+    "fullInstalledCorpus": "node /tmp/musu40-task-create-reference-prepared/run-installed-corpus.mjs"
+  },
+  "artifacts": [
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/artifact-attestation.json",
+      "sha256": "1ea1415c93f4cdf1a626465eb863a62c0ed3af4a405ff0fc371ee8d6bfad7749",
+      "bytes": 368
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/build-context-manifest.json",
+      "sha256": "7269372ec657330d5f9891532d497efac83ac8dd15051a87fd5278c2ac270546",
+      "bytes": 40804
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/build-context.json",
+      "sha256": "5500fee4eb0282e317ad4c6bc369dcbbae4b9477a659ce15a11ece5f6e7b4f6d",
+      "bytes": 745
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/build.log",
+      "sha256": "4e99dcf898d1df538d4b108161681b50585eeaeadf90148d1f85c36d55c78505",
+      "bytes": 3388
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/capture-reference.py",
+      "sha256": "9a4ccf2330d22822127ea36c1a6f51524375d259596e6eb89bd9c8e743bcc64c",
+      "bytes": 9798
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/checkpoint-create-after-candidate.json",
+      "sha256": "f62f9133d0c0a775881f1caf557b2226585920c53541b4959bad00310272b9a6",
+      "bytes": 3427
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/checkpoint-create-marker-before-http.json",
+      "sha256": "dd994d012c8ede0265a96297691b23e30eaf607d8b6fb42c0d138a25edc4c9aa",
+      "bytes": 3326
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/checkpoint-create-raw-status-before-json.json",
+      "sha256": "a16ce7bf0eafd62fbd188f24488f4b2049174ab068a92a2facdf95810fa50ba4",
+      "bytes": 3326
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/cleanup-verified.json",
+      "sha256": "ec90b5ef99de5eec6db10479cc9a4c3dc6b419539b2d51e74becfc009822d9a4",
+      "bytes": 352
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/cleanup.json",
+      "sha256": "faa6e02ed02a62fb77acae8e5ed24e8e994658deb0251caab748d00ad422959d",
+      "bytes": 278
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/combined-ten-profile-ledger-repeat-migrate.json",
+      "sha256": "0eae34d1da13f1fd6b0cc916f94845dcf32a8ecebf80b66f8af67c2dc7a9f446",
+      "bytes": 2718
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/001-migrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/001-migrate.stdout",
+      "sha256": "a6eff23adec1205756963e0201343cbf8b4f5ae59e1a07cbe314dcb0b02d328e",
+      "bytes": 47
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/002-seed-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/002-seed-create.stdout",
+      "sha256": "2b67a46fd34db905631de1f2f3bb40f2d139f2e0fbd35546631fac330bca573a",
+      "bytes": 79
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/003-admit-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/003-admit-create.stdout",
+      "sha256": "54d69a685aff0b8b70b8832ed17dda084fc2f4f31d2d41eafcf2b0d20e8b9e47",
+      "bytes": 2404
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/004-deliver.stderr",
+      "sha256": "0e0340dcce6743cf4f08c4147bb502e9195fb682ddfd8628767de6528406007f",
+      "bytes": 122
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/004-deliver.stdout",
+      "sha256": "d363ade126f7a890db4ce708e1da24f6c6215e60bdcffa93996792183e43cf24",
+      "bytes": 153
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/005-seed.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/005-seed.stdout",
+      "sha256": "4e24d126e9f8b5e0ece2c718e716d7987c4775445bb5a05a4c101e321f8fe365",
+      "bytes": 77
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/006-admit.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/006-admit.stdout",
+      "sha256": "66aaf21f09a18b8855d11a3e8a7fdf205b3a1abe056c058535cae18d5752c75e",
+      "bytes": 2311
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/007-deliver.stderr",
+      "sha256": "8f7bae21961849355e9baba475f0daeaf69bfe42804eb64dc88ee23fc7d52e8b",
+      "bytes": 122
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/007-deliver.stdout",
+      "sha256": "79ce0ae5c9203059d472a73a01a2f364d50658cec77861aca82d9b1d0eec581b",
+      "bytes": 153
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/008-seed.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/008-seed.stdout",
+      "sha256": "93500a85c8dc4b62fd88e6d48c2900a13d2674ed072595952f810294e4a08760",
+      "bytes": 77
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/009-admit-delete.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/009-admit-delete.stdout",
+      "sha256": "3eec914c7b81be9f1c246014850d0cd0e4d8b4aa8f60318471b80422ed0570c8",
+      "bytes": 2270
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/010-deliver.stderr",
+      "sha256": "7eb212494354e85463a3c7e3800a73c5b2f92c4872bcd58f0cd668340fc90b9a",
+      "bytes": 122
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/010-deliver.stdout",
+      "sha256": "4a0e3a4223a01a391ce9ec0cf1e47172d3cb5ede87094b742389c3fe36d7d6ce",
+      "bytes": 153
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/011-seed-graph-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/011-seed-graph-create.stdout",
+      "sha256": "67a7ef53c9e634b2c3d15d09ec49d9f08679a545adfa1e2ba7eea077e65a2bf5",
+      "bytes": 134
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/012-admit-graph-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/012-admit-graph-create.stdout",
+      "sha256": "866d01a3c950e3b3566bf94e98aa35f4ee834e0648d10de337452dcb0f400a36",
+      "bytes": 2483
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/013-deliver.stderr",
+      "sha256": "6617af34f826c546fd5cc92d0d6842656b0fd45ea19f45392b68eaff0d86ec89",
+      "bytes": 124
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/013-deliver.stdout",
+      "sha256": "21421b49245a8e5d9c1d56c81e8d11142b67a9726e48b114854b150f178c3f8d",
+      "bytes": 153
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/014-seed-graph-delete.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/014-seed-graph-delete.stdout",
+      "sha256": "182c1a0dc1befef789643b145114f2a3104bb15abb3c3c553022652816eb59e1",
+      "bytes": 132
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/015-admit-graph-delete.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/015-admit-graph-delete.stdout",
+      "sha256": "f8f0e080dbc6ee9d03e0c40734beb063a102e72c96dd38b1793cb1d8305a6278",
+      "bytes": 2284
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/016-deliver.stderr",
+      "sha256": "e1926bf2a371ede359086367fbda4ffffee6469cd23a69d1464b88eee4da1d00",
+      "bytes": 125
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/016-deliver.stdout",
+      "sha256": "7724e9f8cc0055821d21c11ecba0696af8414893ef795d069b9c6052217e1c9b",
+      "bytes": 153
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/017-seed-caldav-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/017-seed-caldav-create.stdout",
+      "sha256": "375a2a6c6e1264bf52d2bc394725ed50d671da77408c727de68a70234bfc672c",
+      "bytes": 131
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/018-admit-caldav-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/018-admit-caldav-create.stdout",
+      "sha256": "144c7cb00ab2f3e1b96ff7e27b47ffa723c0e70645700271d44c96eb6404e7f6",
+      "bytes": 2885
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/019-deliver.stderr",
+      "sha256": "4066cf3d2447aeff6a5c35df4e3a51eb7face5ec1a28c63dc494856f6334e738",
+      "bytes": 127
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/019-deliver.stdout",
+      "sha256": "4f8e1c2ff390d2c07653a1114580ff6bc1ceea6cd48cc768ff263251cf49372d",
+      "bytes": 153
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/020-seed-caldav-delete.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/020-seed-caldav-delete.stdout",
+      "sha256": "98ca61ffe8bd7c2b6a024e907f12e24993ce717c9e1ae533202342ae608dda04",
+      "bytes": 129
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/021-admit-caldav-delete.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/021-admit-caldav-delete.stdout",
+      "sha256": "9a373036089ced92b5b1161ec616661d41469341de2856eef9699c2533dd7855",
+      "bytes": 3004
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/022-deliver.stderr",
+      "sha256": "f70e521d16df1b27bbee307bafff9c9f28d1cd6587b190818b51f7555eef8be8",
+      "bytes": 122
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/022-deliver.stdout",
+      "sha256": "13b8876cddcd8999bcec264ac79fdf8c8f0afa3bb430f3195ae2ee7ca3132ce2",
+      "bytes": 153
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/023-seed-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/023-seed-task.stdout",
+      "sha256": "279f5c6fbe6b3a7cb11839c4001c4e49122786dc8ac4ab46d0ae5692d7ace668",
+      "bytes": 124
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/024-admit-task-update.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/024-admit-task-update.stdout",
+      "sha256": "2e317d2365c7efcddb24cca845caf015acdd219650c909e06d5fa2a9f90346bc",
+      "bytes": 2733
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/025-deliver-task.stderr",
+      "sha256": "e6aa1624245d1d919af909cb35265f62bddf234488caef6567d907c0c7b203a6",
+      "bytes": 559
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/025-deliver-task.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/026-seed-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/026-seed-task.stdout",
+      "sha256": "cf27a4e828c64f6ec5e128fd1b24ec782a661313e6e53be3c5d2a4e77df5cca8",
+      "bytes": 124
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/027-admit-task-delete.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/027-admit-task-delete.stdout",
+      "sha256": "beaad776d84ece9e9d420fba3d770db9d962f9aa60082de293a319935029fee8",
+      "bytes": 2508
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/028-deliver-task.stderr",
+      "sha256": "cf0e877f0f528c584a803cf972205b5648c47789bbc8499d07db02df2f82b413",
+      "bytes": 556
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/028-deliver-task.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/029-seed-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/029-seed-task.stdout",
+      "sha256": "6133c16fd10eda52890115b3a849b9891c7190b9f8e00f70d3937c9c4c579a91",
+      "bytes": 124
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/030-admit-task-delete.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/030-admit-task-delete.stdout",
+      "sha256": "11d1b4c1e47eac21e28d4e6303bbce7226c89a8296d6d73e857184eb3b127f18",
+      "bytes": 2508
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/031-deliver-task.stderr",
+      "sha256": "50809c7e0510946434768524b9ef2a6a6d4346410ba58679196e3928264f2eea",
+      "bytes": 558
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/031-deliver-task.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/032-admit-task-create.stderr",
+      "sha256": "c0a8dfd53eb8d204b4fd30cf3c427bf7b7c1af19f6b4366f3a6742da21c14889",
+      "bytes": 42
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/032-admit-task-create.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/033-migrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/033-migrate.stdout",
+      "sha256": "a6eff23adec1205756963e0201343cbf8b4f5ae59e1a07cbe314dcb0b02d328e",
+      "bytes": 47
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/034-deliver.stderr",
+      "sha256": "db85bb98b4232737c183febf76884ff426cc91eebeca3a60f38006f4b7b8117a",
+      "bytes": 365
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/034-deliver.stdout",
+      "sha256": "3a874d4de0c69092d5f40520b1e8a4eaa9e6154ab93d8b634cbb7c3eb069d91e",
+      "bytes": 123
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/035-deliver.stderr",
+      "sha256": "c3bce6b47424d1ce299c82198f05211e50823fccfd4970594ca41a1c420199e6",
+      "bytes": 488
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/035-deliver.stdout",
+      "sha256": "0aabe11151c065ac38ec3c7f3d5ac799b1eb745bafb30de93445afa3c4fedfcf",
+      "bytes": 123
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/036-deliver.stderr",
+      "sha256": "7274acec2ada148daca87b16edebda285158521075e5e1c78a00610600565eba",
+      "bytes": 612
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/036-deliver.stdout",
+      "sha256": "2e7844f9db463472e451489c9aab23cc8353fe2b034e66c85759f78e6d4815cc",
+      "bytes": 123
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/037-deliver.stderr",
+      "sha256": "639b01c0f09d2a8343db504dd7aa0cdf20d04fe9c176c6ce7e702cc90f89f966",
+      "bytes": 500
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/037-deliver.stdout",
+      "sha256": "4b0ac7ea79b018c399d0ddcc72a76c2891ee8ebe2315ae6ef0391d7d1d925e61",
+      "bytes": 123
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/038-deliver.stderr",
+      "sha256": "56a1d5610c329bf1c23aaba951cb967400ea1f3ce8a9cf2c9e6bc74d9b22e995",
+      "bytes": 751
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/038-deliver.stdout",
+      "sha256": "7f5a26927626a8a3fc39a7c57b66a7644d5c205a1d98c97622005c645a54b4db",
+      "bytes": 123
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/039-deliver.stderr",
+      "sha256": "7e2d87db6c1c0c87bff26ebeaa2ab86086515dbb66e4eb321075176a1bb68068",
+      "bytes": 369
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/039-deliver.stdout",
+      "sha256": "7460350febc9bb2fdd6dfe7ac0726c5ea4c2a360ee8f50e3bf63f00d749fd231",
+      "bytes": 123
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/040-deliver.stderr",
+      "sha256": "533c49ccad0aace3222df7da51bd133716687b710cd6262dc991b2ad1a658ffe",
+      "bytes": 617
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/040-deliver.stdout",
+      "sha256": "8d902578aa8eb9d29cab01334a16b5de3233c13bc4c77081bc1574a9ff3295eb",
+      "bytes": 123
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/041-deliver-task.stderr",
+      "sha256": "5fa468b4ef6b57739be0e85189eecb64483f2d046e333b4311bb4ce796ef4857",
+      "bytes": 121
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/041-deliver-task.stdout",
+      "sha256": "911fc762a67aa76d99831a34bbc949d3fbf26fa760be5f569c812757f32fb2ec",
+      "bytes": 123
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/042-deliver-task.stderr",
+      "sha256": "e59f9ad6f51bbce4f73f28d66a49dcf2813ea11f97869fb21498d9957637bcdc",
+      "bytes": 121
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/042-deliver-task.stdout",
+      "sha256": "4a12cb8813b65be93fda49b1893d0e9861823d30dc08a26771cf1bf35b340e75",
+      "bytes": 123
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/043-deliver-task.stderr",
+      "sha256": "9d7ecb4dd6793d504f4bd6dcf6fd2e9c06fa039b0591dd343c8b966f47a97e30",
+      "bytes": 121
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/043-deliver-task.stdout",
+      "sha256": "359a6f238297f94af480aef81380c62529ce7f8419a0f3b658d4da1e6dbdd279",
+      "bytes": 123
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/044-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/044-show-task.stdout",
+      "sha256": "43eb9c11be9974264231a86471d6a23f3dbcf7f60cd71fb94fb2e5f0e3688448",
+      "bytes": 2602
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/045-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/045-show-task.stdout",
+      "sha256": "56ab9b72c4f50bace08e1b5953a8434a2a57c0bcab5493808618fb94b77e31b3",
+      "bytes": 2602
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/046-show.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/046-show.stdout",
+      "sha256": "9fd99636ec5d4dcd5acd5301ef69d8f7263201593fa6d29d2e8803bac1497e75",
+      "bytes": 2864
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/047-seed-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/047-seed-task-create.stdout",
+      "sha256": "1ebd0bb3df60f820bc35f2db91ffcba778e82b965934af9f85b18268ef4e12d9",
+      "bytes": 126
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/048-admit-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/048-admit-task-create.stdout",
+      "sha256": "8211417554d536599c7e862c9e8d68005105328d507a6c4ff794b1c55ab00797",
+      "bytes": 2387
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/049-deliver-task.stderr",
+      "sha256": "53397c3f4756b9f690ddef3f45f221da0720e7f10b1c3db065fc52cd933715b2",
+      "bytes": 189
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/049-deliver-task.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/050-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/050-show-task.stdout",
+      "sha256": "aa615230e621badba0e74c4aea40fe6b9765711f1db6c9bf6bdb6dcd756b28b1",
+      "bytes": 2486
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/051-deliver-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/051-deliver-task.stdout",
+      "sha256": "90b6d2934954aa449b11a8db7248ff4611b669004327c290b62e77204c53010d",
+      "bytes": 155
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/052-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/052-show-task.stdout",
+      "sha256": "ac7a8b80f1dd50d1b622873de7c4ce6e15095b5ca6ff8395241ecdf2477b25f5",
+      "bytes": 2429
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/053-seed-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/053-seed-task-create.stdout",
+      "sha256": "241b35146c229aa99cd4a3b8117449b36d0cad9745a7392c35d3fe42af555499",
+      "bytes": 126
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/054-admit-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/054-admit-task-create.stdout",
+      "sha256": "09d08c59da8c631f987dafe8f4cb129eecbd1d2e2b6f2b3916fed06a782f0a71",
+      "bytes": 2387
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/055-deliver-task.stderr",
+      "sha256": "3c302ddde4ca6ec1c9c61627c359fe51d95e04d81483e606960564046770e51e",
+      "bytes": 314
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/055-deliver-task.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/056-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/056-show-task.stdout",
+      "sha256": "25983d168beeea9198f77f19b109360010c54aac984dd20e5642368e11413dbb",
+      "bytes": 2486
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/057-deliver-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/057-deliver-task.stdout",
+      "sha256": "2841a718f6f0f45c389146da09d286c2afc62238c7858c649e3233a07fe52fa3",
+      "bytes": 155
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/058-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/058-show-task.stdout",
+      "sha256": "5ef6da7990b8f82aa6c55cd6140c5ecbb4a1d1fb7569a9a233fe438ff964bd33",
+      "bytes": 2427
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/059-seed-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/059-seed-task-create.stdout",
+      "sha256": "a9c15c786b327c95b58adffb4dae2d8d08a64f55b199ce21211a42ee9af0dced",
+      "bytes": 126
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/060-admit-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/060-admit-task-create.stdout",
+      "sha256": "664ab17b4b94bb8b3d34fb492e927ca7c5506d53f7e2f3744aed75ed6a37046c",
+      "bytes": 2387
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/061-deliver-task.stderr",
+      "sha256": "9b78b2412b7d2712d89338b68bb13e58177070c75ca60b4e521c59b0a0fd3792",
+      "bytes": 308
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/061-deliver-task.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/062-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/062-show-task.stdout",
+      "sha256": "b62f98a71bee3d4a65a2701c1bda184a4c5ea861530e4840b28f86f293bcdf4c",
+      "bytes": 2566
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/063-deliver-task.stderr",
+      "sha256": "bee5f6e4f3467952e0d7c9bfa606563335fd64f840f80750768da2e66e38ec7d",
+      "bytes": 120
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/063-deliver-task.stdout",
+      "sha256": "de04fb342e8630a38336cf3a16baed6ade5042576940b92835a5a67d7cf6fe2b",
+      "bytes": 123
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/064-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/064-show-task.stdout",
+      "sha256": "6a59583b767fd7059a76dd5fa1f58808eae09e93a2006f7325eb98185b76ac67",
+      "bytes": 2709
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/065-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/065-show-task.stdout",
+      "sha256": "6a59583b767fd7059a76dd5fa1f58808eae09e93a2006f7325eb98185b76ac67",
+      "bytes": 2709
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/066-seed-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/066-seed-task-create.stdout",
+      "sha256": "393cbcd5420a5a420830e7c0e7d5160b982af64a818687e3ecea1177144e68ba",
+      "bytes": 126
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/067-admit-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/067-admit-task-create.stdout",
+      "sha256": "6d1bc842d768cc2f1f214e6621e6733425d206e19766d72f37019ffe5a8da323",
+      "bytes": 2387
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/068-deliver-task.stderr",
+      "sha256": "71a84e970dc29f37d3203cd790bfc092fd571663804f6c0bbd116a838e64f1fb",
+      "bytes": 362
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/068-deliver-task.stdout",
+      "sha256": "767fca4cf1fd7ee597565ac443cb2a6acff9adf45be2868287e080e9df9c99c0",
+      "bytes": 123
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/069-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/069-show-task.stdout",
+      "sha256": "3075a0a0969e25398b20da601acc1720f3a92bb85fd6283af2ed330d862252cb",
+      "bytes": 2700
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/070-seed-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/070-seed-task-create.stdout",
+      "sha256": "8f5a6ad596cb60049955a9e4c052802561be9f49bb512a9dfd9860038a3b9741",
+      "bytes": 126
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/071-admit-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/071-admit-task-create.stdout",
+      "sha256": "bd4021d922c41221cd4a70039ad1c6308ecc67f484bdff5ccc747302af0d4d35",
+      "bytes": 2387
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/072-deliver-task.stderr",
+      "sha256": "1c83a4ace9d9ac73d5eaa952f974fe2e993105874d82bd0d47d55ebd87073133",
+      "bytes": 362
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/072-deliver-task.stdout",
+      "sha256": "5c28a940aa8e1c673864f7723c03b1ec60a503311fb2eb84a0434d6e343bde7e",
+      "bytes": 123
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/073-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/073-show-task.stdout",
+      "sha256": "dbeb95d68a9a8132b427a2954c2b75912a1263549aa2939b24a384a1a483efe5",
+      "bytes": 2700
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/074-seed-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/074-seed-task-create.stdout",
+      "sha256": "9009d76a05a08d13ff903ea66f452e5ff5ad3b547b9f25a78a587ef05762a310",
+      "bytes": 126
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/075-admit-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/075-admit-task-create.stdout",
+      "sha256": "7dd3c67636aea761e8659a23f084b694d77ff40f85116a8a0f05e4a053edbb8d",
+      "bytes": 2387
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/076-deliver-task.stderr",
+      "sha256": "5391a0d53d30617070b6c6cae163ef603fca32855c51660f6cb9b6eaf46806ed",
+      "bytes": 254
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/076-deliver-task.stdout",
+      "sha256": "0158cff974506ebbd3d21f6c471284961ee424ead805f80ae6b2a1ae146f8ef2",
+      "bytes": 149
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/077-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/077-show-task.stdout",
+      "sha256": "8684e7fc42712da09c75ae3bd711a8bb7f8663b3f9b601174b695a91f48db0d9",
+      "bytes": 2429
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/078-deliver-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/078-deliver-task.stdout",
+      "sha256": "910a3ac1cc47b625672d530d85d6a9073a1f11b3fb89cfd16ebb17f163f62d21",
+      "bytes": 155
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/079-seed-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/079-seed-task-create.stdout",
+      "sha256": "75027e7e5896a90a2a98b210a56e1e982d1127e3651ffddaa96144fc2fe74f68",
+      "bytes": 126
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/080-admit-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/080-admit-task-create.stdout",
+      "sha256": "6e7ad8ae1940632b188f59174dc01c2ee0dd017f3cfcfed29a0fddd84cbf515d",
+      "bytes": 2387
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/081-deliver-task.stderr",
+      "sha256": "78bfcee9bfac976369dadeacea2cd9eec407622f42fb74ed0166c822ca8a384a",
+      "bytes": 242
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/081-deliver-task.stdout",
+      "sha256": "5f15248edea6246339ff33349a2f33387ca79c7356a6463a7de86c2f2e7f8e16",
+      "bytes": 149
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/082-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/082-show-task.stdout",
+      "sha256": "a891f9b17a37c580acbcf349471c17d27ee6b483da87e2f0a0b04d1e16f123a7",
+      "bytes": 2427
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/083-deliver-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/083-deliver-task.stdout",
+      "sha256": "6f153053f7c7aa61abfc3043f65ec0d077c870d275ae4fefc17004cd5e30c1e4",
+      "bytes": 155
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/084-seed-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/084-seed-task-create.stdout",
+      "sha256": "fb22de49cad2fcb6559038c67b882ab8e7a2b5e5fc0772402581c14c845f6eb4",
+      "bytes": 126
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/085-admit-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/085-admit-task-create.stdout",
+      "sha256": "c54c6f30bc3fbebddeab7676f82901641536e35c69b65d47cf7e69439c0db897",
+      "bytes": 2387
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/086-deliver-task.stderr",
+      "sha256": "8d29da7fe3b949f4bd1c5a5a05f54a583904382ae4a8ad6942b3383e32937a01",
+      "bytes": 242
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/086-deliver-task.stdout",
+      "sha256": "2347bddcdede99ebc93baeb2075ad3c0732b6073f5f86988ab000d78cec1e181",
+      "bytes": 149
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/087-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/087-show-task.stdout",
+      "sha256": "23865dc1bbe1ab5f53101a418aa4767132ad8cb57a88838d80dca4f7690bc11a",
+      "bytes": 2427
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/088-deliver-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/088-deliver-task.stdout",
+      "sha256": "119b131bc973ecb82b8e3352cd653e87346fecff46f73eea239c4cf61551ff1b",
+      "bytes": 155
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/089-seed-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/089-seed-task-create.stdout",
+      "sha256": "1ef6d2fa6f6a102f4505ed429deb1ac837bff6c826113fd1b8d399215c8670fd",
+      "bytes": 126
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/090-admit-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/090-admit-task-create.stdout",
+      "sha256": "83cd0913dedbd527575565c65ab7d92dcec62fa84a57627bb8d7a10df544186e",
+      "bytes": 2387
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/091-deliver-task.stderr",
+      "sha256": "4537d6cd394704caf2cba01a8e288bb32303887a2422e1d7b7e834c59d654eac",
+      "bytes": 242
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/091-deliver-task.stdout",
+      "sha256": "f8325bd3ec9d2bc6d03ee9a26b87541f334951c618a45ad944b5c49e985012fd",
+      "bytes": 149
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/092-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/092-show-task.stdout",
+      "sha256": "47adcb04805b3073efb5bf9847878c0402c54555b366501673a547f853d9132d",
+      "bytes": 2503
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/093-deliver-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/093-deliver-task.stdout",
+      "sha256": "88ab17d2affac0669e782f903079c90c57eb8c5549e30f325265bb6195cee4de",
+      "bytes": 155
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/094-seed-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/094-seed-task-create.stdout",
+      "sha256": "f8220b52f01e291607cafcef511361ca55527a649803e3d7182bf5cf024a8372",
+      "bytes": 126
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/095-admit-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/095-admit-task-create.stdout",
+      "sha256": "dde06ad26d9073390ccc34b10c195d1d086be92fe69a686a2aeacd31b7438abb",
+      "bytes": 2387
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/096-deliver-task.stderr",
+      "sha256": "2f77c45bce3bce4c3ba84525dcdffba66e7d7226bbde29307761f4ab69c6fcf2",
+      "bytes": 362
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/096-deliver-task.stdout",
+      "sha256": "622038c5d64bd2100b4cb9df753e99a5e379c0d9172a14da3d3429e13d249215",
+      "bytes": 149
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/097-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/097-show-task.stdout",
+      "sha256": "4d3935fdd968a85886b00818b36a2b4c59514162b2ab5a93aaa00fe95debedf7",
+      "bytes": 2560
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/098-seed-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/098-seed-task-create.stdout",
+      "sha256": "2169b60565da064c9865cbda95d939abd72d3fdccfc3f18569f15c05bd76a24f",
+      "bytes": 126
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/099-admit-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/099-admit-task-create.stdout",
+      "sha256": "6ce08a01eae258b15ca2ac0f24e0afa0fb8494ff9ce3c21146fd9865ca51fddd",
+      "bytes": 2387
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/100-deliver-task.stderr",
+      "sha256": "a8a35cb05bc1c491aa64d3b358961299a685c2f3788acfe53d4725fa66e46766",
+      "bytes": 362
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/100-deliver-task.stdout",
+      "sha256": "672a8a81385d9153524c866b106e046395218d8df62dae819c1bc35af26523a3",
+      "bytes": 153
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/101-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/101-show-task.stdout",
+      "sha256": "4ebff1fcf06c5cea6682c11ca8e2b2cae2a6b724ae90426790419e20ecb6ea20",
+      "bytes": 2507
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/102-seed-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/102-seed-task-create.stdout",
+      "sha256": "9eb6d8229b190010ab1664edb108b94dde1aa3720c98dbb369fc3db76a3f82fc",
+      "bytes": 126
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/103-admit-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/103-admit-task-create.stdout",
+      "sha256": "5a36400d1550fa58de8473c942ade105644f3dd016c788f02984ec60be3cade1",
+      "bytes": 2387
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/104-deliver-task.stderr",
+      "sha256": "6bbfeabb66707b395689274efebef6bb06d82e986ce2c855dd341e482ac5d321",
+      "bytes": 362
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/104-deliver-task.stdout",
+      "sha256": "65d57e08f8c461727195c49b64bf0a0fd3c6df8ce41530bbf8d7b8e5c5bae1ba",
+      "bytes": 158
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/105-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/105-show-task.stdout",
+      "sha256": "32d68b9ad6dbace8afcfd77bb421e07ee02ddc05767ae843a9905032b3551321",
+      "bytes": 2511
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/106-seed-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/106-seed-task-create.stdout",
+      "sha256": "57d441fda75dec092a172bff554f67f850e371a379781ef087ef3763681acdfc",
+      "bytes": 126
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/107-admit-task-create.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/107-admit-task-create.stdout",
+      "sha256": "800758a296a2231c9aa19b63d08c2e48a840bd6e06f34013b9ecd9bb0a360d44",
+      "bytes": 2387
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/108-deliver-task.stderr",
+      "sha256": "eb95c39fcd09054c5ad0db17df859b1b7f96e1f24cc5d2b3c1ae419574c98b88",
+      "bytes": 362
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/108-deliver-task.stdout",
+      "sha256": "fb0ad1e179f31c75e46bb2062c1159d0828e923e390ffdb6ca95ccc9269687c4",
+      "bytes": 123
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/109-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/109-show-task.stdout",
+      "sha256": "61d8149526fc360c981e47ceb69c86957def0bdc26e050a5d5a9884aeb36b4e6",
+      "bytes": 2709
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/110-admit-task-update.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/110-admit-task-update.stdout",
+      "sha256": "27461719ee6b2e1f1773050202cc641f084592483dc14b8edce30e238e5e728b",
+      "bytes": 2727
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/111-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/111-show-task.stdout",
+      "sha256": "27461719ee6b2e1f1773050202cc641f084592483dc14b8edce30e238e5e728b",
+      "bytes": 2727
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/112-deliver-task.stderr",
+      "sha256": "7247cf40b82a78f69627e6b3fa3f8cac6c60dcc54612f7fe3eac997e9aa27fc7",
+      "bytes": 604
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/112-deliver-task.stdout",
+      "sha256": "f231c8ea6794a4c6c4ca894b598e0696c277e7fb55bceec3e358329f138c8265",
+      "bytes": 123
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/113-admit-task-delete.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/113-admit-task-delete.stdout",
+      "sha256": "035b4695ef7ce29f7f583a3b007a6d826664579aff306e1f35c24ef5ee02fdb4",
+      "bytes": 2524
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/114-deliver-task.stderr",
+      "sha256": "a4d95576386b7d227778c96d4f652717837fca26ce0a4aed6d6779ec1daa8b17",
+      "bytes": 607
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/114-deliver-task.stdout",
+      "sha256": "86d88a9de94335cddeaee99d75e547a53013fc2f688eb41d7ffce8d9730bfdc8",
+      "bytes": 123
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/115-show-task.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/115-show-task.stdout",
+      "sha256": "c23b36e64b9c9f7f1441255b9715f206d0bba0ec22763e4b9217dde116d21fe7",
+      "bytes": 2618
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/116-migrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/116-migrate.stdout",
+      "sha256": "a6eff23adec1205756963e0201343cbf8b4f5ae59e1a07cbe314dcb0b02d328e",
+      "bytes": 47
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/117-migrate.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/commands/117-migrate.stdout",
+      "sha256": "a6eff23adec1205756963e0201343cbf8b4f5ae59e1a07cbe314dcb0b02d328e",
+      "bytes": 47
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/current-context-inventory.json",
+      "sha256": "8f516c549d6251fd7cf77b6135763894bcc35cdb73c129e70013061f86dad8c8",
+      "bytes": 101
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/current-source-inventory.json",
+      "sha256": "06c8f7fd0f7a78b8f55a74b1a5c6c8fe77221487f4275aca45e74feb6dd33d21",
+      "bytes": 145
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/final-verify.mjs",
+      "sha256": "205c95a14d749255f241c0e94451d150d8d0ec2afae2eea8c61b40661b46b097",
+      "bytes": 3991
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/frozen-context-after-proof.json",
+      "sha256": "88b0e3b8397f76c64d5cedc761c7307eae84b85f37eb019e6ce47eb7dca928b8",
+      "bytes": 79
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/http-requests.json",
+      "sha256": "f7d149d0663fec3c17eff0d95497b3e72abbbf2b6ae7a743ea2836c1a55057c0",
+      "bytes": 24748
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/image-config.json",
+      "sha256": "bebfd98492d6aa77d7986524d1677c55c82dded5b06ea34dc83ed6b024d3ccf5",
+      "bytes": 7618
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/image-index.json",
+      "sha256": "a3c0c43e16f3e0845548d52f18cf76b1ca6babc89ee7788add7d6e04138b7f7a",
+      "bytes": 857
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/image-inspect.json",
+      "sha256": "2092d593d63c603c47e738dc8add02772382152a2ed4f721a66f0a878ec70ba9",
+      "bytes": 1780
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/image-inventory.json",
+      "sha256": "4ec9cfc8185d7f7a6321228cbd0d1fdd4f3ee0871e4df14b539fba14af7bceea",
+      "bytes": 636
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/installed-command-artifact-manifest.json",
+      "sha256": "8cd93b28f499793eab35881f4a576320e9de48af1bfee8dd3a15537d286dced4",
+      "bytes": 72435
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/installed-corpus-cleanup.json",
+      "sha256": "0310e71734e244e3a7a78322b2c9a72603389cf7b96ab0750b549115956ca831",
+      "bytes": 161
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/installed-corpus-runner.log",
+      "sha256": "80a8c6d0998102a44ef2702b9d01ed7746f287cc56e0adad56be8a477c20fb0e",
+      "bytes": 1713
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/installed-corpus-runner.mjs",
+      "sha256": "f1361c27433a6827b66155eef33fef99a70eb6c02fa3e2f92762cd0508a42259",
+      "bytes": 3575
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/installed-corpus.json",
+      "sha256": "1644e502aa2d46c00ba8069b7f1ef74e2ad5278d086a9b23260b1c69dac275be",
+      "bytes": 2108
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/installed-db-process.log",
+      "sha256": "06cc6bcaea1f02ad31825e3a3108f8c28b57e15b7059a0dc9757f79370a8db7f",
+      "bytes": 70455
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/installed-package-map.json",
+      "sha256": "bce1b58a6a46296755dce1bb5f77a0eae396225271919d074ec52727bfc7a0ac",
+      "bytes": 1782
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/installed-pure.log",
+      "sha256": "132c3498488eba63ba5ad53dbff733f82eb87e60bb4be53d4e8426b29778a5f3",
+      "bytes": 38765
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/installed-reference-probe.log",
+      "sha256": "5e78c15af6afbc566abcd09cffd465eecc6cc8c82e64f3ec7d89e2fd468eb438",
+      "bytes": 854
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/installed-reference-probe.mjs",
+      "sha256": "3abb0d7ddc4493b219f532eb32ad79d8f2719b7087195c8f994bbe76c432467a",
+      "bytes": 29102
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/installed-reference-proof.json",
+      "sha256": "3959ff28cd996191be16179e3c1ba458d21ca3e46ab97837ab09318d4eb85928",
+      "bytes": 59998
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/installed-runtime-source-manifest.json",
+      "sha256": "d70e05480f9e3170f05fec96f99273d620ed8aca5087a2daca87c7db152f7b8b",
+      "bytes": 19059
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/installed-source-manifest.json",
+      "sha256": "998e731fd04bd9b9ec69985f72f2ad1ab4fc388032a3c350cf7aa9c2620901cb",
+      "bytes": 35786
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/new-ledger-after-upgrade.json",
+      "sha256": "2af923ff657d4f0c4d92944a2269f10811744faaf713a039f19b6b613e8c6fa7",
+      "bytes": 71896
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/old-image-inspect.json",
+      "sha256": "e46d0710eea2bb43722cec78bc6dd4df369f0d3006845663d5c2f1da12d61215",
+      "bytes": 1779
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/old-ledger-before-upgrade.json",
+      "sha256": "2af923ff657d4f0c4d92944a2269f10811744faaf713a039f19b6b613e8c6fa7",
+      "bytes": 71896
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/platform-manifest.json",
+      "sha256": "fcc15aec87cd79c8686da28bff3562282976e0b5e05262b7b3a01a34a01820ed",
+      "bytes": 1434
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/root-qa-cleanup.json",
+      "sha256": "cc113b3f1b4a3e3ff9ddec9f05886bc28e0632fe62610eb06c7c093054e5c0d4",
+      "bytes": 346
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/runtime-source-manifest.json",
+      "sha256": "d70e05480f9e3170f05fec96f99273d620ed8aca5087a2daca87c7db152f7b8b",
+      "bytes": 19059
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/source-manifest.json",
+      "sha256": "998e731fd04bd9b9ec69985f72f2ad1ab4fc388032a3c350cf7aa9c2620901cb",
+      "bytes": 35786
+    },
+    {
+      "path": "/tmp/musu40-task-create-reference-evidence/summarize-reference.mjs",
+      "sha256": "fc3bc1854426b1c5fae457e50a794fb4cd3c58854ee80d91551f389cf6016dd1",
+      "bytes": 10970
+    }
+  ],
+  "rawArtifactManifest": {
+    "path": "/tmp/musu40-task-create-reference-evidence/raw-artifact-manifest.json",
+    "sha256": "9e4bf1df3000f469a8874b714ad2db15731f0250bfe4c149b33f6f7f28a13a4d",
+    "bytes": 54385
+  }
+}

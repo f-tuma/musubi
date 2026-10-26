@@ -1,0 +1,4921 @@
+{
+  "schemaVersion": 1,
+  "driver": "google-task-create",
+  "scenarios": [
+    {
+      "id": "fresh-create",
+      "title": "Fresh CREATE sends the admitted four fields and confirms its generated address",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask",
+          "status": 200,
+          "body": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title",
+            "id": "native/task",
+            "etag": "\"readback\""
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": {
+          "taskId": "native/task",
+          "validator": "\"written\""
+        },
+        "writerResult": {
+          "taskId": "native/task",
+          "etag": "\"written\""
+        },
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "status": "acked",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask"
+        ],
+        "methods": [
+          "GET",
+          "POST",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "contentTypes": [
+          null,
+          "application/json",
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          },
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          },
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "confirmed",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackTaskIds": [
+          "native/task"
+        ],
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackValidators": [
+          "\"readback\""
+        ],
+        "finishStatuses": [],
+        "validator": "\"written\"",
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "reference-fresh-create",
+      "title": "Reference CREATE records raw acceptance and candidate before confirming native content",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask",
+          "status": 200,
+          "body": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title",
+            "id": "native/task",
+            "etag": "\"readback\""
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": {
+          "taskId": "native/task",
+          "validator": "\"written\""
+        },
+        "writerResult": {
+          "taskId": "native/task",
+          "etag": "\"written\""
+        },
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "status": "acked",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask"
+        ],
+        "methods": [
+          "GET",
+          "POST",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error"
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "contentTypes": [
+          null,
+          "application/json",
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          },
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": null,
+            "writerResult": null,
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          },
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": null,
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          },
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          },
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "confirmed",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackTaskIds": [
+          "native/task"
+        ],
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackValidators": [
+          "\"readback\""
+        ],
+        "finishStatuses": [],
+        "validator": "\"written\"",
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "musubi-lost-reply-no-address",
+      "title": "Lost POST reply has no safe address and never causes another POST",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "error": "lost-reply"
+        }
+      ],
+      "expected": {
+        "providerKind": "uncertain",
+        "acceptedStatus": null,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks"
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "redirects": [
+          "error",
+          null
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        ],
+        "contentTypes": [
+          null,
+          "application/json"
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial"
+        ],
+        "sessions": 2,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": "network-error",
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "musubi-missing-response-id",
+      "title": "Accepted HTTP without a generated task ID stays unconfirmed",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "body": {
+            "etag": "\"written\""
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks"
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "redirects": [
+          "error",
+          null
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        ],
+        "contentTypes": [
+          null,
+          "application/json"
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial"
+        ],
+        "sessions": 2,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "musubi-empty-204",
+      "title": "Accepted204 is recorded before its empty success body fails JSON parsing",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 204,
+          "body": null
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 204,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks"
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "redirects": [
+          "error",
+          null
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        ],
+        "contentTypes": [
+          null,
+          "application/json"
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial"
+        ],
+        "sessions": 2,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 204,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "musubi-malformed-success-json",
+      "title": "Malformed success JSON retains raw acceptance without inventing an address",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "rawBody": "{"
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks"
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "redirects": [
+          "error",
+          null
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        ],
+        "contentTypes": [
+          null,
+          "application/json"
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial"
+        ],
+        "sessions": 2,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "reference-lost-reply-no-address",
+      "title": "Lost POST reply has no safe address and never causes another POST",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "error": "lost-reply"
+        }
+      ],
+      "expected": {
+        "providerKind": "uncertain",
+        "acceptedStatus": null,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks"
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "redirects": [
+          "error",
+          "error"
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        ],
+        "contentTypes": [
+          null,
+          "application/json"
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial"
+        ],
+        "sessions": 2,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": "network-error",
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "reference-missing-response-id",
+      "title": "Accepted HTTP without a generated task ID stays unconfirmed",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "body": {
+            "etag": "\"written\""
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks"
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "redirects": [
+          "error",
+          "error"
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        ],
+        "contentTypes": [
+          null,
+          "application/json"
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial"
+        ],
+        "sessions": 2,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": null,
+            "writerResult": null,
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "reference-empty-204",
+      "title": "Accepted204 is recorded before its empty success body fails JSON parsing",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 204,
+          "body": null
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 204,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks"
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "redirects": [
+          "error",
+          "error"
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        ],
+        "contentTypes": [
+          null,
+          "application/json"
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial"
+        ],
+        "sessions": 2,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 204,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 204,
+            "responseAddress": null,
+            "writerResult": null,
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "reference-malformed-success-json",
+      "title": "Malformed success JSON retains raw acceptance without inventing an address",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "rawBody": "{"
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks"
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "redirects": [
+          "error",
+          "error"
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        ],
+        "contentTypes": [
+          null,
+          "application/json"
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial"
+        ],
+        "sessions": 2,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": null,
+            "writerResult": null,
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "musubi-weak-response-tag",
+      "title": "API keeps its complete-writer-return boundary after a weak response tag",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "body": {
+            "id": "native/task",
+            "etag": "W/\"weak\""
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": {
+          "taskId": "native/task",
+          "validator": null
+        },
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks"
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "redirects": [
+          "error",
+          null
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        ],
+        "contentTypes": [
+          null,
+          "application/json"
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial"
+        ],
+        "sessions": 2,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-version-unavailable",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "reference-weak-response-tag-recovers",
+      "title": "Reference independently GET-confirms a captured ID after a weak response tag",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "body": {
+            "id": "native/task",
+            "etag": "W/\"weak\""
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask",
+          "status": 200,
+          "body": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title",
+            "id": "native/task",
+            "etag": "\"readback\""
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": {
+          "taskId": "native/task",
+          "validator": null
+        },
+        "writerResult": null,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "status": "acked",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask"
+        ],
+        "methods": [
+          "GET",
+          "POST",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error"
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "contentTypes": [
+          null,
+          "application/json",
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          },
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": null,
+            "writerResult": null,
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          },
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": null
+            },
+            "writerResult": null,
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          },
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": null
+            },
+            "writerResult": null,
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          },
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": null
+            },
+            "writerResult": null,
+            "remoteKind": "confirmed",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackTaskIds": [
+          "native/task"
+        ],
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackValidators": [
+          "\"readback\""
+        ],
+        "finishStatuses": [],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "post-412",
+      "title": "Native POST rejection retains its status and Retry-After without recovery replay",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 412,
+          "body": {},
+          "headers": {
+            "retry-after": "9"
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "rejected",
+        "acceptedStatus": null,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "conflict",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks"
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "redirects": [
+          "error",
+          null
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        ],
+        "contentTypes": [
+          null,
+          "application/json"
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial"
+        ],
+        "sessions": 2,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 412,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "validator": null,
+        "providerErrorCode": "conflict",
+        "providerRetry": "never",
+        "providerRetryAfterMs": null,
+        "errorCode": "task-provider-conflict",
+        "errorOutcome": "not-written",
+        "providerStatus": 412,
+        "retryAfterMs": 9000
+      }
+    },
+    {
+      "id": "post-429",
+      "title": "Native POST rejection retains its status and Retry-After without recovery replay",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 429,
+          "body": {},
+          "headers": {
+            "retry-after": "9"
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "rejected",
+        "acceptedStatus": null,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks"
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "redirects": [
+          "error",
+          null
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        ],
+        "contentTypes": [
+          null,
+          "application/json"
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial"
+        ],
+        "sessions": 2,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 429,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": "rate-limited",
+        "providerRetry": "after-delay",
+        "providerRetryAfterMs": 9000,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 429,
+        "retryAfterMs": 9000
+      }
+    },
+    {
+      "id": "post-408",
+      "title": "Native POST rejection retains its status and Retry-After without recovery replay",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 408,
+          "body": {},
+          "headers": {
+            "retry-after": "9"
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "rejected",
+        "acceptedStatus": null,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks"
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "redirects": [
+          "error",
+          null
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        ],
+        "contentTypes": [
+          null,
+          "application/json"
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial"
+        ],
+        "sessions": 2,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 408,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": "transport-failed",
+        "providerRetry": "after-delay",
+        "providerRetryAfterMs": null,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 408,
+        "retryAfterMs": 9000
+      }
+    },
+    {
+      "id": "post-503-uncertain",
+      "title": "POST503 is uncertain and cannot be repeated without a captured address",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 503,
+          "body": {},
+          "headers": {
+            "retry-after": "9"
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "uncertain",
+        "acceptedStatus": null,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks"
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "redirects": [
+          "error",
+          "error"
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        ],
+        "contentTypes": [
+          null,
+          "application/json"
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial"
+        ],
+        "sessions": 2,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 503,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": 503,
+        "retryAfterMs": 9000
+      }
+    },
+    {
+      "id": "post-401-never-auth-replays",
+      "title": "POST401 does not use the GET authentication recovery hook",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "readRecovery": true,
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 401,
+          "body": {}
+        }
+      ],
+      "expected": {
+        "providerKind": "rejected",
+        "acceptedStatus": null,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks"
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "redirects": [
+          "error",
+          null
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        ],
+        "contentTypes": [
+          null,
+          "application/json"
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial"
+        ],
+        "sessions": 2,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 401,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": "permission-denied",
+        "providerRetry": "after-reconnect",
+        "providerRetryAfterMs": null,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 401,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "list-401-recovers-once",
+      "title": "One concrete task-list GET401 refreshes and retries only that GET",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "readRecovery": true,
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 401,
+          "body": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask",
+          "status": 200,
+          "body": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title",
+            "id": "native/task",
+            "etag": "\"readback\""
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": {
+          "taskId": "native/task",
+          "validator": "\"written\""
+        },
+        "writerResult": {
+          "taskId": "native/task",
+          "etag": "\"written\""
+        },
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "status": "acked",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask"
+        ],
+        "methods": [
+          "GET",
+          "GET",
+          "POST",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "contentTypes": [
+          null,
+          null,
+          "application/json",
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "recovered",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 1,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 401,
+            "durationMs": 1
+          },
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          },
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          },
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "confirmed",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackTaskIds": [
+          "native/task"
+        ],
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackValidators": [
+          "\"readback\""
+        ],
+        "finishStatuses": [],
+        "validator": "\"written\"",
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "second-get-401-stops",
+      "title": "A second GET401 preserves the host authentication error and adds no retry hint",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "readRecovery": true,
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 401,
+          "body": {}
+        },
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 401,
+          "body": {},
+          "headers": {
+            "retry-after": "99"
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist"
+        ],
+        "methods": [
+          "GET",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error"
+        ],
+        "bodies": [
+          null,
+          null
+        ],
+        "contentTypes": [
+          null,
+          null
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "recovered"
+        ],
+        "sessions": 1,
+        "recoveries": 1,
+        "mutationMarks": 0,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 401,
+            "durationMs": 1
+          },
+          {
+            "method": "GET",
+            "status": 401,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "musubi-restart-known-address",
+      "title": "Restart recovery GETs only the retained response address and confirms the entire target",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "uncertain",
+      "priorResponseAddress": {
+        "taskId": "native/task",
+        "validator": "\"written\""
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask",
+          "status": 200,
+          "body": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title",
+            "id": "native/task",
+            "etag": "\"readback\""
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "uncertain",
+        "acceptedStatus": null,
+        "responseAddress": {
+          "taskId": "native/task",
+          "validator": "\"written\""
+        },
+        "writerResult": null,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "status": "acked",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodies": [
+          null
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": null,
+        "evidence": [
+          {
+            "providerKind": "uncertain",
+            "acceptedStatus": null,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": null,
+            "remoteKind": "confirmed",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackTaskIds": [
+          "native/task"
+        ],
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackValidators": [
+          "\"readback\""
+        ],
+        "finishStatuses": [],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "reference-restart-known-address",
+      "title": "Restart recovery GETs only the retained response address and confirms the entire target",
+      "policy": "reference",
+      "recovery": true,
+      "priorProvider": "accepted",
+      "priorResponseAddress": {
+        "taskId": "native/task",
+        "validator": "\"written\""
+      },
+      "priorAcceptedStatus": 201,
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask",
+          "status": 200,
+          "body": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title",
+            "id": "native/task",
+            "etag": "\"readback\""
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": {
+          "taskId": "native/task",
+          "validator": "\"written\""
+        },
+        "writerResult": null,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "status": "acked",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodies": [
+          null
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": null,
+        "evidence": [
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": null,
+            "remoteKind": "confirmed",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackTaskIds": [
+          "native/task"
+        ],
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackValidators": [
+          "\"readback\""
+        ],
+        "finishStatuses": [],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "musubi-restart-no-address",
+      "title": "An archived attempt with no generated address issues zero HTTP requests",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "uncertain",
+      "exchanges": [],
+      "expected": {
+        "providerKind": "uncertain",
+        "acceptedStatus": null,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [],
+        "methods": [],
+        "redirects": [],
+        "bodies": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-create-unconfirmed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "reference-restart-no-address",
+      "title": "An archived attempt with no generated address issues zero HTTP requests",
+      "policy": "reference",
+      "recovery": true,
+      "priorProvider": "accepted",
+      "priorAcceptedStatus": 201,
+      "exchanges": [],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [],
+        "methods": [],
+        "redirects": [],
+        "bodies": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-create-unconfirmed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "possible-dispatch-without-required-recovery",
+      "title": "A possible-dispatch marker alone forbids another CREATE POST",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "possibleDispatch": true,
+      "exchanges": [],
+      "expected": {
+        "providerKind": "uncertain",
+        "acceptedStatus": null,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [],
+        "methods": [],
+        "redirects": [],
+        "bodies": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-create-unconfirmed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "restart-absence-404",
+      "title": "A captured CREATE address becoming absent does not authorize another POST",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "uncertain",
+      "priorResponseAddress": {
+        "taskId": "native/task",
+        "validator": "\"written\""
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask",
+          "status": 404,
+          "body": {}
+        }
+      ],
+      "expected": {
+        "providerKind": "uncertain",
+        "acceptedStatus": null,
+        "responseAddress": {
+          "taskId": "native/task",
+          "validator": "\"written\""
+        },
+        "writerResult": null,
+        "remoteKind": "conflict",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodies": [
+          null
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 404,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": null,
+        "evidence": [
+          {
+            "providerKind": "uncertain",
+            "acceptedStatus": null,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": null,
+            "remoteKind": "conflict",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-create-unconfirmed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "restart-absence-410",
+      "title": "A captured CREATE address becoming absent does not authorize another POST",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "uncertain",
+      "priorResponseAddress": {
+        "taskId": "native/task",
+        "validator": "\"written\""
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask",
+          "status": 410,
+          "body": {}
+        }
+      ],
+      "expected": {
+        "providerKind": "uncertain",
+        "acceptedStatus": null,
+        "responseAddress": {
+          "taskId": "native/task",
+          "validator": "\"written\""
+        },
+        "writerResult": null,
+        "remoteKind": "conflict",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodies": [
+          null
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 410,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": null,
+        "evidence": [
+          {
+            "providerKind": "uncertain",
+            "acceptedStatus": null,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": null,
+            "remoteKind": "conflict",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-create-unconfirmed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "restart-requires-full-target",
+      "title": "Recovery ignores a narrow saved mask and requires the full admitted target",
+      "policy": "musubi",
+      "recovery": true,
+      "priorProvider": "uncertain",
+      "priorResponseAddress": {
+        "taskId": "native/task",
+        "validator": "\"written\""
+      },
+      "saved": {
+        "baseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "patch": {
+          "title": "Admitted title"
+        }
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask",
+          "status": 200,
+          "body": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Concurrent",
+            "status": "needsAction",
+            "title": "Admitted title",
+            "id": "native/task",
+            "etag": "\"readback\""
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "uncertain",
+        "acceptedStatus": null,
+        "responseAddress": {
+          "taskId": "native/task",
+          "validator": "\"written\""
+        },
+        "writerResult": null,
+        "remoteKind": "conflict",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodies": [
+          null
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": null,
+        "evidence": [
+          {
+            "providerKind": "uncertain",
+            "acceptedStatus": null,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": null,
+            "remoteKind": "conflict",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-create-unconfirmed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "musubi-fresh-saved-mask",
+      "title": "Saved-mask API and full-target reference readback retain their separate comparison policies",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "saved": {
+        "baseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "patch": {
+          "title": "Admitted title"
+        }
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask",
+          "status": 200,
+          "body": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Concurrent",
+            "status": "needsAction",
+            "title": "Admitted title",
+            "id": "native/task",
+            "etag": "\"readback\""
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": {
+          "taskId": "native/task",
+          "validator": "\"written\""
+        },
+        "writerResult": {
+          "taskId": "native/task",
+          "etag": "\"written\""
+        },
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "status": "acked",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask"
+        ],
+        "methods": [
+          "GET",
+          "POST",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "contentTypes": [
+          null,
+          "application/json",
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          },
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "evidence": [
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          },
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "confirmed",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackTaskIds": [
+          "native/task"
+        ],
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Concurrent",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackValidators": [
+          "\"readback\""
+        ],
+        "finishStatuses": [],
+        "validator": "\"written\"",
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "reference-fresh-saved-mask",
+      "title": "Saved-mask API and full-target reference readback retain their separate comparison policies",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "saved": {
+        "baseline": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Before"
+        },
+        "patch": {
+          "title": "Admitted title"
+        }
+      },
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask",
+          "status": 200,
+          "body": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Concurrent",
+            "status": "needsAction",
+            "title": "Admitted title",
+            "id": "native/task",
+            "etag": "\"readback\""
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": {
+          "taskId": "native/task",
+          "validator": "\"written\""
+        },
+        "writerResult": {
+          "taskId": "native/task",
+          "etag": "\"written\""
+        },
+        "remoteKind": "conflict",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask"
+        ],
+        "methods": [
+          "GET",
+          "POST",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          "error",
+          "error"
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "contentTypes": [
+          null,
+          "application/json",
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          },
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "title": "Admitted title"
+        },
+        "evidence": [
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": null,
+            "writerResult": null,
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          },
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": null,
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          },
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          },
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "conflict",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": "\"written\"",
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "musubi-any-ok-read-floor",
+      "title": "API preserves its any-ok task-list and task GET response floor",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 206,
+          "body": {
+            "id": "native/list"
+          },
+          "headers": {
+            "content-range": "bytes 0-1/2"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask",
+          "status": 206,
+          "body": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title",
+            "id": "native/task",
+            "etag": "\"readback\""
+          },
+          "headers": {
+            "content-range": "bytes 0-1/2"
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": {
+          "taskId": "native/task",
+          "validator": "\"written\""
+        },
+        "writerResult": {
+          "taskId": "native/task",
+          "etag": "\"written\""
+        },
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "status": "acked",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask"
+        ],
+        "methods": [
+          "GET",
+          "POST",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "contentTypes": [
+          null,
+          "application/json",
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 206,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          },
+          {
+            "method": "GET",
+            "status": 206,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          },
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "confirmed",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackTaskIds": [
+          "native/task"
+        ],
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackValidators": [
+          "\"readback\""
+        ],
+        "finishStatuses": [],
+        "validator": "\"written\"",
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "reference-rejects-partial-list",
+      "title": "Strict list preflight refuses a partial success before POST",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 206,
+          "body": {
+            "id": "native/list"
+          },
+          "headers": {
+            "content-range": "bytes 0-1/2"
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "redirects": [
+          "error"
+        ],
+        "bodies": [
+          null
+        ],
+        "contentTypes": [
+          null
+        ],
+        "ifMatch": [
+          null
+        ],
+        "tokens": [
+          "initial"
+        ],
+        "sessions": 1,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 206,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "not-written",
+        "providerStatus": 206,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "reference-refuses-post-redirect",
+      "title": "Strict POST preserves raw acceptance while refusing redirected candidate identity",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\""
+          },
+          "responseUrl": "other",
+          "redirected": true
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks"
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "redirects": [
+          "error",
+          "error"
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        ],
+        "contentTypes": [
+          null,
+          "application/json"
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial"
+        ],
+        "sessions": 2,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": null,
+            "writerResult": null,
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-write-failed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": 201,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "musubi-default-post-redirect",
+      "title": "API retains the original default POST redirect behavior",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\""
+          },
+          "responseUrl": "other",
+          "redirected": true
+        },
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask",
+          "status": 200,
+          "body": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title",
+            "id": "native/task",
+            "etag": "\"readback\""
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": {
+          "taskId": "native/task",
+          "validator": "\"written\""
+        },
+        "writerResult": {
+          "taskId": "native/task",
+          "etag": "\"written\""
+        },
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "status": "acked",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask"
+        ],
+        "methods": [
+          "GET",
+          "POST",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "contentTypes": [
+          null,
+          "application/json",
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          },
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          },
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "confirmed",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackTaskIds": [
+          "native/task"
+        ],
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackValidators": [
+          "\"readback\""
+        ],
+        "finishStatuses": [],
+        "validator": "\"written\"",
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "prefixed-musubi-collection",
+      "title": "Musubi unwraps exactly one task-list locator prefix",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "collectionIdentity": "musubi-google-task-list",
+      "collectionId": "musubi-google-task-list:native/list",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask",
+          "status": 200,
+          "body": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title",
+            "id": "native/task",
+            "etag": "\"readback\""
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": {
+          "taskId": "native/task",
+          "validator": "\"written\""
+        },
+        "writerResult": {
+          "taskId": "native/task",
+          "etag": "\"written\""
+        },
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "status": "acked",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask"
+        ],
+        "methods": [
+          "GET",
+          "POST",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "contentTypes": [
+          null,
+          "application/json",
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          },
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          },
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "confirmed",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackTaskIds": [
+          "native/task"
+        ],
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackValidators": [
+          "\"readback\""
+        ],
+        "finishStatuses": [],
+        "validator": "\"written\"",
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": null,
+        "errorOutcome": null,
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "prefix-confusion-blocked",
+      "title": "A native prefixed list ID cannot be silently unwrapped as a different collection",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "collectionIdentity": "native",
+      "collectionId": "musubi-google-task-list:native/list",
+      "exchanges": [],
+      "expected": {
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "status": "hold",
+        "urls": [],
+        "methods": [],
+        "redirects": [],
+        "bodies": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "runtime-task-plan-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "selected-extra-body-field",
+      "title": "A selected malformed CREATE envelope cannot fall back to another writer",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "tamper": "extra-body-field",
+      "exchanges": [],
+      "expected": {
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "status": "hold",
+        "urls": [],
+        "methods": [],
+        "redirects": [],
+        "bodies": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "runtime-task-plan-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "selected-projection-disagrees",
+      "title": "A selected malformed CREATE envelope cannot fall back to another writer",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "tamper": "projection-disagrees",
+      "exchanges": [],
+      "expected": {
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "status": "hold",
+        "urls": [],
+        "methods": [],
+        "redirects": [],
+        "bodies": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "runtime-task-plan-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "selected-unknown-serializer",
+      "title": "A selected malformed CREATE envelope cannot fall back to another writer",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "tamper": "unknown-serializer",
+      "exchanges": [],
+      "expected": {
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "status": "hold",
+        "urls": [],
+        "methods": [],
+        "redirects": [],
+        "bodies": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "delivery-serializer-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "selected-resource-id",
+      "title": "A selected malformed CREATE envelope cannot fall back to another writer",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "tamper": "resource-id",
+      "exchanges": [],
+      "expected": {
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "status": "hold",
+        "urls": [],
+        "methods": [],
+        "redirects": [],
+        "bodies": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": null,
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "operation-envelope-codec-unavailable",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "ack-authority-rejected",
+      "title": "Exact readback cannot bypass the host final authority decision",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "ackAllowed": false,
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask",
+          "status": 200,
+          "body": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title",
+            "id": "native/task",
+            "etag": "\"readback\""
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": {
+          "taskId": "native/task",
+          "validator": "\"written\""
+        },
+        "writerResult": {
+          "taskId": "native/task",
+          "etag": "\"written\""
+        },
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask"
+        ],
+        "methods": [
+          "GET",
+          "POST",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "contentTypes": [
+          null,
+          "application/json",
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          },
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          },
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "confirmed",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "ackTaskIds": [
+          "native/task"
+        ],
+        "ackProjection": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "ackValidators": [
+          "\"readback\""
+        ],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": "\"written\"",
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "runtime-ack-authority-changed",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "late-cancel-after-valid-post-json",
+      "title": "Cancellation as POST JSON resolves retains only candidate evidence before writer return",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\""
+          },
+          "abortAfterJson": true
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": {
+          "taskId": "native/task",
+          "validator": "\"written\""
+        },
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks"
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "redirects": [
+          "error",
+          null
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        ],
+        "contentTypes": [
+          null,
+          "application/json"
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial"
+        ],
+        "sessions": 2,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "runtime-attempt-aborted",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "late-cancel-after-readback",
+      "title": "Cancellation after confirmed readback cannot perform a late host ACK",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "cancelAt": "afterReadback",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\""
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask",
+          "status": 200,
+          "body": {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title",
+            "id": "native/task",
+            "etag": "\"readback\""
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": {
+          "taskId": "native/task",
+          "validator": "\"written\""
+        },
+        "writerResult": {
+          "taskId": "native/task",
+          "etag": "\"written\""
+        },
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks/native%2Ftask"
+        ],
+        "methods": [
+          "GET",
+          "POST",
+          "GET"
+        ],
+        "redirects": [
+          "error",
+          null,
+          "error"
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          },
+          null
+        ],
+        "contentTypes": [
+          null,
+          "application/json",
+          null
+        ],
+        "ifMatch": [
+          null,
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial",
+          "initial"
+        ],
+        "sessions": 3,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          },
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          },
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": {
+              "taskId": "native/task",
+              "validator": "\"written\""
+            },
+            "writerResult": {
+              "taskId": "native/task",
+              "etag": "\"written\""
+            },
+            "remoteKind": "confirmed",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": "\"written\"",
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "runtime-attempt-aborted",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "reference-cancel-after-acceptance",
+      "title": "Reference retains durable raw acceptance while cancellation prevents later parsing",
+      "policy": "reference",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "cancelAt": "afterAcceptance",
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "status": 200,
+          "body": {
+            "id": "native/list"
+          }
+        },
+        {
+          "method": "POST",
+          "url": "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks",
+          "status": 201,
+          "body": {
+            "id": "native/task",
+            "etag": "\"written\""
+          }
+        }
+      ],
+      "expected": {
+        "providerKind": "accepted",
+        "acceptedStatus": 201,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "status": "hold",
+        "urls": [
+          "https://tasks.googleapis.com/tasks/v1/users/@me/lists/native%2Flist",
+          "https://tasks.googleapis.com/tasks/v1/lists/native%2Flist/tasks"
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "redirects": [
+          "error",
+          "error"
+        ],
+        "bodies": [
+          null,
+          {
+            "due": "2026-10-20T00:00:00.000Z",
+            "notes": "Notes",
+            "status": "needsAction",
+            "title": "Admitted title"
+          }
+        ],
+        "contentTypes": [
+          null,
+          "application/json"
+        ],
+        "ifMatch": [
+          null,
+          null
+        ],
+        "tokens": [
+          "initial",
+          "initial"
+        ],
+        "sessions": 2,
+        "recoveries": 0,
+        "mutationMarks": 1,
+        "metrics": [
+          {
+            "method": "GET",
+            "status": 200,
+            "durationMs": 1
+          },
+          {
+            "method": "POST",
+            "status": 201,
+            "durationMs": 1
+          }
+        ],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [
+          {
+            "providerKind": "accepted",
+            "acceptedStatus": 201,
+            "responseAddress": null,
+            "writerResult": null,
+            "remoteKind": "unobserved",
+            "possibleDispatch": true
+          }
+        ],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "runtime-attempt-aborted",
+        "errorOutcome": "unconfirmed",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    },
+    {
+      "id": "dispatch-authority-removed",
+      "title": "Removed dispatch authority prevents every CREATE HTTP request",
+      "policy": "musubi",
+      "recovery": false,
+      "priorProvider": "not-dispatched",
+      "dispatchAllowed": false,
+      "exchanges": [],
+      "expected": {
+        "providerKind": "not-dispatched",
+        "acceptedStatus": null,
+        "responseAddress": null,
+        "writerResult": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "status": "hold",
+        "urls": [],
+        "methods": [],
+        "redirects": [],
+        "bodies": [],
+        "contentTypes": [],
+        "ifMatch": [],
+        "tokens": [],
+        "sessions": 0,
+        "recoveries": 0,
+        "mutationMarks": 0,
+        "metrics": [],
+        "preparedPatch": {
+          "due": "2026-10-20T00:00:00.000Z",
+          "notes": "Notes",
+          "status": "needsAction",
+          "title": "Admitted title"
+        },
+        "evidence": [],
+        "ackKinds": [],
+        "ackTaskIds": [],
+        "ackProjection": null,
+        "ackValidators": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "validator": null,
+        "providerErrorCode": null,
+        "providerRetry": null,
+        "providerRetryAfterMs": null,
+        "errorCode": "task-not-needed",
+        "errorOutcome": "not-written",
+        "providerStatus": null,
+        "retryAfterMs": null
+      }
+    }
+  ]
+}

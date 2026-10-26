@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-26T09:59:21.805481+00:00",
+  "status": "passed",
+  "cases": 8,
+  "durationSeconds": 14.3,
+  "attempts": 1,
+  "sourceFreezeTree": "4daeae14748b2f87df460a01aa87513b431aed8f",
+  "scope": "Running web app/router/components with task-inspector JSON HTTP/auth fixtures. Not real authentication, DB atomicity or live provider proof.",
+  "browserTool": "Existing Playwright suite; Browser plugin not available.",
+  "viewports": [
+    {
+      "width": 1280,
+      "height": 900,
+      "theme": "light"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "theme": "dark"
+    }
+  ],
+  "cleanupBeforeBrowser": "/tmp/musu40-task-create-cleanup.json",
+  "cleanup": {
+    "checkedAt": "2026-10-26T09:56:44.743365+00:00",
+    "ownedPostgresContainerAbsent": true,
+    "ownedPostgresPort55443Absent": true,
+    "remainingOwnedDatabaseNamesBeforeRemoval": [],
+    "userQaContainerRetained": true,
+    "allAuthorsReleasedDatabaseAndBehaviorUse": true,
+    "cleanupCompletedBeforeFinalBrowser": true,
+    "postStopAbsencePolls": 2
+  },
+  "log": "/tmp/musu40-task-create-final-browser.log",
+  "screenshots": {
+    "desktop": {
+      "path": "/tmp/musu40-task-create-final-browser/evidence-desktop.png",
+      "sha256": "5416642ae34c1cf096cceb5c913433ef3529ab43928521721da46bafebb180d4",
+      "bytes": 70744
+    },
+    "narrow": {
+      "path": "/tmp/musu40-task-create-final-browser/evidence-narrow.png",
+      "sha256": "bc42b9e4aa1ea5891a3fd76cbc9806ac7ae28b0ebc9db7d7bd303fa4579fe757",
+      "bytes": 22504
+    }
+  },
+  "screenshotsVisuallyInspected": true,
+  "artifacts": [
+    {
+      "path": "/tmp/musu40-task-create-final-browser.log",
+      "sha256": "3928f3d597f27422fed957f77466de9790bead7d869f3ac3bf7083850e615422",
+      "bytes": 5617
+    },
+    {
+      "path": "/tmp/musu40-task-create-cleanup.json",
+      "sha256": "cc113b3f1b4a3e3ff9ddec9f05886bc28e0632fe62610eb06c7c093054e5c0d4",
+      "bytes": 346
+    },
+    {
+      "path": "/tmp/musu40-task-create-final-browser/evidence-desktop.png",
+      "sha256": "5416642ae34c1cf096cceb5c913433ef3529ab43928521721da46bafebb180d4",
+      "bytes": 70744
+    },
+    {
+      "path": "/tmp/musu40-task-create-final-browser/evidence-narrow.png",
+      "sha256": "bc42b9e4aa1ea5891a3fd76cbc9806ac7ae28b0ebc9db7d7bd303fa4579fe757",
+      "bytes": 22504
+    }
+  ]
+}

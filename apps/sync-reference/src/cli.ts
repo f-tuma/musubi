@@ -5,6 +5,8 @@ import { ReferenceStore } from "./store.js";
 import { ReferenceTaskStore } from "./task-store.js";
 import { deliverReferenceTaskUpdate } from "./task-runner.js";
 import { deliverReferenceTaskDelete } from "./task-delete-runner.js";
+import { deliverReferenceTaskCreate } from "./task-create-runner.js";
+import type { ReferenceTaskCreateAdmission, ReferenceTaskCreateSeed } from "./task-create-model.js";
 import type { ReferenceTaskDeleteAdmission } from "./task-delete-model.js";
 import type { ReferenceTaskSeed, ReferenceTaskAdmission } from "./task-model.js";
 import { ReferenceHoldError, type ReferenceAdmission, type ReferenceDeleteAdmission, type ReferenceSeed, type ReferenceCreateAdmission, type ReferenceCreateSeed, type ReferenceGraphDeleteSeed, type ReferenceGraphDeleteAdmission, type ReferenceCaldavDeleteSeed, type ReferenceCaldavDeleteAdmission, type ReferenceGraphCreateSeed, type ReferenceGraphCreateAdmission, type ReferenceCaldavCreateSeed, type ReferenceCaldavCreateAdmission } from "./model.js";
@@ -34,7 +36,7 @@ function ownObject(value: unknown): Record<string, unknown> {
 }
 async function main() {
   const command = process.argv[2];
-  if (!["migrate", "seed", "seed-create", "seed-graph-delete", "seed-graph-create", "seed-caldav-delete", "seed-caldav-create", "admit", "admit-delete", "admit-create", "admit-graph-delete", "admit-graph-create", "admit-caldav-delete", "admit-caldav-create", "deliver", "show", "seed-task", "admit-task-update", "admit-task-delete", "deliver-task", "show-task"].includes(command)) throw new Error("Invalid reference command.");
+  if (!["migrate", "seed", "seed-create", "seed-graph-delete", "seed-graph-create", "seed-caldav-delete", "seed-caldav-create", "admit", "admit-delete", "admit-create", "admit-graph-delete", "admit-graph-create", "admit-caldav-delete", "admit-caldav-create", "deliver", "show", "seed-task", "seed-task-create", "admit-task-create", "admit-task-update", "admit-task-delete", "deliver-task", "show-task"].includes(command)) throw new Error("Invalid reference command.");
   const databaseUrl = process.env.REFERENCE_DATABASE_URL;
   const credentialKey = process.env.REFERENCE_CREDENTIAL_KEY;
   const privateNetwork = process.env.REFERENCE_ALLOW_PRIVATE_NETWORK;
@@ -52,16 +54,18 @@ async function main() {
     else {
       const value = ownObject(await input(controller.signal));
       controller.signal.throwIfAborted();
-      if (["seed-task", "admit-task-update", "admit-task-delete", "deliver-task", "show-task"].includes(command)) {
+      if (["seed-task", "seed-task-create", "admit-task-create", "admit-task-update", "admit-task-delete", "deliver-task", "show-task"].includes(command)) {
         const taskStore = new ReferenceTaskStore(pool, credentialKey);
         if (command === "seed-task") { await taskStore.seedBinding(value as unknown as ReferenceTaskSeed); result = { status: "seeded", bindingId: value.bindingId, endpointProfile: "google-task-update-v1" }; }
+        else if (command === "seed-task-create") { await taskStore.seedCreateBinding(value as unknown as ReferenceTaskCreateSeed); result = { status: "reserved", bindingId: value.bindingId, endpointProfile: "google-task-create-v1" }; }
+        else if (command === "admit-task-create") result = await taskStore.admitCreate(value as unknown as ReferenceTaskCreateAdmission);
         else if (command === "admit-task-update") result = await taskStore.admitUpdate(value as unknown as ReferenceTaskAdmission);
         else if (command === "admit-task-delete") result = await taskStore.admitDelete(value as unknown as ReferenceTaskDeleteAdmission);
         else {
           if (typeof value.operationId !== "string" || !value.operationId || value.operationId.length > 2048) throw new Error("Invalid reference task operation identity");
           const action = await taskStore.operationAction(value.operationId);
-          const deliver = action === "delete" ? deliverReferenceTaskDelete : deliverReferenceTaskUpdate;
-          result = command === "show-task" ? action === "delete" ? await taskStore.inspectDeleteOperation(value.operationId) : await taskStore.inspectOperation(value.operationId) : await deliver(taskStore, value.operationId, {
+          const deliver = action === "create" ? deliverReferenceTaskCreate : action === "delete" ? deliverReferenceTaskDelete : deliverReferenceTaskUpdate;
+          result = command === "show-task" ? action === "create" ? await taskStore.inspectCreateOperation(value.operationId) : action === "delete" ? await taskStore.inspectDeleteOperation(value.operationId) : await taskStore.inspectOperation(value.operationId) : await deliver(taskStore, value.operationId, {
             http: { fetch: (url, init) => globalThis.fetch(url, init) },
             clock: { nowEpochMs: () => Date.now(), nowMonotonicMs: () => performance.now() },
             telemetry: { record: metric => process.stderr.write(`${JSON.stringify({ type: "provider-http", ...metric })}\n`) },

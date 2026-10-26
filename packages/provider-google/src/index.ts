@@ -1,3 +1,5 @@
+export { createGoogleTaskCreateProvider } from "./task-create";
+export * from "./task-create-types";
 export { createGoogleTaskDeleteProvider } from "./task-delete";
 export * from "./task-delete-types";
 export { createGoogleTaskUpdateProvider } from "./task-update";

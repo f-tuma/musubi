@@ -1,5 +1,6 @@
 import { GoogleTaskProviderError, type GoogleTaskProviderPorts } from "@musubi/provider-google";
 import type { GoogleTaskDeleteProviderPorts } from "@musubi/provider-google";
+import type { GoogleTaskCreateProviderPorts } from "@musubi/provider-google";
 import { getOAuthCredentials, hasOAuthTaskScope } from "@musubi/db";
 import type { AcceptedEventUpdateContext } from "../adapter";
 import { ProviderAuthError } from "../errors";
@@ -40,6 +41,14 @@ export function googleTaskDeleteProviderPorts(userID: string, accountID: string,
   capture: Pick<AcceptedEventUpdateContext, "connectionId" | "connectionGeneration">,
   accessToken: (signal?: AbortSignal, rejectedAccessToken?: string) => Promise<string>,
 ): Omit<GoogleTaskDeleteProviderPorts, "beforeMutation" | "onDeleteResponse"> {
+  const { telemetry: _updateTelemetry, ...ports } = googleTaskProviderPorts(userID, accountID, capture, accessToken);
+  return { ...ports, telemetry: { record: metric => recordProviderHttpRequest(metric.method, metric.status, metric.durationMs) } };
+}
+
+export function googleTaskCreateProviderPorts(userID: string, accountID: string,
+  capture: Pick<AcceptedEventUpdateContext, "connectionId" | "connectionGeneration">,
+  accessToken: (signal?: AbortSignal, rejectedAccessToken?: string) => Promise<string>,
+): Omit<GoogleTaskCreateProviderPorts, "beforeMutation" | "onAcceptedResponse" | "onResponseAddress"> {
   const { telemetry: _updateTelemetry, ...ports } = googleTaskProviderPorts(userID, accountID, capture, accessToken);
   return { ...ports, telemetry: { record: metric => recordProviderHttpRequest(metric.method, metric.status, metric.durationMs) } };
 }
