@@ -133,6 +133,7 @@ export async function runClaimedEventCompatibility(claim: { readonly reconciling
           if (family === "microsoftRsvp") { if (!await mark(family)) failure("provider-conflict"); }
           else {
             await source();
+            if (family === "googleRsvp" && !await mark(family)) failure("provider-conflict", "not-written");
             if (family === "caldavRsvp") {
               if (p.caldavDispatchPossible) failure("provider-conflict");
               let granted: boolean;

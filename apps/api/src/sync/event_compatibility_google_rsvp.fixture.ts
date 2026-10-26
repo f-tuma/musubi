@@ -9,9 +9,9 @@ import { googleEventState } from "./adapters/provider_event_state";
 import { queueGoogleRsvp } from "./provider_rsvp";
 import { deliverEventOutbox } from "./event_delivery";
 
-/** Characterization only: this deliberately preserves the existing Google
- * RSVP retry policy. An unapplied uncertain response may send again at the
- * original complete baseline; this is an OPEN no-resend acceptance gap. */
+/** Dedicated policy delta after event extraction: one possible dispatch is
+ * permanent. Recovery observes only, including an unapplied original baseline.
+ * Historical old/new parity belongs to the frozen pre-policy event checkpoint. */
 async function main() {
   assert.equal(process.env.ENVIRONMENT, "test");
   const flags = { rsvp: config.api.providerRsvpEditsEnabled, time: config.api.eventTimeEditsEnabled, reminders: config.api.providerReminderEditsEnabled };
@@ -67,18 +67,19 @@ async function main() {
       assert.equal((await db.select().from(externalEvents).where(eq(externalEvents.id, mapping.id)))[0]!.etag, '"before"');
       await db.update(eventOutbox).set({ nextAttemptAt: new Date(0) }).where(eq(eventOutbox.id, queued.operationID));
       const beforeRecovery = reads;
-      const recovered = await deliverEventOutbox(queued.operationID, () => adapter); assert.equal(recovered?.status, "completed");
-      assert.equal(patches, mode === "already-desired" ? 1 : 2, "Preserve the old Google read-first/conditional retry policy; do not claim all uncertain RSVP is observe-only");
+      const recovered = await deliverEventOutbox(queued.operationID, () => adapter); assert.equal(recovered?.status, mode === "already-desired" ? "completed" : "unconfirmed");
+      assert.equal(patches, 1, "A possible dispatch permanently consumes this operation's only RSVP mutation permission");
+      assert(first?.payload.rsvp?.googleDelivery?.startedAt); assert.equal(recovered?.payload.rsvp?.googleDelivery?.startedAt, first.payload.rsvp.googleDelivery.startedAt);
       assert(reads > beforeRecovery, "Every recovery first reads the scoped native copy");
       assert.deepEqual(recovered?.payload.rsvp?.baseline, admitted.payload.rsvp.baseline); assert.deepEqual(recovered?.payload.operationEnvelope, admitted.payload.operationEnvelope);
       assert.deepEqual(await getEventSnapshot(original.id), original, "Provider RSVP must not overwrite richer canonical content or exact milliseconds");
       assert.equal(original.start.toISOString(), "2026-10-26T10:11:12.123Z"); assert.equal(original.end.toISOString(), "2026-10-26T11:12:13.456Z");
       const mapped = (await db.select().from(externalEvents).where(eq(externalEvents.id, mapping.id)))[0]!;
-      assert.equal(mapped.etag, '"after"'); assert.equal(mapped.providerState?.ownResponse, "accepted");
+      assert.equal(mapped.etag, mode === "already-desired" ? '"after"' : '"before"'); assert.equal(mapped.providerState?.ownResponse, mode === "already-desired" ? "accepted" : "needsAction");
       const { etag: _beforeTag, attendees: beforeAttendees, ...beforeContent } = baseline, { etag: _afterTag, attendees: afterAttendees, ...afterContent } = remote;
       assert.deepEqual(afterContent, beforeContent); assert.deepEqual(afterAttendees[1], beforeAttendees[1]); assert.equal(afterAttendees[0]!.comment, beforeAttendees[0]!.comment);
-      assert.equal(notification, "unknown");
-      console.log(`Google RSVP recovery characterization: ${mode}: original baseline/version, ${patches} conditional PATCH, unchanged canonical precision, notification unknown: PASS`);
+      assert.equal(notification, mode === "already-desired" ? "unknown" : undefined, "An unobserved native result must not fabricate a writer receipt");
+      console.log(`Google RSVP no-resend policy: ${mode}: original baseline/version, ${patches} conditional PATCH, GET-only recovery, unchanged canonical precision, notification not proven: PASS`);
     } finally { await db.delete(user).where(eq(user.id, owner)); globalThis.fetch = originalFetch; server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); }
   }
   config.api.providerRsvpEditsEnabled = flags.rsvp; config.api.eventTimeEditsEnabled = flags.time; config.api.providerReminderEditsEnabled = flags.reminders;

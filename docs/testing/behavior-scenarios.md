@@ -271,3 +271,14 @@ accessors, inherited prototypes, callbacks and cycles before credentials or HTTP
 and retain original baseline/slot data when a credential callback mutates the
 caller object. These are native boundary probes; host dispatch permission still
 comes from the permanent database marker described above.
+
+
+The `event-delivery` Google host/native cases run the actual API host, shared
+claimed runtime and `googleRsvpMethods` together. Data-only receipts replace its
+existing DB marker/source/ACK and authorized-token ports and the final HTTP
+leaf. These cases cover fresh, started, markerless queued/retried, malformed
+private policy, source refusal, conclusive marker false, ambiguous marker reply
+and closed credential/marker/PATCH/readback continuations. The independent real
+PG/native/process gate remains the durability proof. The historical Google
+reconciling-baseline case deliberately changes from conditional resend to
+GET-only HOLD in this separate policy gate.

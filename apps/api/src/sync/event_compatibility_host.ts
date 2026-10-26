@@ -13,13 +13,14 @@ import { googleEventState } from "./adapters/provider_event_state";
 import { isDeepStrictEqual } from "node:util";
 import { matchesGoogleOccurrence } from "./adapters/google_occurrence";
 import { config } from "@musubi/config";
-import { BadRequestError, ProviderRsvpEditSchema, providerRsvpDesiredState, ProviderReminderEditSchema, type GoogleReminderWrite, type ProviderEventState, hasKnownEventTime, SyncOperationCaptureSchema, EventSchema, EventWriteError, type Event } from "@musubi/types";
+import { googleRsvpDeliveryPolicy, BadRequestError, ProviderRsvpEditSchema, providerRsvpDesiredState, ProviderReminderEditSchema, type GoogleReminderWrite, type ProviderEventState, hasKnownEventTime, SyncOperationCaptureSchema, EventSchema, EventWriteError, type Event } from "@musubi/types";
 import {
   confirmCaldavSplitOutbox,
   confirmCaldavSeriesOutbox,
   confirmCaldavSeriesDeletionOutbox,
   matchesRsvpEventProjection,
   hasProviderRsvpSource,
+  markGoogleRsvpDispatched,
   hasProviderReminderSource,
   completeProviderRsvpOutbox,
   matchesReminderEventProjection,
@@ -109,6 +110,7 @@ export function eventCompatibilityPorts(original: EventOutboxRow & { reconciling
   let expected: Event, reminder: ReturnType<typeof ProviderReminderEditSchema.parse> | undefined;
   let occurrence: NonNullable<EventOutboxRow["payload"]["googleOccurrence"]> | undefined;
   let instanceEvidence: ReturnType<typeof googleReminderInstanceEvidence> | undefined;
+  let googlePolicy: ReturnType<typeof googleRsvpDeliveryPolicy> | undefined, googleDispatchPossible = false;
   let googleEvidence: ReturnType<typeof googleRsvpEvidence> | undefined;
   let microsoftEvidence: import("./adapters/microsoft_rsvp").MicrosoftRsvpEvidence | undefined;
   let davEvidence: import("./adapters/caldav_rsvp").CaldavRsvpEvidence | undefined;
@@ -161,6 +163,12 @@ export function eventCompatibilityPorts(original: EventOutboxRow & { reconciling
         if (!flags.providerRsvpEditsEnabled || row.action !== "update") unsupported();
         family = row.payload.rsvp.request.provider === "microsoft" ? "microsoftRsvp" : row.payload.rsvp.request.provider === "caldav" ? "caldavRsvp" : "googleRsvp";
         if (family === "microsoftRsvp" ? row.provider !== "microsoft" || !adapter?.writeMicrosoftRsvp : family === "caldavRsvp" ? row.provider !== "caldav" || !adapter?.writeCaldavRsvp : row.provider !== "google" || !adapter?.writeRsvp) unsupported();
+        if (family === "googleRsvp") {
+          // Private policy is validated inside the active attempt, before any
+          // credential/native port. Markerless history remains read-only.
+          try { googlePolicy = googleRsvpDeliveryPolicy(row.payload.rsvp); } catch { unsupported(); }
+          googleDispatchPossible = googlePolicy!.observeOnly;
+        }
       } else if (row.payload.reminderEdit) {
         if (!flags.providerReminderEditsEnabled || event.timeModel?.kind === "floating" || event.recurrence || event.seriesID || event.originalStart || event.isCanceled) unsupported();
         reminder = ProviderReminderEditSchema.parse(row.payload.reminderEdit);
@@ -247,6 +255,7 @@ export function eventCompatibilityPorts(original: EventOutboxRow & { reconciling
     },
     async checkDestination(uncertain, signal) {
       signal.throwIfAborted();
+      uncertain ||= googleDispatchPossible;
       if (pinned && !await assertPinnedOutboxSource(row, row.action === "delete")) { await finishEventOutbox(row.id, token, "blocked", "delivery-source-changed", { uncertain }); return false; }
       const link = await getExternalLinkForCalendar(row.calendarID);
       if (!link || link.id !== row.externalCalendarLinkID || link.userID !== row.userID || link.accountID !== row.accountID || link.provider !== row.provider || link.externalCalendarID !== row.externalCalendarID || link.disabled || !link.supportsEvents) {
@@ -259,6 +268,17 @@ export function eventCompatibilityPorts(original: EventOutboxRow & { reconciling
       if (kind === "graphOccurrenceContent") { await markGraphOccurrenceContent(row, accepted); return true; }
       if (kind === "graphMeetingCancellation") { await markGraphMeetingCancellation(row, accepted); return true; }
       if (kind === "organizer") { await markProviderOrganizer(row, accepted); return true; }
+      if (kind === "googleRsvp") {
+        if (!googlePolicy || googlePolicy.observeOnly) throw new ProviderEventWriteError("provider-write-failed", "unconfirmed");
+        const prior = googleDispatchPossible;
+        // A timeout or lost COMMIT acknowledgement remains possible dispatch.
+        // Only a conclusive active false result restores the prior no-send fact.
+        googleDispatchPossible = true;
+        const granted = await markGoogleRsvpDispatched(row, signal);
+        signal.throwIfAborted();
+        if (!granted) googleDispatchPossible = prior;
+        return granted;
+      }
       const { markGraphRsvpDispatched, markGraphRsvpAccepted, markCaldavRsvpDispatched } = await import("@musubi/db");
       return kind === "microsoftRsvp" ? accepted ? markGraphRsvpAccepted(row.id, token) : markGraphRsvpDispatched(row) : markCaldavRsvpDispatched(row);
     },
@@ -333,7 +353,7 @@ export function eventCompatibilityPorts(original: EventOutboxRow & { reconciling
     const providerError =
       error instanceof ProviderEventWriteError ? error : undefined;
     const uncertain =
-      facts.caldavDispatchPossible || row.reconciling ||
+      googleDispatchPossible || facts.caldavDispatchPossible || row.reconciling ||
       (facts.mutationStarted && providerError?.outcome !== "not-written");
     const conflict = providerError?.code === "provider-conflict";
     const retryableStatus =
@@ -418,7 +438,7 @@ export function eventCompatibilityPorts(original: EventOutboxRow & { reconciling
         return observation({ ref: { externalEventId: value.externalId, etag: value.etag, icalUid: value.icalUid }, state: value.providerState });
       }
       if (input.family === "caldavRsvp") { const evidence = davEvidence!; davObserved = own(await adapter!.writeCaldavRsvp!(row.userID, row.accountID, row.externalCalendarID, own(evidence, false), signal, input.mark, row.payload.rsvp!.caldavDelivery === undefined || row.payload.rsvp!.caldavDelivery.startedAt !== undefined)); return observation({ ref: { externalEventId: evidence.id, etag: davObserved.etag, icalUid: evidence.uid }, state: row.payload.rsvp!.desiredState }); }
-      if (input.family === "googleRsvp") { const request = ProviderRsvpEditSchema.parse(row.payload.rsvp!.request); if (request.provider !== "google") conflict(); const value = own(await adapter!.writeRsvp!(row.userID, row.accountID, row.externalCalendarID, own(googleEvidence!, false), { sendUpdates: request.sendUpdates }, signal, input.mark)); return observation({ ref: { externalEventId: row.externalEventID!, etag: value.etag }, state: row.payload.rsvp!.desiredState }); }
+      if (input.family === "googleRsvp") { const request = ProviderRsvpEditSchema.parse(row.payload.rsvp!.request); if (request.provider !== "google") conflict(); const value = own(await adapter!.writeRsvp!(row.userID, row.accountID, row.externalCalendarID, own(googleEvidence!, false), { sendUpdates: request.sendUpdates, observeOnly: googlePolicy!.observeOnly }, signal, input.mark)); return observation({ ref: { externalEventId: row.externalEventID!, etag: value.etag }, state: row.payload.rsvp!.desiredState }); }
       if (input.family === "reminderEdit") return observation(await adapter!.writeReminders!(row.userID, row.accountID, row.externalCalendarID, own(input.ref, false), own(reminder!.reminders, false), signal, input.mark));
       if (input.family !== "generic") throw new Error("Unknown native event family.");
       if (input.action === "create") return observation({ ref: await adapter!.pushCreate(row.userID, row.accountID, row.externalCalendarID, own(input.event, false), input.identity, nativePlan && own(nativePlan, false)) });

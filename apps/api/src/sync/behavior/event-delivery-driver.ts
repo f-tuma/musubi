@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
 import { EventSchema, SyncJsonValueSchema } from "@musubi/types";
+import { copyCompatibilityData } from "@musubi/sync-runtime";
 import type { EventOutboxRow } from "@musubi/db";
 import type { CalendarAdapter } from "../adapter";
 
@@ -13,22 +14,27 @@ export class EventDeliveryScenarioFailure extends Error {
 const text = z.string().max(512), data = z.record(z.string(), SyncJsonValueSchema);
 const nativeNames = ["assertEventWrite", "projectEvent", "pushCreate", "pushUpdate", "pushDelete", "readEvent", "findCreatedEvent", "updateGraphOccurrenceContent", "cancelGraphMeeting", "organizer", "microsoftOrganizer", "caldavOrganizer", "reminderInstance.write", "deleteGraphSeries", "createGraphFamily", "writeCaldavAlarm", "writeCaldavSplitSource", "createCaldavSeries", "deleteCaldavSeries", "writeCaldavSeries", "readOccurrence", "recoverOccurrence", "writeOccurrence", "writeMicrosoftRsvp", "writeCaldavRsvp", "writeRsvp", "readReminderState", "writeReminders"] as const;
 const error = z.object({ code: z.enum(["provider-conflict", "provider-version-unavailable", "event-diff-unavailable", "provider-write-failed", "caldav-rsvp-response-unconfirmed"]), outcome: z.enum(["not-written", "unconfirmed"]).optional(), status: z.number().int().min(100).max(599).optional() }).strict();
-const step = z.object({ port: text.min(1).refine(value => portNames.has(value)), result: SyncJsonValueSchema.optional(), error: error.optional(), callbacks: z.array(z.union([z.number().int().min(0).max(12), z.enum(["5.beforeWrite", "3.acceptedUpdate.beforeMutation"])] )).max(3).optional(), waitForAbort: z.boolean().optional(), mutateProjectionBeforeCapture: z.object({ title: text.optional(), start: text.optional() }).strict().optional(), mutateClaim: z.object({ reconciling: z.boolean().optional(), title: text.optional(), start: text.optional() }).strict().optional() }).strict();
+const httpRequest = z.object({ method: z.enum(["GET", "PATCH"]), url: text.min(1), headers: z.record(z.string(), z.string()), body: SyncJsonValueSchema.optional() }).strict();
+const step = z.object({ http: httpRequest.optional(), portFailure: z.literal("marker-ack-lost").optional(), port: text.min(1).refine(value => portNames.has(value)), result: SyncJsonValueSchema.optional(), error: error.optional(), callbacks: z.array(z.union([z.number().int().min(0).max(12), z.enum(["5.beforeWrite", "3.acceptedUpdate.beforeMutation"])] )).max(3).optional(), waitForAbort: z.boolean().optional(), mutateProjectionBeforeCapture: z.object({ title: text.optional(), start: text.optional() }).strict().optional(), mutateClaim: z.object({ reconciling: z.boolean().optional(), title: text.optional(), start: text.optional() }).strict().optional() }).strict();
 const summary = z.object({ boundary: z.literal("actual-event-delivery-with-fixture-db-and-native-ports"), events: z.array(text).max(160), returnedStatus: text,
   completions: z.array(data).max(3), finishes: z.array(data).max(3), native: z.array(data).max(20), savedProjection: data.optional() }).strict();
 const scenario = z.object({ id: z.string().regex(/^[a-z][a-z0-9-]{0,79}$/), title: z.string().min(1).max(160),
   row: z.object({ provider: z.enum(["google", "microsoft", "caldav"]), action: z.enum(["create", "update", "delete"]), reconciling: z.boolean().optional(), attempts: z.number().int().min(1).max(12).optional(),
     externalEventID: text.nullable().optional(), externalCalendarID: text.optional(), icalUid: text.nullable().optional(), expectedEtag: text.nullable().optional(), predecessorID: text.nullable().optional(), payload: data.optional() }).strict(),
-  flags: z.record(z.string(), z.boolean()).optional(), inspectNative: z.boolean().optional(), inspectCompletions: z.boolean().optional(), inspectProjection: z.boolean().optional(), adapter: z.array(z.enum(nativeNames)).max(32), steps: z.array(step).max(96), returnedStatus: text, expected: summary }).strict();
+  actualGoogleRsvp: z.literal(true).optional(), flags: z.record(z.string(), z.boolean()).optional(), inspectNative: z.boolean().optional(), inspectCompletions: z.boolean().optional(), inspectProjection: z.boolean().optional(), adapter: z.array(z.enum(nativeNames)).max(32), steps: z.array(step).max(96), returnedStatus: text, expected: summary }).strict();
 const suite = z.object({ schemaVersion: z.literal(1), driver: z.literal("event-delivery"), scenarios: z.array(scenario).min(1).max(160) }).strict();
 export type EventDeliveryScenario = z.infer<typeof scenario>;
 export type EventDeliverySummary = z.infer<typeof summary>;
 export function parseEventDeliverySuite(value: unknown) {
-  if (!SyncJsonValueSchema.safeParse(value).success) throw new EventDeliveryScenarioFailure("invalid-suite", "Expected bounded plain JSON data.");
-  const parsed = suite.safeParse(value);
-  if (!parsed.success || new Set(parsed.data.scenarios.map(item => item.id)).size !== parsed.data.scenarios.length) throw new EventDeliveryScenarioFailure("invalid-suite", "Event delivery suite does not match schema version 1.");
+  // Preserve descriptor-safe JSON validation while bounding each independent
+  // case. The manifest's existing byte/case limits bound the aggregate corpus.
+  let owned: unknown;
+  try { owned = copyCompatibilityData(value); } catch { throw new EventDeliveryScenarioFailure("invalid-suite", "Expected plain JSON data."); }
+  const parsed = suite.safeParse(owned);
+  if (!parsed.success || parsed.data.scenarios.some(item => !SyncJsonValueSchema.safeParse(item).success) || new Set(parsed.data.scenarios.map(item => item.id)).size !== parsed.data.scenarios.length) throw new EventDeliveryScenarioFailure("invalid-suite", "Event delivery suite does not match schema version 1.");
   if (parsed.data.scenarios.some(scenario => scenario.steps.some(step => step.result === "<current-destination>" && step.port !== "db.getExternalLinkForCalendar"))) throw new EventDeliveryScenarioFailure("invalid-suite", "Destination receipts belong to the destination query only.");
   if (parsed.data.scenarios.some(scenario => scenario.steps.some(step => step.mutateProjectionBeforeCapture && step.port !== "db.setEventOutboxProjection"))) throw new EventDeliveryScenarioFailure("invalid-suite", "Projection mutation belongs to its existing storage port only.");
+  if (parsed.data.scenarios.some(scenario => scenario.actualGoogleRsvp && !scenario.adapter.includes("writeRsvp") || scenario.steps.some(step => step.http && (step.port !== "http.googleRsvp" || !scenario.actualGoogleRsvp) || step.portFailure && step.port !== "db.markGoogleRsvpDispatched"))) throw new EventDeliveryScenarioFailure("invalid-suite", "Google native HTTP/marker receipts must use their exact existing ports.");
   return structuredClone(parsed.data);
 }
 export async function loadEventDeliverySuite() {
@@ -80,6 +86,7 @@ async function receipt(name: string, args: unknown[]) {
     await new Promise<void>(resolve => { const reply = () => setImmediate(resolve); if (signal.aborted) reply(); else signal.addEventListener("abort", reply, { once: true }); });
     done();
   }
+  if (planned.portFailure === "marker-ack-lost") throw new Error("Synthetic lost marker COMMIT acknowledgement");
   if (planned.error) throw new ProviderEventWriteError(planned.error.code, planned.error.outcome, planned.error.status);
   return planned.result === "<current-destination>" ? { id: f.row.externalCalendarLinkID, calendarID: f.row.calendarID, userID: f.row.userID, accountID: f.row.accountID, provider: f.row.provider,
     externalCalendarID: f.row.externalCalendarID, disabled: false, supportsEvents: true } : revive(structuredClone(planned.result));
@@ -96,7 +103,7 @@ for (const entry of await readdir(new URL("../", import.meta.url), { withFileTyp
   for (const match of source.matchAll(/const\s*\{([^}]+)\}\s*=\s*await\s*import\(["']@musubi\/db["']\)/g)) for (const item of match[1]!.split(",")) if (/^[A-Za-z_$][\w$]*$/.test(item.trim())) dbNames.add(item.trim());
 }
 const dbExports: Record<string, unknown> = Object.fromEntries([...dbNames].map(name => [name, (...args: unknown[]) => receipt(`db.${name}`, args)]));
-const portNames = new Set([...dbNames].map(name => `db.${name}`).concat(nativeNames.map(name => `native.${name}`), ["native.organizer.deliver", "native.microsoftOrganizer.deliver", "native.caldavOrganizer.deliver"]));
+const portNames = new Set([...dbNames].map(name => `db.${name}`).concat(nativeNames.map(name => `native.${name}`), ["native.organizer.deliver", "native.microsoftOrganizer.deliver", "native.caldavOrganizer.deliver", "credentials.googleRsvp", "http.googleRsvp"]));
 for (const name of dbNames) if (/^(?:complete|confirmCaldav)/.test(name)) dbExports[name] = async (...args: unknown[]) => {
   const f = current(); if (f.input.inspectCompletions) f.summary.completions.push(plain({ port: name, args }) as Record<string, never>); return receipt(`db.${name}`, args);
 };
@@ -138,6 +145,7 @@ const { ProviderEventWriteError } = await import("../event_write");
 // that entry order for its existing reminder/adapter circular module graph.
 await import("../adapters/google");
 const { deliverEventOutbox } = await import("../event_delivery");
+const { googleRsvpMethods } = await import("../adapters/google_rsvp_delivery");
 
 export async function runEventDeliveryScenario(input: EventDeliveryScenario, diagnostic?: (summary: EventDeliverySummary) => void): Promise<EventDeliverySummary> {
   if (active) throw new EventDeliveryScenarioFailure("concurrent-run", "Event delivery fixtures run sequentially.");
@@ -145,7 +153,15 @@ export async function runEventDeliveryScenario(input: EventDeliveryScenario, dia
   const summary: EventDeliverySummary = { boundary: "actual-event-delivery-with-fixture-db-and-native-ports", events: [], returnedStatus: "unavailable", completions: [], finishes: [], native: [] };
   const f: Active = { input: selected, row: eventDeliveryFixtureRow(selected), steps: structuredClone(selected.steps), summary };
   const originalFetch = globalThis.fetch, originalFlags = { ...flags }; active = f;
-  globalThis.fetch = async () => unexpected("ambient-network"); Object.assign(flags, selected.flags);
+  globalThis.fetch = async (request, init) => {
+    if (!selected.actualGoogleRsvp) return unexpected("ambient-network");
+    init?.signal?.throwIfAborted();
+    const planned = f.steps[0], actual = { method: init?.method ?? "GET", url: String(request), headers: Object.fromEntries(new Headers(init?.headers)), ...(init?.body === undefined ? {} : { body: JSON.parse(String(init.body)) }) };
+    if (!planned?.http || !isDeepStrictEqual(actual, planned.http) || init?.redirect !== "error") return unexpected("http.googleRsvp:request-mismatch");
+    const response = await receipt("http.googleRsvp", [request, init]) as { status: number; body?: unknown };
+    init?.signal?.throwIfAborted();
+    return new Response(JSON.stringify(response.body ?? {}), { status: response.status, headers: { "content-type": "application/json" } });
+  }; Object.assign(flags, selected.flags);
   const adapter: Record<string, unknown> = { provider: selected.row.provider };
   const method = (name: string) => async (...args: unknown[]) => {
     if (selected.inspectNative) summary.native.push(plain({ method: name, args }) as Record<string, never>);
@@ -160,6 +176,14 @@ export async function runEventDeliveryScenario(input: EventDeliveryScenario, dia
       f.rawProjection = revive(structuredClone(planned.result)); return f.rawProjection;
     }; } else if (name === "reminderInstance.write") adapter.reminderInstance = { write: method(name) };
     else adapter[name] = method(name);
+  }
+  if (selected.actualGoogleRsvp) {
+    const methods = googleRsvpMethods(async (...args) => await receipt("credentials.googleRsvp", args) as string);
+    adapter.writeRsvp = async (...args: Parameters<NonNullable<CalendarAdapter["writeRsvp"]>>) => {
+      if (selected.inspectNative) summary.native.push(plain({ method: "writeRsvp", args }) as Record<string, never>);
+      await receipt("native.writeRsvp", args);
+      return methods.writeRsvp!(...args);
+    };
   }
   try {
     const result = await deliverEventOutbox(OPERATION, () => adapter as CalendarAdapter, { timeoutMs: selected.steps.some(value => value.waitForAbort) ? 30 : 5_000 });

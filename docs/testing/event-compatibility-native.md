@@ -54,10 +54,13 @@ ENVIRONMENT=test MUSUBI_EVENT_COMPATIBILITY_MODE=differential \
 retains every original fixture assertion, including DAV whole-resource series
 edits/splits/deletions, Graph family CREATE/DELETE/content/cancellation, the
 move coordinator, reminders and provider-specific RSVP/organizer policies.
-The added Google RSVP recovery characterization explicitly expects a second
-conditional PATCH for an unapplied reconciling row at the unchanged original
-baseline, and GET-only recovery when already desired. That old Google policy
-is an open no-resend gap, not proof of a universal observe-only policy.
+The event extraction historically characterized Google's second conditional
+PATCH for an unapplied reconciling row at the unchanged baseline. The separate
+Google permanent no-resend gate intentionally changes that policy: started and
+all markerless historical intents now use GET-only recovery and HOLD when the
+full desired native result is absent. This is an explicit policy correction,
+not an old/new parity claim. Fresh typed intents require a committed permanent
+marker before their one PATCH. Existing host conflict/ACK authority is retained.
 
 Actual process acceptance is opt-in and separate from routine CI:
 

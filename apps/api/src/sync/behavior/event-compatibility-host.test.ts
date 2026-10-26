@@ -43,7 +43,7 @@ for (const [id, method, field, family, action] of ingresses) {
   else if (method === "organizer") adapter.organizer = async () => ({ deliver: reply });
   else adapter[method] = reply;
   const { host, native } = eventCompatibilityPorts(row, adapter as unknown as CalendarAdapter, undefined, undefined);
-  if (family === "reminderEdit" || family === "caldavRsvp") await host.prepare(signal);
+  if (family === "reminderEdit" || family === "caldavRsvp" || family === "googleRsvp") await host.prepare(signal);
   if (family === "caldavRsvp") await host.prepareNative(family, () => {}, signal);
   const request = { family, action, event: row.payload.event, ref, identity: { operationID: row.id, signal }, mark: async () => {}, accepted: async () => {} };
   await assert.rejects(() => action === "read" ? native.read(request as EventCompatibilityRead, signal) : native.deliver(request as EventCompatibilityDelivery, signal), /Invalid task preparation descriptor/, `${method} owns its full native return before translation`);
@@ -103,3 +103,24 @@ for (const parameter of ["pinned", "nativePlan"] as const) {
   assert.equal((await native.deliver({ family: "googleOccurrence", ref, event: row.payload.event }, signal)).kind, "observed"); checks++;
 }
 console.log(`Event compatibility actual API host: ${checks} native ingress and ownership regressions passed.`);
+
+for (const invalid of [null, { kind: "google-rsvp-at-most-once", version: 2 }, { kind: "google-rsvp-at-most-once", version: 1, acceptedAt: "2026-10-26T12:00:00.000Z" }]) {
+  const row = eventDeliveryFixtureRow(selected("google-rsvp-reconciling-baseline"));
+  row.payload.rsvp!.googleDelivery = invalid as never;
+  let calls = 0;
+  // Schema rejection belongs to prepare inside the attempt, not the factory.
+  const { host } = eventCompatibilityPorts(row, { writeRsvp: async () => { calls++; throw new Error("Unexpected native credential entry"); } } as unknown as CalendarAdapter, undefined, undefined);
+  await assert.rejects(() => host.prepare(signal), /unsupported/); assert.equal(calls, 0); checks++;
+}
+for (const fresh of [true, false]) {
+  const row = eventDeliveryFixtureRow(selected("google-rsvp-reconciling-baseline"));
+  if (fresh) row.payload.rsvp!.googleDelivery = { kind: "google-rsvp-at-most-once", version: 1 };
+  let observed: boolean | undefined;
+  const { host, native } = eventCompatibilityPorts(row, { async writeRsvp(...args: Parameters<NonNullable<CalendarAdapter["writeRsvp"]>>) { observed = args[4].observeOnly; return { etag: '\"v2\"', recovered: true, notificationDelivery: "unknown" }; } } as unknown as CalendarAdapter, undefined, undefined);
+  if (fresh) row.payload.rsvp!.googleDelivery!.startedAt = "2026-10-26T12:00:00.000Z";
+  else row.payload.rsvp!.googleDelivery = { kind: "google-rsvp-at-most-once", version: 1 };
+  await host.prepare(signal); await host.prepareNative("googleRsvp", () => {}, signal);
+  await native.deliver({ family: "googleRsvp", mark: async () => {} }, signal);
+  assert.equal(observed, !fresh, "Original claimed private policy is owned before caller mutation"); checks++;
+}
+console.log(`Event compatibility Google host policy: ${checks} cumulative actual host ingress/ownership checks passed.`);

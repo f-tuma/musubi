@@ -2981,7 +2981,7 @@
     },
     {
       "id": "google-rsvp-reconciling-desired",
-      "title": "google rsvp reconciling desired",
+      "title": "Google legacy reconciling desired result confirms through actual native GET-only",
       "row": {
         "provider": "google",
         "action": "update",
@@ -3153,11 +3153,79 @@
           "result": true
         },
         {
-          "port": "native.writeRsvp",
+          "port": "native.writeRsvp"
+        },
+        {
+          "port": "credentials.googleRsvp",
+          "result": "fixture-rsvp-token"
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
           "result": {
-            "etag": "\"v2\"",
-            "recovered": true,
-            "notificationDelivery": "unknown"
+            "status": 200,
+            "body": {
+              "id": "guest@example.test",
+              "primary": true,
+              "accessRole": "owner"
+            }
+          }
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "native-event",
+              "etag": "\"v2\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "accepted"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            }
           }
         },
         {
@@ -3166,7 +3234,7 @@
         }
       ],
       "returnedStatus": "completed",
-      "inspectNative": true,
+      "inspectNative": false,
       "expected": {
         "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
         "events": [
@@ -3175,81 +3243,22 @@
           "db.getExternalLinkForCalendar",
           "db.hasProviderRsvpSource",
           "native.writeRsvp",
+          "credentials.googleRsvp",
+          "http.googleRsvp",
+          "http.googleRsvp",
           "db.completeProviderRsvpOutbox",
           "db.get"
         ],
         "returnedStatus": "completed",
         "completions": [],
         "finishes": [],
-        "native": [
-          {
-            "method": "writeRsvp",
-            "args": [
-              "fixture-owner",
-              "fixture-account",
-              "guest@example.test",
-              {
-                "baseline": {
-                  "id": "native-event",
-                  "etag": "\"v1\"",
-                  "status": "confirmed",
-                  "organizer": {
-                    "email": "host@example.test",
-                    "self": false
-                  },
-                  "attendees": [
-                    {
-                      "email": "guest@example.test",
-                      "self": true,
-                      "responseStatus": "needsAction"
-                    }
-                  ],
-                  "start": {
-                    "dateTime": "2026-10-26T10:11:12.123Z",
-                    "timeZone": "UTC"
-                  },
-                  "end": {
-                    "dateTime": "2026-10-26T11:12:13.456Z",
-                    "timeZone": "UTC"
-                  },
-                  "summary": "Accepted title",
-                  "description": "Keep description",
-                  "location": "Keep location",
-                  "reminders": {
-                    "useDefault": false,
-                    "overrides": [
-                      {
-                        "method": "popup",
-                        "minutes": 10
-                      }
-                    ]
-                  }
-                },
-                "selfEmail": "guest@example.test",
-                "response": "accepted",
-                "patch": {
-                  "attendeesOmitted": true,
-                  "attendees": [
-                    {
-                      "email": "guest@example.test",
-                      "responseStatus": "accepted"
-                    }
-                  ]
-                }
-              },
-              {
-                "sendUpdates": "all"
-              },
-              "<signal>",
-              "<callback>"
-            ]
-          }
-        ]
-      }
+        "native": []
+      },
+      "actualGoogleRsvp": true
     },
     {
       "id": "google-rsvp-reconciling-baseline",
-      "title": "google rsvp reconciling baseline",
+      "title": "Google legacy reconciling baseline now holds GET-only under permanent no-resend policy",
       "row": {
         "provider": "google",
         "action": "update",
@@ -3421,27 +3430,87 @@
           "result": true
         },
         {
-          "port": "native.writeRsvp",
-          "result": {
-            "etag": "\"v2\"",
-            "recovered": false,
-            "notificationDelivery": "unknown"
+          "port": "native.writeRsvp"
+        },
+        {
+          "port": "credentials.googleRsvp",
+          "result": "fixture-rsvp-token"
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
           },
-          "callbacks": [
-            6
-          ]
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "guest@example.test",
+              "primary": true,
+              "accessRole": "owner"
+            }
+          }
         },
         {
-          "port": "db.hasProviderRsvpSource",
-          "result": true
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            }
+          }
         },
         {
-          "port": "db.completeProviderRsvpOutbox",
-          "result": true
+          "port": "db.finishEventOutbox"
         }
       ],
-      "returnedStatus": "completed",
-      "inspectNative": true,
+      "returnedStatus": "unconfirmed",
+      "inspectNative": false,
       "expected": {
         "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
         "events": [
@@ -3450,78 +3519,27 @@
           "db.getExternalLinkForCalendar",
           "db.hasProviderRsvpSource",
           "native.writeRsvp",
-          "db.hasProviderRsvpSource",
-          "db.completeProviderRsvpOutbox",
+          "credentials.googleRsvp",
+          "http.googleRsvp",
+          "http.googleRsvp",
+          "db.finishEventOutbox",
           "db.get"
         ],
-        "returnedStatus": "completed",
+        "returnedStatus": "unconfirmed",
         "completions": [],
-        "finishes": [],
-        "native": [
+        "finishes": [
           {
-            "method": "writeRsvp",
-            "args": [
-              "fixture-owner",
-              "fixture-account",
-              "guest@example.test",
-              {
-                "baseline": {
-                  "id": "native-event",
-                  "etag": "\"v1\"",
-                  "status": "confirmed",
-                  "organizer": {
-                    "email": "host@example.test",
-                    "self": false
-                  },
-                  "attendees": [
-                    {
-                      "email": "guest@example.test",
-                      "self": true,
-                      "responseStatus": "needsAction"
-                    }
-                  ],
-                  "start": {
-                    "dateTime": "2026-10-26T10:11:12.123Z",
-                    "timeZone": "UTC"
-                  },
-                  "end": {
-                    "dateTime": "2026-10-26T11:12:13.456Z",
-                    "timeZone": "UTC"
-                  },
-                  "summary": "Accepted title",
-                  "description": "Keep description",
-                  "location": "Keep location",
-                  "reminders": {
-                    "useDefault": false,
-                    "overrides": [
-                      {
-                        "method": "popup",
-                        "minutes": 10
-                      }
-                    ]
-                  }
-                },
-                "selfEmail": "guest@example.test",
-                "response": "accepted",
-                "patch": {
-                  "attendeesOmitted": true,
-                  "attendees": [
-                    {
-                      "email": "guest@example.test",
-                      "responseStatus": "accepted"
-                    }
-                  ]
-                }
-              },
-              {
-                "sendUpdates": "all"
-              },
-              "<signal>",
-              "<callback>"
-            ]
+            "status": "unconfirmed",
+            "code": "provider-write-failed",
+            "details": {
+              "uncertain": true,
+              "nextAttemptAt": "<time>"
+            }
           }
-        ]
-      }
+        ],
+        "native": []
+      },
+      "actualGoogleRsvp": true
     },
     {
       "id": "graph-rsvp-fresh-marker",
@@ -10033,6 +10051,4312 @@
         }
       },
       "inspectProjection": true
+    },
+    {
+      "id": "google-rsvp-host-native-fresh-unstarted",
+      "title": "Fresh Google RSVP crosses actual host runtime and native adapter with durable permission",
+      "row": {
+        "provider": "google",
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+            "creatorID": "fixture-owner",
+            "organizer": "host@example.test",
+            "title": "Accepted title",
+            "color": "#112233",
+            "start": "2026-10-26T10:11:12.123Z",
+            "end": "2026-10-26T11:12:13.456Z",
+            "calendars": [
+              "fixture-calendar"
+            ],
+            "isCanceled": false,
+            "isAllDay": false,
+            "hasAttendees": true,
+            "description": "Keep description",
+            "location": "Keep location",
+            "recurrence": null,
+            "timeModel": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "isMeeting": true
+          },
+          "rsvp": {
+            "request": {
+              "operationID": "abcdef01-abcd-4000-8000-abcdefabcdef",
+              "expectedRevision": 2,
+              "expectedStateVersion": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "provider": "google",
+              "sendUpdates": "all",
+              "response": "accepted"
+            },
+            "baseline": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            },
+            "nativeTime": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "baselineState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "needsAction"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "needsAction",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "desiredState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "accepted"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "accepted",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "mappingID": "fixture-map",
+            "googleDelivery": {
+              "kind": "google-rsvp-at-most-once",
+              "version": 1
+            }
+          }
+        },
+        "externalEventID": "native-event",
+        "expectedEtag": "\"v1\"",
+        "externalCalendarID": "guest@example.test",
+        "reconciling": false
+      },
+      "adapter": [
+        "writeRsvp"
+      ],
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "native.writeRsvp"
+        },
+        {
+          "port": "credentials.googleRsvp",
+          "result": "fixture-rsvp-token"
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "guest@example.test",
+              "primary": true,
+              "accessRole": "owner"
+            }
+          }
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "db.markGoogleRsvpDispatched",
+          "result": true
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "PATCH",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event?sendUpdates=all&conferenceDataVersion=1",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache",
+              "content-type": "application/json",
+              "if-match": "\"v1\""
+            },
+            "body": {
+              "attendeesOmitted": true,
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "responseStatus": "accepted"
+                }
+              ]
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {}
+          }
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "native-event",
+              "etag": "\"v2\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "accepted"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "port": "db.completeProviderRsvpOutbox",
+          "result": true
+        }
+      ],
+      "returnedStatus": "completed",
+      "inspectNative": false,
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasProviderRsvpSource",
+          "native.writeRsvp",
+          "credentials.googleRsvp",
+          "http.googleRsvp",
+          "http.googleRsvp",
+          "db.hasProviderRsvpSource",
+          "db.markGoogleRsvpDispatched",
+          "http.googleRsvp",
+          "http.googleRsvp",
+          "db.completeProviderRsvpOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "completed",
+        "completions": [],
+        "finishes": [],
+        "native": []
+      },
+      "actualGoogleRsvp": true
+    },
+    {
+      "id": "google-rsvp-host-native-started-hold",
+      "title": "Started Google intent holds even when generic uncertainty was cleared",
+      "row": {
+        "provider": "google",
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+            "creatorID": "fixture-owner",
+            "organizer": "host@example.test",
+            "title": "Accepted title",
+            "color": "#112233",
+            "start": "2026-10-26T10:11:12.123Z",
+            "end": "2026-10-26T11:12:13.456Z",
+            "calendars": [
+              "fixture-calendar"
+            ],
+            "isCanceled": false,
+            "isAllDay": false,
+            "hasAttendees": true,
+            "description": "Keep description",
+            "location": "Keep location",
+            "recurrence": null,
+            "timeModel": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "isMeeting": true
+          },
+          "rsvp": {
+            "request": {
+              "operationID": "abcdef01-abcd-4000-8000-abcdefabcdef",
+              "expectedRevision": 2,
+              "expectedStateVersion": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "provider": "google",
+              "sendUpdates": "all",
+              "response": "accepted"
+            },
+            "baseline": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            },
+            "nativeTime": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "baselineState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "needsAction"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "needsAction",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "desiredState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "accepted"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "accepted",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "mappingID": "fixture-map",
+            "googleDelivery": {
+              "kind": "google-rsvp-at-most-once",
+              "version": 1,
+              "startedAt": "2026-10-26T12:00:00.000Z"
+            }
+          }
+        },
+        "externalEventID": "native-event",
+        "expectedEtag": "\"v1\"",
+        "externalCalendarID": "guest@example.test",
+        "reconciling": false
+      },
+      "adapter": [
+        "writeRsvp"
+      ],
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "native.writeRsvp"
+        },
+        {
+          "port": "credentials.googleRsvp",
+          "result": "fixture-rsvp-token"
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "guest@example.test",
+              "primary": true,
+              "accessRole": "owner"
+            }
+          }
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "unconfirmed",
+      "inspectNative": false,
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasProviderRsvpSource",
+          "native.writeRsvp",
+          "credentials.googleRsvp",
+          "http.googleRsvp",
+          "http.googleRsvp",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "unconfirmed",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "provider-write-failed",
+            "details": {
+              "uncertain": true,
+              "nextAttemptAt": "<time>"
+            }
+          }
+        ],
+        "native": []
+      },
+      "actualGoogleRsvp": true
+    },
+    {
+      "id": "google-rsvp-host-native-legacy-queued-hold",
+      "title": "Never-attempted markerless historical queue cannot synthesize fresh permission",
+      "row": {
+        "provider": "google",
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+            "creatorID": "fixture-owner",
+            "organizer": "host@example.test",
+            "title": "Accepted title",
+            "color": "#112233",
+            "start": "2026-10-26T10:11:12.123Z",
+            "end": "2026-10-26T11:12:13.456Z",
+            "calendars": [
+              "fixture-calendar"
+            ],
+            "isCanceled": false,
+            "isAllDay": false,
+            "hasAttendees": true,
+            "description": "Keep description",
+            "location": "Keep location",
+            "recurrence": null,
+            "timeModel": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "isMeeting": true
+          },
+          "rsvp": {
+            "request": {
+              "operationID": "abcdef01-abcd-4000-8000-abcdefabcdef",
+              "expectedRevision": 2,
+              "expectedStateVersion": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "provider": "google",
+              "sendUpdates": "all",
+              "response": "accepted"
+            },
+            "baseline": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            },
+            "nativeTime": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "baselineState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "needsAction"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "needsAction",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "desiredState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "accepted"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "accepted",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "mappingID": "fixture-map"
+          }
+        },
+        "externalEventID": "native-event",
+        "expectedEtag": "\"v1\"",
+        "externalCalendarID": "guest@example.test",
+        "reconciling": false
+      },
+      "adapter": [
+        "writeRsvp"
+      ],
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "native.writeRsvp"
+        },
+        {
+          "port": "credentials.googleRsvp",
+          "result": "fixture-rsvp-token"
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "guest@example.test",
+              "primary": true,
+              "accessRole": "owner"
+            }
+          }
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "unconfirmed",
+      "inspectNative": false,
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasProviderRsvpSource",
+          "native.writeRsvp",
+          "credentials.googleRsvp",
+          "http.googleRsvp",
+          "http.googleRsvp",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "unconfirmed",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "provider-write-failed",
+            "details": {
+              "uncertain": true,
+              "nextAttemptAt": "<time>"
+            }
+          }
+        ],
+        "native": []
+      },
+      "actualGoogleRsvp": true
+    },
+    {
+      "id": "google-rsvp-host-native-started-desired",
+      "title": "Full desired native GET confirms started intent without marking again",
+      "row": {
+        "provider": "google",
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+            "creatorID": "fixture-owner",
+            "organizer": "host@example.test",
+            "title": "Accepted title",
+            "color": "#112233",
+            "start": "2026-10-26T10:11:12.123Z",
+            "end": "2026-10-26T11:12:13.456Z",
+            "calendars": [
+              "fixture-calendar"
+            ],
+            "isCanceled": false,
+            "isAllDay": false,
+            "hasAttendees": true,
+            "description": "Keep description",
+            "location": "Keep location",
+            "recurrence": null,
+            "timeModel": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "isMeeting": true
+          },
+          "rsvp": {
+            "request": {
+              "operationID": "abcdef01-abcd-4000-8000-abcdefabcdef",
+              "expectedRevision": 2,
+              "expectedStateVersion": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "provider": "google",
+              "sendUpdates": "all",
+              "response": "accepted"
+            },
+            "baseline": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            },
+            "nativeTime": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "baselineState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "needsAction"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "needsAction",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "desiredState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "accepted"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "accepted",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "mappingID": "fixture-map",
+            "googleDelivery": {
+              "kind": "google-rsvp-at-most-once",
+              "version": 1,
+              "startedAt": "2026-10-26T12:00:00.000Z"
+            }
+          }
+        },
+        "externalEventID": "native-event",
+        "expectedEtag": "\"v1\"",
+        "externalCalendarID": "guest@example.test",
+        "reconciling": false
+      },
+      "adapter": [
+        "writeRsvp"
+      ],
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "native.writeRsvp"
+        },
+        {
+          "port": "credentials.googleRsvp",
+          "result": "fixture-rsvp-token"
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "guest@example.test",
+              "primary": true,
+              "accessRole": "owner"
+            }
+          }
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "native-event",
+              "etag": "\"v2\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "accepted"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "port": "db.completeProviderRsvpOutbox",
+          "result": true
+        }
+      ],
+      "returnedStatus": "completed",
+      "inspectNative": false,
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasProviderRsvpSource",
+          "native.writeRsvp",
+          "credentials.googleRsvp",
+          "http.googleRsvp",
+          "http.googleRsvp",
+          "db.completeProviderRsvpOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "completed",
+        "completions": [],
+        "finishes": [],
+        "native": []
+      },
+      "actualGoogleRsvp": true
+    },
+    {
+      "id": "google-rsvp-host-native-fresh-preoauth-retry",
+      "title": "Typed unstarted intent remains eligible after pre-send claim or OAuth retry",
+      "row": {
+        "provider": "google",
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+            "creatorID": "fixture-owner",
+            "organizer": "host@example.test",
+            "title": "Accepted title",
+            "color": "#112233",
+            "start": "2026-10-26T10:11:12.123Z",
+            "end": "2026-10-26T11:12:13.456Z",
+            "calendars": [
+              "fixture-calendar"
+            ],
+            "isCanceled": false,
+            "isAllDay": false,
+            "hasAttendees": true,
+            "description": "Keep description",
+            "location": "Keep location",
+            "recurrence": null,
+            "timeModel": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "isMeeting": true
+          },
+          "rsvp": {
+            "request": {
+              "operationID": "abcdef01-abcd-4000-8000-abcdefabcdef",
+              "expectedRevision": 2,
+              "expectedStateVersion": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "provider": "google",
+              "sendUpdates": "all",
+              "response": "accepted"
+            },
+            "baseline": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            },
+            "nativeTime": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "baselineState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "needsAction"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "needsAction",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "desiredState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "accepted"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "accepted",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "mappingID": "fixture-map",
+            "googleDelivery": {
+              "kind": "google-rsvp-at-most-once",
+              "version": 1
+            }
+          }
+        },
+        "externalEventID": "native-event",
+        "expectedEtag": "\"v1\"",
+        "externalCalendarID": "guest@example.test",
+        "reconciling": true
+      },
+      "adapter": [
+        "writeRsvp"
+      ],
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "native.writeRsvp"
+        },
+        {
+          "port": "credentials.googleRsvp",
+          "result": "fixture-rsvp-token"
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "guest@example.test",
+              "primary": true,
+              "accessRole": "owner"
+            }
+          }
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "db.markGoogleRsvpDispatched",
+          "result": true
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "PATCH",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event?sendUpdates=all&conferenceDataVersion=1",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache",
+              "content-type": "application/json",
+              "if-match": "\"v1\""
+            },
+            "body": {
+              "attendeesOmitted": true,
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "responseStatus": "accepted"
+                }
+              ]
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {}
+          }
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "native-event",
+              "etag": "\"v2\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "accepted"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "port": "db.completeProviderRsvpOutbox",
+          "result": true
+        }
+      ],
+      "returnedStatus": "completed",
+      "inspectNative": false,
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasProviderRsvpSource",
+          "native.writeRsvp",
+          "credentials.googleRsvp",
+          "http.googleRsvp",
+          "http.googleRsvp",
+          "db.hasProviderRsvpSource",
+          "db.markGoogleRsvpDispatched",
+          "http.googleRsvp",
+          "http.googleRsvp",
+          "db.completeProviderRsvpOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "completed",
+        "completions": [],
+        "finishes": [],
+        "native": []
+      },
+      "actualGoogleRsvp": true
+    },
+    {
+      "id": "google-rsvp-host-native-marker-false",
+      "title": "Conclusive false marker preserves known no-send and refuses native PATCH",
+      "row": {
+        "provider": "google",
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+            "creatorID": "fixture-owner",
+            "organizer": "host@example.test",
+            "title": "Accepted title",
+            "color": "#112233",
+            "start": "2026-10-26T10:11:12.123Z",
+            "end": "2026-10-26T11:12:13.456Z",
+            "calendars": [
+              "fixture-calendar"
+            ],
+            "isCanceled": false,
+            "isAllDay": false,
+            "hasAttendees": true,
+            "description": "Keep description",
+            "location": "Keep location",
+            "recurrence": null,
+            "timeModel": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "isMeeting": true
+          },
+          "rsvp": {
+            "request": {
+              "operationID": "abcdef01-abcd-4000-8000-abcdefabcdef",
+              "expectedRevision": 2,
+              "expectedStateVersion": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "provider": "google",
+              "sendUpdates": "all",
+              "response": "accepted"
+            },
+            "baseline": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            },
+            "nativeTime": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "baselineState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "needsAction"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "needsAction",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "desiredState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "accepted"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "accepted",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "mappingID": "fixture-map",
+            "googleDelivery": {
+              "kind": "google-rsvp-at-most-once",
+              "version": 1
+            }
+          }
+        },
+        "externalEventID": "native-event",
+        "expectedEtag": "\"v1\"",
+        "externalCalendarID": "guest@example.test",
+        "reconciling": false
+      },
+      "adapter": [
+        "writeRsvp"
+      ],
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "native.writeRsvp"
+        },
+        {
+          "port": "credentials.googleRsvp",
+          "result": "fixture-rsvp-token"
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "guest@example.test",
+              "primary": true,
+              "accessRole": "owner"
+            }
+          }
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "db.markGoogleRsvpDispatched",
+          "result": false
+        },
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "conflict",
+      "inspectNative": false,
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasProviderRsvpSource",
+          "native.writeRsvp",
+          "credentials.googleRsvp",
+          "http.googleRsvp",
+          "http.googleRsvp",
+          "db.hasProviderRsvpSource",
+          "db.markGoogleRsvpDispatched",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "conflict",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "conflict",
+            "code": "provider-conflict",
+            "details": {
+              "uncertain": false,
+              "nextAttemptAt": "<time>"
+            }
+          }
+        ],
+        "native": []
+      },
+      "actualGoogleRsvp": true
+    },
+    {
+      "id": "google-rsvp-host-native-marker-ack-lost",
+      "title": "Lost marker acknowledgement remains uncertain and refuses native PATCH",
+      "row": {
+        "provider": "google",
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+            "creatorID": "fixture-owner",
+            "organizer": "host@example.test",
+            "title": "Accepted title",
+            "color": "#112233",
+            "start": "2026-10-26T10:11:12.123Z",
+            "end": "2026-10-26T11:12:13.456Z",
+            "calendars": [
+              "fixture-calendar"
+            ],
+            "isCanceled": false,
+            "isAllDay": false,
+            "hasAttendees": true,
+            "description": "Keep description",
+            "location": "Keep location",
+            "recurrence": null,
+            "timeModel": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "isMeeting": true
+          },
+          "rsvp": {
+            "request": {
+              "operationID": "abcdef01-abcd-4000-8000-abcdefabcdef",
+              "expectedRevision": 2,
+              "expectedStateVersion": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "provider": "google",
+              "sendUpdates": "all",
+              "response": "accepted"
+            },
+            "baseline": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            },
+            "nativeTime": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "baselineState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "needsAction"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "needsAction",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "desiredState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "accepted"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "accepted",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "mappingID": "fixture-map",
+            "googleDelivery": {
+              "kind": "google-rsvp-at-most-once",
+              "version": 1
+            }
+          }
+        },
+        "externalEventID": "native-event",
+        "expectedEtag": "\"v1\"",
+        "externalCalendarID": "guest@example.test",
+        "reconciling": false
+      },
+      "adapter": [
+        "writeRsvp"
+      ],
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "native.writeRsvp"
+        },
+        {
+          "port": "credentials.googleRsvp",
+          "result": "fixture-rsvp-token"
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "guest@example.test",
+              "primary": true,
+              "accessRole": "owner"
+            }
+          }
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "db.markGoogleRsvpDispatched",
+          "portFailure": "marker-ack-lost"
+        },
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "unconfirmed",
+      "inspectNative": false,
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasProviderRsvpSource",
+          "native.writeRsvp",
+          "credentials.googleRsvp",
+          "http.googleRsvp",
+          "http.googleRsvp",
+          "db.hasProviderRsvpSource",
+          "db.markGoogleRsvpDispatched",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "unconfirmed",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "provider-write-failed",
+            "details": {
+              "uncertain": true,
+              "nextAttemptAt": "<time>"
+            }
+          }
+        ],
+        "native": []
+      },
+      "actualGoogleRsvp": true
+    },
+    {
+      "id": "google-rsvp-host-native-source-refused",
+      "title": "Fresh source refusal before marker remains conclusive no-send",
+      "row": {
+        "provider": "google",
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+            "creatorID": "fixture-owner",
+            "organizer": "host@example.test",
+            "title": "Accepted title",
+            "color": "#112233",
+            "start": "2026-10-26T10:11:12.123Z",
+            "end": "2026-10-26T11:12:13.456Z",
+            "calendars": [
+              "fixture-calendar"
+            ],
+            "isCanceled": false,
+            "isAllDay": false,
+            "hasAttendees": true,
+            "description": "Keep description",
+            "location": "Keep location",
+            "recurrence": null,
+            "timeModel": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "isMeeting": true
+          },
+          "rsvp": {
+            "request": {
+              "operationID": "abcdef01-abcd-4000-8000-abcdefabcdef",
+              "expectedRevision": 2,
+              "expectedStateVersion": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "provider": "google",
+              "sendUpdates": "all",
+              "response": "accepted"
+            },
+            "baseline": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            },
+            "nativeTime": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "baselineState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "needsAction"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "needsAction",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "desiredState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "accepted"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "accepted",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "mappingID": "fixture-map",
+            "googleDelivery": {
+              "kind": "google-rsvp-at-most-once",
+              "version": 1
+            }
+          }
+        },
+        "externalEventID": "native-event",
+        "expectedEtag": "\"v1\"",
+        "externalCalendarID": "guest@example.test",
+        "reconciling": false
+      },
+      "adapter": [
+        "writeRsvp"
+      ],
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "native.writeRsvp"
+        },
+        {
+          "port": "credentials.googleRsvp",
+          "result": "fixture-rsvp-token"
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "guest@example.test",
+              "primary": true,
+              "accessRole": "owner"
+            }
+          }
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": false
+        },
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "conflict",
+      "inspectNative": false,
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasProviderRsvpSource",
+          "native.writeRsvp",
+          "credentials.googleRsvp",
+          "http.googleRsvp",
+          "http.googleRsvp",
+          "db.hasProviderRsvpSource",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "conflict",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "conflict",
+            "code": "provider-conflict",
+            "details": {
+              "uncertain": false,
+              "nextAttemptAt": "<time>"
+            }
+          }
+        ],
+        "native": []
+      },
+      "actualGoogleRsvp": true
+    },
+    {
+      "id": "google-rsvp-host-native-invalid-null",
+      "title": "Malformed Google null sidecar settles inside attempt before credentials",
+      "row": {
+        "provider": "google",
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+            "creatorID": "fixture-owner",
+            "organizer": "host@example.test",
+            "title": "Accepted title",
+            "color": "#112233",
+            "start": "2026-10-26T10:11:12.123Z",
+            "end": "2026-10-26T11:12:13.456Z",
+            "calendars": [
+              "fixture-calendar"
+            ],
+            "isCanceled": false,
+            "isAllDay": false,
+            "hasAttendees": true,
+            "description": "Keep description",
+            "location": "Keep location",
+            "recurrence": null,
+            "timeModel": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "isMeeting": true
+          },
+          "rsvp": {
+            "request": {
+              "operationID": "abcdef01-abcd-4000-8000-abcdefabcdef",
+              "expectedRevision": 2,
+              "expectedStateVersion": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "provider": "google",
+              "sendUpdates": "all",
+              "response": "accepted"
+            },
+            "baseline": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            },
+            "nativeTime": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "baselineState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "needsAction"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "needsAction",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "desiredState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "accepted"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "accepted",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "mappingID": "fixture-map",
+            "googleDelivery": null
+          }
+        },
+        "externalEventID": "native-event",
+        "expectedEtag": "\"v1\"",
+        "externalCalendarID": "guest@example.test",
+        "reconciling": false
+      },
+      "adapter": [
+        "writeRsvp"
+      ],
+      "steps": [
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "blocked",
+      "inspectNative": false,
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "blocked",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "blocked",
+            "code": "provider-write-unsupported",
+            "details": {
+              "uncertain": false,
+              "nextAttemptAt": "<time>"
+            }
+          }
+        ],
+        "native": []
+      },
+      "actualGoogleRsvp": true
+    },
+    {
+      "id": "google-rsvp-host-native-invalid-version",
+      "title": "Malformed Google version sidecar settles inside attempt before credentials",
+      "row": {
+        "provider": "google",
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+            "creatorID": "fixture-owner",
+            "organizer": "host@example.test",
+            "title": "Accepted title",
+            "color": "#112233",
+            "start": "2026-10-26T10:11:12.123Z",
+            "end": "2026-10-26T11:12:13.456Z",
+            "calendars": [
+              "fixture-calendar"
+            ],
+            "isCanceled": false,
+            "isAllDay": false,
+            "hasAttendees": true,
+            "description": "Keep description",
+            "location": "Keep location",
+            "recurrence": null,
+            "timeModel": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "isMeeting": true
+          },
+          "rsvp": {
+            "request": {
+              "operationID": "abcdef01-abcd-4000-8000-abcdefabcdef",
+              "expectedRevision": 2,
+              "expectedStateVersion": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "provider": "google",
+              "sendUpdates": "all",
+              "response": "accepted"
+            },
+            "baseline": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            },
+            "nativeTime": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "baselineState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "needsAction"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "needsAction",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "desiredState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "accepted"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "accepted",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "mappingID": "fixture-map",
+            "googleDelivery": {
+              "kind": "google-rsvp-at-most-once",
+              "version": 2
+            }
+          }
+        },
+        "externalEventID": "native-event",
+        "expectedEtag": "\"v1\"",
+        "externalCalendarID": "guest@example.test",
+        "reconciling": false
+      },
+      "adapter": [
+        "writeRsvp"
+      ],
+      "steps": [
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "blocked",
+      "inspectNative": false,
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "blocked",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "blocked",
+            "code": "provider-write-unsupported",
+            "details": {
+              "uncertain": false,
+              "nextAttemptAt": "<time>"
+            }
+          }
+        ],
+        "native": []
+      },
+      "actualGoogleRsvp": true
+    },
+    {
+      "id": "google-rsvp-host-native-invalid-acceptance",
+      "title": "Malformed Google acceptance sidecar settles inside attempt before credentials",
+      "row": {
+        "provider": "google",
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+            "creatorID": "fixture-owner",
+            "organizer": "host@example.test",
+            "title": "Accepted title",
+            "color": "#112233",
+            "start": "2026-10-26T10:11:12.123Z",
+            "end": "2026-10-26T11:12:13.456Z",
+            "calendars": [
+              "fixture-calendar"
+            ],
+            "isCanceled": false,
+            "isAllDay": false,
+            "hasAttendees": true,
+            "description": "Keep description",
+            "location": "Keep location",
+            "recurrence": null,
+            "timeModel": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "isMeeting": true
+          },
+          "rsvp": {
+            "request": {
+              "operationID": "abcdef01-abcd-4000-8000-abcdefabcdef",
+              "expectedRevision": 2,
+              "expectedStateVersion": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "provider": "google",
+              "sendUpdates": "all",
+              "response": "accepted"
+            },
+            "baseline": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            },
+            "nativeTime": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "baselineState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "needsAction"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "needsAction",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "desiredState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "accepted"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "accepted",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "mappingID": "fixture-map",
+            "googleDelivery": {
+              "kind": "google-rsvp-at-most-once",
+              "version": 1,
+              "acceptedAt": "2026-10-26T12:00:00.000Z"
+            }
+          }
+        },
+        "externalEventID": "native-event",
+        "expectedEtag": "\"v1\"",
+        "externalCalendarID": "guest@example.test",
+        "reconciling": false
+      },
+      "adapter": [
+        "writeRsvp"
+      ],
+      "steps": [
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "blocked",
+      "inspectNative": false,
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "blocked",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "blocked",
+            "code": "provider-write-unsupported",
+            "details": {
+              "uncertain": false,
+              "nextAttemptAt": "<time>"
+            }
+          }
+        ],
+        "native": []
+      },
+      "actualGoogleRsvp": true
+    },
+    {
+      "id": "google-rsvp-host-native-cancel-credentials",
+      "title": "Closed Google attempt refuses continuations after credentials",
+      "row": {
+        "provider": "google",
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+            "creatorID": "fixture-owner",
+            "organizer": "host@example.test",
+            "title": "Accepted title",
+            "color": "#112233",
+            "start": "2026-10-26T10:11:12.123Z",
+            "end": "2026-10-26T11:12:13.456Z",
+            "calendars": [
+              "fixture-calendar"
+            ],
+            "isCanceled": false,
+            "isAllDay": false,
+            "hasAttendees": true,
+            "description": "Keep description",
+            "location": "Keep location",
+            "recurrence": null,
+            "timeModel": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "isMeeting": true
+          },
+          "rsvp": {
+            "request": {
+              "operationID": "abcdef01-abcd-4000-8000-abcdefabcdef",
+              "expectedRevision": 2,
+              "expectedStateVersion": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "provider": "google",
+              "sendUpdates": "all",
+              "response": "accepted"
+            },
+            "baseline": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            },
+            "nativeTime": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "baselineState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "needsAction"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "needsAction",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "desiredState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "accepted"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "accepted",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "mappingID": "fixture-map",
+            "googleDelivery": {
+              "kind": "google-rsvp-at-most-once",
+              "version": 1
+            }
+          }
+        },
+        "externalEventID": "native-event",
+        "expectedEtag": "\"v1\"",
+        "externalCalendarID": "guest@example.test",
+        "reconciling": false
+      },
+      "adapter": [
+        "writeRsvp"
+      ],
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "native.writeRsvp"
+        },
+        {
+          "port": "credentials.googleRsvp",
+          "result": "fixture-rsvp-token",
+          "waitForAbort": true
+        },
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "retry",
+      "inspectNative": false,
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasProviderRsvpSource",
+          "native.writeRsvp",
+          "credentials.googleRsvp",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "retry",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "retry",
+            "code": "provider-write-failed",
+            "details": {
+              "uncertain": false,
+              "nextAttemptAt": "<time>"
+            }
+          }
+        ],
+        "native": []
+      },
+      "actualGoogleRsvp": true
+    },
+    {
+      "id": "google-rsvp-host-native-cancel-marker",
+      "title": "Closed Google attempt refuses continuations after marker",
+      "row": {
+        "provider": "google",
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+            "creatorID": "fixture-owner",
+            "organizer": "host@example.test",
+            "title": "Accepted title",
+            "color": "#112233",
+            "start": "2026-10-26T10:11:12.123Z",
+            "end": "2026-10-26T11:12:13.456Z",
+            "calendars": [
+              "fixture-calendar"
+            ],
+            "isCanceled": false,
+            "isAllDay": false,
+            "hasAttendees": true,
+            "description": "Keep description",
+            "location": "Keep location",
+            "recurrence": null,
+            "timeModel": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "isMeeting": true
+          },
+          "rsvp": {
+            "request": {
+              "operationID": "abcdef01-abcd-4000-8000-abcdefabcdef",
+              "expectedRevision": 2,
+              "expectedStateVersion": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "provider": "google",
+              "sendUpdates": "all",
+              "response": "accepted"
+            },
+            "baseline": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            },
+            "nativeTime": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "baselineState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "needsAction"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "needsAction",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "desiredState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "accepted"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "accepted",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "mappingID": "fixture-map",
+            "googleDelivery": {
+              "kind": "google-rsvp-at-most-once",
+              "version": 1
+            }
+          }
+        },
+        "externalEventID": "native-event",
+        "expectedEtag": "\"v1\"",
+        "externalCalendarID": "guest@example.test",
+        "reconciling": false
+      },
+      "adapter": [
+        "writeRsvp"
+      ],
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "native.writeRsvp"
+        },
+        {
+          "port": "credentials.googleRsvp",
+          "result": "fixture-rsvp-token"
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "guest@example.test",
+              "primary": true,
+              "accessRole": "owner"
+            }
+          }
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "db.markGoogleRsvpDispatched",
+          "result": true,
+          "waitForAbort": true
+        },
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "unconfirmed",
+      "inspectNative": false,
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasProviderRsvpSource",
+          "native.writeRsvp",
+          "credentials.googleRsvp",
+          "http.googleRsvp",
+          "http.googleRsvp",
+          "db.hasProviderRsvpSource",
+          "db.markGoogleRsvpDispatched",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "unconfirmed",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "provider-write-failed",
+            "details": {
+              "uncertain": true,
+              "nextAttemptAt": "<time>"
+            }
+          }
+        ],
+        "native": []
+      },
+      "actualGoogleRsvp": true
+    },
+    {
+      "id": "google-rsvp-host-native-cancel-patch-response",
+      "title": "Closed Google attempt refuses continuations after patch-response",
+      "row": {
+        "provider": "google",
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+            "creatorID": "fixture-owner",
+            "organizer": "host@example.test",
+            "title": "Accepted title",
+            "color": "#112233",
+            "start": "2026-10-26T10:11:12.123Z",
+            "end": "2026-10-26T11:12:13.456Z",
+            "calendars": [
+              "fixture-calendar"
+            ],
+            "isCanceled": false,
+            "isAllDay": false,
+            "hasAttendees": true,
+            "description": "Keep description",
+            "location": "Keep location",
+            "recurrence": null,
+            "timeModel": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "isMeeting": true
+          },
+          "rsvp": {
+            "request": {
+              "operationID": "abcdef01-abcd-4000-8000-abcdefabcdef",
+              "expectedRevision": 2,
+              "expectedStateVersion": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "provider": "google",
+              "sendUpdates": "all",
+              "response": "accepted"
+            },
+            "baseline": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            },
+            "nativeTime": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "baselineState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "needsAction"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "needsAction",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "desiredState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "accepted"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "accepted",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "mappingID": "fixture-map",
+            "googleDelivery": {
+              "kind": "google-rsvp-at-most-once",
+              "version": 1
+            }
+          }
+        },
+        "externalEventID": "native-event",
+        "expectedEtag": "\"v1\"",
+        "externalCalendarID": "guest@example.test",
+        "reconciling": false
+      },
+      "adapter": [
+        "writeRsvp"
+      ],
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "native.writeRsvp"
+        },
+        {
+          "port": "credentials.googleRsvp",
+          "result": "fixture-rsvp-token"
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "guest@example.test",
+              "primary": true,
+              "accessRole": "owner"
+            }
+          }
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "db.markGoogleRsvpDispatched",
+          "result": true
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "PATCH",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event?sendUpdates=all&conferenceDataVersion=1",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache",
+              "content-type": "application/json",
+              "if-match": "\"v1\""
+            },
+            "body": {
+              "attendeesOmitted": true,
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "responseStatus": "accepted"
+                }
+              ]
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {}
+          },
+          "waitForAbort": true
+        },
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "unconfirmed",
+      "inspectNative": false,
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasProviderRsvpSource",
+          "native.writeRsvp",
+          "credentials.googleRsvp",
+          "http.googleRsvp",
+          "http.googleRsvp",
+          "db.hasProviderRsvpSource",
+          "db.markGoogleRsvpDispatched",
+          "http.googleRsvp",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "unconfirmed",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "provider-write-failed",
+            "details": {
+              "uncertain": true,
+              "nextAttemptAt": "<time>"
+            }
+          }
+        ],
+        "native": []
+      },
+      "actualGoogleRsvp": true
+    },
+    {
+      "id": "google-rsvp-host-native-cancel-readback",
+      "title": "Closed Google attempt refuses continuations after readback",
+      "row": {
+        "provider": "google",
+        "action": "update",
+        "payload": {
+          "event": {
+            "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+            "creatorID": "fixture-owner",
+            "organizer": "host@example.test",
+            "title": "Accepted title",
+            "color": "#112233",
+            "start": "2026-10-26T10:11:12.123Z",
+            "end": "2026-10-26T11:12:13.456Z",
+            "calendars": [
+              "fixture-calendar"
+            ],
+            "isCanceled": false,
+            "isAllDay": false,
+            "hasAttendees": true,
+            "description": "Keep description",
+            "location": "Keep location",
+            "recurrence": null,
+            "timeModel": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "isMeeting": true
+          },
+          "rsvp": {
+            "request": {
+              "operationID": "abcdef01-abcd-4000-8000-abcdefabcdef",
+              "expectedRevision": 2,
+              "expectedStateVersion": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "provider": "google",
+              "sendUpdates": "all",
+              "response": "accepted"
+            },
+            "baseline": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            },
+            "nativeTime": {
+              "kind": "zoned",
+              "timeZone": "UTC",
+              "startLocal": "2026-10-26T10:11:12.123",
+              "endLocal": "2026-10-26T11:12:13.456"
+            },
+            "baselineState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "needsAction"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "needsAction",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "desiredState": {
+              "provider": "google",
+              "organizer": {
+                "address": "host@example.test",
+                "name": null,
+                "self": false
+              },
+              "isOrganizer": false,
+              "attendees": [
+                {
+                  "address": "guest@example.test",
+                  "name": null,
+                  "self": true,
+                  "role": "required",
+                  "response": "accepted"
+                }
+              ],
+              "attendeesComplete": true,
+              "ownResponse": "accepted",
+              "reminders": {
+                "provider": "google",
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              },
+              "availability": null,
+              "privacy": null,
+              "status": "confirmed",
+              "eventType": null,
+              "conferenceURLs": []
+            },
+            "mappingID": "fixture-map",
+            "googleDelivery": {
+              "kind": "google-rsvp-at-most-once",
+              "version": 1
+            }
+          }
+        },
+        "externalEventID": "native-event",
+        "expectedEtag": "\"v1\"",
+        "externalCalendarID": "guest@example.test",
+        "reconciling": false
+      },
+      "adapter": [
+        "writeRsvp"
+      ],
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "native.writeRsvp"
+        },
+        {
+          "port": "credentials.googleRsvp",
+          "result": "fixture-rsvp-token"
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "guest@example.test",
+              "primary": true,
+              "accessRole": "owner"
+            }
+          }
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "native-event",
+              "etag": "\"v1\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "needsAction"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "port": "db.hasProviderRsvpSource",
+          "result": true
+        },
+        {
+          "port": "db.markGoogleRsvpDispatched",
+          "result": true
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "PATCH",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event?sendUpdates=all&conferenceDataVersion=1",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache",
+              "content-type": "application/json",
+              "if-match": "\"v1\""
+            },
+            "body": {
+              "attendeesOmitted": true,
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "responseStatus": "accepted"
+                }
+              ]
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {}
+          }
+        },
+        {
+          "port": "http.googleRsvp",
+          "http": {
+            "method": "GET",
+            "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/native-event",
+            "headers": {
+              "authorization": "Bearer fixture-rsvp-token",
+              "cache-control": "no-cache"
+            }
+          },
+          "result": {
+            "status": 200,
+            "body": {
+              "id": "native-event",
+              "etag": "\"v2\"",
+              "status": "confirmed",
+              "summary": "Accepted title",
+              "description": "Keep description",
+              "location": "Keep location",
+              "start": {
+                "dateTime": "2026-10-26T10:11:12.123Z",
+                "timeZone": "UTC"
+              },
+              "end": {
+                "dateTime": "2026-10-26T11:12:13.456Z",
+                "timeZone": "UTC"
+              },
+              "organizer": {
+                "email": "host@example.test",
+                "self": false
+              },
+              "attendees": [
+                {
+                  "email": "guest@example.test",
+                  "self": true,
+                  "responseStatus": "accepted"
+                }
+              ],
+              "reminders": {
+                "useDefault": false,
+                "overrides": [
+                  {
+                    "method": "popup",
+                    "minutes": 10
+                  }
+                ]
+              }
+            }
+          },
+          "waitForAbort": true
+        },
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "unconfirmed",
+      "inspectNative": false,
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasProviderRsvpSource",
+          "native.writeRsvp",
+          "credentials.googleRsvp",
+          "http.googleRsvp",
+          "http.googleRsvp",
+          "db.hasProviderRsvpSource",
+          "db.markGoogleRsvpDispatched",
+          "http.googleRsvp",
+          "http.googleRsvp",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "unconfirmed",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "provider-write-failed",
+            "details": {
+              "uncertain": true,
+              "nextAttemptAt": "<time>"
+            }
+          }
+        ],
+        "native": []
+      },
+      "actualGoogleRsvp": true
     }
   ]
 }

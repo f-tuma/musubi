@@ -185,3 +185,21 @@ for (const family of ["googleOccurrence", "reminderEdit"] as const)
     assert.equal((await f.run()).settled, true);
     assert.equal((f.completions[0] as { expectedRef: typeof f.ref }).expectedRef.etag, '"v1"');
   });
+
+test("Google RSVP conclusive marker refusal cannot release native mutation", async () => {
+  const f = fixture("googleRsvp"); let mutations = 0;
+  f.host.mark = async kind => { f.calls.push(`mark:${kind}:false`); return false; };
+  f.host.fail = async (error, facts) => { assert(error instanceof NativeFailure); assert.equal(error.code, "provider-conflict"); assert.equal(error.outcome, "not-written"); f.failures.push(facts); };
+  f.native.deliver = async input => { if (!("mark" in input)) throw new Error("Expected RSVP marker"); await input.mark(); mutations++; return { kind: "deleted" }; };
+  assert.equal((await f.run()).settled, false); assert.equal(mutations, 0); assert.equal(f.completions.length, 0);
+  assert.equal(f.failures.length, 1); assert.equal(f.failures[0]!.mutationStarted, false); assert.equal(f.failures[0]!.writerFulfilled, false);
+});
+test("Google RSVP marker granted after close cannot release native mutation", async () => {
+  const f = fixture("googleRsvp"), controller = new AbortController(); let mutations = 0, entered!: () => void, resume!: () => void;
+  const ready = new Promise<void>(resolve => { entered = resolve; });
+  f.host.mark = async () => { entered(); await new Promise<void>(resolve => { resume = resolve; }); return true; };
+  f.native.deliver = async input => { if (!("mark" in input)) throw new Error("Expected RSVP marker"); await input.mark(); mutations++; return { kind: "deleted" }; };
+  const running = runClaimedEventCompatibility(f.claim, f.host, f.native, { signal: controller.signal });
+  await ready; controller.abort(); assert.equal((await running).settled, false); resume(); await new Promise<void>(resolve => setImmediate(resolve));
+  assert.equal(mutations, 0); assert.equal(f.completions.length, 0); assert.equal(f.failures.length, 1);
+});

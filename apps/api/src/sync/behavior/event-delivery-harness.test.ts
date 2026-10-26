@@ -20,4 +20,10 @@ await assert.rejects(() => runEventDeliveryScenario(extra), error => error insta
 const concurrent = await Promise.allSettled([runEventDeliveryScenario(suite.scenarios[0]!), runEventDeliveryScenario(suite.scenarios[0]!)]);
 assert.equal(concurrent[0]!.status, "fulfilled"); assert.equal(concurrent[1]!.status, "rejected"); refused++;
 for (const scenario of suite.scenarios) await runEventDeliveryScenario(scenario);
+const combined = suite.scenarios.find(item => item.id === "google-rsvp-host-native-fresh-unstarted")!;
+const malformedHttp = structuredClone(combined); malformedHttp.steps[0]!.http = { method: "GET", url: "https://invalid.test", headers: {} }; invalid({ ...suite, scenarios: [malformedHttp] });
+const malformedMarker = structuredClone(combined); malformedMarker.steps[0]!.portFailure = "marker-ack-lost"; invalid({ ...suite, scenarios: [malformedMarker] });
+const missingNative = structuredClone(combined); missingNative.adapter = []; invalid({ ...suite, scenarios: [missingNative] });
+const wrongHttp = structuredClone(combined); wrongHttp.steps.find(item => item.http)!.http!.url += "-wrong";
+await assert.rejects(() => runEventDeliveryScenario(wrongHttp), error => error instanceof EventDeliveryScenarioFailure && error.code === "unexpected-port"); refused++;
 console.log(`Event delivery behavior: ${suite.scenarios.length} actual-executor scenarios and ${refused} fail-closed checks passed (dependency ports only).`);

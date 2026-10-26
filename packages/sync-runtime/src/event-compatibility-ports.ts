@@ -49,7 +49,7 @@ export type EventCompatibilityNativeOutcome =
   | { readonly kind: "deleted" | "rejected" | "absent" | "unconfirmed" };
 export type EventCompatibilityConfirmation = "graphOccurrenceContent" | "graphMeetingCancellation" | "organizer" | "reminderInstance" |
   "graphSeriesDeletion" | "graphSeriesCreate" | "caldavAlarm" | "caldavSplit" | "caldavSeriesDeletion" | "caldavSeries" | "revision" | "rsvp" | "reminderEdit";
-export type EventCompatibilityMark = "graphOccurrenceContent" | "graphMeetingCancellation" | "organizer" | "microsoftRsvp" | "caldavRsvp";
+export type EventCompatibilityMark = "graphOccurrenceContent" | "graphMeetingCancellation" | "organizer" | "microsoftRsvp" | "caldavRsvp" | "googleRsvp";
 export type EventCompatibilityCompletion =
   | { readonly family: "graphOccurrenceContent" | "graphMeetingCancellation" | "organizer" | "graphSeriesDeletion" | "graphSeriesCreate" }
   | { readonly family: "caldavAlarm"; readonly observation: EventCompatibilityObservation }
