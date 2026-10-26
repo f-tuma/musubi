@@ -192,6 +192,10 @@ async function main() {
     // Expire only this exact owned fixture row; do not erase any other work's
     // durable wait or consume a worker slot with a test sleep.
     await db.update(syncReadWork).set({ notBefore: sql`clock_timestamp()-interval '1 millisecond'` }).where(and(eq(syncReadWork.id, pendingDiscovery!.id), eq(syncReadWork.userID, owner), eq(syncReadWork.caldavAccountID, accountID)));
+    // SQL fixture expiry does not expire the failed coordinator's in-memory
+    // refusal hint. Restart only that coordinator; retain every durable fence.
+    stopSyncWorkCoordinator();
+    initializeSyncEngine(["pull"]);
     absent = true;
     await sync();
     assert.equal(await source(), undefined, "Only the fresh complete account inventory removes the missing mirror.");
