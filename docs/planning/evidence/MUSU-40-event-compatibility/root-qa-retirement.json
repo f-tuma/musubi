@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-26T16:56:23.259703+00:00",
+  "container": "musubi-c08-event-qa-20261026",
+  "containerId": "e43e0748c179724facaf28c89d998aa1da28f691d594536c5b464d6e5f2a46d2",
+  "ownedState": "/tmp/musu40-event-qa-state.json",
+  "lastNonTemplateDatabases": [
+    "postgres"
+  ],
+  "lastOtherClientSessions": 0,
+  "stoppedAndRemoved": true,
+  "ownedAnonymousVolumeRemovalRequested": true,
+  "containerAbsentSuccessfulInventoryVerified": true,
+  "userQaPort55437Untouched": true,
+  "scope": "Root-owned disposable C08 QA retired after all source/installed/upgrade/reference workers completed. Browser runs after network cleanup."
+}

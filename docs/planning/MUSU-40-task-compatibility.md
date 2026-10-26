@@ -1,9 +1,10 @@
 # MUSU-40 · Task compatibility lifecycle
 
 Source implementation, native/process acceptance, independent source review,
-installed upgrade/crash proof and final running-app checks are complete. Final
-PR approval and current-head CI remain separate gates. This document records a
-host-only extraction, not deployment evidence or a new portable provider profile.
+installed upgrade/crash proof and final running-app checks are complete. PR #385
+merged to verified main `27639ade` after all21 current-head checks passed. This
+document records a host-only extraction, not deployment evidence or a new
+portable provider profile.
 
 `runClaimedTaskCompatibility` in `packages/sync-runtime` owns the remaining
 claimed task lifecycle once. The API keeps claim/decode, source and privacy
@@ -177,11 +178,12 @@ All task-owned containers and nonce DBs were removed; shared port55443 was absen
 in two polls before the browser run at12:37UTC. User QA identity/ports remained
 unchanged. Later event QA belongs to the subsequent slice.
 
-C08 remains open for specialized/generic event extraction, Graph move parity,
-a dedicated Google RSVP permanent recovery barrier and final cross-family audit.
-The independent audit found that the old Google RSVP writer may send another
-conditional PATCH after an unapplied503 if the baseline remains unchanged. The
-event parity extraction must characterize that actual behavior, not claim an
-already-satisfied blanket no-resend policy. This gap requires a separate tested
-policy fix before C08 can close. No registry publication, live-provider
-certification or production deployment occurred.
+C08 remains open for the event/Google installed and final acceptance gates and
+cross-family audit. Specialized/generic event extraction and Graph move behavior
+have separate source/native evidence. Historical event parity records the old
+Google RSVP conditional resend after an unapplied503. The separate permanent
+Google barrier now has source/PG/native/process evidence and intentionally
+changes that policy to GET-only HOLD for possible prior dispatch and markerless
+history. Its installed upgrade/crash/app checks remain separate and pending.
+No registry publication, live-provider certification or production deployment
+occurred.

@@ -1,0 +1,2004 @@
+{
+  "schemaVersion": 1,
+  "status": "verified-composite-20-pairs",
+  "artifact": {
+    "path": "/tmp/musu40-event-final-composite-historical-20-v1.json",
+    "sha256": "98f856e96727461f9827e333812025ec153af5c70baaf73a6b295c85d41695af",
+    "bytes": 74748
+  },
+  "baselineCommit": "8ea0d3bfe193abd701e06c15d19b5d312bdd2290",
+  "baselineEventSourceSha256": "63f478c91e36db4913717db759e773d260e928cc530dd0c8696112b5e39ae8b0",
+  "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+  "pairs": [
+    {
+      "suite": "generic",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 26,
+          "nativeLogicalRequests": 0,
+          "actualRelayRequests": 0,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/generic-old.json",
+            "sha256": "013937974228226bd56569a57e7333d57f98954bf1fea54cba0ca359b4e97d23",
+            "bytes": 1614816
+          },
+          "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/generic-old-normalized.json",
+            "sha256": "4a43558a7b9c34e7413b956b5ae8e33b4d3dfed7d4c4f1cefeb0f2476e9a24bb",
+            "bytes": 1450642
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 26,
+          "nativeLogicalRequests": 0,
+          "actualRelayRequests": 0,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/generic-new.json",
+            "sha256": "5a01132403235c0514636566e51b1e536e07fc258214d726994ed130b1e4731a",
+            "bytes": 1614724
+          },
+          "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/generic-new-normalized.json",
+            "sha256": "4a43558a7b9c34e7413b956b5ae8e33b4d3dfed7d4c4f1cefeb0f2476e9a24bb",
+            "bytes": 1450642
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "generic-native",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 18,
+          "nativeLogicalRequests": 78,
+          "actualRelayRequests": 58,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/generic-native-old.json",
+            "sha256": "989ef4900ff6e0fa0a070b2da55389776094884cf705751357233989db552853",
+            "bytes": 636196
+          },
+          "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/generic-native-old-normalized.json",
+            "sha256": "5b28fdfaf4c53941d202c7151985a5fe3cbd8d6ba7257aa9837983df53ffa999",
+            "bytes": 485360
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 18,
+          "nativeLogicalRequests": 78,
+          "actualRelayRequests": 58,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/generic-native-new.json",
+            "sha256": "732ededdfa59487ff98314d3a937d97dce2375e738e7046d4a8769cab838bf2f",
+            "bytes": 636174
+          },
+          "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/generic-native-new-normalized.json",
+            "sha256": "5b28fdfaf4c53941d202c7151985a5fe3cbd8d6ba7257aa9837983df53ffa999",
+            "bytes": 485360
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "google-reminders",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 53,
+          "nativeLogicalRequests": 156,
+          "actualRelayRequests": 156,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/google-reminders-old.json",
+            "sha256": "f81c8edf2f0612ddcea0cd1d65afe119afb67b1e752df7019ed93e5e90587ca3",
+            "bytes": 2227266
+          },
+          "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/google-reminders-old-normalized.json",
+            "sha256": "cc92fa8b01e2e6a91033b40c42c94ea1fdf0a1b90c70fffabe80726cd46724e9",
+            "bytes": 1664918
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 53,
+          "nativeLogicalRequests": 156,
+          "actualRelayRequests": 156,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/google-reminders-new.json",
+            "sha256": "e9cc43cd13a9cd9b93bf26abcc587bf9c41099e948fd06bf4b243ee5a8ca1112",
+            "bytes": 2227291
+          },
+          "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/google-reminders-new-normalized.json",
+            "sha256": "cc92fa8b01e2e6a91033b40c42c94ea1fdf0a1b90c70fffabe80726cd46724e9",
+            "bytes": 1664918
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "google-instance-reminders",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 52,
+          "nativeLogicalRequests": 152,
+          "actualRelayRequests": 152,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/google-instance-reminders-old.json",
+            "sha256": "4df7c3b804be4c93368d292d891fdf1278ed54c7e31b60b4c057ec0435a2ddd8",
+            "bytes": 2706885
+          },
+          "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/google-instance-reminders-old-normalized.json",
+            "sha256": "e832d42188dc497cd6f59a6981f41dd46b66d5e47280cd0c2bccf8e09050717b",
+            "bytes": 2314024
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 52,
+          "nativeLogicalRequests": 152,
+          "actualRelayRequests": 152,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/google-instance-reminders-new.json",
+            "sha256": "e9832eab041cd257640845cb9474b417f071f8e0a4db798cfb495466d9f909cb",
+            "bytes": 2707289
+          },
+          "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/google-instance-reminders-new-normalized.json",
+            "sha256": "e832d42188dc497cd6f59a6981f41dd46b66d5e47280cd0c2bccf8e09050717b",
+            "bytes": 2314024
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "google-occurrence",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 27,
+          "nativeLogicalRequests": 393,
+          "actualRelayRequests": 393,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/google-occurrence-old.json",
+            "sha256": "7db96db9047c4134743c729ce928edb59cc61cd2b9e46c60380bc86490f10535",
+            "bytes": 1655476
+          },
+          "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/google-occurrence-old-normalized.json",
+            "sha256": "b13b9dc3b5df929583eff1928bbd70c08cd67f803c6eaec67a6c19ba48cb5f95",
+            "bytes": 1459569
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 27,
+          "nativeLogicalRequests": 393,
+          "actualRelayRequests": 393,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/google-occurrence-new.json",
+            "sha256": "6c4a7353573a1bee94130f9e98072a2c6ec84648ac5116ecabc72f107c9cf3cb",
+            "bytes": 1655511
+          },
+          "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/google-occurrence-new-normalized.json",
+            "sha256": "b13b9dc3b5df929583eff1928bbd70c08cd67f803c6eaec67a6c19ba48cb5f95",
+            "bytes": 1459569
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "dav-resource",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 544,
+          "nativeLogicalRequests": 3795,
+          "actualRelayRequests": 0,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/dav-resource-old.json",
+            "sha256": "3394e13a8da15bdb329fabba9654a38542882b7459a3c84017aef538ea807bb9",
+            "bytes": 60632909
+          },
+          "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/dav-resource-old-normalized.json",
+            "sha256": "f9d823468524c795c9e3335e357e09733c94b2b72b96ebe4f00bf0134fe0db41",
+            "bytes": 59901305
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 544,
+          "nativeLogicalRequests": 3795,
+          "actualRelayRequests": 0,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/dav-resource-new.json",
+            "sha256": "3701d9cdda653135b59d56ecf51b9593df1be28d4ef1fb1eb225114405829fd6",
+            "bytes": 60632896
+          },
+          "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-v3-codev3-final-paired/dav-resource-new-normalized.json",
+            "sha256": "f9d823468524c795c9e3335e357e09733c94b2b72b96ebe4f00bf0134fe0db41",
+            "bytes": 59901305
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "dav-alarms",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 43,
+          "nativeLogicalRequests": 357,
+          "actualRelayRequests": 0,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "e58787441a71e77913580a4aece65f644938b1b06046231d73f097bf2da9a6db",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/dav-alarms/dav-alarms-old.json",
+            "sha256": "8882d1a09fb36988ea73af71bb9872d379065848f9aa9af50a8d56cafadcd2e3",
+            "bytes": 2106980
+          },
+          "actualExecutionHead": "aecb2c550bb94c558eb2b73c1571dbfacc75518d",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/dav-alarms/dav-alarms-old-normalized.json",
+            "sha256": "3ee690577c563eebb27c6c653fdccca7eab34d1a5bbf6a6476c28a4f6cfac654",
+            "bytes": 1882619
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 43,
+          "nativeLogicalRequests": 357,
+          "actualRelayRequests": 0,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "e58787441a71e77913580a4aece65f644938b1b06046231d73f097bf2da9a6db",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/dav-alarms/dav-alarms-new.json",
+            "sha256": "016e12d3acfa5255e92a7308ef252b1a984dc2264826af4a5f53d533d3e3c85f",
+            "bytes": 2106978
+          },
+          "actualExecutionHead": "aecb2c550bb94c558eb2b73c1571dbfacc75518d",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/dav-alarms/dav-alarms-new-normalized.json",
+            "sha256": "3ee690577c563eebb27c6c653fdccca7eab34d1a5bbf6a6476c28a4f6cfac654",
+            "bytes": 1882619
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "google-organizer",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 63,
+          "nativeLogicalRequests": 264,
+          "actualRelayRequests": 264,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "e58787441a71e77913580a4aece65f644938b1b06046231d73f097bf2da9a6db",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/google-organizer/google-organizer-old.json",
+            "sha256": "317a913c2c96daba1fa1284ae494f5f7833ba4048ce7c114a7e01d01892c38bc",
+            "bytes": 16540192
+          },
+          "actualExecutionHead": "aecb2c550bb94c558eb2b73c1571dbfacc75518d",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/google-organizer/google-organizer-old-normalized.json",
+            "sha256": "c0474267bd75803866c48c93a2a00ab6298dbc5d5048f1a4ba9156d530414b07",
+            "bytes": 16167567
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 63,
+          "nativeLogicalRequests": 264,
+          "actualRelayRequests": 264,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "e58787441a71e77913580a4aece65f644938b1b06046231d73f097bf2da9a6db",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/google-organizer/google-organizer-new.json",
+            "sha256": "c2bfe9bcb8754f3395801761e4b712a6f9817fba9bc55c38c2cfa52b7bf3f8a4",
+            "bytes": 16541145
+          },
+          "actualExecutionHead": "aecb2c550bb94c558eb2b73c1571dbfacc75518d",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/google-organizer/google-organizer-new-normalized.json",
+            "sha256": "c0474267bd75803866c48c93a2a00ab6298dbc5d5048f1a4ba9156d530414b07",
+            "bytes": 16167567
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "graph-organizer",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 10,
+          "nativeLogicalRequests": 61,
+          "actualRelayRequests": 61,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "e58787441a71e77913580a4aece65f644938b1b06046231d73f097bf2da9a6db",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/graph-organizer/graph-organizer-old.json",
+            "sha256": "37b84f40be9c6bba51fe034a5ef9395688a681ddbbcf9da75a6fa5b366b548d6",
+            "bytes": 504450
+          },
+          "actualExecutionHead": "aecb2c550bb94c558eb2b73c1571dbfacc75518d",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/graph-organizer/graph-organizer-old-normalized.json",
+            "sha256": "0b59922c52d5df91fbca0a2e0357ea40719e67a59ed0607d8676b4d6be2c4f0c",
+            "bytes": 360783
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 10,
+          "nativeLogicalRequests": 61,
+          "actualRelayRequests": 61,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "e58787441a71e77913580a4aece65f644938b1b06046231d73f097bf2da9a6db",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/graph-organizer/graph-organizer-new.json",
+            "sha256": "7a3fbb609d6fba0748f7a55da5ae82cef143ffe90c952e41b5348f6486060873",
+            "bytes": 504448
+          },
+          "actualExecutionHead": "aecb2c550bb94c558eb2b73c1571dbfacc75518d",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/graph-organizer/graph-organizer-new-normalized.json",
+            "sha256": "0b59922c52d5df91fbca0a2e0357ea40719e67a59ed0607d8676b4d6be2c4f0c",
+            "bytes": 360783
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "dav-organizer",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 35,
+          "nativeLogicalRequests": 681,
+          "actualRelayRequests": 0,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "e58787441a71e77913580a4aece65f644938b1b06046231d73f097bf2da9a6db",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/dav-organizer/dav-organizer-old.json",
+            "sha256": "6f10a33a08a3e51fe70d3a19b95e172ecd33910f73bae57e5146155748fdde71",
+            "bytes": 2154611
+          },
+          "actualExecutionHead": "aecb2c550bb94c558eb2b73c1571dbfacc75518d",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/dav-organizer/dav-organizer-old-normalized.json",
+            "sha256": "d2e3ecafd35aabd542652c28ce9083794f413c25558a7386e82d0875f7ac03f0",
+            "bytes": 1905499
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 35,
+          "nativeLogicalRequests": 681,
+          "actualRelayRequests": 0,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "e58787441a71e77913580a4aece65f644938b1b06046231d73f097bf2da9a6db",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/dav-organizer/dav-organizer-new.json",
+            "sha256": "56abc922bd1f99db07fc0b855a463eaaedffb9ca661c8351833f3e4874ce83a7",
+            "bytes": 2154577
+          },
+          "actualExecutionHead": "aecb2c550bb94c558eb2b73c1571dbfacc75518d",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/dav-organizer/dav-organizer-new-normalized.json",
+            "sha256": "d2e3ecafd35aabd542652c28ce9083794f413c25558a7386e82d0875f7ac03f0",
+            "bytes": 1905499
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "google-rsvp",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 21,
+          "nativeLogicalRequests": 135,
+          "actualRelayRequests": 135,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "e58787441a71e77913580a4aece65f644938b1b06046231d73f097bf2da9a6db",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/google-rsvp/google-rsvp-old.json",
+            "sha256": "12c53c5c24fabdbeaef52ef4553490cd7d20cfa9d516e86fad1b9da6a46c2e72",
+            "bytes": 1131166
+          },
+          "actualExecutionHead": "aecb2c550bb94c558eb2b73c1571dbfacc75518d",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/google-rsvp/google-rsvp-old-normalized.json",
+            "sha256": "ffc5044f7d9e41494522bdee945d4ed65dca645ec949d4425d2cace95c7fb98b",
+            "bytes": 974839
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 21,
+          "nativeLogicalRequests": 135,
+          "actualRelayRequests": 135,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "e58787441a71e77913580a4aece65f644938b1b06046231d73f097bf2da9a6db",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/google-rsvp/google-rsvp-new.json",
+            "sha256": "205b67b4ea4b3d84b47d961556b5ae3fca307ec591cc446fea9ad10dbb2c09ee",
+            "bytes": 1131172
+          },
+          "actualExecutionHead": "aecb2c550bb94c558eb2b73c1571dbfacc75518d",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/google-rsvp/google-rsvp-new-normalized.json",
+            "sha256": "ffc5044f7d9e41494522bdee945d4ed65dca645ec949d4425d2cace95c7fb98b",
+            "bytes": 974839
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "google-rsvp-recovery",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 4,
+          "nativeLogicalRequests": 16,
+          "actualRelayRequests": 16,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "e58787441a71e77913580a4aece65f644938b1b06046231d73f097bf2da9a6db",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/google-rsvp-recovery/google-rsvp-recovery-old.json",
+            "sha256": "dc48063a6031d2665e79868b87694884f719e9b22badaded2fab337f57902a5f",
+            "bytes": 292430
+          },
+          "actualExecutionHead": "aecb2c550bb94c558eb2b73c1571dbfacc75518d",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/google-rsvp-recovery/google-rsvp-recovery-old-normalized.json",
+            "sha256": "e009dd2170b1e67048c95e80e0b8375c7579ff1bbc5df403e80d7eb89f5015ba",
+            "bytes": 155988
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 4,
+          "nativeLogicalRequests": 16,
+          "actualRelayRequests": 16,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "e58787441a71e77913580a4aece65f644938b1b06046231d73f097bf2da9a6db",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/google-rsvp-recovery/google-rsvp-recovery-new.json",
+            "sha256": "b82feff6f52f82b0ff30fc7aa6d5cd6d94ec70f531db6a8a20feaa9a5b8fd0cf",
+            "bytes": 292420
+          },
+          "actualExecutionHead": "aecb2c550bb94c558eb2b73c1571dbfacc75518d",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/google-rsvp-recovery/google-rsvp-recovery-new-normalized.json",
+            "sha256": "e009dd2170b1e67048c95e80e0b8375c7579ff1bbc5df403e80d7eb89f5015ba",
+            "bytes": 155988
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "graph-rsvp",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 39,
+          "nativeLogicalRequests": 247,
+          "actualRelayRequests": 247,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "e58787441a71e77913580a4aece65f644938b1b06046231d73f097bf2da9a6db",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/graph-rsvp/graph-rsvp-old.json",
+            "sha256": "61a103cf63a4b8fb6bb7aff953ac60730621942de14f9d0237a5e644d7eb568a",
+            "bytes": 2172976
+          },
+          "actualExecutionHead": "aecb2c550bb94c558eb2b73c1571dbfacc75518d",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/graph-rsvp/graph-rsvp-old-normalized.json",
+            "sha256": "cc73a0beec46f6c98cbae310554c4f366f4ad43276ce4e48e281e8fda75f453c",
+            "bytes": 1993891
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 39,
+          "nativeLogicalRequests": 247,
+          "actualRelayRequests": 247,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "e58787441a71e77913580a4aece65f644938b1b06046231d73f097bf2da9a6db",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/graph-rsvp/graph-rsvp-new.json",
+            "sha256": "19e67461f6d5c697f270b9dc10cfd235deab9c310ea0496547a07078fbe95e8e",
+            "bytes": 2172999
+          },
+          "actualExecutionHead": "aecb2c550bb94c558eb2b73c1571dbfacc75518d",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/graph-rsvp/graph-rsvp-new-normalized.json",
+            "sha256": "cc73a0beec46f6c98cbae310554c4f366f4ad43276ce4e48e281e8fda75f453c",
+            "bytes": 1993891
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "dav-rsvp",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 30,
+          "nativeLogicalRequests": 617,
+          "actualRelayRequests": 0,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "e58787441a71e77913580a4aece65f644938b1b06046231d73f097bf2da9a6db",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/dav-rsvp/dav-rsvp-old.json",
+            "sha256": "0d01d7106a9f654239e53bdedcae7c8186c2cb3acde212b2ee1007d327e0760e",
+            "bytes": 2129196
+          },
+          "actualExecutionHead": "aecb2c550bb94c558eb2b73c1571dbfacc75518d",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/dav-rsvp/dav-rsvp-old-normalized.json",
+            "sha256": "1d797529edd3dc8cf6a3c02f4ab351b8091918c5a0fd6f9ee47295be9ad73917",
+            "bytes": 1911714
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 30,
+          "nativeLogicalRequests": 617,
+          "actualRelayRequests": 0,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "e58787441a71e77913580a4aece65f644938b1b06046231d73f097bf2da9a6db",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/dav-rsvp/dav-rsvp-new.json",
+            "sha256": "29ad032d421403ecafcc11586048a08feed9df35e81d625099bc407a1cd6f307",
+            "bytes": 2129186
+          },
+          "actualExecutionHead": "aecb2c550bb94c558eb2b73c1571dbfacc75518d",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-alarm-addendum-final-paired/dav-rsvp/dav-rsvp-new-normalized.json",
+            "sha256": "1d797529edd3dc8cf6a3c02f4ab351b8091918c5a0fd6f9ee47295be9ad73917",
+            "bytes": 1911714
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "graph-create",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 41,
+          "nativeLogicalRequests": 316,
+          "actualRelayRequests": 316,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "0a5100df48fae3aa1aa6c1a5427bb70ea4b249d84bb1d350e1e1a82f90851e97",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-create/graph-create-old.json",
+            "sha256": "90472df4d89a38b05c61db36da729545f6e7a1ae4342e155204843c3a592651f",
+            "bytes": 2390880
+          },
+          "actualExecutionHead": "e6c2c308086c88d999d96096ff4cbd4fb6e5d947",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-create/graph-create-old-normalized.json",
+            "sha256": "d56f48c247dabb2c65b2f53ddb1e169290d94649080907d4b07c8ecc6166a36d",
+            "bytes": 1877538
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 41,
+          "nativeLogicalRequests": 316,
+          "actualRelayRequests": 316,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "0a5100df48fae3aa1aa6c1a5427bb70ea4b249d84bb1d350e1e1a82f90851e97",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-create/graph-create-new.json",
+            "sha256": "120b5f1c8a79e6e20f390111b03b9c5268374ebb7ff4598cd6efd4671a1ae442",
+            "bytes": 2390813
+          },
+          "actualExecutionHead": "e6c2c308086c88d999d96096ff4cbd4fb6e5d947",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-create/graph-create-new-normalized.json",
+            "sha256": "d56f48c247dabb2c65b2f53ddb1e169290d94649080907d4b07c8ecc6166a36d",
+            "bytes": 1877538
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "graph-delete",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 24,
+          "nativeLogicalRequests": 277,
+          "actualRelayRequests": 277,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "0a5100df48fae3aa1aa6c1a5427bb70ea4b249d84bb1d350e1e1a82f90851e97",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-delete/graph-delete-old.json",
+            "sha256": "b93f2c4018f4f5abb9217287112ea26254b422eba228718551de636c67d2df93",
+            "bytes": 3766514
+          },
+          "actualExecutionHead": "e6c2c308086c88d999d96096ff4cbd4fb6e5d947",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-delete/graph-delete-old-normalized.json",
+            "sha256": "c05d071ddb78cdda8af75901c18fce1410bc66ba9fa50cc5323772d9aeed4502",
+            "bytes": 3557591
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 24,
+          "nativeLogicalRequests": 277,
+          "actualRelayRequests": 277,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "0a5100df48fae3aa1aa6c1a5427bb70ea4b249d84bb1d350e1e1a82f90851e97",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-delete/graph-delete-new.json",
+            "sha256": "181d3c1437e53ce65d4352f0c71ecb285d5757acc3e874e8770ccd7f79160b8b",
+            "bytes": 3766354
+          },
+          "actualExecutionHead": "e6c2c308086c88d999d96096ff4cbd4fb6e5d947",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-delete/graph-delete-new-normalized.json",
+            "sha256": "c05d071ddb78cdda8af75901c18fce1410bc66ba9fa50cc5323772d9aeed4502",
+            "bytes": 3557591
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "graph-content",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 29,
+          "nativeLogicalRequests": 1115,
+          "actualRelayRequests": 1115,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "0a5100df48fae3aa1aa6c1a5427bb70ea4b249d84bb1d350e1e1a82f90851e97",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-content/graph-content-old.json",
+            "sha256": "f9d29ecbe894489360e6f8696d976c771f7a7fe18768e9749dae68dce4d62b0b",
+            "bytes": 6925773
+          },
+          "actualExecutionHead": "e6c2c308086c88d999d96096ff4cbd4fb6e5d947",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-content/graph-content-old-normalized.json",
+            "sha256": "c6c2549d797957ef68b97b558e0b7979d9c88a314588aa399aab092075f3e24a",
+            "bytes": 6191861
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 29,
+          "nativeLogicalRequests": 1115,
+          "actualRelayRequests": 1115,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "0a5100df48fae3aa1aa6c1a5427bb70ea4b249d84bb1d350e1e1a82f90851e97",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-content/graph-content-new.json",
+            "sha256": "6a351b100cb551f364c301e1a1351a834da96f89091f6d34a76b20d26a93ea7e",
+            "bytes": 6925750
+          },
+          "actualExecutionHead": "e6c2c308086c88d999d96096ff4cbd4fb6e5d947",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-content/graph-content-new-normalized.json",
+            "sha256": "c6c2549d797957ef68b97b558e0b7979d9c88a314588aa399aab092075f3e24a",
+            "bytes": 6191861
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "graph-series-content",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 37,
+          "nativeLogicalRequests": 2102,
+          "actualRelayRequests": 2102,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "0a5100df48fae3aa1aa6c1a5427bb70ea4b249d84bb1d350e1e1a82f90851e97",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-series-content/graph-series-content-old.json",
+            "sha256": "cf72ec765ccf9450d059081bb0b2aa0f843a84db8a449008bf06834c233685ca",
+            "bytes": 10557700
+          },
+          "actualExecutionHead": "e6c2c308086c88d999d96096ff4cbd4fb6e5d947",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-series-content/graph-series-content-old-normalized.json",
+            "sha256": "d63977dfcf01753101313dc3954ab27de09c293ad797f883ce82511f3d886355",
+            "bytes": 9562172
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 37,
+          "nativeLogicalRequests": 2102,
+          "actualRelayRequests": 2102,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "0a5100df48fae3aa1aa6c1a5427bb70ea4b249d84bb1d350e1e1a82f90851e97",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-series-content/graph-series-content-new.json",
+            "sha256": "1058add8c80ce7bae5857fc3c5003677ee2b3838306ce525a79cf0d5d294e1cb",
+            "bytes": 10557727
+          },
+          "actualExecutionHead": "e6c2c308086c88d999d96096ff4cbd4fb6e5d947",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-series-content/graph-series-content-new-normalized.json",
+            "sha256": "d63977dfcf01753101313dc3954ab27de09c293ad797f883ce82511f3d886355",
+            "bytes": 9562172
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "graph-meeting-cancel",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 35,
+          "nativeLogicalRequests": 556,
+          "actualRelayRequests": 556,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "0a5100df48fae3aa1aa6c1a5427bb70ea4b249d84bb1d350e1e1a82f90851e97",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-meeting-cancel/graph-meeting-cancel-old.json",
+            "sha256": "2278c04ae5f5821e3a9fd78a43f8803dc177e7a124c1c990086c5c8932e94611",
+            "bytes": 5845278
+          },
+          "actualExecutionHead": "e6c2c308086c88d999d96096ff4cbd4fb6e5d947",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-meeting-cancel/graph-meeting-cancel-old-normalized.json",
+            "sha256": "4d6aa54bd8423aff2a3818db42dd98400f57610eb2becb61a84d10eaf9cdae2c",
+            "bytes": 5167633
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 35,
+          "nativeLogicalRequests": 556,
+          "actualRelayRequests": 556,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "0a5100df48fae3aa1aa6c1a5427bb70ea4b249d84bb1d350e1e1a82f90851e97",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-meeting-cancel/graph-meeting-cancel-new.json",
+            "sha256": "8c9a0056df06d750797d832891b47a2ecb00e4b0744f7c821b935d71b3c0516c",
+            "bytes": 5845294
+          },
+          "actualExecutionHead": "e6c2c308086c88d999d96096ff4cbd4fb6e5d947",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-meeting-cancel/graph-meeting-cancel-new-normalized.json",
+            "sha256": "4d6aa54bd8423aff2a3818db42dd98400f57610eb2becb61a84d10eaf9cdae2c",
+            "bytes": 5167633
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    },
+    {
+      "suite": "graph-move",
+      "labels": [
+        {
+          "label": "old",
+          "deliveries": 37,
+          "nativeLogicalRequests": 1740,
+          "actualRelayRequests": 1740,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "0a5100df48fae3aa1aa6c1a5427bb70ea4b249d84bb1d350e1e1a82f90851e97",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-move/graph-move-old.json",
+            "sha256": "612fd3e827eaa216caaaebd44e70c2fb303da1e221d72d87ad23190fb554842a",
+            "bytes": 17663099
+          },
+          "actualExecutionHead": "e6c2c308086c88d999d96096ff4cbd4fb6e5d947",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-move/graph-move-old-normalized.json",
+            "sha256": "ce43ae34f49b025d43ada9d797d590ede2db585c46804f626aeb1e3013a237b6",
+            "bytes": 15237608
+          }
+        },
+        {
+          "label": "new",
+          "deliveries": 37,
+          "nativeLogicalRequests": 1740,
+          "actualRelayRequests": 1740,
+          "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+          "harnessSha256": "0a5100df48fae3aa1aa6c1a5427bb70ea4b249d84bb1d350e1e1a82f90851e97",
+          "ownedPoolsClosed": 2,
+          "artifact": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-move/graph-move-new.json",
+            "sha256": "d8eda58dbf640c2c5bf5c8bc5f58c68d771f554828e1dfb369a1d7d2380bd32e",
+            "bytes": 17663204
+          },
+          "actualExecutionHead": "e6c2c308086c88d999d96096ff4cbd4fb6e5d947",
+          "normalized": {
+            "path": "/tmp/musubi-c08-event-existing-read-clock-final-paired/graph-move/graph-move-new-normalized.json",
+            "sha256": "ce43ae34f49b025d43ada9d797d590ede2db585c46804f626aeb1e3013a237b6",
+            "bytes": 15237608
+          }
+        }
+      ],
+      "normalizedWholeWireAndStateEqual": true
+    }
+  ],
+  "totalsPerLabel": {
+    "old": {
+      "deliveries": 1168,
+      "nativeLogicalRequests": 13058,
+      "actualRelayRequests": 7588
+    },
+    "new": {
+      "deliveries": 1168,
+      "nativeLogicalRequests": 13058,
+      "actualRelayRequests": 7588
+    }
+  },
+  "actualExecutionCohorts": [
+    {
+      "head": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "suites": [
+        "generic",
+        "generic-native",
+        "google-reminders",
+        "google-instance-reminders",
+        "google-occurrence",
+        "dav-resource"
+      ]
+    },
+    {
+      "head": "aecb2c550bb94c558eb2b73c1571dbfacc75518d",
+      "harnessSha256": "e58787441a71e77913580a4aece65f644938b1b06046231d73f097bf2da9a6db",
+      "suites": [
+        "dav-alarms",
+        "google-organizer",
+        "graph-organizer",
+        "dav-organizer",
+        "google-rsvp",
+        "google-rsvp-recovery",
+        "graph-rsvp",
+        "dav-rsvp"
+      ]
+    },
+    {
+      "head": "e6c2c308086c88d999d96096ff4cbd4fb6e5d947",
+      "harnessSha256": "0a5100df48fae3aa1aa6c1a5427bb70ea4b249d84bb1d350e1e1a82f90851e97",
+      "suites": [
+        "graph-create",
+        "graph-delete",
+        "graph-content",
+        "graph-series-content",
+        "graph-meeting-cancel",
+        "graph-move"
+      ]
+    }
+  ],
+  "graphCreateQualification": "Existing options.now controlled caller input only; original/executed compiled bytes and exact literal19rollingwindows validated. Native instances windows/content unchanged.",
+  "separatePrePolicyNewOnlyAndProcess": [
+    {
+      "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/summary.json",
+      "sha256": "2c6a431d843efef15b8c35d1537551ae2e0cec5a417991d42f1cf89eea0f7e7c",
+      "mode": "new-only",
+      "processAcceptance": false,
+      "suiteCount": 20,
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+      "actualExecutionHarness": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c"
+    },
+    {
+      "path": "/tmp/musubi-c08-event-v3-codev3-final-process/summary.json",
+      "sha256": "5752e4a51f6e53a2bff7793b881ab682838adbce637d01cc511a853c5fc61158",
+      "mode": "differential",
+      "processAcceptance": true,
+      "suiteCount": 16,
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+      "actualExecutionHarness": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c"
+    }
+  ],
+  "separatePrePolicyNewOnlyRaw": [
+    {
+      "label": "new",
+      "deliveries": 26,
+      "nativeLogicalRequests": 0,
+      "actualRelayRequests": 0,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/generic-new.json",
+        "sha256": "525ebfbf8a3d8da0d17ca8493e897daa8fe9b593a583d08b8726ed9375632d1c",
+        "bytes": 1614763
+      },
+      "suite": "generic",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 18,
+      "nativeLogicalRequests": 78,
+      "actualRelayRequests": 58,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/generic-native-new.json",
+        "sha256": "004b3bbbe4067c15118f2657ca0e60a90780f2c9b6d1c5e1c3ac1737101d8020",
+        "bytes": 636176
+      },
+      "suite": "generic-native",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 53,
+      "nativeLogicalRequests": 156,
+      "actualRelayRequests": 156,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/google-reminders-new.json",
+        "sha256": "299493b4cf0abc9e4604b0ec1498c6ea954cfde222ec8a596ee465203ab9feda",
+        "bytes": 2227121
+      },
+      "suite": "google-reminders",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 52,
+      "nativeLogicalRequests": 152,
+      "actualRelayRequests": 152,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/google-instance-reminders-new.json",
+        "sha256": "6ac4259c89708513177791cdfde2b59e8730b68de70d24a2ec6cbefe5c4a77b3",
+        "bytes": 2707141
+      },
+      "suite": "google-instance-reminders",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 27,
+      "nativeLogicalRequests": 393,
+      "actualRelayRequests": 393,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/google-occurrence-new.json",
+        "sha256": "0fdedd977e17f29bacc35343d95cee4293e545baef2cd6b8e63cf3f9a90bd760",
+        "bytes": 1655485
+      },
+      "suite": "google-occurrence",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 544,
+      "nativeLogicalRequests": 3795,
+      "actualRelayRequests": 0,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/dav-resource-new.json",
+        "sha256": "2419ce843e3609ce465d5c2d3b9abc2f53f92feb45389a80c0a8534a5aafd4eb",
+        "bytes": 60956004
+      },
+      "suite": "dav-resource",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 43,
+      "nativeLogicalRequests": 357,
+      "actualRelayRequests": 0,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/dav-alarms-new.json",
+        "sha256": "a214e1cce25f97d118259119c00ba5775665f331bec98e1c197992d1cd98a56b",
+        "bytes": 2069923
+      },
+      "suite": "dav-alarms",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 41,
+      "nativeLogicalRequests": 316,
+      "actualRelayRequests": 316,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/graph-create-new.json",
+        "sha256": "73fd327b127893d68ca818dd1d650183726977f51295d4c8d304014d748db4a0",
+        "bytes": 2147964
+      },
+      "suite": "graph-create",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 24,
+      "nativeLogicalRequests": 277,
+      "actualRelayRequests": 277,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/graph-delete-new.json",
+        "sha256": "fdc300520d1bb2a0a4059ddb90b114ad47a2f728ecb0c11b5735b9388c0f0ba1",
+        "bytes": 3766468
+      },
+      "suite": "graph-delete",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 29,
+      "nativeLogicalRequests": 1115,
+      "actualRelayRequests": 1115,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/graph-content-new.json",
+        "sha256": "392d27c58fb2f50290373ae9c0c6b96889fcd1d272272d382e6d7f65f04e681c",
+        "bytes": 6925744
+      },
+      "suite": "graph-content",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 37,
+      "nativeLogicalRequests": 2102,
+      "actualRelayRequests": 2102,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/graph-series-content-new.json",
+        "sha256": "5cd5dd7a38e8ae0b7ede35d0a71d41ea1e390d5448d131ad80138e700a0deda5",
+        "bytes": 10557687
+      },
+      "suite": "graph-series-content",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 35,
+      "nativeLogicalRequests": 556,
+      "actualRelayRequests": 556,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/graph-meeting-cancel-new.json",
+        "sha256": "e09c067c4b8d8c2eb505172eb86aae0b67321135f52ed648264fe3473b606f15",
+        "bytes": 5845241
+      },
+      "suite": "graph-meeting-cancel",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 63,
+      "nativeLogicalRequests": 264,
+      "actualRelayRequests": 264,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/google-organizer-new.json",
+        "sha256": "88c9c56e7cb1418667f810603012455e8423424c2d081df91d7cb465d271614f",
+        "bytes": 16541105
+      },
+      "suite": "google-organizer",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 10,
+      "nativeLogicalRequests": 61,
+      "actualRelayRequests": 61,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/graph-organizer-new.json",
+        "sha256": "18a5f4c527e000a4d82275eb2daa6ddcaaed55c20f49212a6e21221ef45ed64a",
+        "bytes": 504438
+      },
+      "suite": "graph-organizer",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 35,
+      "nativeLogicalRequests": 681,
+      "actualRelayRequests": 0,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/dav-organizer-new.json",
+        "sha256": "f2380d6ffd550582a21736e3206bb183821c470536386f49dd8fced75b74bfd6",
+        "bytes": 2154553
+      },
+      "suite": "dav-organizer",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 21,
+      "nativeLogicalRequests": 135,
+      "actualRelayRequests": 135,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/google-rsvp-new.json",
+        "sha256": "75dfc922f918b32037a81bf76999667f8406605eedb3ebeedf1c8ef08b751222",
+        "bytes": 1131129
+      },
+      "suite": "google-rsvp",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 4,
+      "nativeLogicalRequests": 16,
+      "actualRelayRequests": 16,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/google-rsvp-recovery-new.json",
+        "sha256": "20cc2ee9038c6abaf73f3b0bf6db5c049312f1402ebbb0189acac42315e16609",
+        "bytes": 292399
+      },
+      "suite": "google-rsvp-recovery",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 39,
+      "nativeLogicalRequests": 247,
+      "actualRelayRequests": 247,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/graph-rsvp-new.json",
+        "sha256": "77129c692ca85dd135a1eabe4e91f7cc5ce76997860e5cdf91f7e1a8bc250e7f",
+        "bytes": 2173015
+      },
+      "suite": "graph-rsvp",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 30,
+      "nativeLogicalRequests": 617,
+      "actualRelayRequests": 0,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/dav-rsvp-new.json",
+        "sha256": "3fb660d6ca95df25a9d70db8d2ccba625de1ec777d97608f9f434ba0e3183e50",
+        "bytes": 2129140
+      },
+      "suite": "dav-rsvp",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    },
+    {
+      "label": "new",
+      "deliveries": 37,
+      "nativeLogicalRequests": 1740,
+      "actualRelayRequests": 1740,
+      "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+      "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+      "ownedPoolsClosed": 2,
+      "artifact": {
+        "path": "/tmp/musubi-c08-event-v3-codev3-final-newonly/graph-move-new.json",
+        "sha256": "70f78b3027eb873ceeeb40570b0173952d6cdb403f69bd66191dc42496b2b987",
+        "bytes": 17663264
+      },
+      "suite": "graph-move",
+      "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd"
+    }
+  ],
+  "streamingProcess": {
+    "pairs": 16,
+    "rawReceipts": 32,
+    "totalsPerLabel": {
+      "old": {
+        "processCases": 16,
+        "sigkillExecutors": 16,
+        "recoveryExecutors": 16,
+        "ordinaryPrefixObservations": 184,
+        "nativeLogicalRequests": 1611,
+        "actualRelayRequests": 316
+      },
+      "new": {
+        "processCases": 16,
+        "sigkillExecutors": 16,
+        "recoveryExecutors": 16,
+        "ordinaryPrefixObservations": 184,
+        "nativeLogicalRequests": 1611,
+        "actualRelayRequests": 316
+      }
+    },
+    "records": [
+      {
+        "label": "old",
+        "deliveries": 43,
+        "nativeLogicalRequests": 280,
+        "actualRelayRequests": 0,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/dav-resource-before-native-send-old.json",
+          "sha256": "ea587e23690607bb14c46adfff223afc872aa02c03b14ba44e32b0909269b50b",
+          "bytes": 2269923
+        },
+        "suite": "dav-resource",
+        "phase": "before-native-send",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1032943,
+        "recoveryPid": 1033052,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "new",
+        "deliveries": 43,
+        "nativeLogicalRequests": 280,
+        "actualRelayRequests": 0,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/dav-resource-before-native-send-new.json",
+          "sha256": "9ec881df7ab3271af1fdaab25c7b91e52e07fbc19c350a0ef5be4ffced477170",
+          "bytes": 2269875
+        },
+        "suite": "dav-resource",
+        "phase": "before-native-send",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1033413,
+        "recoveryPid": 1033450,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "old",
+        "deliveries": 43,
+        "nativeLogicalRequests": 279,
+        "actualRelayRequests": 0,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/dav-resource-raw-native-response-old.json",
+          "sha256": "38405d6739bdb6b1fa552c37b4f53c127dc83da048876ba3f96f001f5b92de97",
+          "bytes": 2268288
+        },
+        "suite": "dav-resource",
+        "phase": "raw-native-response",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1033828,
+        "recoveryPid": 1033847,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "new",
+        "deliveries": 43,
+        "nativeLogicalRequests": 279,
+        "actualRelayRequests": 0,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/dav-resource-raw-native-response-new.json",
+          "sha256": "f22a7c555786103c89a42b8baa86a46f6315df2da933b3604d5a49f410d54427",
+          "bytes": 2268296
+        },
+        "suite": "dav-resource",
+        "phase": "raw-native-response",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1034190,
+        "recoveryPid": 1034227,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "old",
+        "deliveries": 43,
+        "nativeLogicalRequests": 280,
+        "actualRelayRequests": 0,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/dav-resource-before-ack-old.json",
+          "sha256": "e1784bccf1d31e533182ee6feaa3dd5f30e8c58056f395b58ae26868c00c5e89",
+          "bytes": 2269447
+        },
+        "suite": "dav-resource",
+        "phase": "before-ack",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1034492,
+        "recoveryPid": 1034584,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "new",
+        "deliveries": 43,
+        "nativeLogicalRequests": 280,
+        "actualRelayRequests": 0,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/dav-resource-before-ack-new.json",
+          "sha256": "d913a4b86cff7a080e79749f849e79c05058b15d212bf91db1e37c0ff7bdbd21",
+          "bytes": 2269435
+        },
+        "suite": "dav-resource",
+        "phase": "before-ack",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1034913,
+        "recoveryPid": 1034928,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "old",
+        "deliveries": 43,
+        "nativeLogicalRequests": 276,
+        "actualRelayRequests": 0,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/dav-resource-ack-committed-old.json",
+          "sha256": "075fae958fd9d437035f45eab8e3475fbd1c051fbb8fa898f6c7946d304b539c",
+          "bytes": 2261127
+        },
+        "suite": "dav-resource",
+        "phase": "ack-committed",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1035327,
+        "recoveryPid": 1035360,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "new",
+        "deliveries": 43,
+        "nativeLogicalRequests": 276,
+        "actualRelayRequests": 0,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/dav-resource-ack-committed-new.json",
+          "sha256": "6518972b5cd86791228c45f3764c721577ef4e7fb62ed048d926013ff4f43e2f",
+          "bytes": 2261163
+        },
+        "suite": "dav-resource",
+        "phase": "ack-committed",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1035809,
+        "recoveryPid": 1035844,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "old",
+        "deliveries": 0,
+        "nativeLogicalRequests": 54,
+        "actualRelayRequests": 54,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/graph-content-before-native-send-old.json",
+          "sha256": "632b7a3158d1185b8798f43df3a2674ceceadbc1e0e52d6e74a7941f663542cc",
+          "bytes": 523295
+        },
+        "suite": "graph-content",
+        "phase": "before-native-send",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1035975,
+        "recoveryPid": 1036016,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "new",
+        "deliveries": 0,
+        "nativeLogicalRequests": 54,
+        "actualRelayRequests": 54,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/graph-content-before-native-send-new.json",
+          "sha256": "93823526c703ed7d94f34c5d6f62b05377f50ecda084306a9ac9fbd7625f6ba0",
+          "bytes": 523295
+        },
+        "suite": "graph-content",
+        "phase": "before-native-send",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1036196,
+        "recoveryPid": 1036296,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "old",
+        "deliveries": 0,
+        "nativeLogicalRequests": 43,
+        "actualRelayRequests": 43,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/graph-content-raw-native-response-old.json",
+          "sha256": "330ffb5fb55999e8c8d9393b29a7298fd2125733303af7290813ea86ed9b49aa",
+          "bytes": 479357
+        },
+        "suite": "graph-content",
+        "phase": "raw-native-response",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1036492,
+        "recoveryPid": 1036510,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "new",
+        "deliveries": 0,
+        "nativeLogicalRequests": 43,
+        "actualRelayRequests": 43,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/graph-content-raw-native-response-new.json",
+          "sha256": "338c7f2fa15e3aef7fc25134c6862040345844e2e51c39d142a72378b0d35d76",
+          "bytes": 479356
+        },
+        "suite": "graph-content",
+        "phase": "raw-native-response",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1036598,
+        "recoveryPid": 1036621,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "old",
+        "deliveries": 0,
+        "nativeLogicalRequests": 47,
+        "actualRelayRequests": 47,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/graph-content-before-ack-old.json",
+          "sha256": "d63cbf2f680474ff5c3efe3fd621bdf2a51159198c9f7917974bbcaa0fadb1ce",
+          "bytes": 498632
+        },
+        "suite": "graph-content",
+        "phase": "before-ack",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1036786,
+        "recoveryPid": 1036803,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "new",
+        "deliveries": 0,
+        "nativeLogicalRequests": 47,
+        "actualRelayRequests": 47,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/graph-content-before-ack-new.json",
+          "sha256": "32dc655a8b6188a6ec8792c732e5790cf778e863e3f4d62ee0edffc80339a404",
+          "bytes": 498602
+        },
+        "suite": "graph-content",
+        "phase": "before-ack",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1036927,
+        "recoveryPid": 1037012,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "old",
+        "deliveries": 0,
+        "nativeLogicalRequests": 41,
+        "actualRelayRequests": 41,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/graph-content-ack-committed-old.json",
+          "sha256": "07ff8696104519799883f055503c5e75a84ce9c96e3cd646b590be11abbaa3cd",
+          "bytes": 477402
+        },
+        "suite": "graph-content",
+        "phase": "ack-committed",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1037121,
+        "recoveryPid": 1037208,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "new",
+        "deliveries": 0,
+        "nativeLogicalRequests": 41,
+        "actualRelayRequests": 41,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/graph-content-ack-committed-new.json",
+          "sha256": "6f0450c5335c583a588fe80a60248d88d877617252604f1a405a0a94ca0ccd96",
+          "bytes": 477392
+        },
+        "suite": "graph-content",
+        "phase": "ack-committed",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1037435,
+        "recoveryPid": 1037502,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "old",
+        "deliveries": 1,
+        "nativeLogicalRequests": 32,
+        "actualRelayRequests": 32,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/google-organizer-before-native-send-old.json",
+          "sha256": "db32fb536b23bf9f1b9f3158d5063b82dadf89d6f10cd112c4ce2f10e2f1e2a5",
+          "bytes": 249491
+        },
+        "suite": "google-organizer",
+        "phase": "before-native-send",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1037719,
+        "recoveryPid": 1037838,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "new",
+        "deliveries": 1,
+        "nativeLogicalRequests": 32,
+        "actualRelayRequests": 32,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/google-organizer-before-native-send-new.json",
+          "sha256": "7ab52c1ee9811f459aca8cb2a0b50e95a5092e93258ecd188b02801f1e85566c",
+          "bytes": 249496
+        },
+        "suite": "google-organizer",
+        "phase": "before-native-send",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1037973,
+        "recoveryPid": 1038037,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "old",
+        "deliveries": 1,
+        "nativeLogicalRequests": 33,
+        "actualRelayRequests": 33,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/google-organizer-raw-native-response-old.json",
+          "sha256": "347b48926fc5ce0417dc8d4c32d83444b481258c637fca04d511d83641bd0454",
+          "bytes": 254878
+        },
+        "suite": "google-organizer",
+        "phase": "raw-native-response",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1038186,
+        "recoveryPid": 1038220,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "new",
+        "deliveries": 1,
+        "nativeLogicalRequests": 33,
+        "actualRelayRequests": 33,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/google-organizer-raw-native-response-new.json",
+          "sha256": "0e2de638e3a82198a1b5511e85b37ec546279c18a74eb86028fd00f56d3bf20c",
+          "bytes": 254896
+        },
+        "suite": "google-organizer",
+        "phase": "raw-native-response",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1038343,
+        "recoveryPid": 1038421,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "old",
+        "deliveries": 1,
+        "nativeLogicalRequests": 34,
+        "actualRelayRequests": 34,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/google-organizer-before-ack-old.json",
+          "sha256": "47a31dde129e8c87f7ee7b6af5c49c089c0204d3c0654f0a750c4697ab2d5f0c",
+          "bytes": 257041
+        },
+        "suite": "google-organizer",
+        "phase": "before-ack",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1038569,
+        "recoveryPid": 1038615,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "new",
+        "deliveries": 1,
+        "nativeLogicalRequests": 34,
+        "actualRelayRequests": 34,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/google-organizer-before-ack-new.json",
+          "sha256": "7b4d64f9bbd4acb4b6790f0a0fc1d57f404dd6ee75c7c8dcd8e30fb4a6e2d467",
+          "bytes": 257037
+        },
+        "suite": "google-organizer",
+        "phase": "before-ack",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1038781,
+        "recoveryPid": 1038842,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "old",
+        "deliveries": 1,
+        "nativeLogicalRequests": 32,
+        "actualRelayRequests": 32,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/google-organizer-ack-committed-old.json",
+          "sha256": "19865bb64e26c4a43f77b8fde2ca3d5307c21bbe5d47403be02a8eda8528d51f",
+          "bytes": 257649
+        },
+        "suite": "google-organizer",
+        "phase": "ack-committed",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1038993,
+        "recoveryPid": 1039066,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "new",
+        "deliveries": 1,
+        "nativeLogicalRequests": 32,
+        "actualRelayRequests": 32,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/google-organizer-ack-committed-new.json",
+          "sha256": "6f4b9d434025886083889787c15df903eb02e795c2e4706dcc12a4980228a0eb",
+          "bytes": 257647
+        },
+        "suite": "google-organizer",
+        "phase": "ack-committed",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1039137,
+        "recoveryPid": 1039178,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "old",
+        "deliveries": 2,
+        "nativeLogicalRequests": 45,
+        "actualRelayRequests": 0,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/dav-organizer-before-native-send-old.json",
+          "sha256": "8a211c5de6bb95c15bca8608824f871843152bd02cdff49b67b5a6a97afd002f",
+          "bytes": 316682
+        },
+        "suite": "dav-organizer",
+        "phase": "before-native-send",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1039266,
+        "recoveryPid": 1039300,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "new",
+        "deliveries": 2,
+        "nativeLogicalRequests": 45,
+        "actualRelayRequests": 0,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/dav-organizer-before-native-send-new.json",
+          "sha256": "59ef373a58454db0eca332ae7f727c34551446bf814fea6f33ab545d293f5e08",
+          "bytes": 316683
+        },
+        "suite": "dav-organizer",
+        "phase": "before-native-send",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1039422,
+        "recoveryPid": 1039438,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "old",
+        "deliveries": 2,
+        "nativeLogicalRequests": 46,
+        "actualRelayRequests": 0,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/dav-organizer-raw-native-response-old.json",
+          "sha256": "f6a913b206e394a1409b66c2df7f14f15b3f2b008ab8c920e6234b27cdb6c673",
+          "bytes": 318317
+        },
+        "suite": "dav-organizer",
+        "phase": "raw-native-response",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1039565,
+        "recoveryPid": 1039601,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "new",
+        "deliveries": 2,
+        "nativeLogicalRequests": 46,
+        "actualRelayRequests": 0,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/dav-organizer-raw-native-response-new.json",
+          "sha256": "a4cf9e271644537f843108c90307b762ddafe49c2e723d07a2f63449347ebab5",
+          "bytes": 318318
+        },
+        "suite": "dav-organizer",
+        "phase": "raw-native-response",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1039743,
+        "recoveryPid": 1039759,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "old",
+        "deliveries": 2,
+        "nativeLogicalRequests": 47,
+        "actualRelayRequests": 0,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/dav-organizer-before-ack-old.json",
+          "sha256": "e0d33b8a098c16ceb7a913ef29ac6aec52382ef2011ccb28f5c6892b99f1b668",
+          "bytes": 320081
+        },
+        "suite": "dav-organizer",
+        "phase": "before-ack",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1039979,
+        "recoveryPid": 1040019,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "new",
+        "deliveries": 2,
+        "nativeLogicalRequests": 47,
+        "actualRelayRequests": 0,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/dav-organizer-before-ack-new.json",
+          "sha256": "323bbf3d615b2710bd07cc810f6a8a6dd99779c4996939a7096ffc5f79f2b943",
+          "bytes": 320135
+        },
+        "suite": "dav-organizer",
+        "phase": "before-ack",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1040141,
+        "recoveryPid": 1040185,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "old",
+        "deliveries": 2,
+        "nativeLogicalRequests": 42,
+        "actualRelayRequests": 0,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/dav-organizer-ack-committed-old.json",
+          "sha256": "00dfecd398a79da65ed085abb96610e7daf65923ec7ee47bb5667604c5a34544",
+          "bytes": 313233
+        },
+        "suite": "dav-organizer",
+        "phase": "ack-committed",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1040356,
+        "recoveryPid": 1040372,
+        "fullPostKillRelationEquality": true
+      },
+      {
+        "label": "new",
+        "deliveries": 2,
+        "nativeLogicalRequests": 42,
+        "actualRelayRequests": 0,
+        "productionSha256": "fe4464a212214da151dc504dc16fc506cc46172b6b0c304b52b95538004568ea",
+        "harnessSha256": "1f6e84ce7a968bb4b8eaa7a543f4a12779c50a8daa368c304df099354274a66c",
+        "ownedPoolsClosed": 2,
+        "artifact": {
+          "path": "/tmp/musubi-c08-event-v3-codev3-final-process/dav-organizer-ack-committed-new.json",
+          "sha256": "0abdb06e9d7fad410e47029a88b65e73babe2b9f7bf18c3f0c2d21eadd69b514",
+          "bytes": 313242
+        },
+        "suite": "dav-organizer",
+        "phase": "ack-committed",
+        "actualExecutionHead": "4001d606f7ef8a1dde6f29e4370414b40c03a4cd",
+        "killedPid": 1040518,
+        "recoveryPid": 1040546,
+        "fullPostKillRelationEquality": true
+      }
+    ]
+  },
+  "workerRelease": {
+    "path": "/tmp/musu40-event-historical-worker-release-v1.json",
+    "sha256": "d13b4c7b029e229896ec25baf53b2795f86aea39abca0900df2b115be89ddbe7",
+    "bytes": 1517
+  },
+  "failedAttemptsPreservedExcludedFromPassTotals": [
+    "/tmp/musubi-c08-event-v3-codev3-final-paired: original alarm comparison failed before bounded origin witness",
+    "/tmp/musubi-c08-event-alarm-addendum-final-paired/graph-create: rolling read windows differ before bounded clock input"
+  ],
+  "historicalSnapshotDisclosure": "Original v1 normalization self-snapshot16cfc… was overwritten by reviewer replay and exact bytes unrecovered; original receipt/log/probe preserved, overwritten snapshot excluded from verified artifact totals.",
+  "qualification": "Actual cohorts retained; no uniform-harness/current-policy relabel; buffered16 cuts are characterization only; no repeated execution by this FS collector"
+}

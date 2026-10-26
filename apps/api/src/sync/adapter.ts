@@ -19,32 +19,8 @@ import type { EventContentPatch } from "@musubi/db";
 
 // A calendar event reduced to what Musubi stores, provider-agnostic.
 // Adapters translate their own format (Google JSON / Graph JSON / iCal) <-> this.
-export type NormalizedEvent = {
-  providerState?: ProviderEventState;
-  creationOperationID?: string;
-  providerOccurrence?: { externalSeriesID: string; originalStart: OccurrenceStart };
-  // Native parent address for import admission only; never canonical identity.
-  sourceSeriesID?: string;
-  // Observation-only proof for pending reminders; never adopts canonical time.
-  reminderTimeEvidence?: ProviderSettingTimeEvidence;
-  timeModel?: EventTimeModel;
-  externalSeriesID?: string | null;
-  originalStart?: OccurrenceStart | null;
-  isCanceled?: boolean;
-  externalId: string;
-  status: "active" | "cancelled"; // cancelled => delete locally
-  title: string;
-  start: Date;
-  end: Date;
-  isAllDay: boolean;
-  description: string | null;
-  location: string | null;
-  organizer: string | null;
-  recurrence: string | null; // RRULE text, or null
-  url: string | null;
-  etag?: string | null; // exact provider validator when exposed; never synthesize from changeKey
-  icalUid?: string | null; // preserve the remote UID across CalDAV writes
-};
+export type { NormalizedEvent } from "@musubi/sync-runtime";
+import type { NormalizedEvent } from "@musubi/sync-runtime";
 
 export type NormalizedTask = {
   externalId: string;
@@ -83,18 +59,13 @@ export type NormalizedChange =
     }
   | { kind: "task"; data: NormalizedTask };
 
-export type ExternalEventRef = {
-  externalEventId: string;
-  etag?: string | null;
-  icalUid?: string | null;
-};
+export type { ExternalEventRef } from "@musubi/sync-runtime";
+import type { ExternalEventRef } from "@musubi/sync-runtime";
 
 /** Identity of one persisted create intent, never a new ID on retry. */
 export type EventCreateIdentity = { operationID: string; signal?: AbortSignal };
-export type CreatedEventEvidence = {
-  ref: ExternalEventRef;
-  event: NormalizedEvent;
-};
+export type { CreatedEventEvidence } from "@musubi/sync-runtime";
+import type { CreatedEventEvidence } from "@musubi/sync-runtime";
 
 export type ExternalTaskRef = {
   beforeMutation?: () => Promise<void>;
@@ -117,14 +88,8 @@ export type TaskWriteOperation = {
 };
 
 /** Ephemeral bridge context for the selected admitted provider slice. Never persisted. */
-export type AcceptedEventUpdateContext = {
-  operationId: string;
-  attemptId: string;
-  serializer: { id: "google-personal-event"; version: 1 };
-  connectionId: string;
-  connectionGeneration: number;
-  beforeMutation: () => Promise<void>;
-};
+export type { AcceptedEventUpdateContext } from "@musubi/sync-runtime";
+import type { AcceptedEventUpdateContext } from "@musubi/sync-runtime";
 
 export type EventWriteOperation = {
   acceptedUpdate?: AcceptedEventUpdateContext;
@@ -276,7 +241,7 @@ export type CalendarAdapter = {
   writeCaldavRsvp?(user: string, account: string, calendar: string, evidence: import("./adapters/caldav_rsvp").CaldavRsvpEvidence, signal?: AbortSignal, beforeWrite?: () => Promise<void>, readOnly?: boolean): Promise<{ etag: string; recovered: boolean; notificationDelivery: "unknown"; confirmation: import("@musubi/types").CaldavRsvpConfirmation }>;
   readRsvp?(user: string, account: string, calendar: string, ref: ExternalEventRef, response: GoogleRsvpResponse, signal?: AbortSignal, occurrence?: GoogleRsvpOccurrence): Promise<GoogleRsvpEvidence>;
   readRsvpResolution?(user: string, account: string, calendar: string, ref: ExternalEventRef, response: GoogleRsvpResponse, signal?: AbortSignal, occurrence?: GoogleRsvpOccurrence): Promise<GoogleRsvpEvidence>;
-  writeRsvp?(user: string, account: string, calendar: string, evidence: GoogleRsvpEvidence, policy: { sendUpdates: "all" }, signal?: AbortSignal, beforeWrite?: () => Promise<void>): Promise<{ etag: string; recovered: boolean; notificationDelivery: "unknown" }>;
+  writeRsvp?(user: string, account: string, calendar: string, evidence: GoogleRsvpEvidence, policy: { sendUpdates: "all"; observeOnly?: boolean }, signal?: AbortSignal, beforeWrite?: () => Promise<void>): Promise<{ etag: string; recovered: boolean; notificationDelivery: "unknown" }>;
   readCaldavSeries?(user: string, account: string, calendar: string, intent: CaldavSeriesIntent, signal?: AbortSignal, operation?: CaldavPersonalContentOperation): Promise<CaldavSeriesEvidence>;
   readCaldavSeriesDeletionResolution?(user: string, account: string, calendar: string, intent: CaldavSeriesIntent, before: string, signal?: AbortSignal): Promise<CaldavSeriesResolutionEvidence>;
   readCaldavSeriesResolution?(user: string, account: string, calendar: string, intent: CaldavSeriesIntent, before: string, signal?: AbortSignal, targetEventID?: string | null, operation?: CaldavPersonalContentOperation): Promise<CaldavSeriesResolutionEvidence>;

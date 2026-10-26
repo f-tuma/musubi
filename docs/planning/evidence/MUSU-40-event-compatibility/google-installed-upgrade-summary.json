@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "status": "verified-bounded-installed-oldpending-upgrade",
+  "result": {
+    "path": "/tmp/musu40-google-rsvp-installed-upgrade-v6-d501/result.json",
+    "sha256": "d3c1075497e9a226ece32c434716ad7aee664d578cd53d4c0ef270d6d6d3e8c3",
+    "bytes": 3828
+  },
+  "cleanup": {
+    "path": "/tmp/musu40-google-rsvp-installed-upgrade-v6-d501/cleanup.json",
+    "sha256": "39712f3b40417842fa2ae87a356de8a4245c0ef6860d46d7f2cc0246cfeb25dc",
+    "bytes": 460
+  },
+  "toolApproval": {
+    "path": "/tmp/musu40-installed-tools-review-v6-20261026T165149Z/approval.json",
+    "sha256": "c45c34bdffd58293b2f79dd5d721f235f65a6b25b6719a8aee5bba3e33d26be3",
+    "bytes": 3268
+  },
+  "executionApproval": {
+    "path": "/tmp/musu40-google-rsvp-upgrade-v6-execution-approval.json",
+    "sha256": "6897445fc1fabaeb86641cd4a726be1ef3294d6e110421bceeabca1ab38853a3",
+    "bytes": 3056
+  },
+  "oldImage": {
+    "tag": "musubi-c08-task-compatibility-api:proof",
+    "indexDigest": "sha256:8a71cd3e00317a43ebdbb905b8ed678e91a2a1a6de8d3c004172272a56d9b15c",
+    "platformManifestDigest": "sha256:cab0f747f13b2c9459aaeb2cc035db572e50644ab74a996c527500302a233c42",
+    "configDigest": "sha256:bf8c4111d665b1110f8c5a07bfcc8e5c36c5e57f10bb11e155a1487d21a864e1"
+  },
+  "newImage": {
+    "tag": "musubi-c08-event-compatibility-api:proof",
+    "indexDigest": "sha256:4b93de02c626d630f4688af453b26552fcbb6f7e5cb80572759624a79d54f375",
+    "platformManifestDigest": "sha256:64b3d033c769fa0b672ddca3629f7732140315e47d5182c0591e9ee0cc7fe149",
+    "configDigest": "sha256:59fb4071f5bcde425bb4b6ca95abbc3beacb06de242dcb1dc4f9045c76fd693b",
+    "sourceHead": "d50152b569e47d3ce8ee90c6db1050db699a6f05",
+    "sourceTree": "bbab7fd1b1d90527e997a728b6c99667b06e5dce",
+    "buildMetadataFile": "/tmp/musu40-event-api-build-state-frozen-d501.json",
+    "buildMetadataSha256": "a58943253bce2329ed7225dd8b1b0f5ecf7ebe373be233565fb87979c18be326"
+  },
+  "approvedHead": "d50152b569e47d3ce8ee90c6db1050db699a6f05",
+  "approvedTree": "bbab7fd1b1d90527e997a728b6c99667b06e5dce",
+  "cases": [
+    {
+      "kind": "queued",
+      "operationId": "edcfc47f-31d1-4cca-85e7-63e754e111ab",
+      "finalStatus": "unconfirmed",
+      "manualHoldRetries": 2,
+      "historySnapshots": 3,
+      "fullOriginalPayloadRetained": true,
+      "googlePermissionNeverSynthesized": true
+    },
+    {
+      "kind": "retried",
+      "operationId": "d73fa718-ca71-47e7-81d7-cbb1f640a8e5",
+      "finalStatus": "unconfirmed",
+      "manualHoldRetries": 2,
+      "historySnapshots": 3,
+      "fullOriginalPayloadRetained": true,
+      "googlePermissionNeverSynthesized": true
+    },
+    {
+      "kind": "unconfirmed",
+      "operationId": "7422ee4e-5e60-41e6-8cc5-9c7b8f62a387",
+      "finalStatus": "unconfirmed",
+      "manualHoldRetries": 2,
+      "historySnapshots": 3,
+      "fullOriginalPayloadRetained": true,
+      "googlePermissionNeverSynthesized": true
+    },
+    {
+      "kind": "applied-desired",
+      "operationId": "381e8264-51fa-4be2-a2de-593903e50c44",
+      "finalStatus": "completed",
+      "manualHoldRetries": 0,
+      "historySnapshots": 1,
+      "fullOriginalPayloadRetained": true,
+      "googlePermissionNeverSynthesized": true
+    }
+  ],
+  "oldRealAdmissions": 4,
+  "oldRealAttempts": 3,
+  "oldPatchRequests": 3,
+  "newGetRequests": 20,
+  "newMutationRequests": 0,
+  "exactNewGetRequestsByKind": {
+    "queued": 6,
+    "retried": 6,
+    "unconfirmed": 6,
+    "applied-desired": 2
+  },
+  "repeatedManualHoldRetries": 6,
+  "completedRetryHttpRequests": 0,
+  "notificationDelivery": "unknown",
+  "permissionSynthesized": false,
+  "oldWorkerStoppedBeforeNew": true,
+  "originalPayloadAndNativeResourceRetained": true,
+  "installedSourceHashesUnchanged": true,
+  "cleanupVerified": true,
+  "failedAttemptsPreserved": [
+    {
+      "version": "v4",
+      "result": {
+        "path": "/tmp/musu40-google-rsvp-installed-upgrade-v4-d501/result.json",
+        "sha256": "1ad2cda11b9f5fb6477286c32b38a5a33f17033067391693c59d3b4acd052073",
+        "bytes": 2184
+      },
+      "status": "failed",
+      "operationError": {
+        "message": "Expected values to be strictly equal:\n\n0 !== 1\n",
+        "stack": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n0 !== 1\n\n    at run (file:///tmp/musu40-google-rsvp-upgrade-prepared-v4/run-upgrade.mjs:90:112)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async Object.execute (file:///tmp/musu40-google-rsvp-upgrade-prepared-v4/run-upgrade.mjs:100:5)\n    at async completeOwnedProof (file:///tmp/musu40-google-rsvp-upgrade-prepared-v4/upgrade-contract.mjs:95:20)\n    at async file:///tmp/musu40-google-rsvp-upgrade-prepared-v4/run-upgrade.mjs:93:15"
+      },
+      "cleanupVerified": true,
+      "cleanup": {
+        "path": "/tmp/musu40-google-rsvp-installed-upgrade-v4-d501/cleanup.json",
+        "sha256": "505beb59b5aae30c7c957464fd66dc25f56cd4698352966666d824fc310eaa29",
+        "bytes": 460
+      },
+      "cleanupDatabase": {
+        "database": "google_rsvp_upgrade_740a28e0d9e14332b94a7b8ced7c0334",
+        "created": true,
+        "sessionsBeforePlainDrop": 0,
+        "dropped": true,
+        "forceUsed": false,
+        "backendTerminationUsed": false,
+        "remainingDatabases": 0
+      },
+      "includedInSuccessfulTotals": false
+    },
+    {
+      "version": "v5",
+      "result": {
+        "path": "/tmp/musu40-google-rsvp-installed-upgrade-v5-d501/result.json",
+        "sha256": "59107b8cb365744f102322d2f2f23bc068012cf96eef73b1fef0c7322001a8ce",
+        "bytes": 2943
+      },
+      "status": "failed",
+      "operationError": {
+        "message": "admit-old.log: Docker command failed: node:internal/process/promises:394\n    triggerUncaughtException(err, true /* fromPromise */);\n    ^\n\n[BetterAuthError: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]\n\nNode.js v22.23.1\n\n\n1 !== 0\n",
+        "stack": "AssertionError [ERR_ASSERTION]: admit-old.log: Docker command failed: node:internal/process/promises:394\n    triggerUncaughtException(err, true /* fromPromise */);\n    ^\n\n[BetterAuthError: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]\n\nNode.js v22.23.1\n\n\n1 !== 0\n\n    at assertCommand (file:///tmp/musu40-google-rsvp-upgrade-prepared-v5/upgrade-contract.mjs:52:85)\n    at command (file:///tmp/musu40-google-rsvp-upgrade-prepared-v5/run-upgrade.mjs:68:22)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async run (file:///tmp/musu40-google-rsvp-upgrade-prepared-v5/run-upgrade.mjs:88:18)\n    at async Object.execute (file:///tmp/musu40-google-rsvp-upgrade-prepared-v5/run-upgrade.mjs:101:19)\n    at async completeOwnedProof (file:///tmp/musu40-google-rsvp-upgrade-prepared-v5/upgrade-contract.mjs:95:20)\n    at async file:///tmp/musu40-google-rsvp-upgrade-prepared-v5/run-upgrade.mjs:93:15"
+      },
+      "cleanupVerified": true,
+      "cleanup": {
+        "path": "/tmp/musu40-google-rsvp-installed-upgrade-v5-d501/cleanup.json",
+        "sha256": "7718a911ca44e1ba4885c100476228839156b4df321899a78b1a3d4b16ab9e67",
+        "bytes": 618
+      },
+      "cleanupDatabase": {
+        "database": "google_rsvp_upgrade_4105e7854d4f405a8adc883eb6a1db40",
+        "created": true,
+        "sessionsBeforePlainDrop": 0,
+        "dropped": true,
+        "forceUsed": false,
+        "backendTerminationUsed": false,
+        "remainingDatabases": 0
+      },
+      "includedInSuccessfulTotals": false
+    }
+  ],
+  "qualification": "Sequential supported old-to-new upgrade only; old reader is stopped before new reader. No universal downgrade/mixed-binary guarantee. Canonical retention is asserted by the unchanged actual worker; this FS collector independently compares raw payload/native ledger and result identities.",
+  "canonicalRetentionEvidence": "Exact manifest-bound worker calls production getEventSnapshot and asserts JSON deep equality to each original canonical (including timestamps) after every delivery/retry. All four actual worker phases returned successful receipts. Saved raw case output emits original canonical only, so this review does not claim an independently emitted after-canonical snapshot.",
+  "permissionPolicy": {
+    "sameIntentManualRetryRegrantsPermission": false,
+    "explicitNewResolution": "A distinct operation may receive a fresh sidecar under fresh baseline/source/actor guards. This does not reset old consumed/markerless permission; original uncertain operation stays read-only."
+  }
+}

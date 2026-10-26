@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "scope": "Documentation/evidence packet for completed implementation and bounded local acceptance; final PR/tree/CI/main publication gate pending",
+  "createdAt": "2026-10-26T17:09:55.374799+00:00",
+  "actualImageSource": {
+    "apiHead": "d50152b569e47d3ce8ee90c6db1050db699a6f05",
+    "apiTree": "bbab7fd1b1d90527e997a728b6c99667b06e5dce",
+    "referenceHead": "06d08da12ca88593d61540b2f67a37fd69de4779",
+    "referenceTree": "ee9e4ddb69202bda123c3f8652967c753c344d07",
+    "referenceCurrentCopyEqualityVerified": true,
+    "documentationCommitDoesNotRelabelImageBuild": true
+  },
+  "files": {
+    "docs/planning/MUSU-40-acceptance.md": {
+      "sha256": "485eaabcbce97d9775a204de94bfbdda36deeeb62d721429798b433068ef0691",
+      "bytes": 21716
+    },
+    "docs/planning/MUSU-40-family-inventory.md": {
+      "sha256": "040fbdcaa13eef8caec5e1b1041665887ba1ef3f95b14123c0bc99e75d27dab3",
+      "bytes": 9289
+    },
+    "docs/planning/MUSU-40-event-compatibility.md": {
+      "sha256": "b8d031101c4eef2c117a4cebea40c1c9ba7f4c7ba3c6988693ca0fc9fc83c98e",
+      "bytes": 8299
+    },
+    "docs/planning/evidence/MUSU-40-event-compatibility/api-installed-summary.json": {
+      "sha256": "6c44902b77e761d93546539941d5b4f03af79e11c440aa1de39c7606348535f6",
+      "bytes": 16560
+    },
+    "docs/planning/evidence/MUSU-40-event-compatibility/browser-summary.json": {
+      "sha256": "d08e3b6d9ddd10d6708503385438789116952ddbd3aa57bb343a372803333a39",
+      "bytes": 3858
+    },
+    "docs/planning/evidence/MUSU-40-event-compatibility/current-policy-source-summary.json": {
+      "sha256": "cb1f8035e2bb08f1e8d595eb3ff0f5721a455ceccb677f9f11bd7b126eb02538",
+      "bytes": 13134
+    },
+    "docs/planning/evidence/MUSU-40-event-compatibility/google-installed-upgrade-summary.json": {
+      "sha256": "a9ec0ec32c25488159c8020bce922041af47f019db3b3c3b597ad69d4c03486a",
+      "bytes": 8679
+    },
+    "docs/planning/evidence/MUSU-40-event-compatibility/historical-parity-summary.json": {
+      "sha256": "4dc36243876d8fd1d81f3dcbb262c054aa21ceb14916be6a7196a667729556ea",
+      "bytes": 87893
+    },
+    "docs/planning/evidence/MUSU-40-event-compatibility/independent-review-summary.json": {
+      "sha256": "71574c250b7cad1852b152a3a4f86fe925b4695259180443fa8a36ce5ee00479",
+      "bytes": 7897
+    },
+    "docs/planning/evidence/MUSU-40-event-compatibility/pending-gates.json": {
+      "sha256": "026e3717cbc0c62ff5c1c24c406dcf92bb9176a3fb4bf9953b72b1c621528273",
+      "bytes": 5767
+    },
+    "docs/planning/evidence/MUSU-40-event-compatibility/raw-artifact-manifest.json": {
+      "sha256": "2467cdf5d7bdf42d1a1b34e53e69f8bfc1bf7a9a06fae55c4c1fb07ac77defa4",
+      "bytes": 60553
+    },
+    "docs/planning/evidence/MUSU-40-event-compatibility/reference-installed-summary.json": {
+      "sha256": "9a57e97d6ac2ffc156160a007d137ae93c9789aa1349ca55b5a3351815210a0e",
+      "bytes": 8084
+    },
+    "docs/planning/evidence/MUSU-40-event-compatibility/root-qa-retirement.json": {
+      "sha256": "01fbc5d8ae6d604fe1f44861440303c3fec67b11f5affd553e71d02a9295a466",
+      "bytes": 632
+    },
+    "docs/planning/evidence/MUSU-40-event-compatibility/source-summary.json": {
+      "sha256": "8a5f038b6cac4967564c1e66977a30803e2f2a4275c2e431a8d7e12ea00c927e",
+      "bytes": 2332
+    }
+  },
+  "validation": {
+    "jsonFilesParsed": 11,
+    "relativeAuditLinksVerified": true,
+    "untrackedAndTrackedPacketWhitespaceChecked": true,
+    "qaTestsRunForThisDocEdit": false,
+    "apiRuntimeCopySourceEdits": false,
+    "gitStageOrCommit": false
+  },
+  "pending": [
+    "Independent final exact documentation/evidence/PR tree approval",
+    "PR current-head required checks",
+    "Squash merge/main verification",
+    "C09 andC10 subsequent core work; production deployment joint later; registry publication separate"
+  ]
+}

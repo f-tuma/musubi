@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-10-26T17:09:55.374799+00:00",
+  "overallC08Complete": false,
+  "installedGoogleOldPendingUpgrade": {
+    "status": "verified-bounded-local-PASS",
+    "summary": "google-installed-upgrade-summary.json",
+    "failedAttemptsPreserved": [
+      {
+        "version": "v4",
+        "result": {
+          "path": "/tmp/musu40-google-rsvp-installed-upgrade-v4-d501/result.json",
+          "sha256": "1ad2cda11b9f5fb6477286c32b38a5a33f17033067391693c59d3b4acd052073",
+          "bytes": 2184
+        },
+        "status": "failed",
+        "operationError": {
+          "message": "Expected values to be strictly equal:\n\n0 !== 1\n",
+          "stack": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n0 !== 1\n\n    at run (file:///tmp/musu40-google-rsvp-upgrade-prepared-v4/run-upgrade.mjs:90:112)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async Object.execute (file:///tmp/musu40-google-rsvp-upgrade-prepared-v4/run-upgrade.mjs:100:5)\n    at async completeOwnedProof (file:///tmp/musu40-google-rsvp-upgrade-prepared-v4/upgrade-contract.mjs:95:20)\n    at async file:///tmp/musu40-google-rsvp-upgrade-prepared-v4/run-upgrade.mjs:93:15"
+        },
+        "cleanupVerified": true,
+        "cleanup": {
+          "path": "/tmp/musu40-google-rsvp-installed-upgrade-v4-d501/cleanup.json",
+          "sha256": "505beb59b5aae30c7c957464fd66dc25f56cd4698352966666d824fc310eaa29",
+          "bytes": 460
+        },
+        "cleanupDatabase": {
+          "database": "google_rsvp_upgrade_740a28e0d9e14332b94a7b8ced7c0334",
+          "created": true,
+          "sessionsBeforePlainDrop": 0,
+          "dropped": true,
+          "forceUsed": false,
+          "backendTerminationUsed": false,
+          "remainingDatabases": 0
+        },
+        "includedInSuccessfulTotals": false
+      },
+      {
+        "version": "v5",
+        "result": {
+          "path": "/tmp/musu40-google-rsvp-installed-upgrade-v5-d501/result.json",
+          "sha256": "59107b8cb365744f102322d2f2f23bc068012cf96eef73b1fef0c7322001a8ce",
+          "bytes": 2943
+        },
+        "status": "failed",
+        "operationError": {
+          "message": "admit-old.log: Docker command failed: node:internal/process/promises:394\n    triggerUncaughtException(err, true /* fromPromise */);\n    ^\n\n[BetterAuthError: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]\n\nNode.js v22.23.1\n\n\n1 !== 0\n",
+          "stack": "AssertionError [ERR_ASSERTION]: admit-old.log: Docker command failed: node:internal/process/promises:394\n    triggerUncaughtException(err, true /* fromPromise */);\n    ^\n\n[BetterAuthError: You are using the default secret. Please set `BETTER_AUTH_SECRET` in your environment variables or pass `secret` in your auth config.]\n\nNode.js v22.23.1\n\n\n1 !== 0\n\n    at assertCommand (file:///tmp/musu40-google-rsvp-upgrade-prepared-v5/upgrade-contract.mjs:52:85)\n    at command (file:///tmp/musu40-google-rsvp-upgrade-prepared-v5/run-upgrade.mjs:68:22)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async run (file:///tmp/musu40-google-rsvp-upgrade-prepared-v5/run-upgrade.mjs:88:18)\n    at async Object.execute (file:///tmp/musu40-google-rsvp-upgrade-prepared-v5/run-upgrade.mjs:101:19)\n    at async completeOwnedProof (file:///tmp/musu40-google-rsvp-upgrade-prepared-v5/upgrade-contract.mjs:95:20)\n    at async file:///tmp/musu40-google-rsvp-upgrade-prepared-v5/run-upgrade.mjs:93:15"
+        },
+        "cleanupVerified": true,
+        "cleanup": {
+          "path": "/tmp/musu40-google-rsvp-installed-upgrade-v5-d501/cleanup.json",
+          "sha256": "7718a911ca44e1ba4885c100476228839156b4df321899a78b1a3d4b16ab9e67",
+          "bytes": 618
+        },
+        "cleanupDatabase": {
+          "database": "google_rsvp_upgrade_4105e7854d4f405a8adc883eb6a1db40",
+          "created": true,
+          "sessionsBeforePlainDrop": 0,
+          "dropped": true,
+          "forceUsed": false,
+          "backendTerminationUsed": false,
+          "remainingDatabases": 0
+        },
+        "includedInSuccessfulTotals": false
+      }
+    ]
+  },
+  "finalApplicationBrowser": {
+    "pending": false,
+    "status": "passed",
+    "report": "browser-summary.json",
+    "passed": 22,
+    "failed": 0,
+    "firstAttempt": true,
+    "durationSeconds": 38.6,
+    "screenshotsVisuallyInspected": 4,
+    "documentTitleExplicitlyAsserted": false
+  },
+  "independentFinalAuditAndTreeApproval": {
+    "pending": true,
+    "status": "Awaiting final documentation/evidence tree and PR review"
+  },
+  "currentHeadRequiredCI": {
+    "pending": true,
+    "status": "Awaiting PR checks for exact final head"
+  },
+  "prSquashMainVerification": {
+    "pending": true,
+    "status": "Root owns PR/squash/main verification"
+  },
+  "registryPublication": "NOT PERFORMED",
+  "productionDeployment": "NOT PERFORMED; joint later step",
+  "nextCoreWork": [
+    "C09 fair scheduling/provider budgets",
+    "C10 reproducible standalone alpha/conformance"
+  ],
+  "scope": "C08 source/local evidence does not complete full C01-C10 user goal",
+  "implementationAndLocalAcceptanceComplete": true,
+  "publicationComplete": false,
+  "overallC08Qualification": "Implementation/local acceptance complete; final PR/tree/checks/main publication gate is open.",
+  "rootQaRetirement": {
+    "pending": false,
+    "report": "root-qa-retirement.json",
+    "zeroOtherSessions": true,
+    "ownedServerRemoved": true,
+    "userQa55437Untouched": true
+  },
+  "primaryAccountingCapturedAt": "2026-10-26T16:57:12.633218+00:00",
+  "finalBrowserCapturedAt": "2026-10-26T17:02:08.055573+00:00"
+}

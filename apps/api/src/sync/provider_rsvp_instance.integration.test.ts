@@ -70,6 +70,9 @@ async function main() {
       const owner = `rsvp-instance-${randomUUID()}`;
       await db.insert(user).values({ id: owner, name: owner, email: `${owner}@example.test`, isExternal: true });
       try {
+        // Durable before-write permission verifies the real connected grant,
+        // including lower-level prepare/commit scenarios that stub token reads.
+        await db.insert(account).values({ id: randomUUID(), userId: owner, providerId: "google", accountId: "fixture", scope: "https://www.googleapis.com/auth/calendar.events", accessToken: "synthetic-instance-rsvp", refreshToken: "synthetic-refresh", accessTokenExpiresAt: new Date(Date.now() + 3600000) });
         const calendar = await createCalendar({ creatorID: owner, name: "Instance fixture", color: "red" });
         const [link] = await db.insert(externalCalendars).values({ provider: "google", userID: owner, accountID: "fixture", calendarID: calendar.id, externalCalendarID: "guest@example.test" }).returning();
         const allDay = kind === "all-day";
@@ -91,7 +94,6 @@ async function main() {
         assert.deepEqual(observation.rsvpEdit, { provider: "google", expectedRevision: child.revision });
         const request = { provider: "google", operationID: randomUUID(), expectedRevision: child.revision, expectedStateVersion: observation.version, response: "accepted", sendUpdates: "all" };
         if (scenario.startsWith("public-")) {
-          await db.insert(account).values({ id: randomUUID(), userId: owner, providerId: "google", accountId: "fixture", scope: "https://www.googleapis.com/auth/calendar.events", accessToken: "synthetic-instance-rsvp", refreshToken: "synthetic-refresh", accessTokenExpiresAt: new Date(Date.now() + 3600000) });
           const credential = issueMemberToken(); await replaceMemberToken(owner, credential.tokenHash);
           const headers = { authorization: `Bearer ${credential.raw}`, [CLIENT_VERSION_HEADER]: PRODUCT_VERSION, "Content-Type": "application/json" };
           const post = (body: unknown, id = child.id) => realFetch(`${apiOrigin}/api/v1/events/${id}/provider-rsvp`, { method: "POST", headers, body: JSON.stringify(body) });

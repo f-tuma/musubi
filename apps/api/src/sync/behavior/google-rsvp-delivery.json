@@ -1,0 +1,4734 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    {
+      "id": "started-unchanged-is-read-only",
+      "title": "A possible prior dispatch never resends an unchanged Google RSVP baseline",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": true,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "unconfirmed"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 1
+      }
+    },
+    {
+      "id": "fresh-patch-exact-wire",
+      "title": "Fresh permission preserves minimal attendee PATCH and original validator",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "confirmed",
+            "recovered": false
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 200,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v2\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "accepted",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 1
+      }
+    },
+    {
+      "id": "desired-observation-needs-no-permission",
+      "title": "Desired full native observation confirms without another dispatch",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": true,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "confirmed",
+            "recovered": true
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v2\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "accepted",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 1
+      }
+    },
+    {
+      "id": "missing-before-write-port-refuses-patch",
+      "title": "Fresh native policy cannot dispatch without durable host permission",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "absent",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 1
+      }
+    },
+    {
+      "id": "marker-commit-failure-refuses-patch",
+      "title": "A failed host marker transaction cannot be ignored",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "reject",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 1
+      }
+    },
+    {
+      "id": "fresh-native-drift-refuses-patch",
+      "title": "Even an unchanged ETag cannot hide unrelated native drift",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Concurrent native title",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 1
+      }
+    },
+    {
+      "id": "read-only-native-drift-holds",
+      "title": "Read-only recovery requires the entire desired native observation",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": true,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "unconfirmed"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v2\"",
+            "status": "confirmed",
+            "summary": "Concurrent native title",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "accepted",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 1
+      }
+    },
+    {
+      "id": "raw-429-never-resends",
+      "title": "Raw 429 refusal retains read-only recovery even when not applied",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "not-written",
+            "status": 429
+          }
+        },
+        {
+          "observeOnly": true,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "unconfirmed"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 429,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 2
+      }
+    },
+    {
+      "id": "raw-408-never-resends",
+      "title": "Raw 408 refusal retains read-only recovery even when not applied",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "not-written",
+            "status": 408
+          }
+        },
+        {
+          "observeOnly": true,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "unconfirmed"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 408,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 2
+      }
+    },
+    {
+      "id": "raw-400-never-resends",
+      "title": "Raw 400 refusal retains read-only recovery even when not applied",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "not-written",
+            "status": 400
+          }
+        },
+        {
+          "observeOnly": true,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "unconfirmed"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 400,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 2
+      }
+    },
+    {
+      "id": "raw-401-never-resends",
+      "title": "Raw 401 refusal retains read-only recovery even when not applied",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "not-written",
+            "status": 401
+          }
+        },
+        {
+          "observeOnly": true,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "unconfirmed"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 401,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 2
+      }
+    },
+    {
+      "id": "raw-403-never-resends",
+      "title": "Raw 403 refusal retains read-only recovery even when not applied",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "not-written",
+            "status": 403
+          }
+        },
+        {
+          "observeOnly": true,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "unconfirmed"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 403,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 2
+      }
+    },
+    {
+      "id": "raw-404-never-resends",
+      "title": "Raw 404 refusal retains read-only recovery even when not applied",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "not-written",
+            "status": 404
+          }
+        },
+        {
+          "observeOnly": true,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "unconfirmed"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 404,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 2
+      }
+    },
+    {
+      "id": "raw-409-never-resends",
+      "title": "Raw 409 refusal retains read-only recovery even when not applied",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "not-written",
+            "status": 409
+          }
+        },
+        {
+          "observeOnly": true,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "unconfirmed"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 409,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 2
+      }
+    },
+    {
+      "id": "raw-412-never-resends",
+      "title": "Raw 412 refusal retains read-only recovery even when not applied",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "not-written",
+            "status": 412
+          }
+        },
+        {
+          "observeOnly": true,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "unconfirmed"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 412,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 2
+      }
+    },
+    {
+      "id": "raw-500-never-resends",
+      "title": "Raw 500 refusal retains read-only recovery even when not applied",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "unconfirmed",
+            "status": 500
+          }
+        },
+        {
+          "observeOnly": true,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "unconfirmed"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 500,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 2
+      }
+    },
+    {
+      "id": "raw-503-never-resends",
+      "title": "Raw 503 refusal retains read-only recovery even when not applied",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "unconfirmed",
+            "status": 503
+          }
+        },
+        {
+          "observeOnly": true,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "unconfirmed"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 503,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 2
+      }
+    },
+    {
+      "id": "lost-desired-get-only",
+      "title": "lost recovers by full desired GET without repeating PATCH",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "unconfirmed"
+          }
+        },
+        {
+          "observeOnly": true,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "confirmed",
+            "recovered": true
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 200,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          },
+          "networkError": true
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v2\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "accepted",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 2
+      }
+    },
+    {
+      "id": "applied-503-desired-get-only",
+      "title": "applied-503 recovers by full desired GET without repeating PATCH",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "unconfirmed",
+            "status": 503
+          }
+        },
+        {
+          "observeOnly": true,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "confirmed",
+            "recovered": true
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 503,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v2\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "accepted",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 2
+      }
+    },
+    {
+      "id": "truncated-success-desired-get-only",
+      "title": "truncated-success recovers by full desired GET without repeating PATCH",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "confirmed",
+            "recovered": false
+          }
+        },
+        {
+          "observeOnly": true,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "confirmed",
+            "recovered": true
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 200,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          },
+          "bodyError": true
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v2\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "accepted",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v2\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "accepted",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 2
+      }
+    },
+    {
+      "id": "instance-original-slot-is-preserved",
+      "title": "An occurrence response retains the original native series and civil slot",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        },
+        "recurringEventId": "master",
+        "originalStartTime": {
+          "date": "2026-09-07"
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "confirmed",
+            "recovered": false
+          }
+        },
+        {
+          "observeOnly": true,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "confirmed",
+            "recovered": true
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            },
+            "recurringEventId": "master",
+            "originalStartTime": {
+              "date": "2026-09-07"
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 200,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v2\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "accepted",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            },
+            "recurringEventId": "master",
+            "originalStartTime": {
+              "date": "2026-09-07"
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v2\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "accepted",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            },
+            "recurringEventId": "master",
+            "originalStartTime": {
+              "date": "2026-09-07"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 2
+      },
+      "occurrence": {
+        "externalSeriesID": "master",
+        "originalStart": {
+          "kind": "date",
+          "value": "2026-09-07"
+        }
+      }
+    },
+    {
+      "id": "credential-cannot-grant-mutable-policy",
+      "title": "Credential refresh cannot change owned read-only dispatch policy",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": true,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "unconfirmed"
+          },
+          "credentialMutation": "policy"
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 1
+      }
+    },
+    {
+      "id": "credential-cannot-rebind-native-evidence",
+      "title": "Credential refresh cannot change original native identity response or occurrence slot",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        },
+        "recurringEventId": "master",
+        "originalStartTime": {
+          "date": "2026-09-07"
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "confirmed",
+            "recovered": false
+          },
+          "credentialMutation": "evidence"
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            },
+            "recurringEventId": "master",
+            "originalStartTime": {
+              "date": "2026-09-07"
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 200,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v2\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "accepted",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            },
+            "recurringEventId": "master",
+            "originalStartTime": {
+              "date": "2026-09-07"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 1
+      },
+      "occurrence": {
+        "externalSeriesID": "master",
+        "originalStart": {
+          "kind": "date",
+          "value": "2026-09-07"
+        }
+      }
+    },
+    {
+      "id": "invalid-getter-policy-precedes-credentials",
+      "title": "Invalid getter native policy fails before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "policyFault": "getter",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "invalid-prototype-policy-precedes-credentials",
+      "title": "Invalid prototype native policy fails before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "policyFault": "prototype",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-getter-before-credentials",
+      "title": "Native evidence accessors are refused without evaluation before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "getter",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-id-getter-before-credentials",
+      "title": "Whole native evidence refuses id-getter before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "id-getter",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-etag-getter-before-credentials",
+      "title": "Whole native evidence refuses etag-getter before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "etag-getter",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-nested-getter-before-credentials",
+      "title": "Whole native evidence refuses nested-getter before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "nested-getter",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-response-getter-before-credentials",
+      "title": "Whole native evidence refuses response-getter before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "response-getter",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-patch-getter-before-credentials",
+      "title": "Whole native evidence refuses patch-getter before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "patch-getter",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-occurrence-getter-before-credentials",
+      "title": "Whole native evidence refuses occurrence-getter before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        },
+        "recurringEventId": "master",
+        "originalStartTime": {
+          "date": "2026-09-07"
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "occurrence-getter",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      },
+      "occurrence": {
+        "externalSeriesID": "master",
+        "originalStart": {
+          "kind": "date",
+          "value": "2026-09-07"
+        }
+      }
+    },
+    {
+      "id": "evidence-slot-getter-before-credentials",
+      "title": "Whole native evidence refuses slot-getter before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        },
+        "recurringEventId": "master",
+        "originalStartTime": {
+          "date": "2026-09-07"
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "slot-getter",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      },
+      "occurrence": {
+        "externalSeriesID": "master",
+        "originalStart": {
+          "kind": "date",
+          "value": "2026-09-07"
+        }
+      }
+    },
+    {
+      "id": "evidence-prototype-before-credentials",
+      "title": "Whole native evidence refuses prototype before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "prototype",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-baseline-prototype-before-credentials",
+      "title": "Whole native evidence refuses baseline-prototype before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "baseline-prototype",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-slot-prototype-before-credentials",
+      "title": "Whole native evidence refuses slot-prototype before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        },
+        "recurringEventId": "master",
+        "originalStartTime": {
+          "date": "2026-09-07"
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "slot-prototype",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      },
+      "occurrence": {
+        "externalSeriesID": "master",
+        "originalStart": {
+          "kind": "date",
+          "value": "2026-09-07"
+        }
+      }
+    },
+    {
+      "id": "evidence-function-before-credentials",
+      "title": "Whole native evidence refuses function before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "function",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "evidence-cycle-before-credentials",
+      "title": "Whole native evidence refuses cycle before credentials",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "evidenceFault": "cycle",
+          "expected": {
+            "outcome": "not-written"
+          }
+        }
+      ],
+      "exchanges": [],
+      "expected": {
+        "patches": 0,
+        "grants": 0,
+        "credentials": 0
+      }
+    },
+    {
+      "id": "credential-cannot-mutate-nested-baseline",
+      "title": "Credentials cannot mutate owned native nested-baseline",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        },
+        "recurringEventId": "master",
+        "originalStartTime": {
+          "date": "2026-09-07"
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "confirmed",
+            "recovered": false
+          },
+          "credentialMutation": "nested-baseline"
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            },
+            "recurringEventId": "master",
+            "originalStartTime": {
+              "date": "2026-09-07"
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 200,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v2\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "accepted",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            },
+            "recurringEventId": "master",
+            "originalStartTime": {
+              "date": "2026-09-07"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 1
+      },
+      "occurrence": {
+        "externalSeriesID": "master",
+        "originalStart": {
+          "kind": "date",
+          "value": "2026-09-07"
+        }
+      }
+    },
+    {
+      "id": "credential-cannot-mutate-original-slot",
+      "title": "Credentials cannot mutate owned native original-slot",
+      "baseline": {
+        "id": "event/id",
+        "etag": "\"v1\"",
+        "status": "confirmed",
+        "summary": "Meeting",
+        "start": {
+          "date": "2026-09-08"
+        },
+        "end": {
+          "date": "2026-09-09"
+        },
+        "organizer": {
+          "email": "host@example.test"
+        },
+        "attendees": [
+          {
+            "email": "guest@example.test",
+            "self": true,
+            "responseStatus": "needsAction",
+            "comment": "keep"
+          },
+          {
+            "email": "other@example.test",
+            "responseStatus": "accepted"
+          }
+        ],
+        "conferenceData": {
+          "conferenceId": "keep"
+        },
+        "reminders": {
+          "useDefault": true
+        },
+        "recurringEventId": "master",
+        "originalStartTime": {
+          "date": "2026-09-07"
+        }
+      },
+      "steps": [
+        {
+          "observeOnly": false,
+          "beforeWrite": "grant",
+          "expected": {
+            "outcome": "confirmed",
+            "recovered": false
+          },
+          "credentialMutation": "original-slot"
+        }
+      ],
+      "exchanges": [
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/users/me/calendarList/primary",
+          "status": 200,
+          "body": {
+            "id": "guest@example.test",
+            "primary": true,
+            "accessRole": "owner"
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v1\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "needsAction",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            },
+            "recurringEventId": "master",
+            "originalStartTime": {
+              "date": "2026-09-07"
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid?sendUpdates=all&conferenceDataVersion=1",
+          "status": 200,
+          "ifMatch": "\"v1\"",
+          "requestBody": {
+            "attendeesOmitted": true,
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "responseStatus": "accepted"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "url": "https://www.googleapis.com/calendar/v3/calendars/guest%40example.test/events/event%2Fid",
+          "status": 200,
+          "body": {
+            "id": "event/id",
+            "etag": "\"v2\"",
+            "status": "confirmed",
+            "summary": "Meeting",
+            "start": {
+              "date": "2026-09-08"
+            },
+            "end": {
+              "date": "2026-09-09"
+            },
+            "organizer": {
+              "email": "host@example.test"
+            },
+            "attendees": [
+              {
+                "email": "guest@example.test",
+                "self": true,
+                "responseStatus": "accepted",
+                "comment": "keep"
+              },
+              {
+                "email": "other@example.test",
+                "responseStatus": "accepted"
+              }
+            ],
+            "conferenceData": {
+              "conferenceId": "keep"
+            },
+            "reminders": {
+              "useDefault": true
+            },
+            "recurringEventId": "master",
+            "originalStartTime": {
+              "date": "2026-09-07"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "patches": 1,
+        "grants": 1,
+        "credentials": 1
+      },
+      "occurrence": {
+        "externalSeriesID": "master",
+        "originalStart": {
+          "kind": "date",
+          "value": "2026-09-07"
+        }
+      }
+    }
+  ]
+}

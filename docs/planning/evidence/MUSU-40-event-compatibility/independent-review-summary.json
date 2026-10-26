@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "scope": "Independent saved filesystem/OCI/raw-integrity reviews; no live rerun or final PR/deployment approval",
+  "sourceHead": "d50152b569e47d3ce8ee90c6db1050db699a6f05",
+  "sourceTree": "bbab7fd1b1d90527e997a728b6c99667b06e5dce",
+  "reviews": [
+    {
+      "receipt": {
+        "path": "/tmp/musu40-c08-installed-evidence-review-v1.json",
+        "sha256": "e1d6c49388abd45d5f8e9fd838ebf621839fdf7c88afb8c2870f81e9bf4cfdfd",
+        "bytes": 284047
+      },
+      "scope": "Independent filesystem-only bounded evidence verification, not final PR/deployment approval",
+      "apiSource": {
+        "status": "passed",
+        "files": 922,
+        "frozenContextCurrentWorkspaceAndBuildCommitByteEqual": true,
+        "gitHeadAtBuild": "d50152b569e47d3ce8ee90c6db1050db699a6f05",
+        "gitTreeAtBuild": "bbab7fd1b1d90527e997a728b6c99667b06e5dce",
+        "context": "/tmp/musu40-event-compatibility-api-context-20261026163247_ec07b0",
+        "inventorySha256": "74fb236fbf65e5db262832959527be0a85758127d1ad3d04abc951fab5fae093",
+        "mismatches": []
+      },
+      "referenceSource": {
+        "status": "passed",
+        "files": 261,
+        "frozenContextCurrentWorkspaceAndBuildCommitByteEqual": true,
+        "gitHeadAtBuild": "06d08da12ca88593d61540b2f67a37fd69de4779",
+        "gitTreeAtBuild": "ee9e4ddb69202bda123c3f8652967c753c344d07",
+        "context": "/tmp/musu40-event-compatibility-reference-context",
+        "inventorySha256": "a785bd81005dbfc8ff3eceb226fc8fa37e9bfb90fda70163d528f9f2d9a1ce6d",
+        "mismatches": []
+      },
+      "apiClassification": {
+        "actualProductionFiles": 460,
+        "productionSupportFiles": 468,
+        "testBehaviorFiles": 231,
+        "overlapFiles": [
+          "apps/api/src/sync/behavior/event-delivery-cli.ts",
+          "apps/api/src/sync/behavior/event-delivery-driver.ts",
+          "apps/api/src/sync/behavior/google-rsvp-delivery-cli.ts",
+          "apps/api/src/sync/behavior/google-rsvp-delivery-driver.ts",
+          "apps/api/src/sync/behavior/task-delivery-cli.ts",
+          "apps/api/src/sync/behavior/task-delivery-driver.ts",
+          "apps/api/src/sync/event_compatibility_fixture_manifest.ts",
+          "apps/api/src/sync/event_compatibility_fixture_worker.ts"
+        ],
+        "uniqueInstalledFiles": 691
+      },
+      "oci": {
+        "apiOCI": {
+          "status": "passed",
+          "allArchiveBlobHashesVerified": true,
+          "localBuildIndexDigest": "sha256:4b93de02c626d630f4688af453b26552fcbb6f7e5cb80572759624a79d54f375",
+          "platformManifestDigest": "sha256:64b3d033c769fa0b672ddca3629f7732140315e47d5182c0591e9ee0cc7fe149",
+          "imageConfigDigest": "sha256:59fb4071f5bcde425bb4b6ca95abbc3beacb06de242dcb1dc4f9045c76fd693b",
+          "indexPlatformConfigDistinct": true,
+          "runtimeUser": "node",
+          "installedSourceFileCount": 691
+        },
+        "referenceOCI": {
+          "status": "passed",
+          "allArchiveBlobHashesVerified": true,
+          "localBuildIndexDigest": "sha256:74f3770efa4d2054704f15ae6ba8babf1e67e3460c9ba49e6860f25851b4498f",
+          "platformManifestDigest": "sha256:8b7d78860c0f54b0b302df2fc5bcebc306727e03f38eb5b10e2313addc3c8984",
+          "imageConfigDigest": "sha256:dcace29445a293273086e86278185fb634b8ce557957b92df6d4cd4f21a5107a",
+          "indexPlatformConfigDistinct": true,
+          "runtimeUser": "node",
+          "installedSourceFileCount": 230
+        }
+      },
+      "referenceBuildProvenance": "Actual built source is 06d08da12ca88593d61540b2f67a37fd69de4779 / ee9e4ddb69202bda123c3f8652967c753c344d07. All 261 frozen COPY files equal current d501 workspace and actual 06 Git source. Context equivalence does not rewrite image build provenance to d501.",
+      "limitations": [
+        "Reads local files and git objects only. Does not independently query current container/database presence. Cleanup findings below are authenticated-by-hash receipts, not a fresh Docker/PG inventory.",
+        "Installed image/source evidence is separate from source-only historical differential/process proofs and current CI.",
+        "No registry publication, production deployment, real external account or live provider requests established."
+      ]
+    },
+    {
+      "receipt": {
+        "path": "/tmp/musu40-c08-installed-evidence-review-raw-v2.json",
+        "sha256": "8bb89c9c506b82c39c5b172468ce50c70584987b80d5ca045b32c80d7b7e7dc6",
+        "bytes": 185206
+      },
+      "status": "BOUNDED_EVIDENCE_APPROVED",
+      "boundArtifactInventory": 704,
+      "scope": "Independent filesystem/raw-integrity and count review only, not live rerun, final PR, full C08, registry publication, deployment or provider acceptance",
+      "historicalCohorts": 3,
+      "excludedLostSnapshot": "Original v1 normalization self-snapshot16cfc… was overwritten by reviewer replay and exact bytes unrecovered; original receipt/log/probe preserved, overwritten snapshot excluded from verified artifact totals.",
+      "limits": [
+        "Filesystem-only verification. Does not freshly query current container/database absence, execute tests, import application code, or make network/provider requests. Cleanup is reviewed from integrity-tracked receipts, not independently repeated live inspection.",
+        "Hashes track integrity and identity; no signed authenticity claim.",
+        "Current installed event controller runs unchanged installed product code with two test-tool/evidence mounts and temporary test aliases; separate canonical API smoke is zero-mount unmodified layout.",
+        "Historical 20-pair composite/16 source process pairs are source-only and retain actual historical heads/harness cohorts. No current or installed process equivalence inferred.",
+        "V4 and V5 upgrade attempts failed and are excluded from acceptance; later attempts require their own actual result, raw artifacts and cleanup review.",
+        "Current CI, publication and deployment remain separate gates."
+      ]
+    },
+    {
+      "receipt": {
+        "path": "/tmp/musu40-c08-installed-evidence-review-v6-final-v3.json",
+        "sha256": "3f3c1206821f35e71b16eac01bdc3252989646d14f0a30e2a5092484abd818ef",
+        "bytes": 28096
+      },
+      "status": "BOUNDED_V6_UPGRADE_AND_REFERENCE_FINAL_EVIDENCE_APPROVED",
+      "boundArtifactInventory": 55,
+      "scope": "Independent filesystem saved-receipt review; no Docker/PG/network/tests/app imports, product changes, final PR/publication/deployment approval",
+      "canonicalCheckEvidence": "Exact manifest-bound worker calls production getEventSnapshot and asserts JSON deep equality to each original canonical (including timestamps) after every delivery/retry. All four actual worker phases returned successful receipts. Saved raw case output emits original canonical only, so this review does not claim an independently emitted after-canonical snapshot.",
+      "referenceSingleLiteralCorrection": true,
+      "limitations": [
+        "All execution, canonical-after and cleanup statements are verified from exact source-bound saved outputs, successful phase receipts and hashes; reviewer did not perform a new live inventory or rerun.",
+        "Provider traffic used bounded owned synthetic fixtures. No real account, external provider acceptance or notification delivery is established.",
+        "Reference active-v2 activation/preparation metadata is copied historical preparation; verifier-root-correction.json explicitly binds the one new verifier digest. Actual reference image provenance remains 06, with current COPY context equivalence.",
+        "Existing source/installed/CI/publication/production-deployment distinctions remain unchanged."
+      ]
+    }
+  ],
+  "countQualification": "704 and55 are separate scoped review inventories with overlap; never sum them as unique artifacts or tests",
+  "finalPRApproval": false
+}

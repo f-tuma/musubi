@@ -34,3 +34,7 @@ export { runClaimedGoogleTaskCreate, supportsGoogleTaskCreateEnvelope } from "./
 export * from "./task-compatibility-ports";
 export { runClaimedTaskCompatibility } from "./task-compatibility";
 export * from "./task-projection";
+export * from "./event-compatibility-types";
+export * from "./event-compatibility-ports";
+export { runClaimedEventCompatibility } from "./event-compatibility";
+export { copyTaskCompatibilityData as copyCompatibilityData } from "./task-compatibility-data";

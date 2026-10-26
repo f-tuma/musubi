@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "status": "source-image-clear-separately-recorded",
+  "head": "d50152b569e47d3ce8ee90c6db1050db699a6f05",
+  "tree": "bbab7fd1b1d90527e997a728b6c99667b06e5dce",
+  "productionSha256": "f98fdd62c2ca13e43b0a2f3379053d825c83f4083868be70f906f3c2b9cd242f",
+  "harnessSha256": "219799bda4e2dca87ec083888b18927708ff3f20d6b978ab23b596fcbd333089",
+  "productionFiles": 364,
+  "harnessFiles": 173,
+  "sourceApproval": {
+    "path": "/tmp/musu40-review-d501-3b64a1-source-image-clear.json",
+    "sha256": "6ec10ca972013cd153e053b7ba48308a107ed9430205d28146668d6994b12185",
+    "bytes": 11962
+  },
+  "bindings": {
+    "path": "/tmp/musu40-review-d501-3b64a1-bindings.json",
+    "sha256": "c99005299155c2abbb824f335963438348ee8dde658ef4c34fea8059783137c7",
+    "bytes": 1355
+  },
+  "finalAuditAndPublicationApproval": "PENDING independent final documentation/evidence tree and PR approval/current-head checks/squash/main verification; installed upgrade and final browser have separate successful receipts",
+  "wholeWorkspaceCheck": {
+    "status": "recorded root PASS at06d08da",
+    "artifact": {
+      "path": "/tmp/musu40-combined-root-workspace-check.log",
+      "sha256": "c6246cf0bc217ebd772dd5e1f1e4add0d8ba782144c1fa61dab66b5945e5caa8",
+      "bytes": 349764
+    },
+    "qualification": "No rerun by this FS-only accounting task; actual current-head CI remains separate"
+  },
+  "allJson": {
+    "artifact": {
+      "path": "/tmp/musu40-combined-root-all-json.json",
+      "sha256": "e30b6d3a5147d356aa89c4742ad11e02f9a4277e91e75fd8bc5048c6a8bfaf44",
+      "bytes": 82573
+    },
+    "passed": 556,
+    "suites": 13,
+    "failed": 0,
+    "errors": 0,
+    "durationMs": 9912
+  },
+  "clockAddendumChecks": [
+    {
+      "path": "/tmp/musu40-combined-clock-manifest-tests.log",
+      "sha256": "39fe7925d9fc8e4d45a90034e7c00be80d8ca9af119c399a1f407c4be789c539",
+      "bytes": 107
+    },
+    {
+      "path": "/tmp/musu40-combined-clock-api-types-existing-check.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  ],
+  "implementationAndLocalAcceptanceComplete": true,
+  "imageProvenanceQualification": "API image built atd501; reference built at06d08da with exact current COPY equality. Documentation-only commits never relabel image build provenance."
+}
