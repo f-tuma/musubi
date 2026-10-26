@@ -60,7 +60,7 @@ test("the real database inventory has no duplicates or empty shards", () => {
     "apps/api/src/sync/google_shared_task_update_delivery.integration.test.ts", "apps/api/src/sync/google_shared_task_delete_delivery.integration.test.ts",
     "apps/sync-reference/src/task-delete.integration.test.ts", "apps/sync-reference/src/task-delete-process.integration.test.ts",
     "apps/api/src/sync/google_shared_task_create_delivery.integration.test.ts", "apps/sync-reference/src/task-create.integration.test.ts", "apps/sync-reference/src/task-create-process.integration.test.ts",
-    "apps/api/src/sync/google_task_causal_delivery.integration.test.ts", "apps/api/src/sync/task_compatibility_delivery.integration.test.ts", "packages/db/src/queries/task-causal.integration.test.ts",
+    "apps/api/src/sync/google_task_causal_delivery.integration.test.ts", "apps/api/src/sync/task_compatibility_delivery.integration.test.ts", "apps/api/src/sync/event_compatibility_delivery.integration.test.ts", "packages/db/src/queries/task-causal.integration.test.ts",
     "apps/sync-reference/src/task-intent.integration.test.ts", "apps/sync-reference/src/task-intent-process.integration.test.ts"]) {
     assert.equal(inventory.filter(item => item.id === id).length, 1);
   }

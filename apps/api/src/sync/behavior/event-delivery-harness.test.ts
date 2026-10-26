@@ -1,0 +1,23 @@
+import assert from "node:assert/strict";
+import { loadEventDeliverySuite, parseEventDeliverySuite, runEventDeliveryScenario, EventDeliveryScenarioFailure } from "./event-delivery-driver";
+
+const suite = await loadEventDeliverySuite();
+let refused = 0;
+const invalid = (value: unknown) => { assert.throws(() => parseEventDeliverySuite(value), error => error instanceof EventDeliveryScenarioFailure && error.code === "invalid-suite"); refused++; };
+invalid(null); invalid({ ...suite, schemaVersion: 2 }); invalid({ ...suite, scenarios: [] });
+const duplicate = structuredClone(suite); duplicate.scenarios.push(structuredClone(duplicate.scenarios[0]!)); invalid(duplicate);
+let getters = 0; const accessor = {}; Object.defineProperty(accessor, "schemaVersion", { enumerable: true, get() { getters++; return 1; } }); invalid(accessor); assert.equal(getters, 0);
+const callback = structuredClone(suite); Object.assign(callback.scenarios[0]!, { execute() {} }); invalid(callback);
+const unknownAdapter = structuredClone(suite); (unknownAdapter.scenarios[0]!.adapter as string[]).push("__proto__"); invalid(unknownAdapter);
+const unknownPort = structuredClone(suite); unknownPort.scenarios[0]!.steps[0]!.port = "db.unregistered"; invalid(unknownPort);
+const foreignSentinel = structuredClone(suite); foreignSentinel.scenarios[0]!.steps[0]!.port = "db.renewEventOutboxLease"; invalid(foreignSentinel);
+const wrong = structuredClone(suite.scenarios[0]!); wrong.expected.returnedStatus = "wrong";
+await assert.rejects(() => runEventDeliveryScenario(wrong), error => error instanceof EventDeliveryScenarioFailure && error.code === "expectation-mismatch"); refused++;
+const missing = structuredClone(suite.scenarios[0]!); missing.steps.pop();
+await assert.rejects(() => runEventDeliveryScenario(missing), error => error instanceof EventDeliveryScenarioFailure && error.code === "unexpected-port"); refused++;
+const extra = structuredClone(suite.scenarios[0]!); extra.steps.push({ port: "db.renewEventOutboxLease", result: true });
+await assert.rejects(() => runEventDeliveryScenario(extra), error => error instanceof EventDeliveryScenarioFailure && error.code === "unconsumed-port"); refused++;
+const concurrent = await Promise.allSettled([runEventDeliveryScenario(suite.scenarios[0]!), runEventDeliveryScenario(suite.scenarios[0]!)]);
+assert.equal(concurrent[0]!.status, "fulfilled"); assert.equal(concurrent[1]!.status, "rejected"); refused++;
+for (const scenario of suite.scenarios) await runEventDeliveryScenario(scenario);
+console.log(`Event delivery behavior: ${suite.scenarios.length} actual-executor scenarios and ${refused} fail-closed checks passed (dependency ports only).`);

@@ -16,6 +16,7 @@ const manifests = {
   "caldav-delete": "packages/sync-runtime/src/behavior/caldav-delete.json",
   "caldav-create": "packages/sync-runtime/src/behavior/caldav-create.json",
   "task-delivery": "apps/api/src/sync/behavior/task-delivery.json",
+  "event-delivery": "apps/api/src/sync/behavior/event-delivery.json",
   "task-inspector": "apps/web/src/tests/behavior/task-inspector.json",
 };
 const scenarios = [{ id: "first", title: "First behavior" }, { id: "second", title: "Second behavior" }];
@@ -383,7 +384,7 @@ test("default runs every fixed suite and emits one clean aggregate JSON document
   const output = [];
   const code = await runCli(["--json"], line => output.push(line), { root, execute: async (_command, args) => {
     launches++;
-    if (args.includes("--import")) return runtime(scenarios, { suite: args.some(arg => arg.endsWith("/task-delivery-cli.ts")) ? "task-delivery" :
+    if (args.includes("--import")) return runtime(scenarios, { suite: args.some(arg => arg.endsWith("/event-delivery-cli.ts")) ? "event-delivery" : args.some(arg => arg.endsWith("/task-delivery-cli.ts")) ? "task-delivery" :
       args.some(arg => arg.endsWith("/google-task-create-cli.ts")) ? "google-task-create" :
       args.some(arg => arg.endsWith("/google-task-delete-cli.ts")) ? "google-task-delete" :
       args.some(arg => arg.endsWith("/google-task-update-cli.ts")) ? "google-task-update" :
@@ -396,11 +397,11 @@ test("default runs every fixed suite and emits one clean aggregate JSON document
     return { code: 0, stdout: "NOISY CHILD STDOUT", stderr: "NOISY CHILD STDERR" };
   } });
   assert.equal(code, 0);
-  assert.equal(launches, 11);
+  assert.equal(launches, 12);
   assert.equal(output.length, 1);
   const report = JSON.parse(output[0]);
   assert.equal(report.schemaVersion, 1);
-  assert.equal(report.passed, 22);
+  assert.equal(report.passed, 24);
   assert.equal(report.failed, 0);
   assert.deepEqual(report.suites.map(item => item.suite), Object.keys(manifests));
   assert.ok(!output[0].includes("NOISY"));

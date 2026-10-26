@@ -2,7 +2,7 @@
   "name": "musubi",
   "private": true,
   "version": "0.2.11",
-  "description": "Musubi monorepo — open, self-hostable shared calendar.",
+  "description": "Musubi monorepo \u2014 open, self-hostable shared calendar.",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -50,7 +50,8 @@
     "test:db:reference": "pnpm --filter @musubi/sync-reference run test:db",
     "test:db:encoder": "pnpm --filter @musubi/db exec tsx src/queries/operation-admission-missing.integration.test.ts",
     "test:db:task-compatibility": "pnpm --filter @musubi/api exec tsx src/sync/task_compatibility_delivery.integration.test.ts",
-    "test:db:shared-runtime": "pnpm --filter @musubi/api exec tsx src/sync/google_shared_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/google_shared_delete_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/google_shared_create_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/microsoft_shared_delete_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/caldav_shared_delete_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/microsoft_shared_create_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/caldav_shared_create_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/google_shared_task_update_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/google_shared_task_delete_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/google_shared_task_create_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/google_task_causal_delivery.integration.test.ts && pnpm test:db:task-compatibility"
+    "test:db:shared-runtime": "pnpm --filter @musubi/api exec tsx src/sync/google_shared_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/google_shared_delete_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/google_shared_create_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/microsoft_shared_delete_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/caldav_shared_delete_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/microsoft_shared_create_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/caldav_shared_create_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/google_shared_task_update_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/google_shared_task_delete_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/google_shared_task_create_delivery.integration.test.ts && pnpm --filter @musubi/api exec tsx src/sync/google_task_causal_delivery.integration.test.ts && pnpm test:db:task-compatibility && pnpm test:db:event-compatibility",
+    "test:db:event-compatibility": "pnpm --filter @musubi/api exec tsx src/sync/event_compatibility_delivery.integration.test.ts"
   },
   "keywords": [],
   "author": "frgtn.dev",
