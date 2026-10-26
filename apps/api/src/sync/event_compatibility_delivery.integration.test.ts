@@ -111,6 +111,8 @@ export function normalizeEventCompatibilityReceipt(receipt: FixtureReceipt) {
     if (outboxPath("payload\\.(?:graphOccurrenceContent|graphMeetingCancellation|graphSeriesDeletion)\\.context\\.(?:family\\[\\]|mappings\\[\\]|children\\[\\]|memberships\\[\\]|root|grant|link)").test(parent) ||
       movePath("initial\\.(?:context\\.(?:family\\[\\]|mappings\\[\\])|template)").test(parent)) return ["createdAt", "updatedAt", "deletedAt", "providerStateObservedAt"].includes(key);
     if (outboxPath("payload\\.(?:organizer|graphOccurrenceContent|graphMeetingCancellation)\\.dispatch").test(parent)) return ["startedAt", "acceptedAt"].includes(key);
+    if (outboxPath("payload\\.rsvp\\.graphDispatch").test(parent)) return ["startedAt", "acceptedAt"].includes(key);
+    if (outboxPath("payload\\.rsvp\\.caldavDelivery").test(parent)) return key === "startedAt";
     if (outboxPath("payload\\.organizer\\.dispatch\\.cancellationTombstone").test(parent)) return key === "deletedAt";
     if (outboxPath("(?:remote_snapshot|remoteSnapshot)").test(parent)) return key === "observedAt";
     if (outboxPath("payload\\.operationEnvelope\\.operation").test(parent)) return key === "acceptedAt";

@@ -128,8 +128,12 @@ raw receipts always retain original values:
   Coordinator SQL expiry clocks are treated the same way. A similarly named
   `payload.event` nested below native baseline or unknown provider data is not a
   host relation. Native provider baseline/identity/unknown fields with those
-  names stay exact. Null/presence
-  remains meaningful.
+  names stay exact. Within genuine rooted outbox payloads, RSVP clock
+  exceptions are limited to `payload.rsvp.graphDispatch.startedAt`,
+  `payload.rsvp.graphDispatch.acceptedAt`, and
+  `payload.rsvp.caldavDelivery.startedAt`. Other policy fields, unknown CalDAV
+  `acceptedAt`, and native lookalikes remain exact. Null/presence remains
+  meaningful.
 - Serializer-generated iCalendar DTSTAMP property clock digits become a marker
   only within the component that the captured operation and actual serializer
   are proven to own. A complete VCALENDAR wire resource alone is insufficient:

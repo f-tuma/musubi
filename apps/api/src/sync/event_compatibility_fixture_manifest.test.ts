@@ -79,6 +79,8 @@ async function main() {
   for (const nativeLookalike of [
     { payload: { event: { updatedAt: "native-time-one" } } },
     { payload: { organizer: { dispatch: { startedAt: "native-time-one" } } } },
+    { payload: { rsvp: { graphDispatch: { startedAt: "native-time-one", acceptedAt: "native-time-one" } } } },
+    { payload: { rsvp: { caldavDelivery: { startedAt: "native-time-one" } } } },
     { payload: { graphOccurrenceContent: { context: { family: [{ updatedAt: "native-time-one" }] } } } },
     { remote_snapshot: { observedAt: "native-time-one" } },
     { state: { events: [{ updated_at: "native-time-one" }] } },
@@ -87,6 +89,13 @@ async function main() {
     const changed = JSON.parse(JSON.stringify(source).replace("native-time-one", "native-time-two")) as typeof source;
     assert.notDeepEqual(normalizeEventCompatibilityReceipt(source), normalizeEventCompatibilityReceipt(changed), "Only rooted actual receipt relations own host clocks");
   }
+  const rsvpMarkers = { ...receipt, records: [{ ...first, before: { payload: { rsvp: { graphDispatch: { kind: "graph-rsvp-dispatch", version: 1, startedAt: "host-time-one", acceptedAt: "host-time-one" }, caldavDelivery: { kind: "one-send", startedAt: "host-time-one", acceptedAt: "unknown-native-field" } } } } }] };
+  const laterMarkers = JSON.parse(JSON.stringify(rsvpMarkers).split("host-time-one").join("host-time-two")) as typeof rsvpMarkers;
+  assert.deepEqual(normalizeEventCompatibilityReceipt(rsvpMarkers), normalizeEventCompatibilityReceipt(laterMarkers), "Only the three exact production RSVP host marker clock fields may vary");
+  const changedRsvpPolicy = structuredClone(rsvpMarkers); changedRsvpPolicy.records[0]!.before!.payload.rsvp.caldavDelivery.kind = "another-policy";
+  assert.notDeepEqual(normalizeEventCompatibilityReceipt(rsvpMarkers), normalizeEventCompatibilityReceipt(changedRsvpPolicy));
+  const unknownRsvpField = structuredClone(rsvpMarkers); unknownRsvpField.records[0]!.before!.payload.rsvp.caldavDelivery.acceptedAt = "changed-unknown-native-field";
+  assert.notDeepEqual(normalizeEventCompatibilityReceipt(rsvpMarkers), normalizeEventCompatibilityReceipt(unknownRsvpField), "CalDAV does not gain an invented acceptedAt field");
   const desiredResource = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:owned-uid\r\nDTSTAMP:20261026T120000Z\r\nDTSTART:20261026T101112Z\r\nDTEND:20261026T111213Z\r\nDESCRIPTION:Literal DTSTAMP:20260101T000000Z\r\nX-PRIVATE;X-KEEP=yes:Folded\r\n extension\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n";
   const clock: EventCompatibilitySerializerClock = { operationId: "serializer-operation", resourceUrl: receipt.wire[0]!.url, uid: "owned-uid", stamp: "20261026T120000Z", desiredResource,
     resourceSha256: createHash("sha256").update(desiredResource).digest("hex"), serializer: "caldavOrganizerDesired", verified: true, generatedProperty: true };
