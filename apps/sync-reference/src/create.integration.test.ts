@@ -1,3 +1,4 @@
+import { referenceTestDatabaseName } from "../conformance/database-name.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -10,7 +11,7 @@ import type { ReferenceClaim, ReferenceContent } from "./model.js";
 
 const adminUrl = process.env.REFERENCE_DATABASE_URL ?? (process.env.ENVIRONMENT === "test" ? process.env.DATABASE_URL : undefined);
 if (!adminUrl) throw new Error("Explicit independent or disposable test DB required");
-const name = `reference_create_${randomUUID().replace(/-/g, "")}`;
+const name = referenceTestDatabaseName("reference_create_");
 const database = new URL(adminUrl); database.pathname = `/${name}`;
 const admin = new Pool({ connectionString: adminUrl, max: 1 });
 const pool = new Pool({ connectionString: database.href, max: 5 });

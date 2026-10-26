@@ -1,3 +1,4 @@
+import { referenceTestDatabaseName } from "../conformance/database-name.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -12,7 +13,7 @@ import type { ReferenceTaskCreateClaim, ReferenceTaskCreateObservation } from ".
 import type { ReferenceTaskContent } from "./task-model.js";
 
 const adminUrl = process.env.REFERENCE_DATABASE_URL ?? (process.env.ENVIRONMENT === "test" ? process.env.DATABASE_URL : undefined); if (!adminUrl) throw new Error("Explicit disposable DB required");
-const name = `reference_task_create_${randomUUID().replaceAll("-", "")}`, url = new URL(adminUrl); url.pathname = `/${name}`;
+const name = referenceTestDatabaseName("reference_task_create_"), url = new URL(adminUrl); url.pathname = `/${name}`;
 const admin = new Pool({ connectionString: adminUrl, max: 1 }), pool = new Pool({ connectionString: url.href, max: 6 }), key = "ac".repeat(32), events = new ReferenceStore(pool, key), store = new ReferenceTaskStore(pool, key);
 const content: ReferenceTaskContent = { name: "Independent created task", notes: null, state: "doing", dueAt: "2026-10-26T14:45:30.123Z", importance: "high" };
 const projection = { title: content.name, notes: null, due: "2026-10-26T00:00:00.000Z", status: "needsAction" as const }, scope = "https://www.googleapis.com/auth/tasks";

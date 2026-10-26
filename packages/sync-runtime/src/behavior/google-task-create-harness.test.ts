@@ -59,3 +59,5 @@ const selected: string[] = []; assert.equal(await runCli(["--scenario", "fresh-c
 const report = JSON.parse(selected[0]!); assert.deepEqual(report.results.map((item: { id: string }) => item.id), ["fresh-create"]);
 assert.equal(report.results[0].status, "passed"); assert(!selected[0]!.includes("fixture-initial-token")); assert(!selected[0]!.includes("fixture-recovered-token"));
 console.log(`Google task CREATE: ${suite.scenarios.length} actual codec/kernel/provider scenarios + ${negative} fail-closed schema/harness checks passed; no DB or live-provider claim.`);
+
+console.log("SYNC_CONFORMANCE_COMPLETE:harness/google-task-create-harness");

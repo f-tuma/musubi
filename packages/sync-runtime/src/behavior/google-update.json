@@ -1,0 +1,606 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    {
+      "id": "fresh-reference-title-update",
+      "title": "Reference confirms the exact native readback",
+      "policy": "reference",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "writer"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "etag": "\"before\"",
+            "summary": "Old",
+            "description": null,
+            "location": "Room",
+            "status": "confirmed",
+            "eventType": "default",
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.000Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00.000Z"
+            },
+            "organizer": {
+              "self": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "etag": "\"after\""
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "etag": "\"after\"",
+            "summary": "New",
+            "description": null,
+            "location": "Room",
+            "status": "confirmed",
+            "eventType": "default",
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.000Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00.000Z"
+            },
+            "organizer": {
+              "self": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          "\"before\"",
+          null
+        ],
+        "bodies": [
+          null,
+          null,
+          {
+            "summary": "New"
+          },
+          null
+        ],
+        "sessions": 3,
+        "mutationMarks": 1,
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "validator": "\"after\"",
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "metrics": 4
+      }
+    },
+    {
+      "id": "fresh-musubi-title-update",
+      "title": "Musubi retains provider response completion policy",
+      "policy": "musubi",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "writer"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "etag": "\"before\"",
+            "summary": "Old",
+            "description": null,
+            "location": "Room",
+            "status": "confirmed",
+            "eventType": "default",
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.000Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00.000Z"
+            },
+            "organizer": {
+              "self": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "etag": "\"after\""
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "PATCH"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          "\"before\""
+        ],
+        "bodies": [
+          null,
+          null,
+          {
+            "summary": "New"
+          }
+        ],
+        "sessions": 2,
+        "mutationMarks": 1,
+        "ackKinds": [
+          "provider-response"
+        ],
+        "finishStatuses": [],
+        "providerKind": "accepted",
+        "validator": "\"after\"",
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "metrics": 3
+      }
+    },
+    {
+      "id": "native-conflict",
+      "title": "A real PATCH conflict cannot ACK",
+      "policy": "reference",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "writer"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "etag": "\"before\"",
+            "summary": "Old",
+            "description": null,
+            "location": "Room",
+            "status": "confirmed",
+            "eventType": "default",
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.000Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00.000Z"
+            },
+            "organizer": {
+              "self": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 412,
+          "body": {}
+        }
+      ],
+      "expected": {
+        "status": "conflict",
+        "methods": [
+          "GET",
+          "GET",
+          "PATCH"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          "\"before\""
+        ],
+        "bodies": [
+          null,
+          null,
+          {
+            "summary": "New"
+          }
+        ],
+        "sessions": 2,
+        "mutationMarks": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "conflict"
+        ],
+        "providerKind": "rejected",
+        "validator": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "metrics": 3
+      }
+    },
+    {
+      "id": "accepted-readback-denied",
+      "title": "A denied readback retains the actual accepted PATCH",
+      "policy": "reference",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "writer"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "etag": "\"before\"",
+            "summary": "Old",
+            "description": null,
+            "location": "Room",
+            "status": "confirmed",
+            "eventType": "default",
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.000Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00.000Z"
+            },
+            "organizer": {
+              "self": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "etag": "\"after\""
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 403,
+          "body": {}
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          "\"before\"",
+          null
+        ],
+        "bodies": [
+          null,
+          null,
+          {
+            "summary": "New"
+          },
+          null
+        ],
+        "sessions": 3,
+        "mutationMarks": 1,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "accepted",
+        "validator": "\"after\"",
+        "remoteKind": "unobserved",
+        "possibleDispatch": true,
+        "metrics": 4
+      }
+    },
+    {
+      "id": "lost-reply-confirmed",
+      "title": "Lost response confirms uncertainty without another PATCH",
+      "policy": "reference",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "writer"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "etag": "\"before\"",
+            "summary": "Old",
+            "description": null,
+            "location": "Room",
+            "status": "confirmed",
+            "eventType": "default",
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.000Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00.000Z"
+            },
+            "organizer": {
+              "self": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "error": "lost-reply"
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "etag": "\"after\"",
+            "summary": "New",
+            "description": null,
+            "location": "Room",
+            "status": "confirmed",
+            "eventType": "default",
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.000Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00.000Z"
+            },
+            "organizer": {
+              "self": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "status": "acked",
+        "methods": [
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          "\"before\"",
+          null
+        ],
+        "bodies": [
+          null,
+          null,
+          {
+            "summary": "New"
+          },
+          null
+        ],
+        "sessions": 3,
+        "mutationMarks": 1,
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "finishStatuses": [],
+        "providerKind": "uncertain",
+        "validator": null,
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "metrics": 4
+      }
+    },
+    {
+      "id": "foreign-account-session",
+      "title": "Wrong physical session cannot dispatch native HTTP",
+      "policy": "reference",
+      "exchanges": [],
+      "expected": {
+        "status": "hold",
+        "methods": [],
+        "ifMatch": [],
+        "bodies": [],
+        "sessions": 1,
+        "mutationMarks": 0,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "validator": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "metrics": 0
+      },
+      "fault": "wrong-session"
+    },
+    {
+      "id": "unknown-envelope",
+      "title": "Unknown envelope version cannot reach credentials or HTTP",
+      "policy": "reference",
+      "exchanges": [],
+      "expected": {
+        "status": "hold",
+        "methods": [],
+        "ifMatch": [],
+        "bodies": [],
+        "sessions": 0,
+        "mutationMarks": 0,
+        "ackKinds": [],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "not-dispatched",
+        "validator": null,
+        "remoteKind": "unobserved",
+        "possibleDispatch": false,
+        "metrics": 0
+      },
+      "fault": "unknown-version"
+    },
+    {
+      "id": "stale-ack-refused",
+      "title": "Changed host authority preserves acceptance without ACK",
+      "policy": "reference",
+      "exchanges": [
+        {
+          "method": "GET",
+          "path": "/calendar/v3/users/me/calendarList/native%2Fcalendar",
+          "status": 200,
+          "body": {
+            "id": "native/calendar",
+            "accessRole": "writer"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "etag": "\"before\"",
+            "summary": "Old",
+            "description": null,
+            "location": "Room",
+            "status": "confirmed",
+            "eventType": "default",
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.000Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00.000Z"
+            },
+            "organizer": {
+              "self": true
+            }
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "etag": "\"after\""
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/calendar/v3/calendars/native%2Fcalendar/events/native%2Fevent",
+          "status": 200,
+          "body": {
+            "id": "native/event",
+            "etag": "\"after\"",
+            "summary": "New",
+            "description": null,
+            "location": "Room",
+            "status": "confirmed",
+            "eventType": "default",
+            "start": {
+              "dateTime": "2026-10-13T08:00:00.000Z"
+            },
+            "end": {
+              "dateTime": "2026-10-13T09:00:00.000Z"
+            },
+            "organizer": {
+              "self": true
+            }
+          }
+        }
+      ],
+      "expected": {
+        "status": "hold",
+        "methods": [
+          "GET",
+          "GET",
+          "PATCH",
+          "GET"
+        ],
+        "ifMatch": [
+          null,
+          null,
+          "\"before\"",
+          null
+        ],
+        "bodies": [
+          null,
+          null,
+          {
+            "summary": "New"
+          },
+          null
+        ],
+        "sessions": 3,
+        "mutationMarks": 1,
+        "ackKinds": [
+          "exact-readback"
+        ],
+        "finishStatuses": [
+          "hold"
+        ],
+        "providerKind": "accepted",
+        "validator": "\"after\"",
+        "remoteKind": "confirmed",
+        "possibleDispatch": true,
+        "metrics": 4
+      },
+      "fault": "reject-ack"
+    }
+  ]
+}

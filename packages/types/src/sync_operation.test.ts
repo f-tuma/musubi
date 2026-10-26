@@ -144,3 +144,5 @@ const customArray = new RewritingArray(); customArray.push("original");
 assert.equal(SyncJsonValueSchema.safeParse(customArray).success, false, "inherited array serialization hooks cannot change admitted bytes");
 
 console.log("Decoder-first operation envelope HOLD contract: OK");
+
+console.log("SYNC_CONFORMANCE_COMPLETE:unit/types/operation");

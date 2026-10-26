@@ -1,3 +1,4 @@
+import { referenceTestDatabaseName } from "../conformance/database-name.js";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -21,7 +22,7 @@ async function main() {
   const adminUrl = process.env.REFERENCE_DATABASE_URL ?? process.env.DATABASE_URL;
   assert.ok(adminUrl);
   const admin = new Pool({ connectionString: adminUrl, max: 2 });
-  const name = `reference_process_${randomUUID().replace(/-/g, "")}`;
+  const name = referenceTestDatabaseName("reference_process_");
   await admin.query(`CREATE DATABASE "${name}"`);
   const database = new URL(adminUrl); database.pathname = `/${name}`;
   const pool = new Pool({ connectionString: database.href, max: 4 });
@@ -191,9 +192,10 @@ async function main() {
     console.log(`Reference real child-process/HTTP/PostgreSQL: ${cases} cases passed without Musubi DB/auth/config env or tables`);
   } finally {
     for(const child of children)child.kill("SIGKILL");
+    await Promise.all([...children].map(child => child.exitCode !== null || child.signalCode !== null ? Promise.resolve() : once(child, "exit")));
     server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));
     await pool.end();
-    await admin.query("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=$1",[name]);
+    assert.equal((await admin.query("SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=$1",[name])).rows[0].count, 0, "Owned children and DB clients must close before plain DROP");
     await admin.query(`DROP DATABASE "${name}"`);await admin.end();
   }
 }

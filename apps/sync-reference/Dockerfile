@@ -15,6 +15,7 @@ RUN pnpm --config.inject-workspace-packages=true --filter @musubi/sync-reference
 FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS runner
 WORKDIR /app
 COPY --from=deploy /prod/reference /app
+COPY LICENSE /app/LICENSE
 USER node
 ENTRYPOINT ["node_modules/.bin/tsx", "src/cli.ts"]
 CMD ["show"]

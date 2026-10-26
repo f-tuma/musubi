@@ -4,6 +4,14 @@ Use small JSON scenarios while editing. Run the affected flow through the
 application after the fast loop passes. The drivers execute production code;
 fixtures supply its dependencies at the existing boundaries.
 
+The Google event UPDATE suite now drives the actual shared kernel, decoder and
+native provider through eight JSON cases, including the distinct reference and
+Musubi completion policies. Start with
+`pnpm test:behavior --suite google-update --scenario fresh-reference-title-update --json`.
+The [standalone alpha corpus](../sync-alpha/README.md) adds exact assertion
+inventories and frozen installed verification. Its pure host compatibility lane
+is separate from the [actual host DB gate](../sync-alpha/host-database.md).
+
 ```sh
 pnpm test:behavior --list
 pnpm test:behavior --suite read-attempt --scenario steady-large-pagination --json

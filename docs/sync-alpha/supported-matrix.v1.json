@@ -1,0 +1,506 @@
+{
+  "schemaVersion": 1,
+  "kind": "musubi-sync-alpha-supported-profile-matrix",
+  "runtimeContract": "Node22/Linux exact-TSX source ESM private artifact; source/runtime versions and architecture are in each candidate manifest",
+  "profiles": [
+    {
+      "id": "google-event-update",
+      "provider": "google",
+      "kind": "event",
+      "action": "update",
+      "operationVersion": 1,
+      "native": {
+        "api": "Google Calendar API v3",
+        "endpoint": "/calendar/v3/calendars/{physicalCalendarId}/events",
+        "server": "Google Calendar; no live deployment certified"
+      },
+      "roleAndGrant": {
+        "credential": "active unexpired scoped OAuth access token",
+        "anyScope": [
+          "https://www.googleapis.com/auth/calendar",
+          "https://www.googleapis.com/auth/calendar.events",
+          "https://www.googleapis.com/auth/calendar.events.owned"
+        ],
+        "calendar": "fresh writable concrete calendar; primary alias refused",
+        "object": "bounded personal timed nonrecurring event; action-specific native eligibility guards"
+      },
+      "validator": "original strong native ETag; emitted conditional If-Match; exact full-target/absence readback",
+      "retryAndRecovery": "original immutable projection/body; uncertain observation before permitted same-ID/same-validator retry; no guessed identity",
+      "allowedSideEffects": [
+        "provider-content-write"
+      ],
+      "notificationDelivery": "unknown; not certified by local fixtures",
+      "profileBoundary": "experimental executable reference profile, not a universal provider portability promise",
+      "requiredEntries": [
+        "json/google-update",
+        "db/reference/store",
+        "db/reference/process"
+      ],
+      "evidence": {
+        "deterministic": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "json/google-update"
+          ]
+        },
+        "referenceDatabaseAndProcess": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "db/reference/store",
+            "db/reference/process"
+          ]
+        },
+        "liveProvider": "not-run",
+        "deployed": "not-established"
+      }
+    },
+    {
+      "id": "google-event-create",
+      "provider": "google",
+      "kind": "event",
+      "action": "create",
+      "operationVersion": 1,
+      "native": {
+        "api": "Google Calendar API v3",
+        "endpoint": "/calendar/v3/calendars/{physicalCalendarId}/events",
+        "server": "Google Calendar; no live deployment certified"
+      },
+      "roleAndGrant": {
+        "credential": "active unexpired scoped OAuth access token",
+        "anyScope": [
+          "https://www.googleapis.com/auth/calendar",
+          "https://www.googleapis.com/auth/calendar.events",
+          "https://www.googleapis.com/auth/calendar.events.owned"
+        ],
+        "calendar": "fresh writable concrete calendar; primary alias refused",
+        "object": "bounded personal timed nonrecurring event; action-specific native eligibility guards"
+      },
+      "validator": "deterministic operation-derived ID/owned marker, exact strong-validator readback and content equality",
+      "retryAndRecovery": "original immutable projection/body; uncertain observation before permitted same-ID/same-validator retry; no guessed identity",
+      "allowedSideEffects": [
+        "provider-content-write"
+      ],
+      "notificationDelivery": "unknown; not certified by local fixtures",
+      "profileBoundary": "experimental executable reference profile, not a universal provider portability promise",
+      "requiredEntries": [
+        "json/google-create",
+        "db/reference/create",
+        "db/reference/create-process"
+      ],
+      "evidence": {
+        "deterministic": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "json/google-create"
+          ]
+        },
+        "referenceDatabaseAndProcess": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "db/reference/create",
+            "db/reference/create-process"
+          ]
+        },
+        "liveProvider": "not-run",
+        "deployed": "not-established"
+      },
+      "conservativeCapabilityDescriptor": "unsupported-portability/unsafe-uncertain-create remains; executable reference recovery does not promote a general capability"
+    },
+    {
+      "id": "google-event-delete",
+      "provider": "google",
+      "kind": "event",
+      "action": "delete",
+      "operationVersion": 1,
+      "native": {
+        "api": "Google Calendar API v3",
+        "endpoint": "/calendar/v3/calendars/{physicalCalendarId}/events",
+        "server": "Google Calendar; no live deployment certified"
+      },
+      "roleAndGrant": {
+        "credential": "active unexpired scoped OAuth access token",
+        "anyScope": [
+          "https://www.googleapis.com/auth/calendar",
+          "https://www.googleapis.com/auth/calendar.events",
+          "https://www.googleapis.com/auth/calendar.events.owned"
+        ],
+        "calendar": "fresh writable concrete calendar; primary alias refused",
+        "object": "bounded personal timed nonrecurring event; action-specific native eligibility guards"
+      },
+      "validator": "original strong native ETag; emitted conditional If-Match; exact full-target/absence readback",
+      "retryAndRecovery": "original immutable projection/body; uncertain observation before permitted same-ID/same-validator retry; no guessed identity",
+      "allowedSideEffects": [
+        "provider-content-write"
+      ],
+      "notificationDelivery": "unknown; not certified by local fixtures",
+      "profileBoundary": "experimental executable reference profile, not a universal provider portability promise",
+      "requiredEntries": [
+        "json/google-delete",
+        "db/reference/delete",
+        "db/reference/delete-process"
+      ],
+      "evidence": {
+        "deterministic": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "json/google-delete"
+          ]
+        },
+        "referenceDatabaseAndProcess": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "db/reference/delete",
+            "db/reference/delete-process"
+          ]
+        },
+        "liveProvider": "not-run",
+        "deployed": "not-established"
+      }
+    },
+    {
+      "id": "microsoft-event-create",
+      "provider": "microsoft",
+      "kind": "event",
+      "action": "create",
+      "operationVersion": 1,
+      "native": {
+        "api": "Microsoft Graph v1.0",
+        "endpoint": "/v1.0/me/calendars/{physicalCalendarId}/events",
+        "server": "Microsoft Graph; no live tenant/deployment certified"
+      },
+      "roleAndGrant": {
+        "credential": "active unexpired scoped OAuth access token",
+        "requiredScope": "Calendars.ReadWrite",
+        "calendar": "fresh owned writable calendar and actual account identity",
+        "object": "bounded eligible personal timed singleInstance; no recurring/online meeting or draft expansion"
+      },
+      "validator": "one-shot possible-send marker; native-assigned ID and complete operation-correlated scoped readback; weak ETag is not CAS",
+      "retryAndRecovery": "observe-only after possible mutation; no blind uncertain resend",
+      "allowedSideEffects": [
+        "provider-content-write"
+      ],
+      "notificationDelivery": "unknown; not certified by local fixtures",
+      "profileBoundary": "experimental executable reference profile, not a universal provider portability promise",
+      "requiredEntries": [
+        "json/microsoft-create",
+        "db/reference/graph-create",
+        "db/reference/graph-create-process"
+      ],
+      "evidence": {
+        "deterministic": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "json/microsoft-create"
+          ]
+        },
+        "referenceDatabaseAndProcess": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "db/reference/graph-create",
+            "db/reference/graph-create-process"
+          ]
+        },
+        "liveProvider": "not-run",
+        "deployed": "not-established"
+      }
+    },
+    {
+      "id": "microsoft-event-delete",
+      "provider": "microsoft",
+      "kind": "event",
+      "action": "delete",
+      "operationVersion": 1,
+      "native": {
+        "api": "Microsoft Graph v1.0",
+        "endpoint": "/v1.0/me/calendars/{physicalCalendarId}/events",
+        "server": "Microsoft Graph; no live tenant/deployment certified"
+      },
+      "roleAndGrant": {
+        "credential": "active unexpired scoped OAuth access token",
+        "requiredScope": "Calendars.ReadWrite",
+        "calendar": "fresh owned writable calendar and actual account identity",
+        "object": "bounded eligible personal timed singleInstance; no recurring/online meeting or draft expansion"
+      },
+      "validator": "original exact native weak ETag guarded preflight; not conditional CAS",
+      "retryAndRecovery": "observe-only after possible mutation; no blind uncertain resend",
+      "allowedSideEffects": [
+        "provider-content-write"
+      ],
+      "notificationDelivery": "unknown; not certified by local fixtures",
+      "profileBoundary": "experimental executable reference profile, not a universal provider portability promise",
+      "requiredEntries": [
+        "json/microsoft-delete",
+        "db/reference/graph-delete",
+        "db/reference/graph-delete-process"
+      ],
+      "evidence": {
+        "deterministic": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "json/microsoft-delete"
+          ]
+        },
+        "referenceDatabaseAndProcess": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "db/reference/graph-delete",
+            "db/reference/graph-delete-process"
+          ]
+        },
+        "liveProvider": "not-run",
+        "deployed": "not-established"
+      }
+    },
+    {
+      "id": "caldav-event-create",
+      "provider": "caldav",
+      "kind": "event",
+      "action": "create",
+      "operationVersion": 1,
+      "native": {
+        "api": "CalDAV VEVENT protocol profile",
+        "endpoint": "exact HTTPS collection/direct-child resource URL",
+        "server": "synthetic protocol fixtures only; no named server/version or iCloud certified"
+      },
+      "roleAndGrant": {
+        "credential": "own active encrypted strict Basic credential; no invented OAuth scope",
+        "requiredScope": "",
+        "calendar": "fresh exact collection privileges and current network policy",
+        "object": "eligible direct-child personal VEVENT with exact UID/resource and native guards",
+        "privileges": "bind/write for CREATE; unbind and action-specific fresh deletion authority for DELETE"
+      },
+      "validator": "operation-derived URL/UID; If-None-Match creation; strong exact resource/UID/content readback",
+      "retryAndRecovery": "owned exact-resource observation, no blind URL change, redirect-derived authority or foreign adoption",
+      "allowedSideEffects": [
+        "provider-content-write"
+      ],
+      "notificationDelivery": "unknown; not certified by local fixtures",
+      "profileBoundary": "experimental executable reference profile, not a universal provider portability promise",
+      "requiredEntries": [
+        "json/caldav-create",
+        "db/reference/caldav-create",
+        "db/reference/caldav-create-process"
+      ],
+      "evidence": {
+        "deterministic": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "json/caldav-create"
+          ]
+        },
+        "referenceDatabaseAndProcess": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "db/reference/caldav-create",
+            "db/reference/caldav-create-process"
+          ]
+        },
+        "liveProvider": "not-run",
+        "deployed": "not-established"
+      }
+    },
+    {
+      "id": "caldav-event-delete",
+      "provider": "caldav",
+      "kind": "event",
+      "action": "delete",
+      "operationVersion": 1,
+      "native": {
+        "api": "CalDAV VEVENT protocol profile",
+        "endpoint": "exact HTTPS collection/direct-child resource URL",
+        "server": "synthetic protocol fixtures only; no named server/version or iCloud certified"
+      },
+      "roleAndGrant": {
+        "credential": "own active encrypted strict Basic credential; no invented OAuth scope",
+        "requiredScope": "",
+        "calendar": "fresh exact collection privileges and current network policy",
+        "object": "eligible direct-child personal VEVENT with exact UID/resource and native guards",
+        "privileges": "bind/write for CREATE; unbind and action-specific fresh deletion authority for DELETE"
+      },
+      "validator": "strong original resource ETag and conditional deletion",
+      "retryAndRecovery": "owned exact-resource observation, no blind URL change, redirect-derived authority or foreign adoption",
+      "allowedSideEffects": [
+        "provider-content-write"
+      ],
+      "notificationDelivery": "unknown; not certified by local fixtures",
+      "profileBoundary": "experimental executable reference profile, not a universal provider portability promise",
+      "requiredEntries": [
+        "json/caldav-delete",
+        "db/reference/caldav-delete",
+        "db/reference/caldav-delete-process"
+      ],
+      "evidence": {
+        "deterministic": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "json/caldav-delete"
+          ]
+        },
+        "referenceDatabaseAndProcess": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "db/reference/caldav-delete",
+            "db/reference/caldav-delete-process"
+          ]
+        },
+        "liveProvider": "not-run",
+        "deployed": "not-established"
+      }
+    },
+    {
+      "id": "google-task-update",
+      "provider": "google",
+      "kind": "task",
+      "action": "update",
+      "operationVersion": 1,
+      "native": {
+        "api": "Google Tasks API v1",
+        "endpoint": "/tasks/v1/lists/{physicalListId}/tasks",
+        "server": "Google Tasks; live conditional enforcement not certified"
+      },
+      "roleAndGrant": {
+        "credential": "active unexpired scoped OAuth access token",
+        "requiredScope": "https://www.googleapis.com/auth/tasks",
+        "list": "exact physical list; task identity scoped to connection/list",
+        "object": "flat bounded nonrecurring task; native title/notes/status/date-only due, richer canonical state/time/importance retained separately"
+      },
+      "validator": "original strong native ETag/baseline and original If-Match request; live enforcement not certified",
+      "retryAndRecovery": "original address/validator and scoped readback/absence; uncertain CREATE never grants blind POST repeat",
+      "allowedSideEffects": [
+        "provider-content-write"
+      ],
+      "notificationDelivery": "unknown; not certified by local fixtures",
+      "profileBoundary": "experimental executable reference profile, not a universal provider portability promise",
+      "requiredEntries": [
+        "json/google-task-update",
+        "db/reference/task-update",
+        "db/reference/task-update-process"
+      ],
+      "evidence": {
+        "deterministic": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "json/google-task-update"
+          ]
+        },
+        "referenceDatabaseAndProcess": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "db/reference/task-update",
+            "db/reference/task-update-process"
+          ]
+        },
+        "liveProvider": "not-run",
+        "deployed": "not-established"
+      }
+    },
+    {
+      "id": "google-task-delete",
+      "provider": "google",
+      "kind": "task",
+      "action": "delete",
+      "operationVersion": 1,
+      "native": {
+        "api": "Google Tasks API v1",
+        "endpoint": "/tasks/v1/lists/{physicalListId}/tasks",
+        "server": "Google Tasks; live conditional enforcement not certified"
+      },
+      "roleAndGrant": {
+        "credential": "active unexpired scoped OAuth access token",
+        "requiredScope": "https://www.googleapis.com/auth/tasks",
+        "list": "exact physical list; task identity scoped to connection/list",
+        "object": "flat bounded nonrecurring task; native title/notes/status/date-only due, richer canonical state/time/importance retained separately"
+      },
+      "validator": "original strong native ETag/baseline and original If-Match request; live enforcement not certified",
+      "retryAndRecovery": "original address/validator and scoped readback/absence; uncertain CREATE never grants blind POST repeat",
+      "allowedSideEffects": [
+        "provider-content-write"
+      ],
+      "notificationDelivery": "unknown; not certified by local fixtures",
+      "profileBoundary": "experimental executable reference profile, not a universal provider portability promise",
+      "requiredEntries": [
+        "json/google-task-delete",
+        "db/reference/task-delete",
+        "db/reference/task-delete-process"
+      ],
+      "evidence": {
+        "deterministic": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "json/google-task-delete"
+          ]
+        },
+        "referenceDatabaseAndProcess": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "db/reference/task-delete",
+            "db/reference/task-delete-process"
+          ]
+        },
+        "liveProvider": "not-run",
+        "deployed": "not-established"
+      }
+    },
+    {
+      "id": "google-task-create",
+      "provider": "google",
+      "kind": "task",
+      "action": "create",
+      "operationVersion": 1,
+      "native": {
+        "api": "Google Tasks API v1",
+        "endpoint": "/tasks/v1/lists/{physicalListId}/tasks",
+        "server": "Google Tasks; live conditional enforcement not certified"
+      },
+      "roleAndGrant": {
+        "credential": "active unexpired scoped OAuth access token",
+        "requiredScope": "https://www.googleapis.com/auth/tasks",
+        "list": "exact physical list; task identity scoped to connection/list",
+        "object": "flat bounded nonrecurring task; native title/notes/status/date-only due, richer canonical state/time/importance retained separately"
+      },
+      "validator": "unaddressed admitted CREATE; native-assigned ID, durable possible-send/address evidence and exact full-target adoption",
+      "retryAndRecovery": "original address/validator and scoped readback/absence; uncertain CREATE never grants blind POST repeat",
+      "allowedSideEffects": [
+        "provider-content-write"
+      ],
+      "notificationDelivery": "unknown; not certified by local fixtures",
+      "profileBoundary": "experimental executable reference profile, not a universal provider portability promise",
+      "requiredEntries": [
+        "json/google-task-create",
+        "db/reference/task-create",
+        "db/reference/task-create-process"
+      ],
+      "evidence": {
+        "deterministic": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "json/google-task-create"
+          ]
+        },
+        "referenceDatabaseAndProcess": {
+          "status": "requires exact-source candidate receipt",
+          "entries": [
+            "db/reference/task-create",
+            "db/reference/task-create-process"
+          ]
+        },
+        "liveProvider": "not-run",
+        "deployed": "not-established"
+      }
+    }
+  ],
+  "profileCount": 10,
+  "referenceCausalExtension": "Queued Google Task UPDATE/DELETE behind CREATE; not an additional provider endpoint",
+  "hostOnly": [
+    "Microsoft To Do",
+    "CalDAV VTODO lifecycle",
+    "RSVP/reminder/organizer/occurrence/series families",
+    "Outlook move coordination",
+    "retained-v0 compatibility",
+    "general coverage/pull/echo application"
+  ],
+  "hostDatabaseEvidence": "host-database.md and separate six-program actual-PG gate; host-compat mode is deterministic lifecycle only",
+  "liveProviderEvidence": "not-run for this candidate",
+  "deploymentEvidence": "not-established",
+  "evidencePolicy": "Statuses bind to separate exact-source/digest receipts. This matrix declares required coverage; it does not pre-mark any future candidate PASS."
+}

@@ -316,7 +316,9 @@ jobs:
   integration:
     name: Database integration (${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Shard 1 additionally verifies a frozen standalone production closure and
+    # its installed reference/process corpus against this same disposable PG.
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -381,6 +383,34 @@ jobs:
       - run: node scripts/ci-shards.mjs db ${{ matrix.shard }}/4
         env:
           CI_SHARD_OUTPUT_DIR: ${{ runner.temp }}/ci-db
+
+      - name: Frozen standalone candidate and installed conformance
+        if: matrix.shard == 1
+        env:
+          REFERENCE_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+          REFERENCE_CREDENTIAL_KEY: "6666666666666666666666666666666666666666666666666666666666666666"
+        run: |
+          candidate_dir="$RUNNER_TEMP/sync-alpha"
+          node scripts/package-sync-alpha.mjs --ref "$GITHUB_SHA" --output "$candidate_dir"
+          node "$candidate_dir/candidate/scripts/verify-sync-alpha.mjs" --candidate "$candidate_dir/candidate" --mode deterministic --report "$RUNNER_TEMP/sync-alpha-deterministic.json"
+          node "$candidate_dir/candidate/scripts/verify-sync-alpha.mjs" --candidate "$candidate_dir/candidate" --mode reference-db --report "$RUNNER_TEMP/sync-alpha-reference-db.json"
+          node scripts/sync-conformance.mjs --mode host-compat --json --report "$RUNNER_TEMP/sync-alpha-host-compat.json"
+          pnpm test:sync-alpha:cleanup-db
+
+      # Receipts only: the private candidate archive is not published by CI.
+      - name: Standalone conformance evidence
+        if: always() && matrix.shard == 1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: standalone-sync-conformance
+          path: |
+            ${{ runner.temp }}/sync-alpha/package-receipt.json
+            ${{ runner.temp }}/sync-alpha-deterministic.json
+            ${{ runner.temp }}/sync-alpha-deterministic.json.conformance.json
+            ${{ runner.temp }}/sync-alpha-reference-db.json
+            ${{ runner.temp }}/sync-alpha-reference-db.json.conformance.json
+            ${{ runner.temp }}/sync-alpha-host-compat.json
+          retention-days: 7
 
       - if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

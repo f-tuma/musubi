@@ -10,6 +10,7 @@ const manifests = {
   "fair-work": "packages/sync-runtime/src/behavior/fair-work.json",
   "caldav-discovery": "apps/api/src/sync/behavior/caldav-discovery.json",
   "google-delete": "packages/sync-runtime/src/behavior/google-delete.json",
+  "google-update": "packages/sync-runtime/src/behavior/google-update.json",
   "google-create": "packages/sync-runtime/src/behavior/google-create.json",
   "google-task-update": "packages/sync-runtime/src/behavior/google-task-update.json",
   "google-task-delete": "packages/sync-runtime/src/behavior/google-task-delete.json",
@@ -143,6 +144,18 @@ test("read attempt selection uses only its fixed production timer-port CLI", asy
   assert.equal(report.passed, 1); assert.equal(report.errors, 0);
   const wrong = await runBehavior(args, { root, execute: async () => runtime([scenarios[1]], { suite: "fair-work" }) });
   assert.equal(wrong.failed, 1);
+});
+
+test("Google event UPDATE uses its fixed production-kernel CLI and rejects another action", async t => {
+  const root = await fixture(t), args = ["--suite", "google-update", "--scenario", "second"];
+  const report = await runBehavior(args, { root, execute: async (command, childArgs) => {
+    assert.equal(command, process.execPath);
+    assert.deepEqual(childArgs, ["--import", "tsx", join(root, "packages/sync-runtime/src/behavior/google-update-cli.ts"), "--json", "--scenario", "second"]);
+    return runtime([scenarios[1]], { suite: "google-update" });
+  } });
+  assert.equal(report.passed, 1); assert.equal(report.errors, 0);
+  const wrong = await runBehavior(args, { root, execute: async () => runtime([scenarios[1]], { suite: "google-delete" }) });
+  assert.equal(wrong.failed, 1); assert.equal(wrong.suites[0].results[0].status, "failed");
 });
 
 test("Google task UPDATE uses its fixed shared-kernel CLI and rejects an event suite report", async t => {
@@ -405,6 +418,7 @@ test("default runs every fixed suite and emits one clean aggregate JSON document
       args.some(arg => arg.endsWith("/google-task-create-cli.ts")) ? "google-task-create" :
       args.some(arg => arg.endsWith("/google-task-delete-cli.ts")) ? "google-task-delete" :
       args.some(arg => arg.endsWith("/google-task-update-cli.ts")) ? "google-task-update" :
+      args.some(arg => arg.endsWith("/google-update-cli.ts")) ? "google-update" :
       args.some(arg => arg.endsWith("/caldav-create-cli.ts")) ? "caldav-create" :
       args.some(arg => arg.endsWith("/microsoft-create-cli.ts")) ? "microsoft-create" :
       args.some(arg => arg.endsWith("/caldav-delete-cli.ts")) ? "caldav-delete" :

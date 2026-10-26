@@ -10,6 +10,7 @@ const SUITES = {
   "fair-work": "packages/sync-runtime/src/behavior/fair-work.json",
   "caldav-discovery": "apps/api/src/sync/behavior/caldav-discovery.json",
   "google-delete": "packages/sync-runtime/src/behavior/google-delete.json",
+  "google-update": "packages/sync-runtime/src/behavior/google-update.json",
   "google-create": "packages/sync-runtime/src/behavior/google-create.json",
   "google-task-update": "packages/sync-runtime/src/behavior/google-task-update.json",
   "google-task-delete": "packages/sync-runtime/src/behavior/google-task-delete.json",
@@ -161,8 +162,8 @@ async function runSuite(selection, options, { root, execute, env }) {
   let directory;
   try {
     let child, results, ancillaryFailed = false, uiFailed = false;
-    if (["fair-work", "google-delete", "google-create", "google-task-update", "google-task-delete", "google-task-create", "microsoft-delete", "microsoft-create", "caldav-delete", "caldav-create"].includes(selection.name)) {
-      const entry = { "fair-work": "fair-work-cli.ts", "google-delete": "cli.ts", "google-create": "create-cli.ts", "google-task-update": "google-task-update-cli.ts", "google-task-delete": "google-task-delete-cli.ts", "google-task-create": "google-task-create-cli.ts", "microsoft-delete": "microsoft-delete-cli.ts", "microsoft-create": "microsoft-create-cli.ts", "caldav-delete": "caldav-delete-cli.ts", "caldav-create": "caldav-create-cli.ts" }[selection.name];
+    if (["fair-work", "google-update", "google-delete", "google-create", "google-task-update", "google-task-delete", "google-task-create", "microsoft-delete", "microsoft-create", "caldav-delete", "caldav-create"].includes(selection.name)) {
+      const entry = { "fair-work": "fair-work-cli.ts", "google-update": "google-update-cli.ts", "google-delete": "cli.ts", "google-create": "create-cli.ts", "google-task-update": "google-task-update-cli.ts", "google-task-delete": "google-task-delete-cli.ts", "google-task-create": "google-task-create-cli.ts", "microsoft-delete": "microsoft-delete-cli.ts", "microsoft-create": "microsoft-create-cli.ts", "caldav-delete": "caldav-delete-cli.ts", "caldav-create": "caldav-create-cli.ts" }[selection.name];
       child = await execute(process.execPath, ["--import", "tsx", join(root, "packages/sync-runtime/src/behavior", entry), "--json",
         ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });
       results = runtimeResults(child.stdout, selection);
