@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "kind": "MUSU-41_SOURCE_LOCAL_ACCEPTANCE",
+  "testedSourceHead": "722d9f04ba934f7175b04422599189a5cf476180",
+  "testedSourceTree": "c7915c4d3923734a8d3d69888898924f85139561",
+  "finalPrApproval": "pending independent exact final documentation/evidence commit review",
+  "publication": "pending current-head CI and squash/main verification",
+  "deployment": "not performed; later joint step",
+  "files": [
+    {
+      "path": "active-budget-source.json",
+      "bytes": 9211,
+      "sha256": "fdb0e70eccdfbfdb842a1909131db7afa0017de17f6de16a3c09e4cf3781a1d2"
+    },
+    {
+      "path": "api-installed-summary.json",
+      "bytes": 18141,
+      "sha256": "e72f33f9a5a384c0d37a6212dbcf9f43c39f74b607d4565e422a8da31bf968a9"
+    },
+    {
+      "path": "behavior-summary.json",
+      "bytes": 2096,
+      "sha256": "6ec6358700c7068bb77090a910a4dc7388cae53e62d974d8bf5dfab93197615d"
+    },
+    {
+      "path": "browser-summary.json",
+      "bytes": 4611,
+      "sha256": "e1c26c4dae8b9eba857cd89380a5def1029b860d43493fa496abb434479a96bd"
+    },
+    {
+      "path": "db-checkpoint-summary.json",
+      "bytes": 2508,
+      "sha256": "c09df8b591096574e5761b1cac674e2e636fc60546ab7106046b34f0b1f66ca6"
+    },
+    {
+      "path": "diagnostic-history.json",
+      "bytes": 2314,
+      "sha256": "c9e5e99c73b5f18261b3d0f9ece3e2dc18c640b6f373a2f3253fbce966d6e6dc"
+    },
+    {
+      "path": "historical-installed-failure.json",
+      "bytes": 2877,
+      "sha256": "3bcc1efe13c89e21d4a7c01776369c633a73cd940cd4da663dc11369517b623a"
+    },
+    {
+      "path": "qa-retirement.json",
+      "bytes": 611,
+      "sha256": "05897a0e7a27f0172c0e3dbf13fb862c32116700b5babd964dca7525c57aba75"
+    },
+    {
+      "path": "reference-installed-summary.json",
+      "bytes": 17577,
+      "sha256": "ca5092a55af50174176c2381b406698c2e80f1d79075fff7da845dfd7ada4735"
+    },
+    {
+      "path": "source-manifest.json",
+      "bytes": 28643,
+      "sha256": "92d183ba722967a6ec6fbcda494a6f3464f81426197161dd5ad58aa76269ced3"
+    },
+    {
+      "path": "source-review.json",
+      "bytes": 6998,
+      "sha256": "de953af47159f7f7848dbfe11d810ccacee1e6a6e8f674b0f1d912de44e5a431"
+    },
+    {
+      "path": "workspace-check.json",
+      "bytes": 653,
+      "sha256": "8e2f0b14394778c959af269b9481b2fd4c791ed38ecaa9d4298fa4d268018b6c"
+    }
+  ]
+}

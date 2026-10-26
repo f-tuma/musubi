@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "kind": "source-json-behavior",
+  "commit": "722d9f04ba934f7175b04422599189a5cf476180",
+  "tree": "c7915c4d3923734a8d3d69888898924f85139561",
+  "passed": 590,
+  "failed": 0,
+  "errors": 0,
+  "suites": [
+    {
+      "suite": "read-attempt",
+      "passed": 8,
+      "failed": 0,
+      "errors": 0
+    },
+    {
+      "suite": "fair-work",
+      "passed": 15,
+      "failed": 0,
+      "errors": 0
+    },
+    {
+      "suite": "caldav-discovery",
+      "passed": 11,
+      "failed": 0,
+      "errors": 0
+    },
+    {
+      "suite": "google-delete",
+      "passed": 7,
+      "failed": 0,
+      "errors": 0
+    },
+    {
+      "suite": "google-create",
+      "passed": 16,
+      "failed": 0,
+      "errors": 0
+    },
+    {
+      "suite": "google-task-update",
+      "passed": 57,
+      "failed": 0,
+      "errors": 0
+    },
+    {
+      "suite": "google-task-delete",
+      "passed": 75,
+      "failed": 0,
+      "errors": 0
+    },
+    {
+      "suite": "google-task-create",
+      "passed": 44,
+      "failed": 0,
+      "errors": 0
+    },
+    {
+      "suite": "microsoft-delete",
+      "passed": 24,
+      "failed": 0,
+      "errors": 0
+    },
+    {
+      "suite": "microsoft-create",
+      "passed": 53,
+      "failed": 0,
+      "errors": 0
+    },
+    {
+      "suite": "caldav-delete",
+      "passed": 34,
+      "failed": 0,
+      "errors": 0
+    },
+    {
+      "suite": "caldav-create",
+      "passed": 53,
+      "failed": 0,
+      "errors": 0
+    },
+    {
+      "suite": "google-rsvp-delivery",
+      "passed": 40,
+      "failed": 0,
+      "errors": 0
+    },
+    {
+      "suite": "task-delivery",
+      "passed": 59,
+      "failed": 0,
+      "errors": 0
+    },
+    {
+      "suite": "event-delivery",
+      "passed": 90,
+      "failed": 0,
+      "errors": 0
+    },
+    {
+      "suite": "task-inspector",
+      "passed": 4,
+      "failed": 0,
+      "errors": 0
+    }
+  ],
+  "rawLog": "/tmp/musu41-final-behavior-722d.json",
+  "rawSha256": "87c47f46717c9a959be52b8bf370f6917826fe2c25e325b87df9e49c960b3d11",
+  "installed": false,
+  "liveProvider": false,
+  "deployment": false
+}

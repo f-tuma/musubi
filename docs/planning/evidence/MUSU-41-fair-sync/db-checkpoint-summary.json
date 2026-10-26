@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "kind": "COMPOSITE_LOCAL_DB_CHECKPOINT",
+  "aggregate": {
+    "command": "pnpm test:db",
+    "exitCode": 1,
+    "sourceScope": "Mixed source checkpoint during final C09 fixes; not a uniform final-head run. Completed all preceding suites including reference corpus, then failed the default-encoder fixture precondition.",
+    "failure": "Root synthetic environment explicitly set SYNC_OPERATION_V1_ENCODER_ENABLED=true; this test requires it absent while verifying the actual default ON.",
+    "receipt": {
+      "testExitCode": 1,
+      "database": "c09root_8c81f3455f7d4aabb68846bbc1a2323e",
+      "cleanupExitCode": 0,
+      "cleanup": "{\"database\":\"c09root_8c81f3455f7d4aabb68846bbc1a2323e\",\"zeroSessions\":true,\"plainDrop\":true,\"remaining\":0}",
+      "log": "/tmp/musu41-root-full-db.log"
+    },
+    "rawLog": {
+      "path": "/tmp/musu41-root-full-db.log",
+      "bytes": 434798,
+      "sha256": "aa3d70c655a2b3d9bb88bddefcb27218a2fe002a21541d3dadc827240f588f39"
+    }
+  },
+  "continuation": {
+    "commands": [
+      "pnpm test:db:encoder",
+      "pnpm test:db:shared-runtime"
+    ],
+    "sourceHead": "722d9f04ba934f7175b04422599189a5cf476180",
+    "sourceTree": "c7915c4d3923734a8d3d69888898924f85139561",
+    "environmentCorrection": "Removed only the synthetic encoder override; verified local dotenv has no encoder key. No source or product default change.",
+    "exitCode": 0,
+    "defaultEncoderCases": 101,
+    "receipt": {
+      "testExitCode": 0,
+      "database": "c09root_c8fe9663350045dd8a2c28c3ec0b3437",
+      "cleanupExitCode": 0,
+      "cleanup": "{\"database\":\"c09root_c8fe9663350045dd8a2c28c3ec0b3437\",\"zeroSessions\":true,\"plainDrop\":true,\"remaining\":0}",
+      "log": "/tmp/musu41-root-db-continuation.log"
+    },
+    "logs": [
+      {
+        "path": "/tmp/musu41-root-db-continuation.log",
+        "bytes": 275,
+        "sha256": "a1a4e96cb4a30377ad269fce38c3142bab28345976f0dd3ec2b661309ea0424a"
+      },
+      {
+        "path": "/tmp/musu41-root-db-continuation-shared.log",
+        "bytes": 85315,
+        "sha256": "ea8570152796d2fe8b7b07d9a396005eb992ef1a4cd190eba2cfd1bce9159763"
+      }
+    ]
+  },
+  "finalHeadActualBudget": "active-budget-source.json records separate V11 final47 equality; installed API has independent actual native/PG proof.",
+  "limits": [
+    "Not one uniform aggregate PASS",
+    "Current-head CI remains a separate publication gate",
+    "Loopback provider fixtures, no live provider or deployment"
+  ]
+}

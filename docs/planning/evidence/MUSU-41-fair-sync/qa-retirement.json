@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-10-26T19:48:46.587846+00:00",
+  "ownedContainer": "musubi-c09-qa-20261026",
+  "expectedContainerID": "ee1542d62be4383f800d7034336a2c28a03fdc05698a2630660abd820562bd58",
+  "port": 55444,
+  "databaseStateBeforeStop": {
+    "databases": [],
+    "otherDatabaseSessions": 0
+  },
+  "containerStoppedRemovedAbsent": true,
+  "allOwnedProofDatabasesAlreadyPlainDropped": true,
+  "forceDropOrBackendTermination": false,
+  "userQa55437": "untouched",
+  "scope": "C09 local QA resources retired after all source/installed/native/DB checks; before final running-web UI verification."
+}

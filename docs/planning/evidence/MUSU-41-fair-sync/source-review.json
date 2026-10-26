@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "approvalKind": "EXACT_SOURCE_IMAGE_CLEAR",
+  "approved": true,
+  "reviewer": "/root/c09_integration_review",
+  "reviewedAtUtc": "2026-10-26T19:39:24.801653+00:00",
+  "baseline": "e75d5c79122b977e7e5cec28606c7d6879f0c211",
+  "approvedSourceHead": "722d9f04ba934f7175b04422599189a5cf476180",
+  "approvedSourceTree": "c7915c4d3923734a8d3d69888898924f85139561",
+  "workingTreeClean": true,
+  "allChangedWorkingFilesMatchGit": true,
+  "changedFileCount": 134,
+  "manifest": {
+    "path": "/tmp/musu41-source-review-722d9f0-manifest.json",
+    "sha256": "92d183ba722967a6ec6fbcda494a6f3464f81426197161dd5ad58aa76269ced3"
+  },
+  "scope": [
+    "Full final C09 source/config/migration/checked-in test changes vs baseline",
+    "Fair SQL current-owned account identity and single held4/regular4/AUX4 coordinator with bounded parking/dependencies/lifetime",
+    "Read-work dirty generations, exact retirement CAS, lease/source/grant/config/checkpoint fences, current DB clock, signal rollback and atomic cursor/captured ACK",
+    "Managed pull progress watchdog and actual HTTP/committed DB progress wiring; native write45s deadline preserved",
+    "DAV routing material cache with fresh credentials/policy and authoritative collection/ACL discovery",
+    "Actual native/raw HTTP budget debit/metrics, unused reservations, permanent marker ordering, OAuth auxiliary identity/deadline/shutdown, sticky accepted facts and typed durable deferral",
+    "Task preflight control deferral cannot poison frozen validation; durable prepared event delivery enters the same whole-operation coordinator",
+    "MAX sentinel hold and adjacent finite cooldown control timestamp serialization without weakening independent monotonic admission",
+    "Active background same-key claim deferral releases newer direct waiters promptly, retains future background retry, and leaves successful captured-generation later-claim semantics intact"
+  ],
+  "findingsRemaining": [],
+  "priorBlockingFindingsResolved": [
+    "Stale metadata and queued move hot loops",
+    "Optional Tasks failure after repeated generations",
+    "Direct CalDAV alarm scope",
+    "AUX close lifetime and dependency capacity",
+    "Malformed Retry-After poisoning",
+    "Aggregate90s read liveness",
+    "Raw payload account-key splitting",
+    "Frozen transient task-preflight error",
+    "Durable prepared event closure bypass",
+    "ExactMAX fractional overflow",
+    "Adjacent finiteMAX-1 overflow",
+    "Active/background deferred claim strands same-key direct waiters until MAX"
+  ],
+  "finalDeltaReviewed": {
+    "from": "6295d09931405d0df8ff5034fe3392f677d0dbe5",
+    "files": 4,
+    "productionChange": "backoff accepts exact deferred result and drains queued same-key waiters only for deferred; future refused key gives immediate control deferral to late direct caller while retaining background Pending; settled path unchanged; no DB ACK authority added."
+  },
+  "independentSubreview": {
+    "reviewer": "/root/c09_integration_review/native_budget_source_review",
+    "approvedNativeBudgetBasePortion": true,
+    "sourceHead": "a40a4f6a3f558273ee0c98179ef63ec22d271ece",
+    "sourceTree": "eff9cdfcdf9c9c4a514f0d46a6841ba41d147518",
+    "laterMaterialDeltasReviewedByPrimaryIndependentReviewer": [
+      "engine task preview and prepared durable closure",
+      "runtime MAX hold",
+      "runtime finite boundary serialization",
+      "Deferred active/background queued-waiter race fix"
+    ],
+    "latestBoundedSemanticsReview": "Native budget subreviewer independently agreed narrow deferred-only drain/retainedcandidate/noACK semantics; did not grant full-head approval."
+  },
+  "reviewerExecutedChecksAtFinalHead": [
+    {
+      "command": "git diff --check e75d5c7 HEAD",
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm test:behavior --suite fair-work --scenario active-deferral-releases-submitters --json",
+      "result": "PASS1/1;3direct callers returnexactfutureeligibility;2pre-deferralcallersretainpartialinvalidations;futureexpirycausessecondactualexecuteandemptyqueue"
+    },
+    {
+      "command": "node --import tsx --test src/fair-work.test.ts",
+      "cwd": "packages/sync-runtime",
+      "result": "PASS15/15;0fail/0skip;settledactivecapturestillrequiressecondhostclaim"
+    }
+  ],
+  "earlierReviewerExecutedProductionPortChecks": [
+    "190progressingreadleaves95.5s",
+    "4parent4AUXcoldchain",
+    "4longcooldownreleaseandB",
+    "TaskCREATEacceptedreadbackSQLfault"
+  ],
+  "historicalRevocationPreserved": {
+    "sourceHead": "140ead15563c4aa6153eb9dba28a00abb0cd3ac3",
+    "revokedReceipt": "/tmp/musu41-source-review-140ead-approval.json",
+    "revokedReceiptSha256": "84f30e0ea95222e4497ee22a8ab118f9330de8a0263c5d32c724517360905436",
+    "originalRevokedApproval": "/tmp/musu41-source-review-140ead-historical-revoked-original.json",
+    "9831fa": "unapproved due reproduced finiteMAX-1 RangeError; no image/PR authorization borrowed",
+    "6295d09": {
+      "revokedReceipt": "/tmp/musu41-source-review-6295d09-approval.json",
+      "sha256": "a3cc8512fa28b73e18c7ca51f09a895a3b23d415be83575ec01fda75c0360746",
+      "originalRevokedApproval": "/tmp/musu41-source-review-6295d09-historical-revoked-original.json",
+      "originalSha256": "af7c5ece0838692d53c1f433e38043ca299fe1acca05f62762f2ac51077af25d",
+      "reason": "Installed actual API exposed deferred strict-waiter race; old image/source remains historical only."
+    }
+  },
+  "limitations": [
+    "SOURCE approval for exact-source image preparation/build only; NOT final PR approval",
+    "Root full check, broad DB aggregate, rebuilt installed images, final running application/UI and current-head CI remain independent gates; no completion claim here",
+    "Previous6295 installed failure remains retained; V10 source-run PASS does not erase that failure or reinstate old approval",
+    "No live-provider certification or deployment approval; observed native concurrency in actual proof is2, not saturation4",
+    "Final documentation/evidence packet requires independent final PR review; material code change requires a new exact-head source review"
+  ],
+  "independentOldSourceReproduction": {
+    "receipt": "/tmp/musu41-active-deferred-race-repro.json",
+    "sha256": "60f4310de537014842af5c6d1ecee1bbb97ac70040f2dfe988862912cc4cefe8",
+    "provenance": "/tmp/musu41-active-deferred-race-repro-provenance.json",
+    "result": "6295 function body unchanged; only relative import path adjusted in /tmp module. Three callers remain pending with zero active, one pendingdueMAX. No production source edited."
+  },
+  "separateActualIntegrationCheckpoint": {
+    "receipt": "/tmp/musu41-active-budget-v11-proof.json",
+    "sha256": "fdb0e70eccdfbfdb842a1909131db7afa0017de17f6de16a3c09e4cf3781a1d2",
+    "sourceHead": "722d9f04ba934f7175b04422599189a5cf476180",
+    "result": "Other independent verifier reports V11 PASS47productionhashes exactbefore/after, actualPG/nativeHTTP; no installed/UI/CI/deploy claim."
+  }
+}

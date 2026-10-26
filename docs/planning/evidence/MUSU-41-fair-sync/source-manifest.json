@@ -1,0 +1,813 @@
+{
+  "head": "722d9f04ba934f7175b04422599189a5cf476180",
+  "tree": "c7915c4d3923734a8d3d69888898924f85139561",
+  "baseline": "e75d5c79122b977e7e5cec28606c7d6879f0c211",
+  "changedFileCount": 134,
+  "allMatch": true,
+  "files": [
+    {
+      "path": ".env.example",
+      "gitBlobMatchesDisk": true,
+      "sha256": "188de53971ba6a6160201d569e2b4ff22c4a8e9f4732ddd28fcad7db8b9163db",
+      "bytes": 11067
+    },
+    {
+      "path": "apps/api/package.json",
+      "gitBlobMatchesDisk": true,
+      "sha256": "52fe3e1e0874e91aa1b2e9a53e2cb0dcd8736e3af15ef637a763e4ab112a767d",
+      "bytes": 7103
+    },
+    {
+      "path": "apps/api/src/handlers/caldav.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "abbba89d0ebcf77ffd3e15980d757e536e923352e695ad5db0ff299dcc2604bc",
+      "bytes": 3309
+    },
+    {
+      "path": "apps/api/src/handlers/connections.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "01eb3b0131318c4c676eea950e8237c34e44e4ef98784a697ee0b2cb695c1ceb",
+      "bytes": 4470
+    },
+    {
+      "path": "apps/api/src/index.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "21e2ad6fcbf6a20d9357bee8ac81e76938abba6b5a7823a84ba4bfada1dec047",
+      "bytes": 29858
+    },
+    {
+      "path": "apps/api/src/sync/adapter.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "1c2134b4ebd1b7d499bcd2145cb60d93b3e0d2c2ac328a190e08959a8fa5ced7",
+      "bytes": 24228
+    },
+    {
+      "path": "apps/api/src/sync/adapters/caldav.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "c3cf1b363d89d2b46d121e903d867c5e4f484518c7079d020554227aa4dd5e1e",
+      "bytes": 99167
+    },
+    {
+      "path": "apps/api/src/sync/adapters/caldav_organizer_delivery.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "66cd6a9893957eb699b188a9decc79715f417e3e9b717b355eefc9e5b963fbb9",
+      "bytes": 7905
+    },
+    {
+      "path": "apps/api/src/sync/adapters/caldav_rsvp_delivery.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "e189839286774dc805702a3481be210969b5c47bee284b6d4f2dc17e86580647",
+      "bytes": 7317
+    },
+    {
+      "path": "apps/api/src/sync/adapters/google.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "c17c1933420ebac3604105609b2e51744c13c70c412970e8aee81c3cbebc9ffe",
+      "bytes": 54216
+    },
+    {
+      "path": "apps/api/src/sync/adapters/google_organizer_delivery.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "390088da9e86dc1de86952b33350e9b70a9d515daf2e1f999f5728be0eb1d753",
+      "bytes": 6878
+    },
+    {
+      "path": "apps/api/src/sync/adapters/google_provider_bridge.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "c13df72703092c9317be2d932162d5fc854886f296621682d9e77573e03391f3",
+      "bytes": 4775
+    },
+    {
+      "path": "apps/api/src/sync/adapters/google_reminder_instance.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "0219a92f76bf277e8255a514cad277a61a1555df46f964a1a32d8e7762507729",
+      "bytes": 11056
+    },
+    {
+      "path": "apps/api/src/sync/adapters/google_rsvp_delivery.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "469b8871f3fc8c0e257131f0b7ec1555762a8ba22a983a72bf7444f8e9441a2f",
+      "bytes": 7430
+    },
+    {
+      "path": "apps/api/src/sync/adapters/google_task_provider_bridge.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "d53d39ef2227441109ede032d0b351e911eb1e83cc5548eaf43a56b0c68f6bbb",
+      "bytes": 3817
+    },
+    {
+      "path": "apps/api/src/sync/adapters/microsoft.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "89e4f13155cc9f4f04b2da1701788f1c2cd7b1c99fcdcca4889dfe1ac9328423",
+      "bytes": 86117
+    },
+    {
+      "path": "apps/api/src/sync/adapters/microsoft_meeting_cancel.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "d99e7d7f2959c86fbfe37f1d3ce8452a70537bf689728b904167765bde78fb94",
+      "bytes": 9974
+    },
+    {
+      "path": "apps/api/src/sync/adapters/microsoft_occurrence_content.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "40e81df42fb4c41d66315a619da16faffdc1063ec2f1829bd41a0c8c45454b15",
+      "bytes": 7888
+    },
+    {
+      "path": "apps/api/src/sync/adapters/microsoft_organizer.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "d4e88f39bd10f6a35e28797c9ff228e959d5d3ce52e18a9106f4bbbc06f3b339",
+      "bytes": 21342
+    },
+    {
+      "path": "apps/api/src/sync/adapters/microsoft_rsvp_delivery.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "498da4ad0123117c2bc3a99a449d00dd2a035deb25054d7f48c882ef0fe8b290",
+      "bytes": 4778
+    },
+    {
+      "path": "apps/api/src/sync/adapters/microsoft_series_content.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "48b8ba737b8623bb4a890b566d3e71ac221ab4a47753197d5027536c13848955",
+      "bytes": 9046
+    },
+    {
+      "path": "apps/api/src/sync/adapters/microsoft_series_delivery.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "ec1dad4d7dcd2d6597d8b7972baceb1ffb69f5fe20c585e54ad39cba8dedd1d9",
+      "bytes": 4993
+    },
+    {
+      "path": "apps/api/src/sync/background.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "02b70910f0f65cf00a381698ee0143149d8a91301ca70ee0baf96829da516cbd",
+      "bytes": 2014
+    },
+    {
+      "path": "apps/api/src/sync/behavior/caldav-discovery-cli.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "2b07265991bc5c828bee53c5b8b22b8f72d91dd0bde09ce3c1f356107349d506",
+      "bytes": 2997
+    },
+    {
+      "path": "apps/api/src/sync/behavior/caldav-discovery-driver.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "2595350930f6078ff1d4d7d0453b6c7bab6776abc6e6015fbbcd5d9c6c4e4205",
+      "bytes": 4285
+    },
+    {
+      "path": "apps/api/src/sync/behavior/caldav-discovery-harness.test.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "26773cf67e32d116d8d268991126a1d33fcfa234f83d17c9de38668fe1924d85",
+      "bytes": 2313
+    },
+    {
+      "path": "apps/api/src/sync/behavior/caldav-discovery.json",
+      "gitBlobMatchesDisk": true,
+      "sha256": "4f869c41697785be16971cd516565431e82a613c64c6ae50ce078107423270c9",
+      "bytes": 4905
+    },
+    {
+      "path": "apps/api/src/sync/behavior/google-rsvp-delivery-driver.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "2846581d2717e6c87aa6b7591d74c73047571f9dff65f01c4a3de572df569a81",
+      "bytes": 11224
+    },
+    {
+      "path": "apps/api/src/sync/behavior/read-attempt-cli.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "10c9f8ab8929829ab10b27567bfffe6343e21f4aacf6a47b5c04c07dacc42c57",
+      "bytes": 2926
+    },
+    {
+      "path": "apps/api/src/sync/behavior/read-attempt-driver.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "fd646c767085587c357470acb29f405f40a46bf7545fdce569f434e679773293",
+      "bytes": 9330
+    },
+    {
+      "path": "apps/api/src/sync/behavior/read-attempt-harness.test.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "9206993ca8a5089febee8d2cbce82d49f1f42c6fabf1205036d72a31ff8c5b71",
+      "bytes": 7175
+    },
+    {
+      "path": "apps/api/src/sync/behavior/read-attempt.json",
+      "gitBlobMatchesDisk": true,
+      "sha256": "1ada50749cbe521afb10da184d674352c88301f04b8fce44a2163f8359612e5c",
+      "bytes": 10120
+    },
+    {
+      "path": "apps/api/src/sync/caldav_client.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "c0bdc8f4af3480d78d3db01de3d1756f6816f8357c7bccf4359c9a2d67e667db",
+      "bytes": 10963
+    },
+    {
+      "path": "apps/api/src/sync/caldav_discovery_material.integration.test.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "ce50131cd06db71ccdf3407c9b47f468fd06240f9485d0f7a71071e2c2b84b26",
+      "bytes": 16967
+    },
+    {
+      "path": "apps/api/src/sync/caldav_discovery_material.test.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "a4f60078e32a7cd919a91be215d198a5a8ca3c27ee06b0191d1226d365a4cde3",
+      "bytes": 9249
+    },
+    {
+      "path": "apps/api/src/sync/caldav_discovery_material.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "1603f06cefe9e2e50f4f61a2383bd43835508de2eda05e3d0eced827e91245dc",
+      "bytes": 4038
+    },
+    {
+      "path": "apps/api/src/sync/caldav_shared_create_delivery.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "2941dab52985e6577fadb355512e3276776938d19ff1b941b50ea6b9d82988bd",
+      "bytes": 13119
+    },
+    {
+      "path": "apps/api/src/sync/caldav_shared_delete_delivery.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "1820b06d6109f0aff65b2a61ced3d3ca84c4b4d182ec32fd043af5ee34d707fa",
+      "bytes": 10868
+    },
+    {
+      "path": "apps/api/src/sync/engine.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "088ea6b0c378df37c5bac77b023ffd389360d547dbc810b2ac3940fec2bc6d6d",
+      "bytes": 61994
+    },
+    {
+      "path": "apps/api/src/sync/event_compatibility_host.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "71ea14e3f6a866b4d006b37a9cd9f8c7de0ed6ed383fb6c6c7c1820c5cc64989",
+      "bytes": 42793
+    },
+    {
+      "path": "apps/api/src/sync/event_delivery.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "3360a12ec94a20de778a41c99b5cfd6b14589d255fa708aeb67a95454c7813fc",
+      "bytes": 8418
+    },
+    {
+      "path": "apps/api/src/sync/google_availability.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "422cf988bc392fe7f7e5ba6b8c41f30f9a7a7dcfff7824327a0d7b57df7a5962",
+      "bytes": 3405
+    },
+    {
+      "path": "apps/api/src/sync/google_shared_create_delivery.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "18160b83d1eebdc775ca44e684d1444a5d250d1f5ec86f0e250314f34dacb795",
+      "bytes": 11389
+    },
+    {
+      "path": "apps/api/src/sync/google_shared_delete_delivery.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "0a3155c1f4db0171e33cf618d75524669fa82d0ef3ec76f0ad5a0ee51e2ba7f6",
+      "bytes": 10622
+    },
+    {
+      "path": "apps/api/src/sync/google_shared_delivery.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "00bc36e442ccfce736c451c1d5dd8a7c065b6862028e5bb08e76fd2df68303e6",
+      "bytes": 11246
+    },
+    {
+      "path": "apps/api/src/sync/google_shared_task_create_delivery.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "6658af69ad7616e395653aada6fd022f2552eed50769f8ce52b76fe8b8044ad5",
+      "bytes": 11345
+    },
+    {
+      "path": "apps/api/src/sync/google_shared_task_delete_delivery.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "d9a208626104154778807328bd28f3c958c0e7e0c5ee2e4ca13082d0871f36af",
+      "bytes": 13242
+    },
+    {
+      "path": "apps/api/src/sync/google_shared_task_update_delivery.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "98c2372670e9494fd63a5e11b42fd0e8d6fdcc12b9c5f274f0e088af923986fb",
+      "bytes": 13516
+    },
+    {
+      "path": "apps/api/src/sync/microsoft_shared_create_delivery.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "8608f2251a066ae325251b85d3c5f11fe7eea5d47451df3ef71f462175f82b47",
+      "bytes": 12660
+    },
+    {
+      "path": "apps/api/src/sync/microsoft_shared_delete_delivery.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "60e34d177ccb3adc304d4956ff9831187e1bc0a439973906f096b78f8bd4f007",
+      "bytes": 11176
+    },
+    {
+      "path": "apps/api/src/sync/oauth.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "e8a82629c0dd5e2d25038a1073b4f5fb7e2aaf944e3765797ae66a699b2f57ca",
+      "bytes": 9978
+    },
+    {
+      "path": "apps/api/src/sync/orchestrator.test.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "00ad770a386b23876d0834fca215f1088c13018055f253beb1110013c2268458",
+      "bytes": 3650
+    },
+    {
+      "path": "apps/api/src/sync/orchestrator.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "e896d1b04b4b006805a959db5e49795492f032d5da5e78577d99d81e1ea9de81",
+      "bytes": 2811
+    },
+    {
+      "path": "apps/api/src/sync/outlook_moves.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "50d279f31bb2e10ead0a2b8735f5e3a3f75cdec8ef1fa77b8193d2121b7dd57b",
+      "bytes": 6594
+    },
+    {
+      "path": "apps/api/src/sync/provider_budget.integration.test.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "7d032c4df7f4f89cc45b4f32b35d11111c4ed8260b07ee587329fbb327d4ceb6",
+      "bytes": 51670
+    },
+    {
+      "path": "apps/api/src/sync/provider_budget.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "17da453d79e467fb60f656cbe05dc0fd748655e3d80a9497fae8b8d0fd229016",
+      "bytes": 23795
+    },
+    {
+      "path": "apps/api/src/sync/provider_http_metrics.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "30d170655e9ff58d744d749c7cc63a01fc64320647e3684384e20c906a279856",
+      "bytes": 4221
+    },
+    {
+      "path": "apps/api/src/sync/read_attempt.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "44d9070dc9181b1493e1d0ef72eaa2d4fb19295b8baf0962fb6bea597177379a",
+      "bytes": 3551
+    },
+    {
+      "path": "apps/api/src/sync/task_delivery.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "7765093a8cb67ced78c9c0183dcc193780113c837aed1de01b8ea51384cf82e7",
+      "bytes": 12613
+    },
+    {
+      "path": "apps/api/src/sync/work_coordinator.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "45c273cc96e38d1fe4f9a197034e550d9ffa7ea42f87f993e82fbbedd17e1ed1",
+      "bytes": 6735
+    },
+    {
+      "path": "docs/planning/MUSU-41-acceptance.md",
+      "gitBlobMatchesDisk": true,
+      "sha256": "aa8c1c0dc0d8527cb42129f1f32d6233a260c630cd613daf3aca1d9e4e70528a",
+      "bytes": 7641
+    },
+    {
+      "path": "docs/planning/MUSU-41-dav-material.md",
+      "gitBlobMatchesDisk": true,
+      "sha256": "37d226b3e66989788ea928347b50575cfca7539922355bce28552d987ac66bf0",
+      "bytes": 4336
+    },
+    {
+      "path": "docs/testing/behavior-scenarios.md",
+      "gitBlobMatchesDisk": true,
+      "sha256": "477ff3e14160c80336a1493f01d4c5baea25465ca533754dfd216255007214ae",
+      "bytes": 21594
+    },
+    {
+      "path": "package.json",
+      "gitBlobMatchesDisk": true,
+      "sha256": "47bb12154ee2278eab6170f79f1fc57f39ba7e45277f5cf72a74aef2217c5a95",
+      "bytes": 15971
+    },
+    {
+      "path": "packages/config/package.json",
+      "gitBlobMatchesDisk": true,
+      "sha256": "b48bf6f817d8bcdd6fbfee55e8ef77d9cb067c34032d4f0af01ef6318a1dabce",
+      "bytes": 502
+    },
+    {
+      "path": "packages/config/src/index.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "e74dbb3f0904114f06c3b583582d1b2ef9f435e9ce1e71067f68c27ce97177ad",
+      "bytes": 15592
+    },
+    {
+      "path": "packages/config/src/provider-budget.test.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "f0cb54ff18ff06f4f00ac73b21838dc85428d34947d72436ceb195fa0ce70647",
+      "bytes": 2051
+    },
+    {
+      "path": "packages/config/src/provider-budget.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "7c9dea5294f920469d1d9e61fac8be3162c7e31775c6e5d277371f6edddcb205",
+      "bytes": 2974
+    },
+    {
+      "path": "packages/db/drizzle/0086_sync_scheduling.sql",
+      "gitBlobMatchesDisk": true,
+      "sha256": "ac6a559f6cde11074e02464f0ac029b259c510722751004867a144909b0cf402",
+      "bytes": 6921
+    },
+    {
+      "path": "packages/db/drizzle/meta/0086_snapshot.json",
+      "gitBlobMatchesDisk": true,
+      "sha256": "339f434d7223a0c1a4dd05c36611cc11ea3a75f27d35637bd0716aa1dcf17f96",
+      "bytes": 142064
+    },
+    {
+      "path": "packages/db/drizzle/meta/_journal.json",
+      "gitBlobMatchesDisk": true,
+      "sha256": "20d2b97937449d87aecc524bf0d7cd55d91b9db056e7047908440653c66e45d1",
+      "bytes": 12841
+    },
+    {
+      "path": "packages/db/package.json",
+      "gitBlobMatchesDisk": true,
+      "sha256": "f546ac67ae63061bab6af45295f1e716798a76ed38e865e842409d06fd570b93",
+      "bytes": 795
+    },
+    {
+      "path": "packages/db/src/index.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "2f49b2f7be1f720e7268ea5fb893845a5f9c2a0b3bc907edf1aa01e59cc36604",
+      "bytes": 3138
+    },
+    {
+      "path": "packages/db/src/queries/availability.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "399cf406710b377ee9aa93450abe62cc3a84e730b7f1434dd09c639912c71543",
+      "bytes": 5185
+    },
+    {
+      "path": "packages/db/src/queries/caldav-access.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "5589f690a9c0daa6a493e196a81387c755a09c3ab08a6b2951331b215aa4d5e7",
+      "bytes": 2709
+    },
+    {
+      "path": "packages/db/src/queries/caldav.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "a640468f1512751a15a0550ef858d4b74da4dcd802829db099427ef9cec9adec",
+      "bytes": 3435
+    },
+    {
+      "path": "packages/db/src/queries/calendars.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "3a5941f7032344859e1c98cd6ebe828ca9f7f2225fef9c16d49da23276d0c748",
+      "bytes": 16917
+    },
+    {
+      "path": "packages/db/src/queries/delivery-postponement.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "a39880564f397a66bc3eaa3119551ba2cd7e827d2a26f6fa2c34920aafc9c0ea",
+      "bytes": 2551
+    },
+    {
+      "path": "packages/db/src/queries/event-outbox.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "2bef44687ee324cee11ac80c2b7e0c27eda63c02f38802a9062822e73cf2a72c",
+      "bytes": 12367
+    },
+    {
+      "path": "packages/db/src/queries/external-access.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "a80ef519c9dcd8422f7aede7d63348854bb1cb26c4ff951c8177287913a1489e",
+      "bytes": 5039
+    },
+    {
+      "path": "packages/db/src/queries/external.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "bed2b309b91b1637f5812c467d18a99b6fbc615745292b5fd72b4aec72f257d2",
+      "bytes": 112908
+    },
+    {
+      "path": "packages/db/src/queries/google-mirror-removal.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "11d8e9ddf3be5d4f1e6c2cdd885f4a65f8ffe05cea736a101419579d6b52e17e",
+      "bytes": 3520
+    },
+    {
+      "path": "packages/db/src/queries/microsoft-access.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "13d57c9f2ba7bf66cf8088538530e79fde251cc869fe40a79970b7b6a5dfc8e1",
+      "bytes": 3263
+    },
+    {
+      "path": "packages/db/src/queries/oauth.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "319b247f60176b49165816f8724e50f4d2d1aea8d8dda78d0ba4e32be3c10373",
+      "bytes": 13272
+    },
+    {
+      "path": "packages/db/src/queries/outlook-moves.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "cf38a66c769801e44d2c5c1f46ebf404f355eaf5f290c940699637313bc96a04",
+      "bytes": 12817
+    },
+    {
+      "path": "packages/db/src/queries/provider-budget-cooldowns.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "38299ecb64d95460277979f41fd37ca488fd3b78df6ed18aa523c732d7cab3fb",
+      "bytes": 6754
+    },
+    {
+      "path": "packages/db/src/queries/read-work-transaction.integration.test.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "bf48928a41761f9916c36c6c9e16bc707ac3edf8fc21b50d1ad631901b2feddc",
+      "bytes": 5420
+    },
+    {
+      "path": "packages/db/src/queries/read-work-transaction.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "01323744ac48dcd114e2cdcea4cdd682d5c2e7ccbf5961f9abe984f7a2c706f5",
+      "bytes": 2534
+    },
+    {
+      "path": "packages/db/src/queries/source-read.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "13b42fae7259958609208a72cef038a7a638c501dab38add085c5e4c1e60fe38",
+      "bytes": 12731
+    },
+    {
+      "path": "packages/db/src/queries/sync-read-work.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "8564594a8506a82d381af5e1ba498fb9a3eae0b369da008c3a4fbeed7bb61a6c",
+      "bytes": 19535
+    },
+    {
+      "path": "packages/db/src/queries/sync-scheduling.integration.test.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "142efeef116d019e5d0dc93c02cd9be0847296dbcbafce67db8c60e980ce1955",
+      "bytes": 44313
+    },
+    {
+      "path": "packages/db/src/queries/sync-work-candidates.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "e056f7a094c0cf691a4723011465e2139bbc3b70e3b0a3a978448e40fcfdccef",
+      "bytes": 11233
+    },
+    {
+      "path": "packages/db/src/queries/task-outbox.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "d39ba7d825e07bed4a05ce13d5d046aa5bde27188613168953f5fb5e119ee3c2",
+      "bytes": 32855
+    },
+    {
+      "path": "packages/db/src/schema.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "06fb1c62c17fbd910c7859c61c5fd3ae537d7661b3d51985e2928dc83bac956e",
+      "bytes": 61014
+    },
+    {
+      "path": "packages/provider-caldav/src/create.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "17602a8e328c62d9be9d555fedaa6e9129ba15188b3a7f3c67b594106ec3e12a",
+      "bytes": 13882
+    },
+    {
+      "path": "packages/provider-caldav/src/http-dispatch.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "5af62f481bf5c52a504462efea0e6ff6eb33ded26ae55efcb6e1598d3326e12f",
+      "bytes": 1992
+    },
+    {
+      "path": "packages/provider-caldav/src/index.test.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "5f98aa2cc9c203289b19b7f65f77b57063feebad40f2c5805656354fddd87589",
+      "bytes": 26962
+    },
+    {
+      "path": "packages/provider-caldav/src/index.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "23086681e8d2b6a436aa473dc65c72df802c696e214ed50d4cc2630a04b94ba7",
+      "bytes": 12232
+    },
+    {
+      "path": "packages/provider-caldav/src/types.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "badbb637e1922dc969a51b43381c83c3b312c8f0e927761d4b54518eae130f5c",
+      "bytes": 5322
+    },
+    {
+      "path": "packages/provider-google/src/http-dispatch.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "5af62f481bf5c52a504462efea0e6ff6eb33ded26ae55efcb6e1598d3326e12f",
+      "bytes": 1992
+    },
+    {
+      "path": "packages/provider-google/src/index.test.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "021d596df7184e5c074d65e4f7735c601f4e0921db902fd97341503b1f8ef360",
+      "bytes": 20663
+    },
+    {
+      "path": "packages/provider-google/src/index.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "52cd14888c9bb0eee4469b603e134b12eab8b29fa8b71a43e459e65430b673e7",
+      "bytes": 34429
+    },
+    {
+      "path": "packages/provider-google/src/task-create.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "4a981bc323a48c327e52ada540dbdb08b5536cebd8e0568738f891691e4cc524",
+      "bytes": 11011
+    },
+    {
+      "path": "packages/provider-google/src/task-transport.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "ff5462aa8ab74dfbf35ac501aee866a04e5036763e7e0dbd705cc423fcdad990",
+      "bytes": 8143
+    },
+    {
+      "path": "packages/provider-google/src/task-types.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "4df53ef465d559e5ccf3158bafd59db1aab8143fe647afe80134c3fb8cd85458",
+      "bytes": 4608
+    },
+    {
+      "path": "packages/provider-google/src/types.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "24dd6ed261cdac77e6cf3cee1ed60e7333e3df24671df13cdd0de1d5223f8e1e",
+      "bytes": 7556
+    },
+    {
+      "path": "packages/provider-microsoft/src/create.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "cbe3b40d62711eb82a4fd128fb860abf1cbc2b160029eb0731521eda2a41ce1a",
+      "bytes": 15071
+    },
+    {
+      "path": "packages/provider-microsoft/src/http-dispatch.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "5af62f481bf5c52a504462efea0e6ff6eb33ded26ae55efcb6e1598d3326e12f",
+      "bytes": 1992
+    },
+    {
+      "path": "packages/provider-microsoft/src/index.test.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "9fcb7856cff94c490bebd8ae27bfdc098bdfd45aa796fc24b9c119728147d350",
+      "bytes": 22624
+    },
+    {
+      "path": "packages/provider-microsoft/src/index.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "0b071dd020d460e26be468e1a600ad1102b730d84ce4a37c0ad93e9e85759d92",
+      "bytes": 15135
+    },
+    {
+      "path": "packages/provider-microsoft/src/types.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "85191dcdf336061f872adda3ad72f042cc3833ab63b2c18231e7531890cf97f6",
+      "bytes": 5901
+    },
+    {
+      "path": "packages/sync-runtime/README.md",
+      "gitBlobMatchesDisk": true,
+      "sha256": "ef1471064e6d6a2967b1398f78b5931cc980fb568523099a8e5918b80efba6c7",
+      "bytes": 4665
+    },
+    {
+      "path": "packages/sync-runtime/package.json",
+      "gitBlobMatchesDisk": true,
+      "sha256": "395e22c5348b2ec74dad096e5b98712ef723ef89c7679f7c138f8d833e293302",
+      "bytes": 2947
+    },
+    {
+      "path": "packages/sync-runtime/src/behavior/fair-work-cli.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "32474675bea500602a972b1f0038a045f76f58b423e4ec4558f89e61af40084f",
+      "bytes": 2119
+    },
+    {
+      "path": "packages/sync-runtime/src/behavior/fair-work.json",
+      "gitBlobMatchesDisk": true,
+      "sha256": "fbcb491f24b88f525d9511bfdff7aae1fd84edd0f04c361b5749ffdc6572b015",
+      "bytes": 4801
+    },
+    {
+      "path": "packages/sync-runtime/src/behavior/fair-work.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "7bc1e267af5c1b2bfb01714e17b1f5dcb2928daec5335921ea95125a7bf7c58f",
+      "bytes": 30124
+    },
+    {
+      "path": "packages/sync-runtime/src/caldav-personal-create.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "715af79b85afa467058e4b941fe22cedf129a5bbe5bb22d45cdfb65a5e72a72a",
+      "bytes": 22425
+    },
+    {
+      "path": "packages/sync-runtime/src/caldav-personal-delete.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "e635706738c60cf728fe66345e47ff8821b84f9c85403e2e35ffd60413fea606",
+      "bytes": 22698
+    },
+    {
+      "path": "packages/sync-runtime/src/fair-work.test.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "8aee28c7327737a90c768747c693a20f9cbc4b0bb71416d80390db260357e16b",
+      "bytes": 14912
+    },
+    {
+      "path": "packages/sync-runtime/src/fair-work.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "69d4f6d0c328d65018ca4562b506cfe75b015a16095efc1d5c986c89f16a963d",
+      "bytes": 18101
+    },
+    {
+      "path": "packages/sync-runtime/src/google-personal-create.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "29b93340f6ac0381aecd42f365e9e1da8068a5dd6d86323e5ab3abaf8349085b",
+      "bytes": 20023
+    },
+    {
+      "path": "packages/sync-runtime/src/google-personal-delete.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "a59d59911365dfe3b7f9cbf5a29ffab4d5e73fe1af4fa0868cae1647f63fdd53",
+      "bytes": 21681
+    },
+    {
+      "path": "packages/sync-runtime/src/google-personal-update.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "934d24c746c4e599db18783fd8ae2543fbeb803f4a05781b891e39c13006b56e",
+      "bytes": 23187
+    },
+    {
+      "path": "packages/sync-runtime/src/google-task-create.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "2adc3c911e4351e0a7b2cf55190a48d7b810e64cb146b08165fa5e106d0a1722",
+      "bytes": 19791
+    },
+    {
+      "path": "packages/sync-runtime/src/google-task-delete.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "edd464d0dddd493b7565a6dc4b6435a10ccf2eb8362ab793205bd0d3c393a567",
+      "bytes": 19875
+    },
+    {
+      "path": "packages/sync-runtime/src/google-task-update.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "06a7ec9545a8933ed2ace6c0afe86bfb327b9bc9429f0678e330041e946d0500",
+      "bytes": 20261
+    },
+    {
+      "path": "packages/sync-runtime/src/http-dispatch.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "dd893cdf98cb1683529fc17dd69c062aa66228ceca7f250366b9fe1c4e779b2e",
+      "bytes": 1056
+    },
+    {
+      "path": "packages/sync-runtime/src/index.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "4c2a395cd7ee136e109b221607583a11c182d1592cb38891a4b3678fcad4ec1d",
+      "bytes": 2174
+    },
+    {
+      "path": "packages/sync-runtime/src/microsoft-personal-create.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "b634f2d27cf1aa5bb3d779034823cbbfb8288eea75000a434c2449155c7d836f",
+      "bytes": 21924
+    },
+    {
+      "path": "packages/sync-runtime/src/microsoft-personal-delete.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "bbf944c7d014fa88c75b7337acf0d9e75835bea7f975db65daeac2d487b2a08c",
+      "bytes": 24042
+    },
+    {
+      "path": "packages/sync-runtime/src/ports.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "05d8f3bd83ceacc5061624e63e16bfb3a8386137adfab2dadc4caacc79bd6c35",
+      "bytes": 7715
+    },
+    {
+      "path": "packages/sync-runtime/src/provider-budget.ts",
+      "gitBlobMatchesDisk": true,
+      "sha256": "0e4e96d47ce20752a361b46872f21c20e18d29db8b2ac7a1fa080516cc092e47",
+      "bytes": 17178
+    },
+    {
+      "path": "scripts/test-behavior.mjs",
+      "gitBlobMatchesDisk": true,
+      "sha256": "2a6f7e19bffae9ae837d830ae93832362a10a7903af927add47a108dd3e96e53",
+      "bytes": 14947
+    },
+    {
+      "path": "scripts/test-behavior.test.mjs",
+      "gitBlobMatchesDisk": true,
+      "sha256": "949ea20ba47ee1f413718942a6325fdd5d0f63f54c4c964443775ed25640f991",
+      "bytes": 25032
+    }
+  ]
+}

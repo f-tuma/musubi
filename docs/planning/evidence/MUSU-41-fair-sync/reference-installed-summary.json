@@ -1,0 +1,571 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "createdAt": "2026-10-26T19:48:04.905880+00:00",
+  "scope": "Local installed independent reference production closure and retained portable-profile corpus plus shared fair-work runtime; bounded synthetic fixtures only",
+  "source": {
+    "gitHeadAtBuild": "722d9f04ba934f7175b04422599189a5cf476180",
+    "gitTreeAtBuild": "c7915c4d3923734a8d3d69888898924f85139561",
+    "sourceApproval": {
+      "path": "/tmp/musu41-source-review-722d9f0-approval.json",
+      "bytes": 6998,
+      "sha256": "de953af47159f7f7848dbfe11d810ccacee1e6a6e8f674b0f1d912de44e5a431"
+    },
+    "captureMethod": "isolated git archive exact approved commit; no checkout dotenv or untracked files",
+    "contextFiles": 272,
+    "contextFingerprint": "eb017f6b8282c339bae371a9d3ef7667c897b2b258d75161caf21985a97ce77a",
+    "contextManifest": {
+      "path": "/tmp/musu41-fair-sync-reference-evidence-722d9f0/build-context-manifest.json",
+      "bytes": 46189,
+      "sha256": "170cdd2ff7cda5fd071b71b928cdfffa11528e3c5ce318524c55e97acae46e51"
+    },
+    "installedSourceFiles": 239,
+    "installedBehaviorJsonFiles": 10,
+    "behaviorJsonManifest": {
+      "path": "/tmp/musu41-fair-sync-reference-evidence-722d9f0/post-runtime-installed-behavior-json-manifest.json",
+      "bytes": 1816,
+      "sha256": "66559816775bd64e38e412ae26425413bc769bb0d7297fbf222bd121dfc0d099"
+    },
+    "productionSourceFiles": 134,
+    "installedSourceManifest": {
+      "path": "/tmp/musu41-fair-sync-reference-evidence-722d9f0/installed-source-manifest.json",
+      "bytes": 40841,
+      "sha256": "018547a49b1be3d24bd0107610fad1d3a833da383154b0dbe9c3be5b36d4acf7"
+    },
+    "productionSourceManifest": {
+      "path": "/tmp/musu41-fair-sync-reference-evidence-722d9f0/runtime-source-manifest.json",
+      "bytes": 22338,
+      "sha256": "edd01dc3e5ab3b19f56bca6ed2b29be5f75cf1e759c2e329b8e25378cfe755db"
+    },
+    "allInstalledHashesMatchApprovedFrozenSource": true,
+    "postRuntimeSourceParity": {
+      "path": "/tmp/musu41-fair-sync-reference-evidence-722d9f0/post-runtime-installed-source-manifest.json",
+      "bytes": 40841,
+      "sha256": "018547a49b1be3d24bd0107610fad1d3a833da383154b0dbe9c3be5b36d4acf7"
+    },
+    "postRuntimeContextParity": {
+      "checkedFiles": 272,
+      "currentWorkspaceAndFrozenContextByteEqual": true,
+      "frozenBuildHead": "722d9f04ba934f7175b04422599189a5cf476180",
+      "frozenBuildTree": "c7915c4d3923734a8d3d69888898924f85139561",
+      "workingHeadAtVerification": "722d9f04ba934f7175b04422599189a5cf476180"
+    }
+  },
+  "image": {
+    "tag": "musubi-c09-fair-sync-reference:proof",
+    "localBuildIndexDigest": "sha256:1f79a65807192bfa9d3d6f20deaf8bce61423d4f76ba91b128f37f1576776b85",
+    "platformManifestDigest": "sha256:01c7a6cae2908ac2a72597809ca85d9abdf80b7f408c9878b2b318d2b4596f55",
+    "imageConfigDigest": "sha256:482dea9e60e91685717e2a9ac6bd291ac2967027ffd8cd252f41d52f9ac08a4a",
+    "platform": {
+      "os": "linux",
+      "architecture": "amd64"
+    },
+    "archive": {
+      "path": "/tmp/musu41-fair-sync-reference-evidence-722d9f0/image-local-oci.tar",
+      "bytes": 65135616,
+      "sha256": "c1affec1d242390edaac81c81244de54cb4b2a0dde302318de42a29d872a9772"
+    },
+    "archiveRetained": true,
+    "allBlobHashesVerified": true,
+    "blobCount": 12,
+    "layers": [
+      {
+        "compressedDigest": "sha256:55afa1ecc21d2bb5e5045f32dafee56272ffd89860bac26f6c32123439af26a4",
+        "compressedBytes": 3846391,
+        "diffId": "sha256:34884abbe92863fce933ed7c39c0e045631af0ed86d5cc0dfbdf9fdca426ce3c",
+        "uncompressedBytes": 8697856
+      },
+      {
+        "compressedDigest": "sha256:3f4c164634d251a8b256151a9e1c1d3e5c5b21f1974f00a213875e66e3fa0801",
+        "compressedBytes": 52313364,
+        "diffId": "sha256:94ba1b56d694c6431a993fcd1fb36ec47c38a313e32a3e3ca9eda71bc287e873",
+        "uncompressedBytes": 151199744
+      },
+      {
+        "compressedDigest": "sha256:1d4d101ceaad39fb56dcac0bb6cc291e6cdec3b711786f0c82b050b5b5b85690",
+        "compressedBytes": 1262101,
+        "diffId": "sha256:fd246171abbe6b0395f94ceba5829950efb68e9c25c5402b26acd15f0038e44c",
+        "uncompressedBytes": 5388800
+      },
+      {
+        "compressedDigest": "sha256:d10ff586f6bdbdd6000a70a914e56bf05bedc78de3311d08a953643982d84e23",
+        "compressedBytes": 446,
+        "diffId": "sha256:dd812e67e5869f0edb739e4274f58af29d8beeca2a08642563809d0622a11e86",
+        "uncompressedBytes": 3584
+      },
+      {
+        "compressedDigest": "sha256:929b3442540ea9cafbe223d52bab2e5e118d409b1318904eafcc912633a2d3d8",
+        "compressedBytes": 92,
+        "diffId": "sha256:d78d6a2fa0196c5014e3dcbcb4b4709a9662148559575d37c2b2ad949dc31577",
+        "uncompressedBytes": 1536
+      },
+      {
+        "compressedDigest": "sha256:e5812971a859da40b7ee51a1820f0052febef31132fb298c5c36c6b555ebb652",
+        "compressedBytes": 7686315,
+        "diffId": "sha256:6fb4662724fade6edc1bd71907f11cb131bd8ba1264e5128d3fe7b538f67ea03",
+        "uncompressedBytes": 26781184
+      }
+    ],
+    "indexPlatformConfigDistinct": true
+  },
+  "dependencies": {
+    "namedPackages": 30,
+    "packages": [
+      {
+        "name": "@esbuild/linux-x64",
+        "version": "0.28.2"
+      },
+      {
+        "name": "@musubi/provider-caldav",
+        "version": null
+      },
+      {
+        "name": "@musubi/provider-google",
+        "version": null
+      },
+      {
+        "name": "@musubi/provider-microsoft",
+        "version": null
+      },
+      {
+        "name": "@musubi/sync-codec",
+        "version": null
+      },
+      {
+        "name": "@musubi/sync-reference",
+        "version": null
+      },
+      {
+        "name": "@musubi/sync-runtime",
+        "version": null
+      },
+      {
+        "name": "@musubi/types",
+        "version": null
+      },
+      {
+        "name": "esbuild",
+        "version": "0.28.2"
+      },
+      {
+        "name": "ical.js",
+        "version": "2.2.1"
+      },
+      {
+        "name": "ipaddr.js",
+        "version": "1.9.1"
+      },
+      {
+        "name": "pg",
+        "version": "8.23.0"
+      },
+      {
+        "name": "pg-cloudflare",
+        "version": "1.4.0"
+      },
+      {
+        "name": "pg-connection-string",
+        "version": "2.14.0"
+      },
+      {
+        "name": "pg-int8",
+        "version": "1.0.1"
+      },
+      {
+        "name": "pg-pool",
+        "version": "3.14.0"
+      },
+      {
+        "name": "pg-protocol",
+        "version": "1.16.0"
+      },
+      {
+        "name": "pg-types",
+        "version": "2.2.0"
+      },
+      {
+        "name": "pgpass",
+        "version": "1.0.5"
+      },
+      {
+        "name": "postgres-array",
+        "version": "2.0.0"
+      },
+      {
+        "name": "postgres-bytea",
+        "version": "1.0.1"
+      },
+      {
+        "name": "postgres-date",
+        "version": "1.0.7"
+      },
+      {
+        "name": "postgres-interval",
+        "version": "1.2.0"
+      },
+      {
+        "name": "sax",
+        "version": "1.6.1"
+      },
+      {
+        "name": "split2",
+        "version": "4.2.0"
+      },
+      {
+        "name": "tsx",
+        "version": "4.23.12"
+      },
+      {
+        "name": "undici",
+        "version": "7.29.0"
+      },
+      {
+        "name": "xml-js",
+        "version": "1.6.11"
+      },
+      {
+        "name": "xtend",
+        "version": "4.0.2"
+      },
+      {
+        "name": "zod",
+        "version": "4.4.3"
+      }
+    ],
+    "forbiddenNamesChecked": [
+      "@musubi/auth",
+      "@musubi/config",
+      "@musubi/db",
+      "@musubi/mobile",
+      "better-auth",
+      "expo",
+      "react-native",
+      "typescript"
+    ],
+    "forbiddenNamesPresent": [],
+    "inventory": {
+      "path": "/tmp/musu41-fair-sync-reference-evidence-722d9f0/installed-package-map.json",
+      "bytes": 1782,
+      "sha256": "bce1b58a6a46296755dce1bb5f77a0eae396225271919d074ec52727bfc7a0ac"
+    }
+  },
+  "runtime": {
+    "user": "node",
+    "readOnlyRootFilesystem": true,
+    "sourceBindMounts": 0,
+    "testSourceOrCompilerMounts": 0,
+    "temporaryFilesystem": "/tmp only",
+    "productionCliConfigurationNames": [
+      "REFERENCE_DATABASE_URL",
+      "REFERENCE_CREDENTIAL_KEY"
+    ],
+    "testHarnessEnvironment": "ENVIRONMENT=test only for installed reference npm test/test:db; direct fair-work JSON/unit checks use node --import tsx, no pnpm runtime"
+  },
+  "canonicalCli": {
+    "status": "passed",
+    "emptyDatabaseBefore": true,
+    "migrateRuns": 2,
+    "repeatPreservedSchemaAndRelationIndexOids": true,
+    "relationsAndIndexObjects": 33,
+    "providerRequests": 0,
+    "receipt": {
+      "path": "/tmp/musu41-fair-sync-reference-evidence-722d9f0/installed-cli-smoke.json",
+      "bytes": 3827,
+      "sha256": "4f8413535f78ad9af9e2b846fe0b24ab419d55a2e7953b0bd3b9e86e6caeed34"
+    }
+  },
+  "installedCorpus": {
+    "status": "passed",
+    "pureCases": 161,
+    "storageCases": 207,
+    "nativeProcessCases": 287,
+    "nativeProcessFamilyCounts": {
+      "Reference process fixture": 30,
+      "Reference DELETE process fixture": 18,
+      "Reference CREATE process fixture": 22,
+      "Reference Graph guarded DELETE process": 17,
+      "Reference CalDAV conditional DELETE process": 28,
+      "Reference Graph CREATE process": 31,
+      "Reference CalDAV conditional CREATE process": 42,
+      "Reference Task process": 25,
+      "Reference Task DELETE process": 31,
+      "Reference Task CREATE process": 24,
+      "Reference Task intent process": 19
+    },
+    "countsComputedFromActualOutput": true,
+    "historicalCountsNotUsedAsAcceptance": true,
+    "pureLog": {
+      "path": "/tmp/musu41-fair-sync-reference-evidence-722d9f0/installed-pure.log",
+      "bytes": 39906,
+      "sha256": "6264f690eda05b08e1410118f9753b47f635a6fee22f8703ed19164c46e2e975"
+    },
+    "dbNativeProcessLog": {
+      "path": "/tmp/musu41-fair-sync-reference-evidence-722d9f0/installed-db-process.log",
+      "bytes": 78893,
+      "sha256": "f0dab530e65d76c1b00d710a36118d8b31dcc680c8472928a4dd99800d627734"
+    },
+    "receipt": {
+      "path": "/tmp/musu41-fair-sync-reference-evidence-722d9f0/installed-corpus.json",
+      "bytes": 1097,
+      "sha256": "1852e9c76f2e508054730cd844fc8891a738a06b35cf8d241194cd64808416fc"
+    }
+  },
+  "fairWork": {
+    "minimalChangedScenario": {
+      "id": "active-deferral-releases-submitters",
+      "status": "passed",
+      "receipt": {
+        "path": "/tmp/musu41-fair-sync-reference-evidence-722d9f0/installed-fair-minimal.json",
+        "bytes": 594,
+        "sha256": "29ee6ed8930e6a27d8f42f83a901de9de714901f08b0ed343b3c83f7bebd08ce"
+      }
+    },
+    "jsonCases": 15,
+    "unitCases": 15,
+    "failed": 0,
+    "skipped": 0,
+    "scenarioResults": [
+      {
+        "id": "active-deferral-releases-submitters",
+        "status": "passed",
+        "summary": {
+          "releasedSubmitters": 3,
+          "exactDue": true,
+          "partialInvalidations": [
+            [
+              "partial"
+            ],
+            [
+              "partial"
+            ]
+          ],
+          "executions": 2,
+          "pending": 0
+        }
+      },
+      {
+        "id": "account-a-429-b-ready",
+        "status": "passed",
+        "summary": {
+          "results": [
+            "deferred",
+            "settled"
+          ],
+          "methods": [
+            "B:GET"
+          ],
+          "active": 0
+        }
+      },
+      {
+        "id": "slow-a-b-progress",
+        "status": "passed",
+        "summary": {
+          "beforeRelease": [
+            "A",
+            "B"
+          ],
+          "maxActive": 2,
+          "methods": [
+            "B:GET",
+            "A:GET"
+          ]
+        }
+      },
+      {
+        "id": "global-capacity-lanes",
+        "status": "passed",
+        "summary": {
+          "starts": [
+            "event-1",
+            "task-1",
+            "event-2",
+            "pull-1"
+          ],
+          "maxActive": 1
+        }
+      },
+      {
+        "id": "nested-child-collision",
+        "status": "passed",
+        "summary": {
+          "childActive": 1,
+          "blockedChild": "not-eligible",
+          "lateRejected": true,
+          "maxActive": 2
+        }
+      },
+      {
+        "id": "native-leaf-lifetime",
+        "status": "passed",
+        "summary": {
+          "sends": 1,
+          "metrics": [
+            7
+          ],
+          "twiceRejected": true,
+          "lateRejected": true,
+          "abortedSends": 0
+        }
+      },
+      {
+        "id": "unused-reservation-refund",
+        "status": "passed",
+        "summary": {
+          "sends": 0,
+          "refundedCredits": 2,
+          "refusalMetrics": 0
+        }
+      },
+      {
+        "id": "accepted-readback-persistence-failure",
+        "status": "passed",
+        "summary": {
+          "provider": "accepted",
+          "acceptedStatus": 201,
+          "writerTaskId": "created",
+          "methods": [
+            "GET",
+            "POST",
+            "GET"
+          ],
+          "statuses": [
+            200,
+            201,
+            429
+          ],
+          "blocked": true,
+          "nextReason": "budget-persistence-pending",
+          "flushed": true
+        }
+      },
+      {
+        "id": "restart-shared-cooldown",
+        "status": "passed",
+        "summary": {
+          "coldReason": "credit",
+          "aReason": "cooldown",
+          "bReady": true,
+          "tenantScopes": 0
+        }
+      },
+      {
+        "id": "parked-pages-b-progress",
+        "status": "passed",
+        "summary": {
+          "pages": 6,
+          "bBeforeA": true,
+          "maxActive": 2
+        }
+      },
+      {
+        "id": "park-until-auxiliary-cold-chain",
+        "status": "passed",
+        "summary": {
+          "sends": 12,
+          "refreshCalls": 4,
+          "maxActive": 4,
+          "maxLogical": 8
+        }
+      },
+      {
+        "id": "finite-boundary-cooldown-clocks",
+        "status": "passed",
+        "summary": {
+          "refusals": 12,
+          "capped": 6,
+          "finiteExpired": 4,
+          "aSends": 4,
+          "bSends": 12,
+          "metrics": 16
+        }
+      },
+      {
+        "id": "max-cooldown-fractional-clocks",
+        "status": "passed",
+        "summary": {
+          "refusals": 8,
+          "exactDue": true,
+          "sends": 8,
+          "metrics": 8
+        }
+      },
+      {
+        "id": "long-cooldown-releases-continuations",
+        "status": "passed",
+        "summary": {
+          "results": [
+            "deferred",
+            "deferred",
+            "deferred",
+            "deferred",
+            "settled"
+          ],
+          "exactDue": true,
+          "methods": [
+            "healthy:GET"
+          ],
+          "parks": 0,
+          "logicalActive": 0
+        }
+      },
+      {
+        "id": "invalid-retry-after-b-progress",
+        "status": "passed",
+        "summary": {
+          "statuses": [
+            429,
+            200
+          ],
+          "writes": 0,
+          "blocked": false,
+          "parsed": "invalid"
+        }
+      }
+    ],
+    "jsonReceipt": {
+      "path": "/tmp/musu41-fair-sync-reference-evidence-722d9f0/installed-fair-json.json",
+      "bytes": 5698,
+      "sha256": "654805a95e27cb53505c28b5fd9348106e8e7bbc1d031a64e63b77d77c811a26"
+    },
+    "unitLog": {
+      "path": "/tmp/musu41-fair-sync-reference-evidence-722d9f0/fair-unit.log",
+      "bytes": 3690,
+      "sha256": "50cf27b791759fc0d00e3cac9948ee2870b7190a1a7ac568a9e5430283992e76"
+    }
+  },
+  "cleanup": {
+    "status": "passed",
+    "ownedDatabasesChecked": [
+      "c09_ref_d6e749877f4743fb85969a0342eed013_cli",
+      "c09_ref_d6e749877f4743fb85969a0342eed013_corpus"
+    ],
+    "remainingOwnedDatabases": [],
+    "remainingOwnedSessions": 0,
+    "remainingOwnedContainers": [],
+    "plainDropWithoutForce": true,
+    "rootQaPgLeftRunning": true,
+    "userQa55437Untouched": true,
+    "scope": "Exact proof owner/container names and two parent nonce databases only; no global deletion or backend termination"
+  },
+  "rawArtifactManifest": {
+    "path": "/tmp/musu41-fair-sync-reference-evidence-722d9f0/raw-artifact-manifest.json",
+    "bytes": 9079,
+    "sha256": "8777776701078a18e9c5c380da1d9f740c1736bfa1a8798616817ff111147b5c"
+  },
+  "rawArtifactCount": 46,
+  "evidenceDistinctions": {
+    "implementation": "Exact approved source packaged and executed from the identified local installed image; actual source parity checked before and after runtime proof.",
+    "publication": "No registry publication, PR/merge or current-head CI is established by these artifacts.",
+    "productionDeployment": "Not performed.",
+    "providerAcceptance": "Synthetic bounded owned loopback/native fixtures; no real OAuth/external provider or notification delivery certification.",
+    "historical6295": "Earlier image/approval are preserved as historical checkpoint and excluded from this722d final proof."
+  },
+  "limitations": [
+    "Reference tests retain the existing ten endpoint profiles and Google-only task namespace; this proof adds no new reference provider capability.",
+    "Reference CLI and test corpus use actual installed production helpers; installed test suites intentionally use ENVIRONMENT=test and loopback native fixtures.",
+    "Shared fair-work JSON scenarios use deterministic ports/clocks; their fixture observations are not real external-provider behavior.",
+    "No product source, runtime dependency or compiler files were edited or mounted into the image.",
+    "Root-owned C09 QA PostgreSQL remains running for later root work; only this proof nonce databases/containers were removed."
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "run": "v11",
+  "result": "PASS",
+  "exitCode": 0,
+  "head": "722d9f04ba934f7175b04422599189a5cf476180",
+  "tree": "c7915c4d3923734a8d3d69888898924f85139561",
+  "preRunClean": true,
+  "postRunClean": true,
+  "sourceFiles": 47,
+  "beforeAfterSourceEqualityAssertedByExecutingHarness": true,
+  "all47HashesMatchExactCommittedHeadAndPostRunFiles": true,
+  "sourceSetSha256": "9d71406d63dac580fa24d89196141538ea273e46ad8602d6f45619645ba4490b",
+  "testHarness": "/tmp/musu41-active-budget-test-v11.ts",
+  "testHarnessSha256": "7d032c4df7f4f89cc45b4f32b35d11111c4ed8260b07ee587329fbb327d4ceb6",
+  "harnessUnchangedFromV10": true,
+  "rawLog": "/tmp/musu41-active-budget-integration-v11.log",
+  "rawLogSha256": "75d3ba6ff03da3c0d0e26153f483a660996dbbc47b8ce364ad463aca527b2850",
+  "rawSummary": "/tmp/musu41-active-budget-v11-summary.json",
+  "rawSummarySha256": "a622671a6bea150647aa9426dadbc5669675731a993d2bec5ab3d4abae757906",
+  "summary": {
+    "boundary": "actual-postgres-api-budget-coordinator-native-http",
+    "buckets": {
+      "capacity": 1,
+      "refillPerSecond": 100
+    },
+    "pages": {
+      "discoveryA": 4,
+      "collectionA": 5,
+      "repeatedPageZero": false
+    },
+    "cold401": {
+      "gets401": 1,
+      "tokenPosts": 1,
+      "retryGet": true
+    },
+    "leaderCancellationSharedRefresh": true,
+    "optionalTasksRepeatedStrict": true,
+    "persistedCooldownChildNoSend": true,
+    "acceptedCreateReadback429SqlFault": {
+      "nativeStatus": 201,
+      "readbackStatus": 429,
+      "durableStatus": "unconfirmed",
+      "retainedResponseAddress": true,
+      "failClosedThenRecovered": true
+    },
+    "taskPreflightBudgetDeferral": {
+      "noSavedValidationPoison": true,
+      "realCanonicalAdmission": true,
+      "frozenProjectionRetained": true,
+      "actualRetryCompleted": true,
+      "realValidationErrorRetained": true
+    },
+    "preparedEventDurableClosure": {
+      "wholeOperationCapability": true,
+      "nativeMethods": [
+        "GET",
+        "GET",
+        "PATCH"
+      ],
+      "completedReceipt": true,
+      "repeatedClosureNoSend": true
+    },
+    "malformedHints": {
+      "invalidIgnored": true,
+      "unsupportedPhysicalAccountQuarantine": true,
+      "healthyBProgress": true
+    },
+    "alarmPreviewLinkUserScope": true,
+    "coordinatorClosedDuringCredentialWaitNoSend": true,
+    "stoppedPrequeueIdentityCannotAttachToReactivatedBudget": true,
+    "longQuotaHoldsReleaseRegularCapacity": {
+      "accounts": 4,
+      "exactFutureDue": true,
+      "noFalseAck": true,
+      "noNativeDispatch": true,
+      "healthyBProgress": true
+    },
+    "maxActiveHTTP": 2,
+    "fourSlotSaturationProved": false,
+    "installed": false,
+    "liveProvider": false,
+    "productionDeployment": false,
+    "source": {
+      "apps/api/src/sync/engine.ts": "088ea6b0c378df37c5bac77b023ffd389360d547dbc810b2ac3940fec2bc6d6d",
+      "apps/api/src/sync/work_coordinator.ts": "45c273cc96e38d1fe4f9a197034e550d9ffa7ea42f87f993e82fbbedd17e1ed1",
+      "apps/api/src/sync/provider_budget.ts": "17da453d79e467fb60f656cbe05dc0fd748655e3d80a9497fae8b8d0fd229016",
+      "apps/api/src/sync/oauth.ts": "e8a82629c0dd5e2d25038a1073b4f5fb7e2aaf944e3765797ae66a699b2f57ca",
+      "apps/api/src/sync/provider_http_metrics.ts": "30d170655e9ff58d744d749c7cc63a01fc64320647e3684384e20c906a279856",
+      "apps/api/src/sync/task_delivery.ts": "7765093a8cb67ced78c9c0183dcc193780113c837aed1de01b8ea51384cf82e7",
+      "apps/api/src/sync/google_shared_task_create_delivery.ts": "6658af69ad7616e395653aada6fd022f2552eed50769f8ce52b76fe8b8044ad5",
+      "apps/api/src/sync/adapters/google.ts": "c17c1933420ebac3604105609b2e51744c13c70c412970e8aee81c3cbebc9ffe",
+      "apps/api/src/sync/adapters/google_task_provider_bridge.ts": "d53d39ef2227441109ede032d0b351e911eb1e83cc5548eaf43a56b0c68f6bbb",
+      "apps/api/src/tokenCrypto.ts": "0dade559087ce870b033f57eede7c2853d22639e0ba4a247feb80e5edae8f5c3",
+      "packages/sync-runtime/src/fair-work.ts": "69d4f6d0c328d65018ca4562b506cfe75b015a16095efc1d5c986c89f16a963d",
+      "packages/sync-runtime/src/provider-budget.ts": "0e4e96d47ce20752a361b46872f21c20e18d29db8b2ac7a1fa080516cc092e47",
+      "packages/sync-runtime/src/http-dispatch.ts": "dd893cdf98cb1683529fc17dd69c062aa66228ceca7f250366b9fe1c4e779b2e",
+      "packages/sync-runtime/src/google-task-create.ts": "2adc3c911e4351e0a7b2cf55190a48d7b810e64cb146b08165fa5e106d0a1722",
+      "packages/provider-google/src/task-create.ts": "4a981bc323a48c327e52ada540dbdb08b5536cebd8e0568738f891691e4cc524",
+      "packages/provider-google/src/task-transport.ts": "ff5462aa8ab74dfbf35ac501aee866a04e5036763e7e0dbd705cc423fcdad990",
+      "packages/provider-google/src/http-dispatch.ts": "5af62f481bf5c52a504462efea0e6ff6eb33ded26ae55efcb6e1598d3326e12f",
+      "packages/db/src/schema.ts": "06fb1c62c17fbd910c7859c61c5fd3ae537d7661b3d51985e2928dc83bac956e",
+      "packages/config/src/index.ts": "e74dbb3f0904114f06c3b583582d1b2ef9f435e9ce1e71067f68c27ce97177ad",
+      "packages/config/src/provider-budget.ts": "7c9dea5294f920469d1d9e61fac8be3162c7e31775c6e5d277371f6edddcb205",
+      "packages/db/src/queries/sync-read-work.ts": "8564594a8506a82d381af5e1ba498fb9a3eae0b369da008c3a4fbeed7bb61a6c",
+      "packages/db/src/queries/sync-work-candidates.ts": "e056f7a094c0cf691a4723011465e2139bbc3b70e3b0a3a978448e40fcfdccef",
+      "packages/db/src/queries/provider-budget-cooldowns.ts": "38299ecb64d95460277979f41fd37ca488fd3b78df6ed18aa523c732d7cab3fb",
+      "packages/db/src/queries/read-work-transaction.ts": "01323744ac48dcd114e2cdcea4cdd682d5c2e7ccbf5961f9abe984f7a2c706f5",
+      "packages/db/src/queries/oauth.ts": "319b247f60176b49165816f8724e50f4d2d1aea8d8dda78d0ba4e32be3c10373",
+      "packages/db/src/queries/task-outbox.ts": "d39ba7d825e07bed4a05ce13d5d046aa5bde27188613168953f5fb5e119ee3c2",
+      "packages/db/src/queries/operation-admission.ts": "024b5426a9c853c23659d34c28016b79b78004f2d3211f3e25451ce05bab0e71",
+      "packages/db/drizzle/0086_sync_scheduling.sql": "ac6a559f6cde11074e02464f0ac029b259c510722751004867a144909b0cf402",
+      "apps/api/src/sync/adapters/caldav.ts": "c3cf1b363d89d2b46d121e903d867c5e4f484518c7079d020554227aa4dd5e1e",
+      "apps/api/src/sync/caldav_client.ts": "c0bdc8f4af3480d78d3db01de3d1756f6816f8357c7bccf4359c9a2d67e667db",
+      "apps/api/src/sync/adapters/caldav_alarms.ts": "13d160e2b4096bdd72d3f29ea3e4c68ab70c46ba793872f7b4045d91ed9afdba",
+      "apps/api/src/sync/adapters/caldav_time.ts": "4746ec0ae9d027dcdf9cb3f4b16339289b7a178520eabb9b603e2db8edce16c1",
+      "packages/db/src/queries/caldav.ts": "a640468f1512751a15a0550ef858d4b74da4dcd802829db099427ef9cec9adec",
+      "packages/db/src/queries/caldav-alarms.ts": "e0481d015d40791de5ab7429a3b0c82d833e01408308655aaa31fdf4813d91c7",
+      "packages/provider-caldav/src/network.ts": "55ee2d4e0b8e8b479e6251a75fb1958164b912ea1dd9a0e782a1cf768c646936",
+      "apps/api/src/sync/read_attempt.ts": "44d9070dc9181b1493e1d0ef72eaa2d4fb19295b8baf0962fb6bea597177379a",
+      "packages/db/src/queries/external.ts": "bed2b309b91b1637f5812c467d18a99b6fbc615745292b5fd72b4aec72f257d2",
+      "packages/db/src/queries/source-read.ts": "13b42fae7259958609208a72cef038a7a638c501dab38add085c5e4c1e60fe38",
+      "packages/db/src/queries/tasks.ts": "da506c8e937876950e824cb7ba966c963282b0ef6070c77268aa8dd54331dd46",
+      "packages/db/src/queries/events.ts": "2d0c8a4f0b638d2d2e85c087558091b913f5bf37f7e087a85cd10cfa942cab04",
+      "packages/db/src/queries/event-outbox.ts": "2bef44687ee324cee11ac80c2b7e0c27eda63c02f38802a9062822e73cf2a72c",
+      "packages/db/src/queries/event-outbox-delivery.ts": "8c9c394f9dc8e57a483f3b94b298dd35c0e3fb5a4616fc9a6eea5b8091fe0d9f",
+      "apps/api/src/sync/event_delivery.ts": "3360a12ec94a20de778a41c99b5cfd6b14589d255fa708aeb67a95454c7813fc",
+      "apps/api/src/sync/google_shared_delivery.ts": "00bc36e442ccfce736c451c1d5dd8a7c065b6862028e5bb08e76fd2df68303e6",
+      "apps/api/src/sync/adapters/google_provider_bridge.ts": "c13df72703092c9317be2d932162d5fc854886f296621682d9e77573e03391f3",
+      "packages/sync-runtime/src/google-personal-update.ts": "934d24c746c4e599db18783fd8ae2543fbeb803f4a05781b891e39c13006b56e",
+      "packages/provider-google/src/index.ts": "52cd14888c9bb0eee4469b603e134b12eab8b29fa8b71a43e459e65430b673e7"
+    }
+  },
+  "cleanup": {
+    "database": "c09budget_51ea49c16d534726b5e86d18d8cff304",
+    "sessionsBeforeDrop": 0,
+    "plainDrop": true,
+    "databaseAbsent": true
+  },
+  "verificationBoundary": "Actual production API functions, queued coordinator, active capacity1 budget, actual migrated PostgreSQL and closed loopback provider HTTP fixtures; no business-logic simulation. This source run is separate from installed-image verification.",
+  "maximumNativeConcurrencyObserved": 2,
+  "fourSlotSaturationProved": false,
+  "installedApplication": false,
+  "runningApplicationBrowser": false,
+  "liveProvider": false,
+  "publication": false,
+  "productionDeployment": false,
+  "historicalFailuresRetained": [
+    "/tmp/musu41-active-budget-v8-failure.json"
+  ],
+  "historicalV10ReceiptUnchanged": "/tmp/musu41-active-budget-v10-proof.json",
+  "historicalV10Scope": "/tmp/musu41-active-budget-v10-historical-scope.json"
+}
