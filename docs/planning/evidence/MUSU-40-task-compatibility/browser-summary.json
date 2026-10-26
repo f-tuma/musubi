@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "scope": "Final running application after source/installed acceptance and owned QA cleanup. API fixtures prove UI behavior only, not real DB/auth/provider boundaries.",
+  "command": "pnpm --silent test:behavior:browser --workers=2 --output=/tmp/musu40-task-compatibility-final-browser",
+  "exitCode": 0,
+  "passed": 8,
+  "failed": 0,
+  "firstAttempt": true,
+  "durationSeconds": 14.0,
+  "flow": "Tasks route \u2192 open task inspector \u2192 edit/preserve rich content, retain conflict draft, enforce mirror read-only state, cancel deletion \u2192 expected rendered state and request evidence",
+  "origin": "http://127.0.0.1:3000",
+  "browser": "Playwright Chromium",
+  "browserRoutingReason": "Browser plugin not available; existing repository Playwright JSON runner used.",
+  "viewportThemes": [
+    {
+      "width": 1280,
+      "height": 900,
+      "theme": "light"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "theme": "dark"
+    }
+  ],
+  "checks": {
+    "routeAndTasksRegion": true,
+    "meaningfulRenderedContent": true,
+    "noFrameworkOverlay": true,
+    "noUnexpectedPageOrConsoleErrors": true,
+    "expectedHttp409OnlyOnConflict": true,
+    "noHorizontalOverflow": true,
+    "interactionAndRequestAssertions": true,
+    "bothScreenshotsVisuallyInspected": true,
+    "documentTitleExplicitlyAsserted": false
+  },
+  "visualReview": "Desktop and narrow inspector readable; no clipping/overlap; richer notes, priority and recurrence retained.",
+  "qaCleanup": "Owned task PostgreSQL/container/port absent in two polls before browser. User QA ID/ports unchanged. Any later event QA belongs to the subsequent slice.",
+  "rawArtifacts": [
+    {
+      "path": "/tmp/musu40-task-compatibility-final-browser.log",
+      "bytes": 5617,
+      "sha256": "c7bef7db8364d94e5cc286957676c45bb8b3b1b8036eebdf5aeee41017157dda"
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-cleanup.json",
+      "bytes": 733,
+      "sha256": "62bcda42dde5c618dcb564ac2d9a6aed447078cc824287cf4cbe7cc756df6cae"
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-final-browser/completion.json",
+      "bytes": 328,
+      "sha256": "38cdd5d3a628a8523e061ba50b505a693893e87167d1c3d03b60e7e5fa88b926"
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-final-browser/evidence-desktop.png",
+      "bytes": 70744,
+      "sha256": "5416642ae34c1cf096cceb5c913433ef3529ab43928521721da46bafebb180d4"
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-final-browser/evidence-narrow.png",
+      "bytes": 22504,
+      "sha256": "bc42b9e4aa1ea5891a3fd76cbc9806ac7ae28b0ebc9db7d7bd303fa4579fe757"
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-review-oci.json",
+      "bytes": 447728,
+      "sha256": "7e2d8843e1c6df5045e8cb2514fc45ef605777b1027cb9481d4ce7e8ae0cf428"
+    }
+  ]
+}

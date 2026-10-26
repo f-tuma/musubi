@@ -1,0 +1,2260 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "createdAt": "2026-10-26T12:33:55.718435+00:00",
+  "scope": "Local installed task compatibility host lifecycle proof; retained Google predecessor CREATE/legacy tasks, home To Do and full-resource VTODO. No new native portability, provider CAS certification, registry publication or production deployment.",
+  "gitHeadAtBuild": "8ea0d3bfe193abd701e06c15d19b5d312bdd2290",
+  "approvedStagedTreeAtBuild": "440029cb442eab552c595f27b70c623333627a79",
+  "imageTag": "musubi-c08-task-compatibility-api:proof",
+  "dockerImageInspectId": "sha256:8a71cd3e00317a43ebdbb905b8ed678e91a2a1a6de8d3c004172272a56d9b15c",
+  "localBuildIndexDigest": "sha256:8a71cd3e00317a43ebdbb905b8ed678e91a2a1a6de8d3c004172272a56d9b15c",
+  "platformManifestDigest": "sha256:cab0f747f13b2c9459aaeb2cc035db572e50644ab74a996c527500302a233c42",
+  "imageConfigDigest": "sha256:bf8c4111d665b1110f8c5a07bfcc8e5c36c5e57f10bb11e155a1487d21a864e1",
+  "imageArchiveRetained": true,
+  "sourceContextFiles": 899,
+  "sourceFingerprint": "2e52805b858db28d686a6468a02bf9da3fa140bbb4d53705d65cd9c97e101c63",
+  "productionSourceFingerprint": "83320b0a8677d38c1511b74a9b7c2de2e55b89ae1e8a2779272aebd1be5630ff",
+  "sourceInventoryCounts": {
+    "productionSupportFiles": 458,
+    "actualProductionFiles": 456,
+    "testBehaviorFiles": 39,
+    "overlapFiles": [
+      "apps/api/src/sync/behavior/task-delivery-cli.ts",
+      "apps/api/src/sync/behavior/task-delivery-driver.ts"
+    ],
+    "uniqueCheckedFiles": 495
+  },
+  "installedSourceHashParity": {
+    "production": {
+      "checkedFiles": 458,
+      "mismatches": [],
+      "scope": "Production/support classification; explicit behavior-helper overlap is counted once in the unique total."
+    },
+    "tests": {
+      "checkedFiles": 39,
+      "mismatches": []
+    },
+    "actualProductionFiles": 456,
+    "productionSupportFiles": 458,
+    "testBehaviorFiles": 39,
+    "overlapFiles": [
+      "apps/api/src/sync/behavior/task-delivery-cli.ts",
+      "apps/api/src/sync/behavior/task-delivery-driver.ts"
+    ],
+    "uniqueCheckedFiles": 495,
+    "checkedSources": [
+      "apps/api/src/event_notifications.ts",
+      "apps/api/src/event_permissions.ts",
+      "apps/api/src/event_time_activation.ts",
+      "apps/api/src/express.d.ts",
+      "apps/api/src/federation_connections.ts",
+      "apps/api/src/federation_origin.ts",
+      "apps/api/src/federation_peer.ts",
+      "apps/api/src/federation_stream.ts",
+      "apps/api/src/federation_tokens.ts",
+      "apps/api/src/handlers/announcements.ts",
+      "apps/api/src/handlers/availability.ts",
+      "apps/api/src/handlers/caldav.ts",
+      "apps/api/src/handlers/calendar_pages.ts",
+      "apps/api/src/handlers/calendars.ts",
+      "apps/api/src/handlers/connections.ts",
+      "apps/api/src/handlers/event_commit.ts",
+      "apps/api/src/handlers/event_delivery.ts",
+      "apps/api/src/handlers/event_mutation.ts",
+      "apps/api/src/handlers/events.ts",
+      "apps/api/src/handlers/federation.ts",
+      "apps/api/src/handlers/federation_proxy.ts",
+      "apps/api/src/handlers/google.ts",
+      "apps/api/src/handlers/invites.ts",
+      "apps/api/src/handlers/outlook_moves.ts",
+      "apps/api/src/handlers/pages.ts",
+      "apps/api/src/handlers/push.ts",
+      "apps/api/src/handlers/reminders.ts",
+      "apps/api/src/handlers/server.ts",
+      "apps/api/src/handlers/settings.ts",
+      "apps/api/src/handlers/stream.ts",
+      "apps/api/src/handlers/task_delivery.ts",
+      "apps/api/src/handlers/tasks.ts",
+      "apps/api/src/handlers/users.ts",
+      "apps/api/src/index.ts",
+      "apps/api/src/invite_preview.ts",
+      "apps/api/src/media_storage.ts",
+      "apps/api/src/metrics.ts",
+      "apps/api/src/middleware/error_handler.ts",
+      "apps/api/src/middleware/http_error.ts",
+      "apps/api/src/middleware/log_handler.ts",
+      "apps/api/src/middleware/proxy.ts",
+      "apps/api/src/middleware/rate_limit.ts",
+      "apps/api/src/middleware/require_admin.ts",
+      "apps/api/src/middleware/require_auth.ts",
+      "apps/api/src/middleware/require_client_version.ts",
+      "apps/api/src/notification_dispatch.ts",
+      "apps/api/src/permissions.ts",
+      "apps/api/src/product_metrics.ts",
+      "apps/api/src/reminder_dispatch.ts",
+      "apps/api/src/request_validation.ts",
+      "apps/api/src/scheduling.ts",
+      "apps/api/src/singleton.ts",
+      "apps/api/src/sync/adapter.ts",
+      "apps/api/src/sync/adapters/caldav.ts",
+      "apps/api/src/sync/adapters/caldav_alarms.ts",
+      "apps/api/src/sync/adapters/caldav_event_ical.ts",
+      "apps/api/src/sync/adapters/caldav_organizer.ts",
+      "apps/api/src/sync/adapters/caldav_organizer_delivery.ts",
+      "apps/api/src/sync/adapters/caldav_organizer_time.ts",
+      "apps/api/src/sync/adapters/caldav_recurrence_dates.ts",
+      "apps/api/src/sync/adapters/caldav_rsvp.ts",
+      "apps/api/src/sync/adapters/caldav_rsvp_delivery.ts",
+      "apps/api/src/sync/adapters/caldav_series.ts",
+      "apps/api/src/sync/adapters/caldav_time.ts",
+      "apps/api/src/sync/adapters/google.ts",
+      "apps/api/src/sync/adapters/google_freebusy.ts",
+      "apps/api/src/sync/adapters/google_occurrence.ts",
+      "apps/api/src/sync/adapters/google_organizer.ts",
+      "apps/api/src/sync/adapters/google_organizer_delivery.ts",
+      "apps/api/src/sync/adapters/google_provider_bridge.ts",
+      "apps/api/src/sync/adapters/google_reminder_instance.ts",
+      "apps/api/src/sync/adapters/google_rsvp.ts",
+      "apps/api/src/sync/adapters/google_rsvp_delivery.ts",
+      "apps/api/src/sync/adapters/google_rsvp_projection.ts",
+      "apps/api/src/sync/adapters/google_task_provider_bridge.ts",
+      "apps/api/src/sync/adapters/google_time.ts",
+      "apps/api/src/sync/adapters/icloud_organizer_creation.ts",
+      "apps/api/src/sync/adapters/microsoft.ts",
+      "apps/api/src/sync/adapters/microsoft_calendar_discovery_error.ts",
+      "apps/api/src/sync/adapters/microsoft_discovery_inventory.ts",
+      "apps/api/src/sync/adapters/microsoft_event_content.ts",
+      "apps/api/src/sync/adapters/microsoft_identity.ts",
+      "apps/api/src/sync/adapters/microsoft_meeting_cancel.ts",
+      "apps/api/src/sync/adapters/microsoft_occurrence_content.ts",
+      "apps/api/src/sync/adapters/microsoft_organizer.ts",
+      "apps/api/src/sync/adapters/microsoft_recurrence.ts",
+      "apps/api/src/sync/adapters/microsoft_rsvp.ts",
+      "apps/api/src/sync/adapters/microsoft_rsvp_delivery.ts",
+      "apps/api/src/sync/adapters/microsoft_rsvp_series.ts",
+      "apps/api/src/sync/adapters/microsoft_series_content.ts",
+      "apps/api/src/sync/adapters/microsoft_series_create.ts",
+      "apps/api/src/sync/adapters/microsoft_series_delete.ts",
+      "apps/api/src/sync/adapters/microsoft_series_delivery.ts",
+      "apps/api/src/sync/adapters/microsoft_series_family.ts",
+      "apps/api/src/sync/adapters/microsoft_series_footprint.ts",
+      "apps/api/src/sync/adapters/microsoft_task_list_discovery_error.ts",
+      "apps/api/src/sync/adapters/microsoft_task_read_error.ts",
+      "apps/api/src/sync/adapters/microsoft_task_read_page.ts",
+      "apps/api/src/sync/adapters/microsoft_time.ts",
+      "apps/api/src/sync/adapters/microsoft_time_zone.ts",
+      "apps/api/src/sync/adapters/provider_event_state.ts",
+      "apps/api/src/sync/background.ts",
+      "apps/api/src/sync/behavior/task-delivery-cli.ts",
+      "apps/api/src/sync/behavior/task-delivery-driver.ts",
+      "apps/api/src/sync/behavior/task-delivery-harness.test.ts",
+      "apps/api/src/sync/behavior/task-delivery.json",
+      "apps/api/src/sync/caldav_alarms.ts",
+      "apps/api/src/sync/caldav_client.ts",
+      "apps/api/src/sync/caldav_personal_content.ts",
+      "apps/api/src/sync/caldav_privileges.ts",
+      "apps/api/src/sync/caldav_properties.ts",
+      "apps/api/src/sync/caldav_scheduling.ts",
+      "apps/api/src/sync/caldav_scope.ts",
+      "apps/api/src/sync/caldav_shared_create_delivery.ts",
+      "apps/api/src/sync/caldav_shared_delete_delivery.ts",
+      "apps/api/src/sync/crypto.ts",
+      "apps/api/src/sync/delivery_policy.ts",
+      "apps/api/src/sync/engine.ts",
+      "apps/api/src/sync/errors.ts",
+      "apps/api/src/sync/event_create_identity.ts",
+      "apps/api/src/sync/event_delivery.ts",
+      "apps/api/src/sync/event_resolution.ts",
+      "apps/api/src/sync/event_write.ts",
+      "apps/api/src/sync/google_availability.ts",
+      "apps/api/src/sync/google_scope.ts",
+      "apps/api/src/sync/google_shared_create_delivery.ts",
+      "apps/api/src/sync/google_shared_delete_delivery.ts",
+      "apps/api/src/sync/google_shared_delivery.ts",
+      "apps/api/src/sync/google_shared_task_create_delivery.integration.test.ts",
+      "apps/api/src/sync/google_shared_task_create_delivery.ts",
+      "apps/api/src/sync/google_shared_task_delete_delivery.integration.test.ts",
+      "apps/api/src/sync/google_shared_task_delete_delivery.ts",
+      "apps/api/src/sync/google_shared_task_update_delivery.integration.test.ts",
+      "apps/api/src/sync/google_shared_task_update_delivery.ts",
+      "apps/api/src/sync/google_task_causal_delivery.integration.test.ts",
+      "apps/api/src/sync/graph_create_adoption.ts",
+      "apps/api/src/sync/graph_series_create.ts",
+      "apps/api/src/sync/microsoft_shared_create_delivery.ts",
+      "apps/api/src/sync/microsoft_shared_delete_delivery.ts",
+      "apps/api/src/sync/microsoft_task_read_completeness.integration.test.ts",
+      "apps/api/src/sync/oauth.ts",
+      "apps/api/src/sync/optional_tasks.integration.test.ts",
+      "apps/api/src/sync/orchestrator.ts",
+      "apps/api/src/sync/outlook_moves.ts",
+      "apps/api/src/sync/pinned_transport.integration.test.ts",
+      "apps/api/src/sync/pinned_write.ts",
+      "apps/api/src/sync/provider_http_metrics.ts",
+      "apps/api/src/sync/provider_organizer.ts",
+      "apps/api/src/sync/provider_profiles.ts",
+      "apps/api/src/sync/provider_reminders.ts",
+      "apps/api/src/sync/provider_rsvp.ts",
+      "apps/api/src/sync/shared_tasks.integration.test.ts",
+      "apps/api/src/sync/task_ack_delivery.integration.test.ts",
+      "apps/api/src/sync/task_compatibility_delivery.integration.test.ts",
+      "apps/api/src/sync/task_delivery.integration.test.ts",
+      "apps/api/src/sync/task_delivery.ts",
+      "apps/api/src/sync/task_write.ts",
+      "apps/api/src/task_compatibility.integration.test.ts",
+      "apps/api/src/task_routes.ts",
+      "apps/api/src/tokenCrypto.ts",
+      "packages/auth/src/index.ts",
+      "packages/auth/src/lib/apple_secret.ts",
+      "packages/auth/src/lib/auth.ts",
+      "packages/auth/src/lib/calendar-aware-adapter.ts",
+      "packages/auth/src/lib/verified_landing.ts",
+      "packages/calendar/src/caldav-alarm-scope.ts",
+      "packages/calendar/src/caldav-series-zone.ts",
+      "packages/calendar/src/datetime.ts",
+      "packages/calendar/src/event-delivery.ts",
+      "packages/calendar/src/exdate-restoration.ts",
+      "packages/calendar/src/finite-series.ts",
+      "packages/calendar/src/iana-time-zones.ts",
+      "packages/calendar/src/index.ts",
+      "packages/calendar/src/interfaces.ts",
+      "packages/calendar/src/layout/all-day-spans.ts",
+      "packages/calendar/src/layout/day-buckets.ts",
+      "packages/calendar/src/layout/day-segments.ts",
+      "packages/calendar/src/layout/index.ts",
+      "packages/calendar/src/layout/month-grid.ts",
+      "packages/calendar/src/layout/overlaps.ts",
+      "packages/calendar/src/layout/ranges.ts",
+      "packages/calendar/src/note-links.ts",
+      "packages/calendar/src/outlook-cancellation.ts",
+      "packages/calendar/src/outlook-time-zone.ts",
+      "packages/calendar/src/outlook-windows-zones.ts",
+      "packages/calendar/src/provider-event-details.ts",
+      "packages/calendar/src/provider-organizer-draft.ts",
+      "packages/calendar/src/provider-reminder-draft.ts",
+      "packages/calendar/src/provider-rsvp-draft.ts",
+      "packages/calendar/src/rdate-edit.ts",
+      "packages/calendar/src/recurrence-edit.ts",
+      "packages/calendar/src/recurrence-validation.ts",
+      "packages/calendar/src/recurrence.ts",
+      "packages/calendar/src/reminders.ts",
+      "packages/calendar/src/rrule-editor.ts",
+      "packages/calendar/src/scope-plan.ts",
+      "packages/calendar/src/scope-request.ts",
+      "packages/calendar/src/series-time-edit.ts",
+      "packages/calendar/src/sync-coverage.ts",
+      "packages/calendar/src/task-calendar.ts",
+      "packages/calendar/src/task-delivery.ts",
+      "packages/calendar/src/task-fork-attempts.ts",
+      "packages/calendar/src/task-sharing.ts",
+      "packages/calendar/src/time-draft.ts",
+      "packages/calendar/src/time-edit.ts",
+      "packages/calendar/src/time-expansion.ts",
+      "packages/calendar/src/time-zone-options.ts",
+      "packages/calendar/src/time-zone.ts",
+      "packages/config/src/index.ts",
+      "packages/config/src/logger.ts",
+      "packages/db/drizzle.config.ts",
+      "packages/db/drizzle/0000_square_dexter_bennett.sql",
+      "packages/db/drizzle/0001_funny_nekra.sql",
+      "packages/db/drizzle/0002_flaky_natasha_romanoff.sql",
+      "packages/db/drizzle/0003_medical_sebastian_shaw.sql",
+      "packages/db/drizzle/0004_legal_maestro.sql",
+      "packages/db/drizzle/0005_green_vin_gonzales.sql",
+      "packages/db/drizzle/0006_mushy_mac_gargan.sql",
+      "packages/db/drizzle/0007_windy_doorman.sql",
+      "packages/db/drizzle/0008_broken_penance.sql",
+      "packages/db/drizzle/0009_neat_meteorite.sql",
+      "packages/db/drizzle/0010_high_bloodstorm.sql",
+      "packages/db/drizzle/0011_boring_mentallo.sql",
+      "packages/db/drizzle/0012_late_anthem.sql",
+      "packages/db/drizzle/0013_zippy_baron_zemo.sql",
+      "packages/db/drizzle/0014_robust_sister_grimm.sql",
+      "packages/db/drizzle/0015_deep_longshot.sql",
+      "packages/db/drizzle/0016_supreme_puppet_master.sql",
+      "packages/db/drizzle/0017_fine_brood.sql",
+      "packages/db/drizzle/0018_cute_blue_shield.sql",
+      "packages/db/drizzle/0019_lean_mattie_franklin.sql",
+      "packages/db/drizzle/0020_opposite_ulik.sql",
+      "packages/db/drizzle/0021_lumpy_supreme_intelligence.sql",
+      "packages/db/drizzle/0022_long_demogoblin.sql",
+      "packages/db/drizzle/0023_time_date_format.sql",
+      "packages/db/drizzle/0024_adorable_king_bedlam.sql",
+      "packages/db/drizzle/0025_smiling_preak.sql",
+      "packages/db/drizzle/0026_old_kingpin.sql",
+      "packages/db/drizzle/0027_mean_santa_claus.sql",
+      "packages/db/drizzle/0028_silky_molten_man.sql",
+      "packages/db/drizzle/0029_parched_leader.sql",
+      "packages/db/drizzle/0030_google_sync_reconnect_state.sql",
+      "packages/db/drizzle/0031_rich_micromacro.sql",
+      "packages/db/drizzle/0032_happy_whiplash.sql",
+      "packages/db/drizzle/0033_busy_thunderball.sql",
+      "packages/db/drizzle/0034_steady_garia.sql",
+      "packages/db/drizzle/0035_add_pages.sql",
+      "packages/db/drizzle/0036_cynical_rhodey.sql",
+      "packages/db/drizzle/0037_fat_major_mapleleaf.sql",
+      "packages/db/drizzle/0038_productive_baron_zemo.sql",
+      "packages/db/drizzle/0039_numerous_jetstream.sql",
+      "packages/db/drizzle/0040_robust_sleepwalker.sql",
+      "packages/db/drizzle/0041_shocking_the_fury.sql",
+      "packages/db/drizzle/0042_fearless_mentor.sql",
+      "packages/db/drizzle/0043_flippant_wilson_fisk.sql",
+      "packages/db/drizzle/0044_ambiguous_red_wolf.sql",
+      "packages/db/drizzle/0045_magical_lord_tyger.sql",
+      "packages/db/drizzle/0046_push_subscriptions.sql",
+      "packages/db/drizzle/0047_notification_emails.sql",
+      "packages/db/drizzle/0048_pending_notifications.sql",
+      "packages/db/drizzle/0049_drop_show_kanji.sql",
+      "packages/db/drizzle/0050_needy_matthew_murdock.sql",
+      "packages/db/drizzle/0051_early_lester.sql",
+      "packages/db/drizzle/0052_chubby_hitman.sql",
+      "packages/db/drizzle/0053_release_0_1_7_announcement.sql",
+      "packages/db/drizzle/0054_cold_revanche.sql",
+      "packages/db/drizzle/0055_rich_zemo.sql",
+      "packages/db/drizzle/0056_provider_task_scopes.sql",
+      "packages/db/drizzle/0057_remove_scheduler_announcement.sql",
+      "packages/db/drizzle/0058_classy_captain_america.sql",
+      "packages/db/drizzle/0059_event_outbox.sql",
+      "packages/db/drizzle/0060_event_outbox_recovery.sql",
+      "packages/db/drizzle/0061_external_event_tombstones.sql",
+      "packages/db/drizzle/0062_event_delivery_inbox.sql",
+      "packages/db/drizzle/0063_event_time_identity.sql",
+      "packages/db/drizzle/0064_event_scope_operations.sql",
+      "packages/db/drizzle/0065_deferred_occurrence_identity.sql",
+      "packages/db/drizzle/0066_provider_event_state.sql",
+      "packages/db/drizzle/0067_provider_state_observation.sql",
+      "packages/db/drizzle/0068_caldav_series_deletion.sql",
+      "packages/db/drizzle/0069_caldav_truncated_versions.sql",
+      "packages/db/drizzle/0070_caldav_split_versions.sql",
+      "packages/db/drizzle/0071_brown_snowbird.sql",
+      "packages/db/drizzle/0072_broad_lilandra.sql",
+      "packages/db/drizzle/0073_dapper_rattler.sql",
+      "packages/db/drizzle/0074_google_availability.sql",
+      "packages/db/drizzle/0075_provider_read_retirement.sql",
+      "packages/db/drizzle/0076_task_read_retirement.sql",
+      "packages/db/drizzle/0077_shallow_young_avengers.sql",
+      "packages/db/drizzle/0078_release_0_2_0_announcement.sql",
+      "packages/db/drizzle/0079_outlook_occurrence_moves.sql",
+      "packages/db/drizzle/0080_shared_tasks.sql",
+      "packages/db/drizzle/0081_task_projection_lookup.sql",
+      "packages/db/drizzle/0082_task_fork_reconciliation.sql",
+      "packages/db/drizzle/0083_task_fork_outcome.sql",
+      "packages/db/drizzle/0084_release_0_2_2_announcement.sql",
+      "packages/db/drizzle/0085_graph_read_coverage.sql",
+      "packages/db/src/index.ts",
+      "packages/db/src/migrate.ts",
+      "packages/db/src/queries/announcements.ts",
+      "packages/db/src/queries/availability.ts",
+      "packages/db/src/queries/caldav-access.ts",
+      "packages/db/src/queries/caldav-alarms.ts",
+      "packages/db/src/queries/caldav-series-scope.ts",
+      "packages/db/src/queries/caldav-split-delivery.ts",
+      "packages/db/src/queries/caldav-split-future.ts",
+      "packages/db/src/queries/caldav-split-resolution.ts",
+      "packages/db/src/queries/caldav-split.ts",
+      "packages/db/src/queries/caldav.ts",
+      "packages/db/src/queries/calendar-lifecycle.ts",
+      "packages/db/src/queries/calendars.ts",
+      "packages/db/src/queries/event-create-receipt.ts",
+      "packages/db/src/queries/event-delivery-inbox.ts",
+      "packages/db/src/queries/event-delivery-resolution.ts",
+      "packages/db/src/queries/event-delivery-retry.ts",
+      "packages/db/src/queries/event-delivery-status.ts",
+      "packages/db/src/queries/event-outbox-deletions.ts",
+      "packages/db/src/queries/event-outbox-delivery.ts",
+      "packages/db/src/queries/event-outbox-fanout.ts",
+      "packages/db/src/queries/event-outbox-projection.ts",
+      "packages/db/src/queries/event-outbox-pull.ts",
+      "packages/db/src/queries/event-outbox.ts",
+      "packages/db/src/queries/event-scope.ts",
+      "packages/db/src/queries/event-time-create.ts",
+      "packages/db/src/queries/event-time-edit.ts",
+      "packages/db/src/queries/event-time-write.ts",
+      "packages/db/src/queries/events.ts",
+      "packages/db/src/queries/external-access-redaction.ts",
+      "packages/db/src/queries/external-access.ts",
+      "packages/db/src/queries/external.ts",
+      "packages/db/src/queries/federation.ts",
+      "packages/db/src/queries/google-mirror-removal.ts",
+      "packages/db/src/queries/google-occurrence-scope.ts",
+      "packages/db/src/queries/google-personal-read-recovery.ts",
+      "packages/db/src/queries/graph-family.ts",
+      "packages/db/src/queries/graph-meeting-cancel.ts",
+      "packages/db/src/queries/graph-occurrence-content.ts",
+      "packages/db/src/queries/graph-rsvp-occurrence.ts",
+      "packages/db/src/queries/graph-series-create.ts",
+      "packages/db/src/queries/graph-series-delete.ts",
+      "packages/db/src/queries/graph-series-time.ts",
+      "packages/db/src/queries/invites.ts",
+      "packages/db/src/queries/microsoft-access.ts",
+      "packages/db/src/queries/notifications.ts",
+      "packages/db/src/queries/oauth.ts",
+      "packages/db/src/queries/operation-admission.ts",
+      "packages/db/src/queries/outbox-causal-retirement.ts",
+      "packages/db/src/queries/outbox-operation.ts",
+      "packages/db/src/queries/outlook-move-plan.ts",
+      "packages/db/src/queries/outlook-moves.ts",
+      "packages/db/src/queries/pages.ts",
+      "packages/db/src/queries/provider-event-state.ts",
+      "packages/db/src/queries/provider-organizer.ts",
+      "packages/db/src/queries/provider-reminder-instance.ts",
+      "packages/db/src/queries/provider-reminders.ts",
+      "packages/db/src/queries/provider-rsvp-instance.ts",
+      "packages/db/src/queries/provider-rsvp.ts",
+      "packages/db/src/queries/push.ts",
+      "packages/db/src/queries/reminders.ts",
+      "packages/db/src/queries/sessions.ts",
+      "packages/db/src/queries/settings.ts",
+      "packages/db/src/queries/source-read-lifecycle.ts",
+      "packages/db/src/queries/source-read.ts",
+      "packages/db/src/queries/task-ack.integration.test.ts",
+      "packages/db/src/queries/task-causal.integration.test.ts",
+      "packages/db/src/queries/task-delivery-status.ts",
+      "packages/db/src/queries/task-outbox.ts",
+      "packages/db/src/queries/tasks.integration.test.ts",
+      "packages/db/src/queries/tasks.ts",
+      "packages/db/src/queries/users.ts",
+      "packages/db/src/schema.ts",
+      "packages/emails/src/brand.ts",
+      "packages/emails/src/calendar_invite.ts",
+      "packages/emails/src/change_email.ts",
+      "packages/emails/src/delete_account.ts",
+      "packages/emails/src/event_changes.ts",
+      "packages/emails/src/index.ts",
+      "packages/emails/src/password_reset.ts",
+      "packages/emails/src/sign_in_code.ts",
+      "packages/emails/src/verify_email.ts",
+      "packages/provider-caldav/src/create.ts",
+      "packages/provider-caldav/src/dav-privileges.ts",
+      "packages/provider-caldav/src/dav-properties.ts",
+      "packages/provider-caldav/src/index.ts",
+      "packages/provider-caldav/src/native-etag.ts",
+      "packages/provider-caldav/src/native-event.ts",
+      "packages/provider-caldav/src/network-origin.ts",
+      "packages/provider-caldav/src/network.ts",
+      "packages/provider-caldav/src/types.ts",
+      "packages/provider-google/src/etag.ts",
+      "packages/provider-google/src/index.ts",
+      "packages/provider-google/src/task-create-types.ts",
+      "packages/provider-google/src/task-create.test.ts",
+      "packages/provider-google/src/task-create.ts",
+      "packages/provider-google/src/task-delete-types.ts",
+      "packages/provider-google/src/task-delete.test.ts",
+      "packages/provider-google/src/task-delete.ts",
+      "packages/provider-google/src/task-projection.ts",
+      "packages/provider-google/src/task-transport.ts",
+      "packages/provider-google/src/task-types.ts",
+      "packages/provider-google/src/task-update.test.ts",
+      "packages/provider-google/src/task-update.ts",
+      "packages/provider-google/src/types.ts",
+      "packages/provider-microsoft/src/create.ts",
+      "packages/provider-microsoft/src/index.ts",
+      "packages/provider-microsoft/src/types.ts",
+      "packages/sync-codec/src/caldav_resource.ts",
+      "packages/sync-codec/src/index.ts",
+      "packages/sync-codec/src/native_plan.ts",
+      "packages/sync-codec/src/projection.ts",
+      "packages/sync-codec/src/recurrence.ts",
+      "packages/sync-codec/src/recurrence_dates.ts",
+      "packages/sync-runtime/src/attempt.ts",
+      "packages/sync-runtime/src/behavior/google-task-create-cli.ts",
+      "packages/sync-runtime/src/behavior/google-task-create-harness.test.ts",
+      "packages/sync-runtime/src/behavior/google-task-create.json",
+      "packages/sync-runtime/src/behavior/google-task-create.ts",
+      "packages/sync-runtime/src/behavior/google-task-delete-cli.ts",
+      "packages/sync-runtime/src/behavior/google-task-delete-harness.test.ts",
+      "packages/sync-runtime/src/behavior/google-task-delete.json",
+      "packages/sync-runtime/src/behavior/google-task-delete.ts",
+      "packages/sync-runtime/src/behavior/google-task-update-cli.ts",
+      "packages/sync-runtime/src/behavior/google-task-update-harness.test.ts",
+      "packages/sync-runtime/src/behavior/google-task-update.json",
+      "packages/sync-runtime/src/behavior/google-task-update.ts",
+      "packages/sync-runtime/src/caldav-create-ports.ts",
+      "packages/sync-runtime/src/caldav-create-trace.ts",
+      "packages/sync-runtime/src/caldav-delete-ports.ts",
+      "packages/sync-runtime/src/caldav-delete-trace.ts",
+      "packages/sync-runtime/src/caldav-personal-create.ts",
+      "packages/sync-runtime/src/caldav-personal-delete.ts",
+      "packages/sync-runtime/src/create-ports.ts",
+      "packages/sync-runtime/src/create-trace.ts",
+      "packages/sync-runtime/src/delete-ports.ts",
+      "packages/sync-runtime/src/delete-trace.ts",
+      "packages/sync-runtime/src/google-personal-create.ts",
+      "packages/sync-runtime/src/google-personal-delete.ts",
+      "packages/sync-runtime/src/google-personal-update.ts",
+      "packages/sync-runtime/src/google-task-address-ports.ts",
+      "packages/sync-runtime/src/google-task-causal.test.ts",
+      "packages/sync-runtime/src/google-task-create-ports.ts",
+      "packages/sync-runtime/src/google-task-create.test.ts",
+      "packages/sync-runtime/src/google-task-create.ts",
+      "packages/sync-runtime/src/google-task-delete-ports.ts",
+      "packages/sync-runtime/src/google-task-delete.test.ts",
+      "packages/sync-runtime/src/google-task-delete.ts",
+      "packages/sync-runtime/src/google-task-update-ports.ts",
+      "packages/sync-runtime/src/google-task-update.test.ts",
+      "packages/sync-runtime/src/google-task-update.ts",
+      "packages/sync-runtime/src/index.ts",
+      "packages/sync-runtime/src/microsoft-create-ports.ts",
+      "packages/sync-runtime/src/microsoft-create-trace.ts",
+      "packages/sync-runtime/src/microsoft-delete-ports.ts",
+      "packages/sync-runtime/src/microsoft-delete-trace.ts",
+      "packages/sync-runtime/src/microsoft-personal-create.ts",
+      "packages/sync-runtime/src/microsoft-personal-delete.ts",
+      "packages/sync-runtime/src/ports.ts",
+      "packages/sync-runtime/src/task-address.ts",
+      "packages/sync-runtime/src/task-compatibility-data.ts",
+      "packages/sync-runtime/src/task-compatibility-ports.ts",
+      "packages/sync-runtime/src/task-compatibility.test.ts",
+      "packages/sync-runtime/src/task-compatibility.ts",
+      "packages/sync-runtime/src/task-data.ts",
+      "packages/sync-runtime/src/task-native-data.ts",
+      "packages/sync-runtime/src/task-projection.ts",
+      "packages/sync-runtime/src/trace.ts",
+      "packages/types/src/announcement.ts",
+      "packages/types/src/availability.ts",
+      "packages/types/src/calendar.ts",
+      "packages/types/src/errors.ts",
+      "packages/types/src/event-scope.ts",
+      "packages/types/src/event.ts",
+      "packages/types/src/event_delivery.ts",
+      "packages/types/src/event_time.ts",
+      "packages/types/src/federation.ts",
+      "packages/types/src/google.ts",
+      "packages/types/src/index.ts",
+      "packages/types/src/invite.ts",
+      "packages/types/src/outlook-move.ts",
+      "packages/types/src/pages.ts",
+      "packages/types/src/permissions.ts",
+      "packages/types/src/provider-event-state.ts",
+      "packages/types/src/provider-organizer.ts",
+      "packages/types/src/provider-reminders.ts",
+      "packages/types/src/provider-rsvp.ts",
+      "packages/types/src/reminder.ts",
+      "packages/types/src/reminder_options.ts",
+      "packages/types/src/settings.ts",
+      "packages/types/src/sync_operation.ts",
+      "packages/types/src/sync_protocol.ts",
+      "packages/types/src/task.ts",
+      "packages/types/src/user.ts",
+      "packages/types/src/version.ts",
+      "packages/types/src/wire.ts",
+      "packages/types/src/wire_contract.ts"
+    ]
+  },
+  "approvedCurrentFrozenContextByteEqual": true,
+  "contextChangesAfterBuild": [],
+  "runtime": {
+    "user": "node",
+    "sourceBindMounts": 0,
+    "mounts": []
+  },
+  "startup": {
+    "port": 51439,
+    "environment": "test",
+    "deploymentMode": "single-replica",
+    "logLevel": "info",
+    "externalSyncIntervalMin": 0,
+    "externalDeliveryRecoveryMode": "disabled",
+    "syncOperationV1EncoderEnabled": true,
+    "syncOperationProfileVersion": "sync-profile-v1",
+    "timestamp": "2026-10-26T12:24:48.230Z",
+    "level": "info",
+    "message": "server.started"
+  },
+  "emptyDatabaseBeforeBoot": {
+    "tables": 0
+  },
+  "emptyDatabaseMigrations": {
+    "applied": 86,
+    "sourceJournalEntries": 86,
+    "lastTag": "0085_graph_read_coverage",
+    "lastHashMatchesSource": true
+  },
+  "effectiveConfiguration": {
+    "encoder": true,
+    "encoderOverridePresent": false,
+    "environment": "test",
+    "nodeEnvironment": "production",
+    "externalSyncIntervalMin": 0,
+    "deliveryRecoveryMode": "disabled",
+    "smtpConfigured": false,
+    "pushConfigured": false,
+    "workspaceEnvPresent": false
+  },
+  "httpChecks": {
+    "status": "passed",
+    "checks": 17,
+    "categories": {
+      "publicHealthAndCapabilities": 2,
+      "unauthenticatedAccessDenied": 1,
+      "realSignUpLoginAndCookieSession": 3,
+      "authenticatedCanonicalCalendarAndEventChecks": 11
+    },
+    "results": [
+      {
+        "label": "health",
+        "status": 200,
+        "category": "publicHealthAndCapabilities"
+      },
+      {
+        "label": "public capabilities",
+        "status": 200,
+        "category": "publicHealthAndCapabilities"
+      },
+      {
+        "label": "unauthenticated access denied",
+        "status": 401,
+        "category": "unauthenticatedAccessDenied"
+      },
+      {
+        "label": "real signup",
+        "status": 200,
+        "category": "realSignUpLoginAndCookieSession"
+      },
+      {
+        "label": "real password login",
+        "status": 200,
+        "category": "realSignUpLoginAndCookieSession"
+      },
+      {
+        "label": "real cookie session",
+        "status": 200,
+        "category": "realSignUpLoginAndCookieSession"
+      },
+      {
+        "label": "calendar create",
+        "status": 201,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "calendar list",
+        "status": 200,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "calendar detail",
+        "status": 200,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "event create",
+        "status": 201,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "idempotent exact create replay",
+        "status": 202,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "event read",
+        "status": 200,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "event revision CAS",
+        "status": 200,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "stale event revision refusal",
+        "status": 409,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "event readback",
+        "status": 200,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "event delete",
+        "status": 200,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      },
+      {
+        "label": "calendar delete",
+        "status": 200,
+        "category": "authenticatedCanonicalCalendarAndEventChecks"
+      }
+    ],
+    "auth": {
+      "syntheticEmailDomain": "example.invalid",
+      "signup": true,
+      "passwordLogin": true,
+      "cookieSession": true,
+      "authBypass": false,
+      "dbSeedChanges": false
+    },
+    "providerScope": {
+      "configuredExternalAccounts": 0,
+      "liveProviderRequests": false,
+      "externalCaldavCreateNotExercised": true
+    }
+  },
+  "providerIsolation": {
+    "externalAccounts": 0,
+    "caldavAccounts": 0,
+    "externalCalendars": 0,
+    "eventOutboxRows": 0,
+    "taskOutboxRows": 0
+  },
+  "installedCorpus": {
+    "schemaVersion": 1,
+    "createdAt": "2026-10-26T12:24:46.220374+00:00",
+    "scope": "Fifteen separate installed-source integration containers; owned fixture HTTP only, no live endpoints",
+    "status": "passed",
+    "suites": [
+      {
+        "file": "apps/api/src/sync/task_compatibility_delivery.integration.test.ts",
+        "numberedCases": 33,
+        "legacySuiteGate": false,
+        "exitCode": 0,
+        "log": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-task_compatibility_delivery.integration.test.log",
+        "ownedContainerAbsentVerified": true
+      },
+      {
+        "file": "apps/api/src/task_compatibility.integration.test.ts",
+        "numberedCases": null,
+        "legacySuiteGate": true,
+        "exitCode": 0,
+        "log": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-task_compatibility.integration.test.log",
+        "ownedContainerAbsentVerified": true
+      },
+      {
+        "file": "apps/api/src/sync/pinned_transport.integration.test.ts",
+        "numberedCases": null,
+        "legacySuiteGate": true,
+        "exitCode": 0,
+        "log": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-pinned_transport.integration.test.log",
+        "ownedContainerAbsentVerified": true
+      },
+      {
+        "file": "apps/api/src/sync/microsoft_task_read_completeness.integration.test.ts",
+        "numberedCases": 42,
+        "legacySuiteGate": false,
+        "exitCode": 0,
+        "log": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-microsoft_task_read_completeness.integration.test.log",
+        "ownedContainerAbsentVerified": true
+      },
+      {
+        "file": "packages/db/src/queries/task-causal.integration.test.ts",
+        "numberedCases": 71,
+        "legacySuiteGate": false,
+        "exitCode": 0,
+        "log": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-task-causal.integration.test.log",
+        "ownedContainerAbsentVerified": true,
+        "poolCleanup": {
+          "ownedPoolsClosed": 2,
+          "remainingNonceDatabaseSessions": 0,
+          "dropDatabaseUsedForce": false,
+          "status": "passed"
+        }
+      },
+      {
+        "file": "apps/api/src/sync/google_task_causal_delivery.integration.test.ts",
+        "numberedCases": 83,
+        "legacySuiteGate": false,
+        "exitCode": 0,
+        "log": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-google_task_causal_delivery.integration.test.log",
+        "ownedContainerAbsentVerified": true,
+        "poolCleanup": {
+          "ownedPoolsClosed": 1,
+          "remainingNonceDatabaseSessions": 0,
+          "dropDatabaseUsedForce": false,
+          "status": "passed"
+        }
+      },
+      {
+        "file": "apps/api/src/sync/google_shared_task_create_delivery.integration.test.ts",
+        "numberedCases": 62,
+        "legacySuiteGate": false,
+        "exitCode": 0,
+        "log": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-google_shared_task_create_delivery.integration.test.log",
+        "ownedContainerAbsentVerified": true,
+        "poolCleanup": {
+          "ownedPoolsClosed": 2,
+          "remainingNonceDatabaseSessions": 0,
+          "dropDatabaseUsedForce": false,
+          "status": "passed"
+        }
+      },
+      {
+        "file": "apps/api/src/sync/google_shared_task_delete_delivery.integration.test.ts",
+        "numberedCases": 46,
+        "legacySuiteGate": false,
+        "exitCode": 0,
+        "log": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-google_shared_task_delete_delivery.integration.test.log",
+        "ownedContainerAbsentVerified": true,
+        "poolCleanup": {
+          "ownedPoolsClosed": 2,
+          "remainingNonceDatabaseSessions": 0,
+          "dropDatabaseUsedForce": false,
+          "status": "passed"
+        }
+      },
+      {
+        "file": "apps/api/src/sync/google_shared_task_update_delivery.integration.test.ts",
+        "numberedCases": 29,
+        "legacySuiteGate": false,
+        "exitCode": 0,
+        "log": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-google_shared_task_update_delivery.integration.test.log",
+        "ownedContainerAbsentVerified": true,
+        "poolCleanup": {
+          "ownedPoolsClosed": 2,
+          "remainingNonceDatabaseSessions": 0,
+          "dropDatabaseUsedForce": false,
+          "status": "passed"
+        }
+      },
+      {
+        "file": "packages/db/src/queries/task-ack.integration.test.ts",
+        "numberedCases": 15,
+        "legacySuiteGate": false,
+        "exitCode": 0,
+        "log": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-task-ack.integration.test.log",
+        "ownedContainerAbsentVerified": true
+      },
+      {
+        "file": "apps/api/src/sync/task_ack_delivery.integration.test.ts",
+        "numberedCases": 4,
+        "legacySuiteGate": false,
+        "exitCode": 0,
+        "log": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-task_ack_delivery.integration.test.log",
+        "ownedContainerAbsentVerified": true,
+        "poolCleanup": {
+          "ownedPoolsClosed": 2,
+          "remainingNonceDatabaseSessions": 0,
+          "dropDatabaseUsedForce": false,
+          "status": "passed"
+        }
+      },
+      {
+        "file": "packages/db/src/queries/tasks.integration.test.ts",
+        "numberedCases": null,
+        "legacySuiteGate": true,
+        "exitCode": 0,
+        "log": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-tasks.integration.test.log",
+        "ownedContainerAbsentVerified": true
+      },
+      {
+        "file": "apps/api/src/sync/shared_tasks.integration.test.ts",
+        "numberedCases": null,
+        "legacySuiteGate": true,
+        "exitCode": 0,
+        "log": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-shared_tasks.integration.test.log",
+        "ownedContainerAbsentVerified": true
+      },
+      {
+        "file": "apps/api/src/sync/task_delivery.integration.test.ts",
+        "numberedCases": null,
+        "legacySuiteGate": true,
+        "exitCode": 0,
+        "log": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-task_delivery.integration.test.log",
+        "ownedContainerAbsentVerified": true
+      },
+      {
+        "file": "apps/api/src/sync/optional_tasks.integration.test.ts",
+        "numberedCases": null,
+        "legacySuiteGate": true,
+        "exitCode": 0,
+        "log": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-optional_tasks.integration.test.log",
+        "ownedContainerAbsentVerified": true
+      }
+    ],
+    "database": "api_compat_corpus_20261026122446_1fe1ce",
+    "migrateLog": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-migrate.log",
+    "hashParity": {
+      "production": {
+        "checkedFiles": 458,
+        "mismatches": [],
+        "scope": "Production/support classification; explicit behavior-helper overlap is counted once in the unique total."
+      },
+      "tests": {
+        "checkedFiles": 39,
+        "mismatches": []
+      },
+      "actualProductionFiles": 456,
+      "productionSupportFiles": 458,
+      "testBehaviorFiles": 39,
+      "overlapFiles": [
+        "apps/api/src/sync/behavior/task-delivery-cli.ts",
+        "apps/api/src/sync/behavior/task-delivery-driver.ts"
+      ],
+      "uniqueCheckedFiles": 495,
+      "checkedSources": [
+        "apps/api/src/event_notifications.ts",
+        "apps/api/src/event_permissions.ts",
+        "apps/api/src/event_time_activation.ts",
+        "apps/api/src/express.d.ts",
+        "apps/api/src/federation_connections.ts",
+        "apps/api/src/federation_origin.ts",
+        "apps/api/src/federation_peer.ts",
+        "apps/api/src/federation_stream.ts",
+        "apps/api/src/federation_tokens.ts",
+        "apps/api/src/handlers/announcements.ts",
+        "apps/api/src/handlers/availability.ts",
+        "apps/api/src/handlers/caldav.ts",
+        "apps/api/src/handlers/calendar_pages.ts",
+        "apps/api/src/handlers/calendars.ts",
+        "apps/api/src/handlers/connections.ts",
+        "apps/api/src/handlers/event_commit.ts",
+        "apps/api/src/handlers/event_delivery.ts",
+        "apps/api/src/handlers/event_mutation.ts",
+        "apps/api/src/handlers/events.ts",
+        "apps/api/src/handlers/federation.ts",
+        "apps/api/src/handlers/federation_proxy.ts",
+        "apps/api/src/handlers/google.ts",
+        "apps/api/src/handlers/invites.ts",
+        "apps/api/src/handlers/outlook_moves.ts",
+        "apps/api/src/handlers/pages.ts",
+        "apps/api/src/handlers/push.ts",
+        "apps/api/src/handlers/reminders.ts",
+        "apps/api/src/handlers/server.ts",
+        "apps/api/src/handlers/settings.ts",
+        "apps/api/src/handlers/stream.ts",
+        "apps/api/src/handlers/task_delivery.ts",
+        "apps/api/src/handlers/tasks.ts",
+        "apps/api/src/handlers/users.ts",
+        "apps/api/src/index.ts",
+        "apps/api/src/invite_preview.ts",
+        "apps/api/src/media_storage.ts",
+        "apps/api/src/metrics.ts",
+        "apps/api/src/middleware/error_handler.ts",
+        "apps/api/src/middleware/http_error.ts",
+        "apps/api/src/middleware/log_handler.ts",
+        "apps/api/src/middleware/proxy.ts",
+        "apps/api/src/middleware/rate_limit.ts",
+        "apps/api/src/middleware/require_admin.ts",
+        "apps/api/src/middleware/require_auth.ts",
+        "apps/api/src/middleware/require_client_version.ts",
+        "apps/api/src/notification_dispatch.ts",
+        "apps/api/src/permissions.ts",
+        "apps/api/src/product_metrics.ts",
+        "apps/api/src/reminder_dispatch.ts",
+        "apps/api/src/request_validation.ts",
+        "apps/api/src/scheduling.ts",
+        "apps/api/src/singleton.ts",
+        "apps/api/src/sync/adapter.ts",
+        "apps/api/src/sync/adapters/caldav.ts",
+        "apps/api/src/sync/adapters/caldav_alarms.ts",
+        "apps/api/src/sync/adapters/caldav_event_ical.ts",
+        "apps/api/src/sync/adapters/caldav_organizer.ts",
+        "apps/api/src/sync/adapters/caldav_organizer_delivery.ts",
+        "apps/api/src/sync/adapters/caldav_organizer_time.ts",
+        "apps/api/src/sync/adapters/caldav_recurrence_dates.ts",
+        "apps/api/src/sync/adapters/caldav_rsvp.ts",
+        "apps/api/src/sync/adapters/caldav_rsvp_delivery.ts",
+        "apps/api/src/sync/adapters/caldav_series.ts",
+        "apps/api/src/sync/adapters/caldav_time.ts",
+        "apps/api/src/sync/adapters/google.ts",
+        "apps/api/src/sync/adapters/google_freebusy.ts",
+        "apps/api/src/sync/adapters/google_occurrence.ts",
+        "apps/api/src/sync/adapters/google_organizer.ts",
+        "apps/api/src/sync/adapters/google_organizer_delivery.ts",
+        "apps/api/src/sync/adapters/google_provider_bridge.ts",
+        "apps/api/src/sync/adapters/google_reminder_instance.ts",
+        "apps/api/src/sync/adapters/google_rsvp.ts",
+        "apps/api/src/sync/adapters/google_rsvp_delivery.ts",
+        "apps/api/src/sync/adapters/google_rsvp_projection.ts",
+        "apps/api/src/sync/adapters/google_task_provider_bridge.ts",
+        "apps/api/src/sync/adapters/google_time.ts",
+        "apps/api/src/sync/adapters/icloud_organizer_creation.ts",
+        "apps/api/src/sync/adapters/microsoft.ts",
+        "apps/api/src/sync/adapters/microsoft_calendar_discovery_error.ts",
+        "apps/api/src/sync/adapters/microsoft_discovery_inventory.ts",
+        "apps/api/src/sync/adapters/microsoft_event_content.ts",
+        "apps/api/src/sync/adapters/microsoft_identity.ts",
+        "apps/api/src/sync/adapters/microsoft_meeting_cancel.ts",
+        "apps/api/src/sync/adapters/microsoft_occurrence_content.ts",
+        "apps/api/src/sync/adapters/microsoft_organizer.ts",
+        "apps/api/src/sync/adapters/microsoft_recurrence.ts",
+        "apps/api/src/sync/adapters/microsoft_rsvp.ts",
+        "apps/api/src/sync/adapters/microsoft_rsvp_delivery.ts",
+        "apps/api/src/sync/adapters/microsoft_rsvp_series.ts",
+        "apps/api/src/sync/adapters/microsoft_series_content.ts",
+        "apps/api/src/sync/adapters/microsoft_series_create.ts",
+        "apps/api/src/sync/adapters/microsoft_series_delete.ts",
+        "apps/api/src/sync/adapters/microsoft_series_delivery.ts",
+        "apps/api/src/sync/adapters/microsoft_series_family.ts",
+        "apps/api/src/sync/adapters/microsoft_series_footprint.ts",
+        "apps/api/src/sync/adapters/microsoft_task_list_discovery_error.ts",
+        "apps/api/src/sync/adapters/microsoft_task_read_error.ts",
+        "apps/api/src/sync/adapters/microsoft_task_read_page.ts",
+        "apps/api/src/sync/adapters/microsoft_time.ts",
+        "apps/api/src/sync/adapters/microsoft_time_zone.ts",
+        "apps/api/src/sync/adapters/provider_event_state.ts",
+        "apps/api/src/sync/background.ts",
+        "apps/api/src/sync/behavior/task-delivery-cli.ts",
+        "apps/api/src/sync/behavior/task-delivery-driver.ts",
+        "apps/api/src/sync/behavior/task-delivery-harness.test.ts",
+        "apps/api/src/sync/behavior/task-delivery.json",
+        "apps/api/src/sync/caldav_alarms.ts",
+        "apps/api/src/sync/caldav_client.ts",
+        "apps/api/src/sync/caldav_personal_content.ts",
+        "apps/api/src/sync/caldav_privileges.ts",
+        "apps/api/src/sync/caldav_properties.ts",
+        "apps/api/src/sync/caldav_scheduling.ts",
+        "apps/api/src/sync/caldav_scope.ts",
+        "apps/api/src/sync/caldav_shared_create_delivery.ts",
+        "apps/api/src/sync/caldav_shared_delete_delivery.ts",
+        "apps/api/src/sync/crypto.ts",
+        "apps/api/src/sync/delivery_policy.ts",
+        "apps/api/src/sync/engine.ts",
+        "apps/api/src/sync/errors.ts",
+        "apps/api/src/sync/event_create_identity.ts",
+        "apps/api/src/sync/event_delivery.ts",
+        "apps/api/src/sync/event_resolution.ts",
+        "apps/api/src/sync/event_write.ts",
+        "apps/api/src/sync/google_availability.ts",
+        "apps/api/src/sync/google_scope.ts",
+        "apps/api/src/sync/google_shared_create_delivery.ts",
+        "apps/api/src/sync/google_shared_delete_delivery.ts",
+        "apps/api/src/sync/google_shared_delivery.ts",
+        "apps/api/src/sync/google_shared_task_create_delivery.integration.test.ts",
+        "apps/api/src/sync/google_shared_task_create_delivery.ts",
+        "apps/api/src/sync/google_shared_task_delete_delivery.integration.test.ts",
+        "apps/api/src/sync/google_shared_task_delete_delivery.ts",
+        "apps/api/src/sync/google_shared_task_update_delivery.integration.test.ts",
+        "apps/api/src/sync/google_shared_task_update_delivery.ts",
+        "apps/api/src/sync/google_task_causal_delivery.integration.test.ts",
+        "apps/api/src/sync/graph_create_adoption.ts",
+        "apps/api/src/sync/graph_series_create.ts",
+        "apps/api/src/sync/microsoft_shared_create_delivery.ts",
+        "apps/api/src/sync/microsoft_shared_delete_delivery.ts",
+        "apps/api/src/sync/microsoft_task_read_completeness.integration.test.ts",
+        "apps/api/src/sync/oauth.ts",
+        "apps/api/src/sync/optional_tasks.integration.test.ts",
+        "apps/api/src/sync/orchestrator.ts",
+        "apps/api/src/sync/outlook_moves.ts",
+        "apps/api/src/sync/pinned_transport.integration.test.ts",
+        "apps/api/src/sync/pinned_write.ts",
+        "apps/api/src/sync/provider_http_metrics.ts",
+        "apps/api/src/sync/provider_organizer.ts",
+        "apps/api/src/sync/provider_profiles.ts",
+        "apps/api/src/sync/provider_reminders.ts",
+        "apps/api/src/sync/provider_rsvp.ts",
+        "apps/api/src/sync/shared_tasks.integration.test.ts",
+        "apps/api/src/sync/task_ack_delivery.integration.test.ts",
+        "apps/api/src/sync/task_compatibility_delivery.integration.test.ts",
+        "apps/api/src/sync/task_delivery.integration.test.ts",
+        "apps/api/src/sync/task_delivery.ts",
+        "apps/api/src/sync/task_write.ts",
+        "apps/api/src/task_compatibility.integration.test.ts",
+        "apps/api/src/task_routes.ts",
+        "apps/api/src/tokenCrypto.ts",
+        "packages/auth/src/index.ts",
+        "packages/auth/src/lib/apple_secret.ts",
+        "packages/auth/src/lib/auth.ts",
+        "packages/auth/src/lib/calendar-aware-adapter.ts",
+        "packages/auth/src/lib/verified_landing.ts",
+        "packages/calendar/src/caldav-alarm-scope.ts",
+        "packages/calendar/src/caldav-series-zone.ts",
+        "packages/calendar/src/datetime.ts",
+        "packages/calendar/src/event-delivery.ts",
+        "packages/calendar/src/exdate-restoration.ts",
+        "packages/calendar/src/finite-series.ts",
+        "packages/calendar/src/iana-time-zones.ts",
+        "packages/calendar/src/index.ts",
+        "packages/calendar/src/interfaces.ts",
+        "packages/calendar/src/layout/all-day-spans.ts",
+        "packages/calendar/src/layout/day-buckets.ts",
+        "packages/calendar/src/layout/day-segments.ts",
+        "packages/calendar/src/layout/index.ts",
+        "packages/calendar/src/layout/month-grid.ts",
+        "packages/calendar/src/layout/overlaps.ts",
+        "packages/calendar/src/layout/ranges.ts",
+        "packages/calendar/src/note-links.ts",
+        "packages/calendar/src/outlook-cancellation.ts",
+        "packages/calendar/src/outlook-time-zone.ts",
+        "packages/calendar/src/outlook-windows-zones.ts",
+        "packages/calendar/src/provider-event-details.ts",
+        "packages/calendar/src/provider-organizer-draft.ts",
+        "packages/calendar/src/provider-reminder-draft.ts",
+        "packages/calendar/src/provider-rsvp-draft.ts",
+        "packages/calendar/src/rdate-edit.ts",
+        "packages/calendar/src/recurrence-edit.ts",
+        "packages/calendar/src/recurrence-validation.ts",
+        "packages/calendar/src/recurrence.ts",
+        "packages/calendar/src/reminders.ts",
+        "packages/calendar/src/rrule-editor.ts",
+        "packages/calendar/src/scope-plan.ts",
+        "packages/calendar/src/scope-request.ts",
+        "packages/calendar/src/series-time-edit.ts",
+        "packages/calendar/src/sync-coverage.ts",
+        "packages/calendar/src/task-calendar.ts",
+        "packages/calendar/src/task-delivery.ts",
+        "packages/calendar/src/task-fork-attempts.ts",
+        "packages/calendar/src/task-sharing.ts",
+        "packages/calendar/src/time-draft.ts",
+        "packages/calendar/src/time-edit.ts",
+        "packages/calendar/src/time-expansion.ts",
+        "packages/calendar/src/time-zone-options.ts",
+        "packages/calendar/src/time-zone.ts",
+        "packages/config/src/index.ts",
+        "packages/config/src/logger.ts",
+        "packages/db/drizzle.config.ts",
+        "packages/db/drizzle/0000_square_dexter_bennett.sql",
+        "packages/db/drizzle/0001_funny_nekra.sql",
+        "packages/db/drizzle/0002_flaky_natasha_romanoff.sql",
+        "packages/db/drizzle/0003_medical_sebastian_shaw.sql",
+        "packages/db/drizzle/0004_legal_maestro.sql",
+        "packages/db/drizzle/0005_green_vin_gonzales.sql",
+        "packages/db/drizzle/0006_mushy_mac_gargan.sql",
+        "packages/db/drizzle/0007_windy_doorman.sql",
+        "packages/db/drizzle/0008_broken_penance.sql",
+        "packages/db/drizzle/0009_neat_meteorite.sql",
+        "packages/db/drizzle/0010_high_bloodstorm.sql",
+        "packages/db/drizzle/0011_boring_mentallo.sql",
+        "packages/db/drizzle/0012_late_anthem.sql",
+        "packages/db/drizzle/0013_zippy_baron_zemo.sql",
+        "packages/db/drizzle/0014_robust_sister_grimm.sql",
+        "packages/db/drizzle/0015_deep_longshot.sql",
+        "packages/db/drizzle/0016_supreme_puppet_master.sql",
+        "packages/db/drizzle/0017_fine_brood.sql",
+        "packages/db/drizzle/0018_cute_blue_shield.sql",
+        "packages/db/drizzle/0019_lean_mattie_franklin.sql",
+        "packages/db/drizzle/0020_opposite_ulik.sql",
+        "packages/db/drizzle/0021_lumpy_supreme_intelligence.sql",
+        "packages/db/drizzle/0022_long_demogoblin.sql",
+        "packages/db/drizzle/0023_time_date_format.sql",
+        "packages/db/drizzle/0024_adorable_king_bedlam.sql",
+        "packages/db/drizzle/0025_smiling_preak.sql",
+        "packages/db/drizzle/0026_old_kingpin.sql",
+        "packages/db/drizzle/0027_mean_santa_claus.sql",
+        "packages/db/drizzle/0028_silky_molten_man.sql",
+        "packages/db/drizzle/0029_parched_leader.sql",
+        "packages/db/drizzle/0030_google_sync_reconnect_state.sql",
+        "packages/db/drizzle/0031_rich_micromacro.sql",
+        "packages/db/drizzle/0032_happy_whiplash.sql",
+        "packages/db/drizzle/0033_busy_thunderball.sql",
+        "packages/db/drizzle/0034_steady_garia.sql",
+        "packages/db/drizzle/0035_add_pages.sql",
+        "packages/db/drizzle/0036_cynical_rhodey.sql",
+        "packages/db/drizzle/0037_fat_major_mapleleaf.sql",
+        "packages/db/drizzle/0038_productive_baron_zemo.sql",
+        "packages/db/drizzle/0039_numerous_jetstream.sql",
+        "packages/db/drizzle/0040_robust_sleepwalker.sql",
+        "packages/db/drizzle/0041_shocking_the_fury.sql",
+        "packages/db/drizzle/0042_fearless_mentor.sql",
+        "packages/db/drizzle/0043_flippant_wilson_fisk.sql",
+        "packages/db/drizzle/0044_ambiguous_red_wolf.sql",
+        "packages/db/drizzle/0045_magical_lord_tyger.sql",
+        "packages/db/drizzle/0046_push_subscriptions.sql",
+        "packages/db/drizzle/0047_notification_emails.sql",
+        "packages/db/drizzle/0048_pending_notifications.sql",
+        "packages/db/drizzle/0049_drop_show_kanji.sql",
+        "packages/db/drizzle/0050_needy_matthew_murdock.sql",
+        "packages/db/drizzle/0051_early_lester.sql",
+        "packages/db/drizzle/0052_chubby_hitman.sql",
+        "packages/db/drizzle/0053_release_0_1_7_announcement.sql",
+        "packages/db/drizzle/0054_cold_revanche.sql",
+        "packages/db/drizzle/0055_rich_zemo.sql",
+        "packages/db/drizzle/0056_provider_task_scopes.sql",
+        "packages/db/drizzle/0057_remove_scheduler_announcement.sql",
+        "packages/db/drizzle/0058_classy_captain_america.sql",
+        "packages/db/drizzle/0059_event_outbox.sql",
+        "packages/db/drizzle/0060_event_outbox_recovery.sql",
+        "packages/db/drizzle/0061_external_event_tombstones.sql",
+        "packages/db/drizzle/0062_event_delivery_inbox.sql",
+        "packages/db/drizzle/0063_event_time_identity.sql",
+        "packages/db/drizzle/0064_event_scope_operations.sql",
+        "packages/db/drizzle/0065_deferred_occurrence_identity.sql",
+        "packages/db/drizzle/0066_provider_event_state.sql",
+        "packages/db/drizzle/0067_provider_state_observation.sql",
+        "packages/db/drizzle/0068_caldav_series_deletion.sql",
+        "packages/db/drizzle/0069_caldav_truncated_versions.sql",
+        "packages/db/drizzle/0070_caldav_split_versions.sql",
+        "packages/db/drizzle/0071_brown_snowbird.sql",
+        "packages/db/drizzle/0072_broad_lilandra.sql",
+        "packages/db/drizzle/0073_dapper_rattler.sql",
+        "packages/db/drizzle/0074_google_availability.sql",
+        "packages/db/drizzle/0075_provider_read_retirement.sql",
+        "packages/db/drizzle/0076_task_read_retirement.sql",
+        "packages/db/drizzle/0077_shallow_young_avengers.sql",
+        "packages/db/drizzle/0078_release_0_2_0_announcement.sql",
+        "packages/db/drizzle/0079_outlook_occurrence_moves.sql",
+        "packages/db/drizzle/0080_shared_tasks.sql",
+        "packages/db/drizzle/0081_task_projection_lookup.sql",
+        "packages/db/drizzle/0082_task_fork_reconciliation.sql",
+        "packages/db/drizzle/0083_task_fork_outcome.sql",
+        "packages/db/drizzle/0084_release_0_2_2_announcement.sql",
+        "packages/db/drizzle/0085_graph_read_coverage.sql",
+        "packages/db/src/index.ts",
+        "packages/db/src/migrate.ts",
+        "packages/db/src/queries/announcements.ts",
+        "packages/db/src/queries/availability.ts",
+        "packages/db/src/queries/caldav-access.ts",
+        "packages/db/src/queries/caldav-alarms.ts",
+        "packages/db/src/queries/caldav-series-scope.ts",
+        "packages/db/src/queries/caldav-split-delivery.ts",
+        "packages/db/src/queries/caldav-split-future.ts",
+        "packages/db/src/queries/caldav-split-resolution.ts",
+        "packages/db/src/queries/caldav-split.ts",
+        "packages/db/src/queries/caldav.ts",
+        "packages/db/src/queries/calendar-lifecycle.ts",
+        "packages/db/src/queries/calendars.ts",
+        "packages/db/src/queries/event-create-receipt.ts",
+        "packages/db/src/queries/event-delivery-inbox.ts",
+        "packages/db/src/queries/event-delivery-resolution.ts",
+        "packages/db/src/queries/event-delivery-retry.ts",
+        "packages/db/src/queries/event-delivery-status.ts",
+        "packages/db/src/queries/event-outbox-deletions.ts",
+        "packages/db/src/queries/event-outbox-delivery.ts",
+        "packages/db/src/queries/event-outbox-fanout.ts",
+        "packages/db/src/queries/event-outbox-projection.ts",
+        "packages/db/src/queries/event-outbox-pull.ts",
+        "packages/db/src/queries/event-outbox.ts",
+        "packages/db/src/queries/event-scope.ts",
+        "packages/db/src/queries/event-time-create.ts",
+        "packages/db/src/queries/event-time-edit.ts",
+        "packages/db/src/queries/event-time-write.ts",
+        "packages/db/src/queries/events.ts",
+        "packages/db/src/queries/external-access-redaction.ts",
+        "packages/db/src/queries/external-access.ts",
+        "packages/db/src/queries/external.ts",
+        "packages/db/src/queries/federation.ts",
+        "packages/db/src/queries/google-mirror-removal.ts",
+        "packages/db/src/queries/google-occurrence-scope.ts",
+        "packages/db/src/queries/google-personal-read-recovery.ts",
+        "packages/db/src/queries/graph-family.ts",
+        "packages/db/src/queries/graph-meeting-cancel.ts",
+        "packages/db/src/queries/graph-occurrence-content.ts",
+        "packages/db/src/queries/graph-rsvp-occurrence.ts",
+        "packages/db/src/queries/graph-series-create.ts",
+        "packages/db/src/queries/graph-series-delete.ts",
+        "packages/db/src/queries/graph-series-time.ts",
+        "packages/db/src/queries/invites.ts",
+        "packages/db/src/queries/microsoft-access.ts",
+        "packages/db/src/queries/notifications.ts",
+        "packages/db/src/queries/oauth.ts",
+        "packages/db/src/queries/operation-admission.ts",
+        "packages/db/src/queries/outbox-causal-retirement.ts",
+        "packages/db/src/queries/outbox-operation.ts",
+        "packages/db/src/queries/outlook-move-plan.ts",
+        "packages/db/src/queries/outlook-moves.ts",
+        "packages/db/src/queries/pages.ts",
+        "packages/db/src/queries/provider-event-state.ts",
+        "packages/db/src/queries/provider-organizer.ts",
+        "packages/db/src/queries/provider-reminder-instance.ts",
+        "packages/db/src/queries/provider-reminders.ts",
+        "packages/db/src/queries/provider-rsvp-instance.ts",
+        "packages/db/src/queries/provider-rsvp.ts",
+        "packages/db/src/queries/push.ts",
+        "packages/db/src/queries/reminders.ts",
+        "packages/db/src/queries/sessions.ts",
+        "packages/db/src/queries/settings.ts",
+        "packages/db/src/queries/source-read-lifecycle.ts",
+        "packages/db/src/queries/source-read.ts",
+        "packages/db/src/queries/task-ack.integration.test.ts",
+        "packages/db/src/queries/task-causal.integration.test.ts",
+        "packages/db/src/queries/task-delivery-status.ts",
+        "packages/db/src/queries/task-outbox.ts",
+        "packages/db/src/queries/tasks.integration.test.ts",
+        "packages/db/src/queries/tasks.ts",
+        "packages/db/src/queries/users.ts",
+        "packages/db/src/schema.ts",
+        "packages/emails/src/brand.ts",
+        "packages/emails/src/calendar_invite.ts",
+        "packages/emails/src/change_email.ts",
+        "packages/emails/src/delete_account.ts",
+        "packages/emails/src/event_changes.ts",
+        "packages/emails/src/index.ts",
+        "packages/emails/src/password_reset.ts",
+        "packages/emails/src/sign_in_code.ts",
+        "packages/emails/src/verify_email.ts",
+        "packages/provider-caldav/src/create.ts",
+        "packages/provider-caldav/src/dav-privileges.ts",
+        "packages/provider-caldav/src/dav-properties.ts",
+        "packages/provider-caldav/src/index.ts",
+        "packages/provider-caldav/src/native-etag.ts",
+        "packages/provider-caldav/src/native-event.ts",
+        "packages/provider-caldav/src/network-origin.ts",
+        "packages/provider-caldav/src/network.ts",
+        "packages/provider-caldav/src/types.ts",
+        "packages/provider-google/src/etag.ts",
+        "packages/provider-google/src/index.ts",
+        "packages/provider-google/src/task-create-types.ts",
+        "packages/provider-google/src/task-create.test.ts",
+        "packages/provider-google/src/task-create.ts",
+        "packages/provider-google/src/task-delete-types.ts",
+        "packages/provider-google/src/task-delete.test.ts",
+        "packages/provider-google/src/task-delete.ts",
+        "packages/provider-google/src/task-projection.ts",
+        "packages/provider-google/src/task-transport.ts",
+        "packages/provider-google/src/task-types.ts",
+        "packages/provider-google/src/task-update.test.ts",
+        "packages/provider-google/src/task-update.ts",
+        "packages/provider-google/src/types.ts",
+        "packages/provider-microsoft/src/create.ts",
+        "packages/provider-microsoft/src/index.ts",
+        "packages/provider-microsoft/src/types.ts",
+        "packages/sync-codec/src/caldav_resource.ts",
+        "packages/sync-codec/src/index.ts",
+        "packages/sync-codec/src/native_plan.ts",
+        "packages/sync-codec/src/projection.ts",
+        "packages/sync-codec/src/recurrence.ts",
+        "packages/sync-codec/src/recurrence_dates.ts",
+        "packages/sync-runtime/src/attempt.ts",
+        "packages/sync-runtime/src/behavior/google-task-create-cli.ts",
+        "packages/sync-runtime/src/behavior/google-task-create-harness.test.ts",
+        "packages/sync-runtime/src/behavior/google-task-create.json",
+        "packages/sync-runtime/src/behavior/google-task-create.ts",
+        "packages/sync-runtime/src/behavior/google-task-delete-cli.ts",
+        "packages/sync-runtime/src/behavior/google-task-delete-harness.test.ts",
+        "packages/sync-runtime/src/behavior/google-task-delete.json",
+        "packages/sync-runtime/src/behavior/google-task-delete.ts",
+        "packages/sync-runtime/src/behavior/google-task-update-cli.ts",
+        "packages/sync-runtime/src/behavior/google-task-update-harness.test.ts",
+        "packages/sync-runtime/src/behavior/google-task-update.json",
+        "packages/sync-runtime/src/behavior/google-task-update.ts",
+        "packages/sync-runtime/src/caldav-create-ports.ts",
+        "packages/sync-runtime/src/caldav-create-trace.ts",
+        "packages/sync-runtime/src/caldav-delete-ports.ts",
+        "packages/sync-runtime/src/caldav-delete-trace.ts",
+        "packages/sync-runtime/src/caldav-personal-create.ts",
+        "packages/sync-runtime/src/caldav-personal-delete.ts",
+        "packages/sync-runtime/src/create-ports.ts",
+        "packages/sync-runtime/src/create-trace.ts",
+        "packages/sync-runtime/src/delete-ports.ts",
+        "packages/sync-runtime/src/delete-trace.ts",
+        "packages/sync-runtime/src/google-personal-create.ts",
+        "packages/sync-runtime/src/google-personal-delete.ts",
+        "packages/sync-runtime/src/google-personal-update.ts",
+        "packages/sync-runtime/src/google-task-address-ports.ts",
+        "packages/sync-runtime/src/google-task-causal.test.ts",
+        "packages/sync-runtime/src/google-task-create-ports.ts",
+        "packages/sync-runtime/src/google-task-create.test.ts",
+        "packages/sync-runtime/src/google-task-create.ts",
+        "packages/sync-runtime/src/google-task-delete-ports.ts",
+        "packages/sync-runtime/src/google-task-delete.test.ts",
+        "packages/sync-runtime/src/google-task-delete.ts",
+        "packages/sync-runtime/src/google-task-update-ports.ts",
+        "packages/sync-runtime/src/google-task-update.test.ts",
+        "packages/sync-runtime/src/google-task-update.ts",
+        "packages/sync-runtime/src/index.ts",
+        "packages/sync-runtime/src/microsoft-create-ports.ts",
+        "packages/sync-runtime/src/microsoft-create-trace.ts",
+        "packages/sync-runtime/src/microsoft-delete-ports.ts",
+        "packages/sync-runtime/src/microsoft-delete-trace.ts",
+        "packages/sync-runtime/src/microsoft-personal-create.ts",
+        "packages/sync-runtime/src/microsoft-personal-delete.ts",
+        "packages/sync-runtime/src/ports.ts",
+        "packages/sync-runtime/src/task-address.ts",
+        "packages/sync-runtime/src/task-compatibility-data.ts",
+        "packages/sync-runtime/src/task-compatibility-ports.ts",
+        "packages/sync-runtime/src/task-compatibility.test.ts",
+        "packages/sync-runtime/src/task-compatibility.ts",
+        "packages/sync-runtime/src/task-data.ts",
+        "packages/sync-runtime/src/task-native-data.ts",
+        "packages/sync-runtime/src/task-projection.ts",
+        "packages/sync-runtime/src/trace.ts",
+        "packages/types/src/announcement.ts",
+        "packages/types/src/availability.ts",
+        "packages/types/src/calendar.ts",
+        "packages/types/src/errors.ts",
+        "packages/types/src/event-scope.ts",
+        "packages/types/src/event.ts",
+        "packages/types/src/event_delivery.ts",
+        "packages/types/src/event_time.ts",
+        "packages/types/src/federation.ts",
+        "packages/types/src/google.ts",
+        "packages/types/src/index.ts",
+        "packages/types/src/invite.ts",
+        "packages/types/src/outlook-move.ts",
+        "packages/types/src/pages.ts",
+        "packages/types/src/permissions.ts",
+        "packages/types/src/provider-event-state.ts",
+        "packages/types/src/provider-organizer.ts",
+        "packages/types/src/provider-reminders.ts",
+        "packages/types/src/provider-rsvp.ts",
+        "packages/types/src/reminder.ts",
+        "packages/types/src/reminder_options.ts",
+        "packages/types/src/settings.ts",
+        "packages/types/src/sync_operation.ts",
+        "packages/types/src/sync_protocol.ts",
+        "packages/types/src/task.ts",
+        "packages/types/src/user.ts",
+        "packages/types/src/version.ts",
+        "packages/types/src/wire.ts",
+        "packages/types/src/wire_contract.ts"
+      ]
+    },
+    "migrations": 86,
+    "totalNumberedRegressions": 385,
+    "newCompatibilityCases": 33,
+    "retainedNumberedRegressions": 352,
+    "existingSuiteGates": 6,
+    "testCreatedNonceDatabaseCleanup": {
+      "unretiredNewDatabaseCount": 0,
+      "prefixes": [
+        "task_causal_",
+        "google_task_create_",
+        "google_task_delete_",
+        "google_task_update_",
+        "task_ack_"
+      ]
+    },
+    "testWiring": {
+      "workspaceEnvRead": false,
+      "sourceBindMounts": 0,
+      "privateNetworkPolicy": "Explicit fixture-only loopback for existing CalDAV/HTTP tests",
+      "socialCredentialsConfigured": "Synthetic OAuth client IDs/secrets only for closed native fixtures; no real external accounts",
+      "smtpConfigured": false,
+      "pushConfigured": false,
+      "testPathAliases": "A test-only tmpfs /packages contains symlinks to installed @musubi packages; canonical production-layout smoke is separate and has no aliases."
+    },
+    "cleanup": {
+      "ownedContainersAbsentVerified": true,
+      "nonceDatabaseDropped": true,
+      "nonceDatabaseAbsentVerified": true,
+      "rootPostgresStillRunning": true
+    }
+  },
+  "installedUpgradeCrashProof": {
+    "status": "passed",
+    "driverSource": "Production task compatibility native fixture instrumentation adapted only to launch real old/new Docker workers; no production executor/adapters rewritten. Parent seeds actual DB/native fixtures from exact approved workspace. Child calls unchanged installed task_delivery and native adapters. Test driver is copied over stdin into /tmp; no source mounts.",
+    "rawHarnessMetadataNote": "The reused differential fixture emits an empty historical Git baseline placeholder; historical source is not loaded in this installed run. Actual old/new Docker image identities and96command receipts below are normative. The separate source differential evidence is not counted as installed proof.",
+    "pairedCases": 24,
+    "providers": [
+      "google",
+      "microsoft",
+      "caldav"
+    ],
+    "actions": [
+      "create",
+      "update"
+    ],
+    "phases": [
+      "raw-native-response",
+      "writer-fulfilled",
+      "readback-observed",
+      "ack-committed"
+    ],
+    "installedWorkerCommands": 96,
+    "realDockerSigkillExit137": 48,
+    "oldImageKilledThenNewImageRecovered": 24,
+    "newImageKilledThenNewImageRecovered": 24,
+    "sourceMounts": 0,
+    "oldImage": {
+      "imageTag": "musubi-c08-google-task-causal-api:proof",
+      "localBuildIndexDigest": "sha256:53acf598b7f025892f4147245617ebb8cbb2e2b60f517906d352cb4b7ce032cc",
+      "platformManifestDigest": "sha256:b0ad6c2200bf04996017a036ea4c6cb3d193adc89c071009cce4bbc6a88f39af",
+      "imageConfigDigest": "sha256:fa32b496aa37da8f2f5b0f266b9711a3744a0c7636d1f9600ce1bcbe2b589fd1",
+      "freshDockerInspectIdentityMatchesPriorApprovedImage": true,
+      "priorApprovedTree": "5fcb8dc5efcec18f4d7ba9ac4cc53cbe4f41d401",
+      "priorSourceManifest": "/tmp/musu40-google-task-causal-api-source-20261026113305_095862.json",
+      "priorImageArchive": "/tmp/musu40-google-task-causal-api-image-20261026113305_095862.tar",
+      "archiveRetained": true
+    },
+    "newImage": "musubi-c08-task-compatibility-api:proof",
+    "eachRecoveryUsesNewImage": true,
+    "assertions": [
+      "One actual mutation at checkpoint; committed ACK completed/mapped before kill, otherwise no process-journal resultRef or provisional mapping.",
+      "No uncertain mutation replay; restart performs only scoped GET or no HTTP for unknown-address CREATE/completed operation.",
+      "Unaddressed Google/To Do CREATE remains unconfirmed; deterministic VTODO and known updates recover; original operation envelope and rich canonical dates/priority/progress/sequence remain unchanged.",
+      "Paired old-image→new-image and new-image→new-image full wire/body/header/outbox/mapping/native-resource/canonical snapshots match."
+    ],
+    "commandsArtifact": "/tmp/musu40-task-compatibility-installed-api-driver/commands.json",
+    "log": "/tmp/musu40-task-compatibility-installed-api-driver/run-final-2.log",
+    "cleanup": "Two owned parent pools closed; all child containers absent; zero sessions and nonce DB plain DROP without FORCE."
+  },
+  "ociArchiveVerification": {
+    "allBlobsStreamHashed": true,
+    "blobCount": 14,
+    "indexManifestConfigDistinct": true
+  },
+  "cleanup": {
+    "allOwnedContainersAbsent": true,
+    "allOwnedApiAndTaskCompatibilityNonceDatabasesAbsent": true,
+    "plainDropWithoutForce": true,
+    "rootPostgresLeftRunning": true,
+    "userQaUntouched": true
+  },
+  "priorHarnessAttempts": [
+    {
+      "artifact": "/tmp/musu40-task-compatibility-api-corpus-20261026122346_7aac38.json",
+      "status": "failed",
+      "error": "",
+      "countedAsFinalAcceptance": false
+    },
+    {
+      "artifact": "/tmp/musu40-task-compatibility-api-probe-driver.log",
+      "status": "failed-cleanup-only",
+      "httpAssertionsPassed": 17,
+      "reason": "Initial smoke completed17 HTTP checks; client sessions closed after the original4-second shutdown polling bound. Container already removed, waited for zero sessions then plain DROP. Final whole smoke repeated successfully with30-second polling bound.",
+      "countedAsFinalAcceptance": false
+    }
+  ],
+  "limitations": [
+    "Synthetic OAuth/native accounts and bounded owned loopback HTTP; no actual external provider account or live write.",
+    "Canonical production-layout smoke has no source mounts or test path aliases. Installed integration corpus uses test-only /packages symlink aliases to installed package closure.",
+    "Docker crash proof uses an external test orchestration/child instrumenter; production delivery functions and actual native writers execute from the identified installed old/new images.",
+    "API task compatibility retains its existing writer-return address durability and To Do conditionality floor. Provider acceptance is distinct from void writer fulfillment.",
+    "Reference packaging and running-browser confirmation are separate evidence. This is not full C08 completion."
+  ],
+  "artifactVerification": {
+    "checkedArtifacts": 152,
+    "method": "Stream SHA256/length of every artifact; all OCI blobs; exact approved/current/frozen/installed source hashes."
+  },
+  "artifacts": [
+    {
+      "path": "/tmp/musu40-task-compatibility-api-build-20261026122315_1c605b.json",
+      "sha256": "44173946d5db84b52f700c04598a7b15385ad33dea183cd8f65490d91486af5e",
+      "bytes": 1340
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-build-20261026122315_1c605b.log",
+      "sha256": "3e28c51280d7692b7cf9bab1491f5cff9172b649dc2c39250d1c990cfcfd6347",
+      "bytes": 4121
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-build-driver.log",
+      "sha256": "15962807e864b1347174bff498c5bdbcfc148f87593de202ca2a97fd3c29afee",
+      "bytes": 140
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-build.py",
+      "sha256": "f7a85c87ba361f34b421a58eeb31b4e3bd245178533fd31ba922a4ba8d82d2be",
+      "bytes": 5200
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-common.py",
+      "sha256": "65dfc00aae6f2242a84e6bddda353861998949606da5b3b26ec2d0737d9f9460",
+      "bytes": 8823
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122346_7aac38-microsoft_task_read_completeness.integration.test.log",
+      "sha256": "fd78d9fa379a50138d64a40f044cc762bf9fea01387eb94477aa704978a0d324",
+      "bytes": 6623
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122346_7aac38-migrate.log",
+      "sha256": "52607390f6013e5fa3831e2bde93e5a9fe6cc3b9934e46329f513a8c7416ed49",
+      "bytes": 61
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122346_7aac38-pinned_transport.integration.test.log",
+      "sha256": "9de1093e11a260101b2c73dea0a8b03f2531d8159daedb308f99091daecd4c96",
+      "bytes": 230
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122346_7aac38-task_compatibility.integration.test.log",
+      "sha256": "da611a5b18c0872f38e34d6efe2efa2816986b53980068e6d37a9920c8faa4c3",
+      "bytes": 2195
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122346_7aac38-task_compatibility_delivery.integration.test.log",
+      "sha256": "ea6986c81715af430864b0bfc6b1235e6ba1c541ed4ec69aa920eb73f180bcf8",
+      "bytes": 2842
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122346_7aac38.json",
+      "sha256": "2b4f88d8a12aa5bb463888e3de3b6c70213f814a5675151462e2ee8e94e73d65",
+      "bytes": 28731
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-google_shared_task_create_delivery.integration.test.log",
+      "sha256": "ff91e57ef424685f117a06ef16624379c51960f4527a13b8d2b16e057e44ac6a",
+      "bytes": 4106
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-google_shared_task_delete_delivery.integration.test.log",
+      "sha256": "56025c978ca7a91ccd5a6b5da753265eb92677d53a68dcf197b2b6d0d046e074",
+      "bytes": 3209
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-google_shared_task_update_delivery.integration.test.log",
+      "sha256": "f9e07bb408e2581f608297baba9597ad4523fdc0369991ba5c5536bc4e3acb17",
+      "bytes": 2120
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-google_task_causal_delivery.integration.test.log",
+      "sha256": "c7965c7481afab3ad5429fb26538d0c038e201661240c07820bf0d236ee4a2f8",
+      "bytes": 7152
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-microsoft_task_read_completeness.integration.test.log",
+      "sha256": "b2c4353f96d0d04bca7639e275059145606495fe836f73c4b8628dc0f3383233",
+      "bytes": 6623
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-migrate.log",
+      "sha256": "52607390f6013e5fa3831e2bde93e5a9fe6cc3b9934e46329f513a8c7416ed49",
+      "bytes": 61
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-optional_tasks.integration.test.log",
+      "sha256": "9cf0462e9259afebc8b6b780080d377411d93cc693993b04a022348b658b7913",
+      "bytes": 3372
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-pinned_transport.integration.test.log",
+      "sha256": "1bf19e491be7c6918b96a0f901c614983a534be03f14cbf1ebded09b12324cba",
+      "bytes": 230
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-shared_tasks.integration.test.log",
+      "sha256": "d2873256b24d4f19d44ce571270765a81b714624212e8c6d7d6dbe4ebe457066",
+      "bytes": 234
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-task-ack.integration.test.log",
+      "sha256": "bf1637da55528a39cb452b2b645c0b5b00dd754550e65242fc6610fd90ec75b5",
+      "bytes": 825
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-task-causal.integration.test.log",
+      "sha256": "b3cb7253a6bd22a9633016f15da0ec2df2f47ae6cab3acd10cc3bbe9c6a74a51",
+      "bytes": 4944
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-task_ack_delivery.integration.test.log",
+      "sha256": "e94ed32d7745681d955347e7a17a14471b68ea6fffaf574cd4874b4b88e4a01a",
+      "bytes": 634
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-task_compatibility.integration.test.log",
+      "sha256": "50799fb445b780a2604fd078913ed5cd3c2a963a7197f37d48cf7dea1fff6ce7",
+      "bytes": 2195
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-task_compatibility_delivery.integration.test.log",
+      "sha256": "357008cbe8e1fa150b7a7da77de18f85be1eea30f997f18a17434f27654b8be3",
+      "bytes": 2842
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-task_delivery.integration.test.log",
+      "sha256": "884bb96e708df3dce4cd95a37ab7754562f7c48bc584fb21bb63bb05fe271243",
+      "bytes": 247
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce-tasks.integration.test.log",
+      "sha256": "86ab190809122f36df2345a242e5606ca036f2398f01b62f0354b857b9dcca54",
+      "bytes": 93
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-20261026122446_1fe1ce.json",
+      "sha256": "0db94d04f2525db52cff6f4c548c645b6645a8351be297cafbb91f4d31a4016d",
+      "bytes": 34333
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-driver-final.log",
+      "sha256": "b660427a03156e39e8b7c6b0e3bfd10656e0b7ac78f3d38a6db3c5c84ad8c1c2",
+      "bytes": 1906
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus-driver.log",
+      "sha256": "179c42486bfe01aed85eb5a705d9cec7fd5cf84bdecb2a7285238f7e5509b26e",
+      "bytes": 793
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-corpus.py",
+      "sha256": "c7119a32ee1eee97feb93953898fd6fd931fbfd8f970f4f11922043368a6cc18",
+      "bytes": 5546
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-http-20261026122345_dcc32a.json",
+      "sha256": "e4c2bc7ca6af21f9a5aa05270d8d6479aa884546884769962560392b66ca3fff",
+      "bytes": 2790
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-http-20261026122443_036daa.json",
+      "sha256": "e4c2bc7ca6af21f9a5aa05270d8d6479aa884546884769962560392b66ca3fff",
+      "bytes": 2790
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-http-smoke.mjs",
+      "sha256": "4d8208ad9e4332c7f256530f04cdb9bb060964597bcea96db52e5139ff6c86f6",
+      "bytes": 5656
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-image-20261026122315_1c605b.tar",
+      "sha256": "b94361d96cfb7d0600f94452447f2d3c3def47936c7ed34cd4070d54bb2c69ff",
+      "bytes": 76975616
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-oci-blob-attestation.json",
+      "sha256": "c8ebc25c805099d5817311e0166cd892a5c648d6d61177a3f48c7312d87f5b73",
+      "bytes": 1897
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-old-image-identity.json",
+      "sha256": "e4aab127e51d0dacbc4c51b88f91ef4a59dfa65928be6314ecb1537a82252e68",
+      "bytes": 710
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-old-image-inspect.json",
+      "sha256": "8d71568e0d0d9d8aba6293df793d7c0652632292a8bb68b88468971e7643ab20",
+      "bytes": 3022
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-probe-driver-final.log",
+      "sha256": "4bcc482b7480b0cd3c3a40b2bf47489a7fb945a522dace4cb3b8a3844bd608da",
+      "bytes": 137
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-probe-driver.log",
+      "sha256": "5f3f2d04bc3f74dca4f10793dde30819c44ba78534008b44f13a5d10e41adee2",
+      "bytes": 648
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-probe.py",
+      "sha256": "e535d5f7e5622107a4a244c9550144e8b1182f08e25ad565008a94fee2aaeb24",
+      "bytes": 5401
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-proof-20261026122443_036daa.json",
+      "sha256": "662eb795a4904addd4346109712530c1c43596e884a03ce9ed4264c2a229f2c5",
+      "bytes": 4907
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-runtime-20261026122345_dcc32a.log",
+      "sha256": "5df2aaf3ee00fdca205600cb0f46e1d5c6dcfc50cb63f93d93a340ed77cdad1a",
+      "bytes": 6164
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-runtime-20261026122443_036daa.log",
+      "sha256": "cc80eecc0fec4bb7081492796bcb61d2420555430fc142439eccffac77f99071",
+      "bytes": 6166
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-source-20261026122315_1c605b.json",
+      "sha256": "d3b415b0d492339b210887a2ce615dc23af0206b8c97e6162b505c29721f9bac",
+      "bytes": 150407
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-state.json",
+      "sha256": "1f5bf9efbc99a3aa41a2c6067a34a672add3bca2a78fcd7df3ef5fc0a6fe58a6",
+      "bytes": 182822
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-summarize.py",
+      "sha256": "f0a17bbd898eb0f87783d9f70aa808a56a6e3a42eb0d00372ba50bfd3b0fbd50",
+      "bytes": 8726
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-summary-driver-final.log",
+      "sha256": "0eaaccc20dc48044d2629ef6c0b0bd45eb9613ebe9bc67d12767ab0e8332d7ca",
+      "bytes": 244
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-api-summary-driver.log",
+      "sha256": "049d001e7d2736704bcf1b7a76733b7c184ef4486da83fce273c0fa78b7f8ea4",
+      "bytes": 467
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/child.ts",
+      "sha256": "b0bd49fd5f906aa212ca4eb6edd8d46e6c1caf5394f0da0ede404d5a6d712f5b",
+      "bytes": 55458
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/commands.json",
+      "sha256": "03deb12060505c76ad8ccfbd629d1d0291598e4cce34f14b3be49e41e6c38987",
+      "bytes": 30207
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/driver.ts",
+      "sha256": "28ff0eda866be6f0e8058c7030c40be8471b4353e8c6191e4a1301142ac87865",
+      "bytes": 56703
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-038d2970-d7cd-467c-bcf3-7f94f98de8d3.log",
+      "sha256": "3d536092fdaed025b5872e967d4dc127a8a36c3986fb764a2209466849452d99",
+      "bytes": 4532
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-04443038-cf14-4b7b-876b-46a92aa40b44.log",
+      "sha256": "63db6cb8fe1a24e08aaa31047124030c04743f301212932922980b860ca61cc7",
+      "bytes": 160
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-0c5e216e-8513-4f09-822b-88ceadff202d.log",
+      "sha256": "2b7693d34ea6b72a6e66b0f0117fa6142457886348f63a51e04178883b68b967",
+      "bytes": 177
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-0eac33ff-e46c-4a3c-a85c-2fd567255953.log",
+      "sha256": "c36535fcd07731adab6fd7dc86b698b3573f88eed57276b10c2818ab8f9caebe",
+      "bytes": 5661
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-0fa6dec0-1ea4-4a80-9d52-d397c9c233c3.log",
+      "sha256": "c450f3c049a8bafb765454c5b021987dd05af8fc99a3357e1d21b0f7c0af3301",
+      "bytes": 3553
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-1a15866e-334b-4952-8e77-24fd70f34251.log",
+      "sha256": "bececc02e64b7070091304241639b9ee7f9a44529a39a8a9e69e7091b011d533",
+      "bytes": 160
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-1b54530b-fb22-42a9-8d49-c29046ae8cc7.log",
+      "sha256": "4fa02bbf703acfe106d295268ddab1fba172d70c84051be99f939f6ee810c4b9",
+      "bytes": 174
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-1b88e7b9-66d9-433d-af47-1c1477017862.log",
+      "sha256": "b197d5e664248660415e595444cde56e533ff0aaae9cefeae279af396a43f596",
+      "bytes": 3362
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-1ceb043d-9fa4-4431-b4d5-b6b33226c350.log",
+      "sha256": "15fee5012f355b1eebc3ca918fc29be04e3366090375b96f965dcf83777baeb8",
+      "bytes": 177
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-1d5ad389-4728-46c6-a397-fb714aff1cf8.log",
+      "sha256": "a818fd897da30cd1d1f8c4b2014ec195f879059c15391163cad6abeb05c4674f",
+      "bytes": 160
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-1e5dbc40-6ce9-46e5-87eb-49b8c4cb5b85.log",
+      "sha256": "f7d013b92e55ff093868a9e53f9f831a1508ce12917eafd72095c157e741bb95",
+      "bytes": 174
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-2191dac3-c9ed-43ca-9c4c-c41595c88bb9.log",
+      "sha256": "39092e8e246b407f93d4a049115b9ac600dbb0acef578ec81df68b798d396b52",
+      "bytes": 180
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-2384e426-716b-478d-8aae-453f70d8e1a0.log",
+      "sha256": "342b6f8ee5b5be694a7eb2aa258a17da593b5c4838277e74239c4ab52931313a",
+      "bytes": 160
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-26eea538-dd41-4782-8b8d-5cee6684c0c2.log",
+      "sha256": "0f1500d8b1b84f7e613c88fa54176eb922d671f7b88614a2da6462955561785c",
+      "bytes": 178
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-278e2bc9-1f5f-4d48-9441-36a967406286.log",
+      "sha256": "5605fccc8776e4de38b4a4eb59632cce096ac2d23776ff9a269d0df4fc519d9b",
+      "bytes": 177
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-2ae412dd-0d09-4f45-8d92-22c0c55073a9.log",
+      "sha256": "116fa29d6a8293bddf6b2c02d9e6fd71f3aaac93ddd8ee2c5e88a1fd911d1eeb",
+      "bytes": 178
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-2f3bcad9-e67c-436f-bade-a558cf9f4070.log",
+      "sha256": "a2781ebc1b8b88b0e784189f1854658e140e362134858eaa5c63bf747e606726",
+      "bytes": 174
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-33d02684-69eb-4e12-868c-fc0b9d67d7ab.log",
+      "sha256": "353dfd179ac2397111c1f0cbea6c20f81360b9de185547b34d934b447f8a080b",
+      "bytes": 174
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-3b5999f5-ea3d-4d3d-a026-a7b3532f592b.log",
+      "sha256": "4617f7d3796b81d4b8f0847f99039eceba13bdf69fad1f52e5cd4aaa52b5ae30",
+      "bytes": 3919
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-3b6f1554-3970-4edd-9373-072d6f3fd1e8.log",
+      "sha256": "8344c029fc38136d65d82e5d036d3069e292e6ad2a433d094e3450482ca826a4",
+      "bytes": 180
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-4043b138-20fc-4768-8388-4ea2e46e3dee.log",
+      "sha256": "c4368c84aaabef0c65ec7d5ada4b49ec2775baeb4706d4f8224b916249a3d5e8",
+      "bytes": 5358
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-40568149-6961-4aa2-a920-5a9ae4d680e8.log",
+      "sha256": "4579d88886a7b14c9268414795161740865ac1ace24fb488b96adc8e2ada9fd8",
+      "bytes": 177
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-47dc8c06-ed13-41f1-8d4a-8df7c5326276.log",
+      "sha256": "be27903ac327c4fa7da8dc260cabb95476bfeb9feb33705572d484a044cea9f4",
+      "bytes": 4532
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-4ac7689c-1530-4b4a-bc99-b701c3e95e24.log",
+      "sha256": "c8b2eb560c0d08fa001e2d85ff5574c37921b50ea536a0a01ee1120c57b3a822",
+      "bytes": 3919
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-4c467aa4-1255-46c0-ad3b-bc2a24382599.log",
+      "sha256": "010bce32e411a829e490705ec736e6b681028d9fad5af470d3b33c0cfd746dab",
+      "bytes": 3553
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-4e4321ce-91ce-4c87-a287-61b95a4ccc3d.log",
+      "sha256": "474d95f4bfb1802d822564d795fd274e8e8141c6b3e6ba4a747c0e4e8f162cc3",
+      "bytes": 177
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-54cbda32-db7b-4b6c-b5ec-9eb12add17a1.log",
+      "sha256": "9f5afa8478effa8617566ed4250b5b93fde9d11a09a082c61b18b97f515eef51",
+      "bytes": 177
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-563e8058-b42b-49a0-aa9c-d625ff610cc8.log",
+      "sha256": "f0767ebb40ee21e9a3c5a6b1cc928c5a6f7b4ad422d10c8cd594aa33e198f6f5",
+      "bytes": 178
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-583b6faa-6449-4078-b9d6-00949dba13da.log",
+      "sha256": "0ff893edb305905526573bb3371d47435d34f79272f6b3321ac493174dbfe816",
+      "bytes": 160
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-5933076d-c0b9-46b2-bf9d-1ae87130297f.log",
+      "sha256": "d0cf911a542d941e323acf1773fe8a019d9755ad13033290a9837a33a0d2fc56",
+      "bytes": 160
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-5a5046bb-3d02-45d8-91a3-a94f494556cb.log",
+      "sha256": "d7158ef80b6e88ba02088ef211f987d9e713145a624f017b9a8c8963655dce1e",
+      "bytes": 180
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-5c05c389-b160-436b-aeab-153f250c0fca.log",
+      "sha256": "7e4fa82b5afa35c4a0dfbb11f5d34b86acb10f8d7bac94669c70748e1b1e842b",
+      "bytes": 160
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-5cfc8b27-e973-4847-9c27-4ddcc64f54f2.log",
+      "sha256": "4e440a37e4991b41d628d9a01c9a2b58df9173e928c33db6c0c065cbc62d47a4",
+      "bytes": 160
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-5eaeaba8-64e4-47a8-9a18-ce5b667b19a2.log",
+      "sha256": "2f7a5fef3cb37f7415b32efba09ce4fcd2671552a1af4f3df28d3a5b5f0cf836",
+      "bytes": 4532
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-617784d8-8197-4cb1-81e4-89586edd0cb3.log",
+      "sha256": "0c808f69d3c7d18e7b4df69fe860bfe898ce28a80e0c24a3be320fbeaaa8d1a6",
+      "bytes": 178
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-639163c0-674e-4a33-bde5-9bbe72575ee2.log",
+      "sha256": "d619514e2a7175c44656576387d2de04aaa676ca0a6e947033432e96688f4317",
+      "bytes": 177
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-67a26261-8bc5-46ee-90e1-7a937a9ffeff.log",
+      "sha256": "f6ecfa008a1bd79c488824ce45e1feb87d0d4b39a03e5587817494984352f2bd",
+      "bytes": 178
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-681e9366-1260-4d58-b0ee-5ffebd4ff6ea.log",
+      "sha256": "2287aa7b5b79c599447f7add4a9ca390014792e3a7761c2c48d22c19b452df3b",
+      "bytes": 174
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-6a0b3765-e8a1-4523-8989-31500f9b4b69.log",
+      "sha256": "53da0abbbcfd4b5ced0b40868afa49e3e7039cc6427c649f15ad46b50e02575e",
+      "bytes": 3919
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-6b48cec1-c050-420a-a636-259dfe358c42.log",
+      "sha256": "b3059d44894fef9b6951efff2fe5161dcc4a3061b6d9d8af882e4fef715fd1a0",
+      "bytes": 3362
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-6c2fd466-4eea-410b-841e-b7bd4969484e.log",
+      "sha256": "d7cacfcf038d7bda7dd73c154e52026f075faed86dbb7feb6f86791727b3c523",
+      "bytes": 180
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-72327dad-49e5-4ea3-8ba8-07e78c2f9f30.log",
+      "sha256": "8e5ed5ce78ee279598c7415f45e22b96810f108f13ec165517d87f170d75431e",
+      "bytes": 3362
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-72c77391-5dcd-4644-b1ad-79c487902c1d.log",
+      "sha256": "d6455adfa047d9740a6ef5e0d539db8bc0d2b8427c54948287e06d7dd1f2eae9",
+      "bytes": 180
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-7309454d-6e6b-47eb-8cdb-775cdf5eaa4f.log",
+      "sha256": "40688693925cbc3198c835f4162069bbabc66344cb512e5a5c9e4c3c0c1a032a",
+      "bytes": 160
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-74518a16-62c3-49d3-85ed-ca3b38d90c6c.log",
+      "sha256": "492fe6e377e86be94d9cbbbdbc75a09eba395cc6683d2f28d9f081217b07f06f",
+      "bytes": 178
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-745dae23-b4fc-4922-911d-baf694816152.log",
+      "sha256": "d74f4bec4933cc5025ebc868b761a78b776e39f95c626771265d9bce5d821408",
+      "bytes": 174
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-7a7c0f02-cca6-4341-8264-154da820b583.log",
+      "sha256": "70c5d006b2e211004b2141bcdb338d16eab69fcb0a71ccc534b4b899775c78b2",
+      "bytes": 3919
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-7bd2a5f9-3156-4d57-9331-86f9fa4fae0b.log",
+      "sha256": "30dec2c4efa1ea2c2ad069cb0ced9856f656bcffa73b26cc15c0e78fefed8877",
+      "bytes": 3919
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-7c4d437f-4cde-4f6b-82ac-5d8672c198fb.log",
+      "sha256": "80a41fbe39102df409c9d93483121713f0fde55fc0da7f5ca1c26fbec9aef0fd",
+      "bytes": 174
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-7c732b7f-5e70-44fd-96bc-79b8344ee61f.log",
+      "sha256": "3a003d54d1116ad97454af16147a8be11b0d4a6d82eabd865a8af354555df8db",
+      "bytes": 177
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-7cbdfa3d-66eb-4298-bb57-799106cea3ed.log",
+      "sha256": "91bec2111a65cfb45c9d12650f2acddb62aa5e57dd5f53bca62eac828d504a58",
+      "bytes": 5358
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-7ec03bbf-aec5-40bd-be8e-76f263bca367.log",
+      "sha256": "4adbe6a83a5201223544f28827f1bc1b2e88928d897bb0e4db9b997dd16b38a7",
+      "bytes": 5661
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-868b976f-e79f-4f9b-a87d-c5da24f40d8e.log",
+      "sha256": "15d8cab574a59118311518f97126fce44471869539ff262668ff189edfc190f7",
+      "bytes": 178
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-890a5cbf-284b-4742-a355-fbbf1e588822.log",
+      "sha256": "ce979cce8ed887fee69ea1312a0a72cbd229d280a55fc34a7c26556531d8d009",
+      "bytes": 5358
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-8921a98d-8df6-4d46-8be1-e8b50ebeb968.log",
+      "sha256": "18f51991de6336efd9650b371901b36ab26a4c7ff150bd8abe4537bef82719ae",
+      "bytes": 178
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-8dfce21a-36d6-4f36-b56a-49d8ec14820c.log",
+      "sha256": "0a1ebafcb2af22f8d226bb4c49c1b4090c9ed8baa69c8db80362c3afc58925a3",
+      "bytes": 174
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-8e98caf1-1b0d-43c6-afe1-0e7edb2a9afc.log",
+      "sha256": "a9dd88c557509046fbe972b104b91788069e6a71d65a2e046b8e1648f94f96c0",
+      "bytes": 177
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-92df1220-80e3-465b-98bb-8da0f6fe11a7.log",
+      "sha256": "4bd466c14ed1b557197549866892c4a46ea4877c8cf75ec3fb6b2231d67be105",
+      "bytes": 180
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-933ba525-11ce-4a30-b16e-511ff046cded.log",
+      "sha256": "30d4d57340ad42541b44b03e5f9926cddbe95a01a966d8594282903fd7343035",
+      "bytes": 180
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-9551d262-549c-429e-a979-c7ed7b93babc.log",
+      "sha256": "5a6359b7cf41f64c583a443990262c030e7ca9e696d0e34936578e61f371e235",
+      "bytes": 160
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-979b9065-8f60-45b0-b44e-bcb5ec1e68f0.log",
+      "sha256": "0ca88eee7d7d69455191457fd5f6d33d3909801cec340e27c86fc1a5301618db",
+      "bytes": 160
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-99730da9-02fd-4986-8a3a-b73eba16f528.log",
+      "sha256": "cb753d7eb081d522c62f55f5ff5917a66055722e41e735b24a44ceebced25e44",
+      "bytes": 3362
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-9a3f15ce-748e-4749-8e78-c86cd3508ace.log",
+      "sha256": "9542abb3ee48cd92e235ecb340523c23e25231f1c4af2de99629ffe4eeae3372",
+      "bytes": 177
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-9c586949-dacf-4d77-b324-e4ea454e399d.log",
+      "sha256": "2400161f1f3fa53a813c544dfbe7489ed4523ce6571df513c862ba99f2331588",
+      "bytes": 180
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-9d6732d0-25f9-4826-9273-eb02ae8dffd1.log",
+      "sha256": "10a5eb7af60276ea7b9d8edc3734084de0dc5c056df717cdcffa5930fc0cf053",
+      "bytes": 174
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-a0620293-22a5-4850-a8d0-36e4a424ca84.log",
+      "sha256": "443598aa29a870621486a2d25ca124f1ba67ecd3dc89e44667d946e1624d8b05",
+      "bytes": 3362
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-a0689d51-f069-4728-9b7b-336cc50d8870.log",
+      "sha256": "88ff1e652ed205edb89893f42f473eaca640f5e33a91643bca712b089c82b7e5",
+      "bytes": 3553
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-a145e102-0dbe-4793-9267-1a7a174a71cd.log",
+      "sha256": "981f1a2c60e07af07c48815ba1c65b0965e2d74bd3d9d32b41dea266c3f60d43",
+      "bytes": 3553
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-a243c407-53b0-4b8c-8799-b452acf39cb2.log",
+      "sha256": "8f89a7309345f4a9fadd668752cbe9ead4c1e3faf277f55267f4ff340153fb35",
+      "bytes": 4532
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-a88273b2-6ad6-4a72-a1b2-fb6a6a2efa5d.log",
+      "sha256": "0417830d00aa2d834deeca8275bc30e3b2fbd98a0c8da34d5c4d422e44b9b144",
+      "bytes": 174
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-aa05933d-8bd4-4b17-bd1c-5f2128cb3af3.log",
+      "sha256": "3b6ea5586733442305d148653214ae216d5c103e85529536d15dab155eb76a8e",
+      "bytes": 178
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-ab33d7db-7de2-457a-b6f3-8d472cb4475c.log",
+      "sha256": "fdd77fd99592eaf627fcdfa102ecd86bd2e4b9bbab8657a5e92b7e3bf72d74df",
+      "bytes": 5358
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-ac9c7bfb-49fe-426b-99e4-d58ded2a510e.log",
+      "sha256": "264c459d70932655ca33b98ac34fc98ea5dd0ed398177dc9a9d932af64220d14",
+      "bytes": 4532
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-b8567202-bd55-4f23-ae66-1eaf708bf6b8.log",
+      "sha256": "9e2424d32ecd43f7f133c66de3352b8fdd1bf0f75827556cd43e3d59f1d6b80f",
+      "bytes": 177
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-bb4b35d9-5baa-4ac3-b80c-89c36081a6e6.log",
+      "sha256": "8df4c4fbbf2a35a0d7632c81b88350a2964dbe5d193c60163f4ab4c557d164ee",
+      "bytes": 180
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-bc25cd59-1df6-4972-942c-18efb8524308.log",
+      "sha256": "ec35a52ee3f334abf776a6ea39cff9aacdff39a82041899d63ef67ff134a59ec",
+      "bytes": 3553
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-c12cd918-65a9-4926-b3ce-f1730af17c90.log",
+      "sha256": "6a00d800801a1c9762aebca6cc0a95233a03822e0892a628a985c8669cddff46",
+      "bytes": 180
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-c4d8952a-10db-4ecf-8e80-cd12925d3884.log",
+      "sha256": "2371e2cb7da6e8e8867a3d324669240b5903aa6264dbd42b74e5fc9bb1010422",
+      "bytes": 5661
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-d2b0a5a1-f2ef-496f-a1ea-48d58b334c22.log",
+      "sha256": "bb742bd6838fbc9d54839d73c6d1254ca6f213a1581e203f5c101c7048eaff6d",
+      "bytes": 178
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-d60c0e8a-d60e-424a-a05a-5058b96f0ee4.log",
+      "sha256": "62ab0ab5c62c2597d83f007ca634d7f1d83aa0c1bef5d5e782b467faaf6e624f",
+      "bytes": 5661
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-d6cbf696-0532-411c-8ea3-a564d6cc5617.log",
+      "sha256": "557ba1d09e017a67cfbaee962afae95b8283b9c2a28ac5f222b571168696dad0",
+      "bytes": 4532
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-d9761d48-a9e4-4330-9cd0-9a4f53860a97.log",
+      "sha256": "a819c23c1bdbc465a14d861b01030ebfca31019a8cb5b02cc1da6e42808063af",
+      "bytes": 5661
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-dbdcb4d6-b7f8-4593-a170-910a7fd6120e.log",
+      "sha256": "255bd75a52012abd9a5111f17bffd840eb948e33d831f9b539b86f1093048cd8",
+      "bytes": 174
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-e3206913-cd2f-4ee5-bea2-8b50b7110098.log",
+      "sha256": "e89daccca89cdae75d9f290c88cc17dd745f1f038ff6ab1c170a2dbd4c6da46c",
+      "bytes": 174
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-e8956349-3864-4038-93a3-b13132b1a45b.log",
+      "sha256": "f111f51b16a4c8c86f3f9cc22b4d486a59c9c588642ee36da4318a82ace54047",
+      "bytes": 3919
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-ea5d37f2-3a9f-44d6-b61c-054ba241f9a5.log",
+      "sha256": "a4784c0616ce1379cf691c055a12bd74003bea9fb64b0644cf3ca12decfec779",
+      "bytes": 178
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-eb1e9f37-03c8-4c5c-ae85-b18a6a99271e.log",
+      "sha256": "ba0d54d2108c804b6cd7bd6f931ee35f067cf3b882993b41299495696a6cc08c",
+      "bytes": 180
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-eb25a3b7-e3ac-4e28-9c5e-a57a7ece72a0.log",
+      "sha256": "fc64978591e4a0f295c12d36b7ac8257ce7456b77c70bd98b7034987bbfe1193",
+      "bytes": 160
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-eb6fd7d9-60d3-4538-ba26-2395423a107c.log",
+      "sha256": "befeff912b9d274f53bf16006d628049e509442602ebe34eaa59adf1c71f406d",
+      "bytes": 3362
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-f0625ba1-4bc0-4b81-a6ee-065bcd7cd950.log",
+      "sha256": "ce72563c7f70b911c87ce16bd67ff52c2e4c784b79a80ee0bdeb0d015a9cb259",
+      "bytes": 5358
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-f12f4e11-3ac3-449a-b021-00cba89fe102.log",
+      "sha256": "8aa808377e2f676bba5f6729bc7e497486051d43f4cb236d5066b03f50d39824",
+      "bytes": 178
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-f2179b5c-7ac0-4073-af4a-59fa4098eac8.log",
+      "sha256": "d18fecc133fbde05c6db6f3a14fe4440a9efd7ac3a5c7d08b55e9b4c90202a86",
+      "bytes": 5661
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-f47694b2-0867-4f3d-bb94-0bca038b2bdf.log",
+      "sha256": "7faec73271a40c5bd84f535c6ee53b2255848c8f2be931e8dc91e249ad65fe70",
+      "bytes": 3553
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-f65a3c76-6d45-4172-b0ed-5cdd8b845878.log",
+      "sha256": "3cd578f4d4de1a248d8c57aeef2aed9ebb1e19ace1f46aa6809d24074ecad3a8",
+      "bytes": 180
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-f67626e0-b98e-4b5b-b30c-5926855b21f5.log",
+      "sha256": "5338775d856e162e8953a4ea4367b6ecf76402b12df67d5150dc57fa6e45ab3b",
+      "bytes": 5358
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/musu40-task-compat-crash-f6e5afe8-16c2-4ea9-a63c-854618062c72.log",
+      "sha256": "d6b711791e373fc7bd924bfd0c3658e929e2a5c751acbd73a4c75c42184cbac2",
+      "bytes": 177
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/prepare.py",
+      "sha256": "cadacc2c349bf881156e792e42b91230dfe2cf81776ec5749df9ce8901b385f8",
+      "bytes": 5312
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/run-final-2.log",
+      "sha256": "421776a3928348461caf01f2312a8c3f920a12ec17a9d9c56cbcf60d2aaf2306",
+      "bytes": 2498
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/run-final.log",
+      "sha256": "f7484734f7f829697d84c640ea53b92585fcf4e710c6f2fa7891d1b6a2ed43f2",
+      "bytes": 1241
+    },
+    {
+      "path": "/tmp/musu40-task-compatibility-installed-api-driver/run.log",
+      "sha256": "9996ef210b3a97638f6435f7f2a057db62a43c13e4813a9ce3ef613bd97442b5",
+      "bytes": 1230
+    }
+  ]
+}

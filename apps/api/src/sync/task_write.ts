@@ -1,6 +1,8 @@
 import type { Task } from "@musubi/types";
 import type { TaskProjection } from "./adapter";
 import { providerRetryAfterMs, strongEventEtag } from "./event_write";
+import { jsonTaskProjection } from "@musubi/sync-runtime";
+export { diffTaskProjection, jsonTaskProjection, sameTaskProjection } from "@musubi/sync-runtime";
 
 export type ProviderTaskWriteCode = "task-provider-conflict" | "task-version-unavailable" | "task-write-failed" | "task-conditional-write-unsupported" | "task-recurrence-projection-unsupported" | "task-source-read-only" | "task-create-unconfirmed" | "task-projection-unavailable";
 export class ProviderTaskWriteError extends Error {
@@ -24,15 +26,6 @@ export function assertTaskMutationResponse(response: Response) {
 /** Preflight/read failure cannot have applied a task mutation. */
 export function assertTaskReadResponse(response: Response) {
   if (!response.ok) throw new ProviderTaskWriteError("task-write-failed", "not-written", response.status, providerRetryAfterMs(response));
-}
-export function jsonTaskProjection(value: TaskProjection): TaskProjection {
-  return JSON.parse(JSON.stringify(value));
-}
-export function diffTaskProjection(before: TaskProjection, after: TaskProjection): TaskProjection {
-  return Object.fromEntries(Object.entries(after).filter(([key, value]) => JSON.stringify(value) !== JSON.stringify(before[key])));
-}
-export function sameTaskProjection(before: TaskProjection, after: TaskProjection) {
-  return Object.keys(diffTaskProjection(before, after)).length === 0 && Object.keys(diffTaskProjection(after, before)).length === 0;
 }
 export function canonicalTaskProjection(task: Pick<Task, "title" | "description" | "status" | "start" | "due" | "isAllDay" | "completedAt" | "percentComplete" | "priority" | "recurrence" | "relatedTo" | "sequence" | "url">): TaskProjection {
   return jsonTaskProjection({ title: task.title, description: task.description ?? null, status: task.status, start: task.start ?? null, due: task.due ?? null, isAllDay: task.isAllDay, completedAt: task.completedAt ?? null, percentComplete: task.percentComplete, priority: task.priority, recurrence: task.recurrence ?? null, relatedTo: task.relatedTo ?? null, sequence: task.sequence, url: task.url ?? null });
