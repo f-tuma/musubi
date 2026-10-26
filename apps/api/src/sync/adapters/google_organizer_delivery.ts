@@ -1,3 +1,4 @@
+import { reserveProviderMutation, providerDeferral } from "../provider_budget";
 import { observedProviderFetch as fetch } from "../provider_http_metrics";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
@@ -122,7 +123,7 @@ export function googleOrganizerTransport(
         headers.Authorization = `Bearer ${await token(user, account)}`;
         if (!config.api.providerOrganizerEditsEnabled)
           throw new EventWriteError("organizer", "unsupported");
-        await beforeDispatch();
+        await reserveProviderMutation({ url: `${url}${request.action === "create" ? "" : `/${encodeURIComponent(id)}`}?sendUpdates=all&conferenceDataVersion=1`, method: request.action === "create" ? "POST" : request.action === "update" ? "PATCH" : "DELETE" }, beforeDispatch);
         signal?.throwIfAborted();
         let result: Response;
         try {
@@ -145,7 +146,7 @@ export function googleOrganizerTransport(
               signal,
             },
           );
-        } catch {
+        } catch (error) { if (providerDeferral(error)) throw error;
           throw new ProviderEventWriteError(
             "provider-write-failed",
             "unconfirmed",
@@ -154,7 +155,7 @@ export function googleOrganizerTransport(
         assertProviderEventMutationResponse(result);
         try {
           await result.body?.cancel();
-        } catch {
+        } catch (error) { if (providerDeferral(error)) throw error;
           /* Authoritative read follows. */
         }
         await accepted();

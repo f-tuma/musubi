@@ -1,3 +1,4 @@
+import { reserveProviderMutation, providerDeferral } from "../provider_budget";
 import { observedProviderFetch as fetch } from "../provider_http_metrics";
 import { resolveEventTimeEdit, unambiguousCivilToInstant, outlookEndpointZonesMatch, outlookTimeZoneMatches } from "@musubi/calendar";
 import { microsoftEventVersion } from "./microsoft_event_content";
@@ -227,13 +228,13 @@ export function microsoftOrganizerTransport(token: (user: string, account: strin
           if (!current || !matchesMeetingContent(baseline, patch, current, email)) return { kind: "unconfirmed" as const };
           return { kind: "observed" as const, native: { id: current.id, etag: current.etag, iCalUID: current.iCalUId }, state: microsoftEventState(current) };
         };
-        const current = saved.dispatch ? await read(baseline.id, true).catch(() => null) : await read(baseline.id, true);
+        const current = saved.dispatch ? await read(baseline.id, true).catch(error => { if (providerDeferral(error)) throw error; return null; }) : await read(baseline.id, true);
         // A possible notification dispatch is never repeated, even if Graph
         // still shows the old content. Acceptance and readback are independent.
         if (saved.dispatch) return saved.dispatch.acceptedAt ? observed(current) : { kind: "unconfirmed" as const };
         if (!current || !isDeepStrictEqual(current, baseline)) fail();
         if (matchesMeetingContent(baseline, patch, current, email)) return observed(current);
-        await beforeDispatch();
+        await reserveProviderMutation({ url: `${base}/${encodeURIComponent(baseline.id)}`, method: "PATCH" }, beforeDispatch);
         let acknowledged = false;
         try {
           const response = await fetch(`${base}/${encodeURIComponent(baseline.id)}`, {
@@ -247,8 +248,8 @@ export function microsoftOrganizerTransport(token: (user: string, account: strin
               await accepted(); acknowledged = true;
             }
           }
-        } catch (error) { if (signal?.aborted) throw error; }
-        const remaining = await read(baseline.id, true).catch(() => null);
+        } catch (error) { if (providerDeferral(error)) throw error; if (signal?.aborted) throw error; }
+        const remaining = await read(baseline.id, true).catch(error => { if (providerDeferral(error)) throw error; return null; });
         return acknowledged ? observed(remaining) : { kind: "unconfirmed" as const };
       }
       if (request.action === "delete") {
@@ -260,7 +261,7 @@ export function microsoftOrganizerTransport(token: (user: string, account: strin
         // Absence without the durable HTTP acceptance is not proof of notices.
         if (saved.dispatch) return { kind: saved.dispatch.acceptedAt && !current ? "deleted" as const : "unconfirmed" as const };
         if (!current || current.etag !== baseline.etag || !isDeepStrictEqual(current, baseline)) fail();
-        await beforeDispatch();
+        await reserveProviderMutation({ url: `${base}/${encodeURIComponent(baseline.id)}/cancel`, method: "POST" }, beforeDispatch);
         let acknowledged = false;
         try {
           const response = await fetch(`${base}/${encodeURIComponent(baseline.id)}/cancel`, {
@@ -268,7 +269,7 @@ export function microsoftOrganizerTransport(token: (user: string, account: strin
             body: "{}", redirect: "error", signal,
           });
           if (response.status === 202) { await accepted(); acknowledged = true; }
-        } catch (error) { if (signal?.aborted) throw error; }
+        } catch (error) { if (providerDeferral(error)) throw error; if (signal?.aborted) throw error; }
         const remaining = await read(baseline.id);
         return { kind: acknowledged && !remaining ? "deleted" as const : "unconfirmed" as const };
       }
@@ -278,12 +279,12 @@ export function microsoftOrganizerTransport(token: (user: string, account: strin
       const existing = await find(request);
       if (existing) return { kind: "observed" as const, ...existing };
       // Persist possible dispatch before POST. No later attempt may send again.
-      await beforeDispatch();
+      await reserveProviderMutation({ url: base, method: "POST" }, beforeDispatch);
       let returnedID: string | undefined;
       try {
         const response = await fetch(base, { method: "POST", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(saved.desired), redirect: "error", signal });
         if (response.status === 201) { returnedID = id.parse((await response.json()).id); await accepted(); }
-      } catch (error) { if (signal?.aborted) throw error; }
+      } catch (error) { if (providerDeferral(error)) throw error; if (signal?.aborted) throw error; }
       const observed = await find(request);
       if (observed && returnedID && observed.native.id !== returnedID) fail();
       return observed ? { kind: "observed" as const, ...observed } : { kind: "unconfirmed" as const };

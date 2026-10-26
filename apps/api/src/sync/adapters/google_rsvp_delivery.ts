@@ -1,3 +1,4 @@
+import { reserveProviderMutation, providerDeferral } from "../provider_budget";
 import { observedProviderFetch as fetch } from "../provider_http_metrics";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
@@ -65,26 +66,26 @@ export function googleRsvpMethods(getAuthorizedToken: (user: string, account: st
       try {
         const confirmed = confirmGoogleRsvp(current, intent);
         return { ...confirmed, recovered: true, notificationDelivery: "unknown" as const };
-      } catch { /* Full observation is required even after provider acceptance. */ }
+      } catch (error) { if (providerDeferral(error)) throw error; /* Full observation is required even after provider acceptance. */ }
       if (observeOnly) throw new ProviderEventWriteError("provider-write-failed", "unconfirmed");
       if (!isDeepStrictEqual(current, intent.baseline)) throw new ProviderEventWriteError("provider-conflict");
       // A native helper cannot grant durable permission. The host must commit
       // its permanent started marker before the first possible PATCH.
       if (!beforeWrite) throw new ProviderEventWriteError("provider-write-failed");
-      await beforeWrite();
+      await reserveProviderMutation({ url: `${ctx.url}?sendUpdates=all&conferenceDataVersion=1`, method: "PATCH" }, beforeWrite);
       signal?.throwIfAborted();
       let result: Response;
       try {
         result = await fetch(`${ctx.url}?sendUpdates=all&conferenceDataVersion=1`, { method: "PATCH", headers: { ...ctx.headers, "Content-Type": "application/json", "If-Match": ref.etag }, body: JSON.stringify(intent.patch), redirect: "error", signal });
-      } catch { throw new ProviderEventWriteError("provider-write-failed", "unconfirmed"); }
+      } catch (error) { if (providerDeferral(error)) throw error; throw new ProviderEventWriteError("provider-write-failed", "unconfirmed"); }
       assertProviderEventMutationResponse(result);
       // Disposing an already errored successful body must not skip the full
       // confirmation GET or escape as an ordinary pre-write network failure.
-      try { await result.body?.cancel(); } catch { /* Confirmation is authoritative. */ }
+      try { await result.body?.cancel(); } catch (error) { if (providerDeferral(error)) throw error; /* Confirmation is authoritative. */ }
       // A complete fresh GET also covers a truncated successful PATCH response.
       try {
         return { ...confirmGoogleRsvp(await ctx.read(), intent), recovered: false, notificationDelivery: "unknown" as const };
-      } catch (cause) {
+      } catch (cause) { if (providerDeferral(cause)) throw cause;
         if (cause instanceof ProviderEventWriteError && cause.outcome === "unconfirmed") throw cause;
         throw new ProviderEventWriteError("provider-write-failed", "unconfirmed");
       }

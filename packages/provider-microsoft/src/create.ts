@@ -1,3 +1,4 @@
+import { dispatchNativeHttp } from "./http-dispatch";
 import { z } from "zod";
 import { MicrosoftProviderError } from "./types";
 import type {
@@ -109,30 +110,25 @@ export function createMicrosoftPersonalEventCreateProvider(ports: MicrosoftCreat
     mode: "preflight" | "listing" | "post" = "listing", body?: string): Promise<Response> {
     signal?.throwIfAborted();
     const bounded = signal ? AbortSignal.any([signal, AbortSignal.timeout(15_000)]) : AbortSignal.timeout(15_000);
-    const started = ports.clock.nowMonotonicMs();
-    let status: number | "network-error" | "aborted" = "network-error";
     try {
-      const response = await ports.http.fetch(url, { method, signal: bounded,
+      const response = await dispatchNativeHttp(ports.http, String(url), { method, signal: bounded,
         ...(strict || mode !== "preflight" ? { redirect: "error" as const } : {}),
         headers: { Authorization: `Bearer ${current.accessToken}`,
           ...(method === "POST" ? { "Content-Type": "application/json" } : mode === "listing" ? {
             Prefer: strict ? 'outlook.timezone="UTC", outlook.body-content-type="text"' : 'outlook.timezone="UTC"',
             "Cache-Control": "no-cache" } : strict ? { "Cache-Control": "no-cache" } : {}) },
-        ...(body === undefined ? {} : { body }) });
-      status = response.status;
+        ...(body === undefined ? {} : { body }) }, (requestInit) => ports.http.fetch(url, requestInit), ports.clock, (status, durationMs) => ports.telemetry.record({ provider: "microsoft", family: "event", method, status, durationMs }));
+
       // POST acceptance is retained independently; strict readback verifies its native identity.
       if (strict && method === "GET" && (response.redirected || response.url && response.url !== url)) throw failed();
       bounded.throwIfAborted();
       return response;
     } catch (error) {
-      if (bounded.aborted || error instanceof Error && error.name === "AbortError") status = "aborted";
+      if (ports.http.isDispatchDeferred?.(error)) throw error;
       if (error instanceof MicrosoftProviderError) throw error;
       if (method === "POST") throw new MicrosoftProviderError("provider-write-failed", "unconfirmed");
       if (strict) throw failed();
       throw error;
-    } finally {
-      try { ports.telemetry.record({ provider: "microsoft", family: "event", method, status,
-        durationMs: Math.max(0, ports.clock.nowMonotonicMs() - started) }); } catch { /* Diagnostics have no authority. */ }
     }
   }
   function readable(response: Response, complete: boolean): void {

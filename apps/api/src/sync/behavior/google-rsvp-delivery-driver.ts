@@ -8,7 +8,9 @@ import { mock } from "node:test";
 // callback is supplied below. Refuse any unexpected DB fallback.
 const unexpectedDb = () => { throw new Error("Unexpected DB port in native RSVP scenario"); };
 mock.module(new URL("../../../../../packages/db/src/index.ts", import.meta.url), { namedExports: { getOAuthCredentials: unexpectedDb, hasProviderSyncScopes: unexpectedDb } });
-mock.module(new URL("../../../../../packages/config/src/index.ts", import.meta.url), { namedExports: { config } });
+const unexpectedDiagnostic = () => { throw new Error("Unexpected diagnostic in native RSVP scenario"); };
+mock.module(new URL("../../../../../packages/config/src/index.ts", import.meta.url), { namedExports: { config,
+  logger: { warn: unexpectedDiagnostic, error: unexpectedDiagnostic, info: unexpectedDiagnostic, debug: unexpectedDiagnostic } } });
 const { googleRsvpMethods } = await import("../adapters/google_rsvp_delivery");
 const { googleRsvpEvidence } = await import("../adapters/google_rsvp");
 

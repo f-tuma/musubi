@@ -1,3 +1,4 @@
+import { providerDeferral } from "./provider_budget";
 import { stopGraphOccurrenceContent, confirmGraphOccurrenceContent, markGraphOccurrenceContent, completeGraphOccurrenceContent } from "@musubi/db";
 import { stopUndispatchedGraphMeetingCancellation, confirmGraphMeetingCancellation, markGraphMeetingCancellation, completeGraphMeetingCancellation } from "@musubi/db";
 import { confirmGraphSeriesDeletionOutbox, completeGraphSeriesDeletionOutbox } from "@musubi/db";
@@ -349,6 +350,15 @@ export function eventCompatibilityPorts(original: EventOutboxRow & { reconciling
       await finishEventOutbox(row.id, token, input.status, input.code, { uncertain: input.uncertain, ...(nextAttemptAt ? { nextAttemptAt } : {}), ...(input.remoteSnapshot ? { remoteSnapshot: input.remoteSnapshot } : {}) });
     },
     async fail(error, facts) {
+      const deferral = providerDeferral(error);
+      if (deferral) {
+        const uncertain = googleDispatchPossible || facts.caldavDispatchPossible || row.reconciling || facts.mutationStarted || facts.writerFulfilled;
+        await finishEventOutbox(row.id, token, uncertain ? "unconfirmed" : "retry", "provider-budget-deferred", {
+          uncertain, nextAttemptAt: new Date(deferral.retryAtMs), ...(facts.resultRef ? { resultRef: facts.resultRef } : {}),
+          ...(facts.remoteSnapshot ? { remoteSnapshot: facts.remoteSnapshot } : {}),
+        });
+        return;
+      }
       // Existing host error/rollback authority is deliberately retained here.
     const providerError =
       error instanceof ProviderEventWriteError ? error : undefined;

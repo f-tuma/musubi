@@ -1,5 +1,7 @@
-import { and, eq } from "drizzle-orm";
+import { createHash } from "node:crypto";
+import { and, eq, sql } from "drizzle-orm";
 import { caldavAccounts, db } from "..";
+import type { DbTransaction } from "./calendars";
 
 // Stores the ALREADY-ENCRYPTED password blob — this layer never sees plaintext.
 // One user can have several CalDAV accounts; reconnecting the same server+user
@@ -53,4 +55,25 @@ export async function getOwnedCaldavAccountById(userID: string, id: string) {
     serverUrl: caldavAccounts.serverUrl, username: caldavAccounts.username, encryptedPassword: caldavAccounts.encryptedPassword,
   }).from(caldavAccounts).where(and(eq(caldavAccounts.id, id), eq(caldavAccounts.userID, userID)));
   return res ?? null;
+}
+
+/** Private credential/session boundary. SQL text preserves PostgreSQL's six
+ * microsecond digits; the historical numeric operation timestamp stays a floor.
+ * Neither this credential row nor its private digest belongs in logs/metrics. */
+export async function getOwnedCaldavAccountBinding(userID: string, id: string,
+  tx?: DbTransaction) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return null;
+  const query = (tx ?? db).select({
+    id: caldavAccounts.id, userID: caldavAccounts.userID,
+    serverUrl: caldavAccounts.serverUrl, username: caldavAccounts.username,
+    encryptedPassword: caldavAccounts.encryptedPassword,
+    credentialRevision: sql<string>`to_char(${caldavAccounts.updatedAt}, 'YYYY-MM-DD"T"HH24:MI:SS.US')`,
+  }).from(caldavAccounts).where(and(eq(caldavAccounts.id, id), eq(caldavAccounts.userID, userID)));
+  const [row] = await (tx ? query.for("share") : query);
+  if (!row) return null;
+  const credentialFingerprint = createHash("sha256").update(JSON.stringify([
+    "caldav-credential-v1", row.id, row.credentialRevision, row.serverUrl,
+    row.username, row.encryptedPassword,
+  ])).digest("hex");
+  return { ...row, credentialFingerprint };
 }

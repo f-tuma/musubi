@@ -1,3 +1,4 @@
+import { reserveProviderMutation, providerDeferral } from "../provider_budget";
 import { observedProviderFetch as fetch } from "../provider_http_metrics";
 import { EventSchema, type MicrosoftSeriesCancellationRequest } from "@musubi/types";
 import { assertGraphMeetingRequest, graphMeetingVersion, sameCaldavScopeContext as same, type GraphFamilyObservation, type GraphMeetingContext, type GraphMeetingCancellation } from "@musubi/db";
@@ -106,7 +107,7 @@ export async function cancelGraphMeeting(token: string, saved: GraphMeetingCance
   const master = await transport.readTarget(saved.context.masterID);
   const native = saved.targetID === saved.context.masterID ? master : await transport.readTarget(saved.targetID);
   if (master.etag !== saved.baseline.master.etag || native.etag !== target.etag || native.iCalUId !== target.icalUid) fail();
-  await mark();
+  await reserveProviderMutation({ url: transport.path(saved.targetID) + "/cancel", method: "POST" }, mark);
   try {
     const response = await transport.cancel(saved.targetID, target.etag);
     if (response.status !== 202) return unknown();
@@ -114,7 +115,7 @@ export async function cancelGraphMeeting(token: string, saved: GraphMeetingCance
     const after = await transport.read(saved.template, saved.baseline.master.icalUid);
     if (!graphMeetingCancellationObserved(saved, after)) return unknown();
     return after;
-  } catch (error) {
+  } catch (error) { if (providerDeferral(error)) throw error;
     if (error instanceof ProviderEventWriteError && (error.providerStatus === 429 ||
         error.providerStatus === 408 || (error.providerStatus ?? 0) >= 500)) {
       throw new ProviderEventWriteError("provider-write-failed", "unconfirmed", error.providerStatus, error.retryAfterMs);

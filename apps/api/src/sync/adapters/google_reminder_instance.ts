@@ -1,3 +1,4 @@
+import { reserveProviderMutation, providerDeferral } from "../provider_budget";
 import { observedProviderFetch as fetch } from "../provider_http_metrics";
 import { unambiguousCivilToInstant } from "@musubi/calendar";
 import { isDeepStrictEqual } from "node:util";
@@ -48,7 +49,7 @@ export function googleReminderInstanceEvidence(input: unknown, expected: { event
     try {
       if (unambiguousCivilToInstant(model.data.startLocal, model.data.timeZone).getTime() !== event.start.getTime() ||
           unambiguousCivilToInstant(model.data.endLocal, model.data.timeZone).getTime() !== event.end.getTime()) throw unsupported();
-    } catch { throw unsupported(); }
+    } catch (error) { if (providerDeferral(error)) throw error; throw unsupported(); }
   }
   return { baseline, occurrence: structuredClone(binding.data), reminders: GoogleReminderWriteSchema.parse(reminders) };
 }
@@ -70,7 +71,7 @@ export function confirmGoogleReminderInstance(input: unknown, evidence: GoogleRe
   const strip = (value: z.infer<typeof native>) => { const { etag: _etag, updated: _updated, reminders: _reminders, ...rest } = value; return rest; };
   if (!isDeepStrictEqual(strip(parsed.data), strip(evidence.baseline)) || !sameReminders(evidence.reminders, parsed.data.reminders)) throw new ProviderEventWriteError("provider-conflict", "unconfirmed");
   try { requireEventEtag(parsed.data.etag); }
-  catch { throw new ProviderEventWriteError("provider-version-unavailable", "unconfirmed"); }
+  catch (error) { if (providerDeferral(error)) throw error; throw new ProviderEventWriteError("provider-version-unavailable", "unconfirmed"); }
   const verified = googleReminderInstanceEvidence(parsed.data, { eventID: evidence.baseline.id, etag: parsed.data.etag, occurrence: evidence.occurrence }, evidence.reminders);
   return { ref: { externalEventId: verified.baseline.id, etag: requireEventEtag(verified.baseline.etag) }, state: googleEventState(verified.baseline), event: googleReminderInstanceProjection(verified) };
 }
@@ -108,19 +109,19 @@ export function googleReminderInstanceTransport(getAuthorizedToken: (user: strin
       const intent = googleReminderInstanceEvidence(input.baseline, { eventID: input.baseline.id, etag: input.baseline.etag, occurrence: input.occurrence }, input.reminders);
       const ctx = await context(user, account, calendar, intent.baseline.id, signal);
       const current = await ctx.read();
-      try { return { ...confirmGoogleReminderInstance(current, intent), recovered: true }; } catch { /* Only the exact baseline permits one PATCH. */ }
+      try { return { ...confirmGoogleReminderInstance(current, intent), recovered: true }; } catch (error) { if (providerDeferral(error)) throw error; /* Only the exact baseline permits one PATCH. */ }
       // Google can materialize instance defaults as explicit overrides. Only
       // exact read-only confirmation is safe for historical default intents.
       if (intent.reminders.useDefault) throw unsupported();
       if (!isDeepStrictEqual(current, intent.baseline)) throw new ProviderEventWriteError("provider-conflict");
-      await beforeWrite(); signal?.throwIfAborted();
+      await reserveProviderMutation({ url: `${ctx.url}?sendUpdates=none`, method: "PATCH" }, beforeWrite); signal?.throwIfAborted();
       let response: Response;
       try { response = await fetch(`${ctx.url}?sendUpdates=none`, { method: "PATCH", headers: { ...ctx.headers, "Content-Type": "application/json", "If-Match": intent.baseline.etag }, body: JSON.stringify({ reminders: intent.reminders }), redirect: "error", signal }); }
-      catch { throw new ProviderEventWriteError("provider-write-failed", "unconfirmed"); }
+      catch (error) { if (providerDeferral(error)) throw error; throw new ProviderEventWriteError("provider-write-failed", "unconfirmed"); }
       assertProviderEventMutationResponse(response);
-      try { await response.body?.cancel(); } catch { /* Full GET is authoritative. */ }
+      try { await response.body?.cancel(); } catch (error) { if (providerDeferral(error)) throw error; /* Full GET is authoritative. */ }
       try { return { ...confirmGoogleReminderInstance(await ctx.read(), intent), recovered: false }; }
-      catch (error) {
+      catch (error) { if (providerDeferral(error)) throw error;
         if (error instanceof ProviderEventWriteError && error.outcome === "unconfirmed") throw error;
         throw new ProviderEventWriteError("provider-write-failed", "unconfirmed");
       }

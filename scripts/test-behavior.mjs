@@ -6,6 +6,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const REPOSITORY = fileURLToPath(new URL("../", import.meta.url));
 const SUITES = {
+  "read-attempt": "apps/api/src/sync/behavior/read-attempt.json",
+  "fair-work": "packages/sync-runtime/src/behavior/fair-work.json",
+  "caldav-discovery": "apps/api/src/sync/behavior/caldav-discovery.json",
   "google-delete": "packages/sync-runtime/src/behavior/google-delete.json",
   "google-create": "packages/sync-runtime/src/behavior/google-create.json",
   "google-task-update": "packages/sync-runtime/src/behavior/google-task-update.json",
@@ -158,12 +161,16 @@ async function runSuite(selection, options, { root, execute, env }) {
   let directory;
   try {
     let child, results, ancillaryFailed = false, uiFailed = false;
-    if (["google-delete", "google-create", "google-task-update", "google-task-delete", "google-task-create", "microsoft-delete", "microsoft-create", "caldav-delete", "caldav-create"].includes(selection.name)) {
-      const entry = { "google-delete": "cli.ts", "google-create": "create-cli.ts", "google-task-update": "google-task-update-cli.ts", "google-task-delete": "google-task-delete-cli.ts", "google-task-create": "google-task-create-cli.ts", "microsoft-delete": "microsoft-delete-cli.ts", "microsoft-create": "microsoft-create-cli.ts", "caldav-delete": "caldav-delete-cli.ts", "caldav-create": "caldav-create-cli.ts" }[selection.name];
+    if (["fair-work", "google-delete", "google-create", "google-task-update", "google-task-delete", "google-task-create", "microsoft-delete", "microsoft-create", "caldav-delete", "caldav-create"].includes(selection.name)) {
+      const entry = { "fair-work": "fair-work-cli.ts", "google-delete": "cli.ts", "google-create": "create-cli.ts", "google-task-update": "google-task-update-cli.ts", "google-task-delete": "google-task-delete-cli.ts", "google-task-create": "google-task-create-cli.ts", "microsoft-delete": "microsoft-delete-cli.ts", "microsoft-create": "microsoft-create-cli.ts", "caldav-delete": "caldav-delete-cli.ts", "caldav-create": "caldav-create-cli.ts" }[selection.name];
       child = await execute(process.execPath, ["--import", "tsx", join(root, "packages/sync-runtime/src/behavior", entry), "--json",
         ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });
       results = runtimeResults(child.stdout, selection);
-    } else if (["task-delivery", "event-delivery", "google-rsvp-delivery"].includes(selection.name)) {
+    } else if (selection.name === "read-attempt") {
+      child = await execute(process.execPath, ["--import", "tsx", join(root, "apps/api/src/sync/behavior/read-attempt-cli.ts"), "--json",
+        ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });
+      results = runtimeResults(child.stdout, selection);
+    } else if (["caldav-discovery", "task-delivery", "event-delivery", "google-rsvp-delivery"].includes(selection.name)) {
       child = await execute(process.execPath, ["--experimental-test-module-mocks", "--experimental-default-type=module", "--import", "tsx",
         join(root, `apps/api/src/sync/behavior/${selection.name}-cli.ts`), "--json",
         ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });

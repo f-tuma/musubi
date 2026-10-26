@@ -1,3 +1,5 @@
+import { guardHttpDispatch } from "./http-dispatch";
+import { providerDeferral } from "./provider-budget";
 import {
   createGooglePersonalEventCreateProvider, GoogleProviderError, strongGoogleEtag,
   type GoogleNativeCreateReadEvidence, type GooglePersonalCreate,
@@ -30,6 +32,8 @@ function frozen<T>(value: T): T {
   return Object.freeze(Object.fromEntries(Object.entries(value).map(([key, item]) => [key, frozen(item)]))) as T;
 }
 function runtimeError(error: unknown, phase: RuntimePhase): RuntimeErrorInfo {
+  const deferral = providerDeferral(error);
+  if (deferral) return { code: "provider-budget-deferred", outcome: "not-written", phase, deferral };
   if (error instanceof SyncRuntimeInterrupted) return { code: "runtime-attempt-aborted", outcome: "unconfirmed", phase,
     interruption: error.reason === "finished" ? "cancelled" : error.reason };
   if (error instanceof GoogleProviderError) return frozen({ code: error.code, outcome: error.outcome, phase,
@@ -185,7 +189,7 @@ export async function runClaimedGooglePersonalCreate(input: ClaimedGooglePersona
   const handleMutationError = async (error: unknown) => {
     const at = error && typeof error === "object" ? errorPhases.get(error) ?? "mutation" : "mutation";
     const info = runtimeError(error, at);
-    if (at === "mutation" && info.outcome === "unconfirmed" && facts.possibleDispatch) {
+    if (!info.deferral && at === "mutation" && info.outcome === "unconfirmed" && facts.possibleDispatch) {
       facts = frozen({ ...facts, provider: facts.provider.kind === "accepted" ? facts.provider : { kind: "uncertain" } });
       await persist(); await checkpoint("afterUncertain");
       const decision = choose({ kind: "failure", error: info }, at);
@@ -199,7 +203,7 @@ export async function runClaimedGooglePersonalCreate(input: ClaimedGooglePersona
     await attempt.run(async () => {
       if (host.prepare) { attempt.guard(); await host.prepare(attempt.signal); attempt.guard(); }
       provider = createGooglePersonalEventCreateProvider({ ...transport,
-        http: { fetch(url, init) { attempt.guard(); return transport.http.fetch(url, init); } },
+        http: guardHttpDispatch(transport.http, attempt.guard),
         accountSession: { async open(connection, signal) {
           attempt.guard(); const previous = phase; phase = "credentials";
           try {

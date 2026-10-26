@@ -1,3 +1,5 @@
+import { guardHttpDispatch } from "./http-dispatch";
+import { providerDeferral } from "./provider-budget";
 import {
   createCaldavPersonalEventDeleteProvider, CaldavProviderError, strongCaldavEtag,
   type CaldavNativeDeleteReadEvidence, type CaldavPersonalDelete,
@@ -35,6 +37,8 @@ function frozen<T>(value: T): T {
   return Object.freeze(Object.fromEntries(Object.entries(value).map(([key, item]) => [key, frozen(item)]))) as T;
 }
 function runtimeError(error: unknown, phase: RuntimePhase): CaldavRuntimeErrorInfo {
+  const deferral = providerDeferral(error);
+  if (deferral) return { code: "provider-budget-deferred", outcome: "not-written", phase, deferral };
   if (error instanceof SyncRuntimeInterrupted) return { code: "runtime-attempt-aborted", outcome: "unconfirmed", phase,
     interruption: error.reason === "finished" ? "cancelled" : error.reason };
   if (error instanceof CaldavProviderError) return frozen({ code: error.code, outcome: error.outcome, phase,
@@ -195,7 +199,7 @@ export async function runClaimedCaldavPersonalDelete(input: ClaimedCaldavPersona
     const errorPhase = error && typeof error === "object" ? errorPhases.get(error) ?? "mutation" : "mutation";
     const info = runtimeError(error, errorPhase);
     if (error && typeof error === "object") errorPhases.set(error, errorPhase);
-    if (info.phase === "mutation" && info.outcome === "unconfirmed" && facts.possibleDispatch) {
+    if (!info.deferral && info.phase === "mutation" && info.outcome === "unconfirmed" && facts.possibleDispatch) {
       facts = frozen({ ...facts, provider: facts.provider.kind === "accepted" ? facts.provider : { kind: "uncertain" } });
       await persist(); await checkpoint("afterUncertain");
       const decision = choose({ kind: "failure", error: info }, "mutation");
@@ -223,7 +227,7 @@ export async function runClaimedCaldavPersonalDelete(input: ClaimedCaldavPersona
         network: { allowPrivate: transport.network.allowPrivate, async lookupImpl(hostname, lookupOptions) {
           attempt.guard(); const addresses = await transport.network.lookupImpl(hostname, lookupOptions); attempt.guard(); return addresses;
         } },
-        http: { fetchPinned(url, init, address) { attempt.guard(); return transport.http.fetchPinned(url, init, address); } },
+        http: guardHttpDispatch(transport.http, attempt.guard),
         accountSession: { async open(connection, signal) {
           attempt.guard(); const previous = phase; phase = "credentials";
           try {

@@ -44,6 +44,14 @@ test("DAV strong ETag is opaque native text with no weak-tag repair", () => {
   for (const value of [undefined, null, "", "*", 'W/"weak"', ' "space"', '"bad\nline"', '"emoji😀"']) assert.equal(strongCaldavEtag(value), null);
 });
 
+test("host dispatch refusal survives strict DAV outer catches without a pinned send or metric", async () => {
+  const refusal = new Error("fixture budget refusal"), f = fixture([], "strict-reference");
+  f.ports.http.dispatch = async () => { throw refusal; }; f.ports.http.isDispatchDeferred = value => value === refusal;
+  await assert.rejects(f.provider.readForDelete(target), value => value === refusal);
+  await assert.rejects(f.provider.delete(input), value => value === refusal);
+  assert.equal(f.calls.length, 0); assert.equal(f.metrics.length, 0); assert.equal(f.resolutions(), 2);
+});
+
 test("exact native resource observation retains bytes and provider UID with nullable versions", async () => {
   for (const tag of [input.acceptedEtag, 'W/"weak"', null]) {
     const f = fixture([response(native, 200, tag === null ? {} : { etag: tag })]);

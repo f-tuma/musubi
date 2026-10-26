@@ -1,3 +1,4 @@
+import type { NativeHttpDispatch } from "./http-dispatch";
 /** Native addresses and host-owned connection incarnations; no storage identity is interpreted here. */
 export interface MicrosoftEventTarget {
   readonly connectionId: string;
@@ -31,7 +32,7 @@ export interface MicrosoftDeleteProviderPorts {
   readonly accountSession: {
     open(connection: Pick<MicrosoftEventTarget, "connectionId" | "connectionGeneration">, signal?: AbortSignal): Promise<MicrosoftAccountSession>;
   };
-  readonly http: { fetch(url: string, init: RequestInit): Promise<Response> };
+  readonly http: NativeHttpDispatch & { fetch(url: string, init: RequestInit): Promise<Response> };
   readonly clock: { nowEpochMs(): number; nowMonotonicMs(): number };
   /** Diagnostic failures cannot change the provider outcome; labels contain no native identities or payloads. */
   readonly telemetry: { record(metric: MicrosoftRequestMetric): void };

@@ -1,3 +1,4 @@
+import { reserveProviderMutation } from "../provider_budget";
 import { observedProviderFetch as fetch } from "../provider_http_metrics";
 import { verifiedGraphIdentity } from "./microsoft_identity";
 import { isDeepStrictEqual } from "node:util";
@@ -46,10 +47,11 @@ export async function graphRsvpSession(token: string, accountID: string, calenda
       if (matches(current)) return { kind: "observed" as const, evidence: current };
       if (dispatched) return { kind: "unconfirmed" as const };
       if (!isDeepStrictEqual(current, saved)) fail();
-      await beforeDispatch();
+      const action = saved.response === "accepted" ? "accept" : saved.response === "tentative" ? "tentativelyAccept" : "decline";
+      await reserveProviderMutation({ url: `${url(saved.series ? saved.occurrence!.externalSeriesID : saved.id)}/${action}`, method: "POST" }, beforeDispatch);
       // The durable marker is committed before this call. Even a definite HTTP
       // failure cannot remove it or grant permission to repeat the action.
-      const action = saved.response === "accepted" ? "accept" : saved.response === "tentative" ? "tentativelyAccept" : "decline";
+
       const response = await fetch(`${url(saved.series ? saved.occurrence!.externalSeriesID : saved.id)}/${action}`, { method: "POST", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify({ sendResponse: true }), redirect: "error", signal });
       if (response.status !== 202) throw new ProviderEventWriteError("provider-write-failed", "unconfirmed", response.status);
       await accepted();

@@ -267,6 +267,7 @@ export type CalendarAdapter = {
   listAccounts(
     userID: string,
     accountId?: string,
+    options?: { metadataOnly?: boolean },
   ): Promise<{ id: string; label: string }[]>;
 
   // Which calendars can this account sync?

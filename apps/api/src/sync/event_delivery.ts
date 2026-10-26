@@ -1,3 +1,6 @@
+import { withDeliveryBudgetScope } from "./provider_budget";
+import { currentSyncWorkParking } from "./work_coordinator";
+import * as budgetPersistence from "@musubi/db";
 import { runClaimedEventCompatibility } from "@musubi/sync-runtime";
 import { eventCompatibilityPorts } from "./event_compatibility_host";
 import { deliverSharedCaldavCreate, usesSharedCaldavCreate } from "./caldav_shared_create_delivery";
@@ -28,6 +31,8 @@ export async function deliverEventOutbox(
   const row = await claimEventOutbox(id);
   if (!row) return getEventOutboxRow(id);
   const token = row.leaseToken!;
+  return withDeliveryBudgetScope(row.provider, row.userID, row.accountID, { operationId: row.id, attemptId: token,
+    sourceIncarnationKey: row.externalCalendarLinkID }, async () => {
   const decoded = decodeEventOutboxOperation(row);
   if (decoded.kind === "blocked") {
     // A claim does not prove dispatch. Preserve prior uncertainty, payload and
@@ -88,4 +93,8 @@ export async function deliverEventOutbox(
       (row.payload.rsvp.caldavDelivery === undefined || row.payload.rsvp.caldavDelivery.startedAt !== undefined),
   }, host, native, options));
   return getEventOutboxRow(row.id);
+  }, { park: currentSyncWorkParking() ? async (retryAtMs, signal) => {
+    if (!await budgetPersistence.postponeEventOutbox(row.id, token, retryAtMs)) throw new Error("Event work lease changed while parking.");
+    await currentSyncWorkParking()!(retryAtMs, signal);
+  } : undefined });
 }

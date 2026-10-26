@@ -6,6 +6,9 @@ import { test } from "node:test";
 import { parseArguments, runBehavior, runCli } from "./test-behavior.mjs";
 
 const manifests = {
+  "read-attempt": "apps/api/src/sync/behavior/read-attempt.json",
+  "fair-work": "packages/sync-runtime/src/behavior/fair-work.json",
+  "caldav-discovery": "apps/api/src/sync/behavior/caldav-discovery.json",
   "google-delete": "packages/sync-runtime/src/behavior/google-delete.json",
   "google-create": "packages/sync-runtime/src/behavior/google-create.json",
   "google-task-update": "packages/sync-runtime/src/behavior/google-task-update.json",
@@ -127,6 +130,19 @@ test("task delivery runs only its fixed module-port CLI and rejects another boun
     stdout: JSON.stringify({ schemaVersion: 1, suite: "task-delivery", error: { code: "unexpected-port", scenarioId: "second", message: "PRIVATE PORT DETAIL" } }) }) });
   assert.equal(portFailure.suites[0].errorCode, "unexpected-port"); assert.equal(portFailure.suites[0].scenarioId, "second");
   assert.ok(!JSON.stringify(portFailure).includes("PRIVATE"));
+});
+
+test("read attempt selection uses only its fixed production timer-port CLI", async t => {
+  const root = await fixture(t), args = ["--suite", "read-attempt", "--scenario", "second"];
+  const report = await runBehavior(args, { root, execute: async (command, childArgs, options) => {
+    assert.equal(command, process.execPath);
+    assert.deepEqual(childArgs, ["--import", "tsx", join(root, "apps/api/src/sync/behavior/read-attempt-cli.ts"), "--json", "--scenario", "second"]);
+    assert.equal(options.cwd, root);
+    return runtime([scenarios[1]], { suite: "read-attempt" });
+  } });
+  assert.equal(report.passed, 1); assert.equal(report.errors, 0);
+  const wrong = await runBehavior(args, { root, execute: async () => runtime([scenarios[1]], { suite: "fair-work" }) });
+  assert.equal(wrong.failed, 1);
 });
 
 test("Google task UPDATE uses its fixed shared-kernel CLI and rejects an event suite report", async t => {
@@ -385,7 +401,7 @@ test("default runs every fixed suite and emits one clean aggregate JSON document
   const output = [];
   const code = await runCli(["--json"], line => output.push(line), { root, execute: async (_command, args) => {
     launches++;
-    if (args.includes("--import")) return runtime(scenarios, { suite: args.some(arg => arg.endsWith("/google-rsvp-delivery-cli.ts")) ? "google-rsvp-delivery" : args.some(arg => arg.endsWith("/event-delivery-cli.ts")) ? "event-delivery" : args.some(arg => arg.endsWith("/task-delivery-cli.ts")) ? "task-delivery" :
+    if (args.includes("--import")) return runtime(scenarios, { suite: args.some(arg => arg.endsWith("/read-attempt-cli.ts")) ? "read-attempt" : args.some(arg => arg.endsWith("/fair-work-cli.ts")) ? "fair-work" : args.some(arg => arg.endsWith("/caldav-discovery-cli.ts")) ? "caldav-discovery" : args.some(arg => arg.endsWith("/google-rsvp-delivery-cli.ts")) ? "google-rsvp-delivery" : args.some(arg => arg.endsWith("/event-delivery-cli.ts")) ? "event-delivery" : args.some(arg => arg.endsWith("/task-delivery-cli.ts")) ? "task-delivery" :
       args.some(arg => arg.endsWith("/google-task-create-cli.ts")) ? "google-task-create" :
       args.some(arg => arg.endsWith("/google-task-delete-cli.ts")) ? "google-task-delete" :
       args.some(arg => arg.endsWith("/google-task-update-cli.ts")) ? "google-task-update" :
@@ -398,11 +414,11 @@ test("default runs every fixed suite and emits one clean aggregate JSON document
     return { code: 0, stdout: "NOISY CHILD STDOUT", stderr: "NOISY CHILD STDERR" };
   } });
   assert.equal(code, 0);
-  assert.equal(launches, 13);
+  assert.equal(launches, Object.keys(manifests).length);
   assert.equal(output.length, 1);
   const report = JSON.parse(output[0]);
   assert.equal(report.schemaVersion, 1);
-  assert.equal(report.passed, 26);
+  assert.equal(report.passed, Object.keys(manifests).length * scenarios.length);
   assert.equal(report.failed, 0);
   assert.deepEqual(report.suites.map(item => item.suite), Object.keys(manifests));
   assert.ok(!output[0].includes("NOISY"));

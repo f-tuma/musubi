@@ -1,3 +1,4 @@
+import { dispatchNativeHttp } from "./http-dispatch";
 import { strongGoogleEtag } from "./etag";
 import { googleTaskDataRecord, parseGoogleTaskProjection, strictGoogleTaskNativeError } from "./task-projection";
 import { requireGoogleTaskEtag, taskExact, taskIdentity, taskRetryAfter } from "./task-transport";
@@ -53,19 +54,15 @@ export function createGoogleTaskCreateProvider(ports: GoogleTaskCreateProviderPo
   }
   async function request(url: string, current: GoogleTaskAccountSession, method: "GET" | "POST", signal?: AbortSignal, serialized?: string): Promise<Response> {
     signal?.throwIfAborted();
-    const started = ports.clock.nowMonotonicMs(); let status: number | "network-error" | "aborted" = "network-error";
     try {
-      const response = await ports.http.fetch(url, { method, signal, ...(method === "GET" || strict ? { redirect: "error" as const } : {}),
+      const response = await dispatchNativeHttp(ports.http, String(url), { method, signal, ...(method === "GET" || strict ? { redirect: "error" as const } : {}),
         headers: { Authorization: `Bearer ${current.accessToken}`, ...(method === "GET" ?
           strict || !url.startsWith(`${ORIGIN}/users/@me/lists/`) ? { "Cache-Control": "no-cache" } : {} : { "Content-Type": "application/json" }) },
-        ...(serialized === undefined ? {} : { body: serialized }) });
-      status = response.status; return response;
+        ...(serialized === undefined ? {} : { body: serialized }) }, (requestInit) => ports.http.fetch(url, requestInit), ports.clock, (status, durationMs) => ports.telemetry.record({ provider: "google", family: "task", method, status, durationMs }));
+      return response;
     } catch (error) {
-      if (signal?.aborted || error instanceof Error && error.name === "AbortError") status = "aborted";
+      if (ports.http.isDispatchDeferred?.(error)) throw error;
       throw error;
-    } finally {
-      try { ports.telemetry.record({ provider: "google", family: "task", method, status, durationMs: Math.max(0, ports.clock.nowMonotonicMs() - started) }); }
-      catch { /* Diagnostics cannot alter native evidence. */ }
     }
   }
   const invalidScope = (response: Response, url: string) => response.redirected || response.url !== "" && response.url !== url;

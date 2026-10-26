@@ -80,6 +80,31 @@ async function main() {
     /discovery unavailable/,
   );
 
+  // Account enumeration must reach B before waiting for A's provider work.
+  // Actual HTTP concurrency is bounded by the shared coordinator, not here.
+  let releaseA!: () => void, reachedB!: () => void;
+  const blockedA = new Promise<void>(resolve => { releaseA = resolve; });
+  const startedB = new Promise<void>(resolve => { reachedB = resolve; });
+  const concurrent = runProviderSyncs([{
+    provider: "working-provider",
+    async listAccounts(_userID, _accountID, options) {
+      assert.equal(options?.metadataOnly, true);
+      return [{ id: "a", label: "A" }, { id: "b", label: "B" }];
+    },
+  }], "user-1", {}, {
+    metadataOnly: true, concurrent: true, onFailure: () => assert.fail("Unexpected failure"),
+    async syncAccount(_adapter, _userID, account) {
+      if (account.id === "a") await blockedA;
+      else reachedB();
+      return [account.id];
+    },
+  });
+  await Promise.race([startedB, new Promise<never>((_, reject) => {
+    const timer = setTimeout(() => reject(new Error("B was hidden behind A")), 1000); timer.unref();
+  })]);
+  releaseA();
+  assert.deepEqual(await concurrent, ["a", "b"]);
+
   console.log("provider orchestration self-check: OK");
 }
 

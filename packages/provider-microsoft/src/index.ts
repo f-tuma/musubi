@@ -1,3 +1,4 @@
+import { dispatchNativeHttp } from "./http-dispatch";
 import { z } from "zod";
 import { MicrosoftProviderError } from "./types";
 import type {
@@ -143,24 +144,19 @@ export function createMicrosoftPersonalEventDeleteProvider(ports: MicrosoftDelet
     prefer = SMALL_PREFER, etag?: string): Promise<Response> {
     signal?.throwIfAborted();
     const bounded = signal ? AbortSignal.any([signal, AbortSignal.timeout(15_000)]) : AbortSignal.timeout(15_000);
-    const started = ports.clock.nowMonotonicMs();
-    let status: number | "network-error" | "aborted" = "network-error";
     try {
-      const response = await ports.http.fetch(url, { method, redirect: "error", signal: bounded,
+      const response = await dispatchNativeHttp(ports.http, String(url), { method, redirect: "error", signal: bounded,
         headers: { Authorization: `Bearer ${current.accessToken}`,
-          ...(method === "GET" ? { Prefer: prefer, "Cache-Control": "no-cache" } : { "If-Match": etag! }) } });
-      status = response.status;
+          ...(method === "GET" ? { Prefer: prefer, "Cache-Control": "no-cache" } : { "If-Match": etag! }) } }, (requestInit) => ports.http.fetch(url, requestInit), ports.clock, (status, durationMs) => ports.telemetry.record({ provider: "microsoft", family: "event", method, status, durationMs }));
+
       if (response.redirected || response.url && response.url !== url)
         throw new MicrosoftProviderError("provider-write-failed", method === "DELETE" ? "unconfirmed" : "not-written", response.status);
       bounded.throwIfAborted();
       return response;
     } catch (error) {
-      if (bounded.aborted || error instanceof Error && error.name === "AbortError") status = "aborted";
+      if (ports.http.isDispatchDeferred?.(error)) throw error;
       if (error instanceof MicrosoftProviderError) throw error;
       throw new MicrosoftProviderError("provider-write-failed", method === "DELETE" ? "unconfirmed" : "not-written");
-    } finally {
-      const durationMs = Math.max(0, ports.clock.nowMonotonicMs() - started);
-      try { ports.telemetry.record({ provider: "microsoft", family: "event", method, status, durationMs }); } catch { /* Diagnostics have no authority. */ }
     }
   }
   function completeRead(response: Response) {

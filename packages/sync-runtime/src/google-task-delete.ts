@@ -1,3 +1,5 @@
+import { guardHttpDispatch } from "./http-dispatch";
+import { providerDeferral } from "./provider-budget";
 import {
   createGoogleTaskDeleteProvider, GoogleTaskProviderError, strongGoogleEtag, isGoogleTaskDeleteAcceptedStatus,
   googleTaskProjectionFromNative, type GoogleTaskDelete, type GoogleNativeTaskDeleteReadEvidence, type GoogleTaskTarget,
@@ -23,6 +25,8 @@ class DeleteFailure extends Error {
   constructor(readonly info: RuntimeErrorInfo, readonly cause?: unknown) { super(info.code); }
 }
 function failure(error: unknown, phase: RuntimePhase): RuntimeErrorInfo {
+  const deferral = providerDeferral(error);
+  if (deferral) return { code: "provider-budget-deferred", outcome: "not-written", phase, deferral };
   if (error instanceof DeleteFailure) return error.info;
   if (error instanceof SyncRuntimeInterrupted) return { code: "runtime-attempt-aborted", outcome: "unconfirmed", phase,
     interruption: error.reason === "finished" ? "cancelled" : error.reason };
@@ -139,7 +143,7 @@ export async function runClaimedGoogleTaskDelete(input: ClaimedGoogleTaskDelete,
         catch (error) { throw new DeleteFailure(failure(error, "credentials"), error); } finally { phase = previous; }
       };
       provider = createGoogleTaskDeleteProvider({ ...transport,
-        http: { fetch(url, init) { attempt.guard(); return transport.http.fetch(url, init); } },
+        http: guardHttpDispatch(transport.http, attempt.guard),
         accountSession: { open: (connection, signal) => accountCall(() => host.accountSession.open(connection, signal)),
           ...(host.accountSession.recoverRejectedRead ? { recoverRejectedRead: (connection: Parameters<NonNullable<typeof host.accountSession.recoverRejectedRead>>[0], token: string, signal?: AbortSignal) => accountCall(() => host.accountSession.recoverRejectedRead!(connection, token, signal)) } : {}),
           ...(host.accountSession.onReadAuthenticationRejected ? { onReadAuthenticationRejected: (signal?: AbortSignal) => accountCall(() => host.accountSession.onReadAuthenticationRejected!(signal)) } : {}) },
@@ -185,7 +189,7 @@ export async function runClaimedGoogleTaskDelete(input: ClaimedGoogleTaskDelete,
         let info = failure(error, phase);
         if (responseSeen && info.outcome === "not-written") info = { ...info, outcome: "unconfirmed" };
         if (dispatched && info.outcome === "unconfirmed" && facts.provider.kind !== "accepted") facts = nativeCopy({ ...facts, provider: { kind: "uncertain" } });
-        if (facts.possibleDispatch && info.outcome === "unconfirmed" && snapshot.policy.ambiguousRecovery === "within-attempt") {
+        if (!info.deferral && facts.possibleDispatch && info.outcome === "unconfirmed" && snapshot.policy.ambiguousRecovery === "within-attempt") {
           await persist(); await checkpoint("afterUncertain"); await verify(); return;
         }
         throw new DeleteFailure(info, error);

@@ -1,3 +1,4 @@
+import { scopeCalendarAdapter, withAccountBudgetScope, providerDeferral, createSdkBudgetHttp, rawProviderFetch } from "../provider_budget";
 import { observeGraphSeriesContent, prepareGraphSeriesContent } from "./microsoft_series_content";
 import { MicrosoftProviderError } from "@musubi/provider-microsoft";
 import type { NativeWritePlanV1 } from "@musubi/sync-codec";
@@ -117,7 +118,7 @@ async function graphError(res: Response): Promise<Error> {
   let detail = res.statusText;
   try {
     detail = (await res.json())?.error?.message ?? detail;
-  } catch {
+  } catch (error) { if (providerDeferral(error)) throw error;
     /* keep statusText */
   }
   return new Error(`Outlook ${res.status}: ${detail}`);
@@ -148,7 +149,7 @@ export function toNormalized(item: any): NormalizedEvent {
 
   let reminderTimeEvidence: NormalizedEvent["reminderTimeEvidence"];
   if (item.type === "singleInstance" && !item.recurrence && !item.seriesMasterId || ["occurrence", "exception"].includes(item.type) && item.providerOccurrence) {
-    try { const native = graphRsvpTime({ ...item, type: "singleInstance" }); reminderTimeEvidence = { timeModel: native.timeModel!, start: native.start, end: native.end, isAllDay: native.isAllDay }; } catch { /* Legacy reads remain available without action evidence. */ }
+    try { const native = graphRsvpTime({ ...item, type: "singleInstance" }); reminderTimeEvidence = { timeModel: native.timeModel!, start: native.start, end: native.end, isAllDay: native.isAllDay }; } catch (error) { if (providerDeferral(error)) throw error; /* Legacy reads remain available without action evidence. */ }
   }
   return {
     ...(typeof item.iCalUId === "string" ? { icalUid: item.iCalUId } : {}),
@@ -328,7 +329,7 @@ async function fetchMicrosoftTaskSnapshot(
     const page = await graphTaskReadPage(res, "snapshot", graphBase);
     try {
       for (const item of page.items) changes.push({ kind: "task", data: toNormalizedMicrosoftTask(item) });
-    } catch {
+    } catch (error) { if (providerDeferral(error)) throw error;
       throw new GraphTaskReadResponseError("snapshot", "normalization", res.status);
     }
     url = page.nextLink;
@@ -365,7 +366,7 @@ export async function fetchMicrosoftTaskChanges(
       continue;
     }
     if (res.status === 400) {
-      const detail = await res.clone().json().catch(() => null);
+      const detail = await res.clone().json().catch(error => { if (providerDeferral(error)) throw error; return null; });
       const reason = graphTaskReadFailureKind(detail);
       const missingInitialPageState = reason === "missing-page-state" &&
         (requestPhase === "initial" || requestPhase === "recovery-initial") && url === initialUrl;
@@ -389,7 +390,7 @@ export async function fetchMicrosoftTaskChanges(
     const page = await graphTaskReadPage(res, "delta", graphBase);
     try {
       for (const item of page.items) changes.push({ kind: "task", data: toNormalizedMicrosoftTask(item) });
-    } catch {
+    } catch (error) { if (providerDeferral(error)) throw error;
       throw new GraphTaskReadResponseError("delta", "normalization", res.status);
     }
     if (page.nextLink !== null) {
@@ -542,7 +543,7 @@ export function parseCursor(
       Number.isFinite(new Date(parsed.windowEnd).getTime())
     )
       return parsed;
-  } catch {
+  } catch (error) { if (providerDeferral(error)) throw error;
     /* treat as no cursor */
   }
   return null;
@@ -577,7 +578,7 @@ function assertDeltaLink(
   }
   const expected = new URL(`${graphBase}/me/calendars/${encodeURIComponent(calendarID)}/calendarView/delta`);
   let parsed: URL;
-  try { parsed = new URL(link); } catch { throw invalid(); }
+  try { parsed = new URL(link); } catch (error) { if (providerDeferral(error)) throw error; throw invalid(); }
   const prefix = new URL(`${graphBase}/me/calendars/`).pathname;
   const suffix = "/calendarView/delta";
   const pathPrefixMatches = parsed.pathname.startsWith(prefix);
@@ -593,7 +594,7 @@ function assertDeltaLink(
       // Static routes and other identities cannot be authorized by decoding.
       calendarIdMatches = decodeURIComponent(segment!) === calendarID;
       calendarEncodingValid = true;
-    } catch { /* Never retain a URI error or its potentially private input. */ }
+    } catch (error) { if (providerDeferral(error)) throw error; /* Never retain a URI error or its potentially private input. */ }
   }
   // URL parsing repairs dot segments, backslashes and malformed authorities.
   // Reject repaired paths; do not rebuild the opaque continuation or its query.
@@ -724,7 +725,7 @@ function graphCanonicalCalendarBinding(
     }
     // Default-calendar paths and unknown aliases have no explicit native key.
     return null;
-  } catch { return null; }
+  } catch (error) { if (providerDeferral(error)) throw error; return null; }
 }
 
 function graphCalendarMetadataProof(value: unknown, calendarID: string, graphBase: string): GraphCalendarIdentityProof {
@@ -738,7 +739,7 @@ function graphCalendarMetadataProof(value: unknown, calendarID: string, graphBas
   try {
     let parsed: URL;
     try { parsed = new URL(value); }
-    catch { diagnostics.canonicalMetadataFailure = "not-absolute"; return result; }
+    catch (error) { if (providerDeferral(error)) throw error; diagnostics.canonicalMetadataFailure = "not-absolute"; return result; }
     const base = new URL(`${graphBase}/`);
     const raw = /^[A-Za-z][A-Za-z\d+.-]*:\/\/([^/?#]*)(\/[^?#]*)?/.exec(value);
     if (value.trim() !== value || /[\u0000-\u001f\u007f]/.test(value) || !raw || raw[2] !== parsed.pathname ||
@@ -757,7 +758,7 @@ function graphCalendarMetadataProof(value: unknown, calendarID: string, graphBas
       result.contradictory = true;
     } else result.binding = binding;
     return result;
-  } catch { diagnostics.canonicalMetadataFailure = "unsupported-route"; return result; }
+  } catch (error) { if (providerDeferral(error)) throw error; diagnostics.canonicalMetadataFailure = "unsupported-route"; return result; }
 }
 
 // Rejection-only diagnostics. A default-calendar route lacks the bound native
@@ -788,7 +789,7 @@ function graphRejectedDeltaRoute(link: string, calendarID: string, graphBase: st
       }
     }
     return unknown;
-  } catch { return unknown; }
+  } catch (error) { if (providerDeferral(error)) throw error; return unknown; }
 }
 
 async function readGraphCalendarIdentityProof(
@@ -807,13 +808,13 @@ async function readGraphCalendarIdentityProof(
         headers: { Authorization: `Bearer ${accessToken}`, Prefer: PREFER,
           Accept: "application/json;odata.metadata=full", "Cache-Control": "no-cache" },
       });
-  } catch { throw new GraphCalendarIdentityError("request"); }
+  } catch (error) { if (providerDeferral(error)) throw error; throw new GraphCalendarIdentityError("request"); }
   if (response.status !== 200 || response.redirected) throw new GraphCalendarIdentityError("response", response.status);
   try { assertCompleteEventReadResponse(response); }
-  catch { throw new GraphCalendarIdentityError("response", response.status); }
+  catch (error) { if (providerDeferral(error)) throw error; throw new GraphCalendarIdentityError("response", response.status); }
   let data: any;
   try { data = await response.json(); }
-  catch { throw new GraphCalendarIdentityError("body", response.status); }
+  catch (error) { if (providerDeferral(error)) throw error; throw new GraphCalendarIdentityError("body", response.status); }
   if (!data || typeof data !== "object" || Array.isArray(data) || data.id !== calendarID ||
     data.value !== undefined || data["@removed"] !== undefined || data["@odata.nextLink"] !== undefined ||
     data["@odata.deltaLink"] !== undefined ||
@@ -838,13 +839,13 @@ async function readGraphPrincipalID(accessToken: string, graphBase: string, fetc
       method: "GET", redirect: "error",
       headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json", "Cache-Control": "no-cache" },
     });
-  } catch { throw new GraphCalendarIdentityError("principal-request"); }
+  } catch (error) { if (providerDeferral(error)) throw error; throw new GraphCalendarIdentityError("principal-request"); }
   if (response.status !== 200 || response.redirected) throw new GraphCalendarIdentityError("principal-response", response.status);
   try { assertCompleteEventReadResponse(response); }
-  catch { throw new GraphCalendarIdentityError("principal-response", response.status); }
+  catch (error) { if (providerDeferral(error)) throw error; throw new GraphCalendarIdentityError("principal-response", response.status); }
   let data: any;
   try { data = await response.json(); }
-  catch { throw new GraphCalendarIdentityError("principal-body", response.status); }
+  catch (error) { if (providerDeferral(error)) throw error; throw new GraphCalendarIdentityError("principal-body", response.status); }
   if (!data || typeof data !== "object" || Array.isArray(data) || !validGraphId(data.id) ||
     data.value !== undefined || data["@removed"] !== undefined || data["@odata.nextLink"] !== undefined ||
     data["@odata.deltaLink"] !== undefined ||
@@ -963,7 +964,7 @@ export async function fetchMicrosoftChanges(
   let principalIdentity: Promise<string> | undefined;
   const assertReadDeltaLink = async (link: unknown, kind: "cursor" | "request" | "next" | "delta") => {
     try { return assertDeltaLink(link, externalCalendarId, graphBase, kind); }
-    catch (error) {
+    catch (error) { if (providerDeferral(error)) throw error;
       const candidate = graphCanonicalCalendarBinding(link, externalCalendarId, graphBase, "delta");
       if (!candidate) throw error;
       // Fresh for each reader invocation and the same token/source generation.
@@ -989,7 +990,7 @@ export async function fetchMicrosoftChanges(
           canonicalKeyStyleMatches: proven ? candidate.keyStyle === proven.keyStyle : null,
         });
         throw error;
-      } catch (identityError) {
+      } catch (identityError) { if (providerDeferral(identityError)) throw identityError;
         if (identityError instanceof GraphCalendarIdentityError) {
           // Fixed classifications survive every failed proof, including before
           // optional metadata is available. Never attach the URI or provider ID.
@@ -1012,7 +1013,7 @@ export async function fetchMicrosoftChanges(
   // from the constructed bound-calendar endpoint before sending credentials.
   if (parsed) {
     try { await assertReadDeltaLink(parsed.link, "cursor"); }
-    catch (error) {
+    catch (error) { if (providerDeferral(error)) throw error;
       // Unavailable proof is a failed read, not permission to replace a window.
       if (error instanceof GraphCalendarIdentityError) throw error;
       parsed = null;
@@ -1224,7 +1225,7 @@ function microsoftEventDeliveryPorts(userID: string, accountID: string, capture:
       return { connectionId: credentials.id, connectionGeneration: String(credentials.syncReadGeneration), accessToken,
         eventWriteAllowed: credentials.scope == null ? undefined : hasProviderSyncScopes("microsoft", credentials.scope) };
     } },
-    http: { fetch: (url, init) => globalThis.fetch(url, init) },
+    http: { ...createSdkBudgetHttp("microsoft", userID, accountID, capture), fetch: rawProviderFetch },
     clock: { nowEpochMs: () => Date.now(), nowMonotonicMs: () => performance.now() },
     telemetry: { record: metric => recordProviderHttpRequest(metric.method, metric.status, metric.durationMs) },
   };
@@ -1237,7 +1238,7 @@ function microsoftCreatedEventEvidence(found: Record<string, any>): CreatedEvent
   return { ref: { externalEventId: found.id, etag: event.etag ?? null }, event };
 }
 
-export const microsoftAdapter: CalendarAdapter = {
+export const microsoftAdapter: CalendarAdapter = scopeCalendarAdapter({
   microsoftPersonalCreateV1(userID, accountID, capture) {
     return { ports: microsoftEventDeliveryPorts(userID, accountID, capture),
       normalizeObservation: read => read.kind === "present" ? microsoftCreatedEventEvidence(read.event) : null };
@@ -1266,10 +1267,12 @@ export const microsoftAdapter: CalendarAdapter = {
   async listAccounts(
     userID: string,
     accountId?: string,
+    options?: { metadataOnly?: boolean },
   ): Promise<{ id: string; label: string }[]> {
     const ids = await getOAuthAccountIDs(userID, "microsoft", accountId);
+    if (options?.metadataOnly) return ids.map(id => ({ id, label: id }));
     return Promise.all(
-      ids.map(async (id) => {
+      ids.map(async (id) => withAccountBudgetScope("microsoft", userID, id, async () => {
         let label = id;
         try {
           const accessToken = await getAccessToken(userID, id);
@@ -1280,11 +1283,12 @@ export const microsoftAdapter: CalendarAdapter = {
             const d = await res.json();
             label = d.mail ?? d.userPrincipalName ?? id;
           }
-        } catch {
+        } catch (error) { if (providerDeferral(error)) throw error;
+          if (providerDeferral(error)) throw error;
           /* fall back to id */
         }
         return { id, label };
-      }),
+      })),
     );
   },
 
@@ -1296,7 +1300,7 @@ export const microsoftAdapter: CalendarAdapter = {
     let calendars: ExternalCalendarInfo[];
     let eventDiscovery: { eventCalendarsComplete: true } | { eventCalendarsComplete: false; eventCalendarDiscoveryError: Error } = { eventCalendarsComplete: true };
     try { calendars = await fetchMicrosoftCalendars(accessToken); }
-    catch (error) {
+    catch (error) { if (providerDeferral(error)) throw error;
       if (!isMicrosoftEventMailboxUnavailable(error)) throw error;
       calendars = [];
       eventDiscovery = { eventCalendarsComplete: false, eventCalendarDiscoveryError: error };
@@ -1315,7 +1319,7 @@ export const microsoftAdapter: CalendarAdapter = {
         taskListsComplete: true,
         ...eventDiscovery,
       };
-    } catch (error) {
+    } catch (error) { if (providerDeferral(error)) throw error;
       if (!isOptionalTaskError(error)) throw error;
       logger.warn("sync.tasks.discovery_unavailable", {
         provider: "microsoft",
@@ -1357,7 +1361,7 @@ export const microsoftAdapter: CalendarAdapter = {
     let family;
     try {
       family = await readGraphSeriesFamily(accessToken, externalCalendarId, event, created.ref, identity.signal);
-    } catch (error) {
+    } catch (error) { if (providerDeferral(error)) throw error;
       // An incomplete or changing family observation is not a confirmed saved
       // intent conflict. Recover the existing transaction and retry the read.
       throw new ProviderEventWriteError("provider-write-failed", "unconfirmed", error instanceof ProviderEventWriteError ? error.providerStatus : undefined, error instanceof ProviderEventWriteError ? error.retryAfterMs : undefined);
@@ -1537,7 +1541,7 @@ export const microsoftAdapter: CalendarAdapter = {
       },
     );
     assertProviderEventMutationResponse(res);
-    const data = await res.json().catch(() => null);
+    const data = await res.json().catch(error => { if (providerDeferral(error)) throw error; return null; });
     if (typeof data?.id !== "string" || !data.id)
       throw new ProviderEventWriteError(
         "provider-write-failed",
@@ -1758,7 +1762,7 @@ export const microsoftAdapter: CalendarAdapter = {
     if (!res.ok && res.status !== 404 && res.status !== 410)
       throw await graphError(res);
   },
-};
+});
 
 function initialDeltaUrl(
   externalCalendarId: string,

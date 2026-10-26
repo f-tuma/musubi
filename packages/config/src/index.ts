@@ -3,6 +3,8 @@ import { expand } from "dotenv-expand";
 import path from "path";
 import { fileURLToPath } from "url";
 import { parseLogLevel, StructuredLogger, type LogLevel } from "./logger";
+import { parseProviderBudgetLimits, parseProviderBudgetNamespace, PROVIDER_BUDGET_CONTINUATION_WINDOW_MS, type ProviderBudgetLimits } from "./provider-budget";
+export { parseProviderBudgetLimits, parseProviderBudgetNamespace } from "./provider-budget";
 
 export {
   LOG_LEVELS,
@@ -120,6 +122,9 @@ export function parseSyncOperationV1EncoderEnabled(value: string | undefined): b
 }
 
 type APIConfig = {
+  providerBudgetLimits: ProviderBudgetLimits;
+  providerBudgetContinuationWindowMs: number;
+  providerBudgetNamespace: string;
   // Default-on immutable admission; explicit false retains legacy admission.
   syncOperationV1EncoderEnabled: boolean;
   // Opt-in until both editors and the release compatibility gate are ready.
@@ -314,6 +319,9 @@ const apiConfig: APIConfig = {
   externalDeliveryRecoveryMode: parseExternalDeliveryRecoveryMode(
     process.env.EXTERNAL_DELIVERY_RECOVERY_MODE,
   ),
+  providerBudgetLimits: parseProviderBudgetLimits(process.env.EXTERNAL_PROVIDER_BUDGETS_JSON),
+  providerBudgetContinuationWindowMs: PROVIDER_BUDGET_CONTINUATION_WINDOW_MS,
+  providerBudgetNamespace: parseProviderBudgetNamespace(process.env.EXTERNAL_PROVIDER_BUDGET_NAMESPACE),
   logLevel: parseLogLevel(process.env.LOG_LEVEL ?? "info"),
   metricsPort: parseMetricsPort(process.env.METRICS_PORT),
 };

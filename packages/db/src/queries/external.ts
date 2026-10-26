@@ -1,3 +1,6 @@
+import { withSyncReadTransaction } from "./read-work-transaction";
+import type { SyncReadWorkExecution } from "./read-work-transaction";
+import { ackSyncReadWorkInTransaction, SyncReadWorkChanged } from "./sync-read-work";
 import { assertPinnedOutboxSourceInTransaction } from "./operation-admission";
 import { decodeTaskOutboxOperation } from "./outbox-operation";
 import { isCancelledGraphMeeting } from "./graph-meeting-cancel";
@@ -135,8 +138,9 @@ export async function importExternalCalendar(
     providerDefaultCalendar?: boolean | null;
   },
   role: string = "owner", // "viewer" for provider-side read-only calendars (holidays, …)
+  readWork?: SyncReadWorkExecution,
 ) {
-  return db.transaction(async (tx) => {
+  return withSyncReadTransaction(readWork, async (tx) => {
     await lockUserLifecycle(tx, [userID], "shared");
     const [created] = await tx
       .insert(calendars)
@@ -271,8 +275,9 @@ export async function setAccountLabel(
   userID: string,
   accountID: string,
   accountLabel: string,
+  readWork?: SyncReadWorkExecution,
 ) {
-  await db
+  await withSyncReadTransaction(readWork, tx => tx
     .update(externalCalendars)
     .set({ accountLabel })
     .where(
@@ -281,7 +286,7 @@ export async function setAccountLabel(
         eq(externalCalendars.userID, userID),
         eq(externalCalendars.accountID, accountID),
       ),
-    );
+    ));
 }
 
 export async function setExternalCalendarCapabilities(
@@ -290,8 +295,9 @@ export async function setExternalCalendarCapabilities(
   accountID: string,
   externalCalendarID: string,
   capabilities: { supportsEvents: boolean; supportsTasks: boolean; providerDefaultCalendar?: boolean | null },
+  readWork?: SyncReadWorkExecution,
 ) {
-  await db.transaction(async tx => {
+  await withSyncReadTransaction(readWork, async tx => {
     // Stabilize the complete source set before discovering calendar fences.
     await lockUserLifecycle(tx, [userID], "exclusive");
     const predicate = and(eq(externalCalendars.provider, provider), eq(externalCalendars.userID, userID), eq(externalCalendars.accountID, accountID), eq(externalCalendars.externalCalendarID, externalCalendarID))!;
@@ -308,7 +314,29 @@ export async function setExternalCalendarCapabilities(
   });
 }
 
-export async function setCursor(calendarID: string, cursor: string | null, context?: ExternalCalendarAccessContext) {
+export async function setCursor(calendarID: string, cursor: string | null, context?: ExternalCalendarAccessContext, readWork?: SyncReadWorkExecution) {
+  if (readWork) return db.transaction(async tx => {
+    const capture = structuredClone(readWork.capture);
+    readWork.signal.throwIfAborted();
+    const source = capture.binding.source;
+    if (!source || source.calendarID !== calendarID) throw new SyncReadWorkChanged();
+    await lockUserLifecycle(tx, [capture.binding.userID], "shared");
+    await lockCalendarLifecycle(tx, [calendarID], "shared");
+    await assertExternalCalendarAccess(tx, capture.binding.provider, calendarID, context);
+    const [accepted] = await tx.update(externalCalendars).set({ cursor, checkpointRevision: sql`${externalCalendars.checkpointRevision} + 1` })
+      .where(and(eq(externalCalendars.id, source.id), eq(externalCalendars.calendarID, calendarID),
+        eq(externalCalendars.sourceGeneration, source.generation), eq(externalCalendars.providerAccessRevision, source.accessRevision),
+        eq(externalCalendars.checkpointRevision, source.checkpointRevision),
+        sql`${externalCalendars.cursor} is not distinct from ${source.cursor}`,
+        sql`${externalCalendars.readConfigurationFingerprint} is not distinct from ${source.configurationFingerprint}`))
+      .returning({ id: externalCalendars.id });
+    if (!accepted) throw new SyncReadWorkChanged();
+    // Last: source/connection/claim and current DB clock after every wait.
+    // The captured checkpoint was consumed by the CAS immediately above.
+    readWork.signal.throwIfAborted();
+    await ackSyncReadWorkInTransaction(tx, capture, { lockLifecycle: false });
+    readWork.signal.throwIfAborted();
+  });
   if (context) return db.transaction(async tx => {
     await lockCalendarLifecycle(tx, [calendarID], "shared");
     await assertExternalCalendarAccess(tx, context.provider ?? "google", calendarID, context);
@@ -690,6 +718,15 @@ export async function upsertExternalEvent(
     .catch(() => { throw new Error("External event observation could not be persisted."); });
 }
 
+/** Queued read guard supplements the existing provider/access projection. */
+export async function upsertExternalEventFromRead(
+  readWork: SyncReadWorkExecution | undefined,
+  ...args: Parameters<typeof upsertExternalEventInTransaction> extends [DbTransaction, boolean, ...infer Rest] ? Rest : never
+): Promise<boolean> {
+  return withSyncReadTransaction(readWork, tx => upsertExternalEventInTransaction(tx, false, ...args))
+    .catch(() => { throw new Error("External event observation could not be persisted."); });
+}
+
 export type ExternalEventResourceObservation = {
   externalId: string;
   values: EventValues;
@@ -728,8 +765,9 @@ async function isRetiredCaldavRecurrence(tx: DbTransaction, provider: string, us
 export async function replaceExternalEventResource(
   provider: string, userID: string, calendarID: string, externalCalendarID: string,
   resourceID: string, observations: ExternalEventResourceObservation[], accessContext?: ExternalCalendarAccessContext,
+  readWork?: SyncReadWorkExecution,
 ): Promise<boolean> {
-  return db.transaction(async tx => {
+  return withSyncReadTransaction(readWork, async tx => {
     await lockCalendarLifecycle(tx, [calendarID], "shared");
     await assertExternalCalendarAccess(tx, provider, calendarID, accessContext);
     await lockExternalEventAddress(tx, provider, calendarID, resourceID);
@@ -1087,8 +1125,9 @@ export async function deleteExternalEvent(
   externalEventID: string,
   onUnlink?: (eventID: string, revision: number) => void,
   accessContext?: ExternalCalendarAccessContext,
+  readWork?: SyncReadWorkExecution,
 ): Promise<boolean> {
-  const result = await db.transaction(tx => deleteExternalEventInTransaction(tx, provider, calendarID, externalEventID, accessContext))
+  const result = await withSyncReadTransaction(readWork, tx => deleteExternalEventInTransaction(tx, provider, calendarID, externalEventID, accessContext))
     .catch(() => { throw new Error("External event deletion could not be persisted."); });
   if (result.unlinked) onUnlink?.(result.unlinked.id, result.unlinked.revision);
   return result.changed;
@@ -1234,8 +1273,9 @@ export async function sweepExternalEvents(
   seenExternalEventIDs: string[],
   onUnlink?: (eventID: string, revision: number) => void,
   accessContext?: ExternalCalendarAccessContext,
+  readWork?: SyncReadWorkExecution,
 ): Promise<number> {
-  if (accessContext) await db.transaction(async tx => {
+  if (accessContext || readWork) await withSyncReadTransaction(readWork, async tx => {
     await lockCalendarLifecycle(tx, [calendarID], "shared");
     await assertExternalCalendarAccess(tx, provider, calendarID, accessContext);
   });
@@ -1263,6 +1303,7 @@ export async function sweepExternalEvents(
         mapping.externalEventID,
         onUnlink,
         accessContext,
+        readWork,
       ))
     )
       changed++;
@@ -1303,7 +1344,7 @@ export async function getExternalSyncUserIDs(): Promise<string[]> {
 }
 
 // For push update/delete: find the external id of an already-synced Musubi event.
-export type TaskSyncScope = { sourceID: string; accountID: string; providerAccessRevision: number; readStartedAt?: Date };
+export type TaskSyncScope = { sourceID: string; accountID: string; providerAccessRevision: number; readStartedAt?: Date; readWork?: SyncReadWorkExecution };
 
 export async function getTaskMirrorReadCalendars(calendarID: string) {
   const links = await db.selectDistinct({ calendarID: calendarTasks.calendarID }).from(calendarTasks).innerJoin(tasks, eq(calendarTasks.taskID, tasks.id)).where(eq(tasks.originCalendarID, calendarID));
@@ -1421,7 +1462,7 @@ export async function upsertExternalTask(
   scope?: TaskSyncScope,
   projection?: Record<string, unknown>,
 ): Promise<boolean> {
-  return db.transaction(async (tx) => {
+  return withSyncReadTransaction(scope?.readWork, async (tx) => {
     await lockCalendarLifecycle(tx, [calendarID], "shared");
     await assertExternalCalendarAccess(tx, provider, calendarID, accessContext);
     await assertTaskSyncScope(tx, provider, calendarID, externalCalendarID, scope);
@@ -1548,7 +1589,7 @@ async function retireTaskProjection(tx: DbTransaction, provider: string, calenda
 }
 
 export async function deleteExternalTask(provider: string, calendarID: string, externalTaskID: string, accessContext?: ExternalCalendarAccessContext, scope?: TaskSyncScope): Promise<boolean> {
-  return db.transaction(async tx => {
+  return withSyncReadTransaction(scope?.readWork, async tx => {
     await lockCalendarLifecycle(tx, [calendarID], "shared");
     await assertExternalCalendarAccess(tx, provider, calendarID, accessContext);
     await assertTaskSyncScope(tx, provider, calendarID, undefined, scope);
@@ -1557,7 +1598,7 @@ export async function deleteExternalTask(provider: string, calendarID: string, e
 }
 
 export async function sweepExternalTasks(provider: string, calendarID: string, seenExternalTaskIDs: string[], accessContext?: ExternalCalendarAccessContext, scope?: TaskSyncScope): Promise<number> {
-  return db.transaction(async tx => {
+  return withSyncReadTransaction(scope?.readWork, async tx => {
     await lockCalendarLifecycle(tx, [calendarID], "shared");
     await assertExternalCalendarAccess(tx, provider, calendarID, accessContext);
     await assertTaskSyncScope(tx, provider, calendarID, undefined, scope);

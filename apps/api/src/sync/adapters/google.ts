@@ -1,3 +1,4 @@
+import { scopeCalendarAdapter, withAccountBudgetScope, providerDeferral, createSdkBudgetHttp, rawProviderFetch } from "../provider_budget";
 import { googlePersonalEventBridge, googlePersonalProviderPorts } from "./google_provider_bridge";
 import { googleTaskProviderPorts, googleTaskDeleteProviderPorts, googleTaskCreateProviderPorts } from "./google_task_provider_bridge";
 import { googleTaskProjectionFromNative } from "@musubi/provider-google";
@@ -67,7 +68,7 @@ async function googleError(res: Response): Promise<Error> {
   let detail = res.statusText;
   try {
     detail = (await res.json())?.error?.message ?? detail;
-  } catch {
+  } catch (error) { if (providerDeferral(error)) throw error;
     /* keep statusText */
   }
   return new Error(`Google ${res.status}: ${detail}`);
@@ -665,7 +666,7 @@ export async function fetchGoogleChanges(
       const item = masters.get(change.data.externalId);
       if (!item || item.status === "cancelled" || item.recurringEventId || item.originalStartTime || item.recurrence?.length) continue;
       try { change.data.reminderTimeEvidence = normalizeGoogleTime(item, change.data).timeModel; }
-      catch (error) {
+      catch (error) { if (providerDeferral(error)) throw error;
         // RSVP comparison fails closed without native time evidence. A valid
         // unsupported time shape must not prevent ordinary legacy ingestion.
         if (options.reminderEvidence) throw error;
@@ -684,7 +685,7 @@ export function googleReminderEventEvidence(data: any) {
   return assertCreatedEventEvidence(normalizeGoogleTime(data, toNormalized(data)));
 }
 
-export const googleAdapter: CalendarAdapter = {
+export const googleAdapter: CalendarAdapter = scopeCalendarAdapter({
   provider: "google",
   googleTaskCreateV1(userID, accountID, capture) {
     return {
@@ -766,10 +767,12 @@ export const googleAdapter: CalendarAdapter = {
   async listAccounts(
     userID: string,
     accountId?: string,
+    options?: { metadataOnly?: boolean },
   ): Promise<{ id: string; label: string }[]> {
     const ids = await getOAuthAccountIDs(userID, "google", accountId);
+    if (options?.metadataOnly) return ids.map(id => ({ id, label: id }));
     return Promise.all(
-      ids.map(async (id) => {
+      ids.map(async (id) => withAccountBudgetScope("google", userID, id, async () => {
         let label = id;
         try {
           const accessToken = await getGoogleAccessToken(userID, id);
@@ -783,11 +786,12 @@ export const googleAdapter: CalendarAdapter = {
             const d = await res.json();
             label = d.email ?? d.name ?? id;
           }
-        } catch {
+        } catch (error) { if (providerDeferral(error)) throw error;
+          if (providerDeferral(error)) throw error;
           /* fall back to id */
         }
         return { id, label };
-      }),
+      })),
     );
   },
 
@@ -842,7 +846,7 @@ export const googleAdapter: CalendarAdapter = {
         calendars: [...calendars, ...taskLists.map(toExternalGoogleTaskList)],
         taskListsComplete: true,
       };
-    } catch (error) {
+    } catch (error) { if (providerDeferral(error)) throw error;
       if (!isOptionalTaskError(error)) throw error;
       logger.warn("sync.tasks.discovery_unavailable", {
         provider: "google",
@@ -955,7 +959,7 @@ export const googleAdapter: CalendarAdapter = {
     // Only this authenticated copy's reminders change, never participants/time.
     const response = await observedProviderFetch(`${GCAL}/calendars/${encodeURIComponent(externalCalendarId)}/events/${encodeURIComponent(ref.externalEventId)}?sendUpdates=none`, { method: "PATCH", headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json", "If-Match": requireEventEtag(ref.etag) }, body: JSON.stringify({ reminders }), redirect: "error", signal });
     assertProviderEventMutationResponse(response);
-    const data = await response.json().catch(() => null);
+    const data = await response.json().catch(error => { if (providerDeferral(error)) throw error; return null; });
     if (data?.id !== ref.externalEventId) throw new ProviderEventWriteError("provider-write-failed", "unconfirmed", response.status);
     const etag = strongEventEtag(data.etag);
     if (!etag) throw new ProviderEventWriteError("provider-version-unavailable", "unconfirmed", response.status);
@@ -963,7 +967,7 @@ export const googleAdapter: CalendarAdapter = {
       if (data.recurringEventId || data.originalStartTime || data.recurrence?.length)
         throw new Error("Unsupported recurring reminder evidence");
       return { ref: { externalEventId: data.id, etag }, state: googleEventState(data), event: googleReminderEventEvidence(data) };
-    } catch {
+    } catch (error) { if (providerDeferral(error)) throw error;
       throw new ProviderEventWriteError("provider-write-failed", "unconfirmed", response.status);
     }
   },
@@ -1056,7 +1060,7 @@ export const googleAdapter: CalendarAdapter = {
       },
     );
     assertProviderEventMutationResponse(res);
-    const data = await res.json().catch(() => null);
+    const data = await res.json().catch(error => { if (providerDeferral(error)) throw error; return null; });
     if (
       typeof data?.id !== "string" ||
       !data.id ||
@@ -1113,7 +1117,7 @@ export const googleAdapter: CalendarAdapter = {
     assertProviderEventMutationResponse(res);
     // A missing/malformed success body cannot authorize another write. Never
     // adopt a later GET's version without accepting its content through sync.
-    const data = await res.json().catch(() => null);
+    const data = await res.json().catch(error => { if (providerDeferral(error)) throw error; return null; });
     return { etag: strongEventEtag(data?.etag) };
   },
 
@@ -1292,4 +1296,4 @@ export const googleAdapter: CalendarAdapter = {
     if (!res.ok && res.status !== 404 && res.status !== 410)
       throw await googleError(res);
   },
-};
+});

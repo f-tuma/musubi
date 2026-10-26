@@ -1,3 +1,4 @@
+import { dispatchNativeHttp } from "./http-dispatch";
 import { strongGoogleEtag } from "./etag";
 import { googleTaskDataRecord, strictGoogleTaskNativeError } from "./task-projection";
 import { GoogleTaskProviderError } from "./task-types";
@@ -65,20 +66,16 @@ export function createGoogleTaskTransport<M extends "PATCH" | "DELETE">(ports: T
   async function request(scope: GoogleTaskTarget, current: GoogleTaskAccountSession, method: "GET" | M, signal?: AbortSignal,
     serializedBody?: string, etag?: string): Promise<Response> {
     signal?.throwIfAborted();
-    const started = ports.clock.nowMonotonicMs(); let status: number | "network-error" | "aborted" = "network-error";
     try {
-      const response = await ports.http.fetch(taskURL(scope), { method, signal,
+      const response = await dispatchNativeHttp(ports.http, String(taskURL(scope)), { method, signal,
         ...(method === "GET" || strict ? { redirect: "error" as const } : {}),
         headers: { Authorization: `Bearer ${current.accessToken}`, ...(method === "GET" ? { "Cache-Control": "no-cache" } :
           method === "PATCH" ? { "Content-Type": "application/json", "If-Match": etag! } : { "If-Match": etag! }) },
-        ...(serializedBody === undefined ? {} : { body: serializedBody }) });
-      status = response.status; return response;
+        ...(serializedBody === undefined ? {} : { body: serializedBody }) }, (requestInit) => ports.http.fetch(taskURL(scope), requestInit), ports.clock, (status, durationMs) => ports.telemetry.record({ provider: "google", family: "task", method, status, durationMs }));
+      return response;
     } catch (error) {
-      if (signal?.aborted || error instanceof Error && error.name === "AbortError") status = "aborted";
+      if (ports.http.isDispatchDeferred?.(error)) throw error;
       throw error;
-    } finally {
-      try { ports.telemetry.record({ provider: "google", family: "task", method, status,
-        durationMs: Math.max(0, ports.clock.nowMonotonicMs() - started) }); } catch { /* Diagnostics cannot alter native evidence. */ }
     }
   }
   function invalidScope(response: Response, scope: GoogleTaskTarget): boolean {

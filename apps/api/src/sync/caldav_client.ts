@@ -8,10 +8,21 @@ import { type LookupAll } from "../federation_origin";
 import { assertCaldavTarget as sharedAssertCaldavTarget, createGuardedCaldavFetch as sharedGuardedCaldavFetch, createPinnedCaldavFetch } from "@musubi/provider-caldav/network";
 import { observedProviderFetch } from "./provider_http_metrics";
 import { ProviderEventWriteError, providerRetryAfterMs } from "./event_write";
+import { copyCaldavDiscoveryMaterial, type CaldavDiscoveryMaterial } from "./caldav_discovery_material";
+import { budgetAttemptSignal, providerDeferral } from "./provider_budget";
+
+export type CaldavDiscoveryMaterialPort = Readonly<{
+  material?: CaldavDiscoveryMaterial;
+  commit(material: CaldavDiscoveryMaterial): void | Promise<void>;
+  invalidate(): void;
+}>;
+export type CaldavRequestScope = <T>(run: () => Promise<T>) => Promise<T>;
 
 const fetchPinned = createPinnedCaldavFetch(observedProviderFetch);
 /** New provider telemetry records each raw leaf; legacy leaves remain observed above. */
-export const fetchCaldavPinned = createPinnedCaldavFetch((input, init) => globalThis.fetch(input, init));
+export const fetchCaldavPinned = createPinnedCaldavFetch((input, init) => globalThis.fetch(input, {
+  ...init, signal: budgetAttemptSignal(init?.signal ?? undefined),
+}));
 
 export function assertCaldavTarget(value: string, {
   allowPrivate = config.security.federationAllowPrivateHosts,
@@ -39,6 +50,8 @@ export function createCaldavClient(
 	username: string,
 	password: string,
 	signal?: AbortSignal,
+	materialPort?: CaldavDiscoveryMaterialPort,
+	requestScope?: CaldavRequestScope,
 ) {
   signal?.throwIfAborted();
   const guarded = createGuardedCaldavFetch();
@@ -53,8 +66,9 @@ export function createCaldavClient(
     const kind = method === "PROPFIND" && body.includes("current-user-principal") ? "principal" : method === "PROPFIND" && body.includes("calendar-home-set") ? "home" : method === "PROPFIND" && headers.get("depth") === "1" ? (body.includes("resourcetype") ? "discovery" : body.includes("getetag") ? "listing" : undefined) : method === "REPORT" && body.includes("calendar-multiget") ? "multiget" : method === "REPORT" && body.includes("sync-collection") ? "sync" : undefined;
     let response: Response;
     const options = { ...init, ...(signal ? { signal: init?.signal ? AbortSignal.any([signal, init.signal]) : signal } : {}), ...(kind === "multiget" || kind === "sync" ? { redirect: "error" as const } : {}) };
-    try { response = await guarded(input, options); } catch (error) {
-      if (kind === "principal" || kind === "home") discoveryFailure = error;
+    try { response = await (requestScope ? requestScope(() => guarded(input, options)) : guarded(input, options)); } catch (error) {
+      materialPort?.invalidate();
+      if (kind === "principal" || kind === "home" || providerDeferral(error)) discoveryFailure = error;
       throw error;
     }
     if (kind) {
@@ -88,6 +102,7 @@ export function createCaldavClient(
       response = new Response(canonicalDavReadXML(xml, originalURL || String(input)), { status: response.status, statusText: response.statusText, headers: response.headers });
       Object.defineProperty(response, "url", { value: originalURL });
       } catch (error) {
+        materialPort?.invalidate();
         // tsdav may catch discovery errors and fall back to the root. Such a
         // fallback must not turn unproven principal/home data into removals.
         if (kind === "principal" || kind === "home") discoveryFailure = error;
@@ -100,9 +115,36 @@ export function createCaldavClient(
 		serverUrl,
 		credentials: { username, password },
 		authMethod: "Basic",
-		defaultAccountType: "caldav",
 		fetch: verified,
-	}).then(client => {
+	}).then(async client => {
+    // Use tsdav's actual account construction, with fresh credentials and
+    // request-local guarded fetch. A cached route only skips endpoint lookup;
+    // it never supplies collections, privilege evidence or a sync token.
+    signal?.throwIfAborted();
+    const material = materialPort?.material && copyCaldavDiscoveryMaterial(materialPort.material);
+    const account = await client.createAccount({ account: { accountType: "caldav", ...material } });
+    signal?.throwIfAborted();
+    // These are exactly the account-default methods createDAVClient normally
+    // binds after login. Preserve caller overrides and its own auth merging.
+    for (const key of ["smartCollectionSync", "smartCollectionSyncDetailed", "fetchCalendars", "fetchCalendarUserAddresses", "syncCalendars", "syncCalendarsDetailed", "fetchAddressBooks"] as const) {
+      const original = client[key] as (parameters?: Record<string, unknown>) => unknown;
+      Object.defineProperty(client, key, { configurable: true, enumerable: true, writable: true,
+        value: (parameters?: Record<string, unknown>) => original({ account, ...parameters }) });
+    }
+    const fetchCalendars = client.fetchCalendars.bind(client);
+    client.fetchCalendars = async parameters => {
+      try {
+        const calendars = await fetchCalendars(parameters);
+        signal?.throwIfAborted();
+        // Explicit alternate accounts/fetch/projections retain their old client
+        // behavior, but cannot publish cache material as complete discovery.
+        if (materialPort && parameters === undefined) {
+          await materialPort.commit(copyCaldavDiscoveryMaterial({ rootUrl: account.rootUrl!, principalUrl: account.principalUrl!, homeUrl: account.homeUrl! }));
+          signal?.throwIfAborted();
+        }
+        return calendars;
+      } catch (error) { materialPort?.invalidate(); throw error; }
+    };
     const fetchObjects = client.fetchCalendarObjects.bind(client);
     client.fetchCalendarObjects = parameters => resourceReads.run(new Map(), async () => {
       const objects = await fetchObjects(parameters);
@@ -133,6 +175,6 @@ export function createCaldavClient(
         return { responses, syncToken: context.token };
       });
     };
-    return Object.assign(client, { syncCollectionWithToken });
-  });
+    return Object.assign(client, { syncCollectionWithToken, invalidateDiscoveryMaterial: () => materialPort?.invalidate() });
+  }).catch(error => { materialPort?.invalidate(); throw error; });
 }

@@ -1,3 +1,4 @@
+import { createSdkBudgetHttp, rawProviderFetch, reserveProviderMutation } from "../provider_budget";
 import { createGooglePersonalEventProvider, GoogleProviderError, type GooglePersonalUpdate, type GoogleProviderPorts } from "@musubi/provider-google";
 import { getOAuthCredentials, hasProviderSyncScopes } from "@musubi/db";
 import { EventWriteError } from "@musubi/types";
@@ -36,7 +37,7 @@ export function googlePersonalProviderPorts(
     } },
     // The module records each leaf dispatch through its explicit telemetry port.
     // Wrapping this in observedProviderFetch would count every request twice.
-    http: { fetch: (url, init) => globalThis.fetch(url, init) },
+    http: { ...createSdkBudgetHttp("google", userID, accountID, accepted), fetch: rawProviderFetch },
     clock: { nowEpochMs: () => Date.now(), nowMonotonicMs: () => performance.now() },
     telemetry: { record: metric => recordProviderHttpRequest(metric.method, metric.status, metric.durationMs) },
   };
@@ -56,7 +57,7 @@ export function googlePersonalEventBridge(
     connectionGeneration: String(accepted.connectionGeneration), calendarId, eventId };
   const provider = createGooglePersonalEventProvider({
     ...googlePersonalProviderPorts(userID, accountID, accepted, accessToken),
-    beforeMutation: () => accepted.beforeMutation(),
+    beforeMutation: () => reserveProviderMutation({ url: `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`, method: "PATCH" }, () => accepted.beforeMutation()),
   });
   const input = (plan: NativeWritePlanV1, etag: unknown): GooglePersonalUpdate => ({
     target, acceptedEtag: requireEventEtag(etag), body: pinnedJsonBodyV1(plan),

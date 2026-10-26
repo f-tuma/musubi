@@ -1,3 +1,5 @@
+import { guardHttpDispatch } from "./http-dispatch";
+import { providerDeferral } from "./provider-budget";
 import {
   createCaldavPersonalEventCreateProvider, CaldavProviderError, strongCaldavEtag,
   type CaldavPersonalCreate,
@@ -39,6 +41,8 @@ function projectionSnapshot(value: CaldavTimedProjection): CaldavTimedProjection
   return Object.freeze({ title, description, location, start, end, isAllDay: false, recurrence: null }) as CaldavTimedProjection;
 }
 function runtimeError(error: unknown, phase: RuntimePhase): RuntimeErrorInfo {
+  const deferral = providerDeferral(error);
+  if (deferral) return { code: "provider-budget-deferred", outcome: "not-written", phase, deferral };
   if (error instanceof SyncRuntimeInterrupted) return { code: "runtime-attempt-aborted", outcome: "unconfirmed", phase,
     interruption: error.reason === "finished" ? "cancelled" : error.reason };
   if (error instanceof CaldavProviderError) return frozen({ code: error.code, outcome: error.outcome, phase,
@@ -209,7 +213,7 @@ export async function runClaimedCaldavPersonalCreate(input: ClaimedCaldavPersona
   const handleMutationError = async (error: unknown) => {
     const at = error && typeof error === "object" ? errorPhases.get(error) ?? "mutation" : "mutation";
     const info = runtimeError(error, at);
-    if (at === "mutation" && info.outcome === "unconfirmed" && facts.possibleDispatch) {
+    if (!info.deferral && at === "mutation" && info.outcome === "unconfirmed" && facts.possibleDispatch) {
       facts = frozen({ ...facts, provider: facts.provider.kind === "accepted" ? facts.provider : { kind: "uncertain" } });
       await persist(); await checkpoint("afterUncertain");
       const decision = choose({ kind: "failure", error: info }, at);
@@ -226,7 +230,7 @@ export async function runClaimedCaldavPersonalCreate(input: ClaimedCaldavPersona
         network: { allowPrivate: transport.network.allowPrivate, async lookupImpl(hostname, lookupOptions) {
           attempt.guard(); const addresses = await transport.network.lookupImpl(hostname, lookupOptions); attempt.guard(); return addresses;
         } },
-        http: { fetchPinned(url, init, address) { attempt.guard(); return transport.http.fetchPinned(url, init, address); } },
+        http: guardHttpDispatch(transport.http, attempt.guard),
         accountSession: { async open(connection, signal) {
           attempt.guard(); const previous = phase; phase = "credentials";
           try {

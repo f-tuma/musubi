@@ -1,3 +1,4 @@
+import { createSdkBudgetHttp, rawProviderFetch } from "../provider_budget";
 import { GoogleTaskProviderError, type GoogleTaskProviderPorts } from "@musubi/provider-google";
 import type { GoogleTaskDeleteProviderPorts } from "@musubi/provider-google";
 import type { GoogleTaskCreateProviderPorts } from "@musubi/provider-google";
@@ -31,7 +32,7 @@ export function googleTaskProviderPorts(userID: string, accountID: string,
       recoverRejectedRead: (_connection, rejected, signal) => open(signal, rejected),
       async onReadAuthenticationRejected() { throw new ProviderAuthError("google", "resource_401", undefined, false); },
     },
-    http: { fetch: (url, init) => globalThis.fetch(url, init) },
+    http: { ...createSdkBudgetHttp("google", userID, accountID, capture), fetch: rawProviderFetch },
     clock: { nowEpochMs: () => Date.now(), nowMonotonicMs: () => performance.now() },
     telemetry: { record: metric => recordProviderHttpRequest(metric.method, metric.status, metric.durationMs) },
   };

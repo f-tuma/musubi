@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "driver": "fair-work",
+  "scenarios": [
+    {
+      "id": "account-a-429-b-ready",
+      "title": "Account cooldown releases A while ready B dispatches",
+      "expected": {
+        "results": [
+          "deferred",
+          "settled"
+        ],
+        "methods": [
+          "B:GET"
+        ],
+        "active": 0
+      }
+    },
+    {
+      "id": "slow-a-b-progress",
+      "title": "B completes while A native HTTP is outstanding",
+      "expected": {
+        "beforeRelease": [
+          "A",
+          "B"
+        ],
+        "maxActive": 2,
+        "methods": [
+          "B:GET",
+          "A:GET"
+        ]
+      }
+    },
+    {
+      "id": "global-capacity-lanes",
+      "title": "One pool rotates lanes and recovery families with bounded pull preference",
+      "expected": {
+        "starts": [
+          "event-1",
+          "task-1",
+          "event-2",
+          "pull-1"
+        ],
+        "maxActive": 1
+      }
+    },
+    {
+      "id": "nested-child-collision",
+      "title": "Nested child inherits a live permit and unrelated collisions wait",
+      "expected": {
+        "childActive": 1,
+        "blockedChild": "not-eligible",
+        "lateRejected": true,
+        "maxActive": 2
+      }
+    },
+    {
+      "id": "native-leaf-lifetime",
+      "title": "Actual native send is one shot and excludes host persistence time",
+      "expected": {
+        "sends": 1,
+        "metrics": [
+          7
+        ],
+        "twiceRejected": true,
+        "lateRejected": true,
+        "abortedSends": 0
+      }
+    },
+    {
+      "id": "unused-reservation-refund",
+      "title": "Cancellation before raw dispatch refunds only unused mutation permission",
+      "expected": {
+        "sends": 0,
+        "refundedCredits": 2,
+        "refusalMetrics": 0
+      }
+    },
+    {
+      "id": "accepted-readback-persistence-failure",
+      "title": "Real Task CREATE retains acceptance after readback cooldown SQL failure",
+      "expected": {
+        "provider": "accepted",
+        "acceptedStatus": 201,
+        "writerTaskId": "created",
+        "methods": [
+          "GET",
+          "POST",
+          "GET"
+        ],
+        "statuses": [
+          200,
+          201,
+          429
+        ],
+        "blocked": true,
+        "nextReason": "budget-persistence-pending",
+        "flushed": true
+      }
+    },
+    {
+      "id": "restart-shared-cooldown",
+      "title": "Restart starts empty and hydrates a shared account cooldown",
+      "expected": {
+        "coldReason": "credit",
+        "aReason": "cooldown",
+        "bReady": true,
+        "tenantScopes": 0
+      }
+    },
+    {
+      "id": "parked-pages-b-progress",
+      "title": "A native pagination continuation exceeds burst while B completes",
+      "expected": {
+        "pages": 6,
+        "bBeforeA": true,
+        "maxActive": 2
+      }
+    },
+    {
+      "id": "park-until-auxiliary-cold-chain",
+      "title": "Four parents and four cold auxiliary refreshes reacquire without deadlock",
+      "expected": {
+        "sends": 12,
+        "refreshCalls": 4,
+        "maxActive": 4,
+        "maxLogical": 8
+      }
+    },
+    {
+      "id": "long-cooldown-releases-continuations",
+      "title": "Four long account cooldowns release continuations before healthy B runs",
+      "expected": {
+        "results": ["deferred", "deferred", "deferred", "deferred", "settled"],
+        "exactDue": true,
+        "methods": ["healthy:GET"],
+        "parks": 0,
+        "logicalActive": 0
+      }
+    },
+    {
+      "id": "invalid-retry-after-b-progress",
+      "title": "Malformed Retry-After preserves actual429 without poisoning healthy B",
+      "expected": {
+        "statuses": [
+          429,
+          200
+        ],
+        "writes": 0,
+        "blocked": false,
+        "parsed": "invalid"
+      }
+    }
+  ]
+}

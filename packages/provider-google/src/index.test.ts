@@ -283,7 +283,7 @@ test("actual aborted HTTP is counted once; telemetry failure does not replace na
 test("provider runtime imports no product/storage/auth/config package or ambient HTTP/clock", () => {
   const sourceDir = fileURLToPath(new URL(".", import.meta.url));
   const files = readdirSync(sourceDir).filter(name => name.endsWith(".ts") && !name.endsWith(".test.ts"));
-  assert.deepEqual(files.sort(), ["etag.ts", "index.ts", "task-create-types.ts", "task-create.ts", "task-delete-types.ts", "task-delete.ts", "task-projection.ts", "task-transport.ts", "task-types.ts", "task-update.ts", "types.ts"]);
+  assert.deepEqual(files.sort(), ["etag.ts", "http-dispatch.ts", "index.ts", "task-create-types.ts", "task-create.ts", "task-delete-types.ts", "task-delete.ts", "task-projection.ts", "task-transport.ts", "task-types.ts", "task-update.ts", "types.ts"]);
   for (const file of files) {
     const code = readFileSync(`${sourceDir}/${file}`, "utf8");
     const imports = [...code.matchAll(/(?:from\s*|import\s*)["']([^"']+)["']/g)].map(match => match[1]);
@@ -295,4 +295,13 @@ test("provider runtime imports no product/storage/auth/config package or ambient
   const manifest = JSON.parse(readFileSync(fileURLToPath(new URL("../package.json", import.meta.url)), "utf8"));
   assert.deepEqual(manifest.dependencies ?? {}, {});
   assert.equal(strongGoogleEtag('"exact"'), '"exact"'); assert.equal(strongGoogleEtag('W/"exact"'), null);
+});
+
+test("host dispatch refusal survives event preflight and mutation catches without HTTP or telemetry", async () => {
+  const refusal = new Error("fixture budget refusal");
+  const f = fixture([]); f.ports.http.dispatch = async () => { throw refusal; };
+  f.ports.http.isDispatchDeferred = value => value === refusal;
+  await assert.rejects(f.provider.preflightUpdate(accepted), value => value === refusal);
+  await assert.rejects(f.provider.update(accepted), value => value === refusal);
+  assert.equal(f.calls.length, 0); assert.equal(f.metrics.length, 0);
 });

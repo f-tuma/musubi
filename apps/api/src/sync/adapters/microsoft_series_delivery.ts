@@ -1,3 +1,4 @@
+import { reserveProviderMutation, providerDeferral } from "../provider_budget";
 import { observedProviderFetch as fetch } from "../provider_http_metrics";
 import { graphSeriesFootprint } from "./microsoft_series_footprint";
 import { config } from "@musubi/config";
@@ -39,10 +40,10 @@ export async function createGraphSeries(
     // A missing uncertain transaction is never evidence of no side effect.
     // Permission and read failures must not erase a previous uncertain POST.
     recovered = await findGraphCreatedSeries(accessToken, calendarID, saved, frozen);
-  } catch (error) { throw uncertain ? unconfirmed(error) : error; }
+  } catch (error) { if (providerDeferral(error)) throw error; throw uncertain ? unconfirmed(error) : error; }
   if (recovered) return { ...recovered, recovered: true };
   if (uncertain) throw new ProviderEventWriteError("provider-write-failed", "unconfirmed");
-  await beforeWrite();
+  await reserveProviderMutation({ url: `${calendar}/events`, method: "POST" }, beforeWrite);
   let returnedID: string | undefined;
   let mutationError: unknown;
   try {
@@ -55,13 +56,13 @@ export async function createGraphSeries(
     if (typeof result?.id !== "string" || !result.id || result.id.trim() !== result.id)
       throw new ProviderEventWriteError("provider-write-failed", "unconfirmed", response.status);
     returnedID = result.id;
-  } catch (error) { mutationError = error; }
+  } catch (error) { if (providerDeferral(error)) throw error; mutationError = error; }
   if (mutationError instanceof ProviderEventWriteError && mutationError.outcome === "not-written") throw mutationError;
   // A successful HTTP status alone does not acknowledge the master or its
   // descendants. Re-read complete transaction identity and native evidence.
   let observed: CreatedEventEvidence | null;
   try { observed = await findGraphCreatedSeries(accessToken, calendarID, saved, frozen); }
-  catch (error) { throw unconfirmed(error); }
+  catch (error) { if (providerDeferral(error)) throw error; throw unconfirmed(error); }
   if (!observed) {
     if (mutationError instanceof ProviderEventWriteError) throw mutationError;
     throw new ProviderEventWriteError("provider-write-failed", "unconfirmed");

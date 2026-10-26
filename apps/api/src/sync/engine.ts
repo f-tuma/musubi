@@ -6,6 +6,7 @@ import { randomUUID } from "node:crypto";
 import { SYNC_PROFILE_V1, SyncCoverageSchema, hasKnownEventTime, EventWriteError, type Event, type Task } from "@musubi/types";
 import { config, logger } from "@musubi/config";
 import {
+  type SyncReadWorkExecution,
   getDueEventOutboxIDs,
   getDueTaskOutboxIDs, getTaskMirrorReadCalendars,
   listGraphFamilyContexts, type GraphFamilyContext, type GraphFamilyObservation,
@@ -40,7 +41,7 @@ import {
   getGoogleMirrorReadCalendars,
   sweepExternalEvents,
   sweepExternalTasks,
-  upsertExternalEvent,
+  upsertExternalEventFromRead,
   replaceExternalEventResource,
   upsertExternalTask,
 } from "@musubi/db";
@@ -66,6 +67,18 @@ import { recordExternalSyncFailure, recordSyncRun, recordSyncObjects } from "../
 import { ProviderEventWriteError, requireEventPatch } from "./event_write";
 import { withDeliveryDeadline } from "./delivery_policy";
 import { type ProviderSyncOptions, runProviderSyncs } from "./orchestrator";
+import { createReadAttempt } from "./read_attempt";
+import { currentSyncWorkParking, initializeSyncWorkCoordinator, kickSyncWork, submitSyncWork, syncWorkCoordinatorEnabled } from "./work_coordinator";
+import { withAccountBudgetScope } from "./provider_budget";
+import type { WorkExecutionResult } from "@musubi/sync-runtime";
+import {
+  ackSyncDiscoveryWork, requestSyncReadWork, claimSyncReadWork, renewSyncReadWork,
+  deferSyncReadWork, getSyncReadWorkStatus, prepareGraphReadConfiguration,
+  postponeSyncReadWork,
+  type SyncReadWorkAddress, type SyncWorkReference, type SyncWorkFamily,
+} from "@musubi/db";
+import { providerDeferral } from "@musubi/sync-runtime";
+import { executeOutlookMove } from "./outlook_moves";
 
 // provider -> adapter. Register new providers here.
 const adapters: Record<string, CalendarAdapter> = {
@@ -107,6 +120,14 @@ export async function prepareTaskWrites(task: Task, actions: readonly { calendar
 }
 
 export async function deliverTaskOutbox(id: string, adapterFor: (provider: string) => CalendarAdapter | null = getAdapter) {
+  if (syncWorkCoordinatorEnabled()) {
+    await submitSyncWork({ family: "task-delivery", id });
+    return;
+  }
+  return executeTaskDeliveryAndNotify(id, adapterFor);
+}
+
+async function executeTaskDeliveryAndNotify(id: string, adapterFor: (provider: string) => CalendarAdapter | null = getAdapter) {
   const result = await executeTaskOutbox(id, adapterFor);
   if (result) {
     if (!["completed", "not-needed", "cancelled"].includes(result.status)) recordExternalSyncFailure("push", result.provider);
@@ -117,6 +138,7 @@ export async function deliverTaskOutbox(id: string, adapterFor: (provider: strin
 }
 
 export async function drainTaskOutbox() {
+  if (syncWorkCoordinatorEnabled()) { kickSyncWork(); return; }
   const candidates = await getDueTaskOutboxIDs(40);
   let next = 0;
   await Promise.all(Array.from({ length: 4 }, async () => {
@@ -129,6 +151,14 @@ export async function drainTaskOutbox() {
 }
 
 export async function deliverEventOutboxAndNotify(id: string) {
+  if (syncWorkCoordinatorEnabled()) {
+    try { await submitSyncWork({ family: "event-delivery", id }); } catch { /* Shared host records bounded failure. */ }
+    return;
+  }
+  return executeEventDeliveryAndNotify(id);
+}
+
+async function executeEventDeliveryAndNotify(id: string) {
   try {
     const result = await deliverEventOutbox(id, getAdapter);
     if (!result) return;
@@ -136,6 +166,7 @@ export async function deliverEventOutboxAndNotify(id: string) {
       recordExternalSyncFailure("push", result.provider);
     const members = await getCalendarMembers(result.calendarID);
     notifyCalendarMembers([...new Set([result.userID, ...members.map((member) => member.userID)])], "external_sync", { calendars: [result.calendarID] });
+    return result;
   } catch {
     // Never log driver-bound JSON or provider content. Persisted work survives.
     recordExternalSyncFailure("push", "all");
@@ -144,6 +175,7 @@ export async function deliverEventOutboxAndNotify(id: string) {
 }
 
 export async function drainEventOutbox() {
+  if (syncWorkCoordinatorEnabled()) { kickSyncWork(); return; }
   const candidates = await getDueEventOutboxIDs(40);
   let next = 0;
   await Promise.all(Array.from({ length: 4 }, async () => {
@@ -303,22 +335,22 @@ function graphReadConfigurationFingerprint() {
   });
 }
 
-async function syncProviderImpl(
+export async function discoverProviderAccount(
   adapter: CalendarAdapter,
   userID: string,
   account: { id: string; label: string },
+  readWork?: SyncReadWorkExecution,
 ) {
-  const startedAt = performance.now();
   const provider = adapter.provider;
   const accountId = account.id;
 
   logger.debug("sync.account.started", { provider, userId: userID, accountId });
 
   // keep the human label fresh on this account's calendars
-  await setAccountLabel(provider, userID, accountId, account.label);
+  await setAccountLabel(provider, userID, accountId, account.label, readWork);
 
   // 1. reconcile the calendar list
-  const availabilityContext = provider === "google" && config.api.googleAvailabilityEnabled ? await beginAvailabilityDiscovery(userID, accountId) : undefined;
+  const availabilityContext = provider === "google" && config.api.googleAvailabilityEnabled ? await beginAvailabilityDiscovery(userID, accountId, readWork) : undefined;
   const { calendars: remote, taskListsComplete, availabilityCalendars, eventCalendarsComplete = true, eventCalendarDiscoveryError } = await adapter.listCalendars(
     userID,
     accountId,
@@ -343,7 +375,7 @@ async function syncProviderImpl(
     (link.supportsEvents || link.supportsTasks || eventCalendarsComplete));
   const changedCalendarIDs: string[] = [];
   if (provider === "google" || provider === "microsoft" || provider === "caldav") {
-    const removed = await removeGoogleCalendarMirrors(userID, accountId, absent.filter(link => provider === "caldav" || link.supportsEvents), provider as "google" | "microsoft" | "caldav");
+    const removed = await removeGoogleCalendarMirrors(userID, accountId, absent.filter(link => provider === "caldav" || link.supportsEvents), provider as "google" | "microsoft" | "caldav", readWork);
     if (removed.calendarIDs.length) {
       // Memberships were captured before source deletion. Publish the committed
       // invalidation even when a later unrelated calendar fetch fails.
@@ -352,11 +384,11 @@ async function syncProviderImpl(
     }
   }
   if (availabilityContext && availabilityCalendars) {
-    await reconcileAvailabilitySources(userID, availabilityContext, availabilityCalendars, account.label);
+    await reconcileAvailabilitySources(userID, availabilityContext, availabilityCalendars, account.label, readWork);
     notifyCalendarMembers([userID], "external_sync", {});
   }
   for (const link of absent) {
-    if (!["google", "microsoft", "caldav"].includes(provider) || provider !== "caldav" && !link.supportsEvents) await removeCalendar(link.calendarID);
+    if (!["google", "microsoft", "caldav"].includes(provider) || provider !== "caldav" && !link.supportsEvents) await removeCalendar(link.calendarID, readWork);
   }
   // new remote calendar -> import; existing -> keep the read-only flag fresh
   // (also self-heals calendars imported before readOnly existed, e.g. holidays)
@@ -375,16 +407,17 @@ async function syncProviderImpl(
     const link = links.find((l) => l.externalCalendarID === cal.externalId);
     if (link) {
       if (provider === "google" && cal.googleAccessRole && capabilities.supportsEvents)
-        await reconcileGoogleAccessAndNotify(userID, accountId, link.calendarID, cal.googleAccessRole);
-      else if (provider === "microsoft" && cal.microsoftAccess && capabilities.supportsEvents) await reconcileMicrosoftAccessAndNotify(userID, accountId, link.calendarID, cal.microsoftAccess);
-      else if (provider === "caldav" && cal.caldavAccess) await reconcileCaldavAccessAndNotify(userID, accountId, link.calendarID, cal.caldavAccess, !!cal.readOnly);
-      else await setMemberRole(userID, link.calendarID, desiredRole);
+        await reconcileGoogleAccessAndNotify(userID, accountId, link.calendarID, cal.googleAccessRole, readWork);
+      else if (provider === "microsoft" && cal.microsoftAccess && capabilities.supportsEvents) await reconcileMicrosoftAccessAndNotify(userID, accountId, link.calendarID, cal.microsoftAccess, readWork);
+      else if (provider === "caldav" && cal.caldavAccess) await reconcileCaldavAccessAndNotify(userID, accountId, link.calendarID, cal.caldavAccess, !!cal.readOnly, readWork);
+      else await setMemberRole(userID, link.calendarID, desiredRole, readWork);
       await setExternalCalendarCapabilities(
         provider,
         userID,
         accountId,
         cal.externalId,
         capabilities,
+        readWork,
       );
     } else {
       const imported = await importExternalCalendar(
@@ -394,262 +427,440 @@ async function syncProviderImpl(
         account.label,
         cal,
         desiredRole,
+        readWork,
       );
       if (provider === "google" && cal.googleAccessRole && capabilities.supportsEvents)
-        await reconcileGoogleAccessAndNotify(userID, accountId, imported.id, cal.googleAccessRole);
-      else if (provider === "microsoft" && cal.microsoftAccess && capabilities.supportsEvents) await reconcileMicrosoftAccessAndNotify(userID, accountId, imported.id, cal.microsoftAccess);
-      else if (provider === "caldav" && cal.caldavAccess) await reconcileCaldavAccessAndNotify(userID, accountId, imported.id, cal.caldavAccess, !!cal.readOnly);
+        await reconcileGoogleAccessAndNotify(userID, accountId, imported.id, cal.googleAccessRole, readWork);
+      else if (provider === "microsoft" && cal.microsoftAccess && capabilities.supportsEvents) await reconcileMicrosoftAccessAndNotify(userID, accountId, imported.id, cal.microsoftAccess, readWork);
+      else if (provider === "caldav" && cal.caldavAccess) await reconcileCaldavAccessAndNotify(userID, accountId, imported.id, cal.caldavAccess, !!cal.readOnly, readWork);
     }
   }
 
-  // 2. pull objects per (now reconciled) calendar. Track which calendars really
-  // changed so the scheduled sync can wake connected clients — the etag-aware
-  // upsert makes a CalDAV full-fetch a quiet no-op when nothing moved.
-  for (const link of await getUserExternalCalendars(
-    provider,
-    userID,
-    accountId,
-  )) {
-    // An unavailable event inventory retains source/cursor/coverage/authority
-    // and pending writes. Skip before any access admission or family read.
-    if (!eventCalendarsComplete && !(link.supportsTasks && !link.supportsEvents)) continue;
-    const accessContext = (provider === "caldav" || ["google", "microsoft"].includes(provider) && link.providerAccessRole !== null) && (link.supportsEvents || provider === "caldav" && link.supportsTasks) ? { provider: provider as "google" | "caldav" | "microsoft", linkID: link.sourceID, revision: link.providerAccessRevision, userID, accountID: accountId, externalCalendarID: link.externalCalendarID } : undefined;
-    if (provider === "caldav" && caldavHasRead(link.providerAccessRole) === false) continue;
-    const taskOnly = link.supportsTasks && !link.supportsEvents;
-    if (taskOnly && !remoteIDs.has(link.externalCalendarID)) continue;
-    const graphRead = provider === "microsoft" && !taskOnly
-      ? await beginGraphRead({ userID, accountID: accountId, calendarID: link.calendarID,
-        sourceID: link.sourceID, configurationFingerprint: graphReadConfigurationFingerprint() })
-      : undefined;
-    const calendarStartedAt = performance.now();
-    const taskReadStartedAt = new Date();
-    let fetched;
-    const families: { context: GraphFamilyContext; observation: GraphFamilyObservation | null }[] = [];
-    const excludedEventIDs = new Set<string>(), excludedSeriesIDs = new Set<string>();
-    try {
-      if (provider === "microsoft" && !taskOnly) {
-        for (const context of await listGraphFamilyContexts(userID, accountId, link.calendarID)) {
-          if (!adapter.readGraphFamily) throw new Error("Complete Graph family reader is unavailable.");
-          const mapping = context.mappings.find(value => value.eventID === context.root.id)!;
-          const native = await adapter.readGraphFamily(userID, accountId, link.externalCalendarID, { ...context.root, calendars: [link.calendarID] }, { externalEventId: mapping.externalEventID, icalUid: mapping.icalUid, etag: mapping.etag });
-          if (!native) {
-            if (!graphRead?.readAuthorityVerified)
-              throw new Error("Missing Graph family requires current full-read authority.");
-            families.push({ context, observation: null });
-            excludedSeriesIDs.add(mapping.externalEventID);
-            for (const value of context.mappings) excludedEventIDs.add(value.externalEventID);
-            continue;
-          }
-          const project = (event: NormalizedEvent): GraphFamilyObservation["master"] => {
-            if (!event.timeModel || !event.icalUid || !event.providerState) throw new Error("Incomplete Graph family projection.");
-            return { creationOperationID: event.creationOperationID, externalID: event.externalId, icalUid: event.icalUid, etag: event.etag ?? null, providerState: event.providerState, values: { ...toEventValues(event, link.calColor), timeModel: event.timeModel } };
-          };
-          const observation: GraphFamilyObservation = { master: project(native.master), instances: native.instances.map(value => {
-            if (!value.originalStart) throw new Error("Missing Graph original identity.");
-            return { ...project(value), originalStart: value.originalStart };
-          }), cancelled: native.cancelled };
-          families.push({ context, observation });
+  const currentLinks = (await getUserExternalCalendars(provider, userID, accountId)).filter(link =>
+    (eventCalendarsComplete || link.supportsTasks && !link.supportsEvents) &&
+    (!(link.supportsTasks && !link.supportsEvents) || remoteIDs.has(link.externalCalendarID)));
+  return { links: currentLinks, changedCalendarIDs, eventCalendarDiscoveryError, remoteCount: remote.length };
+}
+
+type ProviderCollection = Awaited<ReturnType<typeof getUserExternalCalendars>>[number];
+export type ProviderCollectionSyncResult = {
+  kind: "complete" | "optional-unavailable" | "read-unavailable";
+  changedCalendarIDs: string[];
+};
+
+/** One native stream per reconciled collection. DAV's mixed stream keeps one cursor. */
+export async function syncProviderCollection(
+  adapter: CalendarAdapter,
+  userID: string,
+  account: { id: string; label: string },
+  link: ProviderCollection,
+  readWork?: SyncReadWorkExecution,
+): Promise<ProviderCollectionSyncResult> {
+  const provider = adapter.provider;
+  const accountId = account.id;
+  const changedCalendarIDs: string[] = [];
+  const accessContext = (provider === "caldav" || ["google", "microsoft"].includes(provider) && link.providerAccessRole !== null) && (link.supportsEvents || provider === "caldav" && link.supportsTasks) ? { provider: provider as "google" | "caldav" | "microsoft", linkID: link.sourceID, revision: link.providerAccessRevision, userID, accountID: accountId, externalCalendarID: link.externalCalendarID } : undefined;
+  if (provider === "caldav" && caldavHasRead(link.providerAccessRole) === false) return { kind: "read-unavailable", changedCalendarIDs };
+  const taskOnly = link.supportsTasks && !link.supportsEvents;
+  const graphRead = provider === "microsoft" && !taskOnly
+    ? await beginGraphRead({ userID, accountID: accountId, calendarID: link.calendarID,
+      sourceID: link.sourceID, configurationFingerprint: graphReadConfigurationFingerprint() })
+    : undefined;
+  const calendarStartedAt = performance.now();
+  const taskReadStartedAt = new Date();
+  let fetched;
+  const families: { context: GraphFamilyContext; observation: GraphFamilyObservation | null }[] = [];
+  const excludedEventIDs = new Set<string>(), excludedSeriesIDs = new Set<string>();
+  try {
+    if (provider === "microsoft" && !taskOnly) {
+      for (const context of await listGraphFamilyContexts(userID, accountId, link.calendarID)) {
+        if (!adapter.readGraphFamily) throw new Error("Complete Graph family reader is unavailable.");
+        const mapping = context.mappings.find(value => value.eventID === context.root.id)!;
+        const native = await adapter.readGraphFamily(userID, accountId, link.externalCalendarID, { ...context.root, calendars: [link.calendarID] }, { externalEventId: mapping.externalEventID, icalUid: mapping.icalUid, etag: mapping.etag });
+        if (!native) {
+          if (!graphRead?.readAuthorityVerified)
+            throw new Error("Missing Graph family requires current full-read authority.");
+          families.push({ context, observation: null });
           excludedSeriesIDs.add(mapping.externalEventID);
-          for (const id of [mapping.externalEventID, ...context.mappings.map(value => value.externalEventID), ...native.instances.map(value => value.externalId)]) excludedEventIDs.add(id);
+          for (const value of context.mappings) excludedEventIDs.add(value.externalEventID);
+          continue;
         }
-      }
-      fetched = await adapter.fetchChanges(
-        userID,
-        accountId,
-        link.externalCalendarID,
-        graphRead ? graphRead.cursor : link.cursor,
-        graphRead ? {
-          excludedEventIDs: [...excludedEventIDs], excludedSeriesIDs: [...excludedSeriesIDs],
-          knownEventIDs: graphRead.knownEventIDs,
-          microsoftReadAuthorityVerified: graphRead.readAuthorityVerified,
-        } : families.length ? { excludedEventIDs: [...excludedEventIDs], excludedSeriesIDs: [...excludedSeriesIDs] } : undefined,
-      );
-    } catch (error) {
-      if (
-        !taskOnly ||
-        (provider !== "google" && provider !== "microsoft") ||
-        !isOptionalTaskError(error)
-      )
-        throw error;
-      logger.warn("sync.tasks.fetch_unavailable", {
-        provider,
-        userId: userID,
-        accountId,
-        calendarId: link.calendarID,
-      });
-      continue;
-    }
-    const { changes, nextCursor } = fetched;
-    if (graphRead) {
-      const coverage = SyncCoverageSchema.parse(fetched.coverage);
-      if (coverage.kind !== "window" || !coverage.complete || !nextCursor)
-        throw new Error("Graph read requires a complete, scoped window checkpoint.");
-      // Every native GET/hydration has finished. Database effects and the
-      // checkpoint now share the current source incarnation and lifecycle fence.
-      const committed = await applyGraphReadBatch(graphRead, {
-        coverage, nextCursor, configurationFingerprint: graphReadConfigurationFingerprint(),
-      }, async (tx, currentAccess) => {
-        if (graphReadConfigurationFingerprint() !== graphRead.configurationFingerprint)
-          throw new Error("Graph read configuration changed before apply.");
-        const unlinks: { id: string; revision: number }[] = [];
-        let changed = 0;
-        for (const family of families) {
-          const result = family.observation
-            ? await replaceGraphFamilyInTransaction(tx, family.context, family.observation)
-            : await removeGraphFamilyInTransaction(tx, family.context);
-          if (result.changed) changed++;
-        }
-        for (const change of changes) {
-          if (change.kind === "event-absence") {
-            // Both native proof and current host authority are necessary. An
-            // unmapped @removed cannot poison future creates with a tombstone.
-            if (!change.deletionEvidence || !graphRead.readAuthorityVerified ||
-                !graphRead.knownEventIDs.includes(change.externalId)) continue;
-            const result = await deleteExternalEventInTransaction(tx, provider, link.calendarID, change.externalId, currentAccess);
-            if (result.changed) changed++;
-            if (result.unlinked) unlinks.push(result.unlinked);
-          } else if (change.kind === "event") {
-            const event = change.data;
-            if (event.status === "cancelled") {
-              const result = await deleteExternalEventInTransaction(tx, provider, link.calendarID, event.externalId, currentAccess);
-              if (result.changed) changed++;
-              if (result.unlinked) unlinks.push(result.unlinked);
-            } else if (await upsertExternalEventInTransaction(tx, false,
-              provider, userID, link.calendarID, link.externalCalendarID, event.externalId,
-              toEventValues(event, link.calColor), event.etag ?? null, event.icalUid ?? null, event.creationOperationID,
-              event.timeModel ? { timeModel: event.timeModel, externalSeriesID: event.externalSeriesID,
-                originalStart: event.originalStart, isCanceled: event.isCanceled } : undefined,
-              event.providerOccurrence, event.providerState, event.reminderTimeEvidence, event.sourceSeriesID, currentAccess,
-            )) changed++;
-          } else {
-            throw new Error("Unexpected resource family in a Graph event read.");
-          }
-        }
-        // Window absence has no destructive sweep. All canonical rows, binding
-        // IDs, native addresses, original slots and pending writes are retained.
-        return { changed, unlinks };
-      });
-      await notifyExternalEventUnlinks(link.calendarID, committed.unlinks);
-      if (committed.changed) {
-        const calendars = [...new Set([link.calendarID, ...await getGoogleMirrorReadCalendars(link.calendarID)])];
-        const members = await Promise.all(calendars.map(id => getCalendarMembers(id)));
-        notifyCalendarMembers([...new Set([userID, ...members.flat().map(member => member.userID)])], "external_sync", { calendars });
-        changedCalendarIDs.push(...calendars);
-      }
-      recordSyncObjects(provider, changes.filter(({ kind }) => kind === "event").length, 0);
-      logger.debug("sync.calendar.completed", {
-        provider, userId: userID, accountId, calendarId: link.calendarID,
-        fetchedEvents: changes.filter(({ kind }) => kind === "event").length, fetchedTasks: 0,
-        changedObjects: committed.changed, coverage: coverage.kind, fullSet: false,
-        durationMs: Math.round((performance.now() - calendarStartedAt) * 10) / 10,
-      });
-      continue;
-    }
-    // A grant-invalidated Google cursor requires authoritative reconciliation
-    // even when known-time editing is disabled. The adapter fully pages this list.
-    const reset = fetched.reset || (["google", "microsoft"].includes(provider) && !!accessContext && link.cursor === null);
-
-    const unlinkedEventIDs: { id: string; revision: number }[] = [];
-    const onUnlink = (id: string, revision: number) => {
-      unlinkedEventIDs.push({ id, revision });
-    };
-    let changed = 0;
-    let googleReadChanged = false;
-    const trackGoogleRead = async <T extends boolean | number>(write: Promise<T>): Promise<T> => {
-      const result = await write;
-      if (["google", "microsoft", "caldav"].includes(provider) && result) googleReadChanged = true;
-      return result;
-    };
-    const taskScope = { sourceID: link.sourceID, accountID: accountId, providerAccessRevision: link.providerAccessRevision, readStartedAt: taskReadStartedAt };
-    try {
-      changed += await reconcileExternalChanges(changes, reset, {
-        replaceResource: (resourceID, observations) => trackGoogleRead(replaceExternalEventResource(provider, userID, link.calendarID, link.externalCalendarID, resourceID, observations.map(event => {
-          if (!event.timeModel || !event.icalUid) throw new Error("Resource observation requires a time model and UID.");
-          return { providerState: event.providerState, externalId: event.externalId, values: toEventValues(event, link.calColor), etag: event.etag ?? null, icalUid: event.icalUid, time: { timeModel: event.timeModel, externalSeriesID: event.externalSeriesID, originalStart: event.originalStart, isCanceled: event.isCanceled } };
-        }), accessContext)),
-        deleteEvent: (externalID) =>
-          trackGoogleRead(deleteExternalEvent(provider, link.calendarID, externalID, onUnlink, accessContext)),
-        deleteTask: (externalID) =>
-          link.supportsTasks ? trackGoogleRead(deleteExternalTask(provider, link.calendarID, externalID, accessContext, taskScope)) : Promise.resolve(false),
-        upsertEvent: (event) =>
-          trackGoogleRead(upsertExternalEvent(
-            provider,
-            userID,
-            link.calendarID,
-            link.externalCalendarID,
-            event.externalId,
-            toEventValues(event, link.calColor),
-            event.etag ?? null,
-            event.icalUid ?? null,
-            event.creationOperationID,
-            event.timeModel ? { timeModel: event.timeModel, externalSeriesID: event.externalSeriesID, originalStart: event.originalStart, isCanceled: event.isCanceled } : undefined,
-            event.providerOccurrence,
-            event.providerState,
-            event.reminderTimeEvidence,
-            event.sourceSeriesID,
-            accessContext,
-          )),
-        upsertTask: (task) =>
-          link.supportsTasks ? trackGoogleRead(upsertExternalTask(
-            provider,
-            userID,
-            link.calendarID,
-            link.externalCalendarID,
-            task.externalId,
-            toTaskValues(task),
-            task.etag ?? null,
-            task.icalUid ?? null,
-            accessContext,
-            taskScope,
-            adapter.projectTask?.({ ...toTaskValues(task), id: task.externalId, creatorID: userID, calendarID: link.calendarID }),
-          )) : Promise.resolve(false),
-        sweepEvents: (seenExternalIDs) =>
-          trackGoogleRead(sweepExternalEvents(
-            provider,
-            link.calendarID,
-            seenExternalIDs,
-            onUnlink,
-            accessContext,
-          )),
-        sweepTasks: (seenExternalIDs) =>
-          link.supportsTasks ? trackGoogleRead(sweepExternalTasks(provider, link.calendarID, seenExternalIDs, accessContext, taskScope)) : Promise.resolve(0),
-      });
-    } finally {
-      // Earlier unlinks have committed even if a later resource fails.
-      await notifyExternalEventUnlinks(link.calendarID, unlinkedEventIDs);
-      if (googleReadChanged) {
-        const calendars = [...new Set([...await getGoogleMirrorReadCalendars(link.calendarID), ...await getTaskMirrorReadCalendars(link.calendarID)])];
-        const members = await Promise.all(calendars.map(id => getCalendarMembers(id)));
-        // Include committed partial reads if a later item fails. A linked-only
-        // reader must hear about restoration as well as the earlier redaction.
-        notifyCalendarMembers([...new Set([userID, ...members.flat().map(member => member.userID)])], "external_sync", { calendars });
-        changedCalendarIDs.push(...calendars);
+        const project = (event: NormalizedEvent): GraphFamilyObservation["master"] => {
+          if (!event.timeModel || !event.icalUid || !event.providerState) throw new Error("Incomplete Graph family projection.");
+          return { creationOperationID: event.creationOperationID, externalID: event.externalId, icalUid: event.icalUid, etag: event.etag ?? null, providerState: event.providerState, values: { ...toEventValues(event, link.calColor), timeModel: event.timeModel } };
+        };
+        const observation: GraphFamilyObservation = { master: project(native.master), instances: native.instances.map(value => {
+          if (!value.originalStart) throw new Error("Missing Graph original identity.");
+          return { ...project(value), originalStart: value.originalStart };
+        }), cancelled: native.cancelled };
+        families.push({ context, observation });
+        excludedSeriesIDs.add(mapping.externalEventID);
+        for (const id of [mapping.externalEventID, ...context.mappings.map(value => value.externalEventID), ...native.instances.map(value => value.externalId)]) excludedEventIDs.add(id);
       }
     }
-
-    if (changed > 0) changedCalendarIDs.push(link.calendarID);
-    await setCursor(link.calendarID, nextCursor, accessContext);
-    recordSyncObjects(provider, changes.filter(({ kind }) => kind === "event").length, changes.filter(({ kind }) => kind === "task").length);
-    logger.debug("sync.calendar.completed", {
+    fetched = await adapter.fetchChanges(
+      userID,
+      accountId,
+      link.externalCalendarID,
+      graphRead ? graphRead.cursor : link.cursor,
+      graphRead ? {
+        excludedEventIDs: [...excludedEventIDs], excludedSeriesIDs: [...excludedSeriesIDs],
+        knownEventIDs: graphRead.knownEventIDs,
+        microsoftReadAuthorityVerified: graphRead.readAuthorityVerified,
+      } : families.length ? { excludedEventIDs: [...excludedEventIDs], excludedSeriesIDs: [...excludedSeriesIDs] } : undefined,
+    );
+  } catch (error) {
+    if (
+      !taskOnly ||
+      (provider !== "google" && provider !== "microsoft") ||
+      !isOptionalTaskError(error)
+    )
+      throw error;
+    logger.warn("sync.tasks.fetch_unavailable", {
       provider,
       userId: userID,
       accountId,
       calendarId: link.calendarID,
-      fetchedEvents: changes.filter(({ kind }) => kind === "event").length,
-      fetchedTasks: changes.filter(({ kind }) => kind === "task").length,
-      changedObjects: changed,
-      fullSet: !!reset,
+    });
+    return { kind: "optional-unavailable", changedCalendarIDs };
+  }
+  const { changes, nextCursor } = fetched;
+  if (graphRead) {
+    const coverage = SyncCoverageSchema.parse(fetched.coverage);
+    if (coverage.kind !== "window" || !coverage.complete || !nextCursor)
+      throw new Error("Graph read requires a complete, scoped window checkpoint.");
+    // Every native GET/hydration has finished. Database effects and the
+    // checkpoint now share the current source incarnation and lifecycle fence.
+    const committed = await applyGraphReadBatch(graphRead, {
+      coverage, nextCursor, configurationFingerprint: graphReadConfigurationFingerprint(),
+    }, async (tx, currentAccess) => {
+      if (graphReadConfigurationFingerprint() !== graphRead.configurationFingerprint)
+        throw new Error("Graph read configuration changed before apply.");
+      const unlinks: { id: string; revision: number }[] = [];
+      let changed = 0;
+      for (const family of families) {
+        const result = family.observation
+          ? await replaceGraphFamilyInTransaction(tx, family.context, family.observation)
+          : await removeGraphFamilyInTransaction(tx, family.context);
+        readWork?.progress?.();
+        if (result.changed) changed++;
+      }
+      for (const change of changes) {
+        if (change.kind === "event-absence") {
+          // Both native proof and current host authority are necessary. An
+          // unmapped @removed cannot poison future creates with a tombstone.
+          if (!change.deletionEvidence || !graphRead.readAuthorityVerified ||
+              !graphRead.knownEventIDs.includes(change.externalId)) continue;
+          const result = await deleteExternalEventInTransaction(tx, provider, link.calendarID, change.externalId, currentAccess);
+          if (result.changed) changed++;
+          if (result.unlinked) unlinks.push(result.unlinked);
+        } else if (change.kind === "event") {
+          const event = change.data;
+          if (event.status === "cancelled") {
+            const result = await deleteExternalEventInTransaction(tx, provider, link.calendarID, event.externalId, currentAccess);
+            if (result.changed) changed++;
+            if (result.unlinked) unlinks.push(result.unlinked);
+          } else if (await upsertExternalEventInTransaction(tx, false,
+            provider, userID, link.calendarID, link.externalCalendarID, event.externalId,
+            toEventValues(event, link.calColor), event.etag ?? null, event.icalUid ?? null, event.creationOperationID,
+            event.timeModel ? { timeModel: event.timeModel, externalSeriesID: event.externalSeriesID,
+              originalStart: event.originalStart, isCanceled: event.isCanceled } : undefined,
+            event.providerOccurrence, event.providerState, event.reminderTimeEvidence, event.sourceSeriesID, currentAccess,
+          )) changed++;
+        } else {
+          throw new Error("Unexpected resource family in a Graph event read.");
+        }
+        readWork?.progress?.();
+      }
+      // Window absence has no destructive sweep. All canonical rows, binding
+      // IDs, native addresses, original slots and pending writes are retained.
+      return { changed, unlinks };
+    }, readWork);
+    await notifyExternalEventUnlinks(link.calendarID, committed.unlinks);
+    if (committed.changed) {
+      const calendars = [...new Set([link.calendarID, ...await getGoogleMirrorReadCalendars(link.calendarID)])];
+      const members = await Promise.all(calendars.map(id => getCalendarMembers(id)));
+      notifyCalendarMembers([...new Set([userID, ...members.flat().map(member => member.userID)])], "external_sync", { calendars });
+      changedCalendarIDs.push(...calendars);
+    }
+    recordSyncObjects(provider, changes.filter(({ kind }) => kind === "event").length, 0);
+    logger.debug("sync.calendar.completed", {
+      provider, userId: userID, accountId, calendarId: link.calendarID,
+      fetchedEvents: changes.filter(({ kind }) => kind === "event").length, fetchedTasks: 0,
+      changedObjects: committed.changed, coverage: coverage.kind, fullSet: false,
       durationMs: Math.round((performance.now() - calendarStartedAt) * 10) / 10,
     });
+    return { kind: "complete", changedCalendarIDs };
   }
-  // Tasks can commit independently, including their direct SSE invalidations,
-  // while an unavailable Events resource remains a failed account/alert.
-  if (eventCalendarDiscoveryError) throw eventCalendarDiscoveryError;
-  logger.debug("sync.account.completed", {
+  // A grant-invalidated Google cursor requires authoritative reconciliation
+  // even when known-time editing is disabled. The adapter fully pages this list.
+  const reset = fetched.reset || (["google", "microsoft"].includes(provider) && !!accessContext && link.cursor === null);
+
+  const unlinkedEventIDs: { id: string; revision: number }[] = [];
+  const onUnlink = (id: string, revision: number) => {
+    unlinkedEventIDs.push({ id, revision });
+  };
+  let changed = 0;
+  let googleReadChanged = false;
+  const trackGoogleRead = async <T extends boolean | number>(write: Promise<T>): Promise<T> => {
+    const result = await write;
+    if (["google", "microsoft", "caldav"].includes(provider) && result) googleReadChanged = true;
+    return result;
+  };
+  const taskScope = { sourceID: link.sourceID, accountID: accountId, providerAccessRevision: link.providerAccessRevision, readStartedAt: taskReadStartedAt, readWork };
+  try {
+    changed += await reconcileExternalChanges(changes, reset, {
+      replaceResource: (resourceID, observations) => trackGoogleRead(replaceExternalEventResource(provider, userID, link.calendarID, link.externalCalendarID, resourceID, observations.map(event => {
+        if (!event.timeModel || !event.icalUid) throw new Error("Resource observation requires a time model and UID.");
+        return { providerState: event.providerState, externalId: event.externalId, values: toEventValues(event, link.calColor), etag: event.etag ?? null, icalUid: event.icalUid, time: { timeModel: event.timeModel, externalSeriesID: event.externalSeriesID, originalStart: event.originalStart, isCanceled: event.isCanceled } };
+      }), accessContext, readWork)),
+      deleteEvent: (externalID) =>
+        trackGoogleRead(deleteExternalEvent(provider, link.calendarID, externalID, onUnlink, accessContext, readWork)),
+      deleteTask: (externalID) =>
+        link.supportsTasks ? trackGoogleRead(deleteExternalTask(provider, link.calendarID, externalID, accessContext, taskScope)) : Promise.resolve(false),
+      upsertEvent: (event) =>
+        trackGoogleRead(upsertExternalEventFromRead(
+          readWork,
+          provider,
+          userID,
+          link.calendarID,
+          link.externalCalendarID,
+          event.externalId,
+          toEventValues(event, link.calColor),
+          event.etag ?? null,
+          event.icalUid ?? null,
+          event.creationOperationID,
+          event.timeModel ? { timeModel: event.timeModel, externalSeriesID: event.externalSeriesID, originalStart: event.originalStart, isCanceled: event.isCanceled } : undefined,
+          event.providerOccurrence,
+          event.providerState,
+          event.reminderTimeEvidence,
+          event.sourceSeriesID,
+          accessContext,
+        )),
+      upsertTask: (task) =>
+        link.supportsTasks ? trackGoogleRead(upsertExternalTask(
+          provider,
+          userID,
+          link.calendarID,
+          link.externalCalendarID,
+          task.externalId,
+          toTaskValues(task),
+          task.etag ?? null,
+          task.icalUid ?? null,
+          accessContext,
+          taskScope,
+          adapter.projectTask?.({ ...toTaskValues(task), id: task.externalId, creatorID: userID, calendarID: link.calendarID }),
+        )) : Promise.resolve(false),
+      sweepEvents: (seenExternalIDs) =>
+        trackGoogleRead(sweepExternalEvents(
+          provider,
+          link.calendarID,
+          seenExternalIDs,
+          onUnlink,
+          accessContext,
+          readWork,
+        )),
+      sweepTasks: (seenExternalIDs) =>
+        link.supportsTasks ? trackGoogleRead(sweepExternalTasks(provider, link.calendarID, seenExternalIDs, accessContext, taskScope)) : Promise.resolve(0),
+    });
+  } finally {
+    // Earlier unlinks have committed even if a later resource fails.
+    await notifyExternalEventUnlinks(link.calendarID, unlinkedEventIDs);
+    if (googleReadChanged) {
+      const calendars = [...new Set([...await getGoogleMirrorReadCalendars(link.calendarID), ...await getTaskMirrorReadCalendars(link.calendarID)])];
+      const members = await Promise.all(calendars.map(id => getCalendarMembers(id)));
+      // Include committed partial reads if a later item fails. A linked-only
+      // reader must hear about restoration as well as the earlier redaction.
+      notifyCalendarMembers([...new Set([userID, ...members.flat().map(member => member.userID)])], "external_sync", { calendars });
+      changedCalendarIDs.push(...calendars);
+    }
+  }
+
+  if (changed > 0) changedCalendarIDs.push(link.calendarID);
+  await setCursor(link.calendarID, nextCursor, accessContext, readWork);
+  recordSyncObjects(provider, changes.filter(({ kind }) => kind === "event").length, changes.filter(({ kind }) => kind === "task").length);
+  logger.debug("sync.calendar.completed", {
     provider,
     userId: userID,
     accountId,
-    calendars: remote.length,
+    calendarId: link.calendarID,
+    fetchedEvents: changes.filter(({ kind }) => kind === "event").length,
+    fetchedTasks: changes.filter(({ kind }) => kind === "task").length,
+    changedObjects: changed,
+    fullSet: !!reset,
+    durationMs: Math.round((performance.now() - calendarStartedAt) * 10) / 10,
+  });
+  return { kind: "complete", changedCalendarIDs };
+}
+
+
+type DiscoveryReceipt = Awaited<ReturnType<typeof discoverProviderAccount>>;
+type ReadReceipt = {
+  generation: string; bindingToken: string;
+  changedCalendarIDs: string[];
+  discovery?: DiscoveryReceipt;
+  collections?: { workID: string; requestedGeneration: string }[];
+  optionalUnavailable?: true;
+};
+// Request waiters consume local result details; only DB generations grant
+// completion. Bounded receipts contain no native payloads or credentials.
+const readReceipts = new Map<string, ReadReceipt>();
+function saveReadReceipt(workID: string, receipt: ReadReceipt) {
+  readReceipts.delete(workID); readReceipts.set(workID, receipt);
+  while (readReceipts.size > 2000) readReceipts.delete(readReceipts.keys().next().value!);
+}
+export class SyncWorkDeferred extends Error {
+  constructor(readonly retryAtMs: number) { super("Synchronization is pending a later opportunity."); this.name = "SyncWorkDeferred"; }
+}
+function readConfiguration(provider: string, stream: SyncReadWorkAddress["stream"]) {
+  if (provider === "microsoft" && stream === "events") return graphReadConfigurationFingerprint();
+  return JSON.stringify({ profile: SYNC_PROFILE_V1, reader: "queued-read-v1", provider, stream,
+    eventTimeEdits: config.api.eventTimeEditsEnabled, rsvpOccurrences: config.api.providerRsvpEditsEnabled,
+    availability: config.api.googleAvailabilityEnabled });
+}
+function readPolicy() {
+  return JSON.stringify({ network: "guarded-dns-tls-redirect-v1", privateHosts: config.security.federationAllowPrivateHosts });
+}
+async function requestCollectionRead(adapter: CalendarAdapter, userID: string, accountID: string, link: ProviderCollection) {
+  const provider = adapter.provider as SyncReadWorkAddress["provider"];
+  const stream = provider === "caldav" ? "components" : link.supportsTasks && !link.supportsEvents ? "tasks" : "events";
+  const configurationFingerprint = readConfiguration(provider, stream);
+  if (provider === "microsoft" && stream === "events") await prepareGraphReadConfiguration({
+    userID, accountID, calendarID: link.calendarID, sourceID: link.sourceID, configurationFingerprint,
+  });
+  return requestSyncReadWork({ userID, provider, accountID, sourceID: link.sourceID, stream,
+    configurationFingerprint, policyFingerprint: readPolicy() });
+}
+async function executeSyncRead(workID: string, outerSignal: AbortSignal): Promise<WorkExecutionResult> {
+  const claim = await claimSyncReadWork(workID);
+  if (claim.kind !== "claimed") return { kind: "skipped", reason: claim.kind === "retired" ? "retired" : "not-eligible" };
+  const capture = claim.capture, binding = capture.binding;
+  const adapter = getAdapter(binding.provider);
+  if (!adapter) throw new Error("Sync provider is unavailable.");
+  const attempt = createReadAttempt(() => renewSyncReadWork(capture), { signal: outerSignal });
+  const signal = attempt.signal;
+  const execution: SyncReadWorkExecution = { capture, signal, progress: attempt.progress };
+  const park = currentSyncWorkParking();
+  try {
+    return await attempt.run(() => withAccountBudgetScope(binding.provider, binding.userID, binding.accountID, async () => {
+      signal.throwIfAborted();
+      if (binding.configurationFingerprint !== readConfiguration(binding.provider, binding.stream) || binding.policyFingerprint !== readPolicy()) {
+        if (binding.source) {
+          const link = (await getUserExternalCalendars(binding.provider, binding.userID, binding.accountID)).find(value => value.sourceID === binding.source!.id);
+          if (link) await requestCollectionRead(adapter, binding.userID, binding.accountID, link);
+        } else await requestSyncReadWork({ ...binding, configurationFingerprint: readConfiguration(binding.provider, binding.stream), policyFingerprint: readPolicy() });
+        return { kind: "skipped", reason: "retired" };
+      }
+      if (binding.stream === "discovery") {
+        // Profile-label HTTP is inside this same global account permit.
+        const account = (await adapter.listAccounts(binding.userID, binding.accountID)).find(value => value.id === binding.accountID);
+        if (!account) throw new Error("Connected account not found or not eligible for sync");
+        const discovery = await discoverProviderAccount(adapter, binding.userID, account, execution);
+        const collections: { workID: string; requestedGeneration: string }[] = [];
+        for (const link of discovery.links) {
+          signal.throwIfAborted();
+          if (binding.provider === "caldav" && caldavHasRead(link.providerAccessRole) === false) continue;
+          collections.push(await requestCollectionRead(adapter, binding.userID, binding.accountID, link));
+          attempt.progress();
+        }
+        signal.throwIfAborted();
+        await ackSyncDiscoveryWork(execution);
+        saveReadReceipt(workID, { generation: capture.capturedGeneration, bindingToken: capture.bindingToken,
+          changedCalendarIDs: discovery.changedCalendarIDs, discovery, collections });
+        return { kind: "settled", changedCalendarIDs: discovery.changedCalendarIDs };
+      }
+      const link = (await getUserExternalCalendars(binding.provider, binding.userID, binding.accountID)).find(value => value.sourceID === binding.source?.id);
+      if (!link) throw new Error("Sync read source changed.");
+      const result = await syncProviderCollection(adapter, binding.userID, { id: binding.accountID, label: binding.accountID }, link, execution);
+      if (result.kind !== "complete") {
+        const retryAtMs = Date.now() + 15_000;
+        if (!await deferSyncReadWork(capture, retryAtMs, { reason: result.kind === "optional-unavailable" ? "optional-unavailable" : "failure" })) return { kind: "skipped", reason: "lost-lease" };
+        if (result.kind === "optional-unavailable") saveReadReceipt(workID, { generation: capture.capturedGeneration,
+          bindingToken: capture.bindingToken, changedCalendarIDs: result.changedCalendarIDs, optionalUnavailable: true });
+        return { kind: "deferred", retryAtMs, changedCalendarIDs: result.changedCalendarIDs };
+      }
+      saveReadReceipt(workID, { generation: capture.capturedGeneration, bindingToken: capture.bindingToken,
+        changedCalendarIDs: result.changedCalendarIDs });
+      return { kind: "settled", changedCalendarIDs: result.changedCalendarIDs };
+    }, { signal, purpose: binding.stream === "discovery" ? "discovery" : "pull", onProgress: attempt.progress,
+      park: park && (async retryAtMs => {
+        if (!await postponeSyncReadWork(capture, retryAtMs)) throw new Error("Sync read lease lost before budget wait.");
+        signal.throwIfAborted();
+        const resume = attempt.pause();
+        try { await park(retryAtMs, signal); }
+        finally { resume(); }
+        signal.throwIfAborted();
+        if (!await renewSyncReadWork(capture)) throw new Error("Sync read source or lease changed during budget wait.");
+        attempt.progress();
+      }),
+    }));
+  } catch (error) {
+    const deferral = providerDeferral(error), retryAtMs = deferral?.retryAtMs ?? Date.now() + 15_000;
+    await deferSyncReadWork(capture, retryAtMs, { reason: deferral ? "budget" : "failure" });
+    if (deferral) return { kind: "deferred", retryAtMs, changedCalendarIDs: [] };
+    throw error;
+  } finally { attempt.dispose(); }
+}
+async function awaitReadGeneration(request: { workID: string; requestedGeneration: string }): Promise<ReadReceipt> {
+  const before = await getSyncReadWorkStatus(request.workID);
+  if (before?.retiredAt) throw new Error("Sync read source or membership changed.");
+  if (before?.lastDeferralKind === "optional-unavailable" && before.notBeforeEpochMs > Date.now())
+    return { generation: request.requestedGeneration, bindingToken: before.bindingToken,
+      changedCalendarIDs: [], optionalUnavailable: true } satisfies ReadReceipt;
+  const result = await submitSyncWork({ family: "pull", id: request.workID });
+  const status = await getSyncReadWorkStatus(request.workID), receipt = readReceipts.get(request.workID);
+  if (status?.retiredAt) throw new Error("Sync read source or membership changed.");
+  if (status && receipt?.bindingToken === status.bindingToken && BigInt(receipt.generation) >= BigInt(request.requestedGeneration) &&
+      (BigInt(status.completedGeneration) >= BigInt(request.requestedGeneration) || receipt.optionalUnavailable)) return receipt;
+  if (result.kind === "deferred") throw new SyncWorkDeferred(result.retryAtMs);
+  throw new SyncWorkDeferred(Math.max(Date.now() + 1000, status?.notBeforeEpochMs ?? 0, status?.leaseUntilEpochMs ?? 0));
+}
+async function syncProviderQueued(adapter: CalendarAdapter, userID: string, account: { id: string; label: string }) {
+  const provider = adapter.provider as SyncReadWorkAddress["provider"];
+  const receipt = await awaitReadGeneration(await requestSyncReadWork({ userID, provider, accountID: account.id,
+    stream: "discovery", configurationFingerprint: readConfiguration(provider, "discovery"), policyFingerprint: readPolicy() }));
+  if (!receipt.discovery || !receipt.collections) throw new Error("Sync discovery receipt is unavailable.");
+  const changed = [...receipt.changedCalendarIDs];
+  for (const result of await Promise.all(receipt.collections.map(awaitReadGeneration))) changed.push(...result.changedCalendarIDs);
+  if (receipt.discovery.eventCalendarDiscoveryError) throw receipt.discovery.eventCalendarDiscoveryError;
+  return [...new Set(changed)];
+}
+
+export function initializeSyncEngine(families: readonly SyncWorkFamily[]) {
+  initializeSyncWorkCoordinator({ families, async execute(reference: SyncWorkReference, signal) {
+    if (reference.family === "pull") return executeSyncRead(reference.id, signal);
+    if (reference.family === "outlook-move") {
+      const result = await executeOutlookMove(reference.id);
+      return result ? { kind: "deferred", retryAtMs: result.retryAtMs, changedCalendarIDs: [] } : { kind: "settled", changedCalendarIDs: [] };
+    }
+    const row = reference.family === "event-delivery" ? await executeEventDeliveryAndNotify(reference.id) : await executeTaskDeliveryAndNotify(reference.id);
+    if (row && ["retry", "unconfirmed", "pending"].includes(row.status) && row.nextAttemptAt.getTime() > Date.now())
+      return { kind: "deferred", retryAtMs: row.nextAttemptAt.getTime(), changedCalendarIDs: [row.calendarID] };
+    return { kind: "settled", changedCalendarIDs: row ? [row.calendarID] : [] };
+  } });
+}
+
+async function syncProviderImpl(
+  adapter: CalendarAdapter,
+  userID: string,
+  account: { id: string; label: string },
+) {
+  const startedAt = performance.now();
+  if (syncWorkCoordinatorEnabled()) return syncProviderQueued(adapter, userID, account);
+  const discovery = await discoverProviderAccount(adapter, userID, account);
+  const changedCalendarIDs = [...discovery.changedCalendarIDs];
+  for (const link of discovery.links) {
+    const result = await syncProviderCollection(adapter, userID, account, link);
+    changedCalendarIDs.push(...result.changedCalendarIDs);
+  }
+  // Tasks can commit independently, including their direct SSE invalidations,
+  // while an unavailable Events resource remains a failed account/alert.
+  if (discovery.eventCalendarDiscoveryError) throw discovery.eventCalendarDiscoveryError;
+  logger.debug("sync.account.completed", {
+    provider: adapter.provider,
+    userId: userID,
+    accountId: account.id,
+    calendars: discovery.remoteCount,
     changedCalendars: changedCalendarIDs.length,
     durationMs: Math.round((performance.now() - startedAt) * 10) / 10,
   });
@@ -683,11 +894,13 @@ export async function syncUser(
     options,
     {
       syncAccount: syncProvider,
+      metadataOnly: syncWorkCoordinatorEnabled(),
+      concurrent: syncWorkCoordinatorEnabled(),
       onFailure: ({ stage, provider, accountId, error }) => {
         recordExternalSyncFailure(stage, provider);
         // Provider/network hiccups are warn: the next poll retries them. error
         // is reserved for what a human has to act on (revoked grant, our bug).
-        const level = isTransientSyncError(error) ? "warn" : "error";
+        const level = error instanceof SyncWorkDeferred || providerDeferral(error) || isTransientSyncError(error) ? "warn" : "error";
         logger[level](
           stage === "discovery"
             ? "sync.provider.failed"

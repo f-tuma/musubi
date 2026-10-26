@@ -139,15 +139,18 @@ export async function appendTaskOutbox(tx: DbTransaction, task: Task, intents: r
   }
 }
 
-/** Shared by claims and monitoring: waiting predecessors/active leases are not due. */
-export function eligibleTaskOutbox() {
-  return sql`${taskOutbox.nextAttemptAt} <= clock_timestamp() and (
-    ${taskOutbox.status} in ('pending', 'retry', 'unconfirmed') or
-    (${taskOutbox.status} = 'attempting' and (${taskOutbox.leaseUntil} is null or ${taskOutbox.leaseUntil} <= clock_timestamp()))
-  ) and (${taskOutbox.predecessorID} is null or exists (
+/** Ordering eligibility without timing, also reused for future wake hints. */
+export function schedulableTaskOutbox() {
+  return sql`${taskOutbox.status} in ('pending','retry','unconfirmed','attempting')
+  and (${taskOutbox.predecessorID} is null or exists (
     select 1 from task_outbox predecessor where predecessor.id = ${taskOutbox.predecessorID}
       and predecessor.status in ('completed', 'not-needed')
   ))`;
+}
+/** Shared by claims and monitoring: waiting predecessors/active leases are not due. */
+export function eligibleTaskOutbox() {
+  return sql`${schedulableTaskOutbox()} and ${taskOutbox.nextAttemptAt} <= clock_timestamp()
+    and (${taskOutbox.status} <> 'attempting' or ${taskOutbox.leaseUntil} is null or ${taskOutbox.leaseUntil} <= clock_timestamp())`;
 }
 
 export async function getDueTaskOutboxIDs(limit = 50) {

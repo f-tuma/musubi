@@ -1,3 +1,5 @@
+import { guardHttpDispatch } from "./http-dispatch";
+import { providerDeferral } from "./provider-budget";
 import { createGoogleTaskCreateProvider, GoogleTaskProviderError, strongGoogleEtag, googleTaskProjectionFromNative,
   achievesGoogleTaskPatch, parseGoogleTaskPatch, diffGoogleTaskProjection,
   type GoogleTaskCreate, type GoogleTaskProjection, type GoogleNativeTaskReadEvidence, type GoogleNativeTaskResponseAddress } from "@musubi/provider-google";
@@ -18,6 +20,8 @@ class TaskFailure extends Error {
   constructor(readonly info: RuntimeErrorInfo, readonly cause?: unknown) { super(info.code); }
 }
 function failure(error: unknown, phase: RuntimePhase): RuntimeErrorInfo {
+  const deferral = providerDeferral(error);
+  if (deferral) return { code: "provider-budget-deferred", outcome: "not-written", phase, deferral };
   if (error instanceof TaskFailure) return error.info;
   if (error instanceof SyncRuntimeInterrupted) return { code: "runtime-attempt-aborted", outcome: "unconfirmed", phase,
     interruption: error.reason === "finished" ? "cancelled" : error.reason };
@@ -135,7 +139,7 @@ export async function runClaimedGoogleTaskCreate(input: ClaimedGoogleTaskCreate,
       const accountCall = async <T>(call: () => Promise<T>) => { attempt.guard(); const previous = phase; phase = "credentials";
         try { const result = await call(); attempt.guard(); await checkpoint("afterCredentials"); return result; }
         catch (error) { throw new TaskFailure(failure(error, "credentials"), error); } finally { phase = previous; } };
-      provider = createGoogleTaskCreateProvider({ ...transport, http: { fetch(url, init) { attempt.guard(); return transport.http.fetch(url, init); } },
+      provider = createGoogleTaskCreateProvider({ ...transport, http: guardHttpDispatch(transport.http, attempt.guard),
         accountSession: { open: (connection, signal) => accountCall(() => host.accountSession.open(connection, signal)),
           ...(host.accountSession.recoverRejectedRead ? { recoverRejectedRead: (connection: Parameters<NonNullable<typeof host.accountSession.recoverRejectedRead>>[0], token: string, signal?: AbortSignal) => accountCall(() => host.accountSession.recoverRejectedRead!(connection, token, signal)) } : {}),
           ...(host.accountSession.onReadAuthenticationRejected ? { onReadAuthenticationRejected: (signal?: AbortSignal) => accountCall(() => host.accountSession.onReadAuthenticationRejected!(signal)) } : {}) },
@@ -166,7 +170,7 @@ export async function runClaimedGoogleTaskCreate(input: ClaimedGoogleTaskCreate,
         let info = failure(error, phase);
         if (facts.provider.kind === "accepted" && info.outcome === "not-written") info = { ...info, outcome: "unconfirmed" };
         if (currentDispatched && info.outcome === "unconfirmed" && facts.provider.kind !== "accepted") facts = copyNativeTaskEvidence({ ...facts, provider: { kind: "uncertain" } });
-        if (facts.responseAddress && snapshot.policy.ambiguousRecovery === "within-attempt" && info.outcome === "unconfirmed") { await persist(); await checkpoint("afterUncertain"); await verify(true); return; }
+        if (!info.deferral && facts.responseAddress && snapshot.policy.ambiguousRecovery === "within-attempt" && info.outcome === "unconfirmed") { await persist(); await checkpoint("afterUncertain"); await verify(true); return; }
         throw new TaskFailure(info, error);
       }
       await verify(false);

@@ -38,6 +38,7 @@ import {
   sameCaldavScopeContext,
   getCaldavAccountById,
   getOwnedCaldavAccountById,
+  getOwnedCaldavAccountBinding,
   getCaldavAccountsByUser,
   getUserExternalCalendars,
   type EventContentPatch,
@@ -57,6 +58,8 @@ import type {
 import { assertTaskEtag, assertTaskMutationResponse, assertTaskReadResponse, canonicalTaskProjection, ProviderTaskWriteError, requireTaskEtag } from "../task_write";
 import { assertCompleteEventReadResponse, assertCreatedEventEvidence, caldavEventCreateIdentity } from "../event_create_identity";
 import { createCaldavClient, createGuardedCaldavFetch, fetchCaldavPinned } from "../caldav_client";
+import { createCaldavDiscoveryMaterialCache } from "../caldav_discovery_material";
+import { createSdkBudgetHttp, scopeCalendarAdapter, withCaldavBudgetScope, providerDeferral, reserveProviderMutation } from "../provider_budget";
 import { recordProviderHttpRequest } from "../provider_http_metrics";
 import { decryptSecret } from "../crypto";
 import {
@@ -85,15 +88,40 @@ const TASK_STATUS_BY_ICAL: Record<string, TaskStatus> = {
   CANCELLED: "cancelled",
 };
 
-async function clientForAccount(accountId: string, signal?: AbortSignal) {
+const discoveryMaterial = createCaldavDiscoveryMaterialCache();
+const discoveryPolicy = () => JSON.stringify(["guarded-caldav-routing-v1", config.security.federationAllowPrivateHosts]);
+
+async function clientForAccount(userID: string, accountId: string, signal?: AbortSignal, refreshDiscovery = false) {
   signal?.throwIfAborted();
-  const acc = await getCaldavAccountById(accountId);
+  const acc = await getOwnedCaldavAccountBinding(userID, accountId);
   if (!acc) throw new Error("CalDAV account not found");
+  signal?.throwIfAborted();
+  const policyFingerprint = discoveryPolicy();
+  const session = discoveryMaterial.begin({ userID, accountID: acc.id,
+    credentialRevision: acc.credentialRevision, credentialFingerprint: acc.credentialFingerprint, policyFingerprint,
+  }, { refresh: refreshDiscovery });
   return createCaldavClient(
     acc.serverUrl,
     acc.username,
     decryptSecret(acc.encryptedPassword),
     signal,
+    {
+      material: session.material,
+      async commit(material) {
+        // A credential/config change during discovery must not seed a later
+        // attempt. Do not retain this row (or any credential) in the cache.
+        signal?.throwIfAborted();
+        const current = await getOwnedCaldavAccountBinding(userID, accountId);
+        signal?.throwIfAborted();
+        if (!current || current.credentialRevision !== acc.credentialRevision || current.credentialFingerprint !== acc.credentialFingerprint || discoveryPolicy() !== policyFingerprint) {
+          session.invalidate();
+          throw new Error("CalDAV account changed during discovery.");
+        }
+        session.commit(material);
+      },
+      invalidate: session.invalidate,
+    },
+    run => withCaldavBudgetScope(acc, run, { signal, ...(refreshDiscovery ? { purpose: "discovery" as const } : {}) }),
   );
 }
 
@@ -925,6 +953,7 @@ async function etagAfterWrite(
     });
     return object?.etag ?? null;
   } catch (error) {
+    if (providerDeferral(error)) throw error;
     signal?.throwIfAborted();
     logger.warn("caldav.event.etag_refresh_failed", {
       externalCalendarId,
@@ -1207,7 +1236,7 @@ export async function createCaldavSplitResource(externalCalendarId: string, spli
   const resource = caldavSeriesResourceURL(externalCalendarId, rebuilt.creation.ref.externalEventId);
   const read = () => readCaldavSplitCreation(resource, rebuilt.creation, authorization, signal);
   const existing = await read(); if (existing) return existing;
-  await beforeMutation?.(); signal?.throwIfAborted();
+  await reserveProviderMutation({ url: resource.href, method: "PUT" }, async () => { await beforeMutation?.(); }); signal?.throwIfAborted();
   let accepted = false;
   try {
     const response = await caldavFetch(resource.href, { signal, redirect: "error", method: "PUT", headers: { authorization, "Content-Type": "text/calendar; charset=utf-8", "If-None-Match": "*" }, body: rebuilt.creation.data });
@@ -1215,6 +1244,7 @@ export async function createCaldavSplitResource(externalCalendarId: string, spli
     const result = await read(); if (!result) throw new ProviderEventWriteError("provider-conflict", "unconfirmed");
     return result;
   } catch (error) {
+    if (providerDeferral(error)) throw error;
     if (!accepted && error instanceof ProviderEventWriteError && error.providerStatus !== undefined) throw error;
     throw new ProviderEventWriteError("provider-write-failed", "unconfirmed", error instanceof ProviderEventWriteError ? error.providerStatus : undefined);
   }
@@ -1297,7 +1327,7 @@ export async function deleteCaldavSeriesResource(externalCalendarId: string, del
   const current = await read();
   if (!current) return baseline.ref;
   if (current.etag !== baseline.ref.etag || !sameCaldavResource(current.data, before)) throw new ProviderEventWriteError("provider-conflict");
-  await beforeMutation?.();
+  await reserveProviderMutation({ url: resource.href, method: "DELETE" }, async () => { await beforeMutation?.(); });
   signal?.throwIfAborted();
   let accepted = false;
   try {
@@ -1307,6 +1337,7 @@ export async function deleteCaldavSeriesResource(externalCalendarId: string, del
     if (await read()) throw new ProviderEventWriteError("provider-conflict", "unconfirmed");
     return baseline.ref;
   } catch (error) {
+    if (providerDeferral(error)) throw error;
     if (!accepted && error instanceof ProviderEventWriteError && error.providerStatus !== undefined) throw error;
     if (error instanceof ProviderEventWriteError && error.outcome === "unconfirmed") throw error;
     throw new ProviderEventWriteError("provider-write-failed", "unconfirmed", error instanceof ProviderEventWriteError ? error.providerStatus : undefined);
@@ -1328,7 +1359,7 @@ export async function deliverCaldavSeriesResource(externalCalendarId: string, wr
   if (sameCaldavResource(current.data, write.after)) return evidence(current);
   if (current.etag !== baseline.ref.etag || !sameCaldavResource(current.data, write.before))
     throw new ProviderEventWriteError("provider-conflict");
-  await beforeMutation?.();
+  await reserveProviderMutation({ url: resource.href, method: "PUT" }, async () => { await beforeMutation?.(); });
   signal?.throwIfAborted();
   let accepted = false;
   try {
@@ -1346,6 +1377,7 @@ export async function deliverCaldavSeriesResource(externalCalendarId: string, wr
       throw new ProviderEventWriteError("provider-conflict", "unconfirmed");
     return evidence(confirmed);
   } catch (error) {
+    if (providerDeferral(error)) throw error;
     if (!accepted && error instanceof ProviderEventWriteError && error.providerStatus !== undefined) throw error;
     if (error instanceof ProviderEventWriteError && error.outcome === "unconfirmed") throw error;
     // Network errors, timeouts and failed post-write reads cannot prove that
@@ -1366,7 +1398,7 @@ export async function deliverCaldavAlarmResource(intent: CaldavAlarmIntent, auth
   const current = await read();
   if (sameCaldavResource(current.data, after)) return evidence(current);
   if (current.etag !== ref.etag || !sameCaldavResource(current.data, intent.before)) throw new ProviderEventWriteError("provider-conflict");
-  await beforeMutation?.();
+  await reserveProviderMutation({ url: resource.href, method: "PUT" }, async () => { await beforeMutation?.(); });
   signal?.throwIfAborted();
   let accepted = false;
   try {
@@ -1377,6 +1409,7 @@ export async function deliverCaldavAlarmResource(intent: CaldavAlarmIntent, auth
     if (!sameCaldavResource(confirmed.data, after)) throw new ProviderEventWriteError("provider-conflict", "unconfirmed");
     return evidence(confirmed);
   } catch (error) {
+    if (providerDeferral(error)) throw error;
     if (!accepted && error instanceof ProviderEventWriteError && error.providerStatus !== undefined) throw error;
     throw new ProviderEventWriteError("provider-write-failed", "unconfirmed", error instanceof ProviderEventWriteError ? error.providerStatus : undefined);
   }
@@ -1406,22 +1439,29 @@ export function classifyCaldavCalendars(cals: DAVCalendar[]) {
 
 /** Owned Basic credentials attest the captured row timestamp, not an OAuth epoch. */
 function caldavEventDeliveryPorts(userID: string, accountID: string, capture: { connectionId: string; connectionGeneration: number }): CaldavPersonalCreateV1Bridge["ports"] {
+  let nativeBinding: { credentialRevision: string; credentialFingerprint: string } | undefined;
   const currentCredentials = async () => {
     const account = await getOwnedCaldavAccountById(userID, accountID);
     if (!account || account.id !== capture.connectionId || account.userID !== userID ||
         account.updatedAt.getTime() !== capture.connectionGeneration) throw new CaldavProviderError("account-session-changed");
-    return account;
+    const binding = await getOwnedCaldavAccountBinding(userID, accountID);
+    if (!binding || binding.serverUrl !== account.serverUrl || binding.username !== account.username || binding.encryptedPassword !== account.encryptedPassword)
+      throw new CaldavProviderError("account-session-changed");
+    return { account, binding };
   };
   return {
     accountSession: { async open(_connection, signal) {
-      signal?.throwIfAborted(); const account = await currentCredentials();
+      signal?.throwIfAborted(); const { account, binding } = await currentCredentials();
       const authorization = `Basic ${Buffer.from(`${account.username}:${decryptSecret(account.encryptedPassword)}`).toString("base64")}`;
       signal?.throwIfAborted(); const current = await currentCredentials();
+      if (current.binding.credentialRevision !== binding.credentialRevision || current.binding.credentialFingerprint !== binding.credentialFingerprint)
+        throw new CaldavProviderError("account-session-changed");
+      nativeBinding = { credentialRevision: binding.credentialRevision, credentialFingerprint: binding.credentialFingerprint };
       // This is an opaque host timestamp floor, with no monotonic ABA guarantee.
-      return { connectionId: current.id, connectionGeneration: String(current.updatedAt.getTime()), authorization };
+      return { connectionId: current.account.id, connectionGeneration: String(current.account.updatedAt.getTime()), authorization };
     } },
     network: { allowPrivate: config.security.federationAllowPrivateHosts, lookupImpl: lookup },
-    http: { fetchPinned: fetchCaldavPinned },
+    http: { fetchPinned: fetchCaldavPinned, ...createSdkBudgetHttp("caldav", userID, accountID, capture, () => nativeBinding) },
     clock: { nowEpochMs: () => Date.now(), nowMonotonicMs: () => performance.now() },
     telemetry: { record: metric => recordProviderHttpRequest(metric.method, metric.status, metric.durationMs) },
   };
@@ -1438,7 +1478,7 @@ function caldavCreatedEventEvidence(data: string, url: string, uid: string, etag
   return { ref: { externalEventId: url, etag, icalUid: uid }, event };
 }
 
-export const caldavAdapter: CalendarAdapter = {
+export const caldavAdapter: CalendarAdapter = scopeCalendarAdapter({
   caldavPersonalCreateV1(userID, accountID, capture) {
     return { ports: caldavEventDeliveryPorts(userID, accountID, capture),
       normalizeObservation: read => read.kind === "present" ? caldavCreatedEventEvidence(read.resource.data,
@@ -1544,7 +1584,8 @@ export const caldavAdapter: CalendarAdapter = {
     _userID: string,
     accountId: string,
   ): Promise<CalendarDiscoveryResult> {
-    const client = await clientForAccount(accountId);
+    // Only this complete fresh discovery may establish absence/retirement.
+    const client = await clientForAccount(_userID, accountId, undefined, true);
     const cals = await client.fetchCalendars();
     const calendars = classifyCaldavCalendars(cals);
     const authorization = await basicAuthForAccount(accountId);
@@ -1574,10 +1615,11 @@ export const caldavAdapter: CalendarAdapter = {
     cursor,
   ): Promise<FetchChangesResult> {
     const organizerEventIDs = new Set(await getOrganizerTimeEventIDs(_userID, accountId, externalCalendarId, "caldav"));
-    const client = await clientForAccount(accountId);
+    const client = await clientForAccount(_userID, accountId);
     const cals = await client.fetchCalendars();
     const cal = cals.find((c) => c.url === externalCalendarId);
     if (!cal) {
+      client.invalidateDiscoveryMaterial();
       logger.warn("caldav.calendar.not_found", {
         accountId,
         externalCalendarId,
@@ -1595,6 +1637,7 @@ export const caldavAdapter: CalendarAdapter = {
       try {
         return await incrementalChanges(client, cal, cursor, organizerEventIDs);
       } catch (error) {
+        if (providerDeferral(error)) throw error;
         // An expired/unsupported token must never leave stale objects behind.
         // A complete query is the compatibility fallback and resets both kinds.
         logger.warn("caldav.sync_collection_fallback", {
@@ -1789,7 +1832,7 @@ export const caldavAdapter: CalendarAdapter = {
         icalUid: uid,
       };
     }
-    const client = await clientForAccount(accountId);
+    const client = await clientForAccount(_userID, accountId);
     const filename = `${event.id}.ics`;
     const res = await client.createCalendarObject({
       calendar: { url: externalCalendarId } as any,
@@ -1897,7 +1940,7 @@ export const caldavAdapter: CalendarAdapter = {
   },
 
   async pushTaskCreate(_userID, accountId, externalCalendarId, task: Task, beforeMutation, signal, nativePlan) {
-    const client = await clientForAccount(accountId, signal);
+    const client = await clientForAccount(_userID, accountId, signal);
     const authorization = await basicAuthForAccount(accountId);
     const filename = `${task.id}.ics`;
     const base = externalCalendarId.endsWith("/")
@@ -1905,7 +1948,7 @@ export const caldavAdapter: CalendarAdapter = {
       : `${externalCalendarId}/`;
     const externalTaskId = `${base}${filename}`;
     const body = nativePlan ? pinnedCaldavPlanV1(nativePlan, "VTODO", task.id).createResource : toTaskIcal(task);
-    await beforeMutation?.();
+    await reserveProviderMutation({ url: new URL(externalTaskId).href, method: "PUT" }, async () => { await beforeMutation?.(); });
     signal?.throwIfAborted();
     const res = await caldavFetch(externalTaskId, { signal, method: "PUT", headers: { authorization, "Content-Type": "text/calendar; charset=utf-8", "If-None-Match": "*" }, body, redirect: "error" });
     assertTaskMutationResponse(res);
@@ -1933,7 +1976,7 @@ export const caldavAdapter: CalendarAdapter = {
     signal,
     nativePlan,
   ) {
-    const client = await clientForAccount(accountId, signal);
+    const client = await clientForAccount(_userID, accountId, signal);
     const { calendarObject, uid: icalUid } = await taskCalendarObjectForUpdate(
       client,
       externalCalendarId,
@@ -1943,7 +1986,7 @@ export const caldavAdapter: CalendarAdapter = {
       patch,
       nativePlan,
     );
-    await ref?.beforeMutation?.();
+    await reserveProviderMutation({ url: new URL(calendarObject.url).href, method: "PUT" }, async () => { await ref?.beforeMutation?.(); });
     signal?.throwIfAborted();
     const res = await client.updateCalendarObject({ calendarObject });
     assertTaskMutationResponse(res);
@@ -1969,8 +2012,8 @@ export const caldavAdapter: CalendarAdapter = {
   ) {
     if (!ref?.etag)
       throw new Error("CalDAV task has no ETag; refusing an unsafe delete");
-    const client = await clientForAccount(accountId, signal);
-    await ref.beforeMutation?.();
+    const client = await clientForAccount(_userID, accountId, signal);
+    await reserveProviderMutation({ url: new URL(externalTaskId).href, method: "DELETE" }, async () => { await ref.beforeMutation?.(); });
     signal?.throwIfAborted();
     const res = await client.deleteCalendarObject({
       calendarObject: { url: externalTaskId, etag: ref.etag },
@@ -1981,7 +2024,7 @@ export const caldavAdapter: CalendarAdapter = {
   async createCalendar(_userID, accountId, { name, color }) {
     // Calendar home = parent of an existing calendar's URL (every provisioned
     // account has at least one; discovery re-derives partition hosts on iCloud).
-    const client = await clientForAccount(accountId);
+    const client = await clientForAccount(_userID, accountId, undefined, true);
     const cals = await client.fetchCalendars();
     if (cals.length === 0)
       throw new Error("CalDAV: no calendar home found on this account");
@@ -2041,4 +2084,4 @@ export const caldavAdapter: CalendarAdapter = {
     if (!res.ok && res.status !== 404)
       throw new Error(`CalDAV ${res.status} ${res.statusText}`);
   },
-};
+});

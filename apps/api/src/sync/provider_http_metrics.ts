@@ -1,12 +1,13 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { Counter, Histogram, Registry } from "prom-client";
+import { budgetAttemptSignal, dispatchProviderHttp } from "./provider_budget";
 
 type ProviderCallContext = {
   provider: string;
   family: "event" | "task";
 };
 
-const context = new AsyncLocalStorage<ProviderCallContext>();
+const context = new AsyncLocalStorage<ProviderCallContext | undefined>();
 export const providerHttpMetricsRegistry = new Registry();
 const requests = new Counter({
   name: "musubi_provider_http_requests_total",
@@ -36,6 +37,11 @@ export function withProviderCallMetrics<T>(
 ): Promise<T> {
   return context.run({ provider: ["caldav", "google", "microsoft"].includes(provider) ? provider : "unknown", family }, run);
 }
+/** A queued shared refresh retains only its original bounded labels, never a pump sibling's context. */
+export function captureProviderCallMetrics() {
+  const captured = context.getStore();
+  return <T>(run: () => Promise<T>): Promise<T> => context.run(captured, run);
+}
 
 /** Explicit provider telemetry port; only the caller's delivery scope labels it. */
 export function recordProviderHttpRequest(method: string, status: number | "network-error" | "aborted", durationMs: number) {
@@ -55,23 +61,20 @@ export async function observedProviderRequest(
   input: RequestInfo | URL,
   init?: RequestInit,
 ): Promise<Response> {
-  const scope = context.getStore();
-  const signal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
-  // Fetch on an already-aborted signal cannot dispatch a network request.
-  if (!scope || signal?.aborted) return fetchImpl(input, init);
+  const signal = budgetAttemptSignal(init?.signal ?? (input instanceof Request ? input.signal : undefined));
   const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
-  const startedAt = performance.now();
-  let status: number | "network-error" | "aborted" = "network-error";
+  let used = false, open = true;
   try {
-    const response = await fetchImpl(input, init);
-    status = response.status;
-    return response;
-  } catch (error) {
-    if (signal?.aborted || error instanceof Error && error.name === "AbortError") status = "aborted";
-    throw error;
-  } finally {
-    recordProviderHttpRequest(methods.has(method) ? method : "OTHER", status, performance.now() - startedAt);
-  }
+    return await dispatchProviderHttp({ url: input instanceof Request ? input.url : String(input), method, signal }, async beforeRaw => {
+      if (!open || used) throw new Error("Provider HTTP capability is closed or already used.");
+      used = true; signal?.throwIfAborted();
+      if (beforeRaw && beforeRaw() !== undefined) throw new TypeError("Provider HTTP admission must be synchronous.");
+      const startedAt = performance.now(); let status: number | "network-error" | "aborted" = "network-error";
+      try { const response = await fetchImpl(input, { ...init, ...(signal ? { signal } : {}) }); status = response.status; return response; }
+      catch (error) { if (signal?.aborted || error instanceof Error && error.name === "AbortError") status = "aborted"; throw error; }
+      finally { recordProviderHttpRequest(methods.has(method) ? method : "OTHER", status, performance.now() - startedAt); }
+    });
+  } finally { open = false; }
 }
 
 // Resolve global fetch at call time, retaining existing fake-provider test seams.
