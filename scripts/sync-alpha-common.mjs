@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { copyFile, lstat, mkdir, readFile, readdir, readlink, realpath, rm, writeFile } from "node:fs/promises";
-import { builtinModules, createRequire } from "node:module";
+import { createRequire, isBuiltin } from "node:module";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { isDeepStrictEqual } from "node:util";
@@ -259,6 +259,20 @@ export async function stripReferenceTestSupport(runtimeRoot) {
   const excluded = await files(path); await rm(path, { recursive: true }); await absent(path);
   return { directory: "conformance", present: true, files: excluded };
 }
+const MIT_NOTICE_PARAGRAPHS = [
+  'Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:',
+  'The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.',
+  'THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.',
+];
+function hasCompleteEmbeddedMitNotice(text) {
+  const heading = /^#{1,6}[ \t]+licen[cs]e[ \t]*\r?$/im.exec(text); if (!heading) return false;
+  const rest = text.slice(heading.index + heading[0].length), next = /^#{1,6}[ \t]+/m.exec(rest);
+  const section = next ? rest.slice(0, next.index) : rest;
+  const normalized = section.replace(/\s+/g, " ").toLowerCase();
+  return /copyright\s*(?:\(c\)|©)?\s*\d{4}(?:-\d{4})?\s+\S+/i.test(section) &&
+    MIT_NOTICE_PARAGRAPHS.every(paragraph => normalized.includes(paragraph.toLowerCase()));
+}
+const primaryLicense = source => !["notice-file", "third-party-notice"].includes(source.sourceKind);
 export async function inventoryPackages(root, licenseOutput) {
   const paths = await files(root), packages = [];
   for (const entry of paths) {
@@ -272,35 +286,48 @@ export async function inventoryPackages(root, licenseOutput) {
     requireThat(value.name !== "dotenv" && value.name !== "dotenv-expand", "Dotenv is forbidden in standalone installed closure.");
     for (const name of Object.keys(value.dependencies ?? {})) requireThat(!name.startsWith("@musubi/") || OWNED_NAMES.has(name), "Forbidden declared Musubi dependency.");
     const directory = dirname(path);
-    const candidates = (await readdir(directory)).filter(name => /^(?:licen[cs]e|copying|notice)(?:[._-].*)?$/i.test(name));
+    const candidates = (await readdir(directory)).filter(name => /^(?:licen[cs]e|copying|notice)(?:[._-].*)?$/i.test(name) || name === "ThirdPartyNoticeText.txt");
     const licensePaths = [];
-    for (const name of candidates) { const file = join(directory, name); if ((await lstat(file)).isFile()) licensePaths.push(file); }
+    for (const name of candidates) {
+      const file = join(directory, name); if (!(await lstat(file)).isFile()) continue;
+      const sourceKind = name === "ThirdPartyNoticeText.txt" ? "third-party-notice" : /^notice(?:[._-]|$)/i.test(name) ? "notice-file" : "package-license-file";
+      licensePaths.push({ path: file, sourceKind, rationale: "included same-package license/notice file; no compatibility conclusion" });
+    }
     packages.push({ name: value.name, version: value.version ?? null, private: value.private === true, path: entry.path,
       manifestSha256: entry.sha256, declaredLicense: value.license ?? null, licenseReview: "pending-owner-review", licensePaths, directory });
   }
   for (const value of packages) {
-    if (!value.licensePaths.length && OWNED_NAMES.has(value.name)) value.licensePaths.push(join(root, "LICENSE"));
+    if (!value.licensePaths.some(primaryLicense) && OWNED_NAMES.has(value.name)) value.licensePaths.push({ path: join(root, "LICENSE"), sourceKind: "repository-original-license", rationale: "original license for repository-owned code" });
     // esbuild's platform binary packages omit the text but ship the same pinned MIT project.
-    if (!value.licensePaths.length && value.name.startsWith("@esbuild/") && value.declaredLicense === "MIT") {
-      const parent = packages.find(item => item.name === "esbuild" && item.version === value.version && item.declaredLicense === "MIT" && item.licensePaths.length);
-      if (parent) value.licensePaths.push(...parent.licensePaths);
+    if (!value.licensePaths.some(primaryLicense) && value.name.startsWith("@esbuild/") && value.declaredLicense === "MIT") {
+      const parent = packages.find(item => item.name === "esbuild" && item.version === value.version && item.declaredLicense === "MIT" && item.licensePaths.some(primaryLicense));
+      if (parent) value.licensePaths.push(...parent.licensePaths.filter(primaryLicense).map(source => ({ ...source, sourceKind: "matching-version-project-license", rationale: "esbuild platform binary uses matching installed esbuild version/license text" })));
     }
-    requireThat(value.licensePaths.length > 0, `Installed package has no collected license text: ${value.name}.`);
+    if (!value.licensePaths.some(primaryLicense) && value.declaredLicense === "MIT") {
+      for (const name of ["README.md", "readme.md", "README"]) {
+        const path = join(value.directory, name); let bytes;
+        try { if (!(await lstat(path)).isFile()) continue; bytes = await readFile(path); } catch (error) { if (error.code === "ENOENT") continue; throw error; }
+        if (bytes.length <= 2_000_000 && hasCompleteEmbeddedMitNotice(bytes.toString("utf8"))) {
+          value.licensePaths.push({ path, sourceKind: "embedded-license-readme", rationale: "same-package declared MIT with explicit heading, copyright and complete grant/condition/warranty/liability; entire README retained" }); break;
+        }
+      }
+    }
+    requireThat(value.licensePaths.some(primaryLicense), `Installed package has no collected license text: ${value.name}.`);
     value.licenses = [];
-    for (const path of value.licensePaths) {
+    for (const { path, sourceKind, rationale } of value.licensePaths) {
       const bytes = await readFile(path), digest = sha256(bytes); requireThat(bytes.length > 0 && bytes.length <= 2_000_000, "Invalid license text size.");
       const target = join(licenseOutput, `${digest}.txt`); await mkdir(licenseOutput, { recursive: true });
-      await copyFile(path, target); value.licenses.push({ source: relative(root, path).split(sep).join("/"), sha256: digest, text: `licenses/${digest}.txt` });
+      await copyFile(path, target); value.licenses.push({ source: relative(root, path).split(sep).join("/"), sourceKind, rationale, sha256: digest, text: `licenses/${digest}.txt` });
     }
-    delete value.licensePaths; delete value.directory;
   }
+  for (const value of packages) { delete value.licensePaths; delete value.directory; }
   requireThat(packages.some(value => value.name === "@musubi/sync-runtime"), "Installed runtime package is missing.");
   return packages.sort((a, b) => a.path.localeCompare(b.path));
 }
 export function loadTool(root, specifier) { return createRequire(join(root, "package.json")).resolve(specifier); }
 export async function auditOwnedImports(roots, toolingRoot, { runtimeRoot, mirrorsRoot }) {
   const ts = createRequire(join(toolingRoot, "package.json"))(loadTool(toolingRoot, "typescript"));
-  const builtins = new Set([...builtinModules, ...builtinModules.map(name => `node:${name}`)]); let checked = 0;
+  let checked = 0;
   for (const root of roots) for (const entry of await files(root)) {
     if (entry.kind !== "file" || !/\.[cm]?[jt]s$/.test(entry.path)) continue;
     const filename = join(root, entry.path), text = await readFile(filename, "utf8"), source = ts.createSourceFile(entry.path, text, ts.ScriptTarget.Latest, true), imports = []; checked++;
@@ -314,7 +341,7 @@ export async function auditOwnedImports(roots, toolingRoot, { runtimeRoot, mirro
         requireThat(!name.startsWith("@musubi/") || OWNED_NAMES.has(packageName), "Portable source imports a Musubi host package.");
         requireThat(!/^(?:dotenv|dotenv-expand)(?:\/|$)/.test(name) && !/(?:^|\/)(?:apps\/api|packages\/(?:db|auth|config))(?:\/|$)/.test(name), "Portable source imports host configuration.");
         requireThat(!isAbsolute(name) && !name.startsWith("file:") && !name.startsWith("/tmp/"), "Portable source imports an external source path.");
-        if (!builtins.has(name)) imports.push({ name, owned: OWNED_NAMES.has(packageName) });
+        if (!isBuiltin(name)) imports.push({ name, owned: OWNED_NAMES.has(packageName) });
       }
       ts.forEachChild(node, visit);
     }

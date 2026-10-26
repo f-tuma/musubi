@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { GENERATED_MANAGER_PATHS, canonicalNewPath, execute, parseArguments, planDeployedManifest, planGeneratedManagerMetadata,
+import { GENERATED_MANAGER_PATHS, canonicalNewPath, execute, inventoryPackages, parseArguments, planDeployedManifest, planGeneratedManagerMetadata,
   requiredCases, requireArchivedPackageManager, sha256, stripReferenceTestSupport } from "./sync-alpha-common.mjs";
 import { validateConformance } from "./verify-sync-alpha.mjs";
 
@@ -96,6 +96,44 @@ test("generated deployment metadata is planned only for fixed regular owned path
     await writeFile(outside, "do not change\n"); await rm(path); await symlink(outside, path);
     await assert.rejects(planGeneratedManagerMetadata(directory, "runtime"), /regular/); assert.equal(await readFile(outside, "utf8"), "do not change\n");
   } finally { await rm(directory, { recursive: true, force: true }); }
+});
+test("license inventory retains complete same-package embedded MIT and included third-party notices", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "sync-alpha-license-test-")), root = join(directory, "candidate"), output = join(directory, "collected");
+  try {
+    const mit = await readFile(new URL("../LICENSE", import.meta.url));
+    const owned = join(root, "runtime/node_modules/@musubi/sync-runtime"), embedded = join(root, "runtime/node_modules/fixture-mit"), notices = join(root, "tooling/node_modules/fixture-notices");
+    for (const path of [owned, embedded, notices]) await mkdir(path, { recursive: true });
+    await writeFile(join(root, "LICENSE"), mit); await writeFile(join(owned, "package.json"), JSON.stringify({ name: "@musubi/sync-runtime", private: true }));
+    await writeFile(join(embedded, "package.json"), JSON.stringify({ name: "fixture-mit", version: "1.0.0", license: "MIT" }));
+    const readme = Buffer.concat([Buffer.from("# Package usage\n\nEntire README must be preserved.\n\n## License\n\n"), mit]); await writeFile(join(embedded, "README.md"), readme);
+    await writeFile(join(notices, "package.json"), JSON.stringify({ name: "fixture-notices", version: "1.0.0", license: "MIT" }));
+    await writeFile(join(notices, "LICENSE"), mit); const notice = Buffer.from("Included original third-party notice fixture.\n"); await writeFile(join(notices, "ThirdPartyNoticeText.txt"), notice);
+    const inventory = await inventoryPackages(root, output), fromReadme = inventory.find(value => value.name === "fixture-mit").licenses[0];
+    assert.equal(fromReadme.sourceKind, "embedded-license-readme"); assert.equal(fromReadme.sha256, sha256(readme));
+    assert.deepEqual(await readFile(join(output, `${fromReadme.sha256}.txt`)), readme);
+    const fromNotice = inventory.find(value => value.name === "fixture-notices").licenses.find(value => value.sourceKind === "third-party-notice");
+    assert.equal(fromNotice.sha256, sha256(notice)); assert.deepEqual(await readFile(join(output, `${fromNotice.sha256}.txt`)), notice);
+    assert(inventory.every(value => value.licenseReview === "pending-owner-review"));
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+test("license inventory refuses partial or undeclared embedded notices and non-MIT fallback", async () => {
+  const mit = (await readFile(new URL("../LICENSE", import.meta.url))).toString("utf8");
+  const variations = [{ license: "MIT", text: "## License\nCopyright (c) 2026 Fixture\nPermission is hereby granted, free of charge.\n" },
+    { license: undefined, text: `## License\n${mit}` }, { license: "BSD-2-Clause", text: `## License\n${mit}` },
+    { license: "MIT", text: mit }, { license: "MIT", text: `## License\n${mit.replace(/^Copyright.*\n/m, "")}` },
+    { license: "MIT", text: `## License\n${mit.replace(/The above copyright notice[\s\S]*?Software\./, "")}` },
+    { license: "MIT", text: `## License\n${mit.slice(0, mit.indexOf("THE SOFTWARE IS PROVIDED"))}` },
+    { license: "MIT", text: `## License\n${mit.slice(0, mit.indexOf("IN NO EVENT"))}` }];
+  for (const variation of variations) {
+    const directory = await mkdtemp(join(tmpdir(), "sync-alpha-license-negative-")), root = join(directory, "candidate"), owned = join(root, "runtime/node_modules/@musubi/sync-runtime"), external = join(root, "runtime/node_modules/fixture-partial");
+    try {
+      await mkdir(owned, { recursive: true }); await mkdir(external, { recursive: true }); await writeFile(join(root, "LICENSE"), mit);
+      await writeFile(join(owned, "package.json"), JSON.stringify({ name: "@musubi/sync-runtime", private: true }));
+      await writeFile(join(external, "package.json"), JSON.stringify({ name: "fixture-partial", version: "1.0.0", ...(variation.license ? { license: variation.license } : {}) }));
+      await writeFile(join(external, "README.md"), variation.text); await writeFile(join(external, "ThirdPartyNoticeText.txt"), "Copyright notice alone is not a complete license.\n");
+      await assert.rejects(inventoryPackages(root, join(directory, "collected")), /no collected license text: fixture-partial/);
+    } finally { await rm(directory, { recursive: true, force: true }); }
+  }
 });
 test("new output paths reject real parent aliases into candidate/checkout and existing dangling leaves", async () => {
   const directory = await mkdtemp(join(tmpdir(), "sync-alpha-path-test-"));
