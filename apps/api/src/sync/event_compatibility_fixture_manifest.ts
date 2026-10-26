@@ -7,7 +7,8 @@ import ICAL from "ical.js";
 
 export const EVENT_COMPATIBILITY_BASELINE = "8ea0d3bfe193abd701e06c15d19b5d312bdd2290";
 export const EVENT_COMPATIBILITY_BASELINE_SHA256 = "63f478c91e36db4913717db759e773d260e928cc530dd0c8696112b5e39ae8b0";
-export type EventFixtureSuite = { id: string; source: string; families: readonly string[]; native: boolean; retainedGate?: boolean };
+export type EventFixtureSuite = { id: string; source: string; families: readonly string[]; native: boolean; retainedGate?: boolean; microsoftReadNow?: number };
+export const EVENT_COMPATIBILITY_MICROSOFT_READ_NOW = 1_782_907_200_000; // 2026-07-01T12:00:00.000Z
 /** These are existing native fixture programs, with their independent expected
  * wire, resource and DB assertions retained. No provider or lifecycle algorithm
  * is reproduced by the replay harness. */
@@ -19,7 +20,7 @@ export const EVENT_COMPATIBILITY_FIXTURES: readonly EventFixtureSuite[] = [
   { id: "google-occurrence", source: "google_scope.integration.test.ts", families: ["googleOccurrence"], native: true },
   { id: "dav-resource", source: "caldav_scope.integration.test.ts", families: ["caldavSeries", "caldavSplit", "caldavSeriesDeletion"], native: true },
   { id: "dav-alarms", source: "caldav_alarms.integration.test.ts", families: ["caldavAlarm"], native: true },
-  { id: "graph-create", source: "graph_series_create_worker.integration.test.ts", families: ["graphSeriesCreate"], native: true },
+  { id: "graph-create", source: "graph_series_create_worker.integration.test.ts", families: ["graphSeriesCreate"], native: true, microsoftReadNow: EVENT_COMPATIBILITY_MICROSOFT_READ_NOW },
   { id: "graph-delete", source: "graph_series_delete.integration.test.ts", families: ["graphSeriesDeletion"], native: true },
   { id: "graph-content", source: "microsoft_occurrence_content.integration.test.ts", families: ["graphOccurrenceContent"], native: true },
   { id: "graph-series-content", source: "microsoft_series_content.integration.test.ts", families: ["graphOccurrenceContent"], native: true },
@@ -38,6 +39,25 @@ export const EVENT_COMPATIBILITY_PROCESS_FIXTURES: Record<string, string> = {
   "google-organizer": "organizer:google", "graph-content": "graphOccurrenceContent", "dav-organizer": "organizer:caldav", "dav-resource": "caldavSplit",
 };
 export const EVENT_COMPATIBILITY_PROCESS_PHASES = ["before-native-send", "raw-native-response", "before-ack", "ack-committed"] as const;
+export function eventCompatibilityMicrosoftReadClock(source: string, filename: string, now: number) {
+  assert(Number.isSafeInteger(now));
+  const ts = createRequire(import.meta.url)("typescript") as typeof import("typescript"), file = ts.createSourceFile(filename, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const calls: import("typescript").CallExpression[] = [];
+  const walk = (node: import("typescript").Node) => { if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "fetchMicrosoftChanges") calls.push(node); ts.forEachChild(node, walk); };
+  walk(file); assert.equal(calls.length, 1, "Clock forwarding requires exactly one native reader callsite");
+  const call = calls[0]!; assert.equal(call.arguments.length, 4); const options = call.arguments[3]!; assert(ts.isObjectLiteralExpression(options));
+  let parent: import("typescript").Node | undefined = call.parent;
+  while (parent && !ts.isMethodDeclaration(parent)) parent = parent.parent;
+  assert(parent && ts.isMethodDeclaration(parent) && parent.name.getText(file) === "fetchChanges", "Only the real adapter fetchChanges caller owns this clock forwarding");
+  assert(ts.isObjectLiteralExpression(parent.parent) && ts.isVariableDeclaration(parent.parent.parent) && parent.parent.parent.name.getText(file) === "microsoftAdapter");
+  assert(!options.properties.some(property => property.name?.getText(file) === "now"), "Never override a native caller's existing clock option");
+  assert.equal(options.properties.length, 4, "All native read flags/exclusions must retain their exact shape");
+  assert.deepEqual(options.properties.slice(0, 3).map(property => ts.isPropertyAssignment(property) ? property.name.getText(file) : ""), ["timeModels", "rsvpOccurrences", "organizerEventIDs"]);
+  const spread = options.properties[3]!; assert(ts.isSpreadAssignment(spread) && spread.expression.getText(file) === "exclusions");
+  const position = options.getStart(file) + 1, insertion = `now:${now},`, executed = source.slice(0, position) + insertion + source.slice(position);
+  assert.equal(executed.slice(0, position) + executed.slice(position + insertion.length), source, "Removing the one clock argument must restore every original compiled byte");
+  return { original: source, executed, position, insertion, now, originalSha256: createHash("sha256").update(source).digest("hex"), executedSha256: createHash("sha256").update(executed).digest("hex") };
+}
 export type EventCompatibilityWitness = { kind: "graph-content" | "graph-cancellation" | "graph-move"; rawHash: string; recomputedRawHash: string; normalizedHash: string; input: unknown };
 export type EventCompatibilityEchoObservation = { sequence: number; operationId: string; fixtureCase: "delete-sweep-echo"; evidence: Record<string, unknown>; ownership: Record<string, unknown>; mapping: Record<string, unknown>; updateSql: string; rowCount: number; committed: true };
 export type EventCompatibilitySerializerClock = { operationId: string; resourceUrl: string; uid: string; stamp: string; desiredResource: string; resourceSha256: string; serializer: "caldavOrganizerDesired"; verified: true; generatedProperty: boolean };

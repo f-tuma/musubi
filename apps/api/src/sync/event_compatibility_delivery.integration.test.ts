@@ -7,7 +7,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
 import { EVENT_COMPATIBILITY_BASELINE, EVENT_COMPATIBILITY_BASELINE_SHA256, EVENT_COMPATIBILITY_FIXTURES, EVENT_COMPATIBILITY_CI_FIXTURES, EVENT_COMPATIBILITY_PROCESS_FIXTURES, EVENT_COMPATIBILITY_PROCESS_PHASES, EVENT_COMPATIBILITY_TABLES,
-  eventCompatibilityFixtureSource, eventCompatibilityDataHash, eventCompatibilityNormalizedWitnessInput, eventCompatibilityGeneratedClockResource, eventCompatibilityAlarmWitnessInput, eventCompatibilityNormalizedAlarmWitnessInput, type EventCompatibilityWitness, type EventCompatibilityEchoObservation, type EventCompatibilitySerializerClock, type EventCompatibilityAlarmWitness, type EventFixtureSuite } from "./event_compatibility_fixture_manifest";
+  EVENT_COMPATIBILITY_MICROSOFT_READ_NOW, eventCompatibilityMicrosoftReadClock, eventCompatibilityFixtureSource, eventCompatibilityDataHash, eventCompatibilityNormalizedWitnessInput, eventCompatibilityGeneratedClockResource, eventCompatibilityAlarmWitnessInput, eventCompatibilityNormalizedAlarmWitnessInput, type EventCompatibilityWitness, type EventCompatibilityEchoObservation, type EventCompatibilitySerializerClock, type EventCompatibilityAlarmWitness, type EventFixtureSuite } from "./event_compatibility_fixture_manifest";
 
 type Value = null | boolean | number | string | Value[] | { [key: string]: Value };
 type RecordRow = { id: string; family: string; fixtureCase?: string; before: Record<string, unknown> | null; returned: unknown; after: Record<string, unknown> | null;
@@ -230,7 +230,18 @@ function assertIndependentNativeEvidence(spec: EventFixtureSuite, receipt: Fixtu
     assert(mutations.some(request => request.method === "PATCH" && request.body && Object.keys(JSON.parse(request.body)).join(",") === "reminders" && request.headers["if-match"]));
   }
   if (spec.id === "google-rsvp") assert(mutations.some(request => request.method === "PATCH" && request.url.includes("sendUpdates=all") && request.url.includes("conferenceDataVersion=1") && request.headers["if-match"] && request.body?.includes("attendeesOmitted")));
-  if (spec.id === "graph-create") assert(mutations.some(request => request.method === "POST" && request.body?.includes("transactionId")));
+  if (spec.id === "graph-create") {
+    assert(mutations.some(request => request.method === "POST" && request.body?.includes("transactionId")));
+    const proof = (receipt as FixtureReceipt & { nativeReadClock?: ReturnType<typeof eventCompatibilityMicrosoftReadClock> & { filename: string; sourceSha256: string; port: string } }).nativeReadClock;
+    assert(proof); assert.equal(proof.port, "fetchMicrosoftChanges.options.now"); assert.equal(proof.now, EVENT_COMPATIBILITY_MICROSOFT_READ_NOW);
+    assert.equal(proof.filename, fileURLToPath(new URL("./adapters/microsoft.ts", import.meta.url)));
+    assert.equal(proof.sourceSha256, receipt.productionStart?.files["apps/api/src/sync/adapters/microsoft.ts"]);
+    assert.deepEqual(eventCompatibilityMicrosoftReadClock(proof.original, proof.filename, proof.now), Object.fromEntries(Object.entries(proof).filter(([key]) => !["filename", "sourceSha256", "port"].includes(key))));
+    const windows = receipt.wire.filter(request => new URL(request.url).pathname.endsWith("/calendarView/delta")); assert.equal(windows.length, 19);
+    for (const request of windows) {
+      const url = new URL(request.url); assert.equal(url.searchParams.get("startDateTime"), "2026-01-02T12:00:00.000Z"); assert.equal(url.searchParams.get("endDateTime"), "2028-06-30T12:00:00.000Z");
+    }
+  } else assert.equal((receipt as FixtureReceipt & { nativeReadClock?: unknown }).nativeReadClock, undefined, "Other native profiles must retain their original caller bytes");
   if (spec.id.startsWith("dav-")) assert(receipt.wire.some(request => request.method === "PROPFIND" || request.method === "REPORT"), "DAV privilege/resource reads must stay real");
   if (spec.id === "dav-resource" || spec.id === "dav-alarms") assert(mutations.some(request => request.method === "PUT" && request.body?.includes("BEGIN:VCALENDAR") && request.headers["if-match"]));
   if (spec.id.endsWith("organizer")) {
@@ -285,7 +296,8 @@ async function main() {
           const env: NodeJS.ProcessEnv = { ...process.env, DATABASE_URL: url.href, ENVIRONMENT: "test", BETTER_AUTH_URL: "http://127.0.0.1:7531",
             BETTER_AUTH_SECRET: "event-compatibility-owned-fixture-secret", GOOGLE_WEB_CLIENT_ID: "fixture-client", GOOGLE_CLIENT_SECRET: "fixture-secret", MICROSOFT_CLIENT_ID: "fixture-client", MICROSOFT_CLIENT_SECRET: "fixture-secret",
             CALDAV_ENC_KEY: "11".repeat(32), FEDERATION_ALLOW_PRIVATE_HOSTS: "true", SYNC_OPERATION_V1_ENCODER_ENABLED: "true",
-            MUSUBI_EVENT_COMPATIBILITY_UUID_SEED: `event-compatibility:${spec.id}`, ...(differential ? { MUSUBI_EVENT_COMPATIBILITY_OLD_PATH: oldPath } : {}) };
+            MUSUBI_EVENT_COMPATIBILITY_UUID_SEED: `event-compatibility:${spec.id}`, MUSUBI_EVENT_COMPATIBILITY_FIXTURE_ID: spec.id,
+            MUSUBI_EVENT_COMPATIBILITY_MICROSOFT_READ_NOW: spec.microsoftReadNow === undefined ? "" : String(spec.microsoftReadNow), ...(differential ? { MUSUBI_EVENT_COMPATIBILITY_OLD_PATH: oldPath } : {}) };
           if (processAcceptance) Object.assign(env, { MUSUBI_EVENT_COMPATIBILITY_PROCESS_FAMILY: EVENT_COMPATIBILITY_PROCESS_FIXTURES[spec.id], MUSUBI_EVENT_COMPATIBILITY_PROCESS_PHASE: phase });
           await admin.query(`CREATE DATABASE "${database}"`);
           try {

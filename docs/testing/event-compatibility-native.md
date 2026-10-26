@@ -227,3 +227,22 @@ request version and its copied resolution version, which must equal the same
 current raw alarm witness. Native lookalikes, unrelated resolution fields and
 other version producers receive no exception. Raw receipts remain unchanged,
 and an altered or unproven raw/copied witness is refused.
+
+Historical Graph CREATE parity uses a controlled existing read clock argument.
+Its original fixture imports the actual Microsoft adapter and performs inbound
+`calendarView/delta` reads after delivery. Those reads otherwise choose rolling
+windows from wall time, so sequential labels have different raw query values.
+Only this fixture forwards the fixed epoch `2026-07-01T12:00:00.000Z` into the
+existing `fetchMicrosoftChanges.options.now` port. The worker intercepts the
+same TSX-compiled module at its exact source filename and production source hash,
+requires the single real `microsoftAdapter.fetchChanges` callsite and its exact
+three named flags plus exclusions spread, and inserts only the `now` property.
+It records the complete original and executed compiled bytes, both hashes and
+the insertion position; removing the insertion must restore every original
+byte. Native function bodies, OAuth, exclusions, flags, event data, live leases
+and attempt deadlines remain intact. All 19 actual rolling read URLs must carry
+the literal expected start/end bounds. Other Graph instance windows retain
+their complete original query assertions. No URL or native date normalization
+is added. This is an explicitly controlled clock input profile, not a claim that
+the executed adapter module is byte identical to its default compiled form.
+The earlier full default-native new-only corpus remains separate evidence.

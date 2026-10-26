@@ -2,10 +2,27 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { EVENT_COMPATIBILITY_FIXTURES, eventCompatibilityFamily, eventCompatibilityFixtureSource, eventCompatibilityDataHash, eventCompatibilityNormalizedWitnessInput, eventCompatibilityGeneratedClockResource, eventCompatibilityAlarmWitnessInput, eventCompatibilityNormalizedAlarmWitnessInput, type EventCompatibilitySerializerClock, type EventCompatibilityAlarmWitness } from "./event_compatibility_fixture_manifest";
+import { EVENT_COMPATIBILITY_FIXTURES, EVENT_COMPATIBILITY_MICROSOFT_READ_NOW, eventCompatibilityMicrosoftReadClock, eventCompatibilityFamily, eventCompatibilityFixtureSource, eventCompatibilityDataHash, eventCompatibilityNormalizedWitnessInput, eventCompatibilityGeneratedClockResource, eventCompatibilityAlarmWitnessInput, eventCompatibilityNormalizedAlarmWitnessInput, type EventCompatibilitySerializerClock, type EventCompatibilityAlarmWitness } from "./event_compatibility_fixture_manifest";
 import { normalizeEventCompatibilityReceipt } from "./event_compatibility_delivery.integration.test";
 
 async function main() {
+  const compiled = 'const nativeBody="BEGIN:VCALENDAR\\r\\nX-KEEP;Case=yes:  Exact\\r\\nEND:VCALENDAR"; const microsoftAdapter={async fetchChanges(token,id,cursor){const exclusions={knownEventIDs:["exact"],excludedSeriesIDs:["series"],microsoftReadAuthorityVerified:true};return fetchMicrosoftChanges(token,id,cursor,{timeModels:true,rsvpOccurrences:false,organizerEventIDs:await Promise.resolve(["organizer"]),...exclusions});},deadline(){return Date.now()+1234;}}; return {microsoftAdapter,nativeBody};';
+  const clockProfile = eventCompatibilityMicrosoftReadClock(compiled, "native-adapter.js", EVENT_COMPATIBILITY_MICROSOFT_READ_NOW);
+  assert.equal(clockProfile.executed.slice(0, clockProfile.position) + clockProfile.executed.slice(clockProfile.position + clockProfile.insertion.length), compiled);
+  assert.equal(clockProfile.originalSha256, createHash("sha256").update(compiled).digest("hex"));
+  assert.equal(clockProfile.executedSha256, createHash("sha256").update(clockProfile.executed).digest("hex"));
+  const loadProfile = (code: string) => new Function("fetchMicrosoftChanges", code)((...args: unknown[]) => args) as { microsoftAdapter: { fetchChanges(...args: string[]): Promise<unknown[]>; deadline(): number }; nativeBody: string };
+  const defaultNative = loadProfile(compiled), controlledNative = loadProfile(clockProfile.executed), args = ["token", "calendar", "cursor"];
+  const defaultResult = await defaultNative.microsoftAdapter.fetchChanges(...args), controlledResult = await controlledNative.microsoftAdapter.fetchChanges(...args);
+  assert.deepEqual(controlledResult.slice(0, 3), defaultResult.slice(0, 3)); assert.deepEqual(controlledResult[3], { now: EVENT_COMPATIBILITY_MICROSOFT_READ_NOW, ...defaultResult[3] as object });
+  assert.equal(controlledNative.nativeBody, defaultNative.nativeBody, "No native content or function body can be rewritten by clock forwarding");
+  const liveNow = Date.now, beforeDeadline = Date.now() + 1234; assert(controlledNative.microsoftAdapter.deadline() >= beforeDeadline); assert.equal(Date.now, liveNow);
+  for (const changed of [compiled.replace("async fetchChanges", "async differentCaller"), compiled.replace("microsoftAdapter=", "differentAdapter="), compiled + ';fetchMicrosoftChanges(1,2,3,{});',
+    compiled.replace("{timeModels:true", "{now:1,timeModels:true"), compiled.replace("timeModels:true,rsvpOccurrences:false", "rsvpOccurrences:false,timeModels:true"),
+    compiled.replace("...exclusions", "...otherOptions"), compiled.replace("organizerEventIDs:await Promise.resolve([\"organizer\"]),", ""), compiled.replace("token,id,cursor,{", "token,id,{"),
+  ]) assert.throws(() => eventCompatibilityMicrosoftReadClock(changed, "native-adapter.js", EVENT_COMPATIBILITY_MICROSOFT_READ_NOW), "An altered or ambiguous native callsite must refuse instrumentation");
+  assert.throws(() => eventCompatibilityMicrosoftReadClock(compiled, "native-adapter.js", Number.NaN));
+  assert.deepEqual(EVENT_COMPATIBILITY_FIXTURES.filter(spec => spec.microsoftReadNow !== undefined).map(spec => spec.id), ["graph-create"]);
   for (const fixture of EVENT_COMPATIBILITY_FIXTURES) {
     const path = new URL(`./${fixture.source}`, import.meta.url), source = await readFile(path, "utf8"), adapted = eventCompatibilityFixtureSource(source, fileURLToPath(path));
     assert(adapted.includes("export const eventCompatibilityFixtureDone ="));

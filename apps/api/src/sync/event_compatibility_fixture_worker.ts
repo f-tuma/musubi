@@ -7,7 +7,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { Readable } from "node:stream";
 import { fork, type ChildProcess } from "node:child_process";
-import { EVENT_COMPATIBILITY_TABLES, eventCompatibilityFamily, eventCompatibilityProductionFingerprint, eventCompatibilityHarnessFingerprint, eventCompatibilityNormalizedWitnessInput, eventCompatibilityAlarmWitnessInput, eventCompatibilityNormalizedAlarmWitnessInput, eventCompatibilityDataHash, type EventCompatibilityWitness, type EventCompatibilityEchoObservation, type EventCompatibilitySerializerClock, type EventCompatibilityAlarmWitness } from "./event_compatibility_fixture_manifest";
+import { EVENT_COMPATIBILITY_TABLES, EVENT_COMPATIBILITY_MICROSOFT_READ_NOW, eventCompatibilityMicrosoftReadClock, eventCompatibilityFamily, eventCompatibilityProductionFingerprint, eventCompatibilityHarnessFingerprint, eventCompatibilityNormalizedWitnessInput, eventCompatibilityAlarmWitnessInput, eventCompatibilityNormalizedAlarmWitnessInput, eventCompatibilityDataHash, type EventCompatibilityWitness, type EventCompatibilityEchoObservation, type EventCompatibilitySerializerClock, type EventCompatibilityAlarmWitness } from "./event_compatibility_fixture_manifest";
 
 type Plain = null | boolean | number | string | Plain[] | { [key: string]: Plain };
 type Row = Record<string, unknown>;
@@ -19,6 +19,7 @@ type CohortReceipt = { id: number; count: number; after: Row | null; state: Reco
 type DeliveryRecord = { id: string; family: string; fixtureCase?: string; before: Row | null; returned: unknown; after: Row | null; state: Record<string, Row[]>; wireStart: number; wireEnd: number; cohort?: CohortReceipt };
 type ModuleHooks = { _load: (request: string, parent?: { filename?: string }, isMain?: boolean) => unknown;
   _resolveFilename: (request: string, parent?: { filename?: string }, isMain?: boolean) => string;
+  prototype: { _compile: (content: string, filename: string) => unknown };
   _cache: Record<string, { exports: unknown; loaded?: boolean; filename?: string }> };
 type DeliveryModule = Record<string, unknown> & { deliverEventOutbox: (...args: unknown[]) => Promise<unknown> };
 type ProcessPhase = "before-native-send" | "raw-native-response" | "before-ack" | "ack-committed";
@@ -150,6 +151,22 @@ async function main() {
   Object.defineProperty(globalThis, "fetch", { configurable: true, enumerable: true, get: () => effectiveFetch, set: value => { effectiveFetch = wrap(value); } });
   effectiveFetch = wrap(originalFetch);
   const module = require("node:module") as ModuleHooks, load = module._load, resolve = module._resolveFilename;
+  const originalCompile = module.prototype._compile, nativePath = fileURLToPath(new URL("./adapters/microsoft.ts", import.meta.url));
+  let nativeReadClock: (ReturnType<typeof eventCompatibilityMicrosoftReadClock> & { filename: string; sourceSha256: string; port: "fetchMicrosoftChanges.options.now" }) | undefined;
+  const fixedReadNow = process.env.MUSUBI_EVENT_COMPATIBILITY_MICROSOFT_READ_NOW;
+  if (fixedReadNow) {
+    assert.equal(process.env.MUSUBI_EVENT_COMPATIBILITY_FIXTURE_ID, "graph-create");
+    assert.equal(Number(fixedReadNow), EVENT_COMPATIBILITY_MICROSOFT_READ_NOW);
+    assert(!module._cache[nativePath], "Clock forwarding must precede loading the real native adapter");
+    module.prototype._compile = function (content, filename) {
+      if (filename !== nativePath) return Reflect.apply(originalCompile, this, [content, filename]);
+      assert(!nativeReadClock, "Only one exact native module may receive the existing clock argument");
+      const sourceSha256 = createHash("sha256").update(readFileSync(filename)).digest("hex");
+      assert.equal(sourceSha256, productionStart.files["apps/api/src/sync/adapters/microsoft.ts"], "The controlled caller must bind the exact on-disk production module");
+      nativeReadClock = { ...eventCompatibilityMicrosoftReadClock(content, filename, Number(fixedReadNow)), filename, sourceSha256, port: "fetchMicrosoftChanges.options.now" };
+      return Reflect.apply(originalCompile, this, [nativeReadClock.executed, filename]);
+    };
+  }
   const deliveryPath = fileURLToPath(new URL("./event_delivery.ts", import.meta.url));
   const baseline = process.env.MUSUBI_EVENT_COMPATIBILITY_OLD_PATH;
   if (label === "old") assert(baseline, "Historical replay requires its immutable production source");
@@ -336,9 +353,11 @@ async function main() {
       assert.equal(result, "process", "The requested real process checkpoint cannot silently disappear");
     } else { await done; assert.equal(process.exitCode ?? 0, 0, "The existing independent fixture assertions must all pass"); assert(records.length, "The fixture cannot silently omit production delivery"); }
     await Promise.all(responseBodies);
+    if (fixedReadNow) assert(nativeReadClock, "The requested real native reader callsite must not silently disappear");
   } catch (error) { failure = error; }
   finally {
     module._load = load;
+    module.prototype._compile = originalCompile;
     delete executorGlobal.__musubiEventCompatibilityExecutor;
     delete executorGlobal.__musubiEventCompatibilityDrain;
     for (const child of nestedChildren) { const exited = new Promise<void>(resolve => child.once("exit", () => resolve())); child.kill("SIGKILL"); await exited; }
@@ -420,7 +439,7 @@ async function main() {
   const productionEnd = await eventCompatibilityProductionFingerprint(root), sourceStable = productionStart.sha256 === productionEnd.sha256;
   const harnessEnd = await eventCompatibilityHarnessFingerprint(root), harnessStable = harnessEnd.sha256 === harnessManifest.sha256;
   await writeFile(output, JSON.stringify({ schemaVersion: 1, label, sourceSha256, harnessSha256, harnessManifest, harnessEnd, harnessStable, executorSourceSha256, productionStart, productionEnd, sourceStable,
-    records, wire, relayWire, origins, witnesses: [...witnesses.values()], serializerClocks: [...serializerClocks.values()], alarmWitnesses: [...alarmWitnesses.values()], echoObservations, ...(processReceipt ? { processReceipt, processRuntime, processTransport } : {}), ownedPoolsClosed: ownedPools.size, passed: failure === undefined }, null, 2));
+    records, wire, relayWire, origins, ...(nativeReadClock ? { nativeReadClock } : {}), witnesses: [...witnesses.values()], serializerClocks: [...serializerClocks.values()], alarmWitnesses: [...alarmWitnesses.values()], echoObservations, ...(processReceipt ? { processReceipt, processRuntime, processTransport } : {}), ownedPoolsClosed: ownedPools.size, passed: failure === undefined }, null, 2));
   if (!sourceStable && process.env.MUSUBI_EVENT_COMPATIBILITY_ALLOW_INTERMEDIATE !== "1") throw new Error("Production source changed during this fixture; receipt is intermediate, not final acceptance");
   if (!harnessStable && process.env.MUSUBI_EVENT_COMPATIBILITY_ALLOW_INTERMEDIATE !== "1") throw new Error("Fixture or harness source changed during this fixture; receipt is intermediate, not final acceptance");
   if (failure) throw failure;
