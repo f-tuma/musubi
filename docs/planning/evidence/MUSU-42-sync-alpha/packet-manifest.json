@@ -62,7 +62,7 @@
       "previousSuccessfulReceipt": "browser-final.json",
       "finalSummary": "browser-renewed-summary.json",
       "visualScope": "Four images viewed in prior successful run; four renewed image byte hashes exactly equal those viewed images, no new image viewing claimed.",
-      "correctiveSourceBinding": "accepted-8e5-to-corrective-binding.json"
+      "correctiveSourceBinding": "accepted-8e5-to-ci811-cleanup-binding.json"
     },
     "ownedQaContainerRetired": true,
     "correctedFixtureSource": {
@@ -73,6 +73,20 @@
       "bothDatabasesPlainDroppedAtZeroSessionsAndAbsent": true,
       "proof": "ci810-cross-account-fix-proof.json",
       "completeInstalledReferenceCorpusRerunOnCorrectedHead": false
+    },
+    "hostFixtureCleanupCorrection": {
+      "sourceHead": "92ea324ed40795d21e74a6ff330c5b430144f07a",
+      "normalBudgetEntryIncludesDelayedAndPersistentRegressions": true,
+      "fullBudgetNativeBoundary": "passed,47productioninputs unchanged",
+      "apiTypecheck": "passed",
+      "genericNativeDeliveries": 18,
+      "genericNativeRequests": 78,
+      "genericReplayInputsUnchanged": 2286,
+      "productionFingerprintFilesEqualPriorAndCurrent": 380,
+      "qaGlobalZeroAndExactOwnedContainerRetired": true,
+      "completeEventCorpusRerun": false,
+      "newCurrentHeadCiRequired": true,
+      "proof": "ci811-cleanup-execution.json"
     }
   },
   "licenses": {
@@ -83,8 +97,13 @@
     "evidence": "candidate-dependencies.json",
     "scope": "Actual declared metadata and retained texts; owner compatibility/distribution review remains separate"
   },
-  "pathInterpretation": "Verbatim raw receipts retain their original local paths and source identities. Dependency/source/file inventories are relative to their recorded candidate/provenance context, not this repository directory. The private local archive contains the actual retained notice texts. Corrective raw receipts also retain their original /tmp paths: ci810-*-v1.log map by lane to ci810-*.txt; the input inventory and cleanup map to the corresponding ci810-*.json files. Durable backup SAVED-FILES.json hash-verifies their original bytes. Renewed browser raw paths refer to retained private screenshots/logs in that backup, not files committed here.",
+  "pathInterpretation": "Verbatim raw receipts retain their original local paths and source identities. Dependency/source/file inventories are relative to their recorded candidate/provenance context, not this repository directory. The private local archive contains the actual retained notice texts. Corrective raw receipts also retain their original /tmp paths: ci810-*-v1.log map by lane to ci810-*.txt; the input inventory and cleanup map to the corresponding ci810-*.json files. Durable backup SAVED-FILES.json hash-verifies their original bytes. Renewed browser raw paths refer to retained private screenshots/logs in that backup, not files committed here. CI811 raw proof paths retain /tmp execution context; named ci811-*.txt evidence copies contain the actual focused/manual fixture logs, not the private GitHub job environment dumps. Its generic-input inventory has explicit domain-separated file:/symlink: hashing in ci811-event-generic-proof.json and the verbatim executed runner.",
   "files": [
+    {
+      "path": "accepted-8e5-to-ci811-cleanup-binding.json",
+      "bytes": 5214,
+      "sha256": "ca66a3ef99b1ae45a465bade2b0807654b0f1a2d9292dd34bdcebf402a7daf69"
+    },
     {
       "path": "accepted-8e5-to-corrective-binding.json",
       "bytes": 6360,
@@ -246,6 +265,116 @@
       "sha256": "e1b1cecd28557825c0efc90dde6c0b38e6ad97df7ace22bda4562f8df4cb9324"
     },
     {
+      "path": "ci811-budget-cleanup-proof.json",
+      "bytes": 14889,
+      "sha256": "27c4bcd055aa0df3407b4bbdc6d74be4e22ed32188c35eddc532de40b771950c"
+    },
+    {
+      "path": "ci811-budget-final-audit.json",
+      "bytes": 192,
+      "sha256": "d44cad208969ef8add6d9851ffa2a4603d9bb3ddb068a0e785de6f0d09b5b084"
+    },
+    {
+      "path": "ci811-budget-final.txt",
+      "bytes": 15640,
+      "sha256": "bcc585661484ab2ba05f7a8ea5f5aa1e722a546a75e37704b336579eaba60136"
+    },
+    {
+      "path": "ci811-budget-inputs.json",
+      "bytes": 5814,
+      "sha256": "0834426e2779907bf7b8087259d4a6f5c7d89bcda87ea7d21be284fdecf02077"
+    },
+    {
+      "path": "ci811-budget-intermediate.txt",
+      "bytes": 14798,
+      "sha256": "f4ca3fc0d2c72357258b4ce1d4e4b68708a30f529dffd6abab8ccf10f0908b19"
+    },
+    {
+      "path": "ci811-budget-proof-before-retirement.json",
+      "bytes": 14656,
+      "sha256": "6574554671e5effc11e7e6f673fbc20f2d9c93cac7f4096b0e2f6487ea8e43cc"
+    },
+    {
+      "path": "ci811-cleanup-execution.json",
+      "bytes": 2918,
+      "sha256": "392932ed60c14ae0eaf2f3464c3e2ebddffd0913f5451252715a75d67507061c"
+    },
+    {
+      "path": "ci811-event-generic-inputs.json",
+      "bytes": 274628,
+      "sha256": "850a0aadf3a3b1d722f3b6ed73f964cc9ed9781605a372dc89182782ac69e50a"
+    },
+    {
+      "path": "ci811-event-generic-proof.json",
+      "bytes": 3097,
+      "sha256": "f373d83c29f4b4a2b6ec7c2d09988f0ec23e28926652b3d3133123b17f5f27ad"
+    },
+    {
+      "path": "ci811-event-generic-receipt.json",
+      "bytes": 485,
+      "sha256": "d98886c89a6343aed9a1872b0c41e7d89c271a9571eda2f93ca5054d086f879b"
+    },
+    {
+      "path": "ci811-event-generic-runner.py",
+      "bytes": 2399,
+      "sha256": "114dbb85af990ac9c05f12a7111a6c209ef3e1062780a485d6d8cefeb1754408"
+    },
+    {
+      "path": "ci811-event-generic-summary.json",
+      "bytes": 861,
+      "sha256": "272a6cd57f928471867046f884e6a473c667fe1532d45c6892b8d948dc7b9524"
+    },
+    {
+      "path": "ci811-event-generic.txt",
+      "bytes": 1148,
+      "sha256": "260fe5fe3ec5ae0e605c37620fa94f21017bc5c9f1c096ce69598a03b6e85509"
+    },
+    {
+      "path": "ci811-failure-audit.json",
+      "bytes": 62826,
+      "sha256": "45706a65039c80d56937c10445437e2f752a6bc50729e64267cd9e3f03b74fc2"
+    },
+    {
+      "path": "ci811-probe-final.txt",
+      "bytes": 842,
+      "sha256": "095af278a482e3d71519a5bdf62569df7038da7ef8d12df403ecf4684183a811"
+    },
+    {
+      "path": "ci811-probe-intermediate.txt",
+      "bytes": 798,
+      "sha256": "f37b1f76e685bcf445ff1938580f0edb1e7b5d353ba11204b6b9c480c9725b30"
+    },
+    {
+      "path": "ci811-probe-prototype-failure.txt",
+      "bytes": 455,
+      "sha256": "7d7b252d98ddd4df46aaab16a53851ce815a91d4c1d57a93013998d40ade4777"
+    },
+    {
+      "path": "ci811-qa-pre-retirement.json",
+      "bytes": 432,
+      "sha256": "5ba17047d85f71610f038ed6e744c5d42851b3a3687d6667b19c1e7626b73cc3"
+    },
+    {
+      "path": "ci811-qa-retirement-raw-steps.json",
+      "bytes": 826,
+      "sha256": "b4127e1e8e1e8a54edb9bf945499b21aae4a982fd95514eb3ffaf5d1091ab147"
+    },
+    {
+      "path": "ci811-qa-retirement.json",
+      "bytes": 1763,
+      "sha256": "93af3cfaac4702c7f677fd0a6931a0a09985cf871c7a25b5687b112861fca9e4"
+    },
+    {
+      "path": "ci811-typecheck-final.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "ci811-typecheck-prototype-failure.txt",
+      "bytes": 112,
+      "sha256": "5d583265f269e89df33f7d181ff2d87489572573f60b18db8562b907c9765428"
+    },
+    {
       "path": "corrective-qa-pre-retirement.json",
       "bytes": 791,
       "sha256": "2bf8592e105df9d39e4183a843ccbdadf9935a2eb2b6e42b3bb2fe7b6352afc7"
@@ -389,18 +518,20 @@
     "productionDeployed": false,
     "pr": "https://github.com/f-tuma/musubi/pull/389",
     "priorHeadCi": "Quality810 on8c2d2f5 completed20/21success; onlyDB4 failed at initial test fixture guard. Installed DB1 alpha427/23+purehost211 actually passed on its separate merge-ref artifact. Old run cannot authorize merge of corrected head.",
-    "correctedHeadCi": "New reviewed final-head full required checks pending."
+    "correctedHeadCi": "Required after92ea324 and final evidence commit; all21 checks on the new final PR head must pass. Historical failed810/811 remain failed."
   },
   "technicalAcceptanceComplete": true,
   "correctiveSource": {
-    "head": "68f974eba2c4ee1a8709a861c8ca7c62dcce593d",
-    "tree": "93a674aeb0a916cdfc63e4ad13f4d9de3e12167b",
-    "scope": "One test bootstrap fallback line plus conditional timeout budget30min for DB1 only (others20). Accepted8e5 production source/runtime and historical artifact unchanged. New final-head review/CI/publication remain required.",
-    "binding": "accepted-8e5-to-corrective-binding.json",
-    "regressionProof": "ci810-cross-account-fix-proof.json",
-    "cleanup": "ci810-final-cleanup.json",
-    "qaRetirementWitness": "corrective-qa-retirement.json",
-    "fixtureCommit": "e3f619cfa94f31effeedf45628ac9135ba1a9d77"
+    "head": "92ea324ed40795d21e74a6ff330c5b430144f07a",
+    "tree": "d0aaabc64378ecca448b0f9b7e4579eae549c2b1",
+    "scope": "Prior reference bootstrap and CI budget metadata, plus two API integration fixture cleanup changes and one new shared fixture helper. Production behavior unchanged. Focused actual PG/native corrections passed; new current-head whole CI still required.",
+    "binding": "accepted-8e5-to-ci811-cleanup-binding.json",
+    "referenceFixtureProof": "ci810-cross-account-fix-proof.json",
+    "budgetCleanupProof": "ci811-budget-cleanup-proof.json",
+    "actualExecutionMetadata": "ci811-cleanup-execution.json",
+    "genericNativeProof": "ci811-event-generic-proof.json",
+    "ownedQaRetirement": "ci811-qa-retirement.json",
+    "priorCorrectionBinding": "accepted-8e5-to-corrective-binding.json"
   },
   "historicalCi810": {
     "audit": "ci810-independent-audit.json",
@@ -437,5 +568,25 @@
       }
     ],
     "scope": "Exact prior PR tree6a12e829; merge-refd01ccd69, own CI archive6cf8eb60\u2026 distinct from private local8e5 archive0d14e058\u2026; does not cover fixturee3f or metadata68f."
+  },
+  "historicalCi810CorrectiveSource": {
+    "head": "68f974eba2c4ee1a8709a861c8ca7c62dcce593d",
+    "tree": "93a674aeb0a916cdfc63e4ad13f4d9de3e12167b",
+    "scope": "One test bootstrap fallback line plus conditional timeout budget30min for DB1 only (others20). Accepted8e5 production source/runtime and historical artifact unchanged. New final-head review/CI/publication remain required.",
+    "binding": "accepted-8e5-to-corrective-binding.json",
+    "regressionProof": "ci810-cross-account-fix-proof.json",
+    "cleanup": "ci810-final-cleanup.json",
+    "qaRetirementWitness": "corrective-qa-retirement.json",
+    "fixtureCommit": "e3f619cfa94f31effeedf45628ac9135ba1a9d77"
+  },
+  "historicalCi811": {
+    "audit": "ci811-failure-audit.json",
+    "head": "214d4a28a1ad19daf5301fe4fe7be4b368882e20",
+    "requiredJobs": 21,
+    "successfulJobs": 19,
+    "failedJobs": 2,
+    "standaloneAlpha": "Skipped after the ordinaryDB1 cleanup assertion failed; no candidate/reports uploaded.",
+    "originalCleanupSessions": "Count1; PID/owner/state unknown in CI. Local actual delayed/persistent-owned regression is separate evidence, not proof of the original CI session identity.",
+    "referenceBootstrapCorrection": "Actual ordinary DB4 paired-reference fixture and its zero/plainDROP/absence cleanup passed."
   }
 }

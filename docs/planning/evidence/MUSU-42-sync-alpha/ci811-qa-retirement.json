@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "kind": "C10-CI811-owned-QA-retirement",
+  "at": "2026-10-27T07:17:48.915139+00:00",
+  "containerId": "2340c3e8fd51185a832bdb299095d780af74bf3cca87e0b72fa712973328d256",
+  "port": 55448,
+  "preRetirementProof": "/tmp/musu42-ci811-qa-pre-retirement.json",
+  "preRetirementSha256": "5ba17047d85f71610f038ed6e744c5d42851b3a3687d6667b19c1e7626b73cc3",
+  "nondefaultDatabases": 0,
+  "otherClientSessions": 0,
+  "probePoolEnded": true,
+  "rawDockerOperations": [
+    {
+      "args": [
+        "stop",
+        "--time",
+        "20",
+        "2340c3e8fd51185a832bdb299095d780af74bf3cca87e0b72fa712973328d256"
+      ],
+      "exitCode": 0,
+      "stdout": "Flag --time has been deprecated, use --timeout instead\n2340c3e8fd51185a832bdb299095d780af74bf3cca87e0b72fa712973328d256\n",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "rm",
+        "2340c3e8fd51185a832bdb299095d780af74bf3cca87e0b72fa712973328d256"
+      ],
+      "exitCode": 0,
+      "stdout": "2340c3e8fd51185a832bdb299095d780af74bf3cca87e0b72fa712973328d256\n",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "inspect",
+        "2340c3e8fd51185a832bdb299095d780af74bf3cca87e0b72fa712973328d256"
+      ],
+      "exitCode": 1,
+      "stdout": "[]\n",
+      "stderr": "error: no such object: 2340c3e8fd51185a832bdb299095d780af74bf3cca87e0b72fa712973328d256\n"
+    }
+  ],
+  "plainContainerRemove": true,
+  "containerAbsent": true,
+  "databaseBackendsTerminated": false,
+  "userQa55437Untargeted": true,
+  "productionDeployed": false,
+  "receiptPreparationNote": "Initial receipt assertion expected uppercase No such object; actual Docker returned lowercase no such object. Exact raw successful stop/remove and exit1 absence preserved; no operations were repeated."
+}

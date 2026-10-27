@@ -26,6 +26,25 @@ therefore gives only that database shard 30 minutes; the other shards retain 20.
 The old run is not acceptance for these corrections; a newly reviewed final head
 and all its required checks must pass before protected publication.
 
+The following [Quality #811 audit](evidence/MUSU-42-sync-alpha/ci811-failure-audit.json),
+on head `214d4a2`, records 19 successful jobs and two failures. Both failed an
+immediate database-session cleanup assertion with one session remaining, after
+their preceding behavioral assertions. The CI logs did not capture that
+session's owner or state. The standalone alpha step was skipped because the
+ordinary database shard failed first; no new installed 427/23 result is claimed
+for that run. The corrected paired-reference fixture did pass in database shard
+four, including zero sessions, plain DROP and verified absence.
+
+Correction `92ea324` changes two API integration fixtures and adds a shared
+fixture cleanup helper. It waits on fresh, bounded actual PostgreSQL session
+observations, retains diagnostics on refusal and permits plain DROP only at
+zero, followed by catalog absence. Normal budget integration now exercises both
+a real delayed owned disconnect and bounded refusal of a persistent owned
+client. No production behavior, required assertion or fingerprint rule changed.
+Its [actual local proof](evidence/MUSU-42-sync-alpha/ci811-cleanup-execution.json)
+and the [generic native replay](evidence/MUSU-42-sync-alpha/ci811-event-generic-proof.json)
+passed; all required checks on the new final PR head remain necessary.
+
 The [alpha packet](../sync-alpha/README.md) defines a private, preinstalled
 Node 22/Linux source-ESM snapshot with exact TSX and separate compiler/test
 material. It includes the six portable libraries and independent PostgreSQL
@@ -63,7 +82,9 @@ verified files and 70 runtime/tooling/mirror package entries.
 | Full workspace and JSON | `pnpm check`; 598/598 scenarios in 17 suites | Historical exact `d3a8867`; [summary](evidence/MUSU-42-sync-alpha/historical-root-d3a-summary.json) |
 | Actual Musubi host storage/native boundary | All six separate host DB programs passed after committed migrations | Historical exact `d3a8867`; [raw receipt](evidence/MUSU-42-sync-alpha/historical-root-d3a-receipt.json) |
 | Corrected reference fixture | Unchanged RED; fallback and explicit-reference GREEN, two native cases each; pre-SQL guards and both own database cleanups passed | Exact corrected fixture bytes committed as `e3f619c`; [proof](evidence/MUSU-42-sync-alpha/ci810-cross-account-fix-proof.json) |
-| Running web | Renewed final 22/22, zero automatic retries, 26 fresh retained screenshots; four image hashes match the four previously viewed images | Exact unchanged `8e5e202` Web source; [renewed summary](evidence/MUSU-42-sync-alpha/browser-renewed-summary.json) and [corrective source binding](evidence/MUSU-42-sync-alpha/accepted-8e5-to-corrective-binding.json) |
+| Corrected API fixture cleanup | Real delayed owned backend: old immediate assertion RED, actual-zero cleanup GREEN; persistent client refused while its DB/client remained usable; full budget integration and API typecheck passed | Exact corrected bytes in `92ea324`; [proof](evidence/MUSU-42-sync-alpha/ci811-budget-cleanup-proof.json) and [execution metadata](evidence/MUSU-42-sync-alpha/ci811-cleanup-execution.json) |
+| Generic native compatibility replay | 18 delivery snapshots, 78 native HTTP requests; zero sessions, plain DROP and absence passed; 2,286 inputs unchanged | [Receipt and fingerprint proof](evidence/MUSU-42-sync-alpha/ci811-event-generic-proof.json); this is the generic native slice, not a complete event-corpus rerun |
+| Running web | Renewed final 22/22, zero automatic retries, 26 fresh retained screenshots; four image hashes match the four previously viewed images | Exact unchanged `8e5e202` Web source; [renewed summary](evidence/MUSU-42-sync-alpha/browser-renewed-summary.json) and [latest source binding](evidence/MUSU-42-sync-alpha/accepted-8e5-to-ci811-cleanup-binding.json) |
 
 The historical workspace/598/host-six results are not relabelled as reruns on
 `8e5e202`. The [source binding](evidence/MUSU-42-sync-alpha/workspace-d3a-to-8e5-binding.json)
@@ -122,6 +143,29 @@ a new archive or full installed-corpus rerun on `e3f619c`; the corrected source
 fixture has its separate proof and still requires new current-head CI. The web
 copy remains the `8e5e202` full-repository archive, with exact unchanged frontend,
 API, package, dependency and test inputs for the renewed browser run.
+
+That `68f974e` binding is historical. The
+[current binding through `92ea324`](evidence/MUSU-42-sync-alpha/accepted-8e5-to-ci811-cleanup-binding.json)
+qualifies the three subsequent API test-support changes; it does not claim an
+unchanged whole API tree. The actual generic native production fingerprint
+contains 380 files, all byte-equal to both `214d4a2` and `92ea324`; the new helper
+is included in the separate harness fingerprint by its existing `_fixture_`
+rule. The budget proof separately verifies its unchanged 47 production inputs.
+Generic replay inventory values use SHA256 of `file:` plus bytes, or `symlink:`
+plus the literal link target; they are not raw content hashes. Its executed
+runner and this interpretation are retained with the proof. Prior web results
+keep their original copied `8e5e202` identity; no browser rerun after these
+test-only cleanup changes is claimed.
+
+The fresh corrective QA on 55448 was empty after both actual fixture runs:
+zero nondefault databases and zero other clients, then its observer pool ended.
+The [retirement receipt](evidence/MUSU-42-sync-alpha/ci811-qa-retirement.json)
+retains actual stop, non-force removal and exact-ID absence command results.
+User QA on 55437 remained untargeted. The local delayed-disconnect regression
+models an admissible close race; it does not identify the original CI sessions.
+The first probe's deadline-query timeout and the first typecheck's unsupported
+`AggregateError` name remain diagnostic history, followed by passing corrected
+probe/full integration/typecheck results without compiler configuration changes.
 
 The original MIT license and copyright remain intact. The actual dependency
 inventory covers 30 production packages, 70 total entries and 21 deduplicated

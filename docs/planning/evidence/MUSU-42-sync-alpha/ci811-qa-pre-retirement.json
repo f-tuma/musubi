@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "kind": "C10-CI811-owned-QA-pre-retirement",
+  "containerId": "2340c3e8fd51185a832bdb299095d780af74bf3cca87e0b72fa712973328d256",
+  "port": 55448,
+  "serverVersion": "17.11",
+  "nondefaultDatabases": [],
+  "otherClientSessions": [],
+  "noBackendsTerminated": true,
+  "noDatabaseDropIssued": true,
+  "userQa55437Untargeted": true,
+  "probePoolEnded": true,
+  "readyForExactOwnedContainerRetirement": true
+}

@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-original-acceptance-to-ci811-test-cleanup-correction-binding",
+  "acceptedImplementation": {
+    "head": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+    "tree": "dd2c9c7684533f98e898dc3278331c011c313e52"
+  },
+  "priorCi811Head": {
+    "head": "214d4a28a1ad19daf5301fe4fe7be4b368882e20",
+    "tree": "0c544f9de27064a23f4e2f5ea9e5ca34719772a3"
+  },
+  "correctiveSource": {
+    "head": "92ea324ed40795d21e74a6ff330c5b430144f07a",
+    "tree": "d0aaabc64378ecca448b0f9b7e4579eae549c2b1"
+  },
+  "changedNonDocumentationPaths": [
+    ".github/workflows/quality.yml",
+    "apps/api/src/sync/event_compatibility_delivery.integration.test.ts",
+    "apps/api/src/sync/owned_database_fixture_cleanup.ts",
+    "apps/api/src/sync/provider_budget.integration.test.ts",
+    "apps/sync-reference/src/cross-account.integration.test.ts"
+  ],
+  "unchangedExactGitScopes": [
+    {
+      "path": "apps/web",
+      "acceptedGitObject": "11913751799230384ccfac55231a2864ab6c7841",
+      "correctiveGitObject": "11913751799230384ccfac55231a2864ab6c7841"
+    },
+    {
+      "path": "apps/client",
+      "acceptedGitObject": "ebac88b738f14b3f8a1720025ac0484186908b05",
+      "correctiveGitObject": "ebac88b738f14b3f8a1720025ac0484186908b05"
+    },
+    {
+      "path": "apps/ui-catalog",
+      "acceptedGitObject": "ed5749c15f4cf4ba943956fb6759af7c180e23d9",
+      "correctiveGitObject": "ed5749c15f4cf4ba943956fb6759af7c180e23d9"
+    },
+    {
+      "path": "packages",
+      "acceptedGitObject": "bdd06feaf7d97d8a1e769f9738c7ee2ff7b39ced",
+      "correctiveGitObject": "bdd06feaf7d97d8a1e769f9738c7ee2ff7b39ced"
+    },
+    {
+      "path": "apps/sync-reference/package.json",
+      "acceptedGitObject": "d1ad4503e0d7b066c8b02fdf049997f1a524b5a9",
+      "correctiveGitObject": "d1ad4503e0d7b066c8b02fdf049997f1a524b5a9"
+    },
+    {
+      "path": "apps/sync-reference/README.md",
+      "acceptedGitObject": "25894abfac5d45c1923f55233cebcd55a77f4c62",
+      "correctiveGitObject": "25894abfac5d45c1923f55233cebcd55a77f4c62"
+    },
+    {
+      "path": "apps/sync-reference/conformance",
+      "acceptedGitObject": "2c1fc239afc35009684a26924f631c233ebcba7c",
+      "correctiveGitObject": "2c1fc239afc35009684a26924f631c233ebcba7c"
+    },
+    {
+      "path": "package.json",
+      "acceptedGitObject": "1de6235743255dbe8c7e1d2cffb976850cda7299",
+      "correctiveGitObject": "1de6235743255dbe8c7e1d2cffb976850cda7299"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "acceptedGitObject": "0875ea063cf8890ff316657e86b5665ad3ab9fef",
+      "correctiveGitObject": "0875ea063cf8890ff316657e86b5665ad3ab9fef"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "acceptedGitObject": "77751fcbf7a4625bcabf1cf066cff7139ff40d43",
+      "correctiveGitObject": "77751fcbf7a4625bcabf1cf066cff7139ff40d43"
+    },
+    {
+      "path": "turbo.json",
+      "acceptedGitObject": "cc2899a0011d487f03da3790282555742f8c28b5",
+      "correctiveGitObject": "cc2899a0011d487f03da3790282555742f8c28b5"
+    },
+    {
+      "path": "patches",
+      "acceptedGitObject": "70d8dffc2d1e14489c43f287df6016db6d37d743",
+      "correctiveGitObject": "70d8dffc2d1e14489c43f287df6016db6d37d743"
+    },
+    {
+      "path": "scripts",
+      "acceptedGitObject": "d725fa8394b054c248004f33d89fb0bc657c2bc6",
+      "correctiveGitObject": "d725fa8394b054c248004f33d89fb0bc657c2bc6"
+    },
+    {
+      "path": "docs/sync-alpha",
+      "acceptedGitObject": "13fff2ee243126711344cd263e4d88962b995d94",
+      "correctiveGitObject": "13fff2ee243126711344cd263e4d88962b995d94"
+    }
+  ],
+  "apiScopeQualification": "Whole apps/api tree changed: two integration fixtures and one new shared _fixture_ cleanup helper. All other API tracked bytes match accepted8e5; actual production fingerprints independently match prior214 and current92. No unchanged-whole-API-tree claim is made.",
+  "apiChangedPaths": [
+    "apps/api/src/sync/event_compatibility_delivery.integration.test.ts",
+    "apps/api/src/sync/owned_database_fixture_cleanup.ts",
+    "apps/api/src/sync/provider_budget.integration.test.ts"
+  ],
+  "apiProductionFingerprintProof": "ci811-event-generic-proof.json",
+  "budget47ProductionProof": "ci811-budget-cleanup-proof.json",
+  "runtimeChanges": false,
+  "referenceFixtureCorrection": "Existing separate e3f bootstrap proof; original accepted archive/mirror and installed23 stay on old8e5 fixture bytes. CI811 ordinary DB4 did execute the corrected source fixture successfully.",
+  "ciMetadataCorrection": "DB1 timeout30minutes/others20 from68f; every required command/case/assertion retained. CI811 failures were ordinary-shard cleanup assertions before alpha, not timeouts.",
+  "runningWeb": "Exact apps/web/packages/API production/lock/scripts bytes remain unchanged. Prior renewed22/22 proof stays on the copied8e5 repository with its original archive identity; no new browser run after these test-only cleanup corrections is claimed.",
+  "oldBinding": "accepted-8e5-to-corrective-binding.json remains historical to68f, before these API test-support changes.",
+  "fullWorkspaceOrInstalledReferenceRerunOnCorrectiveSource": false,
+  "newCurrentHeadAllRequiredCi": true,
+  "publicRegistryPublished": false,
+  "productionDeployed": false
+}

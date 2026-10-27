@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-ci811-correction-actual-execution-metadata",
+  "source": {
+    "head": "92ea324ed40795d21e74a6ff330c5b430144f07a",
+    "tree": "d0aaabc64378ecca448b0f9b7e4579eae549c2b1",
+    "qualification": "Tests ran before the commit; raw fixture/helper bytes exactly match this committed head."
+  },
+  "originalProof": "ci811-budget-cleanup-proof.json",
+  "originalProofSha256": "27c4bcd055aa0df3407b4bbdc6d74be4e22ed32188c35eddc532de40b771950c",
+  "cwd": "/home/flamendrin/workspace/musubi",
+  "explicitEnvironmentKeys": [
+    "ENVIRONMENT",
+    "DATABASE_URL"
+  ],
+  "environmentBoundary": "ENVIRONMENT=test; DATABASE_URL selects only the owned synthetic PostgreSQL55448 admin database. No ambient environment dump or credential value is included.",
+  "actualCommands": [
+    {
+      "id": "focused-cleanup-probe-final",
+      "argv": [
+        "node",
+        "--import",
+        "tsx",
+        "apps/api/src/sync/provider_budget.integration.test.ts",
+        "--cleanup-probe"
+      ],
+      "exitCode": 0,
+      "log": "ci811-probe-final.txt",
+      "scope": "Final probe logic; the later single awaitcleanupProbe call in normal main did not change this focused entry."
+    },
+    {
+      "id": "normal-budget-integration-final",
+      "argv": [
+        "node",
+        "--import",
+        "tsx",
+        "apps/api/src/sync/provider_budget.integration.test.ts"
+      ],
+      "exitCode": 0,
+      "log": "ci811-budget-final.txt",
+      "scope": "Normal entry runs both delayed/persistent actual-PG cleanup regression and the unchanged47-source native/DB budget behavioral proof, then actual zero/plainDROP/absence."
+    },
+    {
+      "id": "api-typecheck-final",
+      "argv": [
+        "node_modules/.bin/tsc",
+        "-p",
+        "apps/api/tsconfig.json",
+        "--noEmit",
+        "--skipLibCheck"
+      ],
+      "exitCode": 0,
+      "log": "ci811-typecheck-final.txt",
+      "explicitEnvironmentKeys": [],
+      "scope": "Actual directly invoked workspace TypeScript binary; no project compiler setting changed."
+    }
+  ],
+  "retainedDiagnosticHistory": [
+    "ci811-probe-prototype-failure.txt",
+    "ci811-typecheck-prototype-failure.txt"
+  ],
+  "productionOrRegistryDeployment": false,
+  "proofEvolution": {
+    "beforeRetirementProof": "ci811-budget-proof-before-retirement.json",
+    "beforeRetirementSha256": "6574554671e5effc11e7e6f673fbc20f2d9c93cac7f4096b0e2f6487ea8e43cc",
+    "afterRetirementProof": "ci811-budget-cleanup-proof.json",
+    "afterRetirementSha256": "27c4bcd055aa0df3407b4bbdc6d74be4e22ed32188c35eddc532de40b771950c",
+    "change": "The original successful test proof was retained before retiring the shared QA. The later version replaces only qa.retirement with the actual completed retirement receipt/hash; source hashes, executions, summaries and test outcomes are unchanged. This execution-metadata wrapper does not alter either raw proof."
+  }
+}

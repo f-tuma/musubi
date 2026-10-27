@@ -1,0 +1,31 @@
+[
+  {
+    "args": [
+      "stop",
+      "--time",
+      "20",
+      "2340c3e8fd51185a832bdb299095d780af74bf3cca87e0b72fa712973328d256"
+    ],
+    "exitCode": 0,
+    "stdout": "Flag --time has been deprecated, use --timeout instead\n2340c3e8fd51185a832bdb299095d780af74bf3cca87e0b72fa712973328d256\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "rm",
+      "2340c3e8fd51185a832bdb299095d780af74bf3cca87e0b72fa712973328d256"
+    ],
+    "exitCode": 0,
+    "stdout": "2340c3e8fd51185a832bdb299095d780af74bf3cca87e0b72fa712973328d256\n",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "inspect",
+      "2340c3e8fd51185a832bdb299095d780af74bf3cca87e0b72fa712973328d256"
+    ],
+    "exitCode": 1,
+    "stdout": "[]\n",
+    "stderr": "error: no such object: 2340c3e8fd51185a832bdb299095d780af74bf3cca87e0b72fa712973328d256\n"
+  }
+]
