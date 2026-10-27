@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static launcher preview; runtime Tasks uses the shared Agenda shell. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/musubi_widget_background" android:orientation="vertical" android:padding="@dimen/musubi_widget_inset">
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="@dimen/musubi_widget_header_height" android:gravity="center_vertical" android:orientation="horizontal">
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+      <TextView style="@style/MusubiWidgetHeaderLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/musubi_tasks_widget_label" />
+      <TextView style="@style/MusubiWidgetMeta" android:layout_width="match_parent" android:text="@string/musubi_widget_all_calendars" />
+    </LinearLayout>
+    <ImageView style="@style/MusubiWidgetIconControl" android:src="@drawable/musubi_widget_more" android:contentDescription="@string/musubi_widget_calendars" />
+  </LinearLayout>
+  <TextView style="@style/MusubiWidgetEmpty" android:layout_height="0dp" android:layout_weight="1" android:text="@string/musubi_widget_not_loaded" />
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="@dimen/musubi_widget_footer_height" android:orientation="horizontal" android:gravity="center_vertical">
+    <TextView style="@style/MusubiWidgetMeta" android:layout_width="0dp" android:layout_weight="1" android:text="@string/musubi_widget_cached" />
+    <ImageView style="@style/MusubiWidgetIconControl" android:src="@drawable/musubi_widget_refresh" android:contentDescription="@string/musubi_widget_refresh" />
+  </LinearLayout>
+</LinearLayout>
