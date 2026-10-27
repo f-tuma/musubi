@@ -318,7 +318,8 @@ jobs:
     runs-on: ubuntu-latest
     # Shard 1 additionally verifies a frozen standalone production closure and
     # its installed reference/process corpus against this same disposable PG.
-    timeout-minutes: 20
+    # That adds about ten minutes; CI810 finished with under a minute to spare.
+    timeout-minutes: ${{ matrix.shard == 1 && 30 || 20 }}
     strategy:
       fail-fast: false
       matrix:
