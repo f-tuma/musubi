@@ -11,6 +11,13 @@ any local/debug certificate. Multiple comma-separated colon-delimited
 fingerprints support Play signing-key rotation; values are normalized to upper
 case and deduplicated.
 
+The operator supplied both canonical `musubi.pro` Play fingerprints on 27 October
+2026. The concrete public setting is prepared in
+[the production input example](../../ops/production/musubi.pro.public.env.example).
+Applying it to the actual API deployment and verifying the public statement and
+Play-distributed app are separate steps; this file does not automatically change
+Dokploy or provide a default for every self-hosted domain.
+
 There is no built-in production fingerprint. Unset/blank configuration returns
 404. A malformed value fails API startup instead of publishing a partial or
 invalid association. The certificate's provenance remains an operator acceptance
