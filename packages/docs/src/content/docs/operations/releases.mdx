@@ -10,99 +10,93 @@ remaining acceptance. Provider support has its own
 [capability matrix](/docs/operations/capabilities/); an API version or a green
 build does not certify every provider operation.
 
-## 0.2.3 — API/web release preparation, updated 14 October 2026
+## Current assessment — 27 October 2026
 
-The functional source is frozen at
-`601836b4f3ecd78a2cd86acf6719e9c7127cac38`, the first C07 Google DELETE merge
-from [PR #351](https://github.com/f-tuma/musubi/pull/351). Its main
-[Quality run](https://github.com/f-tuma/musubi/actions/runs/38433116916) completed
-successfully with all 21 jobs. Documentation preparation
-[PR #352](https://github.com/f-tuma/musubi/pull/352), source
-`ce7b751ff0b618541d773a342e114006b3ccf893`, also has
-[all 21 main Quality jobs green](https://github.com/f-tuma/musubi/actions/runs/38444284238).
-A subsequent publication-control audit changes the workflow/guard tests and
-release documentation without adding product features. The final reviewed,
-green release-control publication revision and operator evidence belong in the
-[release readiness record](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.3-readiness.md).
-No 0.2.3 publication, production switch or native distribution is recorded by
-this source preparation. Review the
-[release notes](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.3-notes.md)
-and [deployment/recovery guide](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.3-deployment.md)
-before publication.
+**HOLD for a complete server, web, Android and iOS production release.** The
+latest published release is
+[v0.2.11](https://github.com/f-tuma/musubi/releases/tag/v0.2.11), published on
+16 October from `b85a57500ad81b47603a705290e215270a642a95`.
+Product metadata still says 0.2.11. **0.2.12 is the proposed next version, not a
+reservation**; check tags, drafts and registry names again before publication.
 
-The API/web source includes C01 delivery deadlines, cancellation, Retry-After
-and metrics; C02 sync contracts; C03 Graph coverage and pinned operation codecs;
-C04–C06 provider extraction, independent durable reference host and shared Google
-personal content UPDATE; and the first C07 existing personal timed nonrecurring
-Google DELETE slice. Full C07 CREATE/Graph/DAV profiles remain separate gates.
-It also includes stable Vardum web-brand URLs using original artwork,
-privacy-safe CalDAV discovery diagnostics and shared recurrence/timezone
-projection changes. Source fixtures and green CI do not establish live provider
-acceptance.
+The audited main source is `3573a1e8204d111e39725e76665800811f0f4737`.
+Its trusted main-push
+[Quality 816](https://github.com/f-tuma/musubi/actions/runs/40489926411)
+passed all 21 jobs, including native Android build and shipped DEX checks;
+[iOS 23](https://github.com/f-tuma/musubi/actions/runs/40489926576) also passed.
+This is not the eventual version-bumped publication SHA. See the complete
+[readiness assessment and operator runbook](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.12-readiness.md)
+for the release sequence, commands and evidence requirements.
 
-The Musubi API journal now ends at `0085_graph_read_coverage` (index 85).
-Relative to v0.2.2, it adds source/checkpoint generations, read-configuration
-fingerprint and coverage, plus account `sync_read_generation` and its
-lifecycle/ABA trigger. Routine non-null token rotation does not advance account
-generation. The first new Graph read replaces old cursors under coverage fences;
-historical accepted intents are not backfilled. The reference host's DELETE
-schema applies to its own ledger and adds no further Musubi API migration.
-No new announcement migration is included. The actual running journal remains
-UNKNOWN until inspected. Global client/peer minimums and the wire baseline remain
-0.2.0; the v0.2.2 task-write 426 and native distribution gap below still apply.
-Preserve existing Core gates and outstanding live checks.
+| Evidence | Confirmed at the audit | Still required |
+| --- | --- | --- |
+| Source | Exact-main automated checks are green | Reviewed fixes, version/notes and green checks for the final candidate SHA |
+| Publication | API/web 0.2.11 and `latest` registry indexes match; their amd64/arm64 runtime OCI revision labels identify the published source | New publication receipt and immutable API/web digests for the selected candidate |
+| Public runtime | API reports 0.2.11 and minimum client 0.2.0; login and health answer 200 | Actual running digests/revisions, consumer inventory, migration journal and queue baseline |
+| Mobile | Android emulator news scenarios and CI builds passed | Exact signed/distributed Android and iOS artifacts, store processing and physical-device acceptance |
 
-The already authorized encoder source default is ON. Before admitting new v1
-operations, every actual API, delivery worker and custom outbox consumer needs
-the current decoder and exact pinned codecs. Stop old processes first, run one
-API replica, and acquire its singleton lock before migration and listening.
+Dependency security findings require reviewed fixes or version/configuration-bound
+disposition before GO; green CI is not a security attestation. Production
+baseline, stopped-writer backup and a verified isolated restore are also open.
+Android `/.well-known/assetlinks.json` returns 404 despite configured App Links.
+The public `/app/sw.js` response has `Cache-Control: max-age=14400`, including a
+fresh-query/no-cache probe, while source specifies `no-cache`. Identify and
+correct the effective origin/CDN behavior and verify worker updates; the cause
+has not been established. The worker handles notifications and has no app-shell
+fetch cache. The runbook owns the detailed blocker and native acceptance lists.
+
+### Current database and delivery boundary
+
+The source API migration journal has 88 entries, ending at
+`0087_project_news` (index 87); `0086_sync_scheduling` precedes it. The actual
+production journal remains unverified. Migration 0087 deliberately removes the
+former SQL announcements table. Product news now comes from the shared root
+`news.json` through cached, validated public GitHub reads. There is no per-server
+announcement editor or allowlist. Do not run a pre-transition API against this
+contracted schema; see [project news](https://github.com/f-tuma/musubi/blob/main/docs/project-news.md).
+
+The encoder source default is ON. Before admitting new v1 operations, every
+actual API, delivery worker and custom outbox consumer needs the current decoder
+and exact pinned codecs. Stop old processes first, run one API replica, and
+acquire its singleton lock before migration and listening.
 `SYNC_OPERATION_V1_ENCODER_ENABLED=false` affects future admission only; it
 neither converts nor stops existing v1 operations and does not make old workers
 safe. Decoder-only consumers preserve v1 rows on HOLD; delivery needs the pinned
 codecs.
 
-`EXTERNAL_DELIVERY_RECOVERY_MODE=independent` is the new default: event/task/move
+`EXTERNAL_DELIVERY_RECOVERY_MODE=independent` is the default: event/task/move
 recovery runs at startup and every 15 seconds even with provider polling at zero.
 Explicit `legacy` couples background recovery to positive polling; `disabled`
 stops background recovery. Request wakeups remain active in every mode. These
-settings are not write kill switches. Recovery uses maintenance with public
+settings are not write kill switches. Recovery needs maintenance with public
 writes blocked and all API/consumer processes stopped. An older Graph reader
-can resume destructive window sweeps; an image switch is not sufficient rollback
-evidence for coverage or persisted v1 operations.
+can resume destructive window sweeps; an image switch is insufficient rollback
+evidence for coverage, persisted v1 operations or the contracted news schema.
 
-The operator confirmed on 14 October that a new GitHub tag automatically
-deploys API and Musubi/apps/web; a `latest` image change alone does not deploy.
-The publication workflow takes the full approved `expected_source_sha` alongside
-version, requires `refs/heads/main` and matching captured/checkout SHA, reruns
-Quality and updates both API/web version tags **and `latest`** before creating
-a fresh, verified non-force tag. It rejects existing tags/releases and unknown
-API results before builds and again before tag creation, including visible
-drafts from a paginated release list. The release command requires the owned
-source output, rechecks the remote tag, then makes one strict create-only POST
-with source/generated notes. Only HTTP 201 succeeds; existing-release conflicts
-are HOLD, never edit or automatic retry. See the
-[workflow audit](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.3-workflow-audit.md).
+### Current publication contract
 
-Tag creation may already start deployment before the release body succeeds.
-After a push or release-step failure, reconcile actual state with the operator;
-do not delete/recreate/force the tag or automatically rerun publication.
-Publication remains on hold for unknown deployment coordination, actual DB/
-consumer baseline, verified production backup/restore and maintenance decision.
-The GitHub workflow does not enforce Dokploy's stop-first or API→web sequence.
+The publication workflow takes the full approved `expected_source_sha` and
+version. It requires main and the matching captured/checkout SHA, and reuses the
+completed **exact trusted main-push Quality run**. The contract is **nine
+publication jobs plus proof of all 21 actual Quality jobs**; publication does not
+rerun Quality. The pinned proof is checked again immediately before the fresh
+non-force deployment tag. See the
+[current publication and read-only verification contract](https://github.com/f-tuma/musubi/blob/main/docs/releases/publication.md).
 
-The API/web pilot does not require full C07, native store distribution or new
-artwork. Native widget/layout changes still require separately signed,
-distributed artifacts and device acceptance. The eight private mobile originals
-and frozen schema-2 lock remain preserved; marketing website work is separate.
-The stable `web-app` favicon, Apple icon and OG source keys are already correct.
-Any approved new app OG is a later Vardum-only upload after the live consumer is
-verified, with the original baseline preserved. Two real artwork updates and a
-measured method comparison remain VARD-16 work. Record asset versions, checksums,
-image digest and unchanged deployment/container IDs plus `Created`/`StartedAt`
-before and after, or deployment/restart history spanning each update. An
-unchanged image digest alone does not prove no redeploy or restart.
+API/web version tags and `latest` move before the Git tag; tag creation may start
+deployment before the GitHub release body succeeds. Reconfirm the actual
+operator-controlled trigger and mutable-image consumers, and establish approved
+maintenance, backup and old-writer stop before dispatch. The workflow does not
+enforce Dokploy's stop-first or API→web sequence. After an uncertain push or
+release reply, reconcile actual state read-only; do not delete, force, recreate,
+adopt an existing tag or blindly rerun publication.
 
-## v0.2.2 — recorded 5 October 2026
+The [0.2.3 readiness record](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.3-readiness.md)
+and [workflow audit](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.3-workflow-audit.md)
+are dated historical evidence. Their partial feature scope, journal endpoint and
+older publication job counts are not the current release contract.
+
+## Historical v0.2.2 record — 5 October 2026
 
 The [v0.2.2 release](https://github.com/f-tuma/musubi/releases/tag/v0.2.2)
 is published from commit `aea392d0f6bf343794ff7eb6c056cf7d7d645690`.
@@ -135,18 +129,21 @@ revision.
 
 ## Mobile task compatibility
 
-Every task write against the 0.2.2 API needs the 0.2.2 client, including create,
-edit, completion, priority and deletion. Older clients keep task reads and
-compatible calendar/event features. Their legacy task writes return HTTP 426
-before provider preflight or local commit.
+Since 0.2.2, task writes need the mutation protocol shipped by 0.2.2 or newer
+clients, including create, edit, completion, priority and deletion. Older clients
+keep task reads and compatible calendar/event features. Legacy task-write routes
+return HTTP 426 before provider preflight or local commit, regardless of the
+version header supplied.
 
-Current clients use `/api/v1/task-mutations`. On an older API this namespace is
-absent and returns 404; clients retain the draft and never retry through a
+Current clients use `/api/v1/task-mutations`. An API predating 0.2.2 has no such
+namespace and returns 404; clients retain the draft and never retry through a
 legacy writer. Global client and federation peer minimums remain 0.2.0.
 
-Installing the mobile update requires signing in again. Credentials and local
-content are isolated by full server origin and current user; legacy ambiguous
-credentials/cache are cleared before authentication. There is no OTA update
+The 0.2.2 origin-isolation transition required signing in again: legacy ambiguous
+credentials/cache were cleared before authentication. Credentials and local
+content remain isolated by full server origin and current user. Verify the actual
+upgrade and login/restart behavior on each final signed candidate rather than
+assuming a new release always needs reauthentication. There is no OTA update
 channel: users must install the store/TestFlight build. During a distribution
 gap, use the current web client for task changes.
 
@@ -157,18 +154,22 @@ the app alone does not complete these checks.
 
 ## Database upgrade and recovery
 
-The 0.2.1 database journal ends at 0078. The new release adds 0079–0084, including
-task home/memberships, revision admission, durable delivery and fork outcomes.
-The API acquires its singleton lock before running the migrator and listening.
-Stop the previous API before replacing it and run one replica.
+Compare the actual production journal with the final candidate; a public API
+version is not journal evidence. The audited source ends at 0087. The earlier
+0.2.2 upgrade added 0079–0084 after the 0.2.1 journal ending at 0078; its task
+home/membership, revision and durable-delivery boundary remains relevant. The API
+acquires its singleton lock before running the migrator and listening. Stop the
+previous API and all old consumers before replacing them and run one replica.
 
 <Aside type="caution" title="An image-only downgrade is unsafe">
 After migration 0080, the older task writer does not maintain canonical
-memberships, revision checks or task delivery. Recovery needs a compatible
-forward fix, or the exact prior images together with a verified pre-upgrade
-database restore. Restoring the database cannot undo changes already delivered
-to a provider. Do not rewrite migration history or blindly replay uncertain
-creates.
+memberships, revision checks or task delivery. Migration 0087 also removes the
+old announcements table; persisted v1 operations and Graph read coverage impose
+additional decoder/reader requirements. Recovery needs a compatible forward fix,
+or the exact prior images together with a verified matching pre-upgrade database
+restore and stopped writers. Restoring the database cannot undo changes already
+delivered to a provider. Do not rewrite migration history or blindly replay
+uncertain creates.
 </Aside>
 
 Before an upgrade, retain a verified restore, prior image digests, the migration
@@ -176,8 +177,10 @@ journal and aggregate data/queue counts. Afterward, compare the journal and
 preservation evidence and run authenticated task/event smoke tests with an
 approved test account. Keep private data and credentials out of release records.
 
-The maintained [0.2.2 deployment and recovery runbook](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.2-deployment.md)
-contains migration details and content-free SQL aggregates. Follow
+Use the [current production runbook](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.12-readiness.md)
+for preparation and recovery. The historical
+[0.2.2 deployment record](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.2-deployment.md)
+retains that release's migration details and content-free SQL aggregates. Follow
 [self-hosting](/docs/guides/self-hosting/) for stack setup and
 [observability](/docs/operations/observability/) for queue evidence.
 
@@ -197,7 +200,8 @@ delivery separately. See [shared tasks](/docs/guides/shared-tasks/).
 
 For each release, retain:
 
-- accepted source SHA and published API/web digests;
+- accepted source SHA, exact main-push Quality proof, nine-job publication receipt
+  and published API/web digests;
 - actual running digests/revisions and the pre/post migration journal;
 - backup/restore evidence and content-free preservation/queue counts;
 - existing capability decisions, without secret configuration values;

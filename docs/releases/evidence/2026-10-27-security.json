@@ -1,0 +1,118 @@
+{
+  "observedAt": "2026-10-27T11:50:35.338Z",
+  "sourceHead": "3573a1e8204d111e39725e76665800811f0f4737",
+  "lockSha256": "53d9ba813121f0ff8431d98d2e4b117b3d738348252e909bc96c3f87c56388dd",
+  "lockUnchanged": true,
+  "method": "Official npm Bulk Advisory endpoint, HTTP200,20sec abort, all public lockfile versions; conservative dependency+optional roots without dev roots and with peer/optional expansions.",
+  "inventoryCounts": {
+    "packageNames": 1696,
+    "packageVersions": 1947,
+    "closures": {
+      "api": {
+        "packageVersions": 923,
+        "visitedNodes": 935
+      },
+      "web": {
+        "packageVersions": 923,
+        "visitedNodes": 995
+      },
+      "mobile": {
+        "packageVersions": 888,
+        "visitedNodes": 892
+      }
+    }
+  },
+  "allLockAdvisoryRecords": {
+    "high": 30,
+    "critical": 7,
+    "moderate": 33,
+    "low": 13
+  },
+  "scopeLimits": [
+    "83 records include dev/build tooling and multiple packages per advisory; not unique vulnerability or runtime exploitable count.",
+    "No built/published API image, Nitro final artifact dependency SBOM, Android/iOS binary, OS package or Node bundled dependency scan.",
+    "No exploit requests, no production mutation, no dependency update.",
+    "Peer expansion may overinclude Expo/TanStack/Vitest via BetterAuth/Drizzle for API and mobile.",
+    "Additional conservative production-closure high/critical matches remain untriaged; public summary names are inventory, not exposure proof."
+  ],
+  "primaryCorroboratedReview": [
+    {
+      "package": "body-parser",
+      "locked": "2.3.0",
+      "severity": "high",
+      "advisory": "GHSA-27r3-jxmh-p828",
+      "url": "https://github.com/advisories/GHSA-27r3-jxmh-p828",
+      "affected": ">=2.0.0 <2.4.0",
+      "fixed": "2.4.0",
+      "reachability": "Confirmed source uses vulnerable default inflation path: apps/api/src/index.ts:219 express.json({limit:\"512kb\"}) applies before auth at222; neither inflate:false nor a compressed-body rejection is configured there. API -> express5.2.1 -> body-parser2.3.0. No exploit traffic or crash reproduction sent to production.",
+      "decision": "Release HOLD: patch or verify documented inflate:false mitigation before production."
+    },
+    {
+      "package": "@tanstack/react-start / @tanstack/start-server-core",
+      "locked": "1.168.32 / 1.169.17",
+      "severity": "critical",
+      "advisory": "GHSA-qx66-fv34-fjm8",
+      "url": "https://github.com/advisories/GHSA-qx66-fv34-fjm8",
+      "affected": ">=1.143.12 <1.168.60 / >=1.143.12 <1.169.39",
+      "fixed": "1.168.60 / 1.169.39",
+      "reachability": "Web direct dependency apps/web/package.json:34, framework enabled apps/web/vite.config.ts:19, server runtime output apps/web/Dockerfile:22-46; same-origin /_serverFn/* forwarded at ops/gateway/Caddyfile:77. No createServerFn/createServerOnlyFn declarations found under apps/web/src; local generated output has an empty server-function manifest. Attack response execution therefore NOT established for this app or deployed artifact. API/mobile inventory matches via peer expansion are not runtime claims.",
+      "decision": "Release HOLD pending fixed dependency build or explicit version-bound non-reachability proof for final artifact."
+    },
+    {
+      "package": "proxy-addr",
+      "locked": "2.0.7",
+      "severity": "critical",
+      "advisory": "GHSA-jqcg-44mw-7w3h",
+      "url": "https://github.com/advisories/GHSA-jqcg-44mw-7w3h",
+      "affected": ">=1.1.0 <2.0.8",
+      "fixed": "2.0.8",
+      "reachability": "API -> express5.2.1 -> proxy-addr2.0.7. Vulnerability requires bad IPv4-mapped IPv6 / zero-leading-bit trust subnet. apps/api/src/middleware/proxy.ts:5 configures only loopback/linklocal/uniquelocal built-ins; specific dangerous configuration not observed.",
+      "decision": "Real locked advisory match; conditional exploitability not demonstrated. Patch or document configuration evidence."
+    },
+    {
+      "package": "nodemailer",
+      "locked": "9.1.1",
+      "severity": "high",
+      "advisory": "GHSA-v53p-9fqp-m79j / GHSA-prgh-xp8r-p3m5",
+      "url": "https://github.com/advisories/GHSA-v53p-9fqp-m79j",
+      "additionalUrl": "https://github.com/advisories/GHSA-prgh-xp8r-p3m5",
+      "affected": "<=10.0.5 / >=9.1.0 <=10.0.4",
+      "fixed": "10.0.6 (covers both)",
+      "reachability": "Server runtime sendMail receives to at packages/emails/src/index.ts:51-64; caller apps/api/src/handlers/invites.ts:60 parses SendInviteSchema before sendEmail:77. Crafted address passing application validation has not been established; no inbound mailparser flow found in this bounded audit.",
+      "decision": "Production runtime package match, further input reachability review required."
+    },
+    {
+      "package": "undici",
+      "locked": "7.29.0",
+      "severity": "high",
+      "advisory": "GHSA-xjj6-f33q-929c",
+      "url": "https://github.com/advisories/GHSA-xjj6-f33q-929c",
+      "affected": ">=7.18.0 <7.30.1",
+      "fixed": "7.30.1",
+      "reachability": "packages/provider-caldav/src/network.ts:2 imports npm undici.Agent, while API leaf apps/api/src/sync/caldav_client.ts:23 invokes globalThis.fetch (Node bundled implementation). Exact affected npm fetch path not established; shipped Node bundled undici version not attested. Other matched WebSocket/BalancedPool advisories require APIs not found in production source.",
+      "decision": "Do not equate npm7.29.0 version match with Node bundled fetch exploitability; review base image/runtime separately."
+    },
+    {
+      "package": "zod",
+      "locked": "4.4.3 (direct API/Web), 3.25.76 (conservative peer/tool paths)",
+      "severity": "high",
+      "advisory": "GHSA-mrhx-c7xc-m3w5",
+      "url": "https://github.com/advisories/GHSA-mrhx-c7xc-m3w5",
+      "affected": "<4.6.6",
+      "fixed": "4.6.6",
+      "reachability": "Primary advisory describes array validation issue accumulation on large failing arrays without length caps. Shared request/provider schemas contain arrays (for example packages/types/src/task.ts:24), while API express.json has512kb body limit at index.ts219 and many other arrays already have explicit max. Complete input amplification/route review or reproduction not performed.",
+      "decision": "Direct production package version match; bounded audit does not establish exploitable memory exhaustion."
+    }
+  ],
+  "decision": "HOLD. At least body-parser default parser path requires a fix or verified vendor workaround. No clean-security attestation.",
+  "otherConservativeClosureCriticalHighInventoryNames": [
+    "brace-expansion",
+    "compression",
+    "nanoid",
+    "node-forge",
+    "shell-quote",
+    "source-map-js",
+    "vite",
+    "zod"
+  ]
+}
