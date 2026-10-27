@@ -1,10 +1,28 @@
 # Releasing
 
-Current published release: **0.2.2**. Use the
-[release status and upgrade boundary](https://musubi.pro/docs/operations/releases/)
-and [capability matrix](https://musubi.pro/docs/operations/capabilities/) for
-current publication, provider limits and unverified live/device checks. Historical
-Core activation records preserve earlier decisions and do not authorize new gates.
+Current published release: **[0.2.11](https://github.com/f-tuma/musubi/releases/tag/v0.2.11)**
+(16 October 2026). The 27 October assessment is **HOLD for a complete server,
+web, Android and iOS release**. **0.2.12 is a proposal, not a reserved version**;
+product metadata still says 0.2.11. See the
+[current readiness assessment and operator runbook](releases/0.2.12-readiness.md),
+[release status](https://musubi.pro/docs/operations/releases/) and
+[capability matrix](https://musubi.pro/docs/operations/capabilities/).
+
+The audited source is main `3573a1e8204d111e39725e76665800811f0f4737`:
+[Quality 816](https://github.com/f-tuma/musubi/actions/runs/40489926411)
+passed all 21 jobs and
+[iOS 23](https://github.com/f-tuma/musubi/actions/runs/40489926576) passed.
+These are source checks, not publication or deployment. The final version-bumped
+candidate needs its own exact-source checks. Dependency security, Android App
+Links, the public worker's four-hour cache response, production inventory and
+verified restore, and signed/distributed mobile acceptance remain release
+conditions. Historical Core activation records do not authorize new gates.
+
+The [current publication contract](releases/publication.md) is nine publication
+jobs plus evidence of all 21 jobs from the exact trusted main-push Quality run;
+publication does not rerun Quality. Version and `latest` image pointers move
+before the deployment tag, so establish the approved maintenance and old-writer
+stop before dispatch. The workflow does not enforce the deployment sequence.
 
 Three things ship on their own clock — the API, the web app, and a phone build
 — and they have to keep talking to each other across the gaps. This is what
@@ -22,18 +40,18 @@ The API and the web app, by contrast, are a redeploy away.
 So the rule is not "keep the clients current". It is **the server keeps working
 for clients it can no longer change**.
 
-## Explicit event-time activation
+## Historical 0.2.0 explicit event-time activation
 
 The owner approved explicit event-time editing, supported organizer operations,
 provider RSVP and iCloud personal content writes for the coordinated **0.2.0**
 release on 2026-09-14. The unpublished 0.1.8 candidate is superseded; no
 intermediate 0.1.8 tag is planned. iCloud attendee RSVP remains deferred.
 
-Production startup requires product/client/peer compatibility at **0.2.0 or
-newer**, with the product satisfying both enforced minimums. Older writers can
-lose explicit time metadata when copying events. Replace preliminary 0.1.8
-clients with final 0.2.0 builds and coordinate the server, web, native and
-connected peer rollout described below.
+That rollout required product/client/peer compatibility at **0.2.0 or newer**,
+with the product satisfying both enforced minimums. Older writers can lose
+explicit time metadata when copying events. Replacing preliminary 0.1.8 clients
+and coordinating the server, web, native and connected peers belonged to that
+activation; this record is not a new rollout instruction.
 
 Flags remain off by default. The selected activation values, supported provider
 scope and outstanding live/device checks are recorded in
@@ -51,8 +69,9 @@ compatibility breaks need their own coordinated rollout, as recorded below:
 
 1. **API first.** Add fields, endpoints and accepted values while retaining
    released clients' contracts. Document any deliberate refusal before rollout.
-2. **Web next.** It is always served fresh, so it can use whatever the API just
-   grew. It never runs ahead of the API.
+2. **Web next.** Serve the compatible new bundle after the API, and verify
+   effective HTML/asset/worker cache behavior. Existing tabs retain their old
+   JavaScript until reload. The web never runs ahead of the API.
 3. **Phone last**, and it may sit in review for a week. By the time it lands,
    everything it needs has been live for days.
 
@@ -60,31 +79,37 @@ Going the other way — a client that needs an endpoint the server has not
 deployed — needs a feature flag or a capability check, not a careful eye on the
 deploy order.
 
-## 0.2.2 task protocol boundary
+## Task protocol boundary introduced in 0.2.2
 
 The [0.2.2 release runbook](releases/0.2.2.md) records an exception to additive
 rollout: released 0.2.0/0.2.1 task write routes receive 426 before saving. Reads
-and compatible event/calendar functions remain available, but every native task
-write needs a 0.2.2 store build. Keep both global compatibility floors at 0.2.0;
-do not turn this task-specific boundary into a whole-app lockout.
+and compatible event/calendar functions remain available. Native task writes
+need the mutation protocol shipped in 0.2.2 or newer. Keep both global
+compatibility floors at 0.2.0; do not turn this task-specific boundary into a
+whole-app lockout.
 
 API → web → native distribution remains the order, but deploying API before the
 store build accepts a temporary native task-write gap. Stop the old API before
 starting the new one. The shared-task migration and old provider writers make
 an image-only rollback unsafe; keep a verified preupgrade database backup and
-follow [deployment and recovery](releases/0.2.2-deployment.md). A release tag is
-Dokploy's deployment signal, so prepare backup and maintenance before publication.
+retain [0.2.2 deployment and recovery](releases/0.2.2-deployment.md) as the
+historical migration record. Follow the
+[current runbook](releases/0.2.12-readiness.md) for the additional sync/news schema
+and recovery boundaries. A release tag was the operator-reported Dokploy signal;
+reconfirm the actual trigger and mutable-image consumers before publication.
 
 ## Current compatibility contract (introduced by K06 / 0.2.0)
 
-The coordinated release is **0.2.0**. The former 0.1.8 development version was
-not published; historical QA records do not represent a released artifact.
+The coordinated **0.2.0** release introduced this contract. The former 0.1.8
+development version was not published; historical QA records do not represent a
+released artifact.
 
 The owner approved raising **both client and federation peer floors to 0.2.0**.
 That coordinated break superseded the normal additive API→web→phone order.
-The published 0.2.2 server retains these floors; its observed public health
-reports minimum client 0.2.0. This describes the current contract, not a pending
-instruction to repeat the historical rollout. Connected peers and installed
+The current source and the 27 October public 0.2.11 server observation retain
+minimum client 0.2.0; the source peer floor is also 0.2.0. This describes the
+current contract, not a pending instruction to repeat the historical rollout.
+Connected peers and installed
 device versions still need their own compatibility evidence.
 
 All authenticated product API reads and writes require
@@ -231,10 +256,10 @@ reads the peer's `/api/v1/server` first and refuses below it **by name** — "th
 server runs Musubi 0.0.9" — instead of letting the handshake fail with
 "that server rejected the invite", which explains nothing.
 
-It refuses on nothing else. A peer that names no version, answers with an
-error, or cannot be reached is allowed through: the handshake that follows is
-the real test, and turning every unfamiliar server into a dead end would cost
-more than it saves.
+Missing, malformed, unreachable or otherwise unverifiable peer versions fail
+closed: they do not establish compatibility for product requests or streams.
+Established connections are checked too. Existing connections and cached records
+are retained when verification fails; the check does not silently delete them.
 
 The Connections dialog shows what each connected server is running, read live
 through the gateway — no new route, no credential in the browser. A version
@@ -277,15 +302,15 @@ separate from merging this source and feed format.
 back the schema**. A release that drops a column cannot be undone by redeploying
 the previous one.
 
-Split every destructive change across two releases:
+Normally split a destructive change across two releases:
 
 - **Expand** — add the nullable column, backfill it, write to both. Ships with
   code that tolerates either shape.
 - **Contract** — drop the old column. Ships only once the expand release has
   been live long enough that you will not roll back past it.
 
-Never ship the drop in the same release as the code that stops using the
-column. `0049_drop_show_kanji` did exactly that and got away with it only
-because nothing anywhere read the column — it is the exception, not the model.
-
-## Things still worth doing
+The default is to separate reader removal from the drop. Historical
+`0049_drop_show_kanji` had no remaining reader. The deliberate
+`0087_project_news` table removal has its own stop-first and matching-database
+recovery boundary above and in the current runbook; neither exception makes an
+image-only downgrade safe.
