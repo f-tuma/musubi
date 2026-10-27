@@ -6,7 +6,7 @@
   android:minResizeHeight="@dimen/musubi_widget_min_list_height"
   android:minResizeWidth="@dimen/musubi_widget_min_list_width"
   android:minWidth="@dimen/musubi_widget_min_list_width"
-  android:previewLayout="@layout/musubi_agenda_widget_v4"
+  android:previewLayout="@layout/musubi_tasks_widget_preview"
   android:resizeMode="horizontal|vertical"
   android:targetCellHeight="2"
   android:targetCellWidth="3"
