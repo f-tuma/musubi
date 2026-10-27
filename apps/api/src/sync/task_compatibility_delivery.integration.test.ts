@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { setTimeout as pause } from "node:timers/promises";
 import { mock } from "node:test";
 import { Client, Pool, type PoolClient } from "pg";
+import { dropOwnedTestDatabase } from "./owned_database_fixture_cleanup";
 import { and, eq } from "drizzle-orm";
 import { TaskSchema, SyncOperationEnvelopeSchema, type Task } from "@musubi/types";
 import type { CalendarAdapter } from "./adapter";
@@ -581,9 +582,7 @@ async function main() {
     try {
       await Promise.all([...pools].map(pool => pool.end()));
       if (databaseCreated) {
-        const sessions = await admin.query("SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=$1", [databaseName]);
-        assert.equal(sessions.rows[0].count, 0, "Close all owned database sessions before nonce DB removal");
-        await admin.query(`DROP DATABASE "${databaseName}"`);
+        console.log(JSON.stringify({ cleanup: await dropOwnedTestDatabase(admin, databaseName, "task_compat_") }));
         console.log(`Task compatibility cleanup: ${pools.size} owned pools closed, zero sessions, nonce DB dropped without FORCE: PASS`);
       }
     } finally { connect.mock.restore(); await admin.end(); if (oldPath) await unlink(oldPath); }

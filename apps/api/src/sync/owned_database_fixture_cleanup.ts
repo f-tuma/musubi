@@ -4,9 +4,11 @@ import type { Pool } from "pg";
 
 // Test support only: no production store or scheduling behavior lives here.
 export type ClosingSession = { pid: number; application_name: string; state: string; wait_event_type: string | null };
-export async function dropOwnedTestDatabase(admin: Pool, name: string, ownedPrefix: "c09budget_" | "event_compat_",
+const OWNED_TEST_DATABASE_PREFIXES = ["c09budget_", "event_compat_", "task_compat_", "task_causal_",
+  "google_task_update_", "google_task_delete_", "google_task_create_", "task_ack_delivery_"] as const;
+export async function dropOwnedTestDatabase(admin: Pool, name: string, ownedPrefix: (typeof OWNED_TEST_DATABASE_PREFIXES)[number],
   options: { timeoutMs?: number; onObservation?: (sessions: ClosingSession[]) => void } = {}) {
-  assert.ok(["c09budget_", "event_compat_"].includes(ownedPrefix), "Only registered fixture prefixes may be dropped");
+  assert.ok(OWNED_TEST_DATABASE_PREFIXES.includes(ownedPrefix), "Only registered fixture prefixes may be dropped");
   const timeoutMs = options.timeoutMs ?? 2_000;
   assert.ok(Number.isFinite(timeoutMs) && timeoutMs > 0 && timeoutMs <= 10_000);
   assert.match(name, new RegExp(`^${ownedPrefix}[a-f0-9]{32}$`), "Cleanup only owns its unpredictable fixture database");

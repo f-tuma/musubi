@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
 import { Client, Pool } from "pg";
+import { dropOwnedTestDatabase } from "./owned_database_fixture_cleanup";
 import { mock } from "node:test";
 import { setTimeout as pause } from "node:timers/promises";
 import { eq } from "drizzle-orm";
@@ -364,9 +365,7 @@ async function main() {
     timer.mock.restore(); globalThis.fetch = originalFetch; await new Promise<void>(resolve => server.close(() => resolve()));
     try {
       await Promise.all([...pools].map(pool => pool.end()));
-      const sessions = await admin.query("SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=$1", [name]);
-      assert.equal(sessions.rows[0].count, 0, "Every owned pool must close before nonce DB removal");
-      await admin.query(`DROP DATABASE "${name}"`);
+      console.log(JSON.stringify({ cleanup: await dropOwnedTestDatabase(admin, name, "google_task_create_") }));
       console.log(`Google task CREATE cleanup: ${pools.size} owned pools closed, zero sessions, nonce DB dropped without FORCE: PASS`);
     } finally { connect.mock.restore(); await admin.end(); }
   }
