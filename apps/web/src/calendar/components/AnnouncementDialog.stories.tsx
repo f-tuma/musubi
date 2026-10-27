@@ -38,7 +38,7 @@ const meta = {
   parameters: {
     layout: "fullscreen",
   },
-  title: "Calendar/Announcement dialog",
+  title: "Calendar/News and updates",
 } satisfies Meta<typeof AnnouncementDialogView>;
 
 export default meta;
@@ -55,9 +55,10 @@ export const SingleAnnouncement: Story = {
   },
   play: async () => {
     const dialog = await screen.findByRole("dialog", {
-      name: "Tasks across your accounts",
+      name: "News and updates",
     });
     await waitFor(() => expect(dialog).toBeVisible());
+    within(dialog).getByRole("heading", { name: "Tasks across your accounts", level: 3 });
     within(dialog).getByText(
       "Google Tasks, Microsoft To Do, and CalDAV tasks now stay together with your calendars.",
     );
@@ -74,7 +75,7 @@ export const MultipleAnnouncements: Story = {
     },
   },
   play: async () => {
-    const dialog = await screen.findByRole("dialog", { name: "What's new" });
+    const dialog = await screen.findByRole("dialog", { name: "News and updates" });
     await waitFor(() => expect(dialog).toBeVisible());
     const scoped = within(dialog);
     scoped.getByText("Faster recurring events");

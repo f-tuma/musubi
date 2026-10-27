@@ -1,0 +1,1708 @@
+{
+  "schemaVersion": 1,
+  "suite": "project-news",
+  "driver": "project-news",
+  "scenarios": [
+    {
+      "id": "first-baseline",
+      "title": "First successful read baselines the namespace without showing historical news",
+      "settings": {},
+      "initialize": [
+        {
+          "initialized": true,
+          "settings": {
+            "lastSeenProjectNews": "2026-10-02"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": [
+              {
+                "id": "2026-10-01",
+                "title": "First update",
+                "body": "A concise product update."
+              },
+              {
+                "id": "2026-10-02",
+                "title": "Second update",
+                "body": "Another update for every server."
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "handle"
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [
+          {
+            "userId": "news-reader",
+            "marker": "2026-10-02"
+          }
+        ],
+        "outputs": [
+          {
+            "command": "handle",
+            "responses": [
+              {
+                "status": 200,
+                "body": {
+                  "announcements": [],
+                  "isAdmin": false,
+                  "markTo": "2026-10-02"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "empty-baseline",
+      "title": "An empty validated feed initializes the sentinel for later news",
+      "settings": {},
+      "initialize": [
+        {
+          "initialized": true,
+          "settings": {
+            "lastSeenProjectNews": "0000-00-00"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": []
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "handle"
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [
+          {
+            "userId": "news-reader",
+            "marker": "0000-00-00"
+          }
+        ],
+        "outputs": [
+          {
+            "command": "handle",
+            "responses": [
+              {
+                "status": 200,
+                "body": {
+                  "announcements": [],
+                  "isAdmin": false,
+                  "markTo": "0000-00-00"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "old-future-marker-ignored",
+      "title": "An old future-dated local marker cannot suppress the project baseline",
+      "settings": {
+        "lastSeenAnnouncement": "2099-12-31-9"
+      },
+      "initialize": [
+        {
+          "initialized": true,
+          "settings": {
+            "lastSeenProjectNews": "2026-10-02"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": [
+              {
+                "id": "2026-10-01",
+                "title": "First update",
+                "body": "A concise product update."
+              },
+              {
+                "id": "2026-10-02",
+                "title": "Second update",
+                "body": "Another update for every server."
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "handle"
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [
+          {
+            "userId": "news-reader",
+            "marker": "2026-10-02"
+          }
+        ],
+        "outputs": [
+          {
+            "command": "handle",
+            "responses": [
+              {
+                "status": 200,
+                "body": {
+                  "announcements": [],
+                  "isAdmin": false,
+                  "markTo": "2026-10-02"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "seen-filter-no-admin",
+      "title": "An established namespace returns only unseen items and never admin authority",
+      "settings": {
+        "lastSeenAnnouncement": "2099-12-31",
+        "lastSeenProjectNews": "2026-10-01"
+      },
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": [
+              {
+                "id": "2026-10-01",
+                "title": "First update",
+                "body": "A concise product update."
+              },
+              {
+                "id": "2026-10-02",
+                "title": "Second update",
+                "body": "Another update for every server."
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "handle"
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "handle",
+            "responses": [
+              {
+                "status": 200,
+                "body": {
+                  "announcements": [
+                    {
+                      "id": "2026-10-02",
+                      "title": "Second update",
+                      "body": "Another update for every server.",
+                      "minVersion": null
+                    }
+                  ],
+                  "isAdmin": false
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "concurrent-initializer-loser",
+      "title": "Concurrent first reads use the winning stored namespace rather than overwriting it",
+      "settings": {},
+      "initialize": [
+        {
+          "initialized": true,
+          "settings": {
+            "lastSeenProjectNews": "2026-10-02"
+          }
+        },
+        {
+          "initialized": false,
+          "settings": {
+            "lastSeenProjectNews": "2026-10-01"
+          }
+        }
+      ],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": [
+              {
+                "id": "2026-10-01",
+                "title": "First update",
+                "body": "A concise product update."
+              },
+              {
+                "id": "2026-10-02",
+                "title": "Second update",
+                "body": "Another update for every server."
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "handle",
+          "count": 2
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 2,
+        "initializations": [
+          {
+            "userId": "news-reader",
+            "marker": "2026-10-02"
+          },
+          {
+            "userId": "news-reader",
+            "marker": "2026-10-02"
+          }
+        ],
+        "outputs": [
+          {
+            "command": "handle",
+            "responses": [
+              {
+                "status": 200,
+                "body": {
+                  "announcements": [],
+                  "isAdmin": false,
+                  "markTo": "2026-10-02"
+                }
+              },
+              {
+                "status": 200,
+                "body": {
+                  "announcements": [
+                    {
+                      "id": "2026-10-02",
+                      "title": "Second update",
+                      "body": "Another update for every server.",
+                      "minVersion": null
+                    }
+                  ],
+                  "isAdmin": false
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "cache-fresh-singleflight",
+      "title": "Concurrent cold reads share one request and fresh reads reuse validated cached items",
+      "settings": {},
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": [
+              {
+                "id": "2026-10-01",
+                "title": "First update",
+                "body": "A concise product update."
+              },
+              {
+                "id": "2026-10-02",
+                "title": "Second update",
+                "body": "Another update for every server."
+              }
+            ]
+          },
+          "expectEtag": null
+        }
+      ],
+      "steps": [
+        {
+          "command": "read",
+          "count": 3
+        },
+        {
+          "command": "advance",
+          "durationMs": 899999
+        },
+        {
+          "command": "read",
+          "count": 2
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 0,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "read",
+            "results": [
+              {
+                "ids": [
+                  "2026-10-02",
+                  "2026-10-01"
+                ]
+              },
+              {
+                "ids": [
+                  "2026-10-02",
+                  "2026-10-01"
+                ]
+              },
+              {
+                "ids": [
+                  "2026-10-02",
+                  "2026-10-01"
+                ]
+              }
+            ]
+          },
+          {
+            "command": "read",
+            "results": [
+              {
+                "ids": [
+                  "2026-10-02",
+                  "2026-10-01"
+                ]
+              },
+              {
+                "ids": [
+                  "2026-10-02",
+                  "2026-10-01"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "cache-etag-not-modified",
+      "title": "An expired cache sends its ETag and a 304 retains data for another full TTL",
+      "settings": {},
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": [
+              {
+                "id": "2026-10-01",
+                "title": "First update",
+                "body": "A concise product update."
+              },
+              {
+                "id": "2026-10-02",
+                "title": "Second update",
+                "body": "Another update for every server."
+              }
+            ]
+          },
+          "headers": {
+            "etag": "\"news-v1\""
+          },
+          "expectEtag": null
+        },
+        {
+          "kind": "json",
+          "status": 304,
+          "expectEtag": "\"news-v1\""
+        }
+      ],
+      "steps": [
+        {
+          "command": "read"
+        },
+        {
+          "command": "advance",
+          "durationMs": 900000
+        },
+        {
+          "command": "read"
+        },
+        {
+          "command": "advance",
+          "durationMs": 899999
+        },
+        {
+          "command": "read"
+        }
+      ],
+      "expected": {
+        "fetches": 2,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 0,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "read",
+            "results": [
+              {
+                "ids": [
+                  "2026-10-02",
+                  "2026-10-01"
+                ]
+              }
+            ]
+          },
+          {
+            "command": "read",
+            "results": [
+              {
+                "ids": [
+                  "2026-10-02",
+                  "2026-10-01"
+                ]
+              }
+            ]
+          },
+          {
+            "command": "read",
+            "results": [
+              {
+                "ids": [
+                  "2026-10-02",
+                  "2026-10-01"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "malformed-json",
+      "title": "Malformed JSON cannot initialize an account",
+      "settings": {},
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "text",
+          "body": "{"
+        }
+      ],
+      "steps": [
+        {
+          "command": "handle"
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "handle",
+            "responses": [
+              {
+                "status": 503,
+                "body": {
+                  "error": "NewsUnavailable",
+                  "message": "News and updates are temporarily unavailable."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "duplicate-news-id",
+      "title": "Duplicate IDs invalidate the complete feed",
+      "settings": {},
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": [
+              {
+                "id": "2026-10-01",
+                "title": "First update",
+                "body": "A concise product update."
+              },
+              {
+                "id": "2026-10-01",
+                "title": "First update",
+                "body": "A concise product update."
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "handle"
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "handle",
+            "responses": [
+              {
+                "status": 503,
+                "body": {
+                  "error": "NewsUnavailable",
+                  "message": "News and updates are temporarily unavailable."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "wrong-schema-version",
+      "title": "An unsupported schema version cannot initialize an account",
+      "settings": {},
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 2,
+            "items": [
+              {
+                "id": "2026-10-01",
+                "title": "First update",
+                "body": "A concise product update."
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "handle"
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "handle",
+            "responses": [
+              {
+                "status": 503,
+                "body": {
+                  "error": "NewsUnavailable",
+                  "message": "News and updates are temporarily unavailable."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "version-gating-rejected",
+      "title": "Version restrictions cannot enter the shared informational feed",
+      "settings": {},
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": [
+              {
+                "id": "2026-10-01",
+                "title": "First update",
+                "body": "A concise product update.",
+                "minVersion": "0.2.12"
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "handle"
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "handle",
+            "responses": [
+              {
+                "status": 503,
+                "body": {
+                  "error": "NewsUnavailable",
+                  "message": "News and updates are temporarily unavailable."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "null-version-gating-rejected",
+      "title": "Even a null legacy gating field is rejected by the strict source schema",
+      "settings": {},
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": [
+              {
+                "id": "2026-10-01",
+                "title": "First update",
+                "body": "A concise product update.",
+                "minVersion": null
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "handle"
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "handle",
+            "responses": [
+              {
+                "status": 503,
+                "body": {
+                  "error": "NewsUnavailable",
+                  "message": "News and updates are temporarily unavailable."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "overflow-content-length",
+      "title": "An excessive declared response size is canceled before parsing",
+      "settings": {},
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "stream",
+          "chunks": [
+            1
+          ],
+          "headers": {
+            "content-length": "131073"
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "handle"
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 1,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "handle",
+            "responses": [
+              {
+                "status": 503,
+                "body": {
+                  "error": "NewsUnavailable",
+                  "message": "News and updates are temporarily unavailable."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "overflow-stream",
+      "title": "Streamed bytes exceeding the bound are canceled without trusting content length",
+      "settings": {},
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "stream",
+          "chunks": [
+            65536,
+            65537
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "command": "handle"
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 1,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "handle",
+            "responses": [
+              {
+                "status": 503,
+                "body": {
+                  "error": "NewsUnavailable",
+                  "message": "News and updates are temporarily unavailable."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "fetch-error-cold",
+      "title": "A failed cold fetch returns 503 and never initializes read state",
+      "settings": {},
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "error"
+        }
+      ],
+      "steps": [
+        {
+          "command": "handle"
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "handle",
+            "responses": [
+              {
+                "status": 503,
+                "body": {
+                  "error": "NewsUnavailable",
+                  "message": "News and updates are temporarily unavailable."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "cold-not-modified",
+      "title": "A cold 304 cannot fabricate an empty valid feed",
+      "settings": {},
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "json",
+          "status": 304
+        }
+      ],
+      "steps": [
+        {
+          "command": "handle"
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "handle",
+            "responses": [
+              {
+                "status": 503,
+                "body": {
+                  "error": "NewsUnavailable",
+                  "message": "News and updates are temporarily unavailable."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "timeout-aborts-cold",
+      "title": "The actual production timeout aborts the fetch and leaves the namespace uninitialized",
+      "settings": {},
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "abort"
+        }
+      ],
+      "steps": [
+        {
+          "command": "handle"
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 1,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "handle",
+            "responses": [
+              {
+                "status": 503,
+                "body": {
+                  "error": "NewsUnavailable",
+                  "message": "News and updates are temporarily unavailable."
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "timeoutMs": 5
+    },
+    {
+      "id": "cold-failure-backoff",
+      "title": "A cold failure backs off instead of immediately requesting or initializing again",
+      "settings": {},
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "error"
+        }
+      ],
+      "steps": [
+        {
+          "command": "handle"
+        },
+        {
+          "command": "handle"
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 2,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "handle",
+            "responses": [
+              {
+                "status": 503,
+                "body": {
+                  "error": "NewsUnavailable",
+                  "message": "News and updates are temporarily unavailable."
+                }
+              }
+            ]
+          },
+          {
+            "command": "handle",
+            "responses": [
+              {
+                "status": 503,
+                "body": {
+                  "error": "NewsUnavailable",
+                  "message": "News and updates are temporarily unavailable."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "warm-malformed-fallback",
+      "title": "A malformed refresh preserves validated news and suppresses immediate replay",
+      "settings": {},
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": [
+              {
+                "id": "2026-10-01",
+                "title": "First update",
+                "body": "A concise product update."
+              },
+              {
+                "id": "2026-10-02",
+                "title": "Second update",
+                "body": "Another update for every server."
+              }
+            ]
+          }
+        },
+        {
+          "kind": "text",
+          "body": "{"
+        }
+      ],
+      "steps": [
+        {
+          "command": "read"
+        },
+        {
+          "command": "advance",
+          "durationMs": 900000
+        },
+        {
+          "command": "read"
+        },
+        {
+          "command": "read"
+        }
+      ],
+      "expected": {
+        "fetches": 2,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 0,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "read",
+            "results": [
+              {
+                "ids": [
+                  "2026-10-02",
+                  "2026-10-01"
+                ]
+              }
+            ]
+          },
+          {
+            "command": "read",
+            "results": [
+              {
+                "ids": [
+                  "2026-10-02",
+                  "2026-10-01"
+                ]
+              }
+            ]
+          },
+          {
+            "command": "read",
+            "results": [
+              {
+                "ids": [
+                  "2026-10-02",
+                  "2026-10-01"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "warm-429-retry-after",
+      "title": "Rate limiting retains cached news and waits for the declared Retry-After before retrying",
+      "settings": {},
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": [
+              {
+                "id": "2026-10-01",
+                "title": "First update",
+                "body": "A concise product update."
+              },
+              {
+                "id": "2026-10-02",
+                "title": "Second update",
+                "body": "Another update for every server."
+              }
+            ]
+          }
+        },
+        {
+          "kind": "json",
+          "status": 429,
+          "headers": {
+            "retry-after": "120"
+          },
+          "body": {
+            "error": "rate-limited"
+          }
+        },
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": []
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "read"
+        },
+        {
+          "command": "advance",
+          "durationMs": 900000
+        },
+        {
+          "command": "read"
+        },
+        {
+          "command": "read"
+        },
+        {
+          "command": "advance",
+          "durationMs": 119999
+        },
+        {
+          "command": "read"
+        },
+        {
+          "command": "advance",
+          "durationMs": 1
+        },
+        {
+          "command": "read"
+        }
+      ],
+      "expected": {
+        "fetches": 3,
+        "aborted": 0,
+        "cancellations": 1,
+        "settingsReads": 0,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "read",
+            "results": [
+              {
+                "ids": [
+                  "2026-10-02",
+                  "2026-10-01"
+                ]
+              }
+            ]
+          },
+          {
+            "command": "read",
+            "results": [
+              {
+                "ids": [
+                  "2026-10-02",
+                  "2026-10-01"
+                ]
+              }
+            ]
+          },
+          {
+            "command": "read",
+            "results": [
+              {
+                "ids": [
+                  "2026-10-02",
+                  "2026-10-01"
+                ]
+              }
+            ]
+          },
+          {
+            "command": "read",
+            "results": [
+              {
+                "ids": [
+                  "2026-10-02",
+                  "2026-10-01"
+                ]
+              }
+            ]
+          },
+          {
+            "command": "read",
+            "results": [
+              {
+                "ids": []
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "legacy-known-marker-bridge",
+      "title": "An old client may mark an actual shared item after namespace initialization",
+      "settings": {
+        "lastSeenProjectNews": "2026-10-01"
+      },
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": [
+              {
+                "id": "2026-10-01",
+                "title": "First update",
+                "body": "A concise product update."
+              },
+              {
+                "id": "2026-10-02",
+                "title": "Second update",
+                "body": "Another update for every server."
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "bridge",
+          "values": {
+            "lastSeenAnnouncement": "2026-10-02"
+          }
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "bridge",
+            "values": {
+              "lastSeenAnnouncement": "2026-10-02",
+              "lastSeenProjectNews": "2026-10-02"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "legacy-unknown-local-id",
+      "title": "An unknown local admin marker never enters an established shared namespace",
+      "settings": {
+        "lastSeenProjectNews": "2026-10-01"
+      },
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": [
+              {
+                "id": "2026-10-01",
+                "title": "First update",
+                "body": "A concise product update."
+              },
+              {
+                "id": "2026-10-02",
+                "title": "Second update",
+                "body": "Another update for every server."
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "bridge",
+          "values": {
+            "lastSeenAnnouncement": "2099-12-31"
+          }
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "bridge",
+            "values": {
+              "lastSeenAnnouncement": "2099-12-31"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "new-marker-preferred",
+      "title": "An explicit marker takes priority over legacy data after shared-feed validation",
+      "settings": {
+        "lastSeenProjectNews": "2026-10-01"
+      },
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": [
+              {
+                "id": "2026-10-01",
+                "title": "First update",
+                "body": "A concise product update."
+              },
+              {
+                "id": "2026-10-02",
+                "title": "Second update",
+                "body": "Another update for every server."
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "bridge",
+          "values": {
+            "lastSeenAnnouncement": "2026-10-02",
+            "lastSeenProjectNews": "2026-10-01",
+            "theme": "dark"
+          }
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "bridge",
+            "values": {
+              "lastSeenAnnouncement": "2026-10-02",
+              "lastSeenProjectNews": "2026-10-01",
+              "theme": "dark"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "empty-namespace-ignores-legacy",
+      "title": "An uninitialized namespace ignores a known legacy marker without a feed request",
+      "settings": {},
+      "initialize": [],
+      "exchanges": [],
+      "steps": [
+        {
+          "command": "bridge",
+          "values": {
+            "lastSeenAnnouncement": "2026-10-02"
+          }
+        }
+      ],
+      "expected": {
+        "fetches": 0,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "bridge",
+            "values": {
+              "lastSeenAnnouncement": "2026-10-02"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "stale-sentinel-before-first-get",
+      "title": "A stale old empty sentinel cannot initialize before the first validated GET",
+      "settings": {},
+      "initialize": [],
+      "exchanges": [],
+      "steps": [
+        {
+          "command": "bridge",
+          "values": {
+            "lastSeenAnnouncement": "0000-00-00"
+          }
+        }
+      ],
+      "expected": {
+        "fetches": 0,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "bridge",
+            "values": {
+              "lastSeenAnnouncement": "0000-00-00"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "legacy-empty-sentinel-bridge",
+      "title": "An initialized empty namespace accepts the old client empty-feed marker",
+      "settings": {
+        "lastSeenProjectNews": "0000-00-00"
+      },
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": []
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "bridge",
+          "values": {
+            "lastSeenAnnouncement": "0000-00-00"
+          }
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "bridge",
+            "values": {
+              "lastSeenAnnouncement": "0000-00-00",
+              "lastSeenProjectNews": "0000-00-00"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "legacy-bridge-cold-failure",
+      "title": "A failed bridge read preserves the old payload without inventing shared state",
+      "settings": {
+        "lastSeenProjectNews": "2026-10-01"
+      },
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "error"
+        }
+      ],
+      "steps": [
+        {
+          "command": "bridge",
+          "values": {
+            "lastSeenAnnouncement": "2026-10-02"
+          }
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "bridge",
+            "values": {
+              "lastSeenAnnouncement": "2026-10-02"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "explicit-future-local-after-upgrade",
+      "title": "Both markers holding old-server future news cannot suppress common news after upgrade",
+      "settings": {
+        "lastSeenProjectNews": "2026-10-01"
+      },
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": [
+              {
+                "id": "2026-10-01",
+                "title": "First update",
+                "body": "A concise product update."
+              },
+              {
+                "id": "2026-10-02",
+                "title": "Second update",
+                "body": "Another update for every server."
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "bridge",
+          "values": {
+            "lastSeenAnnouncement": "2099-12-31",
+            "lastSeenProjectNews": "2099-12-31",
+            "theme": "dark"
+          }
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "bridge",
+            "values": {
+              "lastSeenAnnouncement": "2099-12-31",
+              "theme": "dark"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "explicit-marker-before-first-get",
+      "title": "An explicit dismissal cannot establish a namespace before its validated first GET",
+      "settings": {},
+      "initialize": [],
+      "exchanges": [],
+      "steps": [
+        {
+          "command": "bridge",
+          "values": {
+            "lastSeenAnnouncement": "2026-10-02",
+            "lastSeenProjectNews": "2026-10-02",
+            "theme": "dark"
+          }
+        }
+      ],
+      "expected": {
+        "fetches": 0,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "bridge",
+            "values": {
+              "lastSeenAnnouncement": "2026-10-02",
+              "theme": "dark"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "explicit-cold-failure",
+      "title": "A failed source read strips an explicit marker while preserving legacy and personal settings",
+      "settings": {
+        "lastSeenProjectNews": "2026-10-01"
+      },
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "error"
+        }
+      ],
+      "steps": [
+        {
+          "command": "bridge",
+          "values": {
+            "lastSeenAnnouncement": "2026-10-02",
+            "lastSeenProjectNews": "2026-10-02",
+            "theme": "dark"
+          }
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "bridge",
+            "values": {
+              "lastSeenAnnouncement": "2026-10-02",
+              "theme": "dark"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "invalid-explicit-no-legacy-fallback",
+      "title": "A rejected explicit marker cannot fall back to a different valid legacy marker",
+      "settings": {
+        "lastSeenProjectNews": "2026-10-01"
+      },
+      "initialize": [],
+      "exchanges": [
+        {
+          "kind": "json",
+          "body": {
+            "schemaVersion": 1,
+            "items": [
+              {
+                "id": "2026-10-01",
+                "title": "First update",
+                "body": "A concise product update."
+              },
+              {
+                "id": "2026-10-02",
+                "title": "Second update",
+                "body": "Another update for every server."
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "command": "bridge",
+          "values": {
+            "lastSeenAnnouncement": "2026-10-02",
+            "lastSeenProjectNews": "2099-12-31",
+            "theme": "dark"
+          }
+        }
+      ],
+      "expected": {
+        "fetches": 1,
+        "aborted": 0,
+        "cancellations": 0,
+        "settingsReads": 1,
+        "initializations": [],
+        "outputs": [
+          {
+            "command": "bridge",
+            "values": {
+              "lastSeenAnnouncement": "2026-10-02",
+              "theme": "dark"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

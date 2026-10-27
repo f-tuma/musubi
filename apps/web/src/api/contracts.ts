@@ -1,5 +1,4 @@
 import {
-  AnnouncementSchema,
   CalendarSchema,
   EventSchema,
   InviteSchema,
@@ -42,12 +41,6 @@ export const RemoveEventResponseSchema = z.object({
 
 export const SettingsResponseSchema = SettingsSchema;
 export const SettingsDocumentResponseSchema = SettingsDocumentSchema;
-
-// Admin seznam je jiný dokument: nese i zprávy, které volající už viděl, a
-// nikdy nenese isAdmin (na tuhle cestu se ne-admin nedostane).
-export const AdminAnnouncementsResponseSchema = z.object({
-  announcements: z.array(AnnouncementSchema),
-});
 
 export const RemindersResponseSchema = RemindersDocumentSchema;
 

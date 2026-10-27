@@ -36,6 +36,10 @@ assert.equal(
   1,
   "user_settings.revision must start at one",
 );
+assert.equal(userSettings.lastSeenProjectNews.notNull, true);
+assert.equal(userSettings.lastSeenProjectNews.default, "");
+assert.equal(userSettings.lastSeenAnnouncement.default, "",
+  "the historical read marker remains available to released clients");
 
 const calendarEventUnique = getTableConfig(
   calendarEvents,

@@ -4,6 +4,7 @@ import { mkdtemp, readFile, writeFile, copyFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { setTimeout } from "node:timers/promises";
 import pg from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
@@ -17,9 +18,11 @@ async function main() {
   const admin = new pg.Client({ connectionString: baseURL.toString() });
   const directory = await mkdtemp(resolve(tmpdir(), "musubi-tasks-migration-"));
   let pool: pg.Pool | undefined;
-  await admin.connect();
+  let created = false;
   try {
+    await admin.connect();
     await admin.query(`CREATE DATABASE "${name}"`);
+    created = true;
     baseURL.pathname = `/${name}`;
     pool = new pg.Pool({ connectionString: baseURL.toString() });
     const migrations = resolve(dirname(fileURLToPath(import.meta.url)), "../../drizzle");
@@ -46,11 +49,17 @@ async function main() {
     await pool.query('insert into "user" (id,name,email) values ($1,$1,$2)', [futureReader, `${futureReader}@example.test`]);
     await pool.query('insert into user_settings(id,last_seen_announcement,theme,notifications_on_by_default,onboarded,timezone,calendar_order,revision) values ($1,$2,$3,false,true,$4,$5,7)',
       [owner, "2026-10-05-9", "dark", "Europe/Prague", JSON.stringify([calendar])]);
-    await pool.query('insert into user_settings(id,last_seen_announcement,theme,revision) values ($1,$2,$3,4)', [futureReader, "2026-10-06", "light"]);
+    await pool.query('insert into user_settings(id,last_seen_announcement,theme,revision) values ($1,$2,$3,4)', [futureReader, "2099-12-31-9", "light"]);
     const originalAnnouncements = (await pool.query('select * from announcements order by id')).rows;
     const originalSettings = (await pool.query('select * from user_settings order by id')).rows;
 
-    await migrate(drizzle(pool), { migrationsFolder: migrations });
+    // Historical release guarantees remain meaningful even though the current
+    // schema deliberately removes server-local announcement content.
+    const releaseEntries = journal.entries.filter((entry: { idx: number }) => entry.idx <= 84);
+    assert.equal(releaseEntries.at(-1)?.tag, "0084_release_0_2_2_announcement");
+    await writeFile(resolve(directory, "meta/_journal.json"), JSON.stringify({ ...journal, entries: releaseEntries }));
+    for (const entry of releaseEntries) await copyFile(resolve(migrations, `${entry.tag}.sql`), resolve(directory, `${entry.tag}.sql`));
+    await migrate(drizzle(pool), { migrationsFolder: directory });
     const migratedAnnouncements = (await pool.query('select * from announcements order by id')).rows;
     const releaseAnnouncements = migratedAnnouncements.filter(row => row.min_version === "0.2.2");
     assert.equal(releaseAnnouncements.length, 1, "The upgrade inserts exactly one 0.2.2 release announcement");
@@ -68,13 +77,32 @@ async function main() {
       "The 0.2.2 announcement is visible after the highest existing same-day read marker");
     assert.equal((await pool.query("select to_regclass('public.outlook_moves') as table_name")).rows[0].table_name, "outlook_moves",
       "The published v0.2.1 upgrade also installs the Outlook move journal");
-    const migratedJournal = (await pool.query('select * from drizzle.__drizzle_migrations order by created_at')).rows;
-    assert.equal(migratedJournal.length, journal.entries.length, "The complete pending release journal is applied");
-    await migrate(drizzle(pool), { migrationsFolder: migrations });
+    await migrate(drizzle(pool), { migrationsFolder: directory });
     assert.deepEqual((await pool.query('select * from announcements order by id')).rows, migratedAnnouncements,
       "Restarting the release migrator never inserts a second announcement");
     assert.deepEqual((await pool.query('select * from user_settings order by id')).rows, originalSettings,
       "Repeated migration never resets announcement read markers or preferences");
+
+    await migrate(drizzle(pool), { migrationsFolder: migrations });
+    assert.equal((await pool.query("select to_regclass('public.announcements') as table_name")).rows[0].table_name, null,
+      "Project news removes the obsolete server-local content table");
+    const projectSettings = (await pool.query('select * from user_settings order by id')).rows;
+    assert.deepEqual(projectSettings.map(({ last_seen_project_news, ...row }) => row), originalSettings,
+      "Project news preserves personal preferences, revisions and historical read markers, including a future marker");
+    assert.ok(projectSettings.every(row => row.last_seen_project_news === ""),
+      "Every existing user gets independent empty project-news read state");
+    await pool.query('update user_settings set last_seen_project_news = $1 where id = $2', ["2026-10-27", owner]);
+    const markedSettings = (await pool.query('select * from user_settings order by id')).rows;
+    const migratedJournal = (await pool.query('select * from drizzle.__drizzle_migrations order by created_at')).rows;
+    assert.equal(migratedJournal.length, journal.entries.length, "The complete pending migration journal is applied");
+    console.log(JSON.stringify({ test: "task-migration", database: name,
+      postgresVersion: (await pool.query("show server_version")).rows[0].server_version,
+      migrations: migratedJournal.length }));
+    await migrate(drizzle(pool), { migrationsFolder: migrations });
+    assert.equal((await pool.query("select to_regclass('public.announcements') as table_name")).rows[0].table_name, null,
+      "Repeated migration never recreates local announcement content");
+    assert.deepEqual((await pool.query('select * from user_settings order by id')).rows, markedSettings,
+      "Repeated migration preserves both read markers and preferences");
     assert.deepEqual((await pool.query('select * from drizzle.__drizzle_migrations order by created_at')).rows, migratedJournal,
       "Repeated migration leaves the release journal unchanged");
     const { rows } = await pool.query('select id,origin_calendar_id,calendar_id,revision,sequence,deleted_at from tasks order by title');
@@ -94,12 +122,31 @@ async function main() {
     }
     await pool.query('delete from calendars where id = $1', [calendar]);
     assert.equal((await pool.query('select id from tasks')).rows.length, 2, "Calendar FK no longer destroys shared identities or tombstones");
-    console.log("v0.2.1 to v0.2.2 migration, task preservation and release announcement self-check: OK");
+    console.log("Historical release migration, project-news removal and personal data preservation self-check: OK");
   } finally {
-    await pool?.end();
-    await admin.query(`DROP DATABASE IF EXISTS "${name}"`);
-    await admin.end();
-    await rm(directory, { recursive: true, force: true });
+    try {
+      await pool?.end();
+      if (created) {
+        // Pool shutdown can finish before PostgreSQL has observed every socket
+        // close. Wait briefly for our sessions; never force another one away.
+        const deadline = Date.now() + 2_000;
+        let sessions: number;
+        do {
+          sessions = Number((await admin.query('select count(*) as count from pg_stat_activity where datname = $1', [name])).rows[0].count);
+          if (sessions === 0 || Date.now() >= deadline) break;
+          await setTimeout(25);
+        } while (true);
+        assert.equal(sessions, 0, `Refusing to drop ${name} while a session remains`);
+        await admin.query(`DROP DATABASE "${name}"`);
+        const absent = (await admin.query('select 1 from pg_database where datname = $1', [name])).rowCount === 0;
+        assert.equal(absent, true, "The test database must be absent after its ordinary DROP");
+        console.log(JSON.stringify({ test: "task-migration", database: name,
+          sessionsBeforeDrop: sessions, cleanup: "ordinary-drop-after-pool-end", absent }));
+      }
+    } finally {
+      try { await admin.end(); }
+      finally { await rm(directory, { recursive: true, force: true }); }
+    }
   }
 }
 main().then(() => process.exit(0)).catch((error) => { console.error(error); process.exit(1); });

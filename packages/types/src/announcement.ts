@@ -5,8 +5,8 @@ import { compareVersions } from "./version";
  * `YYYY-MM-DD`, s číselnou příponou pro další zprávy téhož dne.
  * Přípona je klíč pro lexikografické pořadí, ne počet zpráv.
  *
- * Datum v id není ozdoba: je to zároveň řazení, takže "novější než poslední
- * viděná" je porovnání řetězců a tabulka nepotřebuje druhý sloupec na pořadí.
+ * Datum v id zároveň určuje řazení: "novější než poslední viděná" je
+ * porovnání řetězců. Formát zůstává kompatibilní s vydanými klienty.
  * Formát se lexikograficky řadí správně jen díky nulám (`08`, ne `8`).
  */
 export const ANNOUNCEMENT_ID_PATTERN = /^\d{4}-\d{2}-\d{2}(-\d+)?$/;
@@ -24,7 +24,7 @@ export const AnnouncementSchema = z.object({
 
 export type Announcement = z.infer<typeof AnnouncementSchema>;
 
-/** Co posílá admin panel při vytvoření nebo opravě. `id` přiděluje server. */
+/** @deprecated Former admin input, retained for source compatibility; no server writer remains. */
 export const AnnouncementInputSchema = z.object({
   title: z.string().min(1).max(200),
   body: z.string().min(1).max(4000),
@@ -36,9 +36,8 @@ export type AnnouncementInput = z.infer<typeof AnnouncementInputSchema>;
 export const AnnouncementsResponseSchema = z.object({
   announcements: z.array(AnnouncementSchema),
   /**
-   * Jede s odpovědí, protože tenhle dokument si stahuje každý přihlášený klient
-   * při startu tak jako tak — web podle něj ukáže odkaz na panel bez dalšího
-   * requestu. Autoritou zůstávají admin endpointy samy.
+   * Required legacy field for released clients. Current project-news servers
+   * always return false; announcement administration has been removed.
    */
   isAdmin: z.boolean(),
   /**
@@ -57,8 +56,8 @@ export type AnnouncementsResponse = z.infer<typeof AnnouncementsResponseSchema>;
 /**
  * Volné id pro dnešní datum.
  *
- * Přiděluje ho server, ne autor: klient by musel znát existující id, aby uhodl
- * volné, a dva otevřené panely by si vybraly totéž.
+ * Kept as a source-compatible authoring utility. News IDs are now assigned in
+ * the project's version-controlled feed; the API never creates announcements.
  */
 export function mintAnnouncementId(
   dateKey: string,
@@ -84,7 +83,7 @@ export type AnnouncementSegment =
   | { type: "link"; url: string; value: string };
 
 /**
- * Jen http(s). Obsah píše majitel serveru, ale `javascript:` nebo `data:` URL
+ * Jen http(s). Obsah spravuje projekt, ale `javascript:` nebo `data:` URL
  * v modalu je spouštěč skriptu, ne odkaz — takže se nikdy nestanou klikatelnými
  * a zůstanou obyčejným textem.
  */

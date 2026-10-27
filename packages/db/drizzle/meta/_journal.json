@@ -610,6 +610,13 @@
       "when": 1793038256946,
       "tag": "0086_sync_scheduling",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1793093822306,
+      "tag": "0087_project_news",
+      "breakpoints": true
     }
   ]
 }

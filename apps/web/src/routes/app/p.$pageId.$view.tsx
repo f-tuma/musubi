@@ -26,7 +26,6 @@ import {
   Workspace,
   type PageWorkingDraft,
 } from "~/calendar/components/Workspace";
-import { useAnnouncementsQuery } from "~/calendar/components/AnnouncementDialog";
 import { useEventMutations } from "~/calendar/event-mutations";
 import { usePageMutations } from "~/calendar/page-editor";
 import { useCalendarTransfers } from "~/calendar/calendar-transfers";
@@ -116,11 +115,6 @@ function CalendarScreen({ editorOpen }: { editorOpen: boolean }) {
   useEffect(() => {
     if (!searchActive) queryClient.removeQueries({ queryKey: ["events", getServerOrigin(), userId, "account-search"], exact: true });
   }, [searchActive, queryClient, userId]);
-  // Same query (and same staleTime/refetchOnWindowFocus) the announcement
-  // modal makes, so this costs no extra request and cannot revive the modal
-  // on a focus refetch — see useAnnouncementsQuery's comment.
-  const announcements = useAnnouncementsQuery();
-  const isAdmin = announcements.data?.isAdmin === true;
   const eventMutations = useEventMutations(userId);
   const calendarTransfers = useCalendarTransfers(userId);
   const settingsMutations = useSettingsMutations(userId);
@@ -289,7 +283,6 @@ function CalendarScreen({ editorOpen }: { editorOpen: boolean }) {
       tasks={tasksQuery.data?.tasks ?? []}
       calendarsResolved={workspace.calendars.isSuccess && !workspace.calendars.isFetching && !workspace.calendars.isPlaceholderData}
       tasksResolved={tasksQuery.isSuccess && !tasksQuery.isFetching && !tasksQuery.isPlaceholderData}
-      isAdmin={isAdmin}
       isRefreshing={queries.some((query) => query.isFetching)}
       onRefreshServer={() => refreshServerData(queryClient, userId)}
       newerServer={newerServer}

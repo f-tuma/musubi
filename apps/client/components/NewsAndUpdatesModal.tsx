@@ -58,7 +58,7 @@ function Body({ body }: { body: string }) {
  * server neví, jaká verze se ho ptá. Co tady vypadne, zůstane nevyřízené a
  * vyskočí po aktualizaci ze storu.
  */
-export default function AnnouncementModal() {
+export default function NewsAndUpdatesModal() {
   const api = useApi();
   const insets = useSafeAreaInsets();
   const [pending, setPending] = useState<Announcement[]>([]);
@@ -75,7 +75,7 @@ export default function AnnouncementModal() {
         // První pohled: nic se neukazuje, jen se posune značka. Bez toho by
         // nový účet (a v den nasazení každý stávající) dostal celou historii.
         if (data.markTo) {
-          queueSettingsPatch(api, { lastSeenAnnouncement: data.markTo });
+          queueSettingsPatch(api, { lastSeenProjectNews: data.markTo, lastSeenAnnouncement: data.markTo });
           return;
         }
 
@@ -102,10 +102,8 @@ export default function AnnouncementModal() {
     const newest = newestAnnouncementId(pending);
     // Značka se posouvá jen na to, co se OPRAVDU ukázalo. `queueSettingsPatch`
     // si revizi řeší sám, takže se tu žádné baseRevision neshromažďuje.
-    if (newest) queueSettingsPatch(api, { lastSeenAnnouncement: newest });
+    if (newest) queueSettingsPatch(api, { lastSeenProjectNews: newest, lastSeenAnnouncement: newest });
   }
-
-  const single = pending.length === 1;
 
   return (
     <ModalPortal onRequestClose={close} visible={open}>
@@ -137,7 +135,7 @@ export default function AnnouncementModal() {
           <Text
             style={{ color: colors.fg, fontFamily: fonts.serif, fontSize: 22 }}
           >
-            {single ? pending[0].title : "What's new"}
+            News and updates
           </Text>
 
           <ScrollView>
@@ -146,20 +144,16 @@ export default function AnnouncementModal() {
                 key={announcement.id}
                 style={{ marginTop: index === 0 ? 0 : 20 }}
               >
-                {/* U jediné zprávy je titulek už v hlavičce; opakovat ho uvnitř
-                    by byly dva nadpisy pro totéž. */}
-                {single ? null : (
-                  <Text
-                    style={{
-                      color: colors.fg,
-                      fontFamily: fonts.sans,
-                      fontSize: 16,
-                      marginBottom: 6,
-                    }}
-                  >
-                    {announcement.title}
-                  </Text>
-                )}
+                <Text
+                  style={{
+                    color: colors.fg,
+                    fontFamily: fonts.sans,
+                    fontSize: 16,
+                    marginBottom: 6,
+                  }}
+                >
+                  {announcement.title}
+                </Text>
                 <Body body={announcement.body} />
               </View>
             ))}

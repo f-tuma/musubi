@@ -252,28 +252,24 @@ The API mirrors the version rather than importing it because it ships as a
 mirror before, and the server spent two releases announcing itself as 0.1.3
 while the product was 0.1.5.
 
-### Release announcements
+### Project news and updates
 
-User-facing release notes ship to every upgraded server as a custom migration:
+Short product news lives in the repository's root `news.json`, shared by every
+Musubi server through a cached, validated public GitHub read. Publish content by
+reviewed pull request; run `pnpm news:check`. Use concise plain text and a link to
+the full GitHub release. There is no per-server announcement editor, admin
+allowlist or new SQL announcement migration for each release.
 
-```bash
-pnpm --filter @musubi/db exec drizzle-kit generate --custom --name release_X_Y_Z_announcement
-```
+Items are informational for every installed version; source `minVersion` gates
+are intentionally unsupported. New IDs must sort after all previously published
+IDs, while edits retain the old ID. See [project news](project-news.md) for the
+format, limits, read-state compatibility, failure behavior and authoring rules.
 
-Insert one concise announcement with `min_version` set to the release. The API
-can deploy first: older clients filter the row without marking it as seen, then
-show it on their first start after updating. No server admin action is needed.
-Keep only changes users will notice; GitHub generates the complete engineering
-changelog separately.
-
-Announcement IDs share their date namespace with admin-written messages, so the
-migration must choose an ID lexically greater than existing same-day IDs,
-not just a free suffix. Read markers compare strings: suffix `10` sorts before
-`9`; the allocator extends the highest suffix at that boundary (for example
-`9` to `90`). Preserve admin messages and read markers.
-The 0.1.7 migration also initializes the empty marker for accounts that predate
-the announcement feature. That is a one-time bootstrap and must not be repeated
-in later releases; new accounts intentionally baseline past old news.
+Migration `0087_project_news` deliberately removes the former content table.
+Historical release migrations remain intact. A pre-transition API cannot run
+against that contracted schema: plan stop-first deployment with a verified backup
+and a compatible-build or matching-database recovery path. Production rollout is
+separate from merging this source and feed format.
 
 ## Migrations: expand now, contract later
 

@@ -49,9 +49,9 @@ const CALENDARS: Calendar[] = [
   },
 ];
 
-type StoryArgs = { initial: SettingsSectionId; isAdmin?: boolean };
+type StoryArgs = { initial: SettingsSectionId };
 
-function SettingsStory({ initial, isAdmin }: StoryArgs) {
+function SettingsStory({ initial }: StoryArgs) {
   const [section, setSection] = useState(initial);
   const [open, setOpen] = useState(true);
   const document = useRef(INITIAL_SETTINGS);
@@ -70,7 +70,6 @@ function SettingsStory({ initial, isAdmin }: StoryArgs) {
 
   const props: SettingsWindowProps = {
     calendars: CALENDARS,
-    isAdmin,
     onAdoptSettings: () => undefined,
     onCreateCalendar: async ({ color, name }) => ({ ...CALENDARS[0]!, color, id: "new", isDefault: false, name }),
     onDisconnectCalendar: async () => undefined,
@@ -198,7 +197,7 @@ export const Account: Story = {
 };
 
 export const About: Story = {
-  args: { initial: "about", isAdmin: true },
+  args: { initial: "about" },
   play: async () => {
     const dialog = await settingsWindow();
     expect(dialog.getByRole("button", { name: /Version/ })).toBeVisible();
