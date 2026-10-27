@@ -6,11 +6,69 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { setTimeout as pause } from "node:timers/promises";
 import { Pool } from "pg";
+import { dropOwnedTestDatabase } from "./owned_database_fixture_cleanup";
 
 function deferred() {
   let resolve!: () => void;
   const promise = new Promise<void>(done => { resolve = () => done(); });
   return { promise, resolve };
+}
+
+async function cleanupProbe() {
+  assert.equal(process.env.ENVIRONMENT, "test");
+  const adminURL = process.env.DATABASE_URL; assert.ok(adminURL);
+  assert.ok(["127.0.0.1", "localhost", "[::1]"].includes(new URL(adminURL).hostname));
+  const admin = new Pool({ connectionString: adminURL, max: 1, connectionTimeoutMillis: 2_000, query_timeout: 2_000 });
+  const names: string[] = [], pools = new Set<Pool>(), releaseClose = deferred(), disconnected = deferred();
+  const allocate = async (applicationName: string) => {
+    const name = `c09budget_${randomUUID().replace(/-/g, "")}`; names.push(name);
+    await admin.query(`CREATE DATABASE "${name}"`);
+    const url = new URL(adminURL); url.pathname = `/${name}`;
+    const pool = new Pool({ connectionString: url.href, application_name: applicationName, max: 1 }); pools.add(pool);
+    const client = await pool.connect(), pid = (await client.query("select pg_backend_pid() as pid")).rows[0].pid as number;
+    client.release(); return { name, pool, client, pid };
+  };
+  try {
+    const delayed = await allocate("c10-cleanup-delayed-owned"), actualEnd = delayed.client.end.bind(delayed.client);
+    // Gate the actual pg client's disconnect at its existing dependency port.
+    // Pool.end still runs its real removal logic; no database state is mocked.
+    delayed.client.end = ((callback?: () => void) => {
+      void releaseClose.promise.then(() => actualEnd(() => { callback?.(); disconnected.resolve(); }));
+    }) as typeof delayed.client.end;
+    await delayed.pool.end(); pools.delete(delayed.pool);
+    const legacyCount = (await admin.query("select count(*)::int as n from pg_stat_activity where datname=$1", [delayed.name])).rows[0].n;
+    assert.equal(legacyCount, 1, "Controlled real backend must outlive Pool.end for the regression");
+    assert.throws(() => assert.equal(legacyCount, 0, "Only drop a nonce DB after every client closes"), { code: "ERR_ASSERTION" });
+    const observed = deferred(); let finished = false;
+    const dropping = dropOwnedTestDatabase(admin, delayed.name, "c09budget_", { onObservation: rows => {
+      if (rows.length === 0) return;
+      assert.equal(rows.length, 1); assert.equal(rows[0]!.pid, delayed.pid);
+      assert.equal(rows[0]!.application_name, "c10-cleanup-delayed-owned"); assert.equal(rows[0]!.state, "idle"); observed.resolve();
+    } }).then(result => { finished = true; return result; });
+    await Promise.race([observed.promise, dropping.then(() => { throw new Error("Expected a pending owned backend before cleanup"); })]);
+    assert.equal(finished, false); releaseClose.resolve();
+    const delayedCleanup = await dropping; await disconnected.promise;
+
+    const persistent = await allocate("c10-cleanup-persistent-owned"), refusalStarted = performance.now(); let refusal: unknown;
+    try { await dropOwnedTestDatabase(admin, persistent.name, "c09budget_", { timeoutMs: 100 }); } catch (error) { refusal = error; }
+    const refusalWaitMs = Math.ceil(performance.now() - refusalStarted);
+    assert.ok(refusal instanceof assert.AssertionError); assert.match(refusal.message, new RegExp(`"pid":${persistent.pid}`));
+    assert.equal((await admin.query("select 1 from pg_database where datname=$1", [persistent.name])).rowCount, 1);
+    assert.equal((await persistent.pool.query("select pg_backend_pid() as pid")).rows[0].pid, persistent.pid, "Refusal must neither terminate nor drop the persistent client");
+    await persistent.pool.end(); pools.delete(persistent.pool);
+    const persistentCleanup = await dropOwnedTestDatabase(admin, persistent.name, "c09budget_");
+    console.log(JSON.stringify({ boundary: "actual-postgres-budget-fixture-cleanup", legacyImmediateAssertion: "RED",
+      delayedOwnedBackend: { pid: delayed.pid, state: "idle", applicationName: "c10-cleanup-delayed-owned", cleanup: delayedCleanup },
+      persistentOwnedBackend: { pid: persistent.pid, boundedRefusal: true, configuredWaitMs: 100, observedWaitMs: refusalWaitMs,
+        databaseRetained: true, clientStillUsable: true, cleanup: persistentCleanup },
+      forcedDrop: false, backendsTerminated: false, liveProvider: false }));
+  } finally {
+    releaseClose.resolve();
+    try {
+      await Promise.all([...pools].map(pool => pool.end()));
+      for (const name of names) if ((await admin.query("select 1 from pg_database where datname=$1", [name])).rowCount) await dropOwnedTestDatabase(admin, name, "c09budget_");
+    } finally { await admin.end(); }
+  }
 }
 
 const proofSources = [
@@ -66,6 +124,7 @@ async function main() {
   assert.equal(process.env.ENVIRONMENT, "test", "Use an owned disposable PostgreSQL database");
   const adminURL = process.env.DATABASE_URL; assert.ok(adminURL);
   assert.ok(["127.0.0.1", "localhost", "[::1]"].includes(new URL(adminURL).hostname));
+  await cleanupProbe();
   process.env.BETTER_AUTH_URL ??= "http://localhost:7531";
   process.env.BETTER_AUTH_SECRET ??= "musubi-budget-integration-synthetic-auth-secret-20261026";
   process.env.GOOGLE_WEB_CLIENT_ID = "budget-fixture-client";
@@ -85,7 +144,7 @@ async function main() {
   await admin.query(`CREATE DATABASE "${name}"`);
   console.log(JSON.stringify({ fixture: { database: name, ownedNonce: true } }));
   process.env.DATABASE_URL = databaseURL.href;
-  let store: Awaited<typeof import("@musubi/db")> | undefined;
+  let store: Awaited<typeof import("@musubi/db")> | undefined, behaviorFailure: unknown, behaviorFailed = false;
   let stopBudget: (() => void) | undefined, stopCoordinator: (() => void) | undefined;
   const realFetch = globalThis.fetch;
   const trace: { account: string; method: string; path: string; status: number }[] = [];
@@ -609,22 +668,21 @@ async function main() {
       stoppedPrequeueIdentityCannotAttachToReactivatedBudget: true,
       longQuotaHoldsReleaseRegularCapacity: { accounts: 4, exactFutureDue: true, noFalseAck: true, noNativeDispatch: true, healthyBProgress: true },
       maxActiveHTTP, fourSlotSaturationProved: false, installed: false, liveProvider: false, productionDeployment: false, source }));
-  } finally {
+  } catch (error) { behaviorFailed = true; behaviorFailure = error; throw error; }
+  finally {
+    try {
     tokenHold?.resolve(); aHold?.resolve();
     stopCoordinator?.(); stopBudget?.(); globalThis.fetch = realFetch;
     fixture.closeAllConnections();
     await new Promise<void>(resolve => fixture.close(() => resolve()));
-    // Let already-issued read-only candidate SQL settle after closing its
-    // scheduler, before ending the pool that owns those queries.
-    await pause(30);
     await observer?.end(); await store?.db.$client.end();
-    const sessions = await admin.query("select count(*)::int as n from pg_stat_activity where datname=$1", [name]);
-    assert.equal(sessions.rows[0].n, 0, "Only drop a nonce DB after every client closes");
-    await admin.query(`DROP DATABASE "${name}"`);
-    assert.equal((await admin.query("select 1 from pg_database where datname=$1", [name])).rowCount, 0);
-    console.log(JSON.stringify({ cleanup: { database: name, sessionsBeforeDrop: 0, plainDrop: true, databaseAbsent: true } }));
-    await admin.end();
+    console.log(JSON.stringify({ cleanup: await dropOwnedTestDatabase(admin, name, "c09budget_") }));
+    } catch (cleanupFailure) {
+      if (behaviorFailed) throw Object.assign(new Error("Budget behavior and fixture cleanup both failed"), { errors: [behaviorFailure, cleanupFailure] });
+      throw cleanupFailure;
+    } finally { await admin.end(); }
   }
 }
 
-(process.argv[2] === "--cooldown-child" ? cooldownChild() : main()).catch(error => { console.error(error); process.exitCode = 1; });
+(process.argv[2] === "--cooldown-child" ? cooldownChild() : process.argv[2] === "--cleanup-probe" ? cleanupProbe() : main())
+  .catch(error => { console.error(error); process.exitCode = 1; });
