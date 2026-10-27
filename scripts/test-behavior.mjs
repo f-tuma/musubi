@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const REPOSITORY = fileURLToPath(new URL("../", import.meta.url));
 const SUITES = {
+  "project-news": "apps/api/src/behavior/project-news.json",
   "read-attempt": "apps/api/src/sync/behavior/read-attempt.json",
   "fair-work": "packages/sync-runtime/src/behavior/fair-work.json",
   "caldav-discovery": "apps/api/src/sync/behavior/caldav-discovery.json",
@@ -165,6 +166,10 @@ async function runSuite(selection, options, { root, execute, env }) {
     if (["fair-work", "google-update", "google-delete", "google-create", "google-task-update", "google-task-delete", "google-task-create", "microsoft-delete", "microsoft-create", "caldav-delete", "caldav-create"].includes(selection.name)) {
       const entry = { "fair-work": "fair-work-cli.ts", "google-update": "google-update-cli.ts", "google-delete": "cli.ts", "google-create": "create-cli.ts", "google-task-update": "google-task-update-cli.ts", "google-task-delete": "google-task-delete-cli.ts", "google-task-create": "google-task-create-cli.ts", "microsoft-delete": "microsoft-delete-cli.ts", "microsoft-create": "microsoft-create-cli.ts", "caldav-delete": "caldav-delete-cli.ts", "caldav-create": "caldav-create-cli.ts" }[selection.name];
       child = await execute(process.execPath, ["--import", "tsx", join(root, "packages/sync-runtime/src/behavior", entry), "--json",
+        ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });
+      results = runtimeResults(child.stdout, selection);
+    } else if (selection.name === "project-news") {
+      child = await execute(process.execPath, ["--import", "tsx", join(root, "apps/api/src/behavior/project-news-cli.ts"), "--json",
         ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });
       results = runtimeResults(child.stdout, selection);
     } else if (selection.name === "read-attempt") {

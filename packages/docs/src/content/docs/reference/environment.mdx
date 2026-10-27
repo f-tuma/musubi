@@ -38,7 +38,6 @@ Generate the auth secret with `openssl rand -base64 32`.
 | `EXTERNAL_DELIVERY_RECOVERY_MODE` | No | `independent` | Background event/task/move recovery at boot and every 15 seconds. `independent` runs even with polling disabled; `legacy` runs only with a positive polling interval; `disabled` stops scheduled recovery. Request-triggered delivery remains enabled in every mode |
 | `LOG_LEVEL` | No | `info` | `debug`, `info`, `warn`, `error`, or `silent` |
 | `METRICS_PORT` | No | `9464` | Separate Prometheus listener; `0` disables it |
-| `ADMIN_EMAILS` | No | empty (no admin) | Comma-separated, case-insensitive list of accounts allowed to write server announcements; gates the admin write endpoints and the web admin panel link. Empty means this server has no admin — the admin endpoints refuse everyone, not the other way around |
 
 `BETTER_AUTH_URL` must be an origin, with no `/api` suffix:
 

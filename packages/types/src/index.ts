@@ -10,6 +10,7 @@ export * from "./task";
 export * from "./invite";
 export * from "./settings";
 export * from "./announcement";
+export * from "./project-news";
 export * from "./reminder";
 export * from "./reminder_options";
 export * from "./pages";

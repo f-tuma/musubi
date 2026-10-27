@@ -7,7 +7,7 @@ import {
 
 // Modal sám je React Native strom; testovatelné jsou rozhodovací pravidla,
 // která rozhodují, CO ukáže a kam posune značku.
-describe("announcement selection on the phone", () => {
+describe("project news selection on the phone", () => {
   const announcements = [
     { id: "2026-08-20", title: "next", body: "x", minVersion: "0.1.7" },
     { id: "2026-08-10", title: "now", body: "x", minVersion: "0.1.6" },

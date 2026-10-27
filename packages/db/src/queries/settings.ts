@@ -61,6 +61,31 @@ export async function getUserSettings(userID: string) {
   return result;
 }
 
+/** Establish a first-view baseline once, after the caller has validated news. */
+export async function initializeProjectNewsReadMarker(userID: string, marker: string) {
+  const [initialized] = await db
+    .update(userSettings)
+    .set({
+      lastSeenProjectNews: marker,
+      revision: sql`${userSettings.revision} + 1`,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(userSettings.id, userID), eq(userSettings.lastSeenProjectNews, "")))
+    .returning();
+  if (initialized) return { initialized: true, settings: initialized };
+
+  return { initialized: false, settings: await getUserSettings(userID) };
+}
+
+function advanceProjectNewsReadMarker(values: Partial<SettingsValues>) {
+  if (values.lastSeenProjectNews === undefined) return {};
+  return {
+    // Client markers compare strings. C collation keeps that ordering
+    // independent of the host database's locale, including numeric suffixes.
+    lastSeenProjectNews: sql`greatest(${userSettings.lastSeenProjectNews} collate "C", ${values.lastSeenProjectNews})`,
+  };
+}
+
 export async function saveUserSettings(userID: string, values: SettingsValues) {
   const settings = alignReminderDefaults(values, await getUserSettings(userID));
   // Settings may be saved before any GET materializes the row. One upsert makes
@@ -72,6 +97,7 @@ export async function saveUserSettings(userID: string, values: SettingsValues) {
       target: userSettings.id,
       set: {
         ...settings,
+        ...advanceProjectNewsReadMarker(settings),
         revision: sql`${userSettings.revision} + 1`,
         updatedAt: new Date(),
       },
@@ -90,6 +116,7 @@ export async function patchUserSettings(
     .update(userSettings)
     .set({
       ...patch,
+      ...advanceProjectNewsReadMarker(patch),
       revision: sql`${userSettings.revision} + 1`,
       updatedAt: new Date(),
     })

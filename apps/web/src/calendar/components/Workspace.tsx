@@ -110,8 +110,6 @@ type WorkspaceProps = {
   calendars: Calendar[];
   date: string;
   events: Event[];
-  /** Whether this signed-in account may write announcements on this server. */
-  isAdmin?: boolean;
   isRefreshing: boolean;
   onRefreshServer?: () => Promise<void>;
   /**
@@ -296,7 +294,6 @@ export function Workspace({
   calendars,
   date,
   events,
-  isAdmin = false,
   isRefreshing,
   onRefreshServer,
   newerServer,
@@ -1540,7 +1537,6 @@ export function Workspace({
       ) : null}
       <SettingsWindow
         calendars={calendars}
-        isAdmin={isAdmin}
         onAdoptSettings={onAdoptSettings}
         onCreateCalendar={onCreateCalendar}
         onCreateMeeting={(calendar, returnFocus) => setMeetingCreate({ initialCalendarID: calendar.id, returnFocus })}

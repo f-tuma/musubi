@@ -228,11 +228,6 @@ type SecurityConfig = {
   // default. Self-hosters federating two servers on a LAN (or one box) must
   // opt in explicitly. Auto-enabled only for the two-server dev setup.
   federationAllowPrivateHosts: boolean;
-  // Kdo smí psát zprávy o novinkách. Seznam e-mailů, ne role v databázi:
-  // majitel serveru už svůj .env vlastní, takže tohle se bootstrapuje samo a
-  // nestojí to migraci ani UI na udělování práv. Prázdné = server bez admina,
-  // a admin endpointy pak neuznají nikoho.
-  adminEmails: string[];
 };
 
 type Config = {
@@ -388,13 +383,6 @@ function parseRequireEmailVerification() {
   return required;
 }
 
-export function parseAdminEmails(raw: string | undefined): string[] {
-  return (raw ?? "")
-    .split(",")
-    .map((entry) => entry.trim().toLowerCase())
-    .filter((entry) => entry.length > 0);
-}
-
 const securityConfig: SecurityConfig = {
   devAuthCookiePrefix: parseDevAuthCookiePrefix(environment, process.env.DEV_AUTH_COOKIE_PREFIX),
   caldavEncKey: process.env.CALDAV_ENC_KEY ?? "", // validated at use in the crypto helper
@@ -402,7 +390,6 @@ const securityConfig: SecurityConfig = {
   federationAllowPrivateHosts:
     process.env.FEDERATION_ALLOW_PRIVATE_HOSTS === "true" ||
     environment === "dev",
-  adminEmails: parseAdminEmails(process.env.ADMIN_EMAILS),
 };
 
 export const config: Config = {

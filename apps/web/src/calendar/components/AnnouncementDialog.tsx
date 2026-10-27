@@ -16,16 +16,7 @@ import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "~/
 /** Co tenhle build je. Vite ho vloží; žádný fetch. Stejný zdroj jako use-newer-server. */
 const BUILD_VERSION = musubiPackage.version;
 
-/**
- * Ten samý dotaz pro každého, kdo se ptá "co je nového" — stejný klíč, stejné
- * `staleTime`/`refetchOnWindowFocus`. Cache je sdílená, ale `staleTime` je
- * per-observer: kdyby některé volání použilo defaulty routeru
- * (`staleTime: 30_000`, refetch při focusu), refokusování by přineslo čerstvá
- * data a modal by se probudil uprostřed práce — přesně to, co komentář v
- * `AnnouncementGate` popisuje jako nežádoucí. Proto jeden hook pro všechny tři
- * volající místa (`AnnouncementGate`, sidebar v `p.$pageId.$view.tsx`, admin
- * route), místo opakování téhle dvojice voleb na třech místech.
- */
+/** Project news is fetched at startup, without interrupting work on focus. */
 export function useAnnouncementsQuery() {
   const { user } = useSessionUser();
   const userId = user?.id;
@@ -88,8 +79,6 @@ export function AnnouncementDialogView({
   announcements: Announcement[];
   onClose: () => void;
 }) {
-  const single = announcements.length === 1;
-
   return (
     // Radix uvnitř Dialogu drží focus trap, Escape i vrácení focusu — obojí
     // směřuje sem, takže zavření jakoukoli cestou posune značku.
@@ -101,16 +90,12 @@ export function AnnouncementDialogView({
     >
       <DialogContent size="form" aria-describedby={undefined} closeLabel="Close">
         <DialogHeader>
-          <DialogTitle>{single ? announcements[0].title : "What's new"}</DialogTitle>
+          <DialogTitle>News and updates</DialogTitle>
         </DialogHeader>
         <DialogBody>
           {announcements.map((announcement) => (
             <section className="flex flex-col gap-2" key={announcement.id}>
-              {/* U jediné zprávy je titulek už v hlavičce dialogu; opakovat ho
-                  uvnitř by byly dva nadpisy pro totéž. */}
-              {single ? null : (
-                <h3 className="font-serif text-16 font-normal text-foreground">{announcement.title}</h3>
-              )}
+              <h3 className="font-serif text-16 font-normal text-foreground">{announcement.title}</h3>
               <AnnouncementBody body={announcement.body} />
             </section>
           ))}
@@ -138,12 +123,13 @@ export function AnnouncementGate() {
     userId ?? "",
   );
 
-  async function mark(lastSeenAnnouncement: string) {
+  async function mark(lastSeenProjectNews: string) {
     try {
       const document = await getSettingsDocument();
       await patchSettings({
         baseRevision: document.revision,
-        patch: { lastSeenAnnouncement },
+        // The legacy marker keeps this client compatible with older servers.
+        patch: { lastSeenProjectNews, lastSeenAnnouncement: lastSeenProjectNews },
       });
     } catch {
       // Značka se neuložila — zpráva se příště ukáže znovu. Otravné, ale

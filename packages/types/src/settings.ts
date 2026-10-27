@@ -54,6 +54,10 @@ export const SettingsSchema = z.object({
   // produktu naráz. Volitelné, aby ji starší klient ukládající celý dokument
   // nemohl shodit zpátky.
   lastSeenAnnouncement: z.string().max(64).optional(),
+  // Project news has its own marker: old server-local announcements must not
+  // hide shared updates. Optional without a default so an older client's PUT
+  // cannot reset a marker it does not know about.
+  lastSeenProjectNews: z.string().max(64).optional(),
 });
 
 export type Settings = z.infer<typeof SettingsSchema>;
@@ -65,6 +69,7 @@ export const SettingsPatchSchema = z
     defaultCalendarView: CalendarViewSchema.optional(),
     defaultReminder: ReminderRuleSchema.optional(),
     lastSeenAnnouncement: z.string().max(64).optional(),
+    lastSeenProjectNews: z.string().max(64).optional(),
     notificationEmails: NotificationEmailsSchema.optional(),
     notificationsOnByDefault: z.boolean().optional(),
     onboarded: z.boolean().optional(),

@@ -15,7 +15,6 @@ import { Route as FaviconDoticoRouteImport } from './routes/favicon[.]ico'
 import { Route as HealthzRouteImport } from './routes/healthz'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/app/index'
-import { Route as AppAdminRouteImport } from './routes/app/admin'
 import { Route as AppSwDotjsRouteImport } from './routes/app/sw[.]js'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AppPPageIdViewRouteImport } from './routes/app/p.$pageId.$view'
@@ -52,11 +51,6 @@ const LoginRoute = LoginRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAdminRoute = AppAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSwDotjsRoute = AppSwDotjsRouteImport.update({
@@ -102,7 +96,6 @@ export interface FileRoutesByFullPath {
   '/favicon.ico': typeof FaviconDoticoRoute
   '/healthz': typeof HealthzRoute
   '/login': typeof LoginRoute
-  '/app/admin': typeof AppAdminRoute
   '/app/sw.js': typeof AppSwDotjsRoute
   '/invite/$token': typeof InviteTokenRoute
   '/app/': typeof AppIndexRoute
@@ -117,7 +110,6 @@ export interface FileRoutesByTo {
   '/favicon.ico': typeof FaviconDoticoRoute
   '/healthz': typeof HealthzRoute
   '/login': typeof LoginRoute
-  '/app/admin': typeof AppAdminRoute
   '/app/sw.js': typeof AppSwDotjsRoute
   '/invite/$token': typeof InviteTokenRoute
   '/app': typeof AppIndexRoute
@@ -134,7 +126,6 @@ export interface FileRoutesById {
   '/favicon.ico': typeof FaviconDoticoRoute
   '/healthz': typeof HealthzRoute
   '/login': typeof LoginRoute
-  '/app/admin': typeof AppAdminRoute
   '/app/sw.js': typeof AppSwDotjsRoute
   '/invite/$token': typeof InviteTokenRoute
   '/app/': typeof AppIndexRoute
@@ -152,7 +143,6 @@ export interface FileRouteTypes {
     | '/favicon.ico'
     | '/healthz'
     | '/login'
-    | '/app/admin'
     | '/app/sw.js'
     | '/invite/$token'
     | '/app/'
@@ -167,7 +157,6 @@ export interface FileRouteTypes {
     | '/favicon.ico'
     | '/healthz'
     | '/login'
-    | '/app/admin'
     | '/app/sw.js'
     | '/invite/$token'
     | '/app'
@@ -183,7 +172,6 @@ export interface FileRouteTypes {
     | '/favicon.ico'
     | '/healthz'
     | '/login'
-    | '/app/admin'
     | '/app/sw.js'
     | '/invite/$token'
     | '/app/'
@@ -245,13 +233,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/admin': {
-      id: '/app/admin'
-      path: '/admin'
-      fullPath: '/app/admin'
-      preLoaderRoute: typeof AppAdminRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/sw.js': {
@@ -321,7 +302,6 @@ const AppPPageIdViewRouteWithChildren = AppPPageIdViewRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
-  AppAdminRoute: typeof AppAdminRoute
   AppSwDotjsRoute: typeof AppSwDotjsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppPPageIdViewRoute: typeof AppPPageIdViewRouteWithChildren
@@ -330,7 +310,6 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppAdminRoute: AppAdminRoute,
   AppSwDotjsRoute: AppSwDotjsRoute,
   AppIndexRoute: AppIndexRoute,
   AppPPageIdViewRoute: AppPPageIdViewRouteWithChildren,

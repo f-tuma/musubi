@@ -1,5 +1,5 @@
 import type { Calendar } from "@musubi/types";
-import { CalendarDays, ChevronLeft, Info, Link2, Megaphone, SlidersHorizontal, UserRound } from "lucide-react";
+import { CalendarDays, ChevronLeft, Info, Link2, SlidersHorizontal, UserRound } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import type { ReminderControl } from "~/calendar/reminder-control";
 import { Button } from "~/components/ui/button";
@@ -9,7 +9,6 @@ import { RowAction } from "~/components/ui/row";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { TooltipProvider } from "~/components/ui/tooltip";
 import { cn } from "~/lib/utils";
-import { AdminSettings } from "../AdminSettings";
 import { AboutPanel } from "./AboutPanel";
 import { AccountPanel } from "./AccountPanel";
 import { CalendarsPanel, type CalendarsPanelProps } from "./CalendarsPanel";
@@ -21,7 +20,7 @@ import {
   type SettingsDocumentState,
 } from "./use-settings-document";
 
-export type SettingsSectionId = "general" | "calendars" | "connections" | "account" | "admin" | "about";
+export type SettingsSectionId = "general" | "calendars" | "connections" | "account" | "about";
 
 type SectionMeta = { icon: ReactNode; id: SettingsSectionId; label: string };
 
@@ -30,7 +29,6 @@ const SECTIONS: ReadonlyArray<SectionMeta> = [
   { icon: <CalendarDays />, id: "calendars", label: "Calendars" },
   { icon: <Link2 />, id: "connections", label: "Connections" },
   { icon: <UserRound />, id: "account", label: "Account" },
-  { icon: <Megaphone />, id: "admin", label: "Announcements" },
   { icon: <Info />, id: "about", label: "About" },
 ];
 
@@ -43,7 +41,6 @@ export type SettingsWindowProps = {
   /** Where focus goes on close, for a window opened by a gesture rather than a trigger. */
   returnFocus?: HTMLElement | null;
   calendars: Calendar[];
-  isAdmin?: boolean;
   onNotice: (message: string) => void;
   reminders?: ReminderControl;
   userId: string;
@@ -105,7 +102,6 @@ export function SettingsWindow({ onOpenChange, open, returnFocus, ...props }: Se
 function SettingsWindowContent({
   calendars,
   document,
-  isAdmin = false,
   onClose,
   onCreateCalendar,
   onCreateMeeting,
@@ -128,7 +124,7 @@ function SettingsWindowContent({
   // Mounted only while the window is open, so each opening starts on the
   // requested section rather than on the list it was left at.
   const [view, setView] = useState<"list" | "detail">("detail");
-  const sections = SECTIONS.filter((item) => item.id !== "admin" || isAdmin);
+  const sections = SECTIONS;
   const active = sections.some((item) => item.id === section) ? section : "general";
 
   function panel(id: SettingsSectionId) {
@@ -163,8 +159,6 @@ function SettingsWindowContent({
         );
       case "account":
         return <AccountPanel onClose={onClose} onNotice={onNotice} />;
-      case "admin":
-        return <AdminSettings />;
       case "about":
         return <AboutPanel remindersLoaded={Boolean(reminders)} />;
     }

@@ -86,14 +86,7 @@ import {
   handlerPatchSettings,
   handlerSaveSettings,
 } from "./handlers/settings";
-import {
-  handlerCreateAnnouncement,
-  handlerDeleteAnnouncement,
-  handlerGetAnnouncements,
-  handlerListAllAnnouncements,
-  handlerUpdateAnnouncement,
-} from "./handlers/announcements";
-import { requireAdmin } from "./middleware/require_admin";
+import { handlerGetAnnouncements } from "./handlers/announcements";
 import {
   handlerAppleAppSiteAssociation,
   handlerServer,
@@ -504,32 +497,6 @@ app.patch("/api/v1/users/me/settings", requireAuth, wrap(handlerPatchSettings));
 // Co tenhle uživatel ještě neviděl. Filtrování podle minVersion dělá klient:
 // server neví, jaká verze se ho ptá.
 app.get("/api/v1/announcements", requireAuth, wrap(handlerGetAnnouncements));
-
-// Psaní zpráv. requireAdmin běží VŽDY za requireAuth — sám neautentizuje.
-app.get(
-  "/api/v1/admin/announcements",
-  requireAuth,
-  requireAdmin,
-  wrap(handlerListAllAnnouncements),
-);
-app.post(
-  "/api/v1/admin/announcements",
-  requireAuth,
-  requireAdmin,
-  wrap(handlerCreateAnnouncement),
-);
-app.patch(
-  "/api/v1/admin/announcements/:id",
-  requireAuth,
-  requireAdmin,
-  wrap(handlerUpdateAnnouncement),
-);
-app.delete(
-  "/api/v1/admin/announcements/:id",
-  requireAuth,
-  requireAdmin,
-  wrap(handlerDeleteAnnouncement),
-);
 
 // Pages (private per-user view profiles). `reorder` before `:id` so the literal
 // path can't be captured as an id.

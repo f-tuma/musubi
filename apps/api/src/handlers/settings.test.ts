@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import type { Request, Response } from "express";
-import { createPatchSettingsHandler } from "./settings";
+import { createPatchSettingsHandler, createSaveSettingsHandler } from "./settings";
 
 const settings = {
   calendarOrder: [],
@@ -13,6 +13,7 @@ const settings = {
     allDay: { daysBefore: 1, atMinute: 1080 },
   },
   lastSeenAnnouncement: "",
+  lastSeenProjectNews: "",
   notificationEmails: { eventChanged: true, pollDecided: true },
   notificationsOnByDefault: true,
   onboarded: true,
@@ -46,6 +47,42 @@ function responseRecorder() {
 }
 
 async function run() {
+  const news = [{ id: "2026-10-27", title: "Release available", body: "https://github.com/f-tuma/musubi/releases", minVersion: null }];
+  for (const scenario of [
+    { marker: "2026-10-27", canonical: "2026-10-01", expected: "2026-10-27" },
+    { marker: "2099-12-31-9", canonical: "2026-10-01", expected: undefined },
+    { marker: "0000-00-00", canonical: "", expected: undefined },
+  ]) for (const explicit of [false, true]) {
+    let sent: { lastSeenAnnouncement?: string; lastSeenProjectNews?: string; theme?: string } | undefined;
+    const handler = createPatchSettingsHandler({
+      getSettings: async () => ({ ...settings, lastSeenProjectNews: scenario.canonical }),
+      readNews: async () => news,
+      patch: async (_owner, revision, patch) => { assert.equal(revision, 4); sent = patch; return { conflict: false, settings }; },
+      notify: () => undefined,
+    });
+    await handler({ user: { id: settings.id }, body: { baseRevision: 4, patch: {
+      lastSeenAnnouncement: scenario.marker, theme: "dark",
+      ...(explicit ? { lastSeenProjectNews: scenario.marker } : {}),
+    } } } as Request, responseRecorder().response);
+    assert.equal(sent?.lastSeenAnnouncement, scenario.marker);
+    assert.equal(sent?.lastSeenProjectNews, scenario.expected);
+    assert.equal(sent?.theme, "dark");
+  }
+  for (const explicit of [false, true]) {
+    let sent: unknown;
+    const handler = createSaveSettingsHandler({
+      getSettings: async () => ({ ...settings, lastSeenProjectNews: "2026-10-27" }),
+      readNews: async () => news,
+      save: async (_owner, values) => { sent = values; return settings; },
+      notify: () => undefined,
+    });
+    const { lastSeenProjectNews: _omitted, ...oldDocument } = settings;
+    await handler({ user: { id: settings.id }, body: {
+      ...oldDocument, lastSeenAnnouncement: "2099-12-31-9",
+      ...(explicit ? { lastSeenProjectNews: "2099-12-31-9" } : {}),
+    } } as Request, responseRecorder().response);
+    assert.equal(Object.prototype.hasOwnProperty.call(sent, "lastSeenProjectNews"), false, "A full PUT holding an old server's response cannot import an unknown local marker");
+  }
   {
     const { response, result } = responseRecorder();
     const handler = createPatchSettingsHandler({
@@ -72,6 +109,7 @@ async function run() {
           defaultCalendarView: "month",
           defaultReminder: settings.defaultReminder,
           lastSeenAnnouncement: settings.lastSeenAnnouncement,
+          lastSeenProjectNews: settings.lastSeenProjectNews,
           notificationEmails: settings.notificationEmails,
           notificationsOnByDefault: true,
           onboarded: true,

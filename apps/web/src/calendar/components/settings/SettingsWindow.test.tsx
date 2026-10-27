@@ -44,8 +44,8 @@ function Harness({ initial, ...props }: Partial<SettingsWindowProps> & { initial
   );
 }
 
-it("lists the sections in order, with Announcements only for admins", () => {
-  const { rerender } = render(<Harness initial="general" />);
+it("lists the settings sections without server announcement administration", () => {
+  render(<Harness initial="general" />);
   const dialog = screen.getByRole("dialog", { name: "Settings" });
   const nav = within(dialog).getByRole("tablist", { name: "Settings sections" });
   expect(within(nav).getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
@@ -55,8 +55,6 @@ it("lists the sections in order, with Announcements only for admins", () => {
     "Account",
     "About",
   ]);
-  rerender(<Harness initial="general" isAdmin />);
-  expect(within(nav).getAllByRole("tab").map((tab) => tab.textContent)).toContain("Announcements");
 });
 
 it("opens at the requested section and switches without leaving the window", async () => {
@@ -68,11 +66,6 @@ it("opens at the requested section and switches without leaving the window", asy
   await user.click(within(dialog).getByRole("tab", { name: "General" }));
   expect(await within(dialog).findByRole("radiogroup", { name: "Theme" })).toBeTruthy();
   expect(within(dialog).getByRole("heading", { level: 2, name: "General" })).toBeTruthy();
-});
-
-it("falls back to General when the admin section is not available", () => {
-  render(<Harness initial="admin" />);
-  expect(screen.getByRole("heading", { level: 2, name: "General" })).toBeTruthy();
 });
 
 it("shows a load failure in General with a retry", async () => {

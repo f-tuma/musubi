@@ -14,6 +14,7 @@ is separate from the [actual host DB gate](../sync-alpha/host-database.md).
 
 ```sh
 pnpm test:behavior --list
+pnpm test:behavior --suite project-news --scenario first-baseline --json
 pnpm test:behavior --suite fair-work --scenario due-crosses-during-wake-scan --json
 pnpm test:behavior --suite read-attempt --scenario steady-large-pagination --json
 pnpm test:behavior --suite read-attempt --json
@@ -48,6 +49,7 @@ not committed. The root runner can also be called as
 
 | Suite | Production code exercised | Replaced boundary | Services needed |
 | --- | --- | --- | --- |
+| `project-news` | Actual common-news reader/cache, source schema, API baseline and legacy read-marker bridge | Fetch, clock and account-settings ports | None; no DB or external HTTP |
 | `read-attempt` | Actual pull progress watchdog, pause/resume, lease heartbeat, cancellation and disposal | Explicit production clock port and renewal receipts | None; virtual time, no DB/provider calls |
 | `google-delete` | Claimed delivery runtime, Google provider preflight/conditional DELETE/recovery | Host persistence/lease/credential ports, HTTP responses and clock | None |
 | `google-create` | Admitted codec identity/body, CREATE delivery runtime and provider preflight/write/recovery | Host persistence/lease/credential ports, ordered HTTP responses and clock | None |
@@ -307,3 +309,14 @@ and closed credential/marker/PATCH/readback continuations. The independent real
 PG/native/process gate remains the durability proof. The historical Google
 reconciling-baseline case deliberately changes from conditional resend to
 GET-only HOLD in this separate policy gate.
+
+The project-news suite covers a validated first baseline, an empty feed, old
+local markers, concurrent initialization, single-flight caching, ETag/304,
+malformed/oversized sources, cold and warm failures, timeouts, retry delays and
+legacy-client marker writes. It runs the production functions through their
+existing dependency ports. The API test command also checks actual loopback HTTP
+for redirect refusal, post-header timeout and streamed-body cancellation.
+Actual PostgreSQL tests cover migration and concurrent read-state persistence;
+`pnpm --filter @musubi/web exec playwright test news.spec.ts` confirms the
+reader in the running web app. Its browser API fixtures do not establish live
+GitHub, DB or authentication behavior. See [Project news](../project-news.md).

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { SettingsPatchSchema } from "./settings";
+import { SettingsPatchSchema, SettingsSchema } from "./settings";
 
 // A phone updates from a store; a self-hosted server updates when its admin
 // gets round to it. So a client newer than its server is the ordinary case, and
@@ -64,6 +64,30 @@ import { SettingsPatchSchema } from "./settings";
     SettingsPatchSchema.parse({ lastSeenAnnouncement: "" }).lastSeenAnnouncement,
     "",
   );
+}
+
+{
+  const lastSeenProjectNews = "2026-10-27";
+  assert.deepEqual(SettingsPatchSchema.parse({ lastSeenProjectNews }), {
+    lastSeenProjectNews,
+  });
+  assert.equal(SettingsPatchSchema.parse({ lastSeenProjectNews: "" }).lastSeenProjectNews, "");
+  assert.equal(SettingsPatchSchema.safeParse({ lastSeenProjectNews: "x".repeat(65) }).success, false);
+
+  const oldClientSettings = {
+    notificationsOnByDefault: true,
+    defaultCalendarView: "week",
+    weekStartsOn: "monday",
+    timeFormat: "24h",
+    dateFormat: "dmy",
+    lastSeenAnnouncement: "2099-12-31-9",
+  };
+  const oldPut = SettingsSchema.parse(oldClientSettings);
+  assert.equal(Object.hasOwn(oldPut, "lastSeenProjectNews"), false,
+    "an older client's full PUT must omit the new marker instead of supplying a default");
+  assert.equal(oldPut.lastSeenAnnouncement, oldClientSettings.lastSeenAnnouncement,
+    "server-local and project read markers stay independent");
+  assert.equal(SettingsSchema.parse({ ...oldClientSettings, lastSeenProjectNews }).lastSeenProjectNews, lastSeenProjectNews);
 }
 
 console.log("settings.test.ts ok");

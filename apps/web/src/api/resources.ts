@@ -16,7 +16,6 @@ import {
   requireEventRevision,
 } from "@musubi/types";
 import {
-  AdminAnnouncementsResponseSchema,
   AttendeesResponseSchema,
   CalendarMembersResponseSchema,
   CalendarsResponseSchema,
@@ -36,12 +35,10 @@ import {
   TasksResponseSchema,
 } from "./contracts";
 import {
-  AnnouncementSchema,
   AnnouncementsResponseSchema,
   CalendarSchema,
   EventSchema,
   InviteSchema,
-  type AnnouncementInput,
   type Calendar,
   type CreatePageRequest,
   type Event,
@@ -635,35 +632,6 @@ export function getAnnouncements(signal?: AbortSignal) {
     // parsuje mobil, a jeden tvar znamená jedno místo, kde se mění.
     responseSchema: AnnouncementsResponseSchema,
     signal,
-  });
-}
-
-export function listAdminAnnouncements() {
-  return apiRequest("/api/v1/admin/announcements", {
-    responseSchema: AdminAnnouncementsResponseSchema,
-  });
-}
-
-export function createAnnouncement(input: AnnouncementInput) {
-  return apiRequest("/api/v1/admin/announcements", {
-    body: input,
-    method: "POST",
-    responseSchema: AnnouncementSchema,
-  });
-}
-
-export function updateAnnouncement(id: string, input: AnnouncementInput) {
-  return apiRequest(`/api/v1/admin/announcements/${id}`, {
-    body: input,
-    method: "PATCH",
-    responseSchema: AnnouncementSchema,
-  });
-}
-
-export function removeAnnouncement(id: string) {
-  return apiRequest(`/api/v1/admin/announcements/${id}`, {
-    method: "DELETE",
-    responseSchema: z.object({ deleted: z.boolean() }),
   });
 }
 
