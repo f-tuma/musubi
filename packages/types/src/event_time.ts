@@ -1,8 +1,8 @@
 import { z } from "zod";
+import { WireInstantSchema, WireLocalDateTimeSchema } from "./wire_primitives";
 
 // Offset-free civil timestamps are values, never implicitly parsed in the host TZ.
-export const CivilDateTimeSchema = z.iso
-  .datetime({ local: true })
+export const CivilDateTimeSchema = WireLocalDateTimeSchema
   .refine(
     (value) =>
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?$/.test(value),
@@ -58,8 +58,7 @@ export const OccurrenceStartSchema = z.discriminatedUnion("kind", [
   z
     .object({
       kind: z.literal("instant"),
-      value: z.iso
-        .datetime()
+      value: WireInstantSchema
         .refine(
           (value) => !/\.\d{4}/.test(value),
           "At most millisecond precision",

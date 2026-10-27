@@ -84,4 +84,20 @@ describe("gateway routes", () => {
       "MARKETING_UPSTREAM: musubi-web-internal:3000",
     );
   });
+
+  it("routes both public mobile associations to the API", () => {
+    const source = readFileSync(CADDYFILE, "utf8");
+    for (const route of ["apple-app-site-association", "assetlinks.json"])
+      expect(source).toContain(`handle /.well-known/${route} {\n\t\treverse_proxy {env.API_UPSTREAM}`);
+  });
+
+  it("keeps the mutable worker outside upstream asset cache policy", () => {
+    const source = readFileSync(CADDYFILE, "utf8");
+    const worker = source.indexOf("handle /app/sw.js {");
+    expect(worker).toBeGreaterThan(-1);
+    expect(worker).toBeLessThan(source.indexOf("@webclient path"));
+    expect(source).toContain('header_down Cache-Control "no-store, no-cache, must-revalidate"');
+    expect(source).toContain('header_down CDN-Cache-Control "no-store"');
+    expect(source).toContain('header_down Cloudflare-CDN-Cache-Control "no-store"');
+  });
 });

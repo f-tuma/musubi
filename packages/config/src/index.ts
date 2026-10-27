@@ -4,7 +4,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { parseLogLevel, StructuredLogger, type LogLevel } from "./logger";
 import { parseProviderBudgetLimits, parseProviderBudgetNamespace, PROVIDER_BUDGET_CONTINUATION_WINDOW_MS, type ProviderBudgetLimits } from "./provider-budget";
+import { parseAndroidAppLinksSha256 } from "./android-app-links";
 export { parseProviderBudgetLimits, parseProviderBudgetNamespace } from "./provider-budget";
+export { parseAndroidAppLinksSha256 } from "./android-app-links";
 
 export {
   LOG_LEVELS,
@@ -122,6 +124,7 @@ export function parseSyncOperationV1EncoderEnabled(value: string | undefined): b
 }
 
 type APIConfig = {
+  androidAppLinksSha256: string[];
   providerBudgetLimits: ProviderBudgetLimits;
   providerBudgetContinuationWindowMs: number;
   providerBudgetNamespace: string;
@@ -292,6 +295,7 @@ export function parseMediaConfig(
 const mediaConfig = parseMediaConfig(process.env);
 
 const apiConfig: APIConfig = {
+  androidAppLinksSha256: parseAndroidAppLinksSha256(process.env.ANDROID_APP_LINKS_SHA256),
   // Upgrade every deployed consumer before accepting the new v1 format.
   syncOperationV1EncoderEnabled: parseSyncOperationV1EncoderEnabled(process.env.SYNC_OPERATION_V1_ENCODER_ENABLED),
   eventTimeEditsEnabled: process.env.EVENT_TIME_EDITS_ENABLED === "true",

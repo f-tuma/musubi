@@ -1,9 +1,10 @@
 import { z } from "zod";
+import { WireEmailSchema } from "./wire_primitives";
 
 export const UserSchema = z.object({
   id: z.string(),
   name: z.string(),
-  email: z.string().email(),
+  email: WireEmailSchema,
   image: z.string().nullish(),
 });
 

@@ -14,7 +14,7 @@
   "author": "frgtn.dev",
   "license": "MIT",
   "dependencies": {
-    "zod": "^4.4.3"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "tsx": "^4.23.12"

@@ -2,8 +2,9 @@
 
 Current published release: **[0.2.11](https://github.com/f-tuma/musubi/releases/tag/v0.2.11)**
 (16 October 2026). The 27 October assessment is **HOLD for a complete server,
-web, Android and iOS release**. **0.2.12 is a proposal, not a reserved version**;
-product metadata still says 0.2.11. See the
+web, Android and iOS release**. The versioned **0.2.12 candidate** is described in
+[the hardening record](releases/0.2.12-hardening.md); it has not been published.
+Check remote names again at publication time. See the
 [current readiness assessment and operator runbook](releases/0.2.12-readiness.md),
 [release status](https://musubi.pro/docs/operations/releases/) and
 [capability matrix](https://musubi.pro/docs/operations/capabilities/).

@@ -6,6 +6,10 @@ import { test } from "node:test";
 import { parseArguments, runBehavior, runCli } from "./test-behavior.mjs";
 
 const manifests = {
+  "api-json-body": "apps/api/src/behavior/api-json-body.json",
+  "app-links": "apps/api/src/behavior/app-links.json",
+  "postgres-restore": "ops/behavior/postgres-restore.json",
+  "web-edge": "apps/web/src/tests/behavior/web-edge.json",
   "project-news": "apps/api/src/behavior/project-news.json",
   "read-attempt": "apps/api/src/sync/behavior/read-attempt.json",
   "fair-work": "packages/sync-runtime/src/behavior/fair-work.json",
@@ -96,6 +100,40 @@ test("runtime filtering uses a fixed executable and arguments, and strips arbitr
   assert.equal(report.failed, 0);
   assert.deepEqual(report.suites[0].results, [{ ...scenarios[1], status: "passed", durationMs: 1 }]);
   assert.ok(!JSON.stringify(report).includes("privateDebug"));
+});
+
+test("release boundaries use fixed CLIs and reject another boundary's report", async t => {
+  const root = await fixture(t);
+  for (const [suite, prefix, file] of [
+    ["api-json-body", ["--import", "tsx"], "apps/api/src/behavior/api-json-body-cli.ts"],
+    ["app-links", ["--import", "tsx"], "apps/api/src/behavior/app-links-cli.ts"],
+    ["postgres-restore", [], "ops/behavior/postgres-restore-cli.mjs"],
+  ]) {
+    const selected = await runBehavior(["--suite", suite, "--scenario", "first"], {
+      root, execute: async (command, args) => {
+        assert.equal(command, process.execPath);
+        assert.deepEqual(args, [...prefix, join(root, file), "--json", "--scenario", "first"]);
+        return runtime([scenarios[0]], { suite });
+      },
+    });
+    assert.equal(selected.passed, 1);
+    const wrong = await runBehavior(["--suite", suite], { root, execute: async () => runtime() });
+    assert.equal(wrong.failed, scenarios.length);
+  }
+});
+
+test("web edge uses its own production-route test with the selected scenario filter", async t => {
+  const root = await fixture(t);
+  const report = await runBehavior(["--suite", "web-edge", "--scenario", "second"], {
+    root, execute: async (_command, args, { env }) => {
+      assert.ok(args.includes("src/tests/behavior/web-edge.scenarios.test.ts"));
+      assert.ok(!args.includes("src/tests/behavior/task-inspector.scenarios.test.tsx"));
+      assert.equal(env.MUSUBI_SCENARIO, "second");
+      await writeFile(args.at(-1).slice("--outputFile=".length), JSON.stringify(uiReport([scenarios[1]])));
+      return { code: 0, stdout: "", stderr: "" };
+    },
+  });
+  assert.equal(report.passed, 1);
 });
 
 test("CREATE selection launches only its fixed CLI and refuses DELETE evidence or unknown ids", async t => {
@@ -415,7 +453,8 @@ test("default runs every fixed suite and emits one clean aggregate JSON document
   const output = [];
   const code = await runCli(["--json"], line => output.push(line), { root, execute: async (_command, args) => {
     launches++;
-    if (args.includes("--import")) return runtime(scenarios, { suite: args.some(arg => arg.endsWith("/project-news-cli.ts")) ? "project-news" : args.some(arg => arg.endsWith("/read-attempt-cli.ts")) ? "read-attempt" : args.some(arg => arg.endsWith("/fair-work-cli.ts")) ? "fair-work" : args.some(arg => arg.endsWith("/caldav-discovery-cli.ts")) ? "caldav-discovery" : args.some(arg => arg.endsWith("/google-rsvp-delivery-cli.ts")) ? "google-rsvp-delivery" : args.some(arg => arg.endsWith("/event-delivery-cli.ts")) ? "event-delivery" : args.some(arg => arg.endsWith("/task-delivery-cli.ts")) ? "task-delivery" :
+    if (args.some(arg => arg.endsWith("/postgres-restore-cli.mjs"))) return runtime(scenarios, { suite: "postgres-restore" });
+    if (args.includes("--import")) return runtime(scenarios, { suite: args.some(arg => arg.endsWith("/api-json-body-cli.ts")) ? "api-json-body" : args.some(arg => arg.endsWith("/app-links-cli.ts")) ? "app-links" : args.some(arg => arg.endsWith("/project-news-cli.ts")) ? "project-news" : args.some(arg => arg.endsWith("/read-attempt-cli.ts")) ? "read-attempt" : args.some(arg => arg.endsWith("/fair-work-cli.ts")) ? "fair-work" : args.some(arg => arg.endsWith("/caldav-discovery-cli.ts")) ? "caldav-discovery" : args.some(arg => arg.endsWith("/google-rsvp-delivery-cli.ts")) ? "google-rsvp-delivery" : args.some(arg => arg.endsWith("/event-delivery-cli.ts")) ? "event-delivery" : args.some(arg => arg.endsWith("/task-delivery-cli.ts")) ? "task-delivery" :
       args.some(arg => arg.endsWith("/google-task-create-cli.ts")) ? "google-task-create" :
       args.some(arg => arg.endsWith("/google-task-delete-cli.ts")) ? "google-task-delete" :
       args.some(arg => arg.endsWith("/google-task-update-cli.ts")) ? "google-task-update" :

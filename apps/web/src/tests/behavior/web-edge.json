@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "suite": "web-edge",
+  "scenarios": [
+    {
+      "id": "nitro-forwards-native-worker-request",
+      "title": "The exact Nitro bridge preserves the native worker request and SSR response",
+      "kind": "nitro-dispatch",
+      "request": {
+        "url": "http://worker.example.test/app/sw.js?fresh=1",
+        "method": "GET",
+        "headers": { "sec-fetch-dest": "serviceworker", "accept": "*/*" }
+      },
+      "expected": { "environment": "ssr" }
+    },
+    {
+      "id": "worker-response-bypasses-caches",
+      "title": "The actual worker route refuses browser and CDN response caching",
+      "kind": "worker-response",
+      "expected": {
+        "status": 200,
+        "headers": {
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "cdn-cache-control": "no-store",
+          "cloudflare-cdn-cache-control": "no-store",
+          "content-type": "text/javascript; charset=utf-8",
+          "service-worker-allowed": "/"
+        },
+        "bodyIncludes": ["NOTIFICATION_ICON", "self.addEventListener(\"push\""]
+      }
+    },
+    {
+      "id": "registration-bypasses-http-cache",
+      "title": "Production push registration bypasses HTTP cache for worker update checks",
+      "kind": "registration",
+      "expected": {
+        "scriptURL": "/app/sw.js",
+        "options": { "scope": "/app/", "updateViaCache": "none" },
+        "subscribed": true
+      }
+    }
+  ]
+}

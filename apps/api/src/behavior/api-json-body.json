@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "suite": "api-json-body",
+  "driver": "api-json-body",
+  "scenarios": [
+    {
+      "id": "gzip-trailing-bytes",
+      "title": "Trailing bytes after gzip cannot terminate the parser process",
+      "encoding": "gzip",
+      "input": "small-json",
+      "trailingBytes": 102400,
+      "expectedStatus": [200, 400]
+    },
+    {
+      "id": "identity-json",
+      "title": "Ordinary JSON reaches the downstream handler unchanged",
+      "encoding": "identity",
+      "input": "small-json",
+      "trailingBytes": 0,
+      "expectedStatus": [200]
+    },
+    {
+      "id": "gzip-json",
+      "title": "Valid gzip JSON remains compatible",
+      "encoding": "gzip",
+      "input": "small-json",
+      "trailingBytes": 0,
+      "expectedStatus": [200]
+    },
+    {
+      "id": "deflate-json",
+      "title": "Valid deflate JSON remains compatible",
+      "encoding": "deflate",
+      "input": "small-json",
+      "trailingBytes": 0,
+      "expectedStatus": [200]
+    },
+    {
+      "id": "gzip-decoded-limit",
+      "title": "The 512 KiB limit applies to the decompressed JSON body",
+      "encoding": "gzip",
+      "input": "oversized-json",
+      "trailingBytes": 0,
+      "expectedStatus": [413]
+    },
+    {
+      "id": "invalid-json",
+      "title": "Invalid JSON is rejected without reaching the downstream handler",
+      "encoding": "identity",
+      "input": "invalid-json",
+      "trailingBytes": 0,
+      "expectedStatus": [400]
+    }
+  ]
+}

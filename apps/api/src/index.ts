@@ -15,6 +15,7 @@ import {
 import { migrateDatabase } from "@musubi/db/migrate";
 import { toNodeHandler } from "better-auth/node";
 import express from "express";
+import { createJsonBodyParser } from "./middleware/json_body";
 import cors from "cors";
 import { middlewareErrorHandler } from "./middleware/error_handler";
 import {
@@ -92,6 +93,7 @@ import {
   handlerServer,
   handlerServerStatus,
 } from "./handlers/server";
+import { createAndroidAssetLinksHandler } from "./handlers/android_assetlinks";
 import {
   handlerResetPasswordPage,
   handlerDeleteAccountPage,
@@ -216,7 +218,7 @@ app.use(
     });
   }),
 );
-app.use(express.json({ limit: "512kb" })); // avatars arrive as base64 JSON
+app.use(createJsonBodyParser());
 
 // Better Auth owns everything under /api/auth (sign-in/up, sessions, reset).
 app.all("/api/auth/{*any}", toNodeHandler(auth));
@@ -307,6 +309,11 @@ app.get("/email-verified", handlerEmailVerifiedPage);
 app.get(
   "/.well-known/apple-app-site-association",
   handlerAppleAppSiteAssociation,
+);
+// Android verified links use the Play app-signing certificate, never an upload key.
+app.get(
+  "/.well-known/assetlinks.json",
+  createAndroidAssetLinksHandler(config.api.androidAppLinksSha256),
 );
 // The user's connections to other Musubi servers (member tokens, encrypted at
 // rest) — stored home-side so a connection accepted on one device roams to all.

@@ -26,12 +26,30 @@ overrides:
   qs@<6.16.0: 6.16.0
   # xcode uses only the named CommonJS v4 API, retained by uuid 11.
   xcode>uuid: 11.1.1
-  nanoid@<3.3.17: 3.3.17
+  nanoid@<3.3.18: 3.3.18
   postcss@<8.5.23: 8.5.23
   # Security bumps for transitive docs (Astro) deps flagged by Dependabot.
   svgo@>=4.0.0 <4.1.0: 4.1.0
-  dompurify@<=3.4.11: ">=3.4.12"
-  brace-expansion@<1.1.16: ">=1.1.16 <2"
+  dompurify@<3.4.17: 3.4.17
+  brace-expansion@<1.1.21: 1.1.21
+  brace-expansion@>=5.0.0 <5.0.12: 5.0.12
+  # Keep vulnerable transitive ranges on fixed, compatible major versions.
+  body-parser@>=2.0.0 <2.4.0: 2.4.0
+  proxy-addr@>=2.0.0 <2.0.8: 2.0.8
+  compression@<1.8.2: 1.8.2
+  devalue@>=5.0.0 <5.9.3: 5.9.3
+  http-cache-semantics@>=4.0.0 <4.3.0: 4.3.0
+  node-forge@<1.4.1: 1.4.1
+  shell-quote@>=1.8.4 <1.11.0: 1.11.0
+  source-map-js@>=1.0.0 <1.2.2: 1.2.2
+  undici@>=7.0.0 <7.30.1: 7.30.1
+  undici@>=8.0.0 <8.12.2: 8.12.2
+  zod@>=4.0.0 <4.6.6: 4.6.6
+  # One Vite instance for Astro, Storybook and the app's optional peer contexts.
+  vite@>=8.0.0 <9.0.0: 8.1.6
+  postcss-selector-parser@>=6.0.0 <6.1.5: 6.1.5
+  smol-toml@>=1.0.0 <1.9.1: 1.9.1
+  sharp@>=0.35.0 <0.35.5: 0.35.5
 minimumReleaseAgeExclude:
   # Expo is a trusted first-party publisher — exclude its packages from the
   # release-age gate by name (globs, not name@version, which never matched).
@@ -41,5 +59,8 @@ minimumReleaseAgeExclude:
   - babel-preset-expo
   - '@vardum/cli@0.8.0'
   - '@vardum/shared@0.4.0'
+  # Exact upstream RSA verification fix, released today; never a publisher glob.
+  # https://github.com/digitalbazaar/forge/security/advisories/GHSA-2g46-22mc-6gwp
+  - node-forge@1.4.1
 patchedDependencies:
   query-string@7.1.3: patches/query-string@7.1.3.patch
