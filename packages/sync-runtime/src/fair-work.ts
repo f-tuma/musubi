@@ -96,10 +96,10 @@ export function createFairWorkCoordinator<H>(options: FairWorkOptions<H>) {
       if (result) for (const waiter of item.waiters.splice(0)) waiter.resolve(result);
     }
   }
-  function choose(): Pending<H> | undefined {
+  function choose(atMs: number): Pending<H> | undefined {
     const regular = [...permits.values()].filter(state => !state.item.candidate.auxiliary).length;
     const auxiliary = active.size - regular;
-    const eligible = [...pending.values()].filter(item => { const c = item.candidate; return c.dueAtMs <= now() &&
+    const eligible = [...pending.values()].filter(item => { const c = item.candidate; return c.dueAtMs <= atMs &&
       (item.resume ? permits.has(item.resume.permit) : !active.has(c.key) && (c.auxiliary ? auxiliary : regular) < options.capacity) &&
       (item.resume || c.auxiliary || ![...permits.values()].some(state => state.account === c.accountFairnessKey && !state.item.candidate.auxiliary)) &&
       !accounts.has(c.accountFairnessKey) && c.collisionKeys.every(key => !collisions.has(key)); });
@@ -160,13 +160,20 @@ export function createFairWorkCoordinator<H>(options: FairWorkOptions<H>) {
     let nextWake: number | undefined;
     try {
       if (options.host.candidates && accounts.size < options.capacity && active.size < options.capacity * 2) {
-        const page = await options.host.candidates({ nowMs: now(), limit: options.candidateLimit ?? 80,
+        const lookupAtMs = now();
+        const page = await options.host.candidates({ nowMs: lookupAtMs, limit: options.candidateLimit ?? 80,
           accountCursor: cursor, excludedAccounts: [...accounts], excludedCollisionKeys: [...collisions.keys()] });
         if (closed) return;
-        cursor = page.nextAccountCursor; nextWake = page.nextWakeAtMs;
+        cursor = page.nextAccountCursor;
+        // A future hint may already be due when an asynchronous lookup returns.
+        // Retain that wake, but do not poll repeatedly on an already-past hint.
+        if (page.nextWakeAtMs !== undefined && page.nextWakeAtMs > lookupAtMs) nextWake = page.nextWakeAtMs;
         for (const candidate of page.candidates) if (!active.has(candidate.key)) add(candidate);
       }
-      while (!closed && accounts.size < options.capacity) { const item = choose(); if (!item) break; start(item); }
+      let selectionAtMs = now();
+      while (!closed && accounts.size < options.capacity) {
+        selectionAtMs = now(); const item = choose(selectionAtMs); if (!item) break; start(item);
+      }
       const regular = [...permits.values()].filter(state => !state.item.candidate.auxiliary);
       if (regular.length >= options.capacity && regular.every(state => !state.held)) {
         for (const [key, item] of pending) if (!item.resume && !item.candidate.auxiliary) {
@@ -174,11 +181,14 @@ export function createFairWorkCoordinator<H>(options: FairWorkOptions<H>) {
           for (const waiter of item.waiters) waiter.reject(new ProviderDispatchDeferred({ retryAtMs: now() + 1000, reason: "work-capacity", blockedDimensions: [] }));
         }
       }
-      for (const { candidate } of pending.values()) if (candidate.dueAtMs > now()) nextWake = Math.min(nextWake ?? Infinity, candidate.dueAtMs);
+      // Compare with the same eligibility sample used by the last selection:
+      // crossing the due time during this scan must not strand queued/resumed
+      // work. Already-due collision/capacity waits still rely on release kicks.
+      for (const { candidate } of pending.values()) if (candidate.dueAtMs > selectionAtMs) nextWake = Math.min(nextWake ?? Infinity, candidate.dueAtMs);
     } catch (error) { try { options.host.onFailure?.(error); } catch { /* Diagnostics only. */ } }
     finally {
       pumping = false;
-      if (!closed && nextWake !== undefined && Number.isFinite(nextWake) && nextWake > now()) cancelTimer = schedule(kick, Math.max(1, nextWake - now()));
+      if (!closed && nextWake !== undefined && Number.isFinite(nextWake)) cancelTimer = schedule(kick, Math.max(1, nextWake - now()));
       if (requested && !closed) void Promise.resolve().then(pump);
     }
   }

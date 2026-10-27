@@ -3,12 +3,61 @@
   "driver": "fair-work",
   "scenarios": [
     {
+      "id": "due-crosses-during-wake-scan",
+      "title": "A queued eligibility crossing during selection retains its automatic wake without an unrelated kick",
+      "expected": {
+        "clockCrossings": 8,
+        "completions": 8,
+        "externalKicks": 0,
+        "active": 0,
+        "pending": 0
+      }
+    },
+    {
+      "id": "parked-due-crosses-before-timer",
+      "title": "A parked continuation cannot lose its wake when eligibility passes before the timer is armed",
+      "expected": {
+        "clockCrossings": 8,
+        "completions": 8,
+        "externalKicks": 0,
+        "active": 0,
+        "pending": 0
+      }
+    },
+    {
+      "id": "async-future-hint-crosses-due",
+      "title": "A future host hint that becomes due during an async lookup schedules a wake without spinning on repeated stale hints",
+      "expected": {
+        "starts": 1,
+        "unrelatedKicks": 0,
+        "timersForRepeatedPastHint": 0,
+        "active": 0
+      }
+    },
+    {
+      "id": "due-collision-waits-for-release",
+      "title": "Due work blocked by a held resource waits for release without a timer loop",
+      "expected": {
+        "startsBeforeRelease": 0,
+        "timersWhileBlocked": 0,
+        "startsAfterRelease": 1,
+        "active": 0
+      }
+    },
+    {
       "id": "active-deferral-releases-submitters",
       "title": "Direct submitters receive a running background claim's deferral without waiting until its future due time",
       "expected": {
         "releasedSubmitters": 3,
         "exactDue": true,
-        "partialInvalidations": [["partial"], ["partial"]],
+        "partialInvalidations": [
+          [
+            "partial"
+          ],
+          [
+            "partial"
+          ]
+        ],
         "executions": 2,
         "pending": 0
       }
@@ -164,9 +213,17 @@
       "id": "long-cooldown-releases-continuations",
       "title": "Four long account cooldowns release continuations before healthy B runs",
       "expected": {
-        "results": ["deferred", "deferred", "deferred", "deferred", "settled"],
+        "results": [
+          "deferred",
+          "deferred",
+          "deferred",
+          "deferred",
+          "settled"
+        ],
         "exactDue": true,
-        "methods": ["healthy:GET"],
+        "methods": [
+          "healthy:GET"
+        ],
         "parks": 0,
         "logicalActive": 0
       }
