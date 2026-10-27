@@ -14,6 +14,7 @@ is separate from the [actual host DB gate](../sync-alpha/host-database.md).
 
 ```sh
 pnpm test:behavior --list
+pnpm test:behavior --suite wire-timestamps --scenario availability-minute-utc --json
 pnpm test:behavior --suite api-json-body --scenario gzip-trailing-bytes --json
 pnpm test:behavior --suite app-links --scenario unconfigured-is-not-associated --json
 pnpm test:behavior --suite web-edge --scenario worker-response-bypasses-caches --json
@@ -53,6 +54,7 @@ not committed. The root runner can also be called as
 
 | Suite | Production code exercised | Replaced boundary | Services needed |
 | --- | --- | --- | --- |
+| `wire-timestamps` | Actual public availability/outlook and persisted provider schemas with stable timestamp primitives | JSON validation inputs/expected acceptance only | None; no DB/provider or reimplemented timestamp parser |
 | `api-json-body` | The API's real Express JSON middleware, including decompression, body limits and error recovery | Owned loopback HTTP child and downstream/error observers | No DB/auth/provider; malformed inputs stay in the isolated child |
 | `app-links` | Production certificate configuration parser and Android association handler | Configuration input and Express response ports | None; a separate real HTTP test confirms response/startup behavior |
 | `web-edge` | Real worker route and push-registration function | Browser registration/push subscription ports | Vitest/jsdom; final Chromium test uses the actual served worker |

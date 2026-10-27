@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { EventTimeZoneSchema } from "./event_time";
+import { WireInstantSchema } from "./wire_primitives";
 
 export const OUTLOOK_MOVE_LIMIT = 20;
-const stamp = z.iso.datetime();
+const stamp = WireInstantSchema;
 const occurrence = z.object({ eventID: z.uuid(), start: stamp, end: stamp }).strict();
 export const OutlookMoveRequestSchema = z.object({
   operationID: z.uuid(), eventID: z.uuid(), calendarID: z.uuid(),

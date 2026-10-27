@@ -2,6 +2,7 @@ import { z } from "zod";
 import { EventTimeEditSchema } from "./event_time";
 import type { ProviderRsvpInstance } from "./provider-rsvp";
 import type { Event } from "./event";
+import { WireInstantSchema } from "./wire_primitives";
 const time = EventTimeEditSchema.refine(
   (value) =>
     value.kind !== "floating" &&
@@ -219,12 +220,12 @@ export const OrganizerDispatchSchema = z
   .object({
     kind: z.enum(["google-organizer-dispatch", "caldav-organizer-dispatch", "microsoft-organizer-dispatch"]),
     version: z.literal(1),
-    startedAt: z.iso.datetime(),
-    acceptedAt: z.iso.datetime().optional(),
+    startedAt: WireInstantSchema,
+    acceptedAt: WireInstantSchema.optional(),
     cancellationTombstone: z
       .object({
         revision: z.number().int().positive(),
-        deletedAt: z.iso.datetime(),
+        deletedAt: WireInstantSchema,
       })
       .strict()
       .optional(),

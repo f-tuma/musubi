@@ -28,11 +28,11 @@
     "remainingDisposition": "Requires final artifact inventory/configuration-bound review; Zod3 belongs to ExpoCLI and KaTeX to docs Mermaid, not a clean-security assertion"
   },
   "fastBehavior": {
-    "passed": 680,
+    "passed": 712,
     "failed": 0,
     "errors": 0
   },
-  "suiteCount": 22,
+  "suiteCount": 23,
   "parser": {
     "oldVersion": "2.3.0",
     "oldOwnedChildCrashObserved": true,
@@ -129,7 +129,8 @@
     "clientAndPeerFloorChanged": false,
     "oldRuntime": "4.4.3",
     "newRuntime": "4.6.6",
-    "evidenceScope": "Production primitives and immutable wire comparator, real old/new dependency differential tests"
+    "evidenceScope": "Production primitives and immutable wire comparator, real old/new dependency differential tests",
+    "timestampBoundaryScenarios": 32
   },
   "localRestore": {
     "scope": "Owned synthetic database, not production",

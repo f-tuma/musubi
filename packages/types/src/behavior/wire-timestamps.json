@@ -1,0 +1,536 @@
+{
+  "schemaVersion": 1,
+  "suite": "wire-timestamps",
+  "scenarios": [
+    {
+      "id": "availability-minute-utc",
+      "title": "Availability requests accept legacy minute precision in UTC",
+      "boundary": "availability-request",
+      "input": {
+        "start": "2026-10-27T09:30Z",
+        "end": "2026-10-27T10:30Z",
+        "sourceIds": [
+          "00000000-0000-4000-8000-000000000001"
+        ]
+      },
+      "expectedSuccess": true
+    },
+    {
+      "id": "availability-minute-offset",
+      "title": "Availability requests accept legacy minute precision with an offset",
+      "boundary": "availability-request",
+      "input": {
+        "start": "2026-10-27T09:30+02:00",
+        "end": "2026-10-27T10:30+02:00",
+        "sourceIds": [
+          "00000000-0000-4000-8000-000000000001"
+        ]
+      },
+      "expectedSuccess": true
+    },
+    {
+      "id": "availability-interval-minute-utc",
+      "title": "Busy intervals preserve minute UTC timestamps",
+      "boundary": "availability-interval",
+      "input": {
+        "start": "2026-10-27T09:30Z",
+        "end": "2026-10-27T10:30Z"
+      },
+      "expectedSuccess": true
+    },
+    {
+      "id": "availability-interval-minute-offset",
+      "title": "Busy intervals preserve minute offset timestamps",
+      "boundary": "availability-interval",
+      "input": {
+        "start": "2026-10-27T09:30+02:00",
+        "end": "2026-10-27T10:30+02:00"
+      },
+      "expectedSuccess": true
+    },
+    {
+      "id": "availability-response-minute-utc",
+      "title": "Availability responses preserve UTC minute precision and generation zero",
+      "boundary": "availability-response",
+      "input": {
+        "start": "2026-10-27T09:30Z",
+        "end": "2026-10-27T10:30Z",
+        "observedAt": "2026-10-27T09:30Z",
+        "sources": [
+          {
+            "sourceId": "00000000-0000-4000-8000-000000000001",
+            "generation": 0,
+            "status": "available",
+            "intervals": [
+              {
+                "start": "2026-10-27T09:30Z",
+                "end": "2026-10-27T10:30Z"
+              }
+            ]
+          }
+        ]
+      },
+      "expectedSuccess": true
+    },
+    {
+      "id": "availability-response-minute-offset",
+      "title": "Availability responses preserve offset minute precision",
+      "boundary": "availability-response",
+      "input": {
+        "start": "2026-10-27T09:30+02:00",
+        "end": "2026-10-27T10:30+02:00",
+        "observedAt": "2026-10-27T09:30+02:00",
+        "sources": [
+          {
+            "sourceId": "00000000-0000-4000-8000-000000000001",
+            "generation": 0,
+            "status": "available",
+            "intervals": [
+              {
+                "start": "2026-10-27T09:30+02:00",
+                "end": "2026-10-27T10:30+02:00"
+              }
+            ]
+          }
+        ]
+      },
+      "expectedSuccess": true
+    },
+    {
+      "id": "availability-42-days",
+      "title": "A range of exactly 42 days remains accepted",
+      "boundary": "availability-request",
+      "input": {
+        "start": "2026-10-27T09:30Z",
+        "end": "2026-12-08T09:30Z",
+        "sourceIds": [
+          "00000000-0000-4000-8000-000000000001"
+        ]
+      },
+      "expectedSuccess": true
+    },
+    {
+      "id": "availability-over-42-days",
+      "title": "A range exceeding 42 days remains refused",
+      "boundary": "availability-request",
+      "input": {
+        "start": "2026-10-27T09:30Z",
+        "end": "2026-12-08T09:31Z",
+        "sourceIds": [
+          "00000000-0000-4000-8000-000000000001"
+        ]
+      },
+      "expectedSuccess": false
+    },
+    {
+      "id": "availability-equal-bounds",
+      "title": "A zero-duration request remains refused",
+      "boundary": "availability-request",
+      "input": {
+        "start": "2026-10-27T09:30Z",
+        "end": "2026-10-27T09:30Z",
+        "sourceIds": [
+          "00000000-0000-4000-8000-000000000001"
+        ]
+      },
+      "expectedSuccess": false
+    },
+    {
+      "id": "availability-reversed-offset-bounds",
+      "title": "Ordering compares instants across offsets",
+      "boundary": "availability-request",
+      "input": {
+        "start": "2026-10-27T09:30Z",
+        "end": "2026-10-27T10:30+02:00",
+        "sourceIds": [
+          "00000000-0000-4000-8000-000000000001"
+        ]
+      },
+      "expectedSuccess": false
+    },
+    {
+      "id": "availability-interval-reversed",
+      "title": "Busy intervals with reversed instants remain refused",
+      "boundary": "availability-interval",
+      "input": {
+        "start": "2026-10-27T10:30Z",
+        "end": "2026-10-27T09:30Z"
+      },
+      "expectedSuccess": false
+    },
+    {
+      "id": "availability-interval-empty",
+      "title": "Busy intervals with no duration remain refused",
+      "boundary": "availability-interval",
+      "input": {
+        "start": "2026-10-27T09:30Z",
+        "end": "2026-10-27T09:30Z"
+      },
+      "expectedSuccess": false
+    },
+    {
+      "id": "availability-response-invalid-interval",
+      "title": "Response validation still refuses reversed provider intervals",
+      "boundary": "availability-response",
+      "input": {
+        "start": "2026-10-27T09:30Z",
+        "end": "2026-10-27T10:30Z",
+        "observedAt": "2026-10-27T09:30Z",
+        "sources": [
+          {
+            "sourceId": "00000000-0000-4000-8000-000000000001",
+            "generation": 0,
+            "status": "available",
+            "intervals": [
+              {
+                "start": "2026-10-27T10:30Z",
+                "end": "2026-10-27T09:30Z"
+              }
+            ]
+          }
+        ]
+      },
+      "expectedSuccess": false
+    },
+    {
+      "id": "availability-response-negative-generation",
+      "title": "Responses still refuse negative source generations",
+      "boundary": "availability-response",
+      "input": {
+        "start": "2026-10-27T09:30Z",
+        "end": "2026-10-27T10:30Z",
+        "observedAt": "2026-10-27T09:30Z",
+        "sources": [
+          {
+            "sourceId": "00000000-0000-4000-8000-000000000001",
+            "generation": -1,
+            "status": "available",
+            "intervals": [
+              {
+                "start": "2026-10-27T09:30Z",
+                "end": "2026-10-27T10:30Z"
+              }
+            ]
+          }
+        ]
+      },
+      "expectedSuccess": false
+    },
+    {
+      "id": "availability-20-sources",
+      "title": "The maximum 20 selected sources remain accepted",
+      "boundary": "availability-request",
+      "input": {
+        "start": "2026-10-27T09:30Z",
+        "end": "2026-10-27T10:30Z",
+        "sourceIds": [
+          "00000000-0000-4000-8000-000000000001",
+          "00000000-0000-4000-8000-000000000002",
+          "00000000-0000-4000-8000-000000000003",
+          "00000000-0000-4000-8000-000000000004",
+          "00000000-0000-4000-8000-000000000005",
+          "00000000-0000-4000-8000-000000000006",
+          "00000000-0000-4000-8000-000000000007",
+          "00000000-0000-4000-8000-000000000008",
+          "00000000-0000-4000-8000-000000000009",
+          "00000000-0000-4000-8000-00000000000a",
+          "00000000-0000-4000-8000-00000000000b",
+          "00000000-0000-4000-8000-00000000000c",
+          "00000000-0000-4000-8000-00000000000d",
+          "00000000-0000-4000-8000-00000000000e",
+          "00000000-0000-4000-8000-00000000000f",
+          "00000000-0000-4000-8000-000000000010",
+          "00000000-0000-4000-8000-000000000011",
+          "00000000-0000-4000-8000-000000000012",
+          "00000000-0000-4000-8000-000000000013",
+          "00000000-0000-4000-8000-000000000014"
+        ]
+      },
+      "expectedSuccess": true
+    },
+    {
+      "id": "availability-over-source-limit",
+      "title": "More than 20 selected sources remain refused",
+      "boundary": "availability-request",
+      "input": {
+        "start": "2026-10-27T09:30Z",
+        "end": "2026-10-27T10:30Z",
+        "sourceIds": [
+          "00000000-0000-4000-8000-000000000001",
+          "00000000-0000-4000-8000-000000000002",
+          "00000000-0000-4000-8000-000000000003",
+          "00000000-0000-4000-8000-000000000004",
+          "00000000-0000-4000-8000-000000000005",
+          "00000000-0000-4000-8000-000000000006",
+          "00000000-0000-4000-8000-000000000007",
+          "00000000-0000-4000-8000-000000000008",
+          "00000000-0000-4000-8000-000000000009",
+          "00000000-0000-4000-8000-00000000000a",
+          "00000000-0000-4000-8000-00000000000b",
+          "00000000-0000-4000-8000-00000000000c",
+          "00000000-0000-4000-8000-00000000000d",
+          "00000000-0000-4000-8000-00000000000e",
+          "00000000-0000-4000-8000-00000000000f",
+          "00000000-0000-4000-8000-000000000010",
+          "00000000-0000-4000-8000-000000000011",
+          "00000000-0000-4000-8000-000000000012",
+          "00000000-0000-4000-8000-000000000013",
+          "00000000-0000-4000-8000-000000000014",
+          "00000000-0000-4000-8000-000000000015"
+        ]
+      },
+      "expectedSuccess": false
+    },
+    {
+      "id": "availability-no-sources",
+      "title": "A request without selected sources remains refused",
+      "boundary": "availability-request",
+      "input": {
+        "start": "2026-10-27T09:30Z",
+        "end": "2026-10-27T10:30Z",
+        "sourceIds": []
+      },
+      "expectedSuccess": false
+    },
+    {
+      "id": "availability-duplicate-sources",
+      "title": "Repeated selected sources remain refused",
+      "boundary": "availability-request",
+      "input": {
+        "start": "2026-10-27T09:30Z",
+        "end": "2026-10-27T10:30Z",
+        "sourceIds": [
+          "00000000-0000-4000-8000-000000000001",
+          "00000000-0000-4000-8000-000000000001"
+        ]
+      },
+      "expectedSuccess": false
+    },
+    {
+      "id": "availability-invalid-source-id",
+      "title": "Malformed source identifiers remain refused",
+      "boundary": "availability-request",
+      "input": {
+        "start": "2026-10-27T09:30Z",
+        "end": "2026-10-27T10:30Z",
+        "sourceIds": [
+          "invalid"
+        ]
+      },
+      "expectedSuccess": false
+    },
+    {
+      "id": "availability-strict-request",
+      "title": "Unknown availability request fields remain refused",
+      "boundary": "availability-request",
+      "input": {
+        "start": "2026-10-27T09:30Z",
+        "end": "2026-10-27T10:30Z",
+        "sourceIds": [
+          "00000000-0000-4000-8000-000000000001"
+        ],
+        "extra": true
+      },
+      "expectedSuccess": false
+    },
+    {
+      "id": "availability-invalid-calendar-date",
+      "title": "Invalid leap dates remain refused",
+      "boundary": "availability-request",
+      "input": {
+        "start": "2026-02-29T09:30Z",
+        "end": "2026-03-01T10:30Z",
+        "sourceIds": [
+          "00000000-0000-4000-8000-000000000001"
+        ]
+      },
+      "expectedSuccess": false
+    },
+    {
+      "id": "availability-invalid-offset",
+      "title": "Invalid offsets remain refused",
+      "boundary": "availability-request",
+      "input": {
+        "start": "2026-10-27T09:30+24:00",
+        "end": "2026-10-27T10:30Z",
+        "sourceIds": [
+          "00000000-0000-4000-8000-000000000001"
+        ]
+      },
+      "expectedSuccess": false
+    },
+    {
+      "id": "availability-unqualified-time",
+      "title": "Unqualified availability timestamps remain refused",
+      "boundary": "availability-request",
+      "input": {
+        "start": "2026-10-27T09:30",
+        "end": "2026-10-27T10:30Z",
+        "sourceIds": [
+          "00000000-0000-4000-8000-000000000001"
+        ]
+      },
+      "expectedSuccess": false
+    },
+    {
+      "id": "graph-dispatch-minute-utc",
+      "title": "Persisted Graph dispatch timestamps retain minute precision",
+      "boundary": "graph-rsvp-dispatch",
+      "input": {
+        "kind": "graph-rsvp-dispatch",
+        "version": 1,
+        "startedAt": "2026-10-27T09:30Z",
+        "acceptedAt": "2026-10-27T10:30Z"
+      },
+      "expectedSuccess": true
+    },
+    {
+      "id": "caldav-delivery-minute-utc",
+      "title": "Persisted CalDAV delivery timestamps retain minute precision",
+      "boundary": "caldav-rsvp-delivery",
+      "input": {
+        "kind": "caldav-rsvp-at-most-once",
+        "version": 1,
+        "startedAt": "2026-10-27T09:30Z"
+      },
+      "expectedSuccess": true
+    },
+    {
+      "id": "google-delivery-minute-utc",
+      "title": "Persisted Google delivery timestamps retain minute precision",
+      "boundary": "google-rsvp-delivery",
+      "input": {
+        "kind": "google-rsvp-at-most-once",
+        "version": 1,
+        "startedAt": "2026-10-27T09:30Z"
+      },
+      "expectedSuccess": true
+    },
+    {
+      "id": "organizer-dispatch-minute-utc",
+      "title": "Organizer dispatch and cancellation stamps retain minute precision",
+      "boundary": "organizer-dispatch",
+      "input": {
+        "kind": "google-organizer-dispatch",
+        "version": 1,
+        "startedAt": "2026-10-27T09:30Z",
+        "acceptedAt": "2026-10-27T10:30Z",
+        "cancellationTombstone": {
+          "revision": 1,
+          "deletedAt": "2026-10-27T10:30Z"
+        }
+      },
+      "expectedSuccess": true
+    },
+    {
+      "id": "organizer-dispatch-refuses-offset",
+      "title": "UTC-only persisted dispatch stamps still refuse offsets",
+      "boundary": "organizer-dispatch",
+      "input": {
+        "kind": "google-organizer-dispatch",
+        "version": 1,
+        "startedAt": "2026-10-27T09:30+02:00",
+        "acceptedAt": "2026-10-27T10:30Z",
+        "cancellationTombstone": {
+          "revision": 1,
+          "deletedAt": "2026-10-27T10:30Z"
+        }
+      },
+      "expectedSuccess": false
+    },
+    {
+      "id": "organizer-tombstone-invalid-revision",
+      "title": "Cancellation tombstones still require a positive revision",
+      "boundary": "organizer-dispatch",
+      "input": {
+        "kind": "google-organizer-dispatch",
+        "version": 1,
+        "startedAt": "2026-10-27T09:30Z",
+        "acceptedAt": "2026-10-27T10:30Z",
+        "cancellationTombstone": {
+          "revision": 0,
+          "deletedAt": "2026-10-27T10:30Z"
+        }
+      },
+      "expectedSuccess": false
+    },
+    {
+      "id": "outlook-options-minute-utc",
+      "title": "Outlook previews retain minute UTC occurrence timestamps",
+      "boundary": "outlook-options",
+      "input": {
+        "eventID": "00000000-0000-4000-8000-000000000001",
+        "calendarID": "00000000-0000-4000-8000-000000000001",
+        "version": "observation",
+        "title": "Move",
+        "meeting": false,
+        "timeZone": "UTC",
+        "preserved": {
+          "edited": 0,
+          "cancelled": 0,
+          "unavailable": 0
+        },
+        "occurrences": [
+          {
+            "eventID": "00000000-0000-4000-8000-000000000001",
+            "start": "2026-10-27T09:30Z",
+            "end": "2026-10-27T10:30Z"
+          }
+        ]
+      },
+      "expectedSuccess": true
+    },
+    {
+      "id": "outlook-result-minute-utc",
+      "title": "Saved Outlook move results retain all minute UTC timestamps",
+      "boundary": "outlook-result",
+      "input": {
+        "operationID": "00000000-0000-4000-8000-000000000001",
+        "eventID": "00000000-0000-4000-8000-000000000001",
+        "title": "Move",
+        "meeting": false,
+        "timeZone": "UTC",
+        "status": "preview",
+        "expiresAt": "2026-10-27T10:30Z",
+        "offsetMinutes": 60,
+        "items": [
+          {
+            "eventID": "00000000-0000-4000-8000-000000000001",
+            "start": "2026-10-27T09:30Z",
+            "end": "2026-10-27T10:30Z",
+            "newStart": "2026-10-27T10:30Z",
+            "newEnd": "2026-10-27T11:30Z",
+            "status": "pending"
+          }
+        ]
+      },
+      "expectedSuccess": true
+    },
+    {
+      "id": "outlook-result-refuses-local",
+      "title": "Saved Outlook move results still refuse unqualified timestamps",
+      "boundary": "outlook-result",
+      "input": {
+        "operationID": "00000000-0000-4000-8000-000000000001",
+        "eventID": "00000000-0000-4000-8000-000000000001",
+        "title": "Move",
+        "meeting": false,
+        "timeZone": "UTC",
+        "status": "preview",
+        "expiresAt": "2026-10-27T10:30",
+        "offsetMinutes": 60,
+        "items": [
+          {
+            "eventID": "00000000-0000-4000-8000-000000000001",
+            "start": "2026-10-27T09:30Z",
+            "end": "2026-10-27T10:30Z",
+            "newStart": "2026-10-27T10:30Z",
+            "newEnd": "2026-10-27T11:30Z",
+            "status": "pending"
+          }
+        ]
+      },
+      "expectedSuccess": false
+    }
+  ]
+}

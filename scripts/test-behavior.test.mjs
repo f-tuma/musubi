@@ -6,6 +6,7 @@ import { test } from "node:test";
 import { parseArguments, runBehavior, runCli } from "./test-behavior.mjs";
 
 const manifests = {
+  "wire-timestamps": "packages/types/src/behavior/wire-timestamps.json",
   "api-json-body": "apps/api/src/behavior/api-json-body.json",
   "app-links": "apps/api/src/behavior/app-links.json",
   "postgres-restore": "ops/behavior/postgres-restore.json",
@@ -105,6 +106,7 @@ test("runtime filtering uses a fixed executable and arguments, and strips arbitr
 test("release boundaries use fixed CLIs and reject another boundary's report", async t => {
   const root = await fixture(t);
   for (const [suite, prefix, file] of [
+    ["wire-timestamps", ["--import", "tsx"], "packages/types/src/behavior/wire-timestamps-cli.ts"],
     ["api-json-body", ["--import", "tsx"], "apps/api/src/behavior/api-json-body-cli.ts"],
     ["app-links", ["--import", "tsx"], "apps/api/src/behavior/app-links-cli.ts"],
     ["postgres-restore", [], "ops/behavior/postgres-restore-cli.mjs"],
@@ -454,7 +456,7 @@ test("default runs every fixed suite and emits one clean aggregate JSON document
   const code = await runCli(["--json"], line => output.push(line), { root, execute: async (_command, args) => {
     launches++;
     if (args.some(arg => arg.endsWith("/postgres-restore-cli.mjs"))) return runtime(scenarios, { suite: "postgres-restore" });
-    if (args.includes("--import")) return runtime(scenarios, { suite: args.some(arg => arg.endsWith("/api-json-body-cli.ts")) ? "api-json-body" : args.some(arg => arg.endsWith("/app-links-cli.ts")) ? "app-links" : args.some(arg => arg.endsWith("/project-news-cli.ts")) ? "project-news" : args.some(arg => arg.endsWith("/read-attempt-cli.ts")) ? "read-attempt" : args.some(arg => arg.endsWith("/fair-work-cli.ts")) ? "fair-work" : args.some(arg => arg.endsWith("/caldav-discovery-cli.ts")) ? "caldav-discovery" : args.some(arg => arg.endsWith("/google-rsvp-delivery-cli.ts")) ? "google-rsvp-delivery" : args.some(arg => arg.endsWith("/event-delivery-cli.ts")) ? "event-delivery" : args.some(arg => arg.endsWith("/task-delivery-cli.ts")) ? "task-delivery" :
+    if (args.includes("--import")) return runtime(scenarios, { suite: args.some(arg => arg.endsWith("/wire-timestamps-cli.ts")) ? "wire-timestamps" : args.some(arg => arg.endsWith("/api-json-body-cli.ts")) ? "api-json-body" : args.some(arg => arg.endsWith("/app-links-cli.ts")) ? "app-links" : args.some(arg => arg.endsWith("/project-news-cli.ts")) ? "project-news" : args.some(arg => arg.endsWith("/read-attempt-cli.ts")) ? "read-attempt" : args.some(arg => arg.endsWith("/fair-work-cli.ts")) ? "fair-work" : args.some(arg => arg.endsWith("/caldav-discovery-cli.ts")) ? "caldav-discovery" : args.some(arg => arg.endsWith("/google-rsvp-delivery-cli.ts")) ? "google-rsvp-delivery" : args.some(arg => arg.endsWith("/event-delivery-cli.ts")) ? "event-delivery" : args.some(arg => arg.endsWith("/task-delivery-cli.ts")) ? "task-delivery" :
       args.some(arg => arg.endsWith("/google-task-create-cli.ts")) ? "google-task-create" :
       args.some(arg => arg.endsWith("/google-task-delete-cli.ts")) ? "google-task-delete" :
       args.some(arg => arg.endsWith("/google-task-update-cli.ts")) ? "google-task-update" :
