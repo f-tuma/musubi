@@ -98,9 +98,10 @@
       "severity": "high",
       "advisory": "GHSA-mrhx-c7xc-m3w5",
       "url": "https://github.com/advisories/GHSA-mrhx-c7xc-m3w5",
+      "fixSource": "https://github.com/colinhacks/zod/commit/a0ebf970f2d752e5f58527cd2942ff48be4f46bd",
       "affected": "<4.6.6",
       "fixed": "4.6.6",
-      "reachability": "Primary advisory describes array validation issue accumulation on large failing arrays without length caps. Shared request/provider schemas contain arrays (for example packages/types/src/task.ts:24), while API express.json has512kb body limit at index.ts219 and many other arrays already have explicit max. Complete input amplification/route review or reproduction not performed.",
+      "reachability": "Shared request/provider schemas contain arrays (for example packages/types/src/task.ts:24). The upstream v4 fix moves collection-size checks before element parsing: in affected implementations, schema .max/.length/.size alone do not prevent walking oversized input or accumulating element errors. The API has a512kb JSON body limit at index.ts219; this is not proof against validation amplification or provider-input paths. Complete route/input amplification review or reproduction not performed.",
       "decision": "Direct production package version match; bounded audit does not establish exploitable memory exhaustion."
     }
   ],
