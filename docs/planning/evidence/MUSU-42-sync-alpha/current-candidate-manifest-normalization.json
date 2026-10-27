@@ -1,0 +1,1080 @@
+[
+  {
+    "name": "@musubi/sync-reference",
+    "closure": "runtime",
+    "sourceManifest": "apps/sync-reference/package.json",
+    "manifest": "runtime/package.json",
+    "sourceSha256": "c6452951f4a556b2029644848c47bc7f014a829cdd39ebe535bb740997e3ba7a",
+    "rawDeploySha256": "1a2b82e27e204edfe1e41057bb1db2e65f58472f129c5cc197b93200f5240b97",
+    "normalizedSha256": "77bb049d662be8de38db431c74399542e482ea06f4e900a37d4b4cea9eec1bfb",
+    "rawMode": 420,
+    "edges": [
+      {
+        "table": "dependencies",
+        "name": "@musubi/provider-caldav",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "@musubi/provider-caldav@file:///tmp/sync-alpha-build-VhjxfO/source/packages/provider-caldav",
+        "normalizedSpecifier": "file:./node_modules/@musubi/provider-caldav",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "",
+          "target": "node_modules/@musubi/provider-caldav",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "@musubi/provider-google",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "@musubi/provider-google@file:///tmp/sync-alpha-build-VhjxfO/source/packages/provider-google",
+        "normalizedSpecifier": "file:./node_modules/@musubi/provider-google",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "",
+          "target": "node_modules/@musubi/provider-google",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "@musubi/provider-microsoft",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "@musubi/provider-microsoft@file:///tmp/sync-alpha-build-VhjxfO/source/packages/provider-microsoft",
+        "normalizedSpecifier": "file:./node_modules/@musubi/provider-microsoft",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "",
+          "target": "node_modules/@musubi/provider-microsoft",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "@musubi/sync-codec",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "@musubi/sync-codec@file:///tmp/sync-alpha-build-VhjxfO/source/packages/sync-codec",
+        "normalizedSpecifier": "file:./node_modules/@musubi/sync-codec",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "",
+          "target": "node_modules/@musubi/sync-codec",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "@musubi/sync-runtime",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "@musubi/sync-runtime@file:///tmp/sync-alpha-build-VhjxfO/source/packages/sync-runtime",
+        "normalizedSpecifier": "file:./node_modules/@musubi/sync-runtime",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "",
+          "target": "node_modules/@musubi/sync-runtime",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "@musubi/types",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "@musubi/types@file:///tmp/sync-alpha-build-VhjxfO/source/packages/types",
+        "normalizedSpecifier": "file:./node_modules/@musubi/types",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "",
+          "target": "node_modules/@musubi/types",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "pg",
+        "sourceSpecifier": "^8.23.0",
+        "rawSpecifier": "8.23.0",
+        "normalizedSpecifier": "8.23.0",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "",
+          "target": "node_modules/pg",
+          "version": "8.23.0"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "dependencies",
+        "name": "tsx",
+        "sourceSpecifier": "^4.23.12",
+        "rawSpecifier": "4.23.12",
+        "normalizedSpecifier": "4.23.12",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "",
+          "target": "node_modules/tsx",
+          "version": "4.23.12"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "devDependencies",
+        "name": "@types/pg",
+        "sourceSpecifier": "^8.23.1",
+        "rawSpecifier": "8.23.1",
+        "normalizedSpecifier": "8.23.1",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "",
+          "target": "node_modules/@types/pg",
+          "version": "8.23.1"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "devDependencies",
+        "name": "typescript",
+        "sourceSpecifier": "~6.0.3",
+        "rawSpecifier": "6.0.3",
+        "normalizedSpecifier": "6.0.3",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "",
+          "target": "node_modules/typescript",
+          "version": "6.0.3"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      }
+    ],
+    "rawManifest": "deployed-manifests/runtime/sync-reference.raw.json"
+  },
+  {
+    "name": "@musubi/sync-reference",
+    "closure": "tooling",
+    "sourceManifest": "apps/sync-reference/package.json",
+    "manifest": "tooling/package.json",
+    "sourceSha256": "c6452951f4a556b2029644848c47bc7f014a829cdd39ebe535bb740997e3ba7a",
+    "rawDeploySha256": "1a2b82e27e204edfe1e41057bb1db2e65f58472f129c5cc197b93200f5240b97",
+    "normalizedSha256": "77bb049d662be8de38db431c74399542e482ea06f4e900a37d4b4cea9eec1bfb",
+    "rawMode": 420,
+    "edges": [
+      {
+        "table": "dependencies",
+        "name": "@musubi/provider-caldav",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "@musubi/provider-caldav@file:///tmp/sync-alpha-build-VhjxfO/source/packages/provider-caldav",
+        "normalizedSpecifier": "file:./node_modules/@musubi/provider-caldav",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "",
+          "target": "node_modules/@musubi/provider-caldav",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "@musubi/provider-google",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "@musubi/provider-google@file:///tmp/sync-alpha-build-VhjxfO/source/packages/provider-google",
+        "normalizedSpecifier": "file:./node_modules/@musubi/provider-google",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "",
+          "target": "node_modules/@musubi/provider-google",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "@musubi/provider-microsoft",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "@musubi/provider-microsoft@file:///tmp/sync-alpha-build-VhjxfO/source/packages/provider-microsoft",
+        "normalizedSpecifier": "file:./node_modules/@musubi/provider-microsoft",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "",
+          "target": "node_modules/@musubi/provider-microsoft",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "@musubi/sync-codec",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "@musubi/sync-codec@file:///tmp/sync-alpha-build-VhjxfO/source/packages/sync-codec",
+        "normalizedSpecifier": "file:./node_modules/@musubi/sync-codec",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "",
+          "target": "node_modules/@musubi/sync-codec",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "@musubi/sync-runtime",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "@musubi/sync-runtime@file:///tmp/sync-alpha-build-VhjxfO/source/packages/sync-runtime",
+        "normalizedSpecifier": "file:./node_modules/@musubi/sync-runtime",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "",
+          "target": "node_modules/@musubi/sync-runtime",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "@musubi/types",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "@musubi/types@file:///tmp/sync-alpha-build-VhjxfO/source/packages/types",
+        "normalizedSpecifier": "file:./node_modules/@musubi/types",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "",
+          "target": "node_modules/@musubi/types",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "pg",
+        "sourceSpecifier": "^8.23.0",
+        "rawSpecifier": "8.23.0",
+        "normalizedSpecifier": "8.23.0",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "",
+          "target": "node_modules/pg",
+          "version": "8.23.0"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "dependencies",
+        "name": "tsx",
+        "sourceSpecifier": "^4.23.12",
+        "rawSpecifier": "4.23.12",
+        "normalizedSpecifier": "4.23.12",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "",
+          "target": "node_modules/tsx",
+          "version": "4.23.12"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "devDependencies",
+        "name": "@types/pg",
+        "sourceSpecifier": "^8.23.1",
+        "rawSpecifier": "8.23.1",
+        "normalizedSpecifier": "8.23.1",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "",
+          "target": "node_modules/@types/pg",
+          "version": "8.23.1"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "devDependencies",
+        "name": "typescript",
+        "sourceSpecifier": "~6.0.3",
+        "rawSpecifier": "6.0.3",
+        "normalizedSpecifier": "6.0.3",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "",
+          "target": "node_modules/typescript",
+          "version": "6.0.3"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      }
+    ],
+    "rawManifest": "deployed-manifests/tooling/sync-reference.raw.json"
+  },
+  {
+    "name": "@musubi/types",
+    "closure": "runtime",
+    "sourceManifest": "packages/types/package.json",
+    "manifest": "runtime/node_modules/@musubi/types/package.json",
+    "sourceSha256": "565bbb77f8e3fcd8f0190cb397c914c0c97434019d37106666e66395e0304dca",
+    "rawDeploySha256": "565bbb77f8e3fcd8f0190cb397c914c0c97434019d37106666e66395e0304dca",
+    "normalizedSha256": "f2c074c6afa618eb8d549837069852cdecc703cf610960fa774e54c416e71577",
+    "rawMode": 420,
+    "edges": [
+      {
+        "table": "dependencies",
+        "name": "zod",
+        "sourceSpecifier": "^4.4.3",
+        "rawSpecifier": "^4.4.3",
+        "normalizedSpecifier": "4.4.3",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "node_modules/@musubi/types",
+          "target": "node_modules/zod",
+          "version": "4.4.3"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "devDependencies",
+        "name": "tsx",
+        "sourceSpecifier": "^4.23.12",
+        "rawSpecifier": "^4.23.12",
+        "normalizedSpecifier": "4.23.12",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/types",
+          "target": "node_modules/tsx",
+          "version": "4.23.12"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      }
+    ],
+    "rawManifest": "deployed-manifests/runtime/types.raw.json"
+  },
+  {
+    "name": "@musubi/types",
+    "closure": "tooling",
+    "sourceManifest": "packages/types/package.json",
+    "manifest": "tooling/node_modules/@musubi/types/package.json",
+    "sourceSha256": "565bbb77f8e3fcd8f0190cb397c914c0c97434019d37106666e66395e0304dca",
+    "rawDeploySha256": "565bbb77f8e3fcd8f0190cb397c914c0c97434019d37106666e66395e0304dca",
+    "normalizedSha256": "f2c074c6afa618eb8d549837069852cdecc703cf610960fa774e54c416e71577",
+    "rawMode": 420,
+    "edges": [
+      {
+        "table": "dependencies",
+        "name": "zod",
+        "sourceSpecifier": "^4.4.3",
+        "rawSpecifier": "^4.4.3",
+        "normalizedSpecifier": "4.4.3",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/types",
+          "target": "node_modules/zod",
+          "version": "4.4.3"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "devDependencies",
+        "name": "tsx",
+        "sourceSpecifier": "^4.23.12",
+        "rawSpecifier": "^4.23.12",
+        "normalizedSpecifier": "4.23.12",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/types",
+          "target": "node_modules/tsx",
+          "version": "4.23.12"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      }
+    ],
+    "rawManifest": "deployed-manifests/tooling/types.raw.json"
+  },
+  {
+    "name": "@musubi/sync-codec",
+    "closure": "runtime",
+    "sourceManifest": "packages/sync-codec/package.json",
+    "manifest": "runtime/node_modules/@musubi/sync-codec/package.json",
+    "sourceSha256": "58f9d2d899e46fbbf01ba95a0f40e67fbaeb2b02b6cd01b3631a42ee6ca5d93f",
+    "rawDeploySha256": "58f9d2d899e46fbbf01ba95a0f40e67fbaeb2b02b6cd01b3631a42ee6ca5d93f",
+    "normalizedSha256": "e60c7611d0555cf0c6b3fb6a8a375596c64fddaa41a3469a7462f7e615efa92a",
+    "rawMode": 420,
+    "edges": [
+      {
+        "table": "dependencies",
+        "name": "@musubi/types",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "workspace:*",
+        "normalizedSpecifier": "file:../types",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "node_modules/@musubi/sync-codec",
+          "target": "node_modules/@musubi/types",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "ical.js",
+        "sourceSpecifier": "^2.2.1",
+        "rawSpecifier": "^2.2.1",
+        "normalizedSpecifier": "2.2.1",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "node_modules/@musubi/sync-codec",
+          "target": "node_modules/ical.js",
+          "version": "2.2.1"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "devDependencies",
+        "name": "tsx",
+        "sourceSpecifier": "^4.23.12",
+        "rawSpecifier": "^4.23.12",
+        "normalizedSpecifier": "4.23.12",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/sync-codec",
+          "target": "node_modules/tsx",
+          "version": "4.23.12"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      }
+    ],
+    "rawManifest": "deployed-manifests/runtime/sync-codec.raw.json"
+  },
+  {
+    "name": "@musubi/sync-codec",
+    "closure": "tooling",
+    "sourceManifest": "packages/sync-codec/package.json",
+    "manifest": "tooling/node_modules/@musubi/sync-codec/package.json",
+    "sourceSha256": "58f9d2d899e46fbbf01ba95a0f40e67fbaeb2b02b6cd01b3631a42ee6ca5d93f",
+    "rawDeploySha256": "58f9d2d899e46fbbf01ba95a0f40e67fbaeb2b02b6cd01b3631a42ee6ca5d93f",
+    "normalizedSha256": "e60c7611d0555cf0c6b3fb6a8a375596c64fddaa41a3469a7462f7e615efa92a",
+    "rawMode": 420,
+    "edges": [
+      {
+        "table": "dependencies",
+        "name": "@musubi/types",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "workspace:*",
+        "normalizedSpecifier": "file:../types",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/sync-codec",
+          "target": "node_modules/@musubi/types",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "ical.js",
+        "sourceSpecifier": "^2.2.1",
+        "rawSpecifier": "^2.2.1",
+        "normalizedSpecifier": "2.2.1",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/sync-codec",
+          "target": "node_modules/ical.js",
+          "version": "2.2.1"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "devDependencies",
+        "name": "tsx",
+        "sourceSpecifier": "^4.23.12",
+        "rawSpecifier": "^4.23.12",
+        "normalizedSpecifier": "4.23.12",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/sync-codec",
+          "target": "node_modules/tsx",
+          "version": "4.23.12"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      }
+    ],
+    "rawManifest": "deployed-manifests/tooling/sync-codec.raw.json"
+  },
+  {
+    "name": "@musubi/provider-google",
+    "closure": "runtime",
+    "sourceManifest": "packages/provider-google/package.json",
+    "manifest": "runtime/node_modules/@musubi/provider-google/package.json",
+    "sourceSha256": "e626909d52736f8ae11b279c2a0c70ee6ecc5e421ae9915562b567ba19bb407c",
+    "rawDeploySha256": "e626909d52736f8ae11b279c2a0c70ee6ecc5e421ae9915562b567ba19bb407c",
+    "normalizedSha256": "126ca8b4b1efb48432cf4aeb79e9fdc86d84cdafdefdbdbcc75f7750649d034d",
+    "rawMode": 420,
+    "edges": [
+      {
+        "table": "devDependencies",
+        "name": "tsx",
+        "sourceSpecifier": "^4.23.12",
+        "rawSpecifier": "^4.23.12",
+        "normalizedSpecifier": "4.23.12",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/provider-google",
+          "target": "node_modules/tsx",
+          "version": "4.23.12"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      }
+    ],
+    "rawManifest": "deployed-manifests/runtime/provider-google.raw.json"
+  },
+  {
+    "name": "@musubi/provider-google",
+    "closure": "tooling",
+    "sourceManifest": "packages/provider-google/package.json",
+    "manifest": "tooling/node_modules/@musubi/provider-google/package.json",
+    "sourceSha256": "e626909d52736f8ae11b279c2a0c70ee6ecc5e421ae9915562b567ba19bb407c",
+    "rawDeploySha256": "e626909d52736f8ae11b279c2a0c70ee6ecc5e421ae9915562b567ba19bb407c",
+    "normalizedSha256": "126ca8b4b1efb48432cf4aeb79e9fdc86d84cdafdefdbdbcc75f7750649d034d",
+    "rawMode": 420,
+    "edges": [
+      {
+        "table": "devDependencies",
+        "name": "tsx",
+        "sourceSpecifier": "^4.23.12",
+        "rawSpecifier": "^4.23.12",
+        "normalizedSpecifier": "4.23.12",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/provider-google",
+          "target": "node_modules/tsx",
+          "version": "4.23.12"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      }
+    ],
+    "rawManifest": "deployed-manifests/tooling/provider-google.raw.json"
+  },
+  {
+    "name": "@musubi/provider-microsoft",
+    "closure": "runtime",
+    "sourceManifest": "packages/provider-microsoft/package.json",
+    "manifest": "runtime/node_modules/@musubi/provider-microsoft/package.json",
+    "sourceSha256": "8dc49e4250d95e4983abb8d5162d2e65830940e5238987980889d93e291d2082",
+    "rawDeploySha256": "8dc49e4250d95e4983abb8d5162d2e65830940e5238987980889d93e291d2082",
+    "normalizedSha256": "352c196a5f4b1841e106c3fa4e57c19816539ab8cc79b8fd95de9452313335a5",
+    "rawMode": 420,
+    "edges": [
+      {
+        "table": "dependencies",
+        "name": "zod",
+        "sourceSpecifier": "^4.4.3",
+        "rawSpecifier": "^4.4.3",
+        "normalizedSpecifier": "4.4.3",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "node_modules/@musubi/provider-microsoft",
+          "target": "node_modules/zod",
+          "version": "4.4.3"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "devDependencies",
+        "name": "tsx",
+        "sourceSpecifier": "^4.23.12",
+        "rawSpecifier": "^4.23.12",
+        "normalizedSpecifier": "4.23.12",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/provider-microsoft",
+          "target": "node_modules/tsx",
+          "version": "4.23.12"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      }
+    ],
+    "rawManifest": "deployed-manifests/runtime/provider-microsoft.raw.json"
+  },
+  {
+    "name": "@musubi/provider-microsoft",
+    "closure": "tooling",
+    "sourceManifest": "packages/provider-microsoft/package.json",
+    "manifest": "tooling/node_modules/@musubi/provider-microsoft/package.json",
+    "sourceSha256": "8dc49e4250d95e4983abb8d5162d2e65830940e5238987980889d93e291d2082",
+    "rawDeploySha256": "8dc49e4250d95e4983abb8d5162d2e65830940e5238987980889d93e291d2082",
+    "normalizedSha256": "352c196a5f4b1841e106c3fa4e57c19816539ab8cc79b8fd95de9452313335a5",
+    "rawMode": 420,
+    "edges": [
+      {
+        "table": "dependencies",
+        "name": "zod",
+        "sourceSpecifier": "^4.4.3",
+        "rawSpecifier": "^4.4.3",
+        "normalizedSpecifier": "4.4.3",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/provider-microsoft",
+          "target": "node_modules/zod",
+          "version": "4.4.3"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "devDependencies",
+        "name": "tsx",
+        "sourceSpecifier": "^4.23.12",
+        "rawSpecifier": "^4.23.12",
+        "normalizedSpecifier": "4.23.12",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/provider-microsoft",
+          "target": "node_modules/tsx",
+          "version": "4.23.12"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      }
+    ],
+    "rawManifest": "deployed-manifests/tooling/provider-microsoft.raw.json"
+  },
+  {
+    "name": "@musubi/provider-caldav",
+    "closure": "runtime",
+    "sourceManifest": "packages/provider-caldav/package.json",
+    "manifest": "runtime/node_modules/@musubi/provider-caldav/package.json",
+    "sourceSha256": "990191f4c19b6eb40f6049fb4a28fa3476d3bfcece06e0dd7b10841c4f887db9",
+    "rawDeploySha256": "990191f4c19b6eb40f6049fb4a28fa3476d3bfcece06e0dd7b10841c4f887db9",
+    "normalizedSha256": "142971785cc86eecb39af96f49c3b2674febf16f7746f6255ba6e47432e98ff7",
+    "rawMode": 420,
+    "edges": [
+      {
+        "table": "dependencies",
+        "name": "@musubi/sync-codec",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "workspace:*",
+        "normalizedSpecifier": "file:../sync-codec",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "node_modules/@musubi/provider-caldav",
+          "target": "node_modules/@musubi/sync-codec",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "ical.js",
+        "sourceSpecifier": "^2.2.1",
+        "rawSpecifier": "^2.2.1",
+        "normalizedSpecifier": "2.2.1",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "node_modules/@musubi/provider-caldav",
+          "target": "node_modules/ical.js",
+          "version": "2.2.1"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "dependencies",
+        "name": "ipaddr.js",
+        "sourceSpecifier": "^1.9.1",
+        "rawSpecifier": "^1.9.1",
+        "normalizedSpecifier": "1.9.1",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "node_modules/@musubi/provider-caldav",
+          "target": "node_modules/ipaddr.js",
+          "version": "1.9.1"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "dependencies",
+        "name": "undici",
+        "sourceSpecifier": "^7.29.0",
+        "rawSpecifier": "^7.29.0",
+        "normalizedSpecifier": "7.29.0",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "node_modules/@musubi/provider-caldav",
+          "target": "node_modules/undici",
+          "version": "7.29.0"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "dependencies",
+        "name": "xml-js",
+        "sourceSpecifier": "1.6.11",
+        "rawSpecifier": "1.6.11",
+        "normalizedSpecifier": "1.6.11",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "node_modules/@musubi/provider-caldav",
+          "target": "node_modules/xml-js",
+          "version": "1.6.11"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "devDependencies",
+        "name": "tsx",
+        "sourceSpecifier": "^4.23.12",
+        "rawSpecifier": "^4.23.12",
+        "normalizedSpecifier": "4.23.12",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/provider-caldav",
+          "target": "node_modules/tsx",
+          "version": "4.23.12"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      }
+    ],
+    "rawManifest": "deployed-manifests/runtime/provider-caldav.raw.json"
+  },
+  {
+    "name": "@musubi/provider-caldav",
+    "closure": "tooling",
+    "sourceManifest": "packages/provider-caldav/package.json",
+    "manifest": "tooling/node_modules/@musubi/provider-caldav/package.json",
+    "sourceSha256": "990191f4c19b6eb40f6049fb4a28fa3476d3bfcece06e0dd7b10841c4f887db9",
+    "rawDeploySha256": "990191f4c19b6eb40f6049fb4a28fa3476d3bfcece06e0dd7b10841c4f887db9",
+    "normalizedSha256": "142971785cc86eecb39af96f49c3b2674febf16f7746f6255ba6e47432e98ff7",
+    "rawMode": 420,
+    "edges": [
+      {
+        "table": "dependencies",
+        "name": "@musubi/sync-codec",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "workspace:*",
+        "normalizedSpecifier": "file:../sync-codec",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/provider-caldav",
+          "target": "node_modules/@musubi/sync-codec",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "ical.js",
+        "sourceSpecifier": "^2.2.1",
+        "rawSpecifier": "^2.2.1",
+        "normalizedSpecifier": "2.2.1",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/provider-caldav",
+          "target": "node_modules/ical.js",
+          "version": "2.2.1"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "dependencies",
+        "name": "ipaddr.js",
+        "sourceSpecifier": "^1.9.1",
+        "rawSpecifier": "^1.9.1",
+        "normalizedSpecifier": "1.9.1",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/provider-caldav",
+          "target": "node_modules/ipaddr.js",
+          "version": "1.9.1"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "dependencies",
+        "name": "undici",
+        "sourceSpecifier": "^7.29.0",
+        "rawSpecifier": "^7.29.0",
+        "normalizedSpecifier": "7.29.0",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/provider-caldav",
+          "target": "node_modules/undici",
+          "version": "7.29.0"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "dependencies",
+        "name": "xml-js",
+        "sourceSpecifier": "1.6.11",
+        "rawSpecifier": "1.6.11",
+        "normalizedSpecifier": "1.6.11",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/provider-caldav",
+          "target": "node_modules/xml-js",
+          "version": "1.6.11"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "devDependencies",
+        "name": "tsx",
+        "sourceSpecifier": "^4.23.12",
+        "rawSpecifier": "^4.23.12",
+        "normalizedSpecifier": "4.23.12",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/provider-caldav",
+          "target": "node_modules/tsx",
+          "version": "4.23.12"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      }
+    ],
+    "rawManifest": "deployed-manifests/tooling/provider-caldav.raw.json"
+  },
+  {
+    "name": "@musubi/sync-runtime",
+    "closure": "runtime",
+    "sourceManifest": "packages/sync-runtime/package.json",
+    "manifest": "runtime/node_modules/@musubi/sync-runtime/package.json",
+    "sourceSha256": "bc0490a0f08afc03b67bc410ec47434c2c60f8ec2247bad84ba7f42b84a6e2f7",
+    "rawDeploySha256": "bc0490a0f08afc03b67bc410ec47434c2c60f8ec2247bad84ba7f42b84a6e2f7",
+    "normalizedSha256": "36d6269d650f343b54cf777cae55550816b534ae9ad144a1bde6ec1fe651cb22",
+    "rawMode": 420,
+    "edges": [
+      {
+        "table": "dependencies",
+        "name": "@musubi/provider-google",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "workspace:*",
+        "normalizedSpecifier": "file:../provider-google",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "node_modules/@musubi/sync-runtime",
+          "target": "node_modules/@musubi/provider-google",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "@musubi/provider-caldav",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "workspace:*",
+        "normalizedSpecifier": "file:../provider-caldav",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "node_modules/@musubi/sync-runtime",
+          "target": "node_modules/@musubi/provider-caldav",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "@musubi/provider-microsoft",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "workspace:*",
+        "normalizedSpecifier": "file:../provider-microsoft",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "node_modules/@musubi/sync-runtime",
+          "target": "node_modules/@musubi/provider-microsoft",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "@musubi/types",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "workspace:*",
+        "normalizedSpecifier": "file:../types",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "node_modules/@musubi/sync-runtime",
+          "target": "node_modules/@musubi/types",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "@musubi/sync-codec",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "workspace:*",
+        "normalizedSpecifier": "file:../sync-codec",
+        "resolution": {
+          "closure": "runtime",
+          "importer": "node_modules/@musubi/sync-runtime",
+          "target": "node_modules/@musubi/sync-codec",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "devDependencies",
+        "name": "tsx",
+        "sourceSpecifier": "^4.23.12",
+        "rawSpecifier": "^4.23.12",
+        "normalizedSpecifier": "4.23.12",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/sync-runtime",
+          "target": "node_modules/tsx",
+          "version": "4.23.12"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "devDependencies",
+        "name": "typescript",
+        "sourceSpecifier": "~6.0.3",
+        "rawSpecifier": "~6.0.3",
+        "normalizedSpecifier": "6.0.3",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/sync-runtime",
+          "target": "node_modules/typescript",
+          "version": "6.0.3"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "devDependencies",
+        "name": "@types/node",
+        "sourceSpecifier": "^25.9.5",
+        "rawSpecifier": "^25.9.5",
+        "normalizedSpecifier": "25.9.5",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/sync-runtime",
+          "target": "node_modules/@types/node",
+          "version": "25.9.5"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      }
+    ],
+    "rawManifest": "deployed-manifests/runtime/sync-runtime.raw.json"
+  },
+  {
+    "name": "@musubi/sync-runtime",
+    "closure": "tooling",
+    "sourceManifest": "packages/sync-runtime/package.json",
+    "manifest": "tooling/node_modules/@musubi/sync-runtime/package.json",
+    "sourceSha256": "bc0490a0f08afc03b67bc410ec47434c2c60f8ec2247bad84ba7f42b84a6e2f7",
+    "rawDeploySha256": "bc0490a0f08afc03b67bc410ec47434c2c60f8ec2247bad84ba7f42b84a6e2f7",
+    "normalizedSha256": "36d6269d650f343b54cf777cae55550816b534ae9ad144a1bde6ec1fe651cb22",
+    "rawMode": 420,
+    "edges": [
+      {
+        "table": "dependencies",
+        "name": "@musubi/provider-google",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "workspace:*",
+        "normalizedSpecifier": "file:../provider-google",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/sync-runtime",
+          "target": "node_modules/@musubi/provider-google",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "@musubi/provider-caldav",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "workspace:*",
+        "normalizedSpecifier": "file:../provider-caldav",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/sync-runtime",
+          "target": "node_modules/@musubi/provider-caldav",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "@musubi/provider-microsoft",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "workspace:*",
+        "normalizedSpecifier": "file:../provider-microsoft",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/sync-runtime",
+          "target": "node_modules/@musubi/provider-microsoft",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "@musubi/types",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "workspace:*",
+        "normalizedSpecifier": "file:../types",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/sync-runtime",
+          "target": "node_modules/@musubi/types",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "dependencies",
+        "name": "@musubi/sync-codec",
+        "sourceSpecifier": "workspace:*",
+        "rawSpecifier": "workspace:*",
+        "normalizedSpecifier": "file:../sync-codec",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/sync-runtime",
+          "target": "node_modules/@musubi/sync-codec",
+          "version": null
+        },
+        "rationale": "exact-archived-workspace-to-actual-installed-relative-target"
+      },
+      {
+        "table": "devDependencies",
+        "name": "tsx",
+        "sourceSpecifier": "^4.23.12",
+        "rawSpecifier": "^4.23.12",
+        "normalizedSpecifier": "4.23.12",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/sync-runtime",
+          "target": "node_modules/tsx",
+          "version": "4.23.12"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "devDependencies",
+        "name": "typescript",
+        "sourceSpecifier": "~6.0.3",
+        "rawSpecifier": "~6.0.3",
+        "normalizedSpecifier": "6.0.3",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/sync-runtime",
+          "target": "node_modules/typescript",
+          "version": "6.0.3"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      },
+      {
+        "table": "devDependencies",
+        "name": "@types/node",
+        "sourceSpecifier": "^25.9.5",
+        "rawSpecifier": "^25.9.5",
+        "normalizedSpecifier": "25.9.5",
+        "resolution": {
+          "closure": "tooling",
+          "importer": "node_modules/@musubi/sync-runtime",
+          "target": "node_modules/@types/node",
+          "version": "25.9.5"
+        },
+        "rationale": "importer-resolved-installed-version-within-original-pin"
+      }
+    ],
+    "rawManifest": "deployed-manifests/tooling/sync-runtime.raw.json"
+  }
+]

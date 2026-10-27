@@ -2,21 +2,28 @@
   "schemaVersion": 1,
   "kind": "musubi-c10-local-technical-acceptance-packet",
   "status": "local-technical-acceptance-complete",
+  "at": "2026-10-27",
   "implementationSource": {
-    "head": "8e5e202c4912748e97c02646a8969a4a02543c3c",
-    "tree": "dd2c9c7684533f98e898dc3278331c011c313e52"
+    "head": "fb36100c151bb75323573be8cc9afd9fd689261b",
+    "tree": "0d54cbc311100fbe66d3f835144767fbf2911378"
+  },
+  "testSupportSource": {
+    "head": "0b77e4ee12fcde76c124334a6e386d88e7ddcc25",
+    "tree": "2862105e33dcd0f940ac09a02f459fe7b502dc88"
   },
   "artifact": {
-    "archiveBytes": 15077985,
-    "archiveSha256": "0d14e058cbe9df9f0ca24dcedd09d9f3eab28cc6b4dad80d7802bd3cb1aa8f88",
-    "payloadDigest": "c5a0fc7544059f489f9fabb3cfe16641bf0a5b2ac0aa3a31d1abda5550c6bf9d",
-    "candidateManifestSha256": "20f39cb75fc602c25d2918c2cfa1a08ce06c9b4cf346c8d8fa2a32e54cdb71c0",
-    "selectedPackagingSourceArchiveSha256": "067c04227ef14b7795c6e61eb62c634a5af0235bad630fbda2dd6ea51adf3433",
-    "fullRepositoryWebSourceArchiveSha256": "cb14f7c79aaef6854c278fdc1e44dfba9b53e9bfeef26f4050824f11959a6c93",
-    "artifactFiles": 3589,
+    "archiveBytes": 15083927,
+    "archiveSha256": "35dc0a0c83c1ffc48ecd744a7d33f2dee258b02cd5572e21b3ff2e347639bd91",
+    "payloadDigest": "d542cca4cb70a46375f8a3c46d6c1c930f57b88527cc8356137032cd33d867ac",
+    "candidateManifestSha256": "238de80b13ae557b3c432b7fb607c38025277c97c9e43c7749bbc45a3782c5ee",
+    "selectedPackagingSourceArchiveSha256": "ddb48ee5284dd8dcc0c68d81da6744b38293c6162448fa17a04ad3afb963bdd9",
+    "fullRepositoryWorkspaceAndWebSourceArchiveSha256": "d34b6dda9c6c1f43ee0e62ed79d0f02714332a85832bd51aa9df95475fda0b98",
+    "artifactFilesVerified": 3589,
+    "wholeRootImmutabilityInventoryEntries": 3591,
     "installedPackageEntries": 70,
-    "producedRoot": "/tmp/musu42-candidate-8e5-v1/candidate",
-    "relocatedRoot": "/tmp/musu42-relocated-8e5-v1/candidate"
+    "producedRoot": "/tmp/musu42-final-fb36100c151b-v1/candidate",
+    "relocatedRoot": "/tmp/musu42-final-fb36100c151b-relocated-v1/candidate",
+    "archiveIdentityScope": "Fresh actualfb361 runtime-fix candidate; original8e candidate0d14 is historical. Selected source and full repository tar archives have distinct scopes/hashes."
   },
   "runtimeContract": {
     "kind": "private-preinstalled-source-ESM-snapshot",
@@ -31,73 +38,105 @@
     "plainNodeJavaScriptOrPublicNpmContract": false
   },
   "acceptance": {
-    "sourcePortableRequiredPassed": 427,
+    "sourcePortableRequiredPassed": 431,
     "sourcePureHostRequiredPassed": 211,
-    "installedPortableRequiredPassed": 427,
+    "installedPortableRequiredPassed": 431,
     "installedReferenceDatabaseModulesRequiredPassed": 23,
     "failed": 0,
     "skipped": 0,
     "todo": 0,
-    "referenceCleanup": "23 outer issuer-zero/plain DROP/absent;22 child journal states dropped with zero sessions/absence; parent recovery false",
-    "workspaceAndHostHistory": {
-      "sourceHead": "d3a8867bc6fa91334f3787ac91feffb21989bbfd",
+    "allRequiredReferenceCleanupComplete": true,
+    "allCurrentSourceCandidateCaseIdsReconciled": true,
+    "currentSourceAndInstalledProof": "current-installed-summary.json",
+    "currentRootWorkspace": {
+      "sourceHead": "fb36100c151bb75323573be8cc9afd9fd689261b",
       "pnpmCheck": "passed",
-      "jsonScenarios": 598,
+      "jsonScenarios": 602,
       "jsonSuites": 17,
       "actualHostDatabasePrograms": 6,
-      "currentSourceBinding": "workspace-d3a-to-8e5-binding.json",
-      "rerunOnImplementationHead": false
+      "providerBudgetNormalNativeIntegration": "passed with47-production-source summary, unchanged10sec deadline and strictcleanup",
+      "migrations": 87,
+      "trackedInputChanges": [],
+      "proof": "current-root-summary.json"
+    },
+    "laterTestSupport": {
+      "sourceHead": "0b77e4ee12fcde76c124334a6e386d88e7ddcc25",
+      "changedApiFixtureHelperFiles": 7,
+      "normalPrograms": 6,
+      "reportedCases": 257,
+      "validPrefixesActualPg": 8,
+      "invalidBeforeQueryRefusals": 58,
+      "invalidQueryCalls": 0,
+      "apiTypecheck": "passed",
+      "proof": "current-six-fixture-cleanup-proof.json",
+      "runtimeArtifactBinding": "current-runtime-to-test-support-binding.json"
     },
     "runningWeb": {
-      "sourceHead": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+      "sourceHead": "fb36100c151bb75323573be8cc9afd9fd689261b",
       "requiredPassed": 22,
+      "failed": 0,
+      "skipped": 0,
       "automaticRetries": 0,
       "manualAttempts": 3,
       "retainedFreshScreenshots": 26,
       "imagesActuallyViewed": 4,
-      "coldFirstAttempt": "browser-cold-start-failure.json",
-      "finalReceipt": "browser-renewed.json",
       "sourceChanged": false,
-      "ownedGroupsReaped": true,
-      "previousSuccessfulReceipt": "browser-final.json",
-      "finalSummary": "browser-renewed-summary.json",
-      "visualScope": "Four images viewed in prior successful run; four renewed image byte hashes exactly equal those viewed images, no new image viewing claimed.",
-      "correctiveSourceBinding": "accepted-8e5-to-ci811-cleanup-binding.json"
+      "allFourOwnedGroupsReaped": true,
+      "firstFailure": "current-browser-cold-start-failure.json",
+      "finalReceipt": "current-browser-final.json",
+      "summary": "current-browser-summary.json",
+      "visualReview": "current-browser-visual-review.json",
+      "optimizerDiagnosticCountedAsUiTest": false,
+      "consecutiveCompleteWarmPasses": 2,
+      "userRequestedThirdRun": true,
+      "attemptHistory": "current-browser-attempt-history.json",
+      "previousWarmReceipt": "current-browser-second-warm-receipt.json",
+      "previousActualVisualReview": "current-browser-second-warm-visual-review.json"
     },
     "ownedQaContainerRetired": true,
-    "correctedFixtureSource": {
-      "unchangedRed": true,
-      "positiveNativeCasesPerLane": 2,
-      "positiveLanes": 2,
-      "preSqlGuards": 2,
-      "bothDatabasesPlainDroppedAtZeroSessionsAndAbsent": true,
-      "proof": "ci810-cross-account-fix-proof.json",
-      "completeInstalledReferenceCorpusRerunOnCorrectedHead": false
-    },
-    "hostFixtureCleanupCorrection": {
-      "sourceHead": "92ea324ed40795d21e74a6ff330c5b430144f07a",
-      "normalBudgetEntryIncludesDelayedAndPersistentRegressions": true,
-      "fullBudgetNativeBoundary": "passed,47productioninputs unchanged",
-      "apiTypecheck": "passed",
-      "genericNativeDeliveries": 18,
-      "genericNativeRequests": 78,
-      "genericReplayInputsUnchanged": 2286,
-      "productionFingerprintFilesEqualPriorAndCurrent": 380,
-      "qaGlobalZeroAndExactOwnedContainerRetired": true,
-      "completeEventCorpusRerun": false,
-      "newCurrentHeadCiRequired": true,
-      "proof": "ci811-cleanup-execution.json"
-    }
+    "qaRetirement": "current-qa-retirement.json"
   },
   "licenses": {
     "runtimePackages": 30,
     "allRuntimeToolingMirrorEntries": 70,
     "uniquePackageNames": 34,
     "deduplicatedRetainedLicenseNoticeTexts": 21,
-    "evidence": "candidate-dependencies.json",
-    "scope": "Actual declared metadata and retained texts; owner compatibility/distribution review remains separate"
+    "evidence": "current-candidate-dependencies.json",
+    "scope": "Actual retained metadata/text provenance, not owner distribution or legal approval."
   },
-  "pathInterpretation": "Verbatim raw receipts retain their original local paths and source identities. Dependency/source/file inventories are relative to their recorded candidate/provenance context, not this repository directory. The private local archive contains the actual retained notice texts. Corrective raw receipts also retain their original /tmp paths: ci810-*-v1.log map by lane to ci810-*.txt; the input inventory and cleanup map to the corresponding ci810-*.json files. Durable backup SAVED-FILES.json hash-verifies their original bytes. Renewed browser raw paths refer to retained private screenshots/logs in that backup, not files committed here. CI811 raw proof paths retain /tmp execution context; named ci811-*.txt evidence copies contain the actual focused/manual fixture logs, not the private GitHub job environment dumps. Its generic-input inventory has explicit domain-separated file:/symlink: hashing in ci811-event-generic-proof.json and the verbatim executed runner.",
+  "history": {
+    "originalImplementation": {
+      "head": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+      "tree": "dd2c9c7684533f98e898dc3278331c011c313e52"
+    },
+    "originalArchive": {
+      "bytes": 15077985,
+      "sha256": "0d14e058cbe9df9f0ca24dcedd09d9f3eab28cc6b4dad80d7802bd3cb1aa8f88"
+    },
+    "originalPacket": "historical-8e-packet-manifest.json",
+    "originalPacketSha256": "b96cee2408a7dbc511341b41bd98eb17c70a8a6c606d3ddcf9184938a202d7b8",
+    "originalPacketStatus": "Historical427/23+host211 and earlier598 evidence retain exact original identities; productionfair-work bytes changed atfb, so no old artifact or unchanged-production acceptance is borrowed.",
+    "earlierWorkspaceHead": "d3a8867bc6fa91334f3787ac91feffb21989bbfd",
+    "earlierWorkspaceScenarios": 598,
+    "ci810": "ci810-independent-audit.json",
+    "ci811": "ci811-failure-audit.json",
+    "ci812": "ci812-failure-audit.json",
+    "failedRunsRemainFailed": true,
+    "ci811AndCi812InstalledAlpha": "Skipped after ordinaryDB1 failures, not evidence of new installed conformance.",
+    "specificCi812WaitPathCaptured": false,
+    "actualProductionLostWakeFinding": "ci812-fair-work-fast-proof.json; independently reproduced at production ports and fixed withfourrequiredJSONcases."
+  },
+  "pathInterpretation": "Verbatim raw receipts retain original source identities and /tmp execution paths. Inventories refer to their candidate/provenance context, not this repository directory. Current-* files describe fb runtime or explicitly bound0b test support; original unprefixed andci810/ci811 records retain historical scope. Root full-repository archive is distinct from the selected packaging source and actual candidate archive. Generic ci811input inventory digests are domain-separated file:/symlink: hashes as stated in its own proof; other raw hashes retain their declared methods. Private raw browser screenshots/traces and archives are retained outside this packet; all named record bytes here are indexed below. The unchanged second-warm UI record copies retain their original canonical paths as historical context; current-browser-attempt-history.json supplies the immutable hash/path mapping, while the canonical current-browser-final/visual records identify the third run.",
+  "publication": {
+    "pr": "https://github.com/f-tuma/musubi/pull/389",
+    "finalPrReview": "Separate exact-final-head approval required after this evidence commit. Runtime/test-support provisional reviews are scopedcode reviews, not final publication approval.",
+    "currentHeadCi": "All21required checks on the new final PR head must pass; no historical failedrun authorizesmerge.",
+    "sourceMerge": "Separate protected expected-head squash and approved-tree verification.",
+    "trustedMainQuality": "Future publication requires separate exact main-push Quality provenance; PR CI is not that evidence.",
+    "publicRegistryPublished": false,
+    "productionDeployed": false
+  },
+  "technicalAcceptanceComplete": true,
   "files": [
     {
       "path": "accepted-8e5-to-ci811-cleanup-binding.json",
@@ -375,6 +414,96 @@
       "sha256": "5d583265f269e89df33f7d181ff2d87489572573f60b18db8562b907c9765428"
     },
     {
+      "path": "ci812-failure-audit.json",
+      "bytes": 62872,
+      "sha256": "3ae5af8c41e09da39389b03b734c26f8397945b4b53eafde93a0012a59432b0c"
+    },
+    {
+      "path": "ci812-fair-work-fast-proof.json",
+      "bytes": 15459,
+      "sha256": "083c16d6fa9929ad70f7589a996e4e8f951b5e4e99096d6e5181558c65ede8de"
+    },
+    {
+      "path": "ci812-fair-work-green.txt",
+      "bytes": 3142,
+      "sha256": "dddfa033b27a48b250a7186be721ab6a9d9087d6e831df767a583e09ec239bf2"
+    },
+    {
+      "path": "ci812-fair-work-unit.txt",
+      "bytes": 3686,
+      "sha256": "cac4eb305eb9d13a8743ab38ed463f64267a33ac94a90dedc597ce4c814ab1cb"
+    },
+    {
+      "path": "ci812-hint-red.txt",
+      "bytes": 618,
+      "sha256": "08c3f675522a03411b9df6d7982938f3acef7e00f90dec731792322dc2435a65"
+    },
+    {
+      "path": "ci812-independent-blocked-ports.json",
+      "bytes": 757,
+      "sha256": "48df8b0f29e3bc77b7e4fbd333e72a02929b83aafdcc18ae98aba19e1b4304ec"
+    },
+    {
+      "path": "ci812-independent-hint-repro.json",
+      "bytes": 946,
+      "sha256": "5fa4de18789582236b541c93c7d4dd47797f239f6683369f4ab2266b0129ee09"
+    },
+    {
+      "path": "ci812-independent-parked-repro.json",
+      "bytes": 1321,
+      "sha256": "76984fb33e4c6a6a0da4ca37f90ce4b802410e562ccfb84a2b867d26c883b90a"
+    },
+    {
+      "path": "ci812-independent-queued-repro.json",
+      "bytes": 966,
+      "sha256": "4e871c1e7b22c2d6407937a2f2b2d02b3c6b8a07db80ef6f781d76162a827b31"
+    },
+    {
+      "path": "ci812-independent-scenario-results.json",
+      "bytes": 977,
+      "sha256": "5a1ef8b73a4cb6dca2c4336526d3bdfba9295eb2502f323ac8f68658e9402224"
+    },
+    {
+      "path": "ci812-independent-scheduler-finding.json",
+      "bytes": 3047,
+      "sha256": "56a5e1851a13694e871f5738be885fb19a26c990424fe4dccb5586f4cdbb9529"
+    },
+    {
+      "path": "ci812-lost-due-wake-driver.mjs",
+      "bytes": 2378,
+      "sha256": "f0b1979f3b26d9ef0cc2f04c80ddfeb0a41327213f59c54d1c1e7c0e6f6a4c95"
+    },
+    {
+      "path": "ci812-lost-due-wake-proof.json",
+      "bytes": 1402,
+      "sha256": "61f574e302f00ceaaf350ae256d7b3ab086cee9ae7ceb551e3f0a58ce278648e"
+    },
+    {
+      "path": "ci812-parked-red.txt",
+      "bytes": 600,
+      "sha256": "37869118a5ea0a2b4b674f55dbc4f4c6cf0db3c293694d4bb9e2d1a9aa022231"
+    },
+    {
+      "path": "ci812-parser-unit.txt",
+      "bytes": 2601,
+      "sha256": "fd890b178dcb5bc1d29cdabd20c9b15f861e4b11519bfe46a29e94a6d09f66ee"
+    },
+    {
+      "path": "ci812-queued-red.txt",
+      "bytes": 598,
+      "sha256": "ffffb6d3def67c50951c382860040501ed3281a9d019773e53e4e9accf124fba"
+    },
+    {
+      "path": "ci812-runtime-typecheck.txt",
+      "bytes": 32,
+      "sha256": "38ac890c60e7f38d59ddfb410325cdfb5fca83c9411765c5481754e01c021630"
+    },
+    {
+      "path": "ci812-safe-reports.json",
+      "bytes": 8633,
+      "sha256": "86b6d1c7016d0ac825cdf2b6b4815c7595dbef4d7858851b274813dc542809a1"
+    },
+    {
       "path": "corrective-qa-pre-retirement.json",
       "bytes": 791,
       "sha256": "2bf8592e105df9d39e4183a843ccbdadf9935a2eb2b6e42b3bb2fe7b6352afc7"
@@ -385,9 +514,224 @@
       "sha256": "de9ccf581bae4f01a3b28174d8904b5ea113b3a552f4ca89eec2493ce1cf6941"
     },
     {
+      "path": "current-api-typecheck.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "current-browser-attempt-history.json",
+      "bytes": 2665,
+      "sha256": "0303152e982c6e863720b2a88c5d89fad41617960529062745bc72b29876d768"
+    },
+    {
+      "path": "current-browser-cold-failed-receipt.json",
+      "bytes": 17608,
+      "sha256": "636c10f58eeebf2dc0846ce3179d97d8993eb960b90304799d5390be3d6e0850"
+    },
+    {
+      "path": "current-browser-cold-start-failure.json",
+      "bytes": 2466,
+      "sha256": "0f943d07b135c4cde6dfef4fad3f817a940d944090904ae54daccd5dff4a737f"
+    },
+    {
+      "path": "current-browser-final.json",
+      "bytes": 25387,
+      "sha256": "4a9d715e8697dee33a3d855d01de70ac8048549bfbe8fc8df60b75e73ef3b9e1"
+    },
+    {
+      "path": "current-browser-identity.json",
+      "bytes": 152,
+      "sha256": "f9ae00ec10ba7f7ce7e7315a1c4405dd79d1320888eac697d04625c470a5be52"
+    },
+    {
+      "path": "current-browser-optimizer-diagnostic.json",
+      "bytes": 810,
+      "sha256": "8a43b4dd04e7b7246ad1dc9874257979e7c9c1a5006a63f63c33b71b2441931b"
+    },
+    {
+      "path": "current-browser-second-warm-receipt.json",
+      "bytes": 25387,
+      "sha256": "47be161f187cc8115ac75e21f53ce136258f0173acf9fd967ac08eac4dc49216"
+    },
+    {
+      "path": "current-browser-second-warm-summary.json",
+      "bytes": 2264,
+      "sha256": "b24fb4df670822c6f870b73818d1f82245f47048f3b5be23436b61a920a4bf68"
+    },
+    {
+      "path": "current-browser-second-warm-visual-review.json",
+      "bytes": 3630,
+      "sha256": "f6d3407cbc4c22a7e725f4ad73a8cb48742e7f205827e4926cc304b8cd60844a"
+    },
+    {
+      "path": "current-browser-summary.json",
+      "bytes": 2585,
+      "sha256": "40262bfe20ef05402261ea893ef94efb6499db8f0b0d330d9237cf83d19d279d"
+    },
+    {
+      "path": "current-browser-visual-review.json",
+      "bytes": 4093,
+      "sha256": "689c66530d5e438b797f80e6843c6f119d861efdf846c377fe6c81580e1ffb11"
+    },
+    {
+      "path": "current-candidate-dependencies.json",
+      "bytes": 50902,
+      "sha256": "1a5c91ffc6da0ffd3dc008ff01be0d226bd41d6a9749db903d7165524557b758"
+    },
+    {
+      "path": "current-candidate-file-inventory.json",
+      "bytes": 759279,
+      "sha256": "e3cc8b9d80556d5f56592c4b956f2b79671ae220acd1567b9c5b13dd1ba25685"
+    },
+    {
+      "path": "current-candidate-manager-relocations.json",
+      "bytes": 2145,
+      "sha256": "591999cf45f1fc7eaeb8e3044e4a80ed47fe5911adc026e988af60b9f787e1c1"
+    },
+    {
+      "path": "current-candidate-manifest-normalization.json",
+      "bytes": 39955,
+      "sha256": "6fe8af3e4e977062258d6e7e64d45ece885c0bb819d61448dd59af5761675724"
+    },
+    {
+      "path": "current-candidate-manifest.json",
+      "bytes": 2336,
+      "sha256": "238de80b13ae557b3c432b7fb607c38025277c97c9e43c7749bbc45a3782c5ee"
+    },
+    {
+      "path": "current-candidate-production-parity.json",
+      "bytes": 946,
+      "sha256": "dd3a98fac8b2ef02878cf80e965fb3ded02948acb14b03a63e9c3947039f358f"
+    },
+    {
+      "path": "current-candidate-source-inventory.json",
+      "bytes": 63157,
+      "sha256": "a46b9fc24c4cb7478342199b6facb57c42967e802bdbb7ebc98bb594d9d76e5c"
+    },
+    {
+      "path": "current-fixture-prefix-guards.json",
+      "bytes": 2588,
+      "sha256": "b4e481ed14b3c57b45b086c767a98b1db4ad1df722bc612d2571381260a8f6ca"
+    },
+    {
+      "path": "current-installed-deterministic.conformance.json",
+      "bytes": 133508,
+      "sha256": "f909cb0a8543fe78094d209bae0f4437ece772e8c47438d211154640ec68227f"
+    },
+    {
+      "path": "current-installed-deterministic.json",
+      "bytes": 1460,
+      "sha256": "944bf2341e4d38841e337bb55ebbc5aeacd7fc1586ea292f96068949e3191825"
+    },
+    {
+      "path": "current-installed-reference-db.conformance.json",
+      "bytes": 25309,
+      "sha256": "ebd79267b834a292334e156c1113f3f25a86aa5655f3cbb99f5aead3804087d5"
+    },
+    {
+      "path": "current-installed-reference-db.json",
+      "bytes": 1457,
+      "sha256": "32986f0b735906af01e1985874df0b275bf6af2967c129036cb41fb8a63087ad"
+    },
+    {
+      "path": "current-installed-summary.json",
+      "bytes": 5669,
+      "sha256": "59d0c85ddc37116631e50582aac27a4d74d24421d9969aa0efaa7ec69c4f89af"
+    },
+    {
+      "path": "current-package-receipt.json",
+      "bytes": 4800,
+      "sha256": "b86482e8d5ba61b6ed60f6a18d58268af0bf89f4f44dab0340f62abd83349eaf"
+    },
+    {
+      "path": "current-packaging-input-binding.json",
+      "bytes": 870333,
+      "sha256": "85fc53a4af47f39bf2088fff647fe4a16788e3a088bf1e14110546d95ac2a018"
+    },
+    {
+      "path": "current-produced-artifact.json",
+      "bytes": 1297,
+      "sha256": "49c5503fbe15251b91d8f2e2f379d5b87ed56bc4990f2c885138c66019da696f"
+    },
+    {
+      "path": "current-qa-final-cleanup.json",
+      "bytes": 418,
+      "sha256": "b93518ae3c0cebdfffe7ebe3ef518631969365bdc3ae7b27292415a3cbe6cbc4"
+    },
+    {
+      "path": "current-qa-retirement-events.jsonl",
+      "bytes": 1635,
+      "sha256": "af6f8bc4121bf284684f0e804736885d1bb5a880bc2e50295943c0a8b39714d9"
+    },
+    {
+      "path": "current-qa-retirement.json",
+      "bytes": 4992,
+      "sha256": "4a6eb5148fc54b79b688295d025087569d5b1fd3505e070a63a0da1a856f5ae5"
+    },
+    {
+      "path": "current-root-receipt.json",
+      "bytes": 143332,
+      "sha256": "f492246da15509b657b643d0fe4a045f528a079c6f9d87e1b8a6fe8da3db12c8"
+    },
+    {
+      "path": "current-root-summary.json",
+      "bytes": 1663,
+      "sha256": "7a95778c32d6d7ca2749240f6d17387624e342f3a76268f453d8d3a27c692b12"
+    },
+    {
+      "path": "current-runtime-provisional-review.json",
+      "bytes": 3269,
+      "sha256": "e41e563314be696a8119f93219113d8d2bb77f4ba5a6336e38882ac59294339d"
+    },
+    {
+      "path": "current-runtime-to-test-support-binding.json",
+      "bytes": 7261,
+      "sha256": "9254f97dc7ec861160a683602b1901638616401124ea7f1618f65b2c4fa5fb70"
+    },
+    {
+      "path": "current-six-fixture-before.json",
+      "bytes": 973,
+      "sha256": "e181d19511d92b7b7a28bff2b5012a3ee60b79ee0ba5274b320187b20261d4d7"
+    },
+    {
+      "path": "current-six-fixture-cleanup-proof.json",
+      "bytes": 6476,
+      "sha256": "5f9c05cb755520eaa8aff47e1a8e5504bea1705383856ba2420e65f9b141d16f"
+    },
+    {
+      "path": "current-six-fixture-inputs.json",
+      "bytes": 973,
+      "sha256": "68abd50b5499caee472b2ddaf7edea50f483b21761d072a9519fae62eb3fa692"
+    },
+    {
+      "path": "current-six-fixture-runs.json",
+      "bytes": 10021,
+      "sha256": "fac4d57bdac26b85b6bc6e80fe65ab774d41923833c9bf5e3479cedd1e7f0e07"
+    },
+    {
+      "path": "current-source-deterministic.json",
+      "bytes": 133399,
+      "sha256": "61d4446704f6cf8b985eb4790aaf14b7fb6a7ba842e121e652ac91f084bca85a"
+    },
+    {
+      "path": "current-source-host-compat.json",
+      "bytes": 74587,
+      "sha256": "5a89a6414205d730f07925e2d8484dcab2c024aa62453deef695ac568ca5d060"
+    },
+    {
+      "path": "current-test-support-provisional-review.json",
+      "bytes": 2629,
+      "sha256": "68b93a2ee38b155e2c4c26fb3cd2da81cef882136fb660aad2ad8417e0fe3acb"
+    },
+    {
       "path": "diagnostic-history.json",
       "bytes": 3494,
       "sha256": "fc331b4e07a969b73566585bc0b5b96b8537a9ea1b8a07e22cbafd005e2c1e49"
+    },
+    {
+      "path": "historical-8e-packet-manifest.json",
+      "bytes": 23415,
+      "sha256": "b96cee2408a7dbc511341b41bd98eb17c70a8a6c606d3ddcf9184938a202d7b8"
     },
     {
       "path": "historical-d3a-raw-deployed-reference-manifest.json",
@@ -509,84 +853,5 @@
       "bytes": 4770,
       "sha256": "40508d3032075b8d789a6f7b3b8ef4485461dc5ad2abef4b7d04737bda2909ce"
     }
-  ],
-  "publication": {
-    "finalPrReview": "separate exact-head receipt required before PR",
-    "currentHeadCi": "all required checks must pass before protected squash",
-    "sourceMerge": "separate expected-head and approved-tree verification",
-    "publicRegistryPublished": false,
-    "productionDeployed": false,
-    "pr": "https://github.com/f-tuma/musubi/pull/389",
-    "priorHeadCi": "Quality810 on8c2d2f5 completed20/21success; onlyDB4 failed at initial test fixture guard. Installed DB1 alpha427/23+purehost211 actually passed on its separate merge-ref artifact. Old run cannot authorize merge of corrected head.",
-    "correctedHeadCi": "Required after92ea324 and final evidence commit; all21 checks on the new final PR head must pass. Historical failed810/811 remain failed."
-  },
-  "technicalAcceptanceComplete": true,
-  "correctiveSource": {
-    "head": "92ea324ed40795d21e74a6ff330c5b430144f07a",
-    "tree": "d0aaabc64378ecca448b0f9b7e4579eae549c2b1",
-    "scope": "Prior reference bootstrap and CI budget metadata, plus two API integration fixture cleanup changes and one new shared fixture helper. Production behavior unchanged. Focused actual PG/native corrections passed; new current-head whole CI still required.",
-    "binding": "accepted-8e5-to-ci811-cleanup-binding.json",
-    "referenceFixtureProof": "ci810-cross-account-fix-proof.json",
-    "budgetCleanupProof": "ci811-budget-cleanup-proof.json",
-    "actualExecutionMetadata": "ci811-cleanup-execution.json",
-    "genericNativeProof": "ci811-event-generic-proof.json",
-    "ownedQaRetirement": "ci811-qa-retirement.json",
-    "priorCorrectionBinding": "accepted-8e5-to-corrective-binding.json"
-  },
-  "historicalCi810": {
-    "audit": "ci810-independent-audit.json",
-    "receiptMapping": [
-      {
-        "originalArtifactPath": "sync-alpha/package-receipt.json",
-        "packetPath": "ci810-package-receipt.json",
-        "sha256": "44d2108fbe25b9218f4c712c1bfc6bc1780030c9581ce1fb43528b97793f8f37"
-      },
-      {
-        "originalArtifactPath": "sync-alpha-deterministic.json",
-        "packetPath": "ci810-sync-alpha-deterministic.json",
-        "sha256": "0c7628140ca467daad0f61e3202610f9b957f3cd7e8e2327a6d8b00002e3293c"
-      },
-      {
-        "originalArtifactPath": "sync-alpha-deterministic.json.conformance.json",
-        "packetPath": "ci810-sync-alpha-deterministic.json.conformance.json",
-        "sha256": "fd73d75141351ff5f5de5ac03fdf5330fe8ea2251f84e20398dd43f9546d02ee"
-      },
-      {
-        "originalArtifactPath": "sync-alpha-host-compat.json",
-        "packetPath": "ci810-sync-alpha-host-compat.json",
-        "sha256": "79a4560783e790c6fa544149b71cd2148a3a7a138d8571bb719b81303993b79f"
-      },
-      {
-        "originalArtifactPath": "sync-alpha-reference-db.json",
-        "packetPath": "ci810-sync-alpha-reference-db.json",
-        "sha256": "ff4e747d6ea6c9419ac709b39be578f6972fc3d52d5c2881cd641d7e84730d73"
-      },
-      {
-        "originalArtifactPath": "sync-alpha-reference-db.json.conformance.json",
-        "packetPath": "ci810-sync-alpha-reference-db.json.conformance.json",
-        "sha256": "e1b1cecd28557825c0efc90dde6c0b38e6ad97df7ace22bda4562f8df4cb9324"
-      }
-    ],
-    "scope": "Exact prior PR tree6a12e829; merge-refd01ccd69, own CI archive6cf8eb60\u2026 distinct from private local8e5 archive0d14e058\u2026; does not cover fixturee3f or metadata68f."
-  },
-  "historicalCi810CorrectiveSource": {
-    "head": "68f974eba2c4ee1a8709a861c8ca7c62dcce593d",
-    "tree": "93a674aeb0a916cdfc63e4ad13f4d9de3e12167b",
-    "scope": "One test bootstrap fallback line plus conditional timeout budget30min for DB1 only (others20). Accepted8e5 production source/runtime and historical artifact unchanged. New final-head review/CI/publication remain required.",
-    "binding": "accepted-8e5-to-corrective-binding.json",
-    "regressionProof": "ci810-cross-account-fix-proof.json",
-    "cleanup": "ci810-final-cleanup.json",
-    "qaRetirementWitness": "corrective-qa-retirement.json",
-    "fixtureCommit": "e3f619cfa94f31effeedf45628ac9135ba1a9d77"
-  },
-  "historicalCi811": {
-    "audit": "ci811-failure-audit.json",
-    "head": "214d4a28a1ad19daf5301fe4fe7be4b368882e20",
-    "requiredJobs": 21,
-    "successfulJobs": 19,
-    "failedJobs": 2,
-    "standaloneAlpha": "Skipped after the ordinaryDB1 cleanup assertion failed; no candidate/reports uploaded.",
-    "originalCleanupSessions": "Count1; PID/owner/state unknown in CI. Local actual delayed/persistent-owned regression is separate evidence, not proof of the original CI session identity.",
-    "referenceBootstrapCorrection": "Actual ordinary DB4 paired-reference fixture and its zero/plainDROP/absence cleanup passed."
-  }
+  ]
 }

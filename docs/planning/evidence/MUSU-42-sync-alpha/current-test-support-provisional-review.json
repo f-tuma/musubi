@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-six-fixture-cleanup-provisional-review",
+  "reviewer": "/root/c10_final_review",
+  "base": {
+    "head": "fb36100c151bb75323573be8cc9afd9fd689261b",
+    "tree": "0d54cbc311100fbe66d3f835144767fbf2911378"
+  },
+  "approved": true,
+  "approvalScope": "Pouze sedm přesných source byte hashes níže; šest fixture-callsite adoption a přesný osmiprefixový whitelist. Není finální C10 artefakt/publication approval.",
+  "files": {
+    "apps/api/src/sync/task_compatibility_delivery.integration.test.ts": "c25e9eef52c641806bd4fe4fa52261f4edaea4a287a269a95571589d25df2fe8",
+    "apps/api/src/sync/google_task_causal_delivery.integration.test.ts": "760c6754cf63837877d42772af21987498ee036a4193fd95f3221947d17430ec",
+    "apps/api/src/sync/google_shared_task_update_delivery.integration.test.ts": "cf6b05eb232031c586b233387f5a53b3237e5856091a7ef62ce0a9931c850a87",
+    "apps/api/src/sync/google_shared_task_delete_delivery.integration.test.ts": "9fe52c0e2b14ef3c0c6129f1d830754ad84441f7ff17c74809ee3dc5850fe618",
+    "apps/api/src/sync/google_shared_task_create_delivery.integration.test.ts": "607af63899e4ba508fce54772068301799dd9a80ebd27211988b682360e39176",
+    "apps/api/src/sync/task_ack_delivery.integration.test.ts": "ecd6bf3de64c026bf2acd127d2037ba650fb0af5ad28ca312d03a9d5514f3ad4",
+    "apps/api/src/sync/owned_database_fixture_cleanup.ts": "21ff6470de30eb7aff6b015c4b4d349132e0dc2a62c7f2c41d2490d0fd090429"
+  },
+  "proofSha256": "5f9c05cb755520eaa8aff47e1a8e5504bea1705383856ba2420e65f9b141d16f",
+  "beforeAndFrozenInputInventoryHashesMatched": true,
+  "actualNormalPrograms": 6,
+  "actualNormalCases": 257,
+  "eachActualLogHashAndCleanupReceiptMatched": true,
+  "actualValidPrefixDatabases": 8,
+  "invalidNamesRefusedBeforeAnyQuery": 58,
+  "all14OwnDatabasesStrictZeroPlainDropAbsent": true,
+  "guardDriverCallsActualHelper": true,
+  "productionSourceChanged": false,
+  "apiTypecheckExitCode": 0,
+  "preserved": [
+    "ENVIRONMENT=test guards",
+    "exact nonce allocation names",
+    "task compatibility databaseCreated conditional",
+    "existing native assertions",
+    "existing Pool trackers/ownership",
+    "connect mock restore and admin finally",
+    "helper timeout and exact-zero assertions",
+    "plain DROP and catalog absence"
+  ],
+  "findings": [],
+  "unassessed": [
+    "Reviewer did not rerun actual PostgreSQL programs; read exact retained logs, execution drivers and source identities.",
+    "Root-owned shared QA retirement and final head binding are later packet concerns."
+  ],
+  "mergeAuthorizedByThisReceipt": false,
+  "productionDeployed": false
+}

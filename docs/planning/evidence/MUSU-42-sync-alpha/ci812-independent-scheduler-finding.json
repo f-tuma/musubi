@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "kind": "ci812-independent-production-scheduler-finding",
+  "reviewer": "/root/c10_final_review",
+  "subjectHead": "1e6866db59245fa2ad1f383938fc3dcd8baa0aba",
+  "sourceFile": "packages/sync-runtime/src/fair-work.ts",
+  "sourceSha256": "69d4f6d0c328d65018ca4562b506cfe75b015a16095efc1d5c986c89f16a963d",
+  "findings": [
+    {
+      "id": "C10-R3",
+      "severity": "blocker",
+      "location": "packages/sync-runtime/src/fair-work.ts:115,174,183,187",
+      "expected": "Every future queued candidate or parked continuation eventually receives its own eligibility wake; ready blocked items do not spin.",
+      "actual": "choose reads now before due, rejects candidate; later future-only pending scan reads now after due and omits candidate, or final nextWake>now guard discards wake that elapsed before scheduling. Pump ends with pending/parked work and no own timer/pump.",
+      "impact": "Work can wait indefinitely until an unrelated kick, violating scheduler continuation liveness. Existing10ms fixture budget parks can encounter this timing window. Not a harmless fixture-only deadline condition.",
+      "evidence": [
+        "Actual createFairWorkCoordinator imported from source, only existing nowMs/schedule/host ports injected.",
+        "Futurecandidate due10 with now9→11 remained pending1/started0/timers0 after30microtasks; external kick completed it.",
+        "Actual coordinator.park with async host.candidates, clock0,0,8,9,11 yielded parked1/logical1/active0/pending1/timers0 after50microtasks; external kick resumed/completed once."
+      ],
+      "confidence": "high for production bug; CI812specific attribution unknown",
+      "nextAction": "Fix coherent per-pump eligibility/wake accounting and preserve overdue acquired host wake hints; prove no spins when already-due items are blocked by account/collision/capacity. Add scenarios exercising actual production coordinator and controlled scheduling ports. Rebuild/test the portable candidate because runtime source changes."
+    }
+  ],
+  "reproArtifacts": [
+    {
+      "path": "/tmp/musu42-ci812-fair-work-crossed-due-repro.json",
+      "sha256": "4e871c1e7b22c2d6407937a2f2b2d02b3c6b8a07db80ef6f781d76162a827b31"
+    },
+    {
+      "path": "/tmp/musu42-ci812-parked-crossed-due-repro.json",
+      "sha256": "76984fb33e4c6a6a0da4ca37f90ce4b802410e562ccfb84a2b867d26c883b90a"
+    },
+    {
+      "path": "/tmp/musu42-ci812-parked-crossed-due-repro.mjs",
+      "sha256": "5cfb1b509cc15ffea6317ccebfcc7eba604e68e39baef9127bda0fe33a8560a2"
+    }
+  ],
+  "ci812SpecificCauseEstablished": false,
+  "ci812OriginalTraceLimitation": "Retained log captures deadline expiry, not the waiting request scheduler snapshot/native dispatch sequence. No final47-source behavioral summary, standalone alpha skipped; cleanup PASS is separate.",
+  "reviewOperations": "Read-only source/log inspection plus actual production pure-function reproduction through existing dependency ports; only /tmp repro/report files written. No repo/DB/server/provider mutation."
+}

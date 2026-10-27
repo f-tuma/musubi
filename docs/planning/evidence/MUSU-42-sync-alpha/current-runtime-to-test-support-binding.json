@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-current-runtime-artifact-to-final-test-support-source-binding",
+  "runtimeSource": {
+    "head": "fb36100c151bb75323573be8cc9afd9fd689261b",
+    "tree": "0d54cbc311100fbe66d3f835144767fbf2911378"
+  },
+  "testSupportSource": {
+    "head": "0b77e4ee12fcde76c124334a6e386d88e7ddcc25",
+    "tree": "2862105e33dcd0f940ac09a02f459fe7b502dc88"
+  },
+  "changedPaths": [
+    "apps/api/src/sync/google_shared_task_create_delivery.integration.test.ts",
+    "apps/api/src/sync/google_shared_task_delete_delivery.integration.test.ts",
+    "apps/api/src/sync/google_shared_task_update_delivery.integration.test.ts",
+    "apps/api/src/sync/google_task_causal_delivery.integration.test.ts",
+    "apps/api/src/sync/owned_database_fixture_cleanup.ts",
+    "apps/api/src/sync/task_ack_delivery.integration.test.ts",
+    "apps/api/src/sync/task_compatibility_delivery.integration.test.ts"
+  ],
+  "changedFileSha256": {
+    "apps/api/src/sync/task_compatibility_delivery.integration.test.ts": "c25e9eef52c641806bd4fe4fa52261f4edaea4a287a269a95571589d25df2fe8",
+    "apps/api/src/sync/google_task_causal_delivery.integration.test.ts": "760c6754cf63837877d42772af21987498ee036a4193fd95f3221947d17430ec",
+    "apps/api/src/sync/google_shared_task_update_delivery.integration.test.ts": "cf6b05eb232031c586b233387f5a53b3237e5856091a7ef62ce0a9931c850a87",
+    "apps/api/src/sync/google_shared_task_delete_delivery.integration.test.ts": "9fe52c0e2b14ef3c0c6129f1d830754ad84441f7ff17c74809ee3dc5850fe618",
+    "apps/api/src/sync/google_shared_task_create_delivery.integration.test.ts": "607af63899e4ba508fce54772068301799dd9a80ebd27211988b682360e39176",
+    "apps/api/src/sync/task_ack_delivery.integration.test.ts": "ecd6bf3de64c026bf2acd127d2037ba650fb0af5ad28ca312d03a9d5514f3ad4",
+    "apps/api/src/sync/owned_database_fixture_cleanup.ts": "21ff6470de30eb7aff6b015c4b4d349132e0dc2a62c7f2c41d2490d0fd090429"
+  },
+  "unchangedExactScopes": [
+    {
+      "path": "apps/web",
+      "runtimeSourceGitObject": "11913751799230384ccfac55231a2864ab6c7841",
+      "testSupportSourceGitObject": "11913751799230384ccfac55231a2864ab6c7841"
+    },
+    {
+      "path": "apps/client",
+      "runtimeSourceGitObject": "ebac88b738f14b3f8a1720025ac0484186908b05",
+      "testSupportSourceGitObject": "ebac88b738f14b3f8a1720025ac0484186908b05"
+    },
+    {
+      "path": "apps/ui-catalog",
+      "runtimeSourceGitObject": "ed5749c15f4cf4ba943956fb6759af7c180e23d9",
+      "testSupportSourceGitObject": "ed5749c15f4cf4ba943956fb6759af7c180e23d9"
+    },
+    {
+      "path": "packages",
+      "runtimeSourceGitObject": "0a18458222b0eeb29b1fe320fbec0ebedf1bb6a7",
+      "testSupportSourceGitObject": "0a18458222b0eeb29b1fe320fbec0ebedf1bb6a7"
+    },
+    {
+      "path": "apps/sync-reference",
+      "runtimeSourceGitObject": "fcbfb8ffcbe0b87e77009216c96dd445449bfeea",
+      "testSupportSourceGitObject": "fcbfb8ffcbe0b87e77009216c96dd445449bfeea"
+    },
+    {
+      "path": "package.json",
+      "runtimeSourceGitObject": "1de6235743255dbe8c7e1d2cffb976850cda7299",
+      "testSupportSourceGitObject": "1de6235743255dbe8c7e1d2cffb976850cda7299"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "runtimeSourceGitObject": "0875ea063cf8890ff316657e86b5665ad3ab9fef",
+      "testSupportSourceGitObject": "0875ea063cf8890ff316657e86b5665ad3ab9fef"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "runtimeSourceGitObject": "77751fcbf7a4625bcabf1cf066cff7139ff40d43",
+      "testSupportSourceGitObject": "77751fcbf7a4625bcabf1cf066cff7139ff40d43"
+    },
+    {
+      "path": "turbo.json",
+      "runtimeSourceGitObject": "cc2899a0011d487f03da3790282555742f8c28b5",
+      "testSupportSourceGitObject": "cc2899a0011d487f03da3790282555742f8c28b5"
+    },
+    {
+      "path": "patches",
+      "runtimeSourceGitObject": "70d8dffc2d1e14489c43f287df6016db6d37d743",
+      "testSupportSourceGitObject": "70d8dffc2d1e14489c43f287df6016db6d37d743"
+    },
+    {
+      "path": "scripts",
+      "runtimeSourceGitObject": "d725fa8394b054c248004f33d89fb0bc657c2bc6",
+      "testSupportSourceGitObject": "d725fa8394b054c248004f33d89fb0bc657c2bc6"
+    },
+    {
+      "path": ".github/workflows/quality.yml",
+      "runtimeSourceGitObject": "daa8704119feb3f956074d168e0a8abc3e574c2a",
+      "testSupportSourceGitObject": "daa8704119feb3f956074d168e0a8abc3e574c2a"
+    },
+    {
+      "path": "docs/sync-alpha",
+      "runtimeSourceGitObject": "13fff2ee243126711344cd263e4d88962b995d94",
+      "testSupportSourceGitObject": "13fff2ee243126711344cd263e4d88962b995d94"
+    }
+  ],
+  "packagingSelection": {
+    "method": "ARCHIVE_PATHS imported from the actual packaging module; git diff fb\u21920b over those exact paths is empty.",
+    "paths": [
+      "LICENSE",
+      "package.json",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml",
+      "turbo.json",
+      "patches",
+      "apps/sync-reference",
+      "packages/types",
+      "packages/sync-codec",
+      "packages/provider-google",
+      "packages/provider-microsoft",
+      "packages/provider-caldav",
+      "packages/sync-runtime",
+      "scripts/sync-alpha-common.mjs",
+      "scripts/package-sync-alpha.mjs",
+      "scripts/verify-sync-alpha.mjs",
+      "scripts/sync-alpha.test.mjs",
+      "scripts/sync-conformance.mjs",
+      "docs/sync-alpha",
+      "docs/protocol/sync-operation-v1.md",
+      "docs/protocol/sync-profile-v1.md",
+      "docs/research/nylas/10-source-inventory.md",
+      "docs/research/nylas/references/source-manifest.json",
+      "docs/research/nylas/references/nylas-sitemap-2026-10-12.xml",
+      "docs/research/nylas/references/link-check-2026-10-12.json"
+    ],
+    "changedInputs": [],
+    "all307SelectedArchiveInputsUnchanged": true,
+    "inventoryProof": "current-packaging-input-binding.json"
+  },
+  "apiScope": "Whole API tree contains seven fixture/helper cleanup changes only. No API production byte changes; no fingerprint exclusion rule changed. The exact fb full workspace/602/host6/budget47 reports are not relabelled as runs of these later test-support bytes.",
+  "newTestSupportVerification": {
+    "proof": "current-six-fixture-cleanup-proof.json",
+    "normalPrograms": 6,
+    "reportedCases": 257,
+    "registeredPrefixesActualPg": 8,
+    "invalidBeforeQueryRefusals": 58,
+    "invalidQueryCalls": 0,
+    "typecheck": "passed",
+    "newHelperSha256": "21ff6470de30eb7aff6b015c4b4d349132e0dc2a62c7f2c41d2490d0fd090429"
+  },
+  "currentArtifactScope": "Archive35dc0a0c\u2026 belongs to exact committedfb with runtimefix000908c4\u2026. Current installed431+23 and sourcehost211 include that production correction and corrected reference-bootstrap fixture. They do not execute new0b API test-support bytes; those are separately proven.",
+  "oldArtifactScope": "Original8e archive0d14e058\u2026 and its427/598-era reports contain the earlier runtime and remain historical; no unchanged-production bridge from8e tofb is claimed.",
+  "runningWebScope": "The fresh full-repositoryfb web copy contains exact current Web/APIproduction/packages/lock/scripts bytes; its later final browser receipt retainsfb identity. UI tests do not establish liveSQL/provider/authentication outcomes.",
+  "newCurrentHeadAllRequiredCi": true,
+  "publicRegistryPublished": false,
+  "productionDeployed": false
+}

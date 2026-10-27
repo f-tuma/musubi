@@ -1,0 +1,592 @@
+{
+  "schemaVersion": 1,
+  "kind": "musubi-c10-local-technical-acceptance-packet",
+  "status": "local-technical-acceptance-complete",
+  "implementationSource": {
+    "head": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+    "tree": "dd2c9c7684533f98e898dc3278331c011c313e52"
+  },
+  "artifact": {
+    "archiveBytes": 15077985,
+    "archiveSha256": "0d14e058cbe9df9f0ca24dcedd09d9f3eab28cc6b4dad80d7802bd3cb1aa8f88",
+    "payloadDigest": "c5a0fc7544059f489f9fabb3cfe16641bf0a5b2ac0aa3a31d1abda5550c6bf9d",
+    "candidateManifestSha256": "20f39cb75fc602c25d2918c2cfa1a08ce06c9b4cf346c8d8fa2a32e54cdb71c0",
+    "selectedPackagingSourceArchiveSha256": "067c04227ef14b7795c6e61eb62c634a5af0235bad630fbda2dd6ea51adf3433",
+    "fullRepositoryWebSourceArchiveSha256": "cb14f7c79aaef6854c278fdc1e44dfba9b53e9bfeef26f4050824f11959a6c93",
+    "artifactFiles": 3589,
+    "installedPackageEntries": 70,
+    "producedRoot": "/tmp/musu42-candidate-8e5-v1/candidate",
+    "relocatedRoot": "/tmp/musu42-relocated-8e5-v1/candidate"
+  },
+  "runtimeContract": {
+    "kind": "private-preinstalled-source-ESM-snapshot",
+    "node": "v22.23.4",
+    "nodeMajor": 22,
+    "platform": "linux",
+    "arch": "x64",
+    "tsx": "4.23.12",
+    "pnpm": "11.8.0",
+    "typescriptTooling": "6.0.3",
+    "buildBaseImage": null,
+    "plainNodeJavaScriptOrPublicNpmContract": false
+  },
+  "acceptance": {
+    "sourcePortableRequiredPassed": 427,
+    "sourcePureHostRequiredPassed": 211,
+    "installedPortableRequiredPassed": 427,
+    "installedReferenceDatabaseModulesRequiredPassed": 23,
+    "failed": 0,
+    "skipped": 0,
+    "todo": 0,
+    "referenceCleanup": "23 outer issuer-zero/plain DROP/absent;22 child journal states dropped with zero sessions/absence; parent recovery false",
+    "workspaceAndHostHistory": {
+      "sourceHead": "d3a8867bc6fa91334f3787ac91feffb21989bbfd",
+      "pnpmCheck": "passed",
+      "jsonScenarios": 598,
+      "jsonSuites": 17,
+      "actualHostDatabasePrograms": 6,
+      "currentSourceBinding": "workspace-d3a-to-8e5-binding.json",
+      "rerunOnImplementationHead": false
+    },
+    "runningWeb": {
+      "sourceHead": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+      "requiredPassed": 22,
+      "automaticRetries": 0,
+      "manualAttempts": 3,
+      "retainedFreshScreenshots": 26,
+      "imagesActuallyViewed": 4,
+      "coldFirstAttempt": "browser-cold-start-failure.json",
+      "finalReceipt": "browser-renewed.json",
+      "sourceChanged": false,
+      "ownedGroupsReaped": true,
+      "previousSuccessfulReceipt": "browser-final.json",
+      "finalSummary": "browser-renewed-summary.json",
+      "visualScope": "Four images viewed in prior successful run; four renewed image byte hashes exactly equal those viewed images, no new image viewing claimed.",
+      "correctiveSourceBinding": "accepted-8e5-to-ci811-cleanup-binding.json"
+    },
+    "ownedQaContainerRetired": true,
+    "correctedFixtureSource": {
+      "unchangedRed": true,
+      "positiveNativeCasesPerLane": 2,
+      "positiveLanes": 2,
+      "preSqlGuards": 2,
+      "bothDatabasesPlainDroppedAtZeroSessionsAndAbsent": true,
+      "proof": "ci810-cross-account-fix-proof.json",
+      "completeInstalledReferenceCorpusRerunOnCorrectedHead": false
+    },
+    "hostFixtureCleanupCorrection": {
+      "sourceHead": "92ea324ed40795d21e74a6ff330c5b430144f07a",
+      "normalBudgetEntryIncludesDelayedAndPersistentRegressions": true,
+      "fullBudgetNativeBoundary": "passed,47productioninputs unchanged",
+      "apiTypecheck": "passed",
+      "genericNativeDeliveries": 18,
+      "genericNativeRequests": 78,
+      "genericReplayInputsUnchanged": 2286,
+      "productionFingerprintFilesEqualPriorAndCurrent": 380,
+      "qaGlobalZeroAndExactOwnedContainerRetired": true,
+      "completeEventCorpusRerun": false,
+      "newCurrentHeadCiRequired": true,
+      "proof": "ci811-cleanup-execution.json"
+    }
+  },
+  "licenses": {
+    "runtimePackages": 30,
+    "allRuntimeToolingMirrorEntries": 70,
+    "uniquePackageNames": 34,
+    "deduplicatedRetainedLicenseNoticeTexts": 21,
+    "evidence": "candidate-dependencies.json",
+    "scope": "Actual declared metadata and retained texts; owner compatibility/distribution review remains separate"
+  },
+  "pathInterpretation": "Verbatim raw receipts retain their original local paths and source identities. Dependency/source/file inventories are relative to their recorded candidate/provenance context, not this repository directory. The private local archive contains the actual retained notice texts. Corrective raw receipts also retain their original /tmp paths: ci810-*-v1.log map by lane to ci810-*.txt; the input inventory and cleanup map to the corresponding ci810-*.json files. Durable backup SAVED-FILES.json hash-verifies their original bytes. Renewed browser raw paths refer to retained private screenshots/logs in that backup, not files committed here. CI811 raw proof paths retain /tmp execution context; named ci811-*.txt evidence copies contain the actual focused/manual fixture logs, not the private GitHub job environment dumps. Its generic-input inventory has explicit domain-separated file:/symlink: hashing in ci811-event-generic-proof.json and the verbatim executed runner.",
+  "files": [
+    {
+      "path": "accepted-8e5-to-ci811-cleanup-binding.json",
+      "bytes": 5214,
+      "sha256": "ca66a3ef99b1ae45a465bade2b0807654b0f1a2d9292dd34bdcebf402a7daf69"
+    },
+    {
+      "path": "accepted-8e5-to-corrective-binding.json",
+      "bytes": 6360,
+      "sha256": "c40068e04e073e1e114d43df732cd71da760c77bc6c86b4fbe38bccf2f9f4b23"
+    },
+    {
+      "path": "archive-relocation.json",
+      "bytes": 827,
+      "sha256": "620b7f42b05e4357c7f70031247d16fcb76e1dfbb18d7f68819037858aea0ddc"
+    },
+    {
+      "path": "artifact-produced.json",
+      "bytes": 1297,
+      "sha256": "13b39ce15123b2dc0cfc7f9d2abcc6be8e11e0ea5bb512a1d8f0ad332dd542f5"
+    },
+    {
+      "path": "artifact-relocated.json",
+      "bytes": 1297,
+      "sha256": "13b39ce15123b2dc0cfc7f9d2abcc6be8e11e0ea5bb512a1d8f0ad332dd542f5"
+    },
+    {
+      "path": "browser-cold-start-failure.json",
+      "bytes": 1952,
+      "sha256": "e866d3eb8690ed294e8db2cf18f9a6b5814f1e3589e866e9facf234148af9ac1"
+    },
+    {
+      "path": "browser-final.json",
+      "bytes": 25396,
+      "sha256": "2425ec1460118a02b0261c779aa93de677e58de3d8a343c814774b2068269538"
+    },
+    {
+      "path": "browser-identity.json",
+      "bytes": 152,
+      "sha256": "f9ae00ec10ba7f7ce7e7315a1c4405dd79d1320888eac697d04625c470a5be52"
+    },
+    {
+      "path": "browser-renewed-summary.json",
+      "bytes": 3182,
+      "sha256": "b64d4237b8638581c004b07b60b8a35b6c196d37eafca9a437ccd9cc03ad80fb"
+    },
+    {
+      "path": "browser-renewed.json",
+      "bytes": 25396,
+      "sha256": "b439d30187d9bf17753a3ba9883487be084a55207916d39ca57ca41f53e86a95"
+    },
+    {
+      "path": "browser-summary.json",
+      "bytes": 4230,
+      "sha256": "fb25702e32082955554f852f142c43e857c4f13bee116d89ff3ce113e89f857f"
+    },
+    {
+      "path": "candidate-dependencies.json",
+      "bytes": 50902,
+      "sha256": "1a5c91ffc6da0ffd3dc008ff01be0d226bd41d6a9749db903d7165524557b758"
+    },
+    {
+      "path": "candidate-file-inventory.json",
+      "bytes": 759279,
+      "sha256": "c268669ae89ff1a3985326da677f6d0a1f3cac793e4f802b64066b7dd6efa354"
+    },
+    {
+      "path": "candidate-manager-relocations.json",
+      "bytes": 2145,
+      "sha256": "4b623d93b4f219c70317418d9727da42de2f5306576e9dfa099daaa4a4085086"
+    },
+    {
+      "path": "candidate-manifest-normalization.json",
+      "bytes": 39955,
+      "sha256": "a94c91f350eaa1c10b14d93f1caa801f56ee02412a64b51f440c79a8195b5a89"
+    },
+    {
+      "path": "candidate-manifest.json",
+      "bytes": 2336,
+      "sha256": "20f39cb75fc602c25d2918c2cfa1a08ce06c9b4cf346c8d8fa2a32e54cdb71c0"
+    },
+    {
+      "path": "candidate-production-parity.json",
+      "bytes": 946,
+      "sha256": "dd3a98fac8b2ef02878cf80e965fb3ded02948acb14b03a63e9c3947039f358f"
+    },
+    {
+      "path": "candidate-source-inventory.json",
+      "bytes": 63157,
+      "sha256": "e8dabe3c9feab2d2823ed208dcec49308ee29b65ef1dc0bed9b2a17b55bc66cb"
+    },
+    {
+      "path": "ci810-admin-guard.txt",
+      "bytes": 282,
+      "sha256": "f7786929d3e9d381a74bf7cb8a7fc6714e3673a1406ad588ca467b9b3796eb56"
+    },
+    {
+      "path": "ci810-cross-account-fix-proof.json",
+      "bytes": 3859,
+      "sha256": "6eaf19bced88f33c949435622141cdffd73398b62c080bb4b3dd132e487dd0e2"
+    },
+    {
+      "path": "ci810-cross-account-inputs.json",
+      "bytes": 276284,
+      "sha256": "247edaba04f2e55c11ab67f7082c01b6db263de40ac7e4a50a2db6280674973b"
+    },
+    {
+      "path": "ci810-environment-guard.txt",
+      "bytes": 288,
+      "sha256": "22b49c35bc08c55eabfadd8bf5ef6da759f64a1ef0f9f29cc4f40543cc694bba"
+    },
+    {
+      "path": "ci810-explicit-green.txt",
+      "bytes": 514,
+      "sha256": "2205816ccddfc9d1ce758854994c2adba9d76efdbb15541aceed757c5bc0b90f"
+    },
+    {
+      "path": "ci810-fallback-green.txt",
+      "bytes": 514,
+      "sha256": "113e35ca6963d0c91a865c4bc81e82967f3abde41de9c2c1105424b5e4d302af"
+    },
+    {
+      "path": "ci810-fallback-red.txt",
+      "bytes": 781,
+      "sha256": "4b6eee30c01220731904afd997cd796cbcd76e90f8fa870998862e1bede99835"
+    },
+    {
+      "path": "ci810-final-cleanup.json",
+      "bytes": 977,
+      "sha256": "6d16cbb5decadae0870e139833eff5714258db088c5c232e5e1b49263585b4cd"
+    },
+    {
+      "path": "ci810-independent-audit.json",
+      "bytes": 9327,
+      "sha256": "7fd5634616c8caa3622d1aa3e899fa74d5d5aef8e37a27a7508466815e08bd2e"
+    },
+    {
+      "path": "ci810-package-receipt.json",
+      "bytes": 4800,
+      "sha256": "44d2108fbe25b9218f4c712c1bfc6bc1780030c9581ce1fb43528b97793f8f37"
+    },
+    {
+      "path": "ci810-sync-alpha-deterministic.json",
+      "bytes": 1460,
+      "sha256": "0c7628140ca467daad0f61e3202610f9b957f3cd7e8e2327a6d8b00002e3293c"
+    },
+    {
+      "path": "ci810-sync-alpha-deterministic.json.conformance.json",
+      "bytes": 132252,
+      "sha256": "fd73d75141351ff5f5de5ac03fdf5330fe8ea2251f84e20398dd43f9546d02ee"
+    },
+    {
+      "path": "ci810-sync-alpha-host-compat.json",
+      "bytes": 74589,
+      "sha256": "79a4560783e790c6fa544149b71cd2148a3a7a138d8571bb719b81303993b79f"
+    },
+    {
+      "path": "ci810-sync-alpha-reference-db.json",
+      "bytes": 1457,
+      "sha256": "ff4e747d6ea6c9419ac709b39be578f6972fc3d52d5c2881cd641d7e84730d73"
+    },
+    {
+      "path": "ci810-sync-alpha-reference-db.json.conformance.json",
+      "bytes": 25309,
+      "sha256": "e1b1cecd28557825c0efc90dde6c0b38e6ad97df7ace22bda4562f8df4cb9324"
+    },
+    {
+      "path": "ci811-budget-cleanup-proof.json",
+      "bytes": 14889,
+      "sha256": "27c4bcd055aa0df3407b4bbdc6d74be4e22ed32188c35eddc532de40b771950c"
+    },
+    {
+      "path": "ci811-budget-final-audit.json",
+      "bytes": 192,
+      "sha256": "d44cad208969ef8add6d9851ffa2a4603d9bb3ddb068a0e785de6f0d09b5b084"
+    },
+    {
+      "path": "ci811-budget-final.txt",
+      "bytes": 15640,
+      "sha256": "bcc585661484ab2ba05f7a8ea5f5aa1e722a546a75e37704b336579eaba60136"
+    },
+    {
+      "path": "ci811-budget-inputs.json",
+      "bytes": 5814,
+      "sha256": "0834426e2779907bf7b8087259d4a6f5c7d89bcda87ea7d21be284fdecf02077"
+    },
+    {
+      "path": "ci811-budget-intermediate.txt",
+      "bytes": 14798,
+      "sha256": "f4ca3fc0d2c72357258b4ce1d4e4b68708a30f529dffd6abab8ccf10f0908b19"
+    },
+    {
+      "path": "ci811-budget-proof-before-retirement.json",
+      "bytes": 14656,
+      "sha256": "6574554671e5effc11e7e6f673fbc20f2d9c93cac7f4096b0e2f6487ea8e43cc"
+    },
+    {
+      "path": "ci811-cleanup-execution.json",
+      "bytes": 2918,
+      "sha256": "392932ed60c14ae0eaf2f3464c3e2ebddffd0913f5451252715a75d67507061c"
+    },
+    {
+      "path": "ci811-event-generic-inputs.json",
+      "bytes": 274628,
+      "sha256": "850a0aadf3a3b1d722f3b6ed73f964cc9ed9781605a372dc89182782ac69e50a"
+    },
+    {
+      "path": "ci811-event-generic-proof.json",
+      "bytes": 3097,
+      "sha256": "f373d83c29f4b4a2b6ec7c2d09988f0ec23e28926652b3d3133123b17f5f27ad"
+    },
+    {
+      "path": "ci811-event-generic-receipt.json",
+      "bytes": 485,
+      "sha256": "d98886c89a6343aed9a1872b0c41e7d89c271a9571eda2f93ca5054d086f879b"
+    },
+    {
+      "path": "ci811-event-generic-runner.py",
+      "bytes": 2399,
+      "sha256": "114dbb85af990ac9c05f12a7111a6c209ef3e1062780a485d6d8cefeb1754408"
+    },
+    {
+      "path": "ci811-event-generic-summary.json",
+      "bytes": 861,
+      "sha256": "272a6cd57f928471867046f884e6a473c667fe1532d45c6892b8d948dc7b9524"
+    },
+    {
+      "path": "ci811-event-generic.txt",
+      "bytes": 1148,
+      "sha256": "260fe5fe3ec5ae0e605c37620fa94f21017bc5c9f1c096ce69598a03b6e85509"
+    },
+    {
+      "path": "ci811-failure-audit.json",
+      "bytes": 62826,
+      "sha256": "45706a65039c80d56937c10445437e2f752a6bc50729e64267cd9e3f03b74fc2"
+    },
+    {
+      "path": "ci811-probe-final.txt",
+      "bytes": 842,
+      "sha256": "095af278a482e3d71519a5bdf62569df7038da7ef8d12df403ecf4684183a811"
+    },
+    {
+      "path": "ci811-probe-intermediate.txt",
+      "bytes": 798,
+      "sha256": "f37b1f76e685bcf445ff1938580f0edb1e7b5d353ba11204b6b9c480c9725b30"
+    },
+    {
+      "path": "ci811-probe-prototype-failure.txt",
+      "bytes": 455,
+      "sha256": "7d7b252d98ddd4df46aaab16a53851ce815a91d4c1d57a93013998d40ade4777"
+    },
+    {
+      "path": "ci811-qa-pre-retirement.json",
+      "bytes": 432,
+      "sha256": "5ba17047d85f71610f038ed6e744c5d42851b3a3687d6667b19c1e7626b73cc3"
+    },
+    {
+      "path": "ci811-qa-retirement-raw-steps.json",
+      "bytes": 826,
+      "sha256": "b4127e1e8e1e8a54edb9bf945499b21aae4a982fd95514eb3ffaf5d1091ab147"
+    },
+    {
+      "path": "ci811-qa-retirement.json",
+      "bytes": 1763,
+      "sha256": "93af3cfaac4702c7f677fd0a6931a0a09985cf871c7a25b5687b112861fca9e4"
+    },
+    {
+      "path": "ci811-typecheck-final.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "ci811-typecheck-prototype-failure.txt",
+      "bytes": 112,
+      "sha256": "5d583265f269e89df33f7d181ff2d87489572573f60b18db8562b907c9765428"
+    },
+    {
+      "path": "corrective-qa-pre-retirement.json",
+      "bytes": 791,
+      "sha256": "2bf8592e105df9d39e4183a843ccbdadf9935a2eb2b6e42b3bb2fe7b6352afc7"
+    },
+    {
+      "path": "corrective-qa-retirement.json",
+      "bytes": 1523,
+      "sha256": "de9ccf581bae4f01a3b28174d8904b5ea113b3a552f4ca89eec2493ce1cf6941"
+    },
+    {
+      "path": "diagnostic-history.json",
+      "bytes": 3494,
+      "sha256": "fc331b4e07a969b73566585bc0b5b96b8537a9ea1b8a07e22cbafd005e2c1e49"
+    },
+    {
+      "path": "historical-d3a-raw-deployed-reference-manifest.json",
+      "bytes": 2752,
+      "sha256": "e52037a22001601155d2dbbe19a8f74c6a4b3d9b48d24262048afd3e2e72196a"
+    },
+    {
+      "path": "historical-index.json",
+      "bytes": 3205,
+      "sha256": "34714394f61d958f0c62dbdc9b53f9b7b44d752dd91800cae76586afa64d4b29"
+    },
+    {
+      "path": "historical-pnpm-archive-diagnostic.json",
+      "bytes": 618,
+      "sha256": "2500b32f3a4b978b71e038bae724c5af1a8999a90248c2d9447e96ad8d757d08"
+    },
+    {
+      "path": "historical-root-d3a-receipt.json",
+      "bytes": 141882,
+      "sha256": "31c4844d9cabbbd07549e01b951bec10a041331c8d1011631b3b61d453883373"
+    },
+    {
+      "path": "historical-root-d3a-summary.json",
+      "bytes": 1387,
+      "sha256": "25259e843a16d3e705ea5c6c65a521b57eab0183da63ab56b089d92ddcfec76b"
+    },
+    {
+      "path": "historical-source-d3a-proof.json",
+      "bytes": 9362,
+      "sha256": "ad1a9a6b036ae80637bd0dfe96b9cb05503d55bb22a9ba390027d443851c3d4c"
+    },
+    {
+      "path": "historical-source-d3a-review.md",
+      "bytes": 3289,
+      "sha256": "0ef973276272ef4308866084a0cadc2e7bf5d16e3cb61f7cb20b93b0ae85e70f"
+    },
+    {
+      "path": "historical-source-d540-findings.md",
+      "bytes": 7222,
+      "sha256": "5192e3d7c2fdd5d41bcbc771f3b0726c2b345717386c3d8c444ab222bbc11b2f"
+    },
+    {
+      "path": "historical-source-deterministic-d3a.json",
+      "bytes": 132150,
+      "sha256": "ecf40ba6e5011244a6fdc2c6a5f5e3887ce59942a7a65ecb224d9624e114eedb"
+    },
+    {
+      "path": "historical-source-host-d3a.json",
+      "bytes": 74588,
+      "sha256": "5538fe2c0dad0eb25570c0f2af059c6d3af688ae3041c045642425a375c1f7cc"
+    },
+    {
+      "path": "installed-candidate-summary.json",
+      "bytes": 3335,
+      "sha256": "d6ccd4cb26f68672160b280165a1d596f46cd821539fb3c96e3bd22312a9fe9a"
+    },
+    {
+      "path": "installed-deterministic.conformance.json",
+      "bytes": 132244,
+      "sha256": "9d9527aca8d9728ecfe67dd7eb417b0ffdbb7b2a2bad9e87bd473ac665cfaa2d"
+    },
+    {
+      "path": "installed-deterministic.json",
+      "bytes": 1460,
+      "sha256": "753267d2a1cbc5576041f8dc924d2f88bb71986a4106433c3bbc7c8f76ad5a03"
+    },
+    {
+      "path": "installed-final-cleanup.json",
+      "bytes": 384,
+      "sha256": "c8e9ec36be468c6ed0f2742f9c9ae2fd34247677fccdc56b0d33d16d036eedaa"
+    },
+    {
+      "path": "installed-reference-db.conformance.json",
+      "bytes": 25302,
+      "sha256": "978ee0331d900b0fd4bb7b73b951db9a64c471f6e9ed4e8b04c3e9d87b13c3c3"
+    },
+    {
+      "path": "installed-reference-db.json",
+      "bytes": 1457,
+      "sha256": "b48896c5b5a13ea44ef1033f3ec22c3544baf2c9d7ae526a9e680dde3e7c4a10"
+    },
+    {
+      "path": "package-receipt.json",
+      "bytes": 4800,
+      "sha256": "4a1305ee8fc825c7ad4887502c2738baf12385fbe902f0d267ab954c0e1730f1"
+    },
+    {
+      "path": "qa-pre-retirement.json",
+      "bytes": 607,
+      "sha256": "ce40e0a0f6529017c7ecc8e12f0021a1981ff5c91084bec03795b2ddd62529b9"
+    },
+    {
+      "path": "qa-retirement.json",
+      "bytes": 976,
+      "sha256": "6f271a52dfd6a059aa4780d5ae0aef5ba58b453eb1b12e7acf874c4e4c7601a0"
+    },
+    {
+      "path": "source-8e5-review.md",
+      "bytes": 3516,
+      "sha256": "f17ae5be736df61ce5860c84b6e2777e1031241295b238db652bb611a07b1d7b"
+    },
+    {
+      "path": "source-conformance-8e5-proof.json",
+      "bytes": 10547,
+      "sha256": "18745ea3163e669123848a4768518862df8bcb6cb57e5ab1a0e1b8b7630d736e"
+    },
+    {
+      "path": "source-deterministic-8e5.json",
+      "bytes": 132150,
+      "sha256": "8b689d013cebe258092dd2acd779a0eff4c247b1dcfb088ac0d4b7bc89df4644"
+    },
+    {
+      "path": "source-host-8e5.json",
+      "bytes": 74588,
+      "sha256": "b3f7b991278fe846024651e99c6eeccf0a2e76b2dc02545791a5f7ed3c487d69"
+    },
+    {
+      "path": "workspace-d3a-to-8e5-binding.json",
+      "bytes": 4770,
+      "sha256": "40508d3032075b8d789a6f7b3b8ef4485461dc5ad2abef4b7d04737bda2909ce"
+    }
+  ],
+  "publication": {
+    "finalPrReview": "separate exact-head receipt required before PR",
+    "currentHeadCi": "all required checks must pass before protected squash",
+    "sourceMerge": "separate expected-head and approved-tree verification",
+    "publicRegistryPublished": false,
+    "productionDeployed": false,
+    "pr": "https://github.com/f-tuma/musubi/pull/389",
+    "priorHeadCi": "Quality810 on8c2d2f5 completed20/21success; onlyDB4 failed at initial test fixture guard. Installed DB1 alpha427/23+purehost211 actually passed on its separate merge-ref artifact. Old run cannot authorize merge of corrected head.",
+    "correctedHeadCi": "Required after92ea324 and final evidence commit; all21 checks on the new final PR head must pass. Historical failed810/811 remain failed."
+  },
+  "technicalAcceptanceComplete": true,
+  "correctiveSource": {
+    "head": "92ea324ed40795d21e74a6ff330c5b430144f07a",
+    "tree": "d0aaabc64378ecca448b0f9b7e4579eae549c2b1",
+    "scope": "Prior reference bootstrap and CI budget metadata, plus two API integration fixture cleanup changes and one new shared fixture helper. Production behavior unchanged. Focused actual PG/native corrections passed; new current-head whole CI still required.",
+    "binding": "accepted-8e5-to-ci811-cleanup-binding.json",
+    "referenceFixtureProof": "ci810-cross-account-fix-proof.json",
+    "budgetCleanupProof": "ci811-budget-cleanup-proof.json",
+    "actualExecutionMetadata": "ci811-cleanup-execution.json",
+    "genericNativeProof": "ci811-event-generic-proof.json",
+    "ownedQaRetirement": "ci811-qa-retirement.json",
+    "priorCorrectionBinding": "accepted-8e5-to-corrective-binding.json"
+  },
+  "historicalCi810": {
+    "audit": "ci810-independent-audit.json",
+    "receiptMapping": [
+      {
+        "originalArtifactPath": "sync-alpha/package-receipt.json",
+        "packetPath": "ci810-package-receipt.json",
+        "sha256": "44d2108fbe25b9218f4c712c1bfc6bc1780030c9581ce1fb43528b97793f8f37"
+      },
+      {
+        "originalArtifactPath": "sync-alpha-deterministic.json",
+        "packetPath": "ci810-sync-alpha-deterministic.json",
+        "sha256": "0c7628140ca467daad0f61e3202610f9b957f3cd7e8e2327a6d8b00002e3293c"
+      },
+      {
+        "originalArtifactPath": "sync-alpha-deterministic.json.conformance.json",
+        "packetPath": "ci810-sync-alpha-deterministic.json.conformance.json",
+        "sha256": "fd73d75141351ff5f5de5ac03fdf5330fe8ea2251f84e20398dd43f9546d02ee"
+      },
+      {
+        "originalArtifactPath": "sync-alpha-host-compat.json",
+        "packetPath": "ci810-sync-alpha-host-compat.json",
+        "sha256": "79a4560783e790c6fa544149b71cd2148a3a7a138d8571bb719b81303993b79f"
+      },
+      {
+        "originalArtifactPath": "sync-alpha-reference-db.json",
+        "packetPath": "ci810-sync-alpha-reference-db.json",
+        "sha256": "ff4e747d6ea6c9419ac709b39be578f6972fc3d52d5c2881cd641d7e84730d73"
+      },
+      {
+        "originalArtifactPath": "sync-alpha-reference-db.json.conformance.json",
+        "packetPath": "ci810-sync-alpha-reference-db.json.conformance.json",
+        "sha256": "e1b1cecd28557825c0efc90dde6c0b38e6ad97df7ace22bda4562f8df4cb9324"
+      }
+    ],
+    "scope": "Exact prior PR tree6a12e829; merge-refd01ccd69, own CI archive6cf8eb60\u2026 distinct from private local8e5 archive0d14e058\u2026; does not cover fixturee3f or metadata68f."
+  },
+  "historicalCi810CorrectiveSource": {
+    "head": "68f974eba2c4ee1a8709a861c8ca7c62dcce593d",
+    "tree": "93a674aeb0a916cdfc63e4ad13f4d9de3e12167b",
+    "scope": "One test bootstrap fallback line plus conditional timeout budget30min for DB1 only (others20). Accepted8e5 production source/runtime and historical artifact unchanged. New final-head review/CI/publication remain required.",
+    "binding": "accepted-8e5-to-corrective-binding.json",
+    "regressionProof": "ci810-cross-account-fix-proof.json",
+    "cleanup": "ci810-final-cleanup.json",
+    "qaRetirementWitness": "corrective-qa-retirement.json",
+    "fixtureCommit": "e3f619cfa94f31effeedf45628ac9135ba1a9d77"
+  },
+  "historicalCi811": {
+    "audit": "ci811-failure-audit.json",
+    "head": "214d4a28a1ad19daf5301fe4fe7be4b368882e20",
+    "requiredJobs": 21,
+    "successfulJobs": 19,
+    "failedJobs": 2,
+    "standaloneAlpha": "Skipped after the ordinaryDB1 cleanup assertion failed; no candidate/reports uploaded.",
+    "originalCleanupSessions": "Count1; PID/owner/state unknown in CI. Local actual delayed/persistent-owned regression is separate evidence, not proof of the original CI session identity.",
+    "referenceBootstrapCorrection": "Actual ordinary DB4 paired-reference fixture and its zero/plainDROP/absence cleanup passed."
+  }
+}

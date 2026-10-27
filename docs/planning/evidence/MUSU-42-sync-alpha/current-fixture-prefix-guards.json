@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "kind": "actual-owned-fixture-cleanup-prefix-guards",
+  "qaPort": 55450,
+  "registeredPrefixes": [
+    "c09budget_",
+    "event_compat_",
+    "task_compat_",
+    "task_causal_",
+    "google_task_update_",
+    "google_task_delete_",
+    "google_task_create_",
+    "task_ack_delivery_"
+  ],
+  "validPrefixesActualPgCreateDrop": [
+    {
+      "database": "c09budget_0cc733b0879f4b79aa6d083bda4010ab",
+      "sessionsBeforeDrop": 0,
+      "plainDrop": true,
+      "databaseAbsent": true,
+      "checks": 1,
+      "waitMs": 12,
+      "firstSessions": []
+    },
+    {
+      "database": "event_compat_6b514fcf7ea34b1092849eee50348b53",
+      "sessionsBeforeDrop": 0,
+      "plainDrop": true,
+      "databaseAbsent": true,
+      "checks": 1,
+      "waitMs": 4,
+      "firstSessions": []
+    },
+    {
+      "database": "task_compat_0c72c7ef96e84756bfeb37c7a57ee9df",
+      "sessionsBeforeDrop": 0,
+      "plainDrop": true,
+      "databaseAbsent": true,
+      "checks": 1,
+      "waitMs": 3,
+      "firstSessions": []
+    },
+    {
+      "database": "task_causal_352da8cc9de94a60a0e06e815ca7e2a0",
+      "sessionsBeforeDrop": 0,
+      "plainDrop": true,
+      "databaseAbsent": true,
+      "checks": 1,
+      "waitMs": 4,
+      "firstSessions": []
+    },
+    {
+      "database": "google_task_update_c8fdff5b0d374ec592719caf2e091897",
+      "sessionsBeforeDrop": 0,
+      "plainDrop": true,
+      "databaseAbsent": true,
+      "checks": 1,
+      "waitMs": 3,
+      "firstSessions": []
+    },
+    {
+      "database": "google_task_delete_6fe50ca1e23e4683b8db9b28f515fea2",
+      "sessionsBeforeDrop": 0,
+      "plainDrop": true,
+      "databaseAbsent": true,
+      "checks": 1,
+      "waitMs": 3,
+      "firstSessions": []
+    },
+    {
+      "database": "google_task_create_ee53927d82c844aa8bfecd8636f90a1f",
+      "sessionsBeforeDrop": 0,
+      "plainDrop": true,
+      "databaseAbsent": true,
+      "checks": 1,
+      "waitMs": 3,
+      "firstSessions": []
+    },
+    {
+      "database": "task_ack_delivery_1cb909befbd24ca69e803e2ff670dd34",
+      "sessionsBeforeDrop": 0,
+      "plainDrop": true,
+      "databaseAbsent": true,
+      "checks": 1,
+      "waitMs": 3,
+      "firstSessions": []
+    }
+  ],
+  "invalidNamesRefusedBeforeQuery": 58,
+  "invalidQueryCalls": 0,
+  "ownedDatabasesRemaining": 0,
+  "ownedTargetSessionsRemaining": 0,
+  "adminPoolEnded": true,
+  "otherRootDatabasesUntouched": true,
+  "helperSha256": "21ff6470de30eb7aff6b015c4b4d349132e0dc2a62c7f2c41d2490d0fd090429",
+  "forceDrop": false,
+  "backendsTerminated": false,
+  "productionDeployed": false
+}

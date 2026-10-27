@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "kind": "optional-vite-optimizer-diagnostic",
+  "at": "2026-10-27T07:53:54.044961+00:00",
+  "sourceHead": "fb36100c151bb75323573be8cc9afd9fd689261b",
+  "args": [
+    "node",
+    "node_modules/vite/bin/vite.js",
+    "optimize"
+  ],
+  "cwd": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/source/apps/web",
+  "result": "timed-out-after90seconds; subprocess.run killed and reaped child",
+  "exitCode": null,
+  "logSha256": "db8c52cb5db0cf2603f4f86d8ddf0b89b5097fce99cd11df803768def55e87d4",
+  "countedAsApplicationOrBrowserTest": false,
+  "trackedInputsModified": false,
+  "followup": "Use normal reviewed running-web helper; its full archive verification must pass before and after. No assertion or retry setting changed.",
+  "trackedEntriesChecked": 2309,
+  "trackedInputChanges": []
+}

@@ -1,0 +1,100 @@
+TAP version 13
+# Subtest: deferral rejects invalid time, reason and dimensions and owns bounded metadata
+ok 1 - deferral rejects invalid time, reason and dimensions and owns bounded metadata
+  ---
+  duration_ms: 1.219731
+  type: 'test'
+  ...
+# Subtest: bootstrap failure stays fail-closed, schedules retry, and can recover through the same production port
+ok 2 - bootstrap failure stays fail-closed, schedules retry, and can recover through the same production port
+  ---
+  duration_ms: 0.682383
+  type: 'test'
+  ...
+# Subtest: continuation retention preserves the exact original fault for durable long waits
+ok 3 - continuation retention preserves the exact original fault for durable long waits
+  ---
+  duration_ms: 0.197797
+  type: 'test'
+  ...
+# Subtest: consumed mutation permission is not refunded or reused and changed configuration starts empty
+ok 4 - consumed mutation permission is not refunded or reused and changed configuration starts empty
+  ---
+  duration_ms: 0.4958
+  type: 'test'
+  ...
+# Subtest: physical account cooldown survives authorization incarnation changes
+ok 5 - physical account cooldown survives authorization incarnation changes
+  ---
+  duration_ms: 0.257411
+  type: 'test'
+  ...
+# Subtest: MAX cooldown remains a supported-domain hold without fractional-clock overflow or early admission
+ok 6 - MAX cooldown remains a supported-domain hold without fractional-clock overflow or early admission
+  ---
+  duration_ms: 0.264018
+  type: 'test'
+  ...
+# Subtest: ordinary cooldown retains the conservative monotonic duration and still expires
+ok 7 - ordinary cooldown retains the conservative monotonic duration and still expires
+  ---
+  duration_ms: 0.163452
+  type: 'test'
+  ...
+# Subtest: finite boundary cooldown serialization is capped without converting it into a MAX hold
+ok 8 - finite boundary cooldown serialization is capped without converting it into a MAX hold
+  ---
+  duration_ms: 0.458558
+  type: 'test'
+  ...
+# Subtest: request during active work runs a later host claim instead of joining the captured generation
+ok 9 - request during active work runs a later host claim instead of joining the captured generation
+  ---
+  duration_ms: 0.936037
+  type: 'test'
+  ...
+# Subtest: decorator cannot fabricate a response or retain an aborted raw capability
+ok 10 - decorator cannot fabricate a response or retain an aborted raw capability
+  ---
+  duration_ms: 10.342615
+  type: 'test'
+  ...
+# Subtest: external Retry-After parsing distinguishes invalid, unsupported and supported hints
+ok 11 - external Retry-After parsing distinguishes invalid, unsupported and supported hints
+  ---
+  duration_ms: 0.161851
+  type: 'test'
+  ...
+# Subtest: overlapping inherited children cannot send concurrently under one parent permit
+ok 12 - overlapping inherited children cannot send concurrently under one parent permit
+  ---
+  duration_ms: 0.271093
+  type: 'test'
+  ...
+# Subtest: unclaimable re-offers back off while a ready account progresses
+ok 13 - unclaimable re-offers back off while a ready account progresses
+  ---
+  duration_ms: 0.805193
+  type: 'test'
+  ...
+# Subtest: parked account cannot fill pending capacity and cancelled continuation never sends
+ok 14 - parked account cannot fill pending capacity and cancelled continuation never sends
+  ---
+  duration_ms: 1.070135
+  type: 'test'
+  ...
+# Subtest: four parked regular jobs reserve auxiliary headroom and overload new regular work explicitly
+ok 15 - four parked regular jobs reserve auxiliary headroom and overload new regular work explicitly
+  ---
+  duration_ms: 0.836697
+  type: 'test'
+  ...
+1..15
+# tests 15
+# suites 0
+# pass 15
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 28.01169

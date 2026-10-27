@@ -1,0 +1,281 @@
+{
+  "schemaVersion": 1,
+  "kind": "six-actual-API-nonce-cleanup-fixtures",
+  "baseHead": "fb36100c151bb75323573be8cc9afd9fd689261b",
+  "inputHashes": {
+    "apps/api/src/sync/task_compatibility_delivery.integration.test.ts": "c25e9eef52c641806bd4fe4fa52261f4edaea4a287a269a95571589d25df2fe8",
+    "apps/api/src/sync/google_task_causal_delivery.integration.test.ts": "760c6754cf63837877d42772af21987498ee036a4193fd95f3221947d17430ec",
+    "apps/api/src/sync/google_shared_task_update_delivery.integration.test.ts": "cf6b05eb232031c586b233387f5a53b3237e5856091a7ef62ce0a9931c850a87",
+    "apps/api/src/sync/google_shared_task_delete_delivery.integration.test.ts": "9fe52c0e2b14ef3c0c6129f1d830754ad84441f7ff17c74809ee3dc5850fe618",
+    "apps/api/src/sync/google_shared_task_create_delivery.integration.test.ts": "607af63899e4ba508fce54772068301799dd9a80ebd27211988b682360e39176",
+    "apps/api/src/sync/task_ack_delivery.integration.test.ts": "ecd6bf3de64c026bf2acd127d2037ba650fb0af5ad28ca312d03a9d5514f3ad4",
+    "apps/api/src/sync/owned_database_fixture_cleanup.ts": "21ff6470de30eb7aff6b015c4b4d349132e0dc2a62c7f2c41d2490d0fd090429"
+  },
+  "inputChanges": [],
+  "qaPort": 55450,
+  "ownedQaRetirement": "root-owned, not performed by this runner",
+  "allSixExitZeroAndStrictCleanupComplete": true,
+  "results": [
+    {
+      "fixture": "task_compatibility_delivery",
+      "argv": [
+        "node",
+        "--import",
+        "tsx",
+        "apps/api/src/sync/task_compatibility_delivery.integration.test.ts"
+      ],
+      "cwd": "/home/flamendrin/workspace/musubi",
+      "explicitEnvironmentKeys": [
+        "ENVIRONMENT",
+        "DATABASE_URL",
+        "BETTER_AUTH_URL",
+        "BETTER_AUTH_SECRET",
+        "GOOGLE_WEB_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "MICROSOFT_CLIENT_ID",
+        "MICROSOFT_CLIENT_SECRET",
+        "CALDAV_ENC_KEY",
+        "SYNC_OPERATION_V1_ENCODER_ENABLED",
+        "FEDERATION_ALLOW_PRIVATE_HOSTS",
+        "MUSUBI_TASK_COMPATIBILITY_MODE"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 2.366,
+      "log": "/tmp/musu42-six-fixture-cleanup-task_compatibility_delivery.log",
+      "logSha256": "d7b86fa0c860033314942099c8ec35f35a66905f2ddceebac8a3d6f00b9d2c9f",
+      "cleanup": {
+        "database": "task_compat_8a4cfda376b044da92010a478bb3ded1",
+        "sessionsBeforeDrop": 0,
+        "plainDrop": true,
+        "databaseAbsent": true,
+        "checks": 1,
+        "waitMs": 10,
+        "firstSessions": []
+      },
+      "summaries": [
+        {
+          "schemaVersion": 1,
+          "suite": "task-compatibility-pg-native",
+          "mode": "new-only",
+          "cases": 33,
+          "crashPairedCases": 0,
+          "crashPhases": []
+        }
+      ],
+      "completionLines": [
+        "Task compatibility cleanup: 2 owned pools closed, zero sessions, nonce DB dropped without FORCE: PASS"
+      ]
+    },
+    {
+      "fixture": "google_task_causal_delivery",
+      "argv": [
+        "node",
+        "--import",
+        "tsx",
+        "apps/api/src/sync/google_task_causal_delivery.integration.test.ts"
+      ],
+      "cwd": "/home/flamendrin/workspace/musubi",
+      "explicitEnvironmentKeys": [
+        "ENVIRONMENT",
+        "DATABASE_URL",
+        "BETTER_AUTH_URL",
+        "BETTER_AUTH_SECRET",
+        "GOOGLE_WEB_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "MICROSOFT_CLIENT_ID",
+        "MICROSOFT_CLIENT_SECRET",
+        "CALDAV_ENC_KEY",
+        "SYNC_OPERATION_V1_ENCODER_ENABLED",
+        "FEDERATION_ALLOW_PRIVATE_HOSTS",
+        "MUSUBI_TASK_COMPATIBILITY_MODE"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 7.622,
+      "log": "/tmp/musu42-six-fixture-cleanup-google_task_causal_delivery.log",
+      "logSha256": "1ecb1221beac940ffe7904669ef06142722ce592d7660de2de9d0b857976462c",
+      "cleanup": {
+        "database": "task_causal_e4f1f7c41c0d4a2f8ee63f852f603b38",
+        "sessionsBeforeDrop": 0,
+        "plainDrop": true,
+        "databaseAbsent": true,
+        "checks": 1,
+        "waitMs": 10,
+        "firstSessions": []
+      },
+      "summaries": [],
+      "completionLines": [
+        "Task causal API PostgreSQL/native HTTP: 83 cases passed",
+        "Task causal API cleanup: 1 owned pools closed, zero sessions, nonce DB dropped without FORCE: PASS"
+      ]
+    },
+    {
+      "fixture": "google_shared_task_update_delivery",
+      "argv": [
+        "node",
+        "--import",
+        "tsx",
+        "apps/api/src/sync/google_shared_task_update_delivery.integration.test.ts"
+      ],
+      "cwd": "/home/flamendrin/workspace/musubi",
+      "explicitEnvironmentKeys": [
+        "ENVIRONMENT",
+        "DATABASE_URL",
+        "BETTER_AUTH_URL",
+        "BETTER_AUTH_SECRET",
+        "GOOGLE_WEB_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "MICROSOFT_CLIENT_ID",
+        "MICROSOFT_CLIENT_SECRET",
+        "CALDAV_ENC_KEY",
+        "SYNC_OPERATION_V1_ENCODER_ENABLED",
+        "FEDERATION_ALLOW_PRIVATE_HOSTS",
+        "MUSUBI_TASK_COMPATIBILITY_MODE"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 2.867,
+      "log": "/tmp/musu42-six-fixture-cleanup-google_shared_task_update_delivery.log",
+      "logSha256": "b1b3b59c3df6429485ef9eb4f2b9bd35a1ee172dd57e8f50e8e14fc8757ee845",
+      "cleanup": {
+        "database": "google_task_update_667aac9310d94d4cb8bcbb66755487e3",
+        "sessionsBeforeDrop": 0,
+        "plainDrop": true,
+        "databaseAbsent": true,
+        "checks": 1,
+        "waitMs": 6,
+        "firstSessions": []
+      },
+      "summaries": [],
+      "completionLines": [
+        "Google task UPDATE PostgreSQL/native HTTP: 29 cases passed",
+        "Google task UPDATE cleanup: 2 owned pools closed, zero sessions, nonce DB dropped without FORCE: PASS"
+      ]
+    },
+    {
+      "fixture": "google_shared_task_delete_delivery",
+      "argv": [
+        "node",
+        "--import",
+        "tsx",
+        "apps/api/src/sync/google_shared_task_delete_delivery.integration.test.ts"
+      ],
+      "cwd": "/home/flamendrin/workspace/musubi",
+      "explicitEnvironmentKeys": [
+        "ENVIRONMENT",
+        "DATABASE_URL",
+        "BETTER_AUTH_URL",
+        "BETTER_AUTH_SECRET",
+        "GOOGLE_WEB_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "MICROSOFT_CLIENT_ID",
+        "MICROSOFT_CLIENT_SECRET",
+        "CALDAV_ENC_KEY",
+        "SYNC_OPERATION_V1_ENCODER_ENABLED",
+        "FEDERATION_ALLOW_PRIVATE_HOSTS",
+        "MUSUBI_TASK_COMPATIBILITY_MODE"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 3.768,
+      "log": "/tmp/musu42-six-fixture-cleanup-google_shared_task_delete_delivery.log",
+      "logSha256": "26b5fcdbfcd20e61c87b9ad1aa04aa52991ca1b8afd07442b996d7357099ec7f",
+      "cleanup": {
+        "database": "google_task_delete_228ccecc3c56465a9c3533a8051ab89e",
+        "sessionsBeforeDrop": 0,
+        "plainDrop": true,
+        "databaseAbsent": true,
+        "checks": 1,
+        "waitMs": 10,
+        "firstSessions": []
+      },
+      "summaries": [],
+      "completionLines": [
+        "Google task DELETE PostgreSQL/native HTTP: 46 cases passed",
+        "Google task DELETE cleanup: 2 owned pools closed, zero sessions, nonce DB dropped without FORCE: PASS"
+      ]
+    },
+    {
+      "fixture": "google_shared_task_create_delivery",
+      "argv": [
+        "node",
+        "--import",
+        "tsx",
+        "apps/api/src/sync/google_shared_task_create_delivery.integration.test.ts"
+      ],
+      "cwd": "/home/flamendrin/workspace/musubi",
+      "explicitEnvironmentKeys": [
+        "ENVIRONMENT",
+        "DATABASE_URL",
+        "BETTER_AUTH_URL",
+        "BETTER_AUTH_SECRET",
+        "GOOGLE_WEB_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "MICROSOFT_CLIENT_ID",
+        "MICROSOFT_CLIENT_SECRET",
+        "CALDAV_ENC_KEY",
+        "SYNC_OPERATION_V1_ENCODER_ENABLED",
+        "FEDERATION_ALLOW_PRIVATE_HOSTS",
+        "MUSUBI_TASK_COMPATIBILITY_MODE"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 5.419,
+      "log": "/tmp/musu42-six-fixture-cleanup-google_shared_task_create_delivery.log",
+      "logSha256": "7d8e47ea00f8706fb9b3885035a318258590141d27ce566858265964e6f744d8",
+      "cleanup": {
+        "database": "google_task_create_a901b141543e4c0b8724f11d6c930dab",
+        "sessionsBeforeDrop": 0,
+        "plainDrop": true,
+        "databaseAbsent": true,
+        "checks": 1,
+        "waitMs": 6,
+        "firstSessions": []
+      },
+      "summaries": [],
+      "completionLines": [
+        "Google task CREATE PostgreSQL/native HTTP: 62 cases passed",
+        "Google task CREATE cleanup: 2 owned pools closed, zero sessions, nonce DB dropped without FORCE: PASS"
+      ]
+    },
+    {
+      "fixture": "task_ack_delivery",
+      "argv": [
+        "node",
+        "--import",
+        "tsx",
+        "apps/api/src/sync/task_ack_delivery.integration.test.ts"
+      ],
+      "cwd": "/home/flamendrin/workspace/musubi",
+      "explicitEnvironmentKeys": [
+        "ENVIRONMENT",
+        "DATABASE_URL",
+        "BETTER_AUTH_URL",
+        "BETTER_AUTH_SECRET",
+        "GOOGLE_WEB_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "MICROSOFT_CLIENT_ID",
+        "MICROSOFT_CLIENT_SECRET",
+        "CALDAV_ENC_KEY",
+        "SYNC_OPERATION_V1_ENCODER_ENABLED",
+        "FEDERATION_ALLOW_PRIVATE_HOSTS",
+        "MUSUBI_TASK_COMPATIBILITY_MODE"
+      ],
+      "exitCode": 0,
+      "durationSeconds": 1.215,
+      "log": "/tmp/musu42-six-fixture-cleanup-task_ack_delivery.log",
+      "logSha256": "c50eb66d48ee628eee44d18087f71411f1c44cbe7fb301fea00241ea1801c290",
+      "cleanup": {
+        "database": "task_ack_delivery_40e1809144674a7eacdfc72410277baa",
+        "sessionsBeforeDrop": 0,
+        "plainDrop": true,
+        "databaseAbsent": true,
+        "checks": 1,
+        "waitMs": 6,
+        "firstSessions": []
+      },
+      "summaries": [],
+      "completionLines": [
+        "Task ACK delivery PostgreSQL: 4 cases passed",
+        "Task ACK delivery cleanup: 2 owned pools closed, zero sessions, nonce DB dropped without FORCE: PASS"
+      ]
+    }
+  ],
+  "productionDeployed": false
+}

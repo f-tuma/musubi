@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-current-runtime-three-manual-browser-attempt-history",
+  "source": {
+    "head": "fb36100c151bb75323573be8cc9afd9fd689261b",
+    "tree": "0d54cbc311100fbe66d3f835144767fbf2911378",
+    "archiveSha256": "d34b6dda9c6c1f43ee0e62ed79d0f02714332a85832bd51aa9df95475fda0b98"
+  },
+  "sameSourceAndAssertions": true,
+  "automaticRetries": 0,
+  "attempts": [
+    {
+      "number": 1,
+      "result": "20passed/2failed;actualtraceHTTP504OutdatedOptimizeDep",
+      "evidence": "current-browser-cold-start-failure.json",
+      "allOwnedGroupsReaped": true
+    },
+    {
+      "number": 2,
+      "result": "22/22passed",
+      "receipt": "current-browser-second-warm-receipt.json",
+      "receiptSha256": "47be161f187cc8115ac75e21f53ce136258f0173acf9fd967ac08eac4dc49216",
+      "visualReview": "current-browser-second-warm-visual-review.json",
+      "visualReviewSha256": "f6d3407cbc4c22a7e725f4ad73a8cb48742e7f205827e4926cc304b8cd60844a",
+      "actualImagesViewed": 4,
+      "allOwnedGroupsReaped": true
+    },
+    {
+      "number": 3,
+      "result": "22/22passed",
+      "userRequestedRepeat": true,
+      "receipt": "current-browser-final.json",
+      "receiptSha256": "4a9d715e8697dee33a3d855d01de70ac8048549bfbe8fc8df60b75e73ef3b9e1",
+      "visualReview": "current-browser-visual-review.json",
+      "visualReviewSha256": "689c66530d5e438b797f80e6843c6f119d861efdf846c377fe6c81580e1ffb11",
+      "actualImagesViewed": 4,
+      "allOwnedGroupsReaped": true
+    }
+  ],
+  "previousWarmFilesCopiedVerbatim": [
+    {
+      "originalPacketPath": "current-browser-final.json",
+      "retainedHistoryPath": "current-browser-second-warm-receipt.json",
+      "sha256": "47be161f187cc8115ac75e21f53ce136258f0173acf9fd967ac08eac4dc49216"
+    },
+    {
+      "originalPacketPath": "current-browser-summary.json",
+      "retainedHistoryPath": "current-browser-second-warm-summary.json",
+      "sha256": "b24fb4df670822c6f870b73818d1f82245f47048f3b5be23436b61a920a4bf68"
+    },
+    {
+      "originalPacketPath": "current-browser-visual-review.json",
+      "retainedHistoryPath": "current-browser-second-warm-visual-review.json",
+      "sha256": "f6d3407cbc4c22a7e725f4ad73a8cb48742e7f205827e4926cc304b8cd60844a"
+    }
+  ],
+  "historicalPathInterpretation": "Second-warm raw receipt/visual/summary bytes are unchanged. Its summary retains the original canonical receipt/visual filenames from that earlier packet context; resolve those historical files by the explicit mapping and SHA256 above, not the later canonical third-run bytes.",
+  "consecutiveCompleteWarmPasses": 2,
+  "backendReexecutedForThirdUi": false,
+  "productionDeployed": false
+}

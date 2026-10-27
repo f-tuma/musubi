@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-current-runtime-first-running-web-cold-dependency-failure",
+  "source": {
+    "head": "fb36100c151bb75323573be8cc9afd9fd689261b",
+    "tree": "0d54cbc311100fbe66d3f835144767fbf2911378",
+    "archiveSha256": "d34b6dda9c6c1f43ee0e62ed79d0f02714332a85832bd51aa9df95475fda0b98"
+  },
+  "status": "failed-first-attempt",
+  "passed": 20,
+  "failed": 2,
+  "automaticRetries": 0,
+  "receipt": "current-browser-cold-failed-receipt.json",
+  "receiptSha256": "636c10f58eeebf2dc0846ce3179d97d8993eb960b90304799d5390be3d6e0850",
+  "interactionLog": {
+    "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-590aaef22876/interactions.log",
+    "sha256": "66fff0f0959a8b9b9f569dba4bd7e586b8951f56072bda2c660187c032e65a29"
+  },
+  "traceArchives": [
+    {
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-590aaef22876/playwright/behavior-JSON-behavior-edit-preserves-content-desktop-chromium/trace.zip",
+      "bytes": 2215744,
+      "sha256": "97755fd4969756592a30828c4e4446ee16c241d1157e2de9a64199ab360d74db",
+      "actualNetwork504": [
+        {
+          "url": "http://127.0.0.1:3006/node_modules/.vite/deps/@tanstack_react-router_n_@tanstack_react-store.js?v=2ff02d8c",
+          "status": 504,
+          "statusText": "Outdated Optimize Dep"
+        }
+      ]
+    },
+    {
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-590aaef22876/playwright/behavior-JSON-behavior-conflict-keeps-draft-desktop-chromium/trace.zip",
+      "bytes": 2142907,
+      "sha256": "0f913474541fe941604d0e9bb7308696ea4eb61ba99dc6bb87e4ef18d75361d3",
+      "actualNetwork504": [
+        {
+          "url": "http://127.0.0.1:3006/node_modules/.vite/deps/react_jsx-runtime.js?v=2ff02d8c",
+          "status": 504,
+          "statusText": "Outdated Optimize Dep"
+        }
+      ]
+    }
+  ],
+  "diagnosisBoundary": "ActualtraceHTTP504OutdatedOptimizeDep for the two Vite-optimized dependency URLs. Task-mutation409 in conflict scenario is expected. This diagnosis does not turn the failed attempt into a pass; unchanged full manual rerun has its own receipt.",
+  "allFourOwnedGroupsReaped": true,
+  "trackedInputChanges": [],
+  "optimizerDiagnostic": "current-browser-optimizer-diagnostic.json is optional setup diagnostic, not an application/browser test; no test/assertion/retry changes were made.",
+  "liveProvider": false,
+  "productionDeployed": false
+}

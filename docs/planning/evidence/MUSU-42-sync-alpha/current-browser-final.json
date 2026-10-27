@@ -1,0 +1,487 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-final-running-web",
+  "source": {
+    "head": "fb36100c151bb75323573be8cc9afd9fd689261b",
+    "tree": "0d54cbc311100fbe66d3f835144767fbf2911378",
+    "archiveSha256": "d34b6dda9c6c1f43ee0e62ed79d0f02714332a85832bd51aa9df95475fda0b98"
+  },
+  "origin": "http://127.0.0.1:3006",
+  "scope": "Actual running web UI with synthetic API fixtures; real PostgreSQL/native/auth boundaries are separate evidence",
+  "automation": "Repository Playwright replays checked-in interaction fixtures against the owned web server",
+  "root": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/source",
+  "beforeSourceIdentity": {
+    "rootMatchesPreparation": true,
+    "archiveSha256MatchesPreparation": true,
+    "trackedEntries": 2309,
+    "trackedInputChanges": []
+  },
+  "commands": [
+    {
+      "id": "inventory",
+      "args": [
+        "pnpm",
+        "--filter",
+        "@musubi/web",
+        "exec",
+        "playwright",
+        "test",
+        "e2e/behavior.spec.ts",
+        "e2e/month-read.spec.ts",
+        "--grep",
+        "JSON behavior|K13 Google RSVP editor preserves retry|K13 CalDAV RSVP editor preserves retry|K13 Graph one-off RSVP editor preserves retry|K14 personal reminder conflict confirmation|K14 CalDAV event alarm editor preserves retry|Outlook selected occurrence move|Google organizer explicit update",
+        "--workers=2",
+        "--retries=0",
+        "--output=/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/playwright",
+        "--list"
+      ],
+      "exitCode": 0,
+      "timeoutSeconds": 60,
+      "terminationReason": null,
+      "cleanup": {
+        "pid": 201341,
+        "directChildReaped": true,
+        "groupAbsent": true
+      },
+      "log": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/inventory.log",
+      "sha256": "e2a30e340cdda292c13b3f8f7cca650c477f1b018a276d975795a8a0cd7e1809"
+    },
+    {
+      "id": "identity",
+      "args": [
+        "node",
+        "--input-type=module",
+        "-e",
+        "\nimport assert from 'node:assert/strict';\nimport {createRequire} from 'node:module';\nimport {resolve} from 'node:path';\nimport {writeFile} from 'node:fs/promises';\nconst {chromium}=createRequire(resolve('apps/web/package.json'))('@playwright/test');\nconst executablePath=process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;\nconst browser=await chromium.launch(executablePath?{headless:true,executablePath}:{headless:true});\ntry {\n const page=await browser.newPage({viewport:{width:1280,height:900}}),errors=[];\n page.on('pageerror',e=>errors.push(e.message));\n await page.route(url=>url.pathname.startsWith('/api/'),route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(new URL(route.request().url()).pathname==='/api/v1/server'?{version:'0.2.11',minClientVersion:'0.2.0',email:true,socials:[],socialsWeb:[],syncProviders:[],pushPublicKey:null}:null)}));\n await page.goto(process.env.PLAYWRIGHT_ORIGIN+'/login');\n await page.getByRole('button',{name:'Continue',exact:true}).first().waitFor();\n const title=await page.title(),url=page.url(); assert.match(title,/Musubi/i);assert.match(url,/\\/login$/);assert.deepEqual(errors,[]);\n await writeFile(process.env.MUSUBI_C10_UI_IDENTITY_REPORT,JSON.stringify({title,url,meaningfulLoginControl:true,pageErrors:errors,boundary:'web-only fixture'},null,2)+'\\n');\n} finally {await browser.close();}\n"
+      ],
+      "exitCode": 0,
+      "timeoutSeconds": 90,
+      "terminationReason": null,
+      "cleanup": {
+        "pid": 201595,
+        "directChildReaped": true,
+        "groupAbsent": true
+      },
+      "log": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/identity.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "interactions",
+      "args": [
+        "pnpm",
+        "--filter",
+        "@musubi/web",
+        "exec",
+        "playwright",
+        "test",
+        "e2e/behavior.spec.ts",
+        "e2e/month-read.spec.ts",
+        "--grep",
+        "JSON behavior|K13 Google RSVP editor preserves retry|K13 CalDAV RSVP editor preserves retry|K13 Graph one-off RSVP editor preserves retry|K14 personal reminder conflict confirmation|K14 CalDAV event alarm editor preserves retry|Outlook selected occurrence move|Google organizer explicit update",
+        "--workers=2",
+        "--retries=0",
+        "--output=/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/playwright"
+      ],
+      "exitCode": 0,
+      "timeoutSeconds": 600,
+      "terminationReason": null,
+      "cleanup": {
+        "pid": 201724,
+        "directChildReaped": true,
+        "groupAbsent": true
+      },
+      "log": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/interactions.log",
+      "sha256": "53f3ce69742ed7be23a7f086f33843480d7e6dc387590d1f7c01dbb2d5bcc2da"
+    }
+  ],
+  "liveProvider": false,
+  "deployed": false,
+  "status": "passed",
+  "priorScreenshots": [
+    {
+      "originalPath": "/tmp/musubi-k13-rsvp-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/prior-screenshots/musubi-k13-rsvp-light.png",
+      "sha256": "0dbc6cd42359e43dcf34806908b30c9ad41dc2ae6386d90930ee29564a1dae7a",
+      "size": 12849,
+      "mtimeNs": 1793087869006625502
+    },
+    {
+      "originalPath": "/tmp/musubi-k14-reminder-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/prior-screenshots/musubi-k14-reminder-light.png",
+      "sha256": "e47115df42450a08c0da59c83b55870689631116282b4337cc86712bad1ad0a9",
+      "size": 31746,
+      "mtimeNs": 1793087865876544903
+    },
+    {
+      "originalPath": "/tmp/musubi-caldav-alarm-editor-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/prior-screenshots/musubi-caldav-alarm-editor-light.png",
+      "sha256": "3a65c8fd7392c97a7cfdc3fc256de093742bf5b916d4dc165e054b4ad2a32ff4",
+      "size": 26112,
+      "mtimeNs": 1793087872074704289
+    },
+    {
+      "originalPath": "/tmp/outlook-move-select-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/prior-screenshots/outlook-move-select-light.png",
+      "sha256": "9620ef03f2606ee2d29e1f268a372c6120cad98329f96a138e9238bbaf4dbbde",
+      "size": 93890,
+      "mtimeNs": 1793087886792079332
+    },
+    {
+      "originalPath": "/tmp/outlook-move-preview-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/prior-screenshots/outlook-move-preview-light.png",
+      "sha256": "1d97a5512302094a9a9272357178663e5efede52ea276ce87c4273b214aac7c1",
+      "size": 97279,
+      "mtimeNs": 1793087887392094521
+    },
+    {
+      "originalPath": "/tmp/outlook-move-result-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/prior-screenshots/outlook-move-result-light.png",
+      "sha256": "5461d919bafb1b0516181be9436dd69de0cf2299ee49fbd64680b9a46224e1c3",
+      "size": 89618,
+      "mtimeNs": 1793087887476096647
+    },
+    {
+      "originalPath": "/tmp/musubi-k12-live/caldav-rsvp-browser-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/prior-screenshots/caldav-rsvp-browser-light.png",
+      "sha256": "ce4316df2796ad202e92f4d44d4290c764f569acaf35081e256735c95fc31836",
+      "size": 17753,
+      "mtimeNs": 1793087876123807947
+    },
+    {
+      "originalPath": "/tmp/musubi-k12-live/microsoft-one-off-rsvp-browser-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/prior-screenshots/microsoft-one-off-rsvp-browser-light.png",
+      "sha256": "f2c1fe64ae4c54e1687e02a519c27825eb7745758fae8e902823f4c7ed22257a",
+      "size": 18058,
+      "mtimeNs": 1793087880090909156
+    },
+    {
+      "originalPath": "/tmp/musubi-k12-live/google-organizer-update-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/prior-screenshots/google-organizer-update-light.png",
+      "sha256": "3dc8b7efb4c2653bdd5206b6c736f6b2440f6ac41f76f6e9e67c8330ebe54da3",
+      "size": 31330,
+      "mtimeNs": 1793087883660999939
+    },
+    {
+      "originalPath": "/tmp/musubi-k13-rsvp-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/prior-screenshots/musubi-k13-rsvp-dark.png",
+      "sha256": "efc91944a5647f8065fa82562fd9022d8b6cedb1792afe7e0d4a458f5844db1c",
+      "size": 12180,
+      "mtimeNs": 1793087869738644316
+    },
+    {
+      "originalPath": "/tmp/musubi-k14-reminder-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/prior-screenshots/musubi-k14-reminder-dark.png",
+      "sha256": "f1739501f809be7494e8574ca6f627db10f8797b39d58f606724066f1f62d5c4",
+      "size": 31160,
+      "mtimeNs": 1793087867059231665
+    },
+    {
+      "originalPath": "/tmp/musubi-caldav-alarm-editor-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/prior-screenshots/musubi-caldav-alarm-editor-dark.png",
+      "sha256": "c465ee5ab80772fd1dbbf775225599378414e13f2a7ab9f86835723db9141118",
+      "size": 25684,
+      "mtimeNs": 1793087872111705237
+    },
+    {
+      "originalPath": "/tmp/outlook-move-select-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/prior-screenshots/outlook-move-select-dark.png",
+      "sha256": "9d933018258751c08c56b79cb0d399a418416085ebba66b26eb0598dcf2872a7",
+      "size": 39878,
+      "mtimeNs": 1793087886461070948
+    },
+    {
+      "originalPath": "/tmp/outlook-move-preview-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/prior-screenshots/outlook-move-preview-dark.png",
+      "sha256": "7fd0b612c8aad9900ede097a106b003a46d5cefd626b54c58a596acfc21af933",
+      "size": 44805,
+      "mtimeNs": 1793087886961083613
+    },
+    {
+      "originalPath": "/tmp/outlook-move-result-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/prior-screenshots/outlook-move-result-dark.png",
+      "sha256": "d8500c7d414cacc568a88dafdeacfffc70e12564c7149946b927e37acef67412",
+      "size": 38768,
+      "mtimeNs": 1793087887033085436
+    },
+    {
+      "originalPath": "/tmp/musubi-k12-live/caldav-rsvp-browser-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/prior-screenshots/caldav-rsvp-browser-dark.png",
+      "sha256": "fb47d2467013689d88d04dd444f0cb25e2237ab4df7466a74e50ae53fd514a11",
+      "size": 14788,
+      "mtimeNs": 1793087875888801941
+    },
+    {
+      "originalPath": "/tmp/musubi-k12-live/microsoft-one-off-rsvp-browser-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/prior-screenshots/microsoft-one-off-rsvp-browser-dark.png",
+      "sha256": "cd2bcd2bfd5d28ad1b3d8a8347563db25f495d4f89f5f837578fef6663744995",
+      "size": 15211,
+      "mtimeNs": 1793087879905904443
+    },
+    {
+      "originalPath": "/tmp/musubi-k12-live/google-organizer-update-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/prior-screenshots/google-organizer-update-dark.png",
+      "sha256": "0093180153b3bfffe29efaa49ea0182a6ddab29907076a2aa3e16e426b201a2c",
+      "size": 31728,
+      "mtimeNs": 1793087883495995749
+    }
+  ],
+  "ownedServerPID": 201424,
+  "interactions": {
+    "required": 22,
+    "passed": 22,
+    "failed": 0,
+    "skipped": 0,
+    "retries": 0
+  },
+  "screenshots": [
+    {
+      "originalPath": "/tmp/musubi-k13-rsvp-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/musubi-k13-rsvp-light.png",
+      "sha256": "0dbc6cd42359e43dcf34806908b30c9ad41dc2ae6386d90930ee29564a1dae7a",
+      "size": 12849,
+      "mtimeNs": 1793088404535062367
+    },
+    {
+      "originalPath": "/tmp/musubi-k14-reminder-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/musubi-k14-reminder-light.png",
+      "sha256": "e47115df42450a08c0da59c83b55870689631116282b4337cc86712bad1ad0a9",
+      "size": 31746,
+      "mtimeNs": 1793088401188001160
+    },
+    {
+      "originalPath": "/tmp/musubi-caldav-alarm-editor-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/musubi-caldav-alarm-editor-light.png",
+      "sha256": "3a65c8fd7392c97a7cfdc3fc256de093742bf5b916d4dc165e054b4ad2a32ff4",
+      "size": 26112,
+      "mtimeNs": 1793088407488116295
+    },
+    {
+      "originalPath": "/tmp/outlook-move-select-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/outlook-move-select-light.png",
+      "sha256": "9620ef03f2606ee2d29e1f268a372c6120cad98329f96a138e9238bbaf4dbbde",
+      "size": 93890,
+      "mtimeNs": 1793088422320386138
+    },
+    {
+      "originalPath": "/tmp/outlook-move-preview-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/outlook-move-preview-light.png",
+      "sha256": "1d97a5512302094a9a9272357178663e5efede52ea276ce87c4273b214aac7c1",
+      "size": 97279,
+      "mtimeNs": 1793088422928397164
+    },
+    {
+      "originalPath": "/tmp/outlook-move-result-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/outlook-move-result-light.png",
+      "sha256": "5461d919bafb1b0516181be9436dd69de0cf2299ee49fbd64680b9a46224e1c3",
+      "size": 89618,
+      "mtimeNs": 1793088423003398524
+    },
+    {
+      "originalPath": "/tmp/musubi-k12-live/caldav-rsvp-browser-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/caldav-rsvp-browser-light.png",
+      "sha256": "ce4316df2796ad202e92f4d44d4290c764f569acaf35081e256735c95fc31836",
+      "size": 17753,
+      "mtimeNs": 1793088411552190402
+    },
+    {
+      "originalPath": "/tmp/musubi-k12-live/microsoft-one-off-rsvp-browser-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/microsoft-one-off-rsvp-browser-light.png",
+      "sha256": "f2c1fe64ae4c54e1687e02a519c27825eb7745758fae8e902823f4c7ed22257a",
+      "size": 18058,
+      "mtimeNs": 1793088415553263234
+    },
+    {
+      "originalPath": "/tmp/musubi-k12-live/google-organizer-update-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/google-organizer-update-light.png",
+      "sha256": "3dc8b7efb4c2653bdd5206b6c736f6b2440f6ac41f76f6e9e67c8330ebe54da3",
+      "size": 31330,
+      "mtimeNs": 1793088419072327191
+    },
+    {
+      "originalPath": "/tmp/musubi-k13-rsvp-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/musubi-k13-rsvp-dark.png",
+      "sha256": "efc91944a5647f8065fa82562fd9022d8b6cedb1792afe7e0d4a458f5844db1c",
+      "size": 12180,
+      "mtimeNs": 1793088405351077276
+    },
+    {
+      "originalPath": "/tmp/musubi-k14-reminder-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/musubi-k14-reminder-dark.png",
+      "sha256": "f1739501f809be7494e8574ca6f627db10f8797b39d58f606724066f1f62d5c4",
+      "size": 31160,
+      "mtimeNs": 1793088402338022200
+    },
+    {
+      "originalPath": "/tmp/musubi-caldav-alarm-editor-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/musubi-caldav-alarm-editor-dark.png",
+      "sha256": "c465ee5ab80772fd1dbbf775225599378414e13f2a7ab9f86835723db9141118",
+      "size": 25684,
+      "mtimeNs": 1793088407791121825
+    },
+    {
+      "originalPath": "/tmp/outlook-move-select-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/outlook-move-select-dark.png",
+      "sha256": "9d933018258751c08c56b79cb0d399a418416085ebba66b26eb0598dcf2872a7",
+      "size": 39878,
+      "mtimeNs": 1793088422140382873
+    },
+    {
+      "originalPath": "/tmp/outlook-move-preview-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/outlook-move-preview-dark.png",
+      "sha256": "7fd0b612c8aad9900ede097a106b003a46d5cefd626b54c58a596acfc21af933",
+      "size": 44805,
+      "mtimeNs": 1793088422661392321
+    },
+    {
+      "originalPath": "/tmp/outlook-move-result-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/outlook-move-result-dark.png",
+      "sha256": "d8500c7d414cacc568a88dafdeacfffc70e12564c7149946b927e37acef67412",
+      "size": 38768,
+      "mtimeNs": 1793088422740393754
+    },
+    {
+      "originalPath": "/tmp/musubi-k12-live/caldav-rsvp-browser-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/caldav-rsvp-browser-dark.png",
+      "sha256": "fb47d2467013689d88d04dd444f0cb25e2237ab4df7466a74e50ae53fd514a11",
+      "size": 14788,
+      "mtimeNs": 1793088411551190384
+    },
+    {
+      "originalPath": "/tmp/musubi-k12-live/microsoft-one-off-rsvp-browser-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/microsoft-one-off-rsvp-browser-dark.png",
+      "sha256": "cd2bcd2bfd5d28ad1b3d8a8347563db25f495d4f89f5f837578fef6663744995",
+      "size": 15211,
+      "mtimeNs": 1793088415284258342
+    },
+    {
+      "originalPath": "/tmp/musubi-k12-live/google-organizer-update-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/google-organizer-update-dark.png",
+      "sha256": "0093180153b3bfffe29efaa49ea0182a6ddab29907076a2aa3e16e426b201a2c",
+      "size": 31728,
+      "mtimeNs": 1793088419341332076
+    },
+    {
+      "originalPath": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/tmp/musubi-behavior-edit-preserves-content-desktop.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/musubi-behavior-edit-preserves-content-desktop.png",
+      "sha256": "01399948a8a5a9d27b225d61738818fd86c14ac0e323b692c331f1de5b97c5ef",
+      "size": 70726,
+      "mtimeNs": 1793088392250837292
+    },
+    {
+      "originalPath": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/tmp/musubi-behavior-edit-preserves-content-narrow.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/musubi-behavior-edit-preserves-content-narrow.png",
+      "sha256": "bc42b9e4aa1ea5891a3fd76cbc9806ac7ae28b0ebc9db7d7bd303fa4579fe757",
+      "size": 22504,
+      "mtimeNs": 1793088395771901929
+    },
+    {
+      "originalPath": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/tmp/musubi-behavior-conflict-keeps-draft-desktop.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/musubi-behavior-conflict-keeps-draft-desktop.png",
+      "sha256": "dd3c87c4c89912ae936c3ed0e806caf975ce7fd34cdb951676f927e996e4eae7",
+      "size": 83612,
+      "mtimeNs": 1793088392206836484
+    },
+    {
+      "originalPath": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/tmp/musubi-behavior-conflict-keeps-draft-narrow.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/musubi-behavior-conflict-keeps-draft-narrow.png",
+      "sha256": "b40515641b786aa7f752a2aa51fdfeefec7a01e76007f6f6afb7c8c6a7afc87e",
+      "size": 30878,
+      "mtimeNs": 1793088396773920305
+    },
+    {
+      "originalPath": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/tmp/musubi-behavior-mirror-is-readonly-desktop.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/musubi-behavior-mirror-is-readonly-desktop.png",
+      "sha256": "dc37b0467a2d6545f0cc1df1035ba2ba424ab3364f95176efd5cffe126a1875b",
+      "size": 68790,
+      "mtimeNs": 1793088393865866952
+    },
+    {
+      "originalPath": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/tmp/musubi-behavior-mirror-is-readonly-narrow.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/musubi-behavior-mirror-is-readonly-narrow.png",
+      "sha256": "166a9a5e19e8e1f6329f015d90ac245151c5b8e049829e84d8ec784d6428d4bb",
+      "size": 20255,
+      "mtimeNs": 1793088397421932185
+    },
+    {
+      "originalPath": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/tmp/musubi-behavior-cancel-delete-keeps-task-desktop.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/musubi-behavior-cancel-delete-keeps-task-desktop.png",
+      "sha256": "c9c8bfc2b28353414686ff681730fe30f5c37890ab81d5fd15e6dab215a344eb",
+      "size": 69837,
+      "mtimeNs": 1793088394894307809
+    },
+    {
+      "originalPath": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/tmp/musubi-behavior-cancel-delete-keeps-task-narrow.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/musubi-behavior-cancel-delete-keeps-task-narrow.png",
+      "sha256": "511a7c7dfeff40dcb60ff1a92a138b9fa7fcd3366fbb311412d0c60242f014ba",
+      "size": 21937,
+      "mtimeNs": 1793088399055962126
+    }
+  ],
+  "screenshotWindowNs": {
+    "start": 1793088387489105488,
+    "end": 1793088423238223845
+  },
+  "requiredScreenshotPaths": [
+    "/tmp/musubi-k13-rsvp-light.png",
+    "/tmp/musubi-k14-reminder-light.png",
+    "/tmp/musubi-caldav-alarm-editor-light.png",
+    "/tmp/outlook-move-select-light.png",
+    "/tmp/outlook-move-preview-light.png",
+    "/tmp/outlook-move-result-light.png",
+    "/tmp/musubi-k12-live/caldav-rsvp-browser-light.png",
+    "/tmp/musubi-k12-live/microsoft-one-off-rsvp-browser-light.png",
+    "/tmp/musubi-k12-live/google-organizer-update-light.png",
+    "/tmp/musubi-k13-rsvp-dark.png",
+    "/tmp/musubi-k14-reminder-dark.png",
+    "/tmp/musubi-caldav-alarm-editor-dark.png",
+    "/tmp/outlook-move-select-dark.png",
+    "/tmp/outlook-move-preview-dark.png",
+    "/tmp/outlook-move-result-dark.png",
+    "/tmp/musubi-k12-live/caldav-rsvp-browser-dark.png",
+    "/tmp/musubi-k12-live/microsoft-one-off-rsvp-browser-dark.png",
+    "/tmp/musubi-k12-live/google-organizer-update-dark.png",
+    "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/tmp/musubi-behavior-edit-preserves-content-desktop.png",
+    "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/tmp/musubi-behavior-edit-preserves-content-narrow.png",
+    "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/tmp/musubi-behavior-conflict-keeps-draft-desktop.png",
+    "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/tmp/musubi-behavior-conflict-keeps-draft-narrow.png",
+    "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/tmp/musubi-behavior-mirror-is-readonly-desktop.png",
+    "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/tmp/musubi-behavior-mirror-is-readonly-narrow.png",
+    "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/tmp/musubi-behavior-cancel-delete-keeps-task-desktop.png",
+    "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/tmp/musubi-behavior-cancel-delete-keeps-task-narrow.png"
+  ],
+  "screenshotInventoryComplete": true,
+  "cleanup": {
+    "ownedProcessGroup": 201424,
+    "reaped": true,
+    "groups": [
+      {
+        "pid": 201341,
+        "directChildReaped": true,
+        "groupAbsent": true
+      },
+      {
+        "pid": 201595,
+        "directChildReaped": true,
+        "groupAbsent": true
+      },
+      {
+        "pid": 201724,
+        "directChildReaped": true,
+        "groupAbsent": true
+      },
+      {
+        "pid": 201424,
+        "directChildReaped": true,
+        "groupAbsent": true
+      }
+    ]
+  },
+  "afterSourceIdentity": {
+    "rootMatchesPreparation": true,
+    "archiveSha256MatchesPreparation": true,
+    "trackedEntries": 2309,
+    "trackedInputChanges": []
+  },
+  "trackedInputChanges": [],
+  "interrupted": null
+}

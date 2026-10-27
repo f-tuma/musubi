@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-current-runtime-final-running-web-summary",
+  "source": {
+    "head": "fb36100c151bb75323573be8cc9afd9fd689261b",
+    "tree": "0d54cbc311100fbe66d3f835144767fbf2911378",
+    "archiveSha256": "d34b6dda9c6c1f43ee0e62ed79d0f02714332a85832bd51aa9df95475fda0b98"
+  },
+  "receipt": "current-browser-final.json",
+  "receiptSha256": "4a9d715e8697dee33a3d855d01de70ac8048549bfbe8fc8df60b75e73ef3b9e1",
+  "visualReview": "current-browser-visual-review.json",
+  "visualReviewSha256": "689c66530d5e438b797f80e6843c6f119d861efdf846c377fe6c81580e1ffb11",
+  "actualInteractions": {
+    "required": 22,
+    "passed": 22,
+    "failed": 0,
+    "skipped": 0,
+    "retries": 0
+  },
+  "retainedFreshScreenshots": 26,
+  "allScreenshotBytesReconciled": true,
+  "imagesActuallyViewed": 4,
+  "visualMethod": "Root actually viewed four fresh third-run images via tools.view_image: taskedit desktoplight/narrowdark and CalDAVRSVP light/dark. Current hash identities are retained without borrowing previous images.",
+  "manualAttemptsCurrentRuntime": 3,
+  "automaticRetries": 0,
+  "firstFailure": "current-browser-cold-start-failure.json",
+  "optionalOptimizerDiagnostic": "current-browser-optimizer-diagnostic.json is not an application/browser test.",
+  "sourceBinding": "current-runtime-to-test-support-binding.json",
+  "trackedInputChanges": [],
+  "cleanup": {
+    "ownedProcessGroup": 201424,
+    "reaped": true,
+    "groups": [
+      {
+        "pid": 201341,
+        "directChildReaped": true,
+        "groupAbsent": true
+      },
+      {
+        "pid": 201595,
+        "directChildReaped": true,
+        "groupAbsent": true
+      },
+      {
+        "pid": 201724,
+        "directChildReaped": true,
+        "groupAbsent": true
+      },
+      {
+        "pid": 201424,
+        "directChildReaped": true,
+        "groupAbsent": true
+      }
+    ]
+  },
+  "ownedQaRetiredBeforeFinalBrowser": true,
+  "browserPlugin": "absent",
+  "fallback": "Existing repository Playwright; unavailable Browser plugin checked by root.",
+  "boundaries": "Actual running Web with synthetic API fixtures. Actual sourceSQL/native proofs are separate; this does not certify real auth/provider notification or production.",
+  "publicRegistryPublished": false,
+  "productionDeployed": false,
+  "consecutiveCompleteWarmPasses": 2,
+  "userExplicitlyRequestedAdditionalRun": true,
+  "attemptHistory": "current-browser-attempt-history.json",
+  "previousSuccessfulReceipt": "current-browser-second-warm-receipt.json",
+  "previousActualVisualReview": "current-browser-second-warm-visual-review.json"
+}
