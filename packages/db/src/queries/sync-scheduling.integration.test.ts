@@ -436,10 +436,20 @@ async function main() {
     });
     assert(passed > 0, `Unknown scheduling scenario ${selected}; known ${cases.join(",")}`);
   } finally {
-    await observer?.end(); await store?.db.$client.end();
-    const sessions = await admin.query("select count(*)::int as count from pg_stat_activity where datname=$1", [name]);
-    assert.equal(sessions.rows[0].count, 0, "Never force-drop a database with live sessions");
-    await admin.query(`DROP DATABASE "${name}"`); await admin.end();
+    try {
+      await observer?.end(); await store?.db.$client.end();
+      // Closing our sockets can finish before PostgreSQL observes disconnects.
+      // Wait for our own database to become idle; never terminate a session.
+      const deadline = Date.now() + 2_000;
+      let sessions: number;
+      do {
+        sessions = (await admin.query("select count(*)::int as count from pg_stat_activity where datname=$1", [name])).rows[0].count;
+        if (sessions === 0 || Date.now() >= deadline) break;
+        await pause(25);
+      } while (true);
+      assert.equal(sessions, 0, "Never force-drop a database with live sessions");
+      await admin.query(`DROP DATABASE "${name}"`);
+    } finally { await admin.end(); }
   }
 }
 (process.argv[2]?.startsWith("--") ? child() : main()).catch(error => { console.error(error); process.exitCode = 1; });
