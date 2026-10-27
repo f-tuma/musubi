@@ -17,6 +17,70 @@ type JsonObject = Record<string, unknown>;
 const isObject = (value: unknown): value is JsonObject =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+const JSON_SCHEMA_TYPES = new Set([
+  "array", "boolean", "integer", "null", "number", "object", "string",
+]);
+const SCHEMA_MAPS = new Set([
+  "$defs", "definitions", "dependentSchemas", "patternProperties", "properties",
+]);
+const SCHEMA_LISTS = new Set(["allOf", "anyOf", "oneOf", "prefixItems"]);
+const SCHEMA_VALUES = new Set([
+  "additionalItems", "additionalProperties", "contains", "contentSchema", "else",
+  "if", "items", "not", "propertyNames", "then", "unevaluatedItems",
+  "unevaluatedProperties",
+]);
+
+/**
+ * JSON Schema permits the same type union as `type: ["string", "null"]` or
+ * `anyOf: [{ type: "string" }, { type: "null" }]`. Zod has emitted both.
+ * Fold only branches with no other keywords: moving a branch's constraint
+ * outside its union can change which values are accepted.
+ *
+ * Recurse through schema positions, never literal values in enum/const/default.
+ * Sorting schema keys also keeps the representation stable inside union lists,
+ * which the comparator otherwise compares as complete values.
+ */
+function canonicalSchema(value: unknown): unknown {
+  if (!isObject(value)) return value;
+
+  let schema = value;
+  if (!("type" in schema) && Array.isArray(schema.anyOf) && schema.anyOf.length > 0) {
+    const types = schema.anyOf.map((branch: unknown) =>
+      isObject(branch) && Object.keys(branch).length === 1 &&
+      typeof branch.type === "string" && JSON_SCHEMA_TYPES.has(branch.type)
+        ? branch.type
+        : undefined,
+    );
+    if (types.every((type) => type !== undefined)) {
+      const { anyOf: _, ...rest } = schema;
+      schema = { ...rest, type: types };
+    }
+  }
+
+  return Object.fromEntries(Object.keys(schema).sort().map((keyword) => {
+    const entry = schema[keyword];
+    if (keyword === "type" && Array.isArray(entry) && entry.length > 0 &&
+        entry.every((type) => typeof type === "string" && JSON_SCHEMA_TYPES.has(type))) {
+      const types = [...new Set(entry)].sort();
+      return [keyword, types.length === 1 ? types[0] : types];
+    }
+    if (SCHEMA_MAPS.has(keyword) && isObject(entry)) {
+      return [keyword, Object.fromEntries(Object.entries(entry).map(
+        ([name, child]) => [name, canonicalSchema(child)],
+      ))];
+    }
+    if (SCHEMA_LISTS.has(keyword) && Array.isArray(entry)) {
+      return [keyword, entry.map(canonicalSchema)];
+    }
+    if (SCHEMA_VALUES.has(keyword)) {
+      return [keyword, Array.isArray(entry)
+        ? entry.map(canonicalSchema)
+        : canonicalSchema(entry)];
+    }
+    return [keyword, entry];
+  }));
+}
+
 /**
  * JSON Schema keywords that describe rather than restrict.
  *
@@ -75,7 +139,10 @@ export function compareWireContract(
       });
       continue;
     }
-    walk(was.schema, now.schema, was.direction, name, "", breaks);
+    walk(
+      canonicalSchema(was.schema), canonicalSchema(now.schema),
+      was.direction, name, "", breaks,
+    );
   }
 
   return breaks;

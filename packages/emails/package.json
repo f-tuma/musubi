@@ -14,7 +14,7 @@
   "license": "MIT",
   "dependencies": {
     "@musubi/config": "workspace:*",
-    "nodemailer": "^9.1.1"
+    "nodemailer": "^10.1.4"
   },
   "devDependencies": {
     "@types/nodemailer": "^8.0.1",

@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { WireOffsetDateTimeSchema } from "./wire_primitives";
 export const GOOGLE_AVAILABILITY_SCOPE = "https://www.googleapis.com/auth/calendar.events.freebusy";
 export const AVAILABILITY_SOURCE_LIMIT = 20;
-const instant = z.iso.datetime({ offset: true });
+const instant = WireOffsetDateTimeSchema;
 export const AvailabilityIntervalSchema = z.object({ start: instant, end: instant }).strict().refine(v => Date.parse(v.start) < Date.parse(v.end));
 export const AvailabilityRequestSchema = z.object({
   start: instant, end: instant, sourceIds: z.array(z.uuid()).min(1).max(AVAILABILITY_SOURCE_LIMIT).refine(v => new Set(v).size === v.length),

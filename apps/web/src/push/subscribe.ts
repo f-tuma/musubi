@@ -38,6 +38,7 @@ function decodeKey(base64Url: string) {
 async function registration() {
   return navigator.serviceWorker.register(SERVICE_WORKER_URL, {
     scope: "/app/",
+    updateViaCache: "none",
   });
 }
 

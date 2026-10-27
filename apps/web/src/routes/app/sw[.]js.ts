@@ -15,9 +15,11 @@ export const Route = createFileRoute("/app/sw.js")({
       GET: () =>
         new Response(serviceWorkerSource, {
           headers: {
-            // No caching: a browser that pinned an old worker would keep
-            // showing whatever that version did, for as long as it liked.
-            "Cache-Control": "no-cache",
+            // The script and notification behavior must update together.
+            // CDN-specific policy also covers intermediaries with their own TTL.
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            "CDN-Cache-Control": "no-store",
+            "Cloudflare-CDN-Cache-Control": "no-store",
             "Content-Type": "text/javascript; charset=utf-8",
             // Lets the worker claim the whole origin later if it ever needs to.
             "Service-Worker-Allowed": "/",

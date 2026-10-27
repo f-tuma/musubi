@@ -1,0 +1,976 @@
+{
+  "schemaVersion": 1,
+  "suite": "postgres-restore",
+  "driver": "postgres-restore",
+  "scenarios": [
+    {
+      "id": "create-failure",
+      "title": "Failed or colliding creation never removes an unowned container",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create",
+          "exitCode": 1,
+          "stderr": "Synthetic creation collision."
+        }
+      ],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": [
+          "Synthetic creation collision."
+        ]
+      }
+    },
+    {
+      "id": "uncertain-create",
+      "title": "An unsuccessful create response never authorizes ID or name cleanup",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create",
+          "exitCode": 1,
+          "stdout": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+        }
+      ],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": []
+      }
+    },
+    {
+      "id": "malformed-create-id",
+      "title": "Malformed create output never becomes a cleanup target",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create",
+          "stdout": "some-existing-container\n"
+        }
+      ],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": [
+          "valid full container ID"
+        ]
+      }
+    },
+    {
+      "id": "short-create-id",
+      "title": "A short container ID is rejected without cleanup",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create",
+          "stdout": "aaaaaaaaaaaa\n"
+        }
+      ],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": [
+          "valid full container ID"
+        ]
+      }
+    },
+    {
+      "id": "start-failure",
+      "title": "A failed start cleans up only the full ID created by this invocation",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create"
+        },
+        {
+          "command": "start",
+          "exitCode": 1
+        },
+        {
+          "command": "stop"
+        },
+        {
+          "command": "remove"
+        }
+      ],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": []
+      }
+    },
+    {
+      "id": "readiness-timeout",
+      "title": "Readiness stops after thirty TCP probes and cleans up the owned ID",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create"
+        },
+        {
+          "command": "start"
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "stop"
+        },
+        {
+          "command": "remove"
+        }
+      ],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": [
+          "did not become ready"
+        ]
+      }
+    },
+    {
+      "id": "readiness-retry",
+      "title": "A transient TCP readiness failure can recover before restoring",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create"
+        },
+        {
+          "command": "start"
+        },
+        {
+          "command": "ready",
+          "exitCode": 1
+        },
+        {
+          "command": "ready"
+        },
+        {
+          "command": "restore"
+        },
+        {
+          "command": "tables"
+        },
+        {
+          "command": "stop"
+        },
+        {
+          "command": "remove"
+        }
+      ],
+      "expected": {
+        "exitCode": 0,
+        "stdoutIncludes": [
+          "Restore completed",
+          "comparison remains required"
+        ],
+        "stderrIncludes": []
+      }
+    },
+    {
+      "id": "restore-failure",
+      "title": "A failed custom restore fails the helper and cleans up the owned ID",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create"
+        },
+        {
+          "command": "start"
+        },
+        {
+          "command": "ready"
+        },
+        {
+          "command": "restore",
+          "exitCode": 1
+        },
+        {
+          "command": "stop"
+        },
+        {
+          "command": "remove"
+        }
+      ],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": []
+      }
+    },
+    {
+      "id": "restore-deadline",
+      "title": "A stalled restore reaches its configured deadline and cleans up the owned ID",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create"
+        },
+        {
+          "command": "start"
+        },
+        {
+          "command": "ready"
+        },
+        {
+          "command": "restore",
+          "hang": true
+        },
+        {
+          "command": "stop"
+        },
+        {
+          "command": "remove"
+        }
+      ],
+      "expected": {
+        "exitCode": 124,
+        "stdoutIncludes": [],
+        "stderrIncludes": []
+      },
+      "env": {
+        "MUSUBI_RESTORE_TIMEOUT_SECONDS": "1"
+      }
+    },
+    {
+      "id": "table-query-failure",
+      "title": "A failed table-presence query cannot report restore success",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create"
+        },
+        {
+          "command": "start"
+        },
+        {
+          "command": "ready"
+        },
+        {
+          "command": "restore"
+        },
+        {
+          "command": "tables",
+          "exitCode": 1
+        },
+        {
+          "command": "stop"
+        },
+        {
+          "command": "remove"
+        }
+      ],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": []
+      }
+    },
+    {
+      "id": "empty-database",
+      "title": "An empty restored public schema is a failure",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create"
+        },
+        {
+          "command": "start"
+        },
+        {
+          "command": "ready"
+        },
+        {
+          "command": "restore"
+        },
+        {
+          "command": "tables",
+          "stdout": "0\n"
+        },
+        {
+          "command": "stop"
+        },
+        {
+          "command": "remove"
+        }
+      ],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": [
+          "without any public tables"
+        ]
+      }
+    },
+    {
+      "id": "invalid-table-count",
+      "title": "Malformed table count output is a failure",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create"
+        },
+        {
+          "command": "start"
+        },
+        {
+          "command": "ready"
+        },
+        {
+          "command": "restore"
+        },
+        {
+          "command": "tables",
+          "stdout": "not-a-count\n"
+        },
+        {
+          "command": "stop"
+        },
+        {
+          "command": "remove"
+        }
+      ],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": [
+          "without any public tables"
+        ]
+      }
+    },
+    {
+      "id": "cleanup-stop-failure",
+      "title": "An unconfirmed stop leaves the exact owned ID for inspection",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create"
+        },
+        {
+          "command": "start"
+        },
+        {
+          "command": "ready"
+        },
+        {
+          "command": "restore"
+        },
+        {
+          "command": "tables"
+        },
+        {
+          "command": "stop",
+          "exitCode": 1
+        }
+      ],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": [
+          "Could not confirm stop",
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ]
+      }
+    },
+    {
+      "id": "cleanup-remove-failure",
+      "title": "A failed removal is reported without forced or expanded cleanup",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create"
+        },
+        {
+          "command": "start"
+        },
+        {
+          "command": "ready"
+        },
+        {
+          "command": "restore"
+        },
+        {
+          "command": "tables"
+        },
+        {
+          "command": "stop"
+        },
+        {
+          "command": "remove",
+          "exitCode": 1
+        }
+      ],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": [
+          "Could not remove owned",
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ]
+      }
+    },
+    {
+      "id": "custom-success",
+      "title": "A custom dump restores through stdin and removes only the owned container",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create"
+        },
+        {
+          "command": "start"
+        },
+        {
+          "command": "ready"
+        },
+        {
+          "command": "restore"
+        },
+        {
+          "command": "tables"
+        },
+        {
+          "command": "stop"
+        },
+        {
+          "command": "remove"
+        }
+      ],
+      "expected": {
+        "exitCode": 0,
+        "stdoutIncludes": [
+          "Restore completed",
+          "comparison remains required"
+        ],
+        "stderrIncludes": []
+      }
+    },
+    {
+      "id": "gzip-success",
+      "title": "A gzip-wrapped custom dump is fully decompressed before restoring",
+      "input": "gzip",
+      "ports": [
+        {
+          "command": "create"
+        },
+        {
+          "command": "start"
+        },
+        {
+          "command": "ready"
+        },
+        {
+          "command": "restore"
+        },
+        {
+          "command": "tables"
+        },
+        {
+          "command": "stop"
+        },
+        {
+          "command": "remove"
+        }
+      ],
+      "expected": {
+        "exitCode": 0,
+        "stdoutIncludes": [
+          "Restore completed"
+        ],
+        "stderrIncludes": []
+      }
+    },
+    {
+      "id": "corrupt-gzip",
+      "title": "Corrupt gzip fails before any container is created",
+      "input": "corrupt-gzip",
+      "ports": [],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": []
+      }
+    },
+    {
+      "id": "invalid-input",
+      "title": "A non-custom archive is rejected before any Docker call",
+      "input": "invalid",
+      "ports": [],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": [
+          "custom-format dump"
+        ]
+      }
+    },
+    {
+      "id": "empty-input",
+      "title": "An empty dump is rejected before any Docker call",
+      "input": "empty",
+      "ports": [],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": [
+          "missing, unreadable, or empty"
+        ]
+      }
+    },
+    {
+      "id": "missing-input",
+      "title": "A missing dump is rejected before any Docker call",
+      "input": "missing",
+      "ports": [],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": [
+          "missing, unreadable, or empty"
+        ]
+      }
+    },
+    {
+      "id": "counts-match",
+      "title": "Restore preservation output must exactly match the captured source baseline",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create"
+        },
+        {
+          "command": "start"
+        },
+        {
+          "command": "ready"
+        },
+        {
+          "command": "restore"
+        },
+        {
+          "command": "tables"
+        },
+        {
+          "command": "counts",
+          "stdout": "preserved\n7\n"
+        },
+        {
+          "command": "stop"
+        },
+        {
+          "command": "remove"
+        }
+      ],
+      "expected": {
+        "exitCode": 0,
+        "stdoutIncludes": [
+          "matches the supplied baseline",
+          "Restore completed"
+        ],
+        "stderrIncludes": []
+      },
+      "counts": {
+        "expected": "preserved\n7\n",
+        "output": "preserved\n7\n"
+      }
+    },
+    {
+      "id": "counts-mismatch",
+      "title": "A count or journal mismatch fails even after pg_restore succeeds",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create"
+        },
+        {
+          "command": "start"
+        },
+        {
+          "command": "ready"
+        },
+        {
+          "command": "restore"
+        },
+        {
+          "command": "tables"
+        },
+        {
+          "command": "counts",
+          "stdout": "preserved\n6\n"
+        },
+        {
+          "command": "stop"
+        },
+        {
+          "command": "remove"
+        }
+      ],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": [
+          "differs from the supplied stopped-source baseline"
+        ]
+      },
+      "counts": {
+        "expected": "preserved\n7\n",
+        "output": "preserved\n6\n"
+      }
+    },
+    {
+      "id": "counts-query-failure",
+      "title": "A preservation query failure cannot report baseline agreement",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create"
+        },
+        {
+          "command": "start"
+        },
+        {
+          "command": "ready"
+        },
+        {
+          "command": "restore"
+        },
+        {
+          "command": "tables"
+        },
+        {
+          "command": "counts",
+          "exitCode": 1
+        },
+        {
+          "command": "stop"
+        },
+        {
+          "command": "remove"
+        }
+      ],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": []
+      },
+      "counts": {
+        "expected": "preserved\n7\n"
+      }
+    },
+    {
+      "id": "termination-cleanup",
+      "title": "Termination after creation preserves the signal status and cleans only the owned ID",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create"
+        },
+        {
+          "command": "start"
+        },
+        {
+          "command": "ready",
+          "signal": "SIGTERM"
+        },
+        {
+          "command": "stop"
+        },
+        {
+          "command": "remove"
+        }
+      ],
+      "expected": {
+        "exitCode": 143,
+        "stdoutIncludes": [],
+        "stderrIncludes": []
+      }
+    },
+    {
+      "id": "pinned-image",
+      "title": "An explicitly approved image digest is passed without mutation",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create"
+        },
+        {
+          "command": "start"
+        },
+        {
+          "command": "ready"
+        },
+        {
+          "command": "restore"
+        },
+        {
+          "command": "tables"
+        },
+        {
+          "command": "stop"
+        },
+        {
+          "command": "remove"
+        }
+      ],
+      "expected": {
+        "exitCode": 0,
+        "stdoutIncludes": [
+          "Restore completed"
+        ],
+        "stderrIncludes": []
+      },
+      "env": {
+        "MUSUBI_RESTORE_IMAGE": "postgres@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "id": "invalid-deadline",
+      "title": "An invalid configured deadline is rejected before any Docker call",
+      "input": "custom",
+      "ports": [],
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": [
+          "must be 1..86400"
+        ]
+      },
+      "env": {
+        "MUSUBI_RESTORE_TIMEOUT_SECONDS": "0"
+      }
+    },
+    {
+      "id": "partial-preservation-config",
+      "title": "A missing preservation comparison input fails before creating anything",
+      "input": "custom",
+      "ports": [],
+      "counts": {
+        "expected": "7\n",
+        "omit": "expected"
+      },
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": [
+          "together"
+        ]
+      }
+    },
+    {
+      "id": "existing-counts-output",
+      "title": "An existing private evidence file is never overwritten",
+      "input": "custom",
+      "ports": [],
+      "counts": {
+        "expected": "7\n",
+        "outputMode": "file",
+        "output": "protected-output\n"
+      },
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": [
+          "fresh private output path"
+        ]
+      }
+    },
+    {
+      "id": "symlink-counts-output",
+      "title": "An existing evidence symlink and its target are never overwritten",
+      "input": "custom",
+      "ports": [],
+      "counts": {
+        "expected": "7\n",
+        "outputMode": "symlink",
+        "output": "protected-output\n"
+      },
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": [
+          "fresh private output path"
+        ]
+      }
+    },
+    {
+      "id": "dangling-counts-symlink",
+      "title": "A dangling evidence symlink is rejected before creating anything",
+      "input": "custom",
+      "ports": [],
+      "counts": {
+        "expected": "7\n",
+        "outputMode": "dangling-symlink"
+      },
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": [
+          "fresh private output path"
+        ]
+      }
+    },
+    {
+      "id": "racing-counts-output",
+      "title": "A destination created after preflight is not overwritten by preservation output",
+      "input": "custom",
+      "ports": [
+        {
+          "command": "create"
+        },
+        {
+          "command": "start"
+        },
+        {
+          "command": "ready"
+        },
+        {
+          "command": "restore"
+        },
+        {
+          "command": "tables"
+        },
+        {
+          "command": "counts",
+          "stdout": "7\n",
+          "writeOutput": "protected-racing-output\n"
+        },
+        {
+          "command": "stop"
+        },
+        {
+          "command": "remove"
+        }
+      ],
+      "counts": {
+        "expected": "7\n",
+        "output": "protected-racing-output\n"
+      },
+      "expected": {
+        "exitCode": 1,
+        "stdoutIncludes": [],
+        "stderrIncludes": [
+          "existing destination was not replaced"
+        ]
+      }
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS deploy
+FROM node:22.23.4-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS deploy
 RUN corepack enable
 WORKDIR /repo
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
@@ -12,7 +12,7 @@ COPY packages/provider-microsoft packages/provider-microsoft
 COPY packages/sync-runtime packages/sync-runtime
 RUN pnpm --config.inject-workspace-packages=true --filter @musubi/sync-reference deploy --prod --frozen-lockfile /prod/reference
 
-FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS runner
+FROM node:22.23.4-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS runner
 WORKDIR /app
 COPY --from=deploy /prod/reference /app
 COPY LICENSE /app/LICENSE

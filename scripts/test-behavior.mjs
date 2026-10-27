@@ -6,6 +6,11 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const REPOSITORY = fileURLToPath(new URL("../", import.meta.url));
 const SUITES = {
+  "wire-timestamps": "packages/types/src/behavior/wire-timestamps.json",
+  "api-json-body": "apps/api/src/behavior/api-json-body.json",
+  "app-links": "apps/api/src/behavior/app-links.json",
+  "postgres-restore": "ops/behavior/postgres-restore.json",
+  "web-edge": "apps/web/src/tests/behavior/web-edge.json",
   "project-news": "apps/api/src/behavior/project-news.json",
   "read-attempt": "apps/api/src/sync/behavior/read-attempt.json",
   "fair-work": "packages/sync-runtime/src/behavior/fair-work.json",
@@ -168,8 +173,16 @@ async function runSuite(selection, options, { root, execute, env }) {
       child = await execute(process.execPath, ["--import", "tsx", join(root, "packages/sync-runtime/src/behavior", entry), "--json",
         ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });
       results = runtimeResults(child.stdout, selection);
-    } else if (selection.name === "project-news") {
-      child = await execute(process.execPath, ["--import", "tsx", join(root, "apps/api/src/behavior/project-news-cli.ts"), "--json",
+    } else if (selection.name === "wire-timestamps") {
+      child = await execute(process.execPath, ["--import", "tsx", join(root, "packages/types/src/behavior/wire-timestamps-cli.ts"), "--json",
+        ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });
+      results = runtimeResults(child.stdout, selection);
+    } else if (["project-news", "api-json-body", "app-links"].includes(selection.name)) {
+      child = await execute(process.execPath, ["--import", "tsx", join(root, `apps/api/src/behavior/${selection.name}-cli.ts`), "--json",
+        ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });
+      results = runtimeResults(child.stdout, selection);
+    } else if (selection.name === "postgres-restore") {
+      child = await execute(process.execPath, [join(root, "ops/behavior/postgres-restore-cli.mjs"), "--json",
         ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });
       results = runtimeResults(child.stdout, selection);
     } else if (selection.name === "read-attempt") {
@@ -185,7 +198,7 @@ async function runSuite(selection, options, { root, execute, env }) {
       directory = await mkdtemp(join(tmpdir(), "musubi-behavior-"));
       const reportPath = join(directory, "vitest.json");
       child = await execute(process.execPath, [join(root, "node_modules/vitest/vitest.mjs"), "run", "--project=unit",
-        "src/tests/behavior/task-inspector.scenarios.test.tsx", "--reporter=json", `--outputFile=${reportPath}`],
+        selection.name === "web-edge" ? "src/tests/behavior/web-edge.scenarios.test.ts" : "src/tests/behavior/task-inspector.scenarios.test.tsx", "--reporter=json", `--outputFile=${reportPath}`],
       { cwd: join(root, "apps/web"), env: { ...env, MUSUBI_SCENARIO: options.scenario ?? "" } });
       let report;
       try { report = JSON.parse(await readFile(reportPath, "utf8")); }
@@ -193,7 +206,7 @@ async function runSuite(selection, options, { root, execute, env }) {
       ({ results, ancillaryFailed } = uiResults(report, selection));
       uiFailed = report.numFailedTests > 0;
     }
-    if (child.code !== 0 && !(selection.name === "task-inspector" && child.code === 1 && uiFailed)) {
+    if (child.code !== 0 && !(["task-inspector", "web-edge"].includes(selection.name) && child.code === 1 && uiFailed)) {
       throw new BehaviorError("Runner exited unsuccessfully; run the selected suite directly for assertion details.");
     }
     return { suite: selection.name, results, passed: results.filter(item => item.status === "passed").length,

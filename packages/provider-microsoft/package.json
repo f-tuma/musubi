@@ -4,8 +4,16 @@
   "type": "module",
   "description": "Storage-free Microsoft personal event CREATE and guarded DELETE transport with explicit host ports.",
   "main": "./src/index.ts",
-  "exports": { ".": "./src/index.ts" },
-  "scripts": { "test": "node --import tsx src/index.test.ts" },
-  "dependencies": { "zod": "^4.4.3" },
-  "devDependencies": { "tsx": "^4.23.12" }
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "node --import tsx src/index.test.ts"
+  },
+  "dependencies": {
+    "zod": "^4.6.6"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.12"
+  }
 }

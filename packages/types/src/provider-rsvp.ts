@@ -1,6 +1,7 @@
 import { OccurrenceStartSchema, type EventTimeModel } from "./event_time";
 import { z } from "zod";
 import { ProviderEventStateSchema, type ProviderEventState } from "./provider-event-state";
+import { WireInstantSchema } from "./wire_primitives";
 const ProviderRsvpCommonSchema = z.object({
   operationID: z.uuid().transform(value => value.toLowerCase()),
   expectedRevision: z.number().int().positive(),
@@ -128,16 +129,16 @@ export function matchesMicrosoftRsvpObservedState(baseline: ProviderEventState, 
     return JSON.stringify(observed) === JSON.stringify(expected);
   } catch { return false; }
 }
-export const GraphRsvpDispatchSchema = z.object({ kind: z.literal("graph-rsvp-dispatch"), version: z.literal(1), startedAt: z.iso.datetime(), acceptedAt: z.iso.datetime().optional() }).strict();
+export const GraphRsvpDispatchSchema = z.object({ kind: z.literal("graph-rsvp-dispatch"), version: z.literal(1), startedAt: WireInstantSchema, acceptedAt: WireInstantSchema.optional() }).strict();
 export type MicrosoftRsvpConfirmation = { baselineHash: string; observedResponse: string; seriesResponse?: string };
 
 /** Durable permission for at most one CalDAV scheduling PUT. Missing legacy
  * policy and a started policy permit read-only recovery, never another PUT. */
-export const CaldavRsvpDeliverySchema = z.object({ kind: z.literal("caldav-rsvp-at-most-once"), version: z.literal(1), startedAt: z.iso.datetime().optional() }).strict();
+export const CaldavRsvpDeliverySchema = z.object({ kind: z.literal("caldav-rsvp-at-most-once"), version: z.literal(1), startedAt: WireInstantSchema.optional() }).strict();
 
 /** Private permission for one Google attendee PATCH. Missing historical policy
  * is always read-only, including old never-attempted queued operations. */
-export const GoogleRsvpDeliverySchema = z.object({ kind: z.literal("google-rsvp-at-most-once"), version: z.literal(1), startedAt: z.iso.datetime().optional() }).strict();
+export const GoogleRsvpDeliverySchema = z.object({ kind: z.literal("google-rsvp-at-most-once"), version: z.literal(1), startedAt: WireInstantSchema.optional() }).strict();
 export function googleRsvpDeliveryPolicy(intent: unknown): { observeOnly: boolean; delivery?: z.infer<typeof GoogleRsvpDeliverySchema> } {
   if (intent === null || typeof intent !== "object" || ![Object.prototype, null].includes(Object.getPrototypeOf(intent))) throw new TypeError("Invalid Google RSVP intent");
   const descriptor = Object.getOwnPropertyDescriptor(intent, "googleDelivery");

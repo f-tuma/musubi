@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import "./wire_contract.test";
+import "./wire_primitives.test";
+import "./wire_sidecars.test";
+import "./wire_timestamps.test";
 import { compareWireContract, type WireBreak } from "./wire_contract";
 import { wireSnapshot, type WireSnapshot } from "./wire";
 import { compareVersions, MIN_CLIENT_VERSION, PRODUCT_VERSION } from "./version";

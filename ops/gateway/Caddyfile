@@ -62,6 +62,20 @@
 	handle /.well-known/apple-app-site-association {
 		reverse_proxy {env.API_UPSTREAM}
 	}
+	handle /.well-known/assetlinks.json {
+		reverse_proxy {env.API_UPSTREAM}
+	}
+
+	# The worker is mutable executable code, not a versioned /assets/* chunk.
+	# Keep its response uncacheable even if an upstream static policy changes.
+	# External CDN rules must also respect this path's origin policy.
+	handle /app/sw.js {
+		reverse_proxy {env.WEB_UPSTREAM} {
+			header_down Cache-Control "no-store, no-cache, must-revalidate"
+			header_down CDN-Cache-Control "no-store"
+			header_down Cloudflare-CDN-Cache-Control "no-store"
+		}
+	}
 
 	# The routes the web client owns, listed rather than caught, so that the
 	# apex can belong to something else. Keep in sync with apps/web/src/routes —

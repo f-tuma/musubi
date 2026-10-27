@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "suite": "app-links",
+  "scenarios": [
+    {
+      "id": "unconfigured-is-not-associated",
+      "title": "An unconfigured server does not advertise an Android signing identity",
+      "kind": "response",
+      "expected": {
+        "status": 404,
+        "headers": {
+          "cache-control": "no-store",
+          "cdn-cache-control": "no-store",
+          "cloudflare-cdn-cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "id": "blank-is-not-associated",
+      "title": "Blank configuration leaves Android domain association unavailable",
+      "kind": "response",
+      "fingerprints": "  ",
+      "expected": {
+        "status": 404,
+        "headers": {
+          "cache-control": "no-store",
+          "cdn-cache-control": "no-store",
+          "cloudflare-cdn-cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "id": "configured-app-identity",
+      "title": "Configured public certificate produces the exact Musubi Android association",
+      "kind": "response",
+      "fingerprints": "AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA",
+      "expected": {
+        "status": 200,
+        "headers": {
+          "cache-control": "no-store",
+          "cdn-cache-control": "no-store",
+          "cloudflare-cdn-cache-control": "no-store",
+          "content-type": "application/json"
+        },
+        "body": [
+          {
+            "relation": [
+              "delegate_permission/common.handle_all_urls"
+            ],
+            "target": {
+              "namespace": "android_app",
+              "package_name": "dev.frgtn.musubi",
+              "sha256_cert_fingerprints": [
+                "AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "rotation-normalizes-and-deduplicates",
+      "title": "Signing-key rotation preserves distinct certificates and normalizes duplicates",
+      "kind": "response",
+      "fingerprints": " aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa:aa , 1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b:1b , AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA ",
+      "expected": {
+        "status": 200,
+        "headers": {
+          "cache-control": "no-store",
+          "cdn-cache-control": "no-store",
+          "cloudflare-cdn-cache-control": "no-store",
+          "content-type": "application/json"
+        },
+        "body": [
+          {
+            "relation": [
+              "delegate_permission/common.handle_all_urls"
+            ],
+            "target": {
+              "namespace": "android_app",
+              "package_name": "dev.frgtn.musubi",
+              "sha256_cert_fingerprints": [
+                "AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA",
+                "1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B:1B"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "mixed-invalid-config-refused",
+      "title": "A malformed certificate rejects the whole configuration instead of publishing a partial association",
+      "kind": "invalid",
+      "fingerprints": "AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA,not-a-certificate",
+      "expectedError": "Invalid ANDROID_APP_LINKS_SHA256. Expected comma-separated SHA-256 certificate fingerprints."
+    },
+    {
+      "id": "empty-list-element-refused",
+      "title": "A trailing comma cannot silently drop an invalid certificate entry",
+      "kind": "invalid",
+      "fingerprints": "AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA,",
+      "expectedError": "Invalid ANDROID_APP_LINKS_SHA256. Expected comma-separated SHA-256 certificate fingerprints."
+    },
+    {
+      "id": "wrong-digest-length-refused",
+      "title": "A short digest cannot be advertised as SHA256",
+      "kind": "invalid",
+      "fingerprints": "AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA:AA",
+      "expectedError": "Invalid ANDROID_APP_LINKS_SHA256. Expected comma-separated SHA-256 certificate fingerprints."
+    }
+  ]
+}

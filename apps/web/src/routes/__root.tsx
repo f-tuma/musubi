@@ -14,7 +14,7 @@ import { type ReactNode, useSyncExternalStore } from "react";
 import { AppErrorBoundary } from "~/components/AppErrorBoundary";
 import { NotFound } from "~/components/NotFound";
 import { useFocusMode } from "~/design/focus-mode";
-import appCss from "~/design/app.css?url";
+import "~/design/app.css";
 import {
   getAppliedTheme,
   subscribeToTheme,
@@ -32,7 +32,6 @@ export const Route = createRootRouteWithContext<{
         type: "image/svg+xml",
       },
       { href: BRAND_ASSETS.appleTouchIcon, rel: "apple-touch-icon" },
-      { rel: "stylesheet", href: appCss },
     ],
     meta: [
       { title: "Musubi" },

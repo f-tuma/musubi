@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { EventTimeModelSchema, OccurrenceStartSchema, EventTimeEditSchema, type EventTimeEdit, hasKnownEventTime } from "./event_time";
+import { WireOffsetDateTimeSchema } from "./wire_primitives";
 
 export const EventRevisionSchema = z
   .number()
@@ -37,7 +38,7 @@ export const EventSchema = z.object({
 export type Event = z.infer<typeof EventSchema>;
 
 const eventWriteDate = z
-  .union([z.date(), z.iso.datetime({ offset: true })])
+  .union([z.date(), WireOffsetDateTimeSchema])
   .pipe(z.coerce.date());
 export const EventCreateRequestSchema = EventSchema.omit({ isMeeting: true, providerReadRetiredRevision: true, revision: true, timeModel: true, seriesID: true, originalStart: true })
   .extend({ start: eventWriteDate, end: eventWriteDate })

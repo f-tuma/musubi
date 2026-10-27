@@ -2,6 +2,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 
 export default defineConfig({
@@ -21,6 +22,13 @@ export default defineConfig({
 		}),
 		viteReact(),
 		nitro({
+			// Register this executable server route explicitly. Nitro otherwise
+			// classifies .js/serviceworker requests as Vite assets in dev.
+			handlers: (["GET", "HEAD"] as const).map((method) => ({
+				route: "/app/sw.js",
+				method,
+				handler: fileURLToPath(new URL("./src/server/worker-route.ts", import.meta.url)),
+			})),
 			routeRules: {
 				"/**": {
 					headers: {

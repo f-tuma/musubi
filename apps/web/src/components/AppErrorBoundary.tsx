@@ -16,7 +16,9 @@ export function AppErrorBoundary({ error }: ErrorComponentProps) {
           </Button>
         </>
       }
-      description={error.message || "An unexpected error interrupted the workspace."}
+      description={error instanceof Error && error.message
+        ? error.message
+        : "An unexpected error interrupted the workspace."}
       title="Musubi could not open this view"
     />
   );

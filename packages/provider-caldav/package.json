@@ -11,13 +11,17 @@
     "./network-origin": "./src/network-origin.ts",
     "./network": "./src/network.ts"
   },
-  "scripts": { "test": "node --import tsx src/index.test.ts" },
+  "scripts": {
+    "test": "node --import tsx src/index.test.ts"
+  },
   "dependencies": {
     "@musubi/sync-codec": "workspace:*",
     "ical.js": "^2.2.1",
     "ipaddr.js": "^1.9.1",
-    "undici": "^7.29.0",
+    "undici": "^7.30.1",
     "xml-js": "1.6.11"
   },
-  "devDependencies": { "tsx": "^4.23.12" }
+  "devDependencies": {
+    "tsx": "^4.23.12"
+  }
 }
