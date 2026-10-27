@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-corrective-owned-qa-retirement-checkpoint-witness",
+  "containerId": "e325732bc0bd10ff866a6f634a6e3cd55707c659875dd1950b9f5e88af41e62a",
+  "port": 55447,
+  "preRetirementProof": "corrective-qa-pre-retirement.json",
+  "preRetirementSha256": "2bf8592e105df9d39e4183a843ccbdadf9935a2eb2b6e42b3bb2fe7b6352afc7",
+  "preRetirementActualSqlProbe": {
+    "remainingNondefaultDatabases": [],
+    "otherClientSessions": [],
+    "probePoolClosed": true
+  },
+  "historicalOperatorObservation": {
+    "atOrBefore": "2026-10-26T22:13:53.284655+00:00",
+    "source": "Durable PC-shutdown checkpoint STATE.json, written by root after the operations",
+    "sha256": "05c64a9cc2b247e21858dac483f431a56c2763183f9e6a454d31c35a90633420",
+    "resourceStatement": "retired exacte325732bc0bd10ff866a6f634a6e3cd55707c659875dd1950b9f5e88af41e62a afterzeroDB/clients+Poolend, dockerstop/rm(noForce), inspectNoSuch, BEFORErenewedUI22",
+    "stopTimeoutSeconds": 20,
+    "plainContainerRemove": true,
+    "exactIdInspectResult": "No such object",
+    "beforeRenewedFinalUi": true
+  },
+  "evidenceBoundary": "The actual pre-retirement SQL receipt is retained. Stop/remove/inspect were observed by root and preserved in the durable checkpoint; their raw command stdout/exit-code receipt was not saved. This is a historical checkpoint witness, not a new live probe or an independently reproduced retirement.",
+  "databaseBackendsTerminated": false,
+  "userQa55437NotTargeted": true,
+  "productionDeployed": false
+}

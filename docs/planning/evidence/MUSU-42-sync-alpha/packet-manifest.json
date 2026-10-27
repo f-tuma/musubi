@@ -52,15 +52,28 @@
       "sourceHead": "8e5e202c4912748e97c02646a8969a4a02543c3c",
       "requiredPassed": 22,
       "automaticRetries": 0,
-      "manualAttempts": 2,
+      "manualAttempts": 3,
       "retainedFreshScreenshots": 26,
       "imagesActuallyViewed": 4,
       "coldFirstAttempt": "browser-cold-start-failure.json",
-      "finalReceipt": "browser-final.json",
+      "finalReceipt": "browser-renewed.json",
       "sourceChanged": false,
-      "ownedGroupsReaped": true
+      "ownedGroupsReaped": true,
+      "previousSuccessfulReceipt": "browser-final.json",
+      "finalSummary": "browser-renewed-summary.json",
+      "visualScope": "Four images viewed in prior successful run; four renewed image byte hashes exactly equal those viewed images, no new image viewing claimed.",
+      "correctiveSourceBinding": "accepted-8e5-to-corrective-binding.json"
     },
-    "ownedQaContainerRetired": true
+    "ownedQaContainerRetired": true,
+    "correctedFixtureSource": {
+      "unchangedRed": true,
+      "positiveNativeCasesPerLane": 2,
+      "positiveLanes": 2,
+      "preSqlGuards": 2,
+      "bothDatabasesPlainDroppedAtZeroSessionsAndAbsent": true,
+      "proof": "ci810-cross-account-fix-proof.json",
+      "completeInstalledReferenceCorpusRerunOnCorrectedHead": false
+    }
   },
   "licenses": {
     "runtimePackages": 30,
@@ -70,8 +83,13 @@
     "evidence": "candidate-dependencies.json",
     "scope": "Actual declared metadata and retained texts; owner compatibility/distribution review remains separate"
   },
-  "pathInterpretation": "Verbatim raw receipts retain their original local paths and source identities. Dependency/source/file inventories are relative to their recorded candidate/provenance context, not this repository directory. The private local archive contains the actual retained notice texts.",
+  "pathInterpretation": "Verbatim raw receipts retain their original local paths and source identities. Dependency/source/file inventories are relative to their recorded candidate/provenance context, not this repository directory. The private local archive contains the actual retained notice texts. Corrective raw receipts also retain their original /tmp paths: ci810-*-v1.log map by lane to ci810-*.txt; the input inventory and cleanup map to the corresponding ci810-*.json files. Durable backup SAVED-FILES.json hash-verifies their original bytes. Renewed browser raw paths refer to retained private screenshots/logs in that backup, not files committed here.",
   "files": [
+    {
+      "path": "accepted-8e5-to-corrective-binding.json",
+      "bytes": 6360,
+      "sha256": "c40068e04e073e1e114d43df732cd71da760c77bc6c86b4fbe38bccf2f9f4b23"
+    },
     {
       "path": "archive-relocation.json",
       "bytes": 827,
@@ -101,6 +119,16 @@
       "path": "browser-identity.json",
       "bytes": 152,
       "sha256": "f9ae00ec10ba7f7ce7e7315a1c4405dd79d1320888eac697d04625c470a5be52"
+    },
+    {
+      "path": "browser-renewed-summary.json",
+      "bytes": 3182,
+      "sha256": "b64d4237b8638581c004b07b60b8a35b6c196d37eafca9a437ccd9cc03ad80fb"
+    },
+    {
+      "path": "browser-renewed.json",
+      "bytes": 25396,
+      "sha256": "b439d30187d9bf17753a3ba9883487be084a55207916d39ca57ca41f53e86a95"
     },
     {
       "path": "browser-summary.json",
@@ -141,6 +169,91 @@
       "path": "candidate-source-inventory.json",
       "bytes": 63157,
       "sha256": "e8dabe3c9feab2d2823ed208dcec49308ee29b65ef1dc0bed9b2a17b55bc66cb"
+    },
+    {
+      "path": "ci810-admin-guard.txt",
+      "bytes": 282,
+      "sha256": "f7786929d3e9d381a74bf7cb8a7fc6714e3673a1406ad588ca467b9b3796eb56"
+    },
+    {
+      "path": "ci810-cross-account-fix-proof.json",
+      "bytes": 3859,
+      "sha256": "6eaf19bced88f33c949435622141cdffd73398b62c080bb4b3dd132e487dd0e2"
+    },
+    {
+      "path": "ci810-cross-account-inputs.json",
+      "bytes": 276284,
+      "sha256": "247edaba04f2e55c11ab67f7082c01b6db263de40ac7e4a50a2db6280674973b"
+    },
+    {
+      "path": "ci810-environment-guard.txt",
+      "bytes": 288,
+      "sha256": "22b49c35bc08c55eabfadd8bf5ef6da759f64a1ef0f9f29cc4f40543cc694bba"
+    },
+    {
+      "path": "ci810-explicit-green.txt",
+      "bytes": 514,
+      "sha256": "2205816ccddfc9d1ce758854994c2adba9d76efdbb15541aceed757c5bc0b90f"
+    },
+    {
+      "path": "ci810-fallback-green.txt",
+      "bytes": 514,
+      "sha256": "113e35ca6963d0c91a865c4bc81e82967f3abde41de9c2c1105424b5e4d302af"
+    },
+    {
+      "path": "ci810-fallback-red.txt",
+      "bytes": 781,
+      "sha256": "4b6eee30c01220731904afd997cd796cbcd76e90f8fa870998862e1bede99835"
+    },
+    {
+      "path": "ci810-final-cleanup.json",
+      "bytes": 977,
+      "sha256": "6d16cbb5decadae0870e139833eff5714258db088c5c232e5e1b49263585b4cd"
+    },
+    {
+      "path": "ci810-independent-audit.json",
+      "bytes": 9327,
+      "sha256": "7fd5634616c8caa3622d1aa3e899fa74d5d5aef8e37a27a7508466815e08bd2e"
+    },
+    {
+      "path": "ci810-package-receipt.json",
+      "bytes": 4800,
+      "sha256": "44d2108fbe25b9218f4c712c1bfc6bc1780030c9581ce1fb43528b97793f8f37"
+    },
+    {
+      "path": "ci810-sync-alpha-deterministic.json",
+      "bytes": 1460,
+      "sha256": "0c7628140ca467daad0f61e3202610f9b957f3cd7e8e2327a6d8b00002e3293c"
+    },
+    {
+      "path": "ci810-sync-alpha-deterministic.json.conformance.json",
+      "bytes": 132252,
+      "sha256": "fd73d75141351ff5f5de5ac03fdf5330fe8ea2251f84e20398dd43f9546d02ee"
+    },
+    {
+      "path": "ci810-sync-alpha-host-compat.json",
+      "bytes": 74589,
+      "sha256": "79a4560783e790c6fa544149b71cd2148a3a7a138d8571bb719b81303993b79f"
+    },
+    {
+      "path": "ci810-sync-alpha-reference-db.json",
+      "bytes": 1457,
+      "sha256": "ff4e747d6ea6c9419ac709b39be578f6972fc3d52d5c2881cd641d7e84730d73"
+    },
+    {
+      "path": "ci810-sync-alpha-reference-db.json.conformance.json",
+      "bytes": 25309,
+      "sha256": "e1b1cecd28557825c0efc90dde6c0b38e6ad97df7ace22bda4562f8df4cb9324"
+    },
+    {
+      "path": "corrective-qa-pre-retirement.json",
+      "bytes": 791,
+      "sha256": "2bf8592e105df9d39e4183a843ccbdadf9935a2eb2b6e42b3bb2fe7b6352afc7"
+    },
+    {
+      "path": "corrective-qa-retirement.json",
+      "bytes": 1523,
+      "sha256": "de9ccf581bae4f01a3b28174d8904b5ea113b3a552f4ca89eec2493ce1cf6941"
     },
     {
       "path": "diagnostic-history.json",
@@ -273,7 +386,56 @@
     "currentHeadCi": "all required checks must pass before protected squash",
     "sourceMerge": "separate expected-head and approved-tree verification",
     "publicRegistryPublished": false,
-    "productionDeployed": false
+    "productionDeployed": false,
+    "pr": "https://github.com/f-tuma/musubi/pull/389",
+    "priorHeadCi": "Quality810 on8c2d2f5 completed20/21success; onlyDB4 failed at initial test fixture guard. Installed DB1 alpha427/23+purehost211 actually passed on its separate merge-ref artifact. Old run cannot authorize merge of corrected head.",
+    "correctedHeadCi": "New reviewed final-head full required checks pending."
   },
-  "technicalAcceptanceComplete": true
+  "technicalAcceptanceComplete": true,
+  "correctiveSource": {
+    "head": "68f974eba2c4ee1a8709a861c8ca7c62dcce593d",
+    "tree": "93a674aeb0a916cdfc63e4ad13f4d9de3e12167b",
+    "scope": "One test bootstrap fallback line plus conditional timeout budget30min for DB1 only (others20). Accepted8e5 production source/runtime and historical artifact unchanged. New final-head review/CI/publication remain required.",
+    "binding": "accepted-8e5-to-corrective-binding.json",
+    "regressionProof": "ci810-cross-account-fix-proof.json",
+    "cleanup": "ci810-final-cleanup.json",
+    "qaRetirementWitness": "corrective-qa-retirement.json",
+    "fixtureCommit": "e3f619cfa94f31effeedf45628ac9135ba1a9d77"
+  },
+  "historicalCi810": {
+    "audit": "ci810-independent-audit.json",
+    "receiptMapping": [
+      {
+        "originalArtifactPath": "sync-alpha/package-receipt.json",
+        "packetPath": "ci810-package-receipt.json",
+        "sha256": "44d2108fbe25b9218f4c712c1bfc6bc1780030c9581ce1fb43528b97793f8f37"
+      },
+      {
+        "originalArtifactPath": "sync-alpha-deterministic.json",
+        "packetPath": "ci810-sync-alpha-deterministic.json",
+        "sha256": "0c7628140ca467daad0f61e3202610f9b957f3cd7e8e2327a6d8b00002e3293c"
+      },
+      {
+        "originalArtifactPath": "sync-alpha-deterministic.json.conformance.json",
+        "packetPath": "ci810-sync-alpha-deterministic.json.conformance.json",
+        "sha256": "fd73d75141351ff5f5de5ac03fdf5330fe8ea2251f84e20398dd43f9546d02ee"
+      },
+      {
+        "originalArtifactPath": "sync-alpha-host-compat.json",
+        "packetPath": "ci810-sync-alpha-host-compat.json",
+        "sha256": "79a4560783e790c6fa544149b71cd2148a3a7a138d8571bb719b81303993b79f"
+      },
+      {
+        "originalArtifactPath": "sync-alpha-reference-db.json",
+        "packetPath": "ci810-sync-alpha-reference-db.json",
+        "sha256": "ff4e747d6ea6c9419ac709b39be578f6972fc3d52d5c2881cd641d7e84730d73"
+      },
+      {
+        "originalArtifactPath": "sync-alpha-reference-db.json.conformance.json",
+        "packetPath": "ci810-sync-alpha-reference-db.json.conformance.json",
+        "sha256": "e1b1cecd28557825c0efc90dde6c0b38e6ad97df7ace22bda4562f8df4cb9324"
+      }
+    ],
+    "scope": "Exact prior PR tree6a12e829; merge-refd01ccd69, own CI archive6cf8eb60\u2026 distinct from private local8e5 archive0d14e058\u2026; does not cover fixturee3f or metadata68f."
+  }
 }

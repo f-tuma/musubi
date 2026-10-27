@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-renewed-final-running-web-after-ci-fixture-correction",
+  "source": {
+    "head": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+    "tree": "dd2c9c7684533f98e898dc3278331c011c313e52",
+    "archiveSha256": "cb14f7c79aaef6854c278fdc1e44dfba9b53e9bfeef26f4050824f11959a6c93"
+  },
+  "receipt": "browser-renewed.json",
+  "receiptSha256": "b439d30187d9bf17753a3ba9883487be084a55207916d39ca57ca41f53e86a95",
+  "order": "Run after corrective fixture actual DB proof and retirement of owned QA55447, before PC shutdown checkpoint.",
+  "interactions": {
+    "required": 22,
+    "passed": 22,
+    "failed": 0,
+    "skipped": 0,
+    "retries": 0
+  },
+  "freshRetainedScreenshots": 26,
+  "allRetainedScreenshotBytesVerifiedAgainstSavedManifest": true,
+  "screenshotInventoryComplete": true,
+  "cleanup": {
+    "ownedProcessGroup": 1862000,
+    "reaped": true,
+    "groups": [
+      {
+        "pid": 1861917,
+        "directChildReaped": true,
+        "groupAbsent": true
+      },
+      {
+        "pid": 1862202,
+        "directChildReaped": true,
+        "groupAbsent": true
+      },
+      {
+        "pid": 1862328,
+        "directChildReaped": true,
+        "groupAbsent": true
+      },
+      {
+        "pid": 1862000,
+        "directChildReaped": true,
+        "groupAbsent": true
+      }
+    ]
+  },
+  "trackedInputChanges": [],
+  "sourceBinding": "accepted-8e5-to-corrective-binding.json",
+  "copiedWholeRepositoryHeadRemains8e5": true,
+  "visualInspection": {
+    "previousActuallyViewedEvidence": "browser-summary.json",
+    "newImagesIndependentlyViewed": 0,
+    "fourRenewedImagesByteEqualToPreviouslyViewedFour": [
+      {
+        "name": "caldav-rsvp-browser-light.png",
+        "sha256": "ce4316df2796ad202e92f4d44d4290c764f569acaf35081e256735c95fc31836",
+        "bytes": 17753,
+        "equalToPreviouslyViewedImage": true
+      },
+      {
+        "name": "caldav-rsvp-browser-dark.png",
+        "sha256": "fb47d2467013689d88d04dd444f0cb25e2237ab4df7466a74e50ae53fd514a11",
+        "bytes": 14788,
+        "equalToPreviouslyViewedImage": true
+      },
+      {
+        "name": "musubi-behavior-edit-preserves-content-desktop.png",
+        "sha256": "5416642ae34c1cf096cceb5c913433ef3529ab43928521721da46bafebb180d4",
+        "bytes": 70744,
+        "equalToPreviouslyViewedImage": true
+      },
+      {
+        "name": "musubi-behavior-edit-preserves-content-narrow.png",
+        "sha256": "bc42b9e4aa1ea5891a3fd76cbc9806ac7ae28b0ebc9db7d7bd303fa4579fe757",
+        "bytes": 22504,
+        "equalToPreviouslyViewedImage": true
+      }
+    ],
+    "scope": "The four renewed image byte hashes match images previously actually viewed by root. This does not claim another image viewing."
+  },
+  "attemptHistory": "Original cold21/22 HTTP504 failure retained; unchanged warm22/22 retained; this is a second successful full22/22 run with automatic retries0.",
+  "boundaries": "Actual running web with synthetic API fixtures; does not establish real authentication, PostgreSQL/provider or deployment behavior. Old accepted8e5 source archive remains exact; current corrected Web/API/packages/lock/scripts bytes match it.",
+  "productionDeployed": false
+}

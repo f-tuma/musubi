@@ -10,6 +10,22 @@ have separate receipts; local tests do not establish those outcomes. C09 is
 published by [PR #388](https://github.com/f-tuma/musubi/pull/388), squash
 `f5004674d774fc55b628497ae6ad16d003c4d680`, after all 21 current-head checks passed.
 
+[PR #389](https://github.com/f-tuma/musubi/pull/389) is open. Its first CI run
+(`Quality #810`, head `8c2d2f5`) exposed a test bootstrap mismatch: the paired
+reference-account fixture required `REFERENCE_DATABASE_URL`, whereas the ordinary
+database shard supplies `ENVIRONMENT=test` and `DATABASE_URL`. It failed at the
+startup assertion before any database allocation. Correction `e3f619c` retains
+the initial test-environment guard and explicit reference URL precedence, then
+accepts the ordinary test database URL. The completed run had 20 successful jobs
+and this single failure. Its installed standalone lane actually passed 427/427,
+23/23 and pure host 211/211 on its own CI archive; the
+[independent audit and six receipts](evidence/MUSU-42-sync-alpha/ci810-independent-audit.json)
+retain that separate merge-ref identity. Its observed job log spans 19m23s,
+including about ten extra minutes for standalone conformance. Commit `68f974e`
+therefore gives only that database shard 30 minutes; the other shards retain 20.
+The old run is not acceptance for these corrections; a newly reviewed final head
+and all its required checks must pass before protected publication.
+
 The [alpha packet](../sync-alpha/README.md) defines a private, preinstalled
 Node 22/Linux source-ESM snapshot with exact TSX and separate compiler/test
 material. It includes the six portable libraries and independent PostgreSQL
@@ -46,7 +62,8 @@ verified files and 70 runtime/tooling/mirror package entries.
 | Installed PostgreSQL/process corpus | 23/23 required modules, zero failure/skip/TODO, every required cleanup complete | [Installed reference receipt](evidence/MUSU-42-sync-alpha/installed-reference-db.json) and [aggregate proof](evidence/MUSU-42-sync-alpha/installed-candidate-summary.json) |
 | Full workspace and JSON | `pnpm check`; 598/598 scenarios in 17 suites | Historical exact `d3a8867`; [summary](evidence/MUSU-42-sync-alpha/historical-root-d3a-summary.json) |
 | Actual Musubi host storage/native boundary | All six separate host DB programs passed after committed migrations | Historical exact `d3a8867`; [raw receipt](evidence/MUSU-42-sync-alpha/historical-root-d3a-receipt.json) |
-| Running web | Final 22/22, zero automatic retries, 26 fresh retained screenshots; four actual images visually inspected | Exact `8e5e202` full-repository archive; [web summary](evidence/MUSU-42-sync-alpha/browser-summary.json) |
+| Corrected reference fixture | Unchanged RED; fallback and explicit-reference GREEN, two native cases each; pre-SQL guards and both own database cleanups passed | Exact corrected fixture bytes committed as `e3f619c`; [proof](evidence/MUSU-42-sync-alpha/ci810-cross-account-fix-proof.json) |
+| Running web | Renewed final 22/22, zero automatic retries, 26 fresh retained screenshots; four image hashes match the four previously viewed images | Exact unchanged `8e5e202` Web source; [renewed summary](evidence/MUSU-42-sync-alpha/browser-renewed-summary.json) and [corrective source binding](evidence/MUSU-42-sync-alpha/accepted-8e5-to-corrective-binding.json) |
 
 The historical workspace/598/host-six results are not relabelled as reruns on
 `8e5e202`. The [source binding](evidence/MUSU-42-sync-alpha/workspace-d3a-to-8e5-binding.json)
@@ -71,7 +88,7 @@ records those child DROP operations, not additional recovery DROP calls by the
 observer. The final inspection found zero nonmaintenance databases and zero
 other client sessions, then closed its own pool. Root retired only its exact QA
 container on port 55446 before browser testing; user QA on 55437 was untargeted.
-Both web attempts reaped their owned groups and left tracked source unchanged.
+All three web attempts reaped their owned groups and left tracked source unchanged.
 
 The first web attempt was 21/22: its trace captured HTTP 504
 `Outdated Optimize Dep` while Vite changed its cold dependency cache and reloaded.
@@ -79,6 +96,32 @@ The failed receipt/log/trace remain [separate evidence](evidence/MUSU-42-sync-al
 The identical full suite then passed on the populated cache without application,
 assertion or automatic-retry changes. Browser API fixtures do not prove real
 authentication, SQL or provider services; those boundaries are separate.
+
+The corrective fixture has separate actual source regression evidence: the
+unchanged CI-style invocation failed, both supported URL inputs then passed the
+same two native account-ownership cases, and missing test environment/admin URL
+guards constructed zero pools and issued zero SQL. Each fresh own database had
+zero sessions before plain DROP and verified absence. The retained
+[cleanup receipt](evidence/MUSU-42-sync-alpha/ci810-final-cleanup.json) also records
+zero other clients and the ended observer pool. A final actual SQL probe found
+the owned QA on 55447 empty. Its subsequent stop/remove/exact-ID absence was
+preserved in the PC-shutdown checkpoint; the
+[retirement witness](evidence/MUSU-42-sync-alpha/corrective-qa-retirement.json)
+explicitly distinguishes that operator record from retained raw command output.
+The renewed full web run followed this retirement.
+
+The [exact Git binding](evidence/MUSU-42-sync-alpha/accepted-8e5-to-corrective-binding.json)
+verifies 15 Web/API/package/tooling/lock scopes unchanged from accepted
+`8e5e202` to corrective `68f974e`, plus the bounded CI timeout metadata change.
+The only changed selected packaging input is
+the integration test fixture; the actual packaging predicate excludes it from
+production and copies it into the conformance mirror. All 30 retained reference
+production source/SQL files are unchanged. The original archive, its test mirror
+and installed 23-module result retain their original fixture bytes. This is not
+a new archive or full installed-corpus rerun on `e3f619c`; the corrected source
+fixture has its separate proof and still requires new current-head CI. The web
+copy remains the `8e5e202` full-repository archive, with exact unchanged frontend,
+API, package, dependency and test inputs for the renewed browser run.
 
 The original MIT license and copyright remain intact. The actual dependency
 inventory covers 30 production packages, 70 total entries and 21 deduplicated

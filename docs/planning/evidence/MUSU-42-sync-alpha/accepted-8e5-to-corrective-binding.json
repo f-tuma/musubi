@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-accepted-artifact-to-corrective-fixture-source-binding",
+  "acceptedSource": {
+    "head": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+    "tree": "dd2c9c7684533f98e898dc3278331c011c313e52"
+  },
+  "correctedSource": {
+    "head": "68f974eba2c4ee1a8709a861c8ca7c62dcce593d",
+    "tree": "93a674aeb0a916cdfc63e4ad13f4d9de3e12167b"
+  },
+  "previousPrHead": "8c2d2f5ce9afa2210fe439ee02ce68c00e60f28b",
+  "method": "Exact Git tree/blob identity; selected packaging paths and runtime exclusions read from actual scripts/sync-alpha-common.mjs via Node.",
+  "unchangedScopes": [
+    {
+      "path": "apps/api",
+      "acceptedGitObject": "8155fb1132b7f4ecebdf33e5a979afeec69d853a",
+      "correctedGitObject": "8155fb1132b7f4ecebdf33e5a979afeec69d853a",
+      "equal": true
+    },
+    {
+      "path": "apps/web",
+      "acceptedGitObject": "11913751799230384ccfac55231a2864ab6c7841",
+      "correctedGitObject": "11913751799230384ccfac55231a2864ab6c7841",
+      "equal": true
+    },
+    {
+      "path": "apps/client",
+      "acceptedGitObject": "ebac88b738f14b3f8a1720025ac0484186908b05",
+      "correctedGitObject": "ebac88b738f14b3f8a1720025ac0484186908b05",
+      "equal": true
+    },
+    {
+      "path": "apps/ui-catalog",
+      "acceptedGitObject": "ed5749c15f4cf4ba943956fb6759af7c180e23d9",
+      "correctedGitObject": "ed5749c15f4cf4ba943956fb6759af7c180e23d9",
+      "equal": true
+    },
+    {
+      "path": "packages",
+      "acceptedGitObject": "bdd06feaf7d97d8a1e769f9738c7ee2ff7b39ced",
+      "correctedGitObject": "bdd06feaf7d97d8a1e769f9738c7ee2ff7b39ced",
+      "equal": true
+    },
+    {
+      "path": "apps/sync-reference/package.json",
+      "acceptedGitObject": "d1ad4503e0d7b066c8b02fdf049997f1a524b5a9",
+      "correctedGitObject": "d1ad4503e0d7b066c8b02fdf049997f1a524b5a9",
+      "equal": true
+    },
+    {
+      "path": "apps/sync-reference/README.md",
+      "acceptedGitObject": "25894abfac5d45c1923f55233cebcd55a77f4c62",
+      "correctedGitObject": "25894abfac5d45c1923f55233cebcd55a77f4c62",
+      "equal": true
+    },
+    {
+      "path": "apps/sync-reference/conformance",
+      "acceptedGitObject": "2c1fc239afc35009684a26924f631c233ebcba7c",
+      "correctedGitObject": "2c1fc239afc35009684a26924f631c233ebcba7c",
+      "equal": true
+    },
+    {
+      "path": "package.json",
+      "acceptedGitObject": "1de6235743255dbe8c7e1d2cffb976850cda7299",
+      "correctedGitObject": "1de6235743255dbe8c7e1d2cffb976850cda7299",
+      "equal": true
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "acceptedGitObject": "0875ea063cf8890ff316657e86b5665ad3ab9fef",
+      "correctedGitObject": "0875ea063cf8890ff316657e86b5665ad3ab9fef",
+      "equal": true
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "acceptedGitObject": "77751fcbf7a4625bcabf1cf066cff7139ff40d43",
+      "correctedGitObject": "77751fcbf7a4625bcabf1cf066cff7139ff40d43",
+      "equal": true
+    },
+    {
+      "path": "turbo.json",
+      "acceptedGitObject": "cc2899a0011d487f03da3790282555742f8c28b5",
+      "correctedGitObject": "cc2899a0011d487f03da3790282555742f8c28b5",
+      "equal": true
+    },
+    {
+      "path": "patches",
+      "acceptedGitObject": "70d8dffc2d1e14489c43f287df6016db6d37d743",
+      "correctedGitObject": "70d8dffc2d1e14489c43f287df6016db6d37d743",
+      "equal": true
+    },
+    {
+      "path": "scripts",
+      "acceptedGitObject": "d725fa8394b054c248004f33d89fb0bc657c2bc6",
+      "correctedGitObject": "d725fa8394b054c248004f33d89fb0bc657c2bc6",
+      "equal": true
+    },
+    {
+      "path": "docs/sync-alpha",
+      "acceptedGitObject": "13fff2ee243126711344cd263e4d88962b995d94",
+      "correctedGitObject": "13fff2ee243126711344cd263e4d88962b995d94",
+      "equal": true
+    }
+  ],
+  "changedNonDocumentationPaths": [
+    ".github/workflows/quality.yml",
+    "apps/sync-reference/src/cross-account.integration.test.ts"
+  ],
+  "selectedPackagingSourceChangedPaths": [
+    "apps/sync-reference/src/cross-account.integration.test.ts"
+  ],
+  "referenceProduction": {
+    "trackedSrcFiles": 72,
+    "runtimeTestFilesExcludedByActualPredicate": 42,
+    "retainedProductionSourceSqlFiles": 30,
+    "allRetainedGitObjectsEqual": true
+  },
+  "correctiveFixture": {
+    "path": "apps/sync-reference/src/cross-account.integration.test.ts",
+    "beforeSha256": "6183d2290c1cf053e7df3e3bc8777b414728655a218f9cad5c4d229582291bba",
+    "afterSha256": "2b581bef7b6fc4846a2cafe240d31f1d0e5d0e592ee8f6fef40f3842356795b2",
+    "excludedFromProductionRuntimeByActualPredicate": true,
+    "copiedIntoConformanceMirror": true,
+    "change": "Admin URL fallback only after the existing ENVIRONMENT=test assertion; no native behavior/assertions changed.",
+    "proof": "ci810-cross-account-fix-proof.json"
+  },
+  "evidenceBoundary": "The accepted 8e5 artifact, its conformance test mirror, and installed 23-module run retain the original fixture bytes. No new artifact or complete installed-reference rerun is claimed for e3f. Its corrected fixture has separate actual source RED/GREEN and pre-SQL guard/cleanup proof. Production source/SQL, manifests, tooling, lockfile and complete Web/API/test scopes are unchanged by exact Git objects. Subsequent commit68f974e changes only CI timeout metadata for the measured additional installed conformance work; CI810 is historical evidence for the prior PR tree, not this new head.",
+  "runningWebBinding": "browser-renewed-summary.json runs the unchanged 8e5 archived full repository; apps/web, packages, API, dependency manifests/lock and scripts match corrected68f (fixture committed at e3f). It does not claim the whole copied repository is e3f.",
+  "fullWorkspaceAndHostDatabaseRerunOnCorrectiveHead": false,
+  "newCurrentHeadCiRequired": true,
+  "publicRegistryPublished": false,
+  "productionDeployed": false,
+  "fixtureCorrectionSource": {
+    "head": "e3f619cfa94f31effeedf45628ac9135ba1a9d77",
+    "tree": "2cdc8ac4010a1ed62deefc869ffe8f5a14882b83"
+  },
+  "changedCiMetadata": {
+    "path": ".github/workflows/quality.yml",
+    "acceptedGitObject": "fc1020a1fdb64b3b68b8f8968016fc5916fc9277",
+    "correctedGitObject": "daa8704119feb3f956074d168e0a8abc3e574c2a",
+    "equal": false,
+    "scope": "Only database shard1 timeout20\u219230minutes (others20) plus rationale comment; all commands, cases, guards, required jobs and receipt-only upload unchanged."
+  }
+}

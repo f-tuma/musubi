@@ -1,0 +1,196 @@
+{
+  "schemaVersion": 1,
+  "kind": "sync-alpha-package-receipt",
+  "status": "built-not-verified",
+  "source": {
+    "commit": "d01ccd6916a51d7b1c94a43633240ef80a7974db",
+    "head": "d01ccd6916a51d7b1c94a43633240ef80a7974db",
+    "tree": "6a12e829a6dd6838e969b67591b1a2c531d4d390",
+    "archiveSha256": "05f1bf1a1f7ee083369099213c4b15ffb515bd5d377c96e3d5e09e890b8606da"
+  },
+  "payloadDigest": "bc9d182e4084bec1a18877f782f53f6ab0f11ecee9aeac4a82b900b305ac3e04",
+  "archive": {
+    "name": "candidate.tar.gz",
+    "bytes": 21782021,
+    "sha256": "6cf8eb6016ab57669530641d59ea16e9aa999403097a0ec775147773d32fea8b"
+  },
+  "candidateManifestSha256": "2161cb740ff86b03ab11d7fa4c0ef44867b47d9d394675ad63d4d8bdeaea00f3",
+  "tools": {
+    "node": "v22.23.3",
+    "pnpm": "11.8.0",
+    "tsx": "4.23.12",
+    "typescript": "6.0.3"
+  },
+  "commands": [
+    {
+      "id": "source-type",
+      "executable": "git",
+      "args": [
+        "-C",
+        "$REPOSITORY",
+        "cat-file",
+        "-t",
+        "d01ccd6916a51d7b1c94a43633240ef80a7974db"
+      ],
+      "code": 0
+    },
+    {
+      "id": "source-tree",
+      "executable": "git",
+      "args": [
+        "-C",
+        "$REPOSITORY",
+        "rev-parse",
+        "d01ccd6916a51d7b1c94a43633240ef80a7974db^{tree}"
+      ],
+      "code": 0
+    },
+    {
+      "id": "source-time",
+      "executable": "git",
+      "args": [
+        "-C",
+        "$REPOSITORY",
+        "show",
+        "-s",
+        "--format=%ct",
+        "d01ccd6916a51d7b1c94a43633240ef80a7974db"
+      ],
+      "code": 0
+    },
+    {
+      "id": "tar-version",
+      "executable": "tar",
+      "args": [
+        "--version"
+      ],
+      "code": 0
+    },
+    {
+      "id": "source-archive",
+      "executable": "git",
+      "args": [
+        "-C",
+        "$REPOSITORY",
+        "archive",
+        "--format=tar",
+        "--output=$WORK/source.tar",
+        "d01ccd6916a51d7b1c94a43633240ef80a7974db",
+        "--",
+        "LICENSE",
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        "turbo.json",
+        "patches",
+        "apps/sync-reference",
+        "packages/types",
+        "packages/sync-codec",
+        "packages/provider-google",
+        "packages/provider-microsoft",
+        "packages/provider-caldav",
+        "packages/sync-runtime",
+        "scripts/sync-alpha-common.mjs",
+        "scripts/package-sync-alpha.mjs",
+        "scripts/verify-sync-alpha.mjs",
+        "scripts/sync-alpha.test.mjs",
+        "scripts/sync-conformance.mjs",
+        "docs/sync-alpha",
+        "docs/protocol/sync-operation-v1.md",
+        "docs/protocol/sync-profile-v1.md",
+        "docs/research/nylas/10-source-inventory.md",
+        "docs/research/nylas/references/source-manifest.json",
+        "docs/research/nylas/references/nylas-sitemap-2026-10-12.xml",
+        "docs/research/nylas/references/link-check-2026-10-12.json"
+      ],
+      "code": 0
+    },
+    {
+      "id": "extract-source",
+      "executable": "tar",
+      "args": [
+        "--extract",
+        "--file",
+        "$WORK/source.tar",
+        "--directory",
+        "$WORK/source",
+        "--no-same-owner"
+      ],
+      "code": 0
+    },
+    {
+      "id": "pnpm-version",
+      "executable": "pnpm",
+      "args": [
+        "--version"
+      ],
+      "code": 0
+    },
+    {
+      "id": "frozen-production-deploy",
+      "executable": "pnpm",
+      "args": [
+        "--config.inject-workspace-packages=true",
+        "--filter",
+        "@musubi/sync-reference",
+        "deploy",
+        "--frozen-lockfile",
+        "--store-dir",
+        "$WORK/store",
+        "--prod",
+        "$OUTPUT/candidate/runtime"
+      ],
+      "code": 0
+    },
+    {
+      "id": "frozen-conformance-tool-deploy",
+      "executable": "pnpm",
+      "args": [
+        "--config.inject-workspace-packages=true",
+        "--filter",
+        "@musubi/sync-reference",
+        "deploy",
+        "--frozen-lockfile",
+        "--store-dir",
+        "$WORK/store",
+        "$OUTPUT/candidate/tooling"
+      ],
+      "code": 0
+    },
+    {
+      "id": "documentation-source-paths",
+      "executable": "git",
+      "args": [
+        "-C",
+        "$REPOSITORY",
+        "ls-tree",
+        "-r",
+        "--name-only",
+        "d01ccd6916a51d7b1c94a43633240ef80a7974db"
+      ],
+      "code": 0
+    },
+    {
+      "id": "candidate-archive",
+      "executable": "tar",
+      "args": [
+        "--sort=name",
+        "--mtime=@1793051742",
+        "--owner=0",
+        "--group=0",
+        "--numeric-owner",
+        "--create",
+        "--gzip",
+        "--file",
+        "$OUTPUT/candidate.tar.gz",
+        "--directory",
+        "$OUTPUT",
+        "candidate"
+      ],
+      "code": 0
+    }
+  ],
+  "verification": "not-run",
+  "publicPublication": "not-performed",
+  "deployment": "not-performed"
+}

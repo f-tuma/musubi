@@ -1,0 +1,38 @@
+{
+  "status": "passed",
+  "qaPort": 55447,
+  "ownCases": [
+    {
+      "lane": "fallback",
+      "database": "reference_cross_account_67020f8a86d04a448766488a72ce6bf1",
+      "actualNativeCases": 2,
+      "cleanup": {
+        "database": "reference_cross_account_67020f8a86d04a448766488a72ce6bf1",
+        "sessionsBeforeDrop": 0,
+        "plainDrop": true,
+        "databaseAbsent": true
+      },
+      "finalObservation": {
+        "sessions": 0,
+        "databases": 0
+      }
+    },
+    {
+      "lane": "explicit",
+      "database": "reference_cross_account_86993a24faa24a5d8ff444c21008b2a7",
+      "actualNativeCases": 2,
+      "cleanup": {
+        "database": "reference_cross_account_86993a24faa24a5d8ff444c21008b2a7",
+        "sessionsBeforeDrop": 0,
+        "plainDrop": true,
+        "databaseAbsent": true
+      },
+      "finalObservation": {
+        "sessions": 0,
+        "databases": 0
+      }
+    }
+  ],
+  "otherClientSessions": 0,
+  "observerPoolEnded": true
+}

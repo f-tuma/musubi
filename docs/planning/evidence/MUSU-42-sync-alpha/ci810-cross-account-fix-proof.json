@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "kind": "C10-CI-fixture-environment-regression-proof",
+  "status": "PASS",
+  "parentHead": "8c2d2f5ce9afa2210fe439ee02ce68c00e60f28b",
+  "parentTree": "6a12e829a6dd6838e969b67591b1a2c531d4d390",
+  "preRunCleanOriginalSource": true,
+  "fixtureFile": "apps/sync-reference/src/cross-account.integration.test.ts",
+  "fixtureBeforeSha256": "6183d2290c1cf053e7df3e3bc8777b414728655a218f9cad5c4d229582291bba",
+  "fixtureAfterSha256": "2b581bef7b6fc4846a2cafe240d31f1d0e5d0e592ee8f6fef40f3842356795b2",
+  "sourceDelta": "One test fixture line uses explicit REFERENCE_DATABASE_URL first, falling back to DATABASE_URL only under ENVIRONMENT=test; existing ENVIRONMENT assertion remains first. Native assertions, store, runner and schemas unchanged.",
+  "allOtherTrackedInputsMatchExactParentHead": true,
+  "trackedInputFileCount": 2265,
+  "inputInventory": "/tmp/musu42-ci810-cross-account-inputs.json",
+  "inputInventorySha256": "247edaba04f2e55c11ab67f7082c01b6db263de40ac7e4a50a2db6280674973b",
+  "logs": {
+    "unchanged-red": {
+      "path": "/tmp/musu42-ci810-fallback-red-v1.log",
+      "sha256": "4b6eee30c01220731904afd997cd796cbcd76e90f8fa870998862e1bede99835",
+      "childExitCode": 1
+    },
+    "fallback-green": {
+      "path": "/tmp/musu42-ci810-fallback-green-v1.log",
+      "sha256": "113e35ca6963d0c91a865c4bc81e82967f3abde41de9c2c1105424b5e4d302af",
+      "childExitCode": 0
+    },
+    "explicit-reference-green": {
+      "path": "/tmp/musu42-ci810-explicit-green-v1.log",
+      "sha256": "2205816ccddfc9d1ce758854994c2adba9d76efdbb15541aceed757c5bc0b90f",
+      "childExitCode": 0
+    },
+    "environment-before-pool": {
+      "path": "/tmp/musu42-ci810-environment-guard-v1.log",
+      "sha256": "22b49c35bc08c55eabfadd8bf5ef6da759f64a1ef0f9f29cc4f40543cc694bba",
+      "childExitCode": 0
+    },
+    "admin-before-pool": {
+      "path": "/tmp/musu42-ci810-admin-guard-v1.log",
+      "sha256": "f7786929d3e9d381a74bf7cb8a7fc6714e3673a1406ad588ca467b9b3796eb56",
+      "childExitCode": 0
+    }
+  },
+  "actualPositiveLanes": [
+    "CI ENVIRONMENT=test with DATABASE_URL and no REFERENCE_DATABASE_URL",
+    "explicit REFERENCE_DATABASE_URL with deliberately unusable DATABASE_URL proves preference"
+  ],
+  "nativeCasesPerPositiveLane": 2,
+  "guardPort": "Actual imported test; Node pg Pool port replaced only for before-SQL negative guards",
+  "cleanup": {
+    "status": "passed",
+    "qaPort": 55447,
+    "ownCases": [
+      {
+        "lane": "fallback",
+        "database": "reference_cross_account_67020f8a86d04a448766488a72ce6bf1",
+        "actualNativeCases": 2,
+        "cleanup": {
+          "database": "reference_cross_account_67020f8a86d04a448766488a72ce6bf1",
+          "sessionsBeforeDrop": 0,
+          "plainDrop": true,
+          "databaseAbsent": true
+        },
+        "finalObservation": {
+          "sessions": 0,
+          "databases": 0
+        }
+      },
+      {
+        "lane": "explicit",
+        "database": "reference_cross_account_86993a24faa24a5d8ff444c21008b2a7",
+        "actualNativeCases": 2,
+        "cleanup": {
+          "database": "reference_cross_account_86993a24faa24a5d8ff444c21008b2a7",
+          "sessionsBeforeDrop": 0,
+          "plainDrop": true,
+          "databaseAbsent": true
+        },
+        "finalObservation": {
+          "sessions": 0,
+          "databases": 0
+        }
+      }
+    ],
+    "otherClientSessions": 0,
+    "observerPoolEnded": true
+  },
+  "cleanupReceipt": "/tmp/musu42-ci810-final-cleanup-v1.json",
+  "cleanupReceiptSha256": "6d16cbb5decadae0870e139833eff5714258db088c5c232e5e1b49263585b4cd",
+  "qaPort": 55447,
+  "allOwnJobsAndConnectionsReleased": true,
+  "node": "v22.23.4",
+  "installedRuntime": false,
+  "liveProvider": false,
+  "publication": false,
+  "deployed": false,
+  "requiresNewCommittedHeadCI": true,
+  "earlierCI810FailureRetained": true
+}

@@ -1,0 +1,267 @@
+{
+  "schemaVersion": 1,
+  "kind": "MUSU-42-ci810-independent-audit",
+  "observedAt": "2026-10-27T06:55:12.229362+00:00",
+  "run": {
+    "id": 40408415744,
+    "number": 810,
+    "status": "completed",
+    "conclusion": "failure",
+    "jobs": 21,
+    "success": 20,
+    "failure": 1
+  },
+  "pr": {
+    "number": 389,
+    "head": "8c2d2f5ce9afa2210fe439ee02ce68c00e60f28b",
+    "base": "f5004674d774fc55b628497ae6ad16d003c4d680",
+    "open": true,
+    "merged": false
+  },
+  "failedJob": {
+    "id": 121872068127,
+    "name": "Database integration (4/4)",
+    "failure": "cross-account test bootstrap asserts REFERENCE_DATABASE_URL; ordinary CI supplies ENVIRONMENT=test and DATABASE_URL; corrected locally at e3f619c, not part of this run"
+  },
+  "alphaJob": {
+    "id": 121872068290,
+    "name": "Database integration (1/4)",
+    "conclusion": "success",
+    "ordinaryShardStep": "success",
+    "alphaStep": "success (actually executed)",
+    "receiptUploadStep": "success",
+    "source": {
+      "commit": "d01ccd6916a51d7b1c94a43633240ef80a7974db",
+      "head": "d01ccd6916a51d7b1c94a43633240ef80a7974db",
+      "tree": "6a12e829a6dd6838e969b67591b1a2c531d4d390",
+      "archiveSha256": "05f1bf1a1f7ee083369099213c4b15ffb515bd5d377c96e3d5e09e890b8606da"
+    },
+    "candidateArchive": {
+      "name": "candidate.tar.gz",
+      "bytes": 21782021,
+      "sha256": "6cf8eb6016ab57669530641d59ea16e9aa999403097a0ec775147773d32fea8b"
+    },
+    "payloadDigest": "bc9d182e4084bec1a18877f782f53f6ab0f11ecee9aeac4a82b900b305ac3e04",
+    "manifestSha256": "2161cb740ff86b03ab11d7fa4c0ef44867b47d9d394675ad63d4d8bdeaea00f3",
+    "tools": {
+      "node": "v22.23.3",
+      "pnpm": "11.8.0",
+      "tsx": "4.23.12",
+      "typescript": "6.0.3"
+    },
+    "requiredResults": {
+      "installedDeterministic": 427,
+      "installedReferenceDb": 23,
+      "sourcePureHost": 211
+    },
+    "allCaseIDsReconciled": true,
+    "sidecarDigestsVerified": true,
+    "allResultsPassedNoSkippedTodo": true,
+    "allRequiredCleanupCompleted": true
+  },
+  "phaseTimings": [
+    {
+      "phase": "ordinaryDbShard",
+      "start": "2026-10-26T21:56:42.710055Z",
+      "end": "2026-10-26T22:05:03.123128Z",
+      "elapsedSeconds": 500.413
+    },
+    {
+      "phase": "candidatePackaging",
+      "start": "2026-10-26T22:05:03.132174Z",
+      "end": "2026-10-26T22:05:20.547192Z",
+      "elapsedSeconds": 17.415
+    },
+    {
+      "phase": "installedDeterministic",
+      "start": "2026-10-26T22:05:20.547192Z",
+      "end": "2026-10-26T22:06:06.959481Z",
+      "elapsedSeconds": 46.412
+    },
+    {
+      "phase": "installedReferenceDb",
+      "start": "2026-10-26T22:06:06.959481Z",
+      "end": "2026-10-26T22:14:52.374382Z",
+      "elapsedSeconds": 525.415
+    },
+    {
+      "phase": "hostCompatibility",
+      "start": "2026-10-26T22:14:52.374382Z",
+      "end": "2026-10-26T22:15:02.972316Z",
+      "elapsedSeconds": 10.598
+    },
+    {
+      "phase": "cleanupNegativeProgram",
+      "start": "2026-10-26T22:15:03.468755Z",
+      "end": "2026-10-26T22:15:08.934524Z",
+      "elapsedSeconds": 5.466
+    },
+    {
+      "phase": "alphaStepThroughCleanup",
+      "start": "2026-10-26T22:05:03.132174Z",
+      "end": "2026-10-26T22:15:08.934524Z",
+      "elapsedSeconds": 605.802
+    },
+    {
+      "phase": "observedFullJobLog",
+      "start": "2026-10-26T21:55:50.362326Z",
+      "end": "2026-10-26T22:15:13.075691Z",
+      "elapsedSeconds": 1162.713
+    }
+  ],
+  "timingBoundary": "Phase intervals between logged commands and receipts include orchestration. Ordinary DB shard interval starts at first shard test output, not an exact job-step API timestamp. Full-job log window excludes setup before first line; timeout margin ~36\u201337s, not measured slack under slower runners.",
+  "timeoutAssessment": {
+    "currentMinutes": 20,
+    "timedOut": false,
+    "observedLogWindowSeconds": 1162.713,
+    "remainingFromFirstLogSeconds": 37.287,
+    "recommendation": "Increase shard1 budget to30min for the actual extra ~10min6s installed alpha work. Conditional matrix30for1/20forothers best reflects workload; uniform30is acceptable minimal scalar change if documented. No assertion/manifest/case/check weakening is justified."
+  },
+  "artifact": {
+    "id": 12692832489,
+    "name": "standalone-sync-conformance",
+    "bytes": 19229,
+    "sha256": "01a8a5ef6c24fdc433eafa961b95d08c01509f5f172eb5e9171f59dc6f9fa769",
+    "sha256Verified": true,
+    "exactAllowlist": true,
+    "containsCandidate": false,
+    "reports": [
+      {
+        "path": "sync-alpha/package-receipt.json",
+        "sha256": "44d2108fbe25b9218f4c712c1bfc6bc1780030c9581ce1fb43528b97793f8f37",
+        "bytes": 4800,
+        "kind": "sync-alpha-package-receipt",
+        "status": "built-not-verified",
+        "totals": null,
+        "conformance": null
+      },
+      {
+        "path": "sync-alpha-deterministic.json",
+        "sha256": "0c7628140ca467daad0f61e3202610f9b957f3cd7e8e2327a6d8b00002e3293c",
+        "bytes": 1460,
+        "kind": "sync-alpha-verification",
+        "status": "passed",
+        "totals": null,
+        "conformance": {
+          "mode": "deterministic",
+          "status": "passed",
+          "required": 427,
+          "passed": 427,
+          "cleanupCompleted": true,
+          "receiptSha256": "fd73d75141351ff5f5de5ac03fdf5330fe8ea2251f84e20398dd43f9546d02ee"
+        }
+      },
+      {
+        "path": "sync-alpha-deterministic.json.conformance.json",
+        "sha256": "fd73d75141351ff5f5de5ac03fdf5330fe8ea2251f84e20398dd43f9546d02ee",
+        "bytes": 132252,
+        "kind": "sync-conformance-report",
+        "status": "passed",
+        "totals": {
+          "required": 427,
+          "selected": 427,
+          "passed": 427,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        "conformance": null
+      },
+      {
+        "path": "sync-alpha-host-compat.json",
+        "sha256": "79a4560783e790c6fa544149b71cd2148a3a7a138d8571bb719b81303993b79f",
+        "bytes": 74589,
+        "kind": "sync-conformance-report",
+        "status": "passed",
+        "totals": {
+          "required": 211,
+          "selected": 211,
+          "passed": 211,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        "conformance": null
+      },
+      {
+        "path": "sync-alpha-reference-db.json",
+        "sha256": "ff4e747d6ea6c9419ac709b39be578f6972fc3d52d5c2881cd641d7e84730d73",
+        "bytes": 1457,
+        "kind": "sync-alpha-verification",
+        "status": "passed",
+        "totals": null,
+        "conformance": {
+          "mode": "reference-db",
+          "status": "passed",
+          "required": 23,
+          "passed": 23,
+          "cleanupCompleted": true,
+          "receiptSha256": "e1b1cecd28557825c0efc90dde6c0b38e6ad97df7ace22bda4562f8df4cb9324"
+        }
+      },
+      {
+        "path": "sync-alpha-reference-db.json.conformance.json",
+        "sha256": "e1b1cecd28557825c0efc90dde6c0b38e6ad97df7ace22bda4562f8df4cb9324",
+        "bytes": 25309,
+        "kind": "sync-conformance-report",
+        "status": "passed",
+        "totals": {
+          "required": 23,
+          "selected": 23,
+          "passed": 23,
+          "failed": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        "conformance": null
+      }
+    ]
+  },
+  "sourceBoundary": "GitHub checkout/packaging uses merge-ref d01ccd6916a51d7b1c94a43633240ef80a7974db, tree6a12e829a6dd6838e969b67591b1a2c531d4d390 equals reviewed PR8c tree. Archive6cf8\u2026 is CI-specific21,782,021B; do not relabel private8e archive0d14\u2026 or local correctione3f as tested by CI810. New-head all21 checks still required.",
+  "rawLog": {
+    "path": "/tmp/musu42-ci810-db1-final.log",
+    "sha256": "9cddda4a81a4b2c5d514f4a6f564344009eeb96d6df92fe829c544c921c77d51",
+    "publication": "Not included; contains workflow environment blocks with known synthetic test credentials and masked URLs. Selected credential-free markers and six JSON reports checked without credential URL or credential-value keys."
+  },
+  "phaseMarkers": [
+    {
+      "at": "2026-10-26T22:05:03.1321745Z",
+      "event": "##[group]Run candidate_dir=\"$RUNNER_TEMP/sync-alpha\""
+    },
+    {
+      "at": "2026-10-26T22:05:20.5471929Z",
+      "kind": "sync-alpha-package-receipt",
+      "mode": null,
+      "status": "built-not-verified"
+    },
+    {
+      "at": "2026-10-26T22:06:06.9594815Z",
+      "kind": "sync-alpha-verification",
+      "mode": "deterministic",
+      "status": "passed"
+    },
+    {
+      "at": "2026-10-26T22:14:52.3743824Z",
+      "kind": "sync-alpha-verification",
+      "mode": "reference-db",
+      "status": "passed"
+    },
+    {
+      "at": "2026-10-26T22:15:02.9723162Z",
+      "kind": "sync-conformance-report",
+      "mode": "host-compat",
+      "status": "passed"
+    },
+    {
+      "at": "2026-10-26T22:15:03.4687558Z",
+      "event": "$ node --import tsx --test apps/sync-reference/conformance/cleanup.integration.test.mjs"
+    },
+    {
+      "at": "2026-10-26T22:15:10.5278246Z",
+      "event": "Artifact standalone-sync-conformance.zip successfully finalized. Artifact ID 12692832489"
+    }
+  ],
+  "productionDeployed": false,
+  "publicRegistryPublished": false,
+  "mutations": "None to repo, workflow, checks or providers; read-only API audit and local /tmp report extraction only."
+}
