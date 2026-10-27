@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-current-runtime-final-running-web-summary",
+  "source": {
+    "head": "fb36100c151bb75323573be8cc9afd9fd689261b",
+    "tree": "0d54cbc311100fbe66d3f835144767fbf2911378",
+    "archiveSha256": "d34b6dda9c6c1f43ee0e62ed79d0f02714332a85832bd51aa9df95475fda0b98"
+  },
+  "receipt": "current-browser-final.json",
+  "receiptSha256": "47be161f187cc8115ac75e21f53ce136258f0173acf9fd967ac08eac4dc49216",
+  "visualReview": "current-browser-visual-review.json",
+  "visualReviewSha256": "f6d3407cbc4c22a7e725f4ad73a8cb48742e7f205827e4926cc304b8cd60844a",
+  "actualInteractions": {
+    "required": 22,
+    "passed": 22,
+    "failed": 0,
+    "skipped": 0,
+    "retries": 0
+  },
+  "retainedFreshScreenshots": 26,
+  "allScreenshotBytesReconciled": true,
+  "imagesActuallyViewed": 4,
+  "visualMethod": "Root actually viewed taskedit desktoplight/narrowdark and CalDAVRSVP light/dark using tools.view_image. Current four hashes are retained; no equality-to-historical8e images is claimed.",
+  "manualAttemptsCurrentRuntime": 2,
+  "automaticRetries": 0,
+  "firstFailure": "current-browser-cold-start-failure.json",
+  "optionalOptimizerDiagnostic": "current-browser-optimizer-diagnostic.json is not an application/browser test.",
+  "sourceBinding": "current-runtime-to-test-support-binding.json",
+  "trackedInputChanges": [],
+  "cleanup": {
+    "ownedProcessGroup": 187748,
+    "reaped": true,
+    "groups": [
+      {
+        "pid": 187647,
+        "directChildReaped": true,
+        "groupAbsent": true
+      },
+      {
+        "pid": 187884,
+        "directChildReaped": true,
+        "groupAbsent": true
+      },
+      {
+        "pid": 187992,
+        "directChildReaped": true,
+        "groupAbsent": true
+      },
+      {
+        "pid": 187748,
+        "directChildReaped": true,
+        "groupAbsent": true
+      }
+    ]
+  },
+  "ownedQaRetiredBeforeFinalBrowser": true,
+  "browserPlugin": "absent",
+  "fallback": "Existing repository Playwright; unavailable Browser plugin checked by root.",
+  "boundaries": "Actual running Web with synthetic API fixtures. Actual sourceSQL/native proofs are separate; this does not certify real auth/provider notification or production.",
+  "publicRegistryPublished": false,
+  "productionDeployed": false
+}

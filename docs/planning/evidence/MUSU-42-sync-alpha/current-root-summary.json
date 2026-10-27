@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-current-root-full-workspace-and-host-summary",
+  "source": {
+    "head": "fb36100c151bb75323573be8cc9afd9fd689261b",
+    "tree": "0d54cbc311100fbe66d3f835144767fbf2911378",
+    "archiveSha256": "d34b6dda9c6c1f43ee0e62ed79d0f02714332a85832bd51aa9df95475fda0b98"
+  },
+  "receipt": "current-root-receipt.json",
+  "receiptSha256": "f492246da15509b657b643d0fe4a045f528a079c6f9d87e1b8a6fe8da3db12c8",
+  "all12CommandsExitZero": true,
+  "pnpmCheck": "passed",
+  "json": {
+    "scenarios": 602,
+    "suites": 17,
+    "failed": 0,
+    "errors": 0
+  },
+  "hostDbPrograms": 6,
+  "providerBudgetNative": "Unchanged normal fixture passed with its10sec InvalidRetry-After deadline and final47-source summary; separate actual ownnoncecleanup succeeded.",
+  "migrations": 87,
+  "hostDatabase": {
+    "database": "c10host_e2fea09bd41c49a8804040a50cdcc59e",
+    "port": 55450,
+    "createExitCode": 0,
+    "create": "{\"database\":\"c10host_e2fea09bd41c49a8804040a50cdcc59e\",\"absentBeforeCreate\":true}\n{\"created\":\"c10host_e2fea09bd41c49a8804040a50cdcc59e\"}",
+    "createStderr": "",
+    "testExitCode": 0,
+    "cleanupExitCode": 0,
+    "cleanup": "{\"database\":\"c10host_e2fea09bd41c49a8804040a50cdcc59e\",\"zeroSessions\":true,\"plainDrop\":true,\"remaining\":0}",
+    "cleanupStderr": ""
+  },
+  "trackedInputChanges": [],
+  "sourceImmutable": true,
+  "boundary": "Full trackedfb361archive separately installed frozen dependencies. LatersevenAPItestsupportbytes were not run by this archive; current-six-fixture proofs verify those separately. No relabelling of older d3a598history.",
+  "liveProvider": false,
+  "deployed": false
+}

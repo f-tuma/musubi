@@ -1,3 +1,4 @@
+import { referenceTestDatabaseName } from "../conformance/database-name.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
@@ -16,7 +17,7 @@ const baseline = { title: content.name, notes: null, due: "2026-10-26T00:00:00.0
 const deferred = () => { let resolve!: () => void, reject!: (e: unknown) => void; const promise = new Promise<void>((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
 async function main() {
   const adminUrl = process.env.REFERENCE_DATABASE_URL ?? (process.env.ENVIRONMENT === "test" ? process.env.DATABASE_URL : undefined); assert(adminUrl, "Explicit disposable DB required");
-  const name = `reference_task_delete_process_${randomUUID().replaceAll("-", "")}`, url = new URL(adminUrl); url.pathname = `/${name}`;
+  const name = referenceTestDatabaseName("reference_task_delete_process_"), url = new URL(adminUrl); url.pathname = `/${name}`;
   const admin = new Pool({ connectionString: adminUrl, max: 1 }); await admin.query(`CREATE DATABASE "${name}"`);
   const pool = new Pool({ connectionString: url.href, max: 4 }), events = new ReferenceStore(pool, key), store = new ReferenceTaskStore(pool, key), children = new Set<ChildProcess>();
   let operationId = "", taskId = "", taskListId = "", mode = "healthy", exists = true, deletes = 0, patches = 0, methods: string[] = [], failures: unknown[] = [], metrics = 0, remote: Record<string, unknown> = {}, acceptedEtag = '"original"', passed = 0;

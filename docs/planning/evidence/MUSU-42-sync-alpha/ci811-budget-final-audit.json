@@ -1,0 +1,9 @@
+{
+  "qaPort": 55448,
+  "ownedPrefix": "c09budget_",
+  "databases": [],
+  "sessions": [],
+  "otherFixtureDatabasesNotTargeted": true,
+  "noBackendsTerminated": true,
+  "auditPoolEnded": true
+}

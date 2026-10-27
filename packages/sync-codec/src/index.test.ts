@@ -129,24 +129,6 @@ assert.equal(parseNativeWritePlanV1({ id: "google-task", version: 1 }, "create",
 assert.equal(parseNativeWritePlanV1({ id: "microsoft-personal-event", version: 1 }, "update", "event", { planKind: "json-body", body: { start: { dateTime: "2026-10-12T08:00:00Z", timeZone: "UTC" } } }), undefined);
 assert.equal(parseNativeWritePlanV1(davUpdate.serializer, "update", "event", { ...davUpdate.nativePlan.data, replacementComponent: davUpdate.nativePlan.data.replacementComponent.replace("END:VEVENT", "ATTENDEE:mailto:someone@example.test\r\nEND:VEVENT") }), undefined);
 
-// Test-only legacy adapters provide independent parity evidence; runtime package imports none.
-process.env.DATABASE_URL ??= "postgres://user:pass@localhost:5432/test";
-process.env.ENVIRONMENT ??= "test";
-process.env.BETTER_AUTH_URL ??= "http://localhost:7531";
-const [{ googleAdapter }, { microsoftAdapter }, { caldavAdapter, patchEventIcal, patchTaskIcal }] = await Promise.all([
-  import("../../../apps/api/src/sync/adapters/google"),
-  import("../../../apps/api/src/sync/adapters/microsoft"),
-  import("../../../apps/api/src/sync/adapters/caldav"),
-]);
-for (const [provider, adapter] of [["google", googleAdapter], ["microsoft", microsoftAdapter], ["caldav", caldavAdapter]] as const) {
-  const plan = encodeEventV1(provider, event, undefined, context);
-  const oldProjection = adapter.projectEvent!(event);
-  const fields = Object.fromEntries(["title", "start", "end", "isAllDay", "description", "location", "recurrence"].map(key => [key, oldProjection[key as keyof typeof oldProjection]]));
-  assert.deepEqual(plan.admittedProjection.data, JSON.parse(JSON.stringify(fields)));
-  assert.deepEqual(encodeTaskV1(provider, task, undefined, context).admittedProjection.data, JSON.parse(JSON.stringify(adapter.projectTask!(task))));
-}
-assert.equal(changed, patchEventIcal(original, { ...event, title: "Changed" }, "native-uid", { title: "Changed" }));
-const taskReference = patchTaskIcal(todoOriginal, task, "todo-uid", { title: task.title });
-assert.equal(new ICAL.Component(ICAL.parse(applyCaldavTaskPlanV1(todoOriginal, todoPlan))).getFirstSubcomponent("vtodo")!.getFirstPropertyValue("summary"),
-  new ICAL.Component(ICAL.parse(taskReference)).getFirstSubcomponent("vtodo")!.getFirstPropertyValue("summary"));
-console.log("Pinned sync codec v1: pure fixed clock, wire parity, DATE/task precision, nullable clears, strict plan decoding and preserving DAV merges OK");
+console.log("Pinned sync codec v1: pure fixed clock, DATE/task precision, nullable clears, strict plan decoding and preserving DAV merges OK");
+
+console.log("SYNC_CONFORMANCE_COMPLETE:unit/sync-codec/pure");

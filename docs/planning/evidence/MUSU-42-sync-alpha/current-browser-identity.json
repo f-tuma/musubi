@@ -1,0 +1,7 @@
+{
+  "title": "Musubi",
+  "url": "http://127.0.0.1:3006/login",
+  "meaningfulLoginControl": true,
+  "pageErrors": [],
+  "boundary": "web-only fixture"
+}

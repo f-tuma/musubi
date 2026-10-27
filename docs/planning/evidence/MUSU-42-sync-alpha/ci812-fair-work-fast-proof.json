@@ -1,0 +1,403 @@
+{
+  "schemaVersion": 1,
+  "kind": "C10-CI812-production-fair-work-lost-wake-correction",
+  "status": "focused-fast-checks-PASS",
+  "baseHead": "1e6866db59245fa2ad1f383938fc3dcd8baa0aba",
+  "productionFile": "packages/sync-runtime/src/fair-work.ts",
+  "productionBeforeSha256": "69d4f6d0c328d65018ca4562b506cfe75b015a16095efc1d5c986c89f16a963d",
+  "productionAfterSha256": "000908c42ce7036214db9ed52b025e34ec59b525872772b637b3224309481bb6",
+  "changedInputs": {
+    "packages/sync-runtime/src/fair-work.ts": "000908c42ce7036214db9ed52b025e34ec59b525872772b637b3224309481bb6",
+    "packages/sync-runtime/src/behavior/fair-work.ts": "5670340f54c9675796ef7855f014915cf733cc939becdfa4a37aadd439d8564f",
+    "packages/sync-runtime/src/behavior/fair-work.json": "456183342f13442228a9e9e4591b09d8a68e5cbecfc9958bc62d135949928eca",
+    "apps/sync-reference/conformance/manifest.v1.json": "564fd57618fd6d171788970a3e7ce74b01d6c0ec6baea978e0bfec570b6fb429"
+  },
+  "diagnosis": "A future queued/resumed due time can pass between eligibility selection, wake scan and timer arming; the old fresh-now checks drop the only wake. An async host future hint can likewise arrive after it is due. These are actual production scheduler lost-wakeup bugs, separately reproduced with dependency ports.",
+  "ciFailureBoundary": "CI812 timed out at the existing10sec InvalidRetry-After preview deadline; its stage/trace does not directly identify the wait cause. This independent lost-wake reproduction is causally compatible but is not labelled a captured CI execution trace. Cleanupregression+mainstrictcleanup did pass in CI812; its final47-source native summary and installed alpha were not reached.",
+  "actualProductionReproduction": {
+    "path": "/tmp/musu42-ci812-lost-due-wake-proof.json",
+    "sha256": "61f574e302f00ceaaf350ae256d7b3ab086cee9ae7ceb551e3f0a58ce278648e",
+    "result": {
+      "schemaVersion": 1,
+      "kind": "actual-production-fair-work-lost-due-wake-reproduction",
+      "status": "REPRODUCED",
+      "source": "/home/flamendrin/workspace/musubi/packages/sync-runtime/src/fair-work.ts",
+      "sourceSha256": "69d4f6d0c328d65018ca4562b506cfe75b015a16095efc1d5c986c89f16a963d",
+      "clockReads": [
+        {
+          "read": 1,
+          "value": 1000
+        },
+        {
+          "read": 2,
+          "value": 1000
+        },
+        {
+          "read": 3,
+          "value": 1000
+        },
+        {
+          "read": 4,
+          "value": 1001
+        },
+        {
+          "read": 5,
+          "value": 1001
+        },
+        {
+          "read": 6,
+          "value": 1001
+        },
+        {
+          "read": 7,
+          "value": 1001
+        }
+      ],
+      "strandedSnapshot": {
+        "active": 0,
+        "logicalActive": 1,
+        "regularLogical": 1,
+        "auxiliaryLogical": 0,
+        "parked": 1,
+        "pending": 1,
+        "activeAccounts": 0,
+        "heldCollisions": 0
+      },
+      "scheduledWakeupsAtStranding": 0,
+      "completionBeforeExternalKick": false,
+      "completionAfterExternalKick": true,
+      "after": {
+        "active": 0,
+        "logicalActive": 0,
+        "regularLogical": 0,
+        "auxiliaryLogical": 0,
+        "parked": 0,
+        "pending": 0,
+        "activeAccounts": 0,
+        "heldCollisions": 0
+      },
+      "ports": "Actual production createFairWorkCoordinator with explicit clock/schedule/host dependency ports; no scheduler logic copied.",
+      "realDatabase": false,
+      "liveProvider": false,
+      "productionDeployment": false
+    },
+    "executedDriver": "/tmp/musu42-ci812-lost-due-wake.mjs",
+    "executedDriverSha256": "f0b1979f3b26d9ef0cc2f04c80ddfeb0a41327213f59c54d1c1e7c0e6f6a4c95"
+  },
+  "fix": "Use one eligibility sample per selection and the same sample for the future scan; keep async future hints relative to their prelookup cutoff; arm a bounded future wake even when it has become due by timer creation. Already-due collision/capacity waits and repeated past host hints do not spin. Claims, leases, source authority, fairness and capacity bounds unchanged.",
+  "jsonChecks": {
+    "queued-red": {
+      "path": "/tmp/musu42-ci812-queued-red.json",
+      "sha256": "ffffb6d3def67c50951c382860040501ed3281a9d019773e53e4e9accf124fba",
+      "exitCode": 1,
+      "report": {
+        "schemaVersion": 1,
+        "suites": [
+          {
+            "suite": "fair-work",
+            "results": [
+              {
+                "id": "due-crosses-during-wake-scan",
+                "title": "A queued eligibility crossing during selection retains its automatic wake without an unrelated kick",
+                "status": "failed",
+                "durationMs": 0
+              }
+            ],
+            "passed": 0,
+            "failed": 1,
+            "errors": 0,
+            "durationMs": 214,
+            "error": "fair-work/due-crosses-during-wake-scan: expectation-mismatch. Run the selected suite directly for assertion details.",
+            "errorCode": "expectation-mismatch",
+            "scenarioId": "due-crosses-during-wake-scan"
+          }
+        ],
+        "passed": 0,
+        "failed": 1,
+        "errors": 0,
+        "durationMs": 215
+      }
+    },
+    "parked-red": {
+      "path": "/tmp/musu42-ci812-parked-red.json",
+      "sha256": "37869118a5ea0a2b4b674f55dbc4f4c6cf0db3c293694d4bb9e2d1a9aa022231",
+      "exitCode": 1,
+      "report": {
+        "schemaVersion": 1,
+        "suites": [
+          {
+            "suite": "fair-work",
+            "results": [
+              {
+                "id": "parked-due-crosses-before-timer",
+                "title": "A parked continuation cannot lose its wake when eligibility passes before the timer is armed",
+                "status": "failed",
+                "durationMs": 0
+              }
+            ],
+            "passed": 0,
+            "failed": 1,
+            "errors": 0,
+            "durationMs": 180,
+            "error": "fair-work/parked-due-crosses-before-timer: expectation-mismatch. Run the selected suite directly for assertion details.",
+            "errorCode": "expectation-mismatch",
+            "scenarioId": "parked-due-crosses-before-timer"
+          }
+        ],
+        "passed": 0,
+        "failed": 1,
+        "errors": 0,
+        "durationMs": 181
+      }
+    },
+    "hint-red": {
+      "path": "/tmp/musu42-ci812-hint-red.json",
+      "sha256": "08c3f675522a03411b9df6d7982938f3acef7e00f90dec731792322dc2435a65",
+      "exitCode": 1,
+      "report": {
+        "schemaVersion": 1,
+        "suites": [
+          {
+            "suite": "fair-work",
+            "results": [
+              {
+                "id": "async-future-hint-crosses-due",
+                "title": "A future host hint that becomes due during an async lookup schedules a wake without spinning on repeated stale hints",
+                "status": "failed",
+                "durationMs": 0
+              }
+            ],
+            "passed": 0,
+            "failed": 1,
+            "errors": 0,
+            "durationMs": 212,
+            "error": "fair-work/async-future-hint-crosses-due: expectation-mismatch. Run the selected suite directly for assertion details.",
+            "errorCode": "expectation-mismatch",
+            "scenarioId": "async-future-hint-crosses-due"
+          }
+        ],
+        "passed": 0,
+        "failed": 1,
+        "errors": 0,
+        "durationMs": 213
+      }
+    },
+    "queued-green": {
+      "path": "/tmp/musu42-ci812-queued-green.json",
+      "sha256": "688a58c41ff28e7a8757752bebd7c602a2c763d96fb66fc806dc2f931bd60588",
+      "exitCode": 0,
+      "report": {
+        "schemaVersion": 1,
+        "suites": [
+          {
+            "suite": "fair-work",
+            "results": [
+              {
+                "id": "due-crosses-during-wake-scan",
+                "title": "A queued eligibility crossing during selection retains its automatic wake without an unrelated kick",
+                "status": "passed",
+                "durationMs": 2
+              }
+            ],
+            "passed": 1,
+            "failed": 0,
+            "errors": 0,
+            "durationMs": 211
+          }
+        ],
+        "passed": 1,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 212
+      }
+    },
+    "fair-work-green": {
+      "path": "/tmp/musu42-ci812-fair-work-green.json",
+      "sha256": "dddfa033b27a48b250a7186be721ab6a9d9087d6e831df767a583e09ec239bf2",
+      "exitCode": 0,
+      "report": {
+        "schemaVersion": 1,
+        "suites": [
+          {
+            "suite": "fair-work",
+            "results": [
+              {
+                "id": "due-crosses-during-wake-scan",
+                "title": "A queued eligibility crossing during selection retains its automatic wake without an unrelated kick",
+                "status": "passed",
+                "durationMs": 2
+              },
+              {
+                "id": "parked-due-crosses-before-timer",
+                "title": "A parked continuation cannot lose its wake when eligibility passes before the timer is armed",
+                "status": "passed",
+                "durationMs": 1
+              },
+              {
+                "id": "async-future-hint-crosses-due",
+                "title": "A future host hint that becomes due during an async lookup schedules a wake without spinning on repeated stale hints",
+                "status": "passed",
+                "durationMs": 0
+              },
+              {
+                "id": "due-collision-waits-for-release",
+                "title": "Due work blocked by a held resource waits for release without a timer loop",
+                "status": "passed",
+                "durationMs": 0
+              },
+              {
+                "id": "active-deferral-releases-submitters",
+                "title": "Direct submitters receive a running background claim's deferral without waiting until its future due time",
+                "status": "passed",
+                "durationMs": 0
+              },
+              {
+                "id": "account-a-429-b-ready",
+                "title": "Account cooldown releases A while ready B dispatches",
+                "status": "passed",
+                "durationMs": 12
+              },
+              {
+                "id": "slow-a-b-progress",
+                "title": "B completes while A native HTTP is outstanding",
+                "status": "passed",
+                "durationMs": 1
+              },
+              {
+                "id": "global-capacity-lanes",
+                "title": "One pool rotates lanes and recovery families with bounded pull preference",
+                "status": "passed",
+                "durationMs": 4
+              },
+              {
+                "id": "nested-child-collision",
+                "title": "Nested child inherits a live permit and unrelated collisions wait",
+                "status": "passed",
+                "durationMs": 0
+              },
+              {
+                "id": "native-leaf-lifetime",
+                "title": "Actual native send is one shot and excludes host persistence time",
+                "status": "passed",
+                "durationMs": 0
+              },
+              {
+                "id": "unused-reservation-refund",
+                "title": "Cancellation before raw dispatch refunds only unused mutation permission",
+                "status": "passed",
+                "durationMs": 0
+              },
+              {
+                "id": "accepted-readback-persistence-failure",
+                "title": "Real Task CREATE retains acceptance after readback cooldown SQL failure",
+                "status": "passed",
+                "durationMs": 8
+              },
+              {
+                "id": "restart-shared-cooldown",
+                "title": "Restart starts empty and hydrates a shared account cooldown",
+                "status": "passed",
+                "durationMs": 0
+              },
+              {
+                "id": "parked-pages-b-progress",
+                "title": "A native pagination continuation exceeds burst while B completes",
+                "status": "passed",
+                "durationMs": 3
+              },
+              {
+                "id": "park-until-auxiliary-cold-chain",
+                "title": "Four parents and four cold auxiliary refreshes reacquire without deadlock",
+                "status": "passed",
+                "durationMs": 2
+              },
+              {
+                "id": "finite-boundary-cooldown-clocks",
+                "title": "Finite boundary cooldowns cap control eligibility and still expire independently",
+                "status": "passed",
+                "durationMs": 2
+              },
+              {
+                "id": "max-cooldown-fractional-clocks",
+                "title": "MAX account holds preserve exact eligibility across fractional and stepped clocks",
+                "status": "passed",
+                "durationMs": 1
+              },
+              {
+                "id": "long-cooldown-releases-continuations",
+                "title": "Four long account cooldowns release continuations before healthy B runs",
+                "status": "passed",
+                "durationMs": 1
+              },
+              {
+                "id": "invalid-retry-after-b-progress",
+                "title": "Malformed Retry-After preserves actual429 without poisoning healthy B",
+                "status": "passed",
+                "durationMs": 0
+              }
+            ],
+            "passed": 19,
+            "failed": 0,
+            "errors": 0,
+            "durationMs": 219
+          }
+        ],
+        "passed": 19,
+        "failed": 0,
+        "errors": 0,
+        "durationMs": 220
+      }
+    }
+  },
+  "otherChecks": {
+    "actualNamedFairWorkUnitAssertions": {
+      "passed": 15,
+      "path": "/tmp/musu42-ci812-fair-work-direct-unit.log",
+      "sha256": "cac4eb305eb9d13a8743ab38ed463f64267a33ac94a90dedc597ce4c814ab1cb",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "@musubi/sync-runtime",
+        "exec",
+        "tsx",
+        "src/fair-work.test.ts"
+      ],
+      "exitCode": 0
+    },
+    "runtimeTypecheck": {
+      "path": "/tmp/musu42-ci812-runtime-typecheck.log",
+      "sha256": "38ac890c60e7f38d59ddfb410325cdfb5fca83c9411765c5481754e01c021630",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "@musubi/sync-runtime",
+        "typecheck"
+      ],
+      "exitCode": 0
+    },
+    "conformanceParserDirect": {
+      "path": "/tmp/musu42-ci812-conformance-parser-direct.log",
+      "sha256": "fd890b178dcb5bc1d29cdabd20c9b15f861e4b11519bfe46a29e94a6d09f66ee",
+      "argv": [
+        "node",
+        "apps/sync-reference/conformance/runner.test.mjs"
+      ],
+      "exitCode": 0
+    }
+  },
+  "requiredConformanceIDs": {
+    "deterministic": 431,
+    "reference-db": 23,
+    "host-compat": 211,
+    "newJsonCases": 4,
+    "actualManifestValidation": "validateManifest fromscripts/sync-conformance.mjs invokeddirectly; mode inventoryexact"
+  },
+  "historicalArtifactBoundary": "Original8e5 archive and its427-case source/installed proofs retain old productionfair-work bytes. They are historical for this correction. Fresh exact-source package/external/artifact/installed431+23 and relevant host checks are required.",
+  "fixtureDeadlineChanged": false,
+  "newDependency": false,
+  "realDatabase": false,
+  "installedRuntime": false,
+  "liveProvider": false,
+  "deployed": false,
+  "newCurrentHeadCiRequired": true
+}

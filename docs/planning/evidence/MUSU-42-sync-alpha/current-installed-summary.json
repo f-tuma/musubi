@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "kind": "MUSU-42-runtime-fix-installed-candidate-reconciliation",
+  "at": "2026-10-27T07:51:17.405Z",
+  "status": "passed",
+  "source": {
+    "commit": "fb36100c151bb75323573be8cc9afd9fd689261b",
+    "head": "fb36100c151bb75323573be8cc9afd9fd689261b",
+    "tree": "0d54cbc311100fbe66d3f835144767fbf2911378",
+    "archiveSha256": "ddb48ee5284dd8dcc0c68d81da6744b38293c6162448fa17a04ad3afb963bdd9"
+  },
+  "artifact": {
+    "archive": {
+      "path": "/tmp/musu42-final-fb36100c151b-v1/candidate.tar.gz",
+      "bytes": 15083927,
+      "sha256": "35dc0a0c83c1ffc48ecd744a7d33f2dee258b02cd5572e21b3ff2e347639bd91"
+    },
+    "packageReceipt": {
+      "path": "/tmp/musu42-final-fb36100c151b-v1/package-receipt.json",
+      "bytes": 4800,
+      "sha256": "b86482e8d5ba61b6ed60f6a18d58268af0bf89f4f44dab0340f62abd83349eaf"
+    },
+    "manifestSha256": "238de80b13ae557b3c432b7fb607c38025277c97c9e43c7749bbc45a3782c5ee",
+    "payloadDigest": "d542cca4cb70a46375f8a3c46d6c1c930f57b88527cc8356137032cd33d867ac"
+  },
+  "producedRoot": "/tmp/musu42-final-fb36100c151b-v1/candidate",
+  "relocatedRoot": "/tmp/musu42-final-fb36100c151b-relocated-v1/candidate",
+  "relocatedArchiveExtractionMatchesProduced": true,
+  "reconciled": [
+    {
+      "mode": "deterministic",
+      "required": 431,
+      "passed": 431,
+      "cleanupCompleted": true,
+      "caseIDsSha256": "7d86c5b5921c437f6027818490562f110d4615c984a3dccd672ecaf2988f44bf"
+    },
+    {
+      "mode": "reference-db",
+      "required": 23,
+      "passed": 23,
+      "cleanupCompleted": true,
+      "caseIDsSha256": "0589ae808da7c6222f4760c28bbe0b840936977d6a63068f6d8a9348989527c8"
+    }
+  ],
+  "sourcePureHost": {
+    "required": 211,
+    "passed": 211,
+    "caseIDsSha256": "91ec3b2f96b0c4aba5080d6ce3670938dcd76991e48233a81715ce65dc9faf2c"
+  },
+  "reports": [
+    {
+      "path": "/tmp/musu42-final-fb36100c151b-produced-artifact.json",
+      "bytes": 1297,
+      "sha256": "49c5503fbe15251b91d8f2e2f379d5b87ed56bc4990f2c885138c66019da696f"
+    },
+    {
+      "path": "/tmp/musu42-final-fb36100c151b-relocated-deterministic.json",
+      "bytes": 1460,
+      "sha256": "944bf2341e4d38841e337bb55ebbc5aeacd7fc1586ea292f96068949e3191825"
+    },
+    {
+      "path": "/tmp/musu42-final-fb36100c151b-relocated-deterministic.json.conformance.json",
+      "bytes": 133508,
+      "sha256": "f909cb0a8543fe78094d209bae0f4437ece772e8c47438d211154640ec68227f"
+    },
+    {
+      "path": "/tmp/musu42-final-fb36100c151b-relocated-reference-db.json",
+      "bytes": 1457,
+      "sha256": "32986f0b735906af01e1985874df0b275bf6af2967c129036cb41fb8a63087ad"
+    },
+    {
+      "path": "/tmp/musu42-final-fb36100c151b-relocated-reference-db.json.conformance.json",
+      "bytes": 25309,
+      "sha256": "ebd79267b834a292334e156c1113f3f25a86aa5655f3cbb99f5aead3804087d5"
+    },
+    {
+      "path": "/tmp/musu42-final-fb36100c151b-host-compat.json",
+      "bytes": 74587,
+      "sha256": "5a89a6414205d730f07925e2d8484dcab2c024aa62453deef695ac568ca5d060"
+    }
+  ],
+  "immutability": [
+    {
+      "name": "produced",
+      "root": "/tmp/musu42-final-fb36100c151b-v1/candidate",
+      "entries": 3591,
+      "unchanged": true,
+      "before": {
+        "path": "/tmp/musu42-final-fb36100c151b-produced-before.json",
+        "bytes": 630648,
+        "sha256": "f0c6298f08d47c47441aea6027964c36bf678b598a114fd68588004d656f1f7e"
+      },
+      "after": {
+        "path": "/tmp/musu42-final-fb36100c151b-produced-after.json",
+        "bytes": 630648,
+        "sha256": "f0c6298f08d47c47441aea6027964c36bf678b598a114fd68588004d656f1f7e"
+      }
+    },
+    {
+      "name": "relocated",
+      "root": "/tmp/musu42-final-fb36100c151b-relocated-v1/candidate",
+      "entries": 3591,
+      "unchanged": true,
+      "before": {
+        "path": "/tmp/musu42-final-fb36100c151b-relocated-before.json",
+        "bytes": 630648,
+        "sha256": "f0c6298f08d47c47441aea6027964c36bf678b598a114fd68588004d656f1f7e"
+      },
+      "after": {
+        "path": "/tmp/musu42-final-fb36100c151b-relocated-after.json",
+        "bytes": 630648,
+        "sha256": "f0c6298f08d47c47441aea6027964c36bf678b598a114fd68588004d656f1f7e"
+      }
+    }
+  ],
+  "sourceHeadUnchanged": true,
+  "sourceInputBinding": {
+    "path": "/tmp/musu42-final-fb36100c151b-source-input-binding.json",
+    "bytes": 870333,
+    "sha256": "85fc53a4af47f39bf2088fff647fe4a16788e3a088bf1e14110546d95ac2a018"
+  },
+  "workingStatus": " M apps/api/src/sync/google_shared_task_create_delivery.integration.test.ts\n M apps/api/src/sync/google_shared_task_delete_delivery.integration.test.ts\n M apps/api/src/sync/google_shared_task_update_delivery.integration.test.ts\n M apps/api/src/sync/google_task_causal_delivery.integration.test.ts\n M apps/api/src/sync/owned_database_fixture_cleanup.ts\n M apps/api/src/sync/task_ack_delivery.integration.test.ts\n M apps/api/src/sync/task_compatibility_delivery.integration.test.ts\n",
+  "boundary": "The exact fb361 committed artifact and selected source remain unchanged. Subsequent seven API integration/helper edits are explicitly listed in sourceInputBinding; these are not packaged and their new bytes are not covered by this installed artifact. The pure host211 files and all other tracked source match fb361. This is not a claim that the whole current working tree is clean or that fb361 reference reports executed future commits.",
+  "qa": "Owned PG17.11 container a4d5d0fa... port55450; conformance uses unpredictable owned nonce DBs only. Root concurrent host fixture is separate. Container must stay until root releases.",
+  "liveProvider": false,
+  "publicRegistryPublished": false,
+  "productionDeployed": false
+}

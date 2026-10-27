@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "kind": "ci812-independent-scheduler-code-review",
+  "reviewer": "/root/c10_final_review",
+  "head": "fb36100c151bb75323573be8cc9afd9fd689261b",
+  "tree": "0d54cbc311100fbe66d3f835144767fbf2911378",
+  "workingTreeClean": true,
+  "approved": true,
+  "approvalQuestion": "Pět přesných souborů produkční opravy lost scheduler wake, nových čtyř JSON scenarios, přísného conformance inventory a příslušného průvodce. Provisional code acceptance only; final C10 publication approval vyžaduje nový artefakt/evidence/current-head CI.",
+  "sourceFiles": {
+    "packages/sync-runtime/src/fair-work.ts": "000908c42ce7036214db9ed52b025e34ec59b525872772b637b3224309481bb6",
+    "packages/sync-runtime/src/behavior/fair-work.ts": "5670340f54c9675796ef7855f014915cf733cc939becdfa4a37aadd439d8564f",
+    "packages/sync-runtime/src/behavior/fair-work.json": "456183342f13442228a9e9e4591b09d8a68e5cbecfc9958bc62d135949928eca",
+    "apps/sync-reference/conformance/manifest.v1.json": "564fd57618fd6d171788970a3e7ce74b01d6c0ec6baea978e0bfec570b6fb429",
+    "docs/testing/behavior-scenarios.md": "752b5e6e3d045e2da2b696af9c85bafaf3d512c5de862396aae068d849136b61"
+  },
+  "findingResolved": "C10-R3",
+  "behavior": "choose receives one sampled eligibility time per selection; pending future scan uses same last selection sample. Future host hints retain prelookup cutoff, surviving async return after due. Finite acquired future wake always arms at least1ms even if now advanced. Already-due account/collision/capacity blocked work still waits on release kick instead of a polling timer.",
+  "independentExecution": {
+    "actualCheckedInDriver": {
+      "path": "/tmp/musu42-ci812-independent-new-scenarios.json",
+      "sha256": "5a1ef8b73a4cb6dca2c4336526d3bdfba9295eb2502f323ac8f68658e9402224",
+      "passed": 4,
+      "failed": 0,
+      "ports": "Actual production coordinator with existing clock/timer/candidate ports; no scheduler logic copied"
+    },
+    "additionalAccountCapacityPorts": {
+      "path": "/tmp/musu42-ci812-independent-blocked-ports.json",
+      "sha256": "48df8b0f29e3bc77b7e4fbd333e72a02929b83aafdcc18ae98aba19e1b4304ec",
+      "passed": 2,
+      "timersWhileDueBlocked": 0,
+      "startsAfterReleasePerCase": 1
+    },
+    "pnpmLaunchAttempts": "Four attempts produced no output in reviewer tool environment and were terminated with exit130; not counted as product test results. Direct checked-in driver import completed and all four scenarios passed."
+  },
+  "conformanceRequiredPortableIDs": 431,
+  "noRequiredIDsRemoved": true,
+  "findings": [],
+  "limitations": [
+    "Specific original CI812 waiting backend/permit path remains unknown; separate real production scheduler bug is deterministically reproduced and fixed.",
+    "Fresh archive/installed431+23/sourcehost211 and running application evidence have not been reviewed by this code receipt. Old8e runtime/artifact proof remains historical after this production-byte change.",
+    "Root reports full fair-work19/19, direct unit15/15 and runtime typecheck; reviewer separately executed the four new scenarios and account/capacity boundary checks."
+  ],
+  "publicationPerformed": false,
+  "mergeAuthorizedByThisReceipt": false,
+  "productionDeployed": false
+}

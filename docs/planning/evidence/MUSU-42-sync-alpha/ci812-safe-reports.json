@@ -1,0 +1,262 @@
+{
+  "cleanupRegression": {
+    "at": "2026-10-27T07:32:36.6828291Z",
+    "data": {
+      "boundary": "actual-postgres-budget-fixture-cleanup",
+      "legacyImmediateAssertion": "RED",
+      "delayedOwnedBackend": {
+        "pid": 582,
+        "state": "idle",
+        "applicationName": "c10-cleanup-delayed-owned",
+        "cleanup": {
+          "database": "c09budget_c2d5694fc6bd437db41d843ff4edc90a",
+          "sessionsBeforeDrop": 0,
+          "plainDrop": true,
+          "databaseAbsent": true,
+          "checks": 2,
+          "waitMs": 69,
+          "firstSessions": [
+            {
+              "pid": 582,
+              "application_name": "c10-cleanup-delayed-owned",
+              "state": "idle",
+              "wait_event_type": "Client"
+            }
+          ]
+        }
+      },
+      "persistentOwnedBackend": {
+        "pid": 583,
+        "boundedRefusal": true,
+        "configuredWaitMs": 100,
+        "observedWaitMs": 102,
+        "databaseRetained": true,
+        "clientStillUsable": true,
+        "cleanup": {
+          "database": "c09budget_815c4a909924442d845f3066195e2ef1",
+          "sessionsBeforeDrop": 0,
+          "plainDrop": true,
+          "databaseAbsent": true,
+          "checks": 1,
+          "waitMs": 13,
+          "firstSessions": []
+        }
+      },
+      "forcedDrop": false,
+      "backendsTerminated": false,
+      "liveProvider": false
+    }
+  },
+  "budgetMainCleanupAfterBehaviorFailure": {
+    "at": "2026-10-27T07:32:51.9021929Z",
+    "data": {
+      "cleanup": {
+        "database": "c09budget_48328ae0ff7b4528969a2675a2b0a13b",
+        "sessionsBeforeDrop": 0,
+        "plainDrop": true,
+        "databaseAbsent": true,
+        "checks": 1,
+        "waitMs": 98,
+        "firstSessions": []
+      }
+    }
+  },
+  "eventCompatibility": {
+    "at": "2026-10-27T07:33:52.9205553Z",
+    "data": {
+      "schemaVersion": 1,
+      "suite": "event-compatibility-pg-native",
+      "mode": "new-only",
+      "processAcceptance": false,
+      "suites": [
+        {
+          "suite": "generic",
+          "mode": "new-only",
+          "deliveries": 26,
+          "nativeRequests": 0,
+          "families": [
+            "generic"
+          ],
+          "fixtureSha256": "57eac9ec77cadf62c3a16cf676f957a28df32bf59c67cb3dd84b0fbc2725c4f1",
+          "normalizedSha256": "07ad5db9263ec16c572a4250208ba4ee65ae10ba865a908339ba2c8535c108cc",
+          "productionSha256": "8eded235c19a40ded4101590427ac959d291f188f80385253b54865ab4e848ba",
+          "harnessSha256": "7fafcf8d5b2d23126412baaa39579a02aad302d74f680746d5ac72ea5f65c76f",
+          "sourceStable": true,
+          "executorSourceSha256": "3360a12ec94a20de778a41c99b5cfd6b14589d255fa708aeb67a95454c7813fc"
+        },
+        {
+          "suite": "generic-native",
+          "mode": "new-only",
+          "deliveries": 18,
+          "nativeRequests": 78,
+          "families": [
+            "generic"
+          ],
+          "fixtureSha256": "577c57e22b91db9c807cf6991e0f2af51e6be93457fce93934463d30035a92ba",
+          "normalizedSha256": "a8b774c4732d12dd894d08d0b81eb5d958175506d70345e75fb77371d8d5736c",
+          "productionSha256": "8eded235c19a40ded4101590427ac959d291f188f80385253b54865ab4e848ba",
+          "harnessSha256": "7fafcf8d5b2d23126412baaa39579a02aad302d74f680746d5ac72ea5f65c76f",
+          "sourceStable": true,
+          "executorSourceSha256": "3360a12ec94a20de778a41c99b5cfd6b14589d255fa708aeb67a95454c7813fc"
+        },
+        {
+          "suite": "google-instance-reminders",
+          "mode": "new-only",
+          "deliveries": 52,
+          "nativeRequests": 152,
+          "families": [
+            "reminderInstance"
+          ],
+          "fixtureSha256": "99a0e43842e47d40e6c705790e149148295bfe06a8fac4eece75d163e82c976e",
+          "normalizedSha256": "33f6908b69477be6ccdd7e42e9b17418526a17e067b192b4344568c8b701e967",
+          "productionSha256": "8eded235c19a40ded4101590427ac959d291f188f80385253b54865ab4e848ba",
+          "harnessSha256": "7fafcf8d5b2d23126412baaa39579a02aad302d74f680746d5ac72ea5f65c76f",
+          "sourceStable": true,
+          "executorSourceSha256": "3360a12ec94a20de778a41c99b5cfd6b14589d255fa708aeb67a95454c7813fc"
+        },
+        {
+          "suite": "graph-content",
+          "mode": "new-only",
+          "deliveries": 29,
+          "nativeRequests": 1115,
+          "families": [
+            "graphOccurrenceContent"
+          ],
+          "fixtureSha256": "55ef2a6feab263992e6c292e655fe162712c51a86b75f483b5e28248702bdd94",
+          "normalizedSha256": "c8d07ec5dc7cbc14e95de22d63e72e69a48f30a81ae6b1059e178d8e19471f36",
+          "productionSha256": "8eded235c19a40ded4101590427ac959d291f188f80385253b54865ab4e848ba",
+          "harnessSha256": "7fafcf8d5b2d23126412baaa39579a02aad302d74f680746d5ac72ea5f65c76f",
+          "sourceStable": true,
+          "executorSourceSha256": "3360a12ec94a20de778a41c99b5cfd6b14589d255fa708aeb67a95454c7813fc"
+        },
+        {
+          "suite": "google-organizer",
+          "mode": "new-only",
+          "deliveries": 63,
+          "nativeRequests": 264,
+          "families": [
+            "organizer:google"
+          ],
+          "fixtureSha256": "37242f59faa25d6bf480ba8dbcc9c7850c1a1bbee8ddf1b8c4a9bdd2f3857176",
+          "normalizedSha256": "3911249a7c3667665fb60b02e98bf6660e340cfe8308512060ecc7f39c73562c",
+          "productionSha256": "8eded235c19a40ded4101590427ac959d291f188f80385253b54865ab4e848ba",
+          "harnessSha256": "7fafcf8d5b2d23126412baaa39579a02aad302d74f680746d5ac72ea5f65c76f",
+          "sourceStable": true,
+          "executorSourceSha256": "3360a12ec94a20de778a41c99b5cfd6b14589d255fa708aeb67a95454c7813fc"
+        }
+      ],
+      "output": "/tmp/musubi-event-compatibility-EYpzzs"
+    }
+  },
+  "eventCleanups": [
+    {
+      "at": "2026-10-27T07:33:15.1969349Z",
+      "data": {
+        "cleanup": {
+          "database": "event_compat_91d039ed68d5416799926e39f7006e7f",
+          "sessionsBeforeDrop": 0,
+          "plainDrop": true,
+          "databaseAbsent": true,
+          "checks": 1,
+          "waitMs": 20,
+          "firstSessions": []
+        },
+        "fixture": "generic",
+        "label": "new"
+      }
+    },
+    {
+      "at": "2026-10-27T07:33:18.3970950Z",
+      "data": {
+        "cleanup": {
+          "database": "event_compat_32a0fc862a304cbc844d54e081b8a147",
+          "sessionsBeforeDrop": 0,
+          "plainDrop": true,
+          "databaseAbsent": true,
+          "checks": 1,
+          "waitMs": 19,
+          "firstSessions": []
+        },
+        "fixture": "generic-native",
+        "label": "new"
+      }
+    },
+    {
+      "at": "2026-10-27T07:33:24.5858680Z",
+      "data": {
+        "cleanup": {
+          "database": "event_compat_64052989e1564094ba978385acd200b8",
+          "sessionsBeforeDrop": 0,
+          "plainDrop": true,
+          "databaseAbsent": true,
+          "checks": 1,
+          "waitMs": 18,
+          "firstSessions": []
+        },
+        "fixture": "google-instance-reminders",
+        "label": "new"
+      }
+    },
+    {
+      "at": "2026-10-27T07:33:45.9409218Z",
+      "data": {
+        "cleanup": {
+          "database": "event_compat_7f76853dde9442559b0c94b9f4706b52",
+          "sessionsBeforeDrop": 0,
+          "plainDrop": true,
+          "databaseAbsent": true,
+          "checks": 1,
+          "waitMs": 23,
+          "firstSessions": []
+        },
+        "fixture": "graph-content",
+        "label": "new"
+      }
+    },
+    {
+      "at": "2026-10-27T07:33:52.9191812Z",
+      "data": {
+        "cleanup": {
+          "database": "event_compat_2da1cf10059844ce9b3c3bc052274fc3",
+          "sessionsBeforeDrop": 0,
+          "plainDrop": true,
+          "databaseAbsent": true,
+          "checks": 1,
+          "waitMs": 19,
+          "firstSessions": []
+        },
+        "fixture": "google-organizer",
+        "label": "new"
+      }
+    }
+  ],
+  "referencePairedAccounts": {
+    "at": "2026-10-27T07:34:22.4661267Z",
+    "data": {
+      "schemaVersion": 1,
+      "suite": "reference-cross-account",
+      "results": [
+        {
+          "id": "paired-identical-native-locators-foreign-receipt-adoption-ack",
+          "status": "passed"
+        },
+        {
+          "id": "denied-a-does-not-authorize-or-block-b",
+          "status": "passed"
+        }
+      ],
+      "liveProvider": false
+    }
+  },
+  "referencePairedCleanup": {
+    "at": "2026-10-27T07:34:22.4853633Z",
+    "data": {
+      "cleanup": {
+        "database": "reference_cross_account_5d977bcb0f1d42a9a30100e17c00c5e5",
+        "sessionsBeforeDrop": 0,
+        "plainDrop": true,
+        "databaseAbsent": true
+      }
+    }
+  }
+}

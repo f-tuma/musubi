@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "kind": "MUSU-42-final-owned-QA-retirement",
+  "at": "2026-10-27T07:54:13.024250+00:00",
+  "status": "passed",
+  "containerId": "a4d5d0fab1e830f1fb0969f88f8190f205d1e049f8f2e3f7054233fbb672ebbc",
+  "name": "musubi-c10-runtime-qa-20261027-b46ebd9e",
+  "image": "sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73",
+  "port": 55450,
+  "before": {
+    "path": "/tmp/musu42-final-fb36100c151b-qa-final-cleanup.json",
+    "sha256": "b93518ae3c0cebdfffe7ebe3ef518631969365bdc3ae7b27292415a3cbe6cbc4",
+    "nonMaintenanceDatabases": 0,
+    "otherClients": 0,
+    "observerPoolEnded": true
+  },
+  "stop": {
+    "command": [
+      "docker",
+      "--host=unix:///var/run/docker.sock",
+      "stop",
+      "--timeout",
+      "20",
+      "a4d5d0fab1e830f1fb0969f88f8190f205d1e049f8f2e3f7054233fbb672ebbc"
+    ],
+    "exitCode": 0,
+    "evidence": "Prior helper reached its final inspect assertion only after checking stop exit0 and exact stdoutID. Raw daemon stop/die events independently retained."
+  },
+  "remove": {
+    "command": [
+      "docker",
+      "--host=unix:///var/run/docker.sock",
+      "rm",
+      "a4d5d0fab1e830f1fb0969f88f8190f205d1e049f8f2e3f7054233fbb672ebbc"
+    ],
+    "exitCode": 0,
+    "force": false,
+    "evidence": "Prior helper reached final inspect assertion after checking rm exit0 and exact stdoutID. Raw daemon destroy event independently retained."
+  },
+  "daemonEvents": {
+    "path": "/tmp/musu42-final-fb36100c151b-qa-retirement-events.jsonl",
+    "bytes": 1635,
+    "sha256": "af6f8bc4121bf284684f0e804736885d1bb5a880bc2e50295943c0a8b39714d9",
+    "events": [
+      {
+        "Type": "container",
+        "Action": "kill",
+        "Actor": {
+          "ID": "a4d5d0fab1e830f1fb0969f88f8190f205d1e049f8f2e3f7054233fbb672ebbc",
+          "Attributes": {
+            "codex.owner": "c10_ci_audit",
+            "codex.task": "MUSU-42-runtime-final",
+            "image": "sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73",
+            "name": "musubi-c10-runtime-qa-20261027-b46ebd9e",
+            "signal": "2"
+          }
+        },
+        "scope": "local",
+        "time": 1793087559,
+        "timeNano": 1793087559895251236
+      },
+      {
+        "Type": "container",
+        "Action": "stop",
+        "Actor": {
+          "ID": "a4d5d0fab1e830f1fb0969f88f8190f205d1e049f8f2e3f7054233fbb672ebbc",
+          "Attributes": {
+            "codex.owner": "c10_ci_audit",
+            "codex.task": "MUSU-42-runtime-final",
+            "image": "sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73",
+            "name": "musubi-c10-runtime-qa-20261027-b46ebd9e"
+          }
+        },
+        "scope": "local",
+        "time": 1793087560,
+        "timeNano": 1793087560028212918
+      },
+      {
+        "Type": "container",
+        "Action": "die",
+        "Actor": {
+          "ID": "a4d5d0fab1e830f1fb0969f88f8190f205d1e049f8f2e3f7054233fbb672ebbc",
+          "Attributes": {
+            "codex.owner": "c10_ci_audit",
+            "codex.task": "MUSU-42-runtime-final",
+            "execDuration": "824",
+            "exitCode": "0",
+            "image": "sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73",
+            "name": "musubi-c10-runtime-qa-20261027-b46ebd9e"
+          }
+        },
+        "scope": "local",
+        "time": 1793087560,
+        "timeNano": 1793087560030097600
+      },
+      {
+        "Type": "container",
+        "Action": "destroy",
+        "Actor": {
+          "ID": "a4d5d0fab1e830f1fb0969f88f8190f205d1e049f8f2e3f7054233fbb672ebbc",
+          "Attributes": {
+            "codex.owner": "c10_ci_audit",
+            "codex.task": "MUSU-42-runtime-final",
+            "image": "sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73",
+            "name": "musubi-c10-runtime-qa-20261027-b46ebd9e"
+          }
+        },
+        "scope": "local",
+        "time": 1793087560,
+        "timeNano": 1793087560069974386
+      }
+    ],
+    "normalStopSignal": "2 (image stop signal), no signal9 observed",
+    "containerExitCode": 0
+  },
+  "finalInspection": {
+    "command": [
+      "docker",
+      "--host=unix:///var/run/docker.sock",
+      "inspect",
+      "a4d5d0fab1e830f1fb0969f88f8190f205d1e049f8f2e3f7054233fbb672ebbc"
+    ],
+    "exitCode": 1,
+    "stdout": "[]",
+    "stderr": "error: no such object: a4d5d0fab1e830f1fb0969f88f8190f205d1e049f8f2e3f7054233fbb672ebbc",
+    "exactContainerAbsent": true
+  },
+  "receiptHelperDiagnostic": {
+    "initialReceiptAttempt": "Failed at final case-sensitive diagnostic-text assertion; Docker29 emits lowercase error: no such object. Stop/rm had already succeeded; no Docker mutation repeated.",
+    "correctedReadOnlyCheck": "Fresh exactID inspect exit1/emptyarray/case-insensitiveNoSuchObject; daemon exactID events confirm stop/die0/destroy."
+  },
+  "allConsumersReleased": true,
+  "userQA55437Untouched": true,
+  "forcedRemoval": false,
+  "production": false
+}

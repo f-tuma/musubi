@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "toolingComparison": "production src/SQL subset; test material retained",
+  "owners": [
+    {
+      "name": "@musubi/sync-reference",
+      "runtimeFiles": 30,
+      "toolingProductionSubsetFiles": 30
+    },
+    {
+      "name": "@musubi/types",
+      "runtimeFiles": 29,
+      "toolingProductionSubsetFiles": 29
+    },
+    {
+      "name": "@musubi/sync-codec",
+      "runtimeFiles": 6,
+      "toolingProductionSubsetFiles": 6
+    },
+    {
+      "name": "@musubi/provider-google",
+      "runtimeFiles": 12,
+      "toolingProductionSubsetFiles": 12
+    },
+    {
+      "name": "@musubi/provider-microsoft",
+      "runtimeFiles": 4,
+      "toolingProductionSubsetFiles": 4
+    },
+    {
+      "name": "@musubi/provider-caldav",
+      "runtimeFiles": 10,
+      "toolingProductionSubsetFiles": 10
+    },
+    {
+      "name": "@musubi/sync-runtime",
+      "runtimeFiles": 43,
+      "toolingProductionSubsetFiles": 43
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "kind": "actual-production-fair-work-late-host-hint-diagnosis",
+  "source": "packages/sync-runtime/src/fair-work.ts",
+  "beforeExternalKick": {
+    "hostInvokedAt": 8,
+    "hostReturnedAt": 11,
+    "hostNextWakeAt": 10,
+    "candidateCalls": 1,
+    "started": 0,
+    "scheduledTimers": [],
+    "snapshot": {
+      "active": 0,
+      "logicalActive": 0,
+      "regularLogical": 0,
+      "auxiliaryLogical": 0,
+      "parked": 0,
+      "pending": 0,
+      "activeAccounts": 0,
+      "heldCollisions": 0
+    }
+  },
+  "afterExternalKick": {
+    "candidateCalls": 3,
+    "started": 1,
+    "snapshot": {
+      "active": 0,
+      "logicalActive": 0,
+      "regularLogical": 0,
+      "auxiliaryLogical": 0,
+      "parked": 0,
+      "pending": 0,
+      "activeAccounts": 0,
+      "heldCollisions": 0
+    }
+  },
+  "status": "REPRODUCED: host hint elapsed during async lookup is dropped until unrelated kick",
+  "ci812SpecificCauseEstablished": false
+}

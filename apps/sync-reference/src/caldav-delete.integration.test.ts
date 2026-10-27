@@ -1,3 +1,4 @@
+import { referenceTestDatabaseName } from "../conformance/database-name.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -11,7 +12,7 @@ import type { ReferenceClaim, ReferenceCaldavDeleteSeed } from "./model.js";
 
 const adminUrl = process.env.REFERENCE_DATABASE_URL ?? (process.env.ENVIRONMENT === "test" ? process.env.DATABASE_URL : undefined);
 if (!adminUrl) throw new Error("Explicit independent disposable DB required");
-const name = `reference_caldav_delete_${randomUUID().replaceAll("-", "")}`, database = new URL(adminUrl); database.pathname = `/${name}`;
+const name = referenceTestDatabaseName("reference_caldav_delete_"), database = new URL(adminUrl); database.pathname = `/${name}`;
 const admin = new Pool({ connectionString: adminUrl, max: 1 }), pool = new Pool({ connectionString: database.href, max: 5 });
 const key = "ab".repeat(32), store = new ReferenceStore(pool, key), etag = '"original-native-version"';
 const content = { name: "Exact DAV DELETE", notes: null, place: "Room", beginsAt: "2026-10-25T08:00:00.000Z", endsAt: "2026-10-25T09:00:00.000Z" };

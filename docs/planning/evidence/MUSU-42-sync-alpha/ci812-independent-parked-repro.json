@@ -1,0 +1,64 @@
+{
+  "kind": "actual-production-fair-work-parked-crossed-due-diagnosis",
+  "source": "packages/sync-runtime/src/fair-work.ts",
+  "injectedPorts": [
+    "nowMs",
+    "schedule",
+    "async host.candidates",
+    "host.execute"
+  ],
+  "resumeDueAtMs": 10,
+  "beforeExternalKick": {
+    "clockReads": [
+      {
+        "crossing": false,
+        "value": 0
+      },
+      {
+        "crossing": false,
+        "value": 0
+      },
+      {
+        "crossing": true,
+        "value": 8
+      },
+      {
+        "crossing": true,
+        "value": 9
+      },
+      {
+        "crossing": true,
+        "value": 11
+      }
+    ],
+    "started": 1,
+    "finished": 0,
+    "scheduledTimers": [],
+    "snapshot": {
+      "active": 0,
+      "logicalActive": 1,
+      "regularLogical": 1,
+      "auxiliaryLogical": 0,
+      "parked": 1,
+      "pending": 1,
+      "activeAccounts": 0,
+      "heldCollisions": 0
+    }
+  },
+  "afterExternalKick": {
+    "started": 1,
+    "finished": 1,
+    "snapshot": {
+      "active": 0,
+      "logicalActive": 0,
+      "regularLogical": 0,
+      "auxiliaryLogical": 0,
+      "parked": 0,
+      "pending": 0,
+      "activeAccounts": 0,
+      "heldCollisions": 0
+    }
+  },
+  "status": "REPRODUCED: parked continuation due without own wakeup until unrelated kick",
+  "ci812SpecificCauseEstablished": false
+}

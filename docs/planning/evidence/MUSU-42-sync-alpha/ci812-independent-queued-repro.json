@@ -1,0 +1,43 @@
+{
+  "kind": "actual-production-fair-work-crossed-due-diagnosis",
+  "source": "packages/sync-runtime/src/fair-work.ts",
+  "injectedPorts": [
+    "nowMs",
+    "schedule",
+    "host.execute"
+  ],
+  "candidateDueAtMs": 10,
+  "beforeExternalKick": {
+    "clockReads": [
+      9,
+      11
+    ],
+    "started": 0,
+    "scheduledTimers": [],
+    "snapshot": {
+      "active": 0,
+      "logicalActive": 0,
+      "regularLogical": 0,
+      "auxiliaryLogical": 0,
+      "parked": 0,
+      "pending": 1,
+      "activeAccounts": 0,
+      "heldCollisions": 0
+    }
+  },
+  "afterExternalKick": {
+    "started": 1,
+    "snapshot": {
+      "active": 0,
+      "logicalActive": 0,
+      "regularLogical": 0,
+      "auxiliaryLogical": 0,
+      "parked": 0,
+      "pending": 0,
+      "activeAccounts": 0,
+      "heldCollisions": 0
+    }
+  },
+  "status": "REPRODUCED: due pending item without own timer or scheduled pump until unrelated kick",
+  "ci812SpecificCauseEstablished": false
+}

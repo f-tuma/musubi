@@ -4,6 +4,7 @@ import { mock } from "node:test";
 import { setTimeout as pause } from "node:timers/promises";
 import { eq } from "drizzle-orm";
 import { Client, Pool } from "pg";
+import { dropOwnedTestDatabase } from "./owned_database_fixture_cleanup";
 import { TaskSchema } from "@musubi/types";
 import type { CalendarAdapter, TaskReadEvidence } from "./adapter";
 
@@ -160,9 +161,7 @@ async function main() {
   } finally {
     try {
       await Promise.all([...pools].map(pool => pool.end()));
-      const sessions = await admin.query("SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=$1", [databaseName]);
-      assert.equal(sessions.rows[0].count, 0, "Every owned pool must close before nonce database removal");
-      await admin.query(`DROP DATABASE "${databaseName}"`);
+      console.log(JSON.stringify({ cleanup: await dropOwnedTestDatabase(admin, databaseName, "task_ack_delivery_") }));
       console.log(`Task ACK delivery cleanup: ${pools.size} owned pools closed, zero sessions, nonce DB dropped without FORCE: PASS`);
     } finally { connect.mock.restore(); await admin.end(); }
   }

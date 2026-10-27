@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "actual-generic-native-fixture-after-ci811-cleanup-fix",
+  "exitCode": 0,
+  "elapsedSeconds": 3.611,
+  "inputFiles": 2286,
+  "trackedOrHelperChanges": [],
+  "inputsSha256": "850a0aadf3a3b1d722f3b6ed73f964cc9ed9781605a372dc89182782ac69e50a",
+  "logSha256": "260fe5fe3ec5ae0e605c37620fa94f21017bc5c9f1c096ce69598a03b6e85509",
+  "output": "/tmp/musu42-ci811-event-generic-v1-output",
+  "wholeCurrentHeadCiRequired": true,
+  "productionDeployed": false
+}

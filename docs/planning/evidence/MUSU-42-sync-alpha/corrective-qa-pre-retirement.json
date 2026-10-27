@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-corrective-owned-qa-pre-retirement",
+  "containerId": "e325732bc0bd10ff866a6f634a6e3cd55707c659875dd1950b9f5e88af41e62a",
+  "host": "127.0.0.1",
+  "port": 55447,
+  "basePrHead": "8c2d2f5ce9afa2210fe439ee02ce68c00e60f28b",
+  "fixtureSha256": "2b581bef7b6fc4846a2cafe240d31f1d0e5d0e592ee8f6fef40f3842356795b2",
+  "sourceScope": "uncommitted one-line fixture correction over basePrHead",
+  "historicalCandidateManifestSha256": "20f39cb75fc602c25d2918c2cfa1a08ce06c9b4cf346c8d8fa2a32e54cdb71c0",
+  "userQaPortNotTargeted": 55437,
+  "noBackendsTerminated": true,
+  "noDatabaseDropIssued": true,
+  "poolClosed": true,
+  "serverVersion": "17.11",
+  "remainingNondefaultDatabases": [],
+  "otherClientSessions": [],
+  "readyForOwnedContainerRetirement": true
+}

@@ -1,0 +1,1269 @@
+[
+  {
+    "name": "@musubi/sync-reference",
+    "version": null,
+    "private": true,
+    "path": "conformance/apps/sync-reference/package.json",
+    "manifestSha256": "77bb049d662be8de38db431c74399542e482ea06f4e900a37d4b4cea9eec1bfb",
+    "declaredLicense": null,
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/provider-caldav",
+    "version": null,
+    "private": true,
+    "path": "conformance/packages/provider-caldav/package.json",
+    "manifestSha256": "142971785cc86eecb39af96f49c3b2674febf16f7746f6255ba6e47432e98ff7",
+    "declaredLicense": null,
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/provider-google",
+    "version": null,
+    "private": true,
+    "path": "conformance/packages/provider-google/package.json",
+    "manifestSha256": "126ca8b4b1efb48432cf4aeb79e9fdc86d84cdafdefdbdbcc75f7750649d034d",
+    "declaredLicense": null,
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/provider-microsoft",
+    "version": null,
+    "private": true,
+    "path": "conformance/packages/provider-microsoft/package.json",
+    "manifestSha256": "352c196a5f4b1841e106c3fa4e57c19816539ab8cc79b8fd95de9452313335a5",
+    "declaredLicense": null,
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/sync-codec",
+    "version": null,
+    "private": true,
+    "path": "conformance/packages/sync-codec/package.json",
+    "manifestSha256": "e60c7611d0555cf0c6b3fb6a8a375596c64fddaa41a3469a7462f7e615efa92a",
+    "declaredLicense": null,
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/sync-runtime",
+    "version": null,
+    "private": true,
+    "path": "conformance/packages/sync-runtime/package.json",
+    "manifestSha256": "36d6269d650f343b54cf777cae55550816b534ae9ad144a1bde6ec1fe651cb22",
+    "declaredLicense": null,
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/types",
+    "version": null,
+    "private": true,
+    "path": "conformance/packages/types/package.json",
+    "manifestSha256": "f2c074c6afa618eb8d549837069852cdecc703cf610960fa774e54c416e71577",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@esbuild/linux-x64",
+    "version": "0.28.2",
+    "private": false,
+    "path": "runtime/node_modules/@esbuild/linux-x64/package.json",
+    "manifestSha256": "a3924c1835c7849adeb3d82ac24525da0d4190607b60d05265dc6746bde2ddb8",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/esbuild/LICENSE.md",
+        "sourceKind": "matching-version-project-license",
+        "rationale": "esbuild platform binary uses matching installed esbuild version/license text",
+        "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+        "text": "licenses/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/provider-caldav",
+    "version": null,
+    "private": true,
+    "path": "runtime/node_modules/@musubi/provider-caldav/package.json",
+    "manifestSha256": "142971785cc86eecb39af96f49c3b2674febf16f7746f6255ba6e47432e98ff7",
+    "declaredLicense": null,
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/provider-google",
+    "version": null,
+    "private": true,
+    "path": "runtime/node_modules/@musubi/provider-google/package.json",
+    "manifestSha256": "126ca8b4b1efb48432cf4aeb79e9fdc86d84cdafdefdbdbcc75f7750649d034d",
+    "declaredLicense": null,
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/provider-microsoft",
+    "version": null,
+    "private": true,
+    "path": "runtime/node_modules/@musubi/provider-microsoft/package.json",
+    "manifestSha256": "352c196a5f4b1841e106c3fa4e57c19816539ab8cc79b8fd95de9452313335a5",
+    "declaredLicense": null,
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/sync-codec",
+    "version": null,
+    "private": true,
+    "path": "runtime/node_modules/@musubi/sync-codec/package.json",
+    "manifestSha256": "e60c7611d0555cf0c6b3fb6a8a375596c64fddaa41a3469a7462f7e615efa92a",
+    "declaredLicense": null,
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/sync-runtime",
+    "version": null,
+    "private": true,
+    "path": "runtime/node_modules/@musubi/sync-runtime/package.json",
+    "manifestSha256": "36d6269d650f343b54cf777cae55550816b534ae9ad144a1bde6ec1fe651cb22",
+    "declaredLicense": null,
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/types",
+    "version": null,
+    "private": true,
+    "path": "runtime/node_modules/@musubi/types/package.json",
+    "manifestSha256": "f2c074c6afa618eb8d549837069852cdecc703cf610960fa774e54c416e71577",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "esbuild",
+    "version": "0.28.2",
+    "private": false,
+    "path": "runtime/node_modules/esbuild/package.json",
+    "manifestSha256": "9d0bc453f4e791553c4cc2298ba023b409241fd9801e494741666eb0f6051490",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/esbuild/LICENSE.md",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+        "text": "licenses/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+      }
+    ]
+  },
+  {
+    "name": "ical.js",
+    "version": "2.2.1",
+    "private": false,
+    "path": "runtime/node_modules/ical.js/package.json",
+    "manifestSha256": "dc7aabab93308e64a72817dca00897e6719afa20b9b2ca4f509cdbf1bb6ded2c",
+    "declaredLicense": "MPL-2.0",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/ical.js/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5",
+        "text": "licenses/1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5.txt"
+      }
+    ]
+  },
+  {
+    "name": "ipaddr.js",
+    "version": "1.9.1",
+    "private": false,
+    "path": "runtime/node_modules/ipaddr.js/package.json",
+    "manifestSha256": "fc1071893728a0e78fa40ce0dbe04c5a1021179fdcb5b229f274e3556d6a87cd",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/ipaddr.js/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "62568a2d1337b77171ecca9db10579163446de1ba6151678e81f06cdc199971b",
+        "text": "licenses/62568a2d1337b77171ecca9db10579163446de1ba6151678e81f06cdc199971b.txt"
+      }
+    ]
+  },
+  {
+    "name": "pg-cloudflare",
+    "version": "1.4.0",
+    "private": false,
+    "path": "runtime/node_modules/pg-cloudflare/package.json",
+    "manifestSha256": "26a5017fe5fa14bb2eaa90fb87a2c54becc2666516ef79ee591694bcb9533531",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/pg-cloudflare/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "192b8f5c96900f04a1271dec39688655d7416c1c6ea84a508e18b50d2b6751f3",
+        "text": "licenses/192b8f5c96900f04a1271dec39688655d7416c1c6ea84a508e18b50d2b6751f3.txt"
+      }
+    ]
+  },
+  {
+    "name": "pg-connection-string",
+    "version": "2.14.0",
+    "private": false,
+    "path": "runtime/node_modules/pg-connection-string/package.json",
+    "manifestSha256": "5e07e70c64af1e8695a91f9371b713106eeed3b52a1d6b7f7238a33f01dd3f20",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/pg-connection-string/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "2244b5486c4427001b6756a87b9a297d427c111dcc3ba64a097492a8979c23d0",
+        "text": "licenses/2244b5486c4427001b6756a87b9a297d427c111dcc3ba64a097492a8979c23d0.txt"
+      }
+    ]
+  },
+  {
+    "name": "pg-int8",
+    "version": "1.0.1",
+    "private": false,
+    "path": "runtime/node_modules/pg-int8/package.json",
+    "manifestSha256": "147155887a41bb6f69ff98b3dde827b7e6a8214c3a71938da4babf8e12adff2e",
+    "declaredLicense": "ISC",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/pg-int8/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "4e8e87ccdfc7e4b47fd89015f78468aa53b6bf43ab6e6e12d43e8f55294911de",
+        "text": "licenses/4e8e87ccdfc7e4b47fd89015f78468aa53b6bf43ab6e6e12d43e8f55294911de.txt"
+      }
+    ]
+  },
+  {
+    "name": "pg-pool",
+    "version": "3.14.0",
+    "private": false,
+    "path": "runtime/node_modules/pg-pool/package.json",
+    "manifestSha256": "0a9924def9e06f791b09a44eaefb227f323a39199887f6ce17b44cb5a9193134",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/pg-pool/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "4f15ee7fc2a72082859d7e0d12dfa4bcdd70b1c744ad3850d07780730ac08557",
+        "text": "licenses/4f15ee7fc2a72082859d7e0d12dfa4bcdd70b1c744ad3850d07780730ac08557.txt"
+      }
+    ]
+  },
+  {
+    "name": "pg-protocol",
+    "version": "1.16.0",
+    "private": false,
+    "path": "runtime/node_modules/pg-protocol/package.json",
+    "manifestSha256": "4ee6a91e60a002e828e64dfab04c232bba566db233a905a1a15e475a0336c73d",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/pg-protocol/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "192b8f5c96900f04a1271dec39688655d7416c1c6ea84a508e18b50d2b6751f3",
+        "text": "licenses/192b8f5c96900f04a1271dec39688655d7416c1c6ea84a508e18b50d2b6751f3.txt"
+      }
+    ]
+  },
+  {
+    "name": "pg-types",
+    "version": "2.2.0",
+    "private": false,
+    "path": "runtime/node_modules/pg-types/package.json",
+    "manifestSha256": "3ec0293cb38cc8d9475e3eb32ac5f19d195bf9fccc8b19a0714e6ecd6e7c2cf0",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/pg-types/README.md",
+        "sourceKind": "embedded-license-readme",
+        "rationale": "same-package declared MIT with explicit heading, copyright and complete grant/condition/warranty/liability; entire README retained",
+        "sha256": "ecda9bca71d3f0cee4e600d1dd2bef336213f39ef2e8fca6a1a1c1c8723f643a",
+        "text": "licenses/ecda9bca71d3f0cee4e600d1dd2bef336213f39ef2e8fca6a1a1c1c8723f643a.txt"
+      }
+    ]
+  },
+  {
+    "name": "pg",
+    "version": "8.23.0",
+    "private": false,
+    "path": "runtime/node_modules/pg/package.json",
+    "manifestSha256": "e42dd36cba6e9dd8dbb6f773a2f7be8a8c3c273e18b155e42e75961a4cb8bc28",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/pg/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "192b8f5c96900f04a1271dec39688655d7416c1c6ea84a508e18b50d2b6751f3",
+        "text": "licenses/192b8f5c96900f04a1271dec39688655d7416c1c6ea84a508e18b50d2b6751f3.txt"
+      }
+    ]
+  },
+  {
+    "name": "pgpass",
+    "version": "1.0.5",
+    "private": false,
+    "path": "runtime/node_modules/pgpass/package.json",
+    "manifestSha256": "d75240eb4fe759c10db9f903838275348676a8bdc1f329e20a833713cd7c99bd",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/pgpass/README.md",
+        "sourceKind": "embedded-license-readme",
+        "rationale": "same-package declared MIT with explicit heading, copyright and complete grant/condition/warranty/liability; entire README retained",
+        "sha256": "62549909404b5a0dcb2b4b74c9a930baf8095dbcfa1543c4ffc79378acd22b57",
+        "text": "licenses/62549909404b5a0dcb2b4b74c9a930baf8095dbcfa1543c4ffc79378acd22b57.txt"
+      }
+    ]
+  },
+  {
+    "name": "postgres-array",
+    "version": "2.0.0",
+    "private": false,
+    "path": "runtime/node_modules/postgres-array/package.json",
+    "manifestSha256": "dcd6a505fcbc032b409ee2838ab2c776dea3a9cfe02b736364b6cb82a946665f",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/postgres-array/license",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "f057f36739d53d228a746de4440c1e0c644ecde06d6beab45337d39c9d12a393",
+        "text": "licenses/f057f36739d53d228a746de4440c1e0c644ecde06d6beab45337d39c9d12a393.txt"
+      }
+    ]
+  },
+  {
+    "name": "postgres-bytea",
+    "version": "1.0.1",
+    "private": false,
+    "path": "runtime/node_modules/postgres-bytea/package.json",
+    "manifestSha256": "9125568c5fb51a65b8f11adb0080c2775b99ee82822d73bff8b56b2a9d47d7aa",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/postgres-bytea/license",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "f057f36739d53d228a746de4440c1e0c644ecde06d6beab45337d39c9d12a393",
+        "text": "licenses/f057f36739d53d228a746de4440c1e0c644ecde06d6beab45337d39c9d12a393.txt"
+      }
+    ]
+  },
+  {
+    "name": "postgres-date",
+    "version": "1.0.7",
+    "private": false,
+    "path": "runtime/node_modules/postgres-date/package.json",
+    "manifestSha256": "03f9edefa96697072075e02df045cc61ed4ca2f8dfffb1ff87f4070bc3404151",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/postgres-date/license",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "f057f36739d53d228a746de4440c1e0c644ecde06d6beab45337d39c9d12a393",
+        "text": "licenses/f057f36739d53d228a746de4440c1e0c644ecde06d6beab45337d39c9d12a393.txt"
+      }
+    ]
+  },
+  {
+    "name": "postgres-interval",
+    "version": "1.2.0",
+    "private": false,
+    "path": "runtime/node_modules/postgres-interval/package.json",
+    "manifestSha256": "cc3056db105e66c9128cb8a387cda782d5f1ae9281be90de0b8d26a90af89c57",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/postgres-interval/license",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "f057f36739d53d228a746de4440c1e0c644ecde06d6beab45337d39c9d12a393",
+        "text": "licenses/f057f36739d53d228a746de4440c1e0c644ecde06d6beab45337d39c9d12a393.txt"
+      }
+    ]
+  },
+  {
+    "name": "sax",
+    "version": "1.6.1",
+    "private": false,
+    "path": "runtime/node_modules/sax/package.json",
+    "manifestSha256": "d7e5ff764b48b9532d1b9a8b481b8d54336e6309e362571e993645b790bea657",
+    "declaredLicense": "BlueOak-1.0.0",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/sax/LICENSE.md",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "8a1af140fdfbf5afd3df27f7e662f989c5b963a300020dfafce42033cae9e004",
+        "text": "licenses/8a1af140fdfbf5afd3df27f7e662f989c5b963a300020dfafce42033cae9e004.txt"
+      }
+    ]
+  },
+  {
+    "name": "split2",
+    "version": "4.2.0",
+    "private": false,
+    "path": "runtime/node_modules/split2/package.json",
+    "manifestSha256": "87b734c3087c8d9ed5d76d1bff00db30f960831ba8705dd18d73b180d08d2140",
+    "declaredLicense": "ISC",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/split2/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "c372ef2fa1dfcb124ed807609751e75e3a009f108c5724916b489288fcb88a0c",
+        "text": "licenses/c372ef2fa1dfcb124ed807609751e75e3a009f108c5724916b489288fcb88a0c.txt"
+      }
+    ]
+  },
+  {
+    "name": "tsx",
+    "version": "4.23.12",
+    "private": false,
+    "path": "runtime/node_modules/tsx/package.json",
+    "manifestSha256": "96aee9fd252d0cc31f3c01468250961f5b338c797bc208700d7db926450c7659",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/tsx/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "8dded67841a9261a622c739fb61c81785e93765de852828ceeb9403d20a74581",
+        "text": "licenses/8dded67841a9261a622c739fb61c81785e93765de852828ceeb9403d20a74581.txt"
+      }
+    ]
+  },
+  {
+    "name": "undici",
+    "version": "7.29.0",
+    "private": false,
+    "path": "runtime/node_modules/undici/package.json",
+    "manifestSha256": "d2fb5736b5adad6a74c3fba9345d756258e1e953a3a2a13c03fca1bd6c9f6c52",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/undici/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27",
+        "text": "licenses/a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27.txt"
+      }
+    ]
+  },
+  {
+    "name": "xml-js",
+    "version": "1.6.11",
+    "private": false,
+    "path": "runtime/node_modules/xml-js/package.json",
+    "manifestSha256": "71b38b1b2915848c890fe8c5effd006b61aff674e163fe87cf47aa0dbb2f61ba",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/xml-js/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "8ada61091ef0ef154a69321483e5ffadf5c50693ca945047ffb90a6b4b12b088",
+        "text": "licenses/8ada61091ef0ef154a69321483e5ffadf5c50693ca945047ffb90a6b4b12b088.txt"
+      }
+    ]
+  },
+  {
+    "name": "xtend",
+    "version": "4.0.2",
+    "private": false,
+    "path": "runtime/node_modules/xtend/package.json",
+    "manifestSha256": "b02ffef8cda96c5c3ee00a00390e63f608362c2ddfb3ed754e181d013a45d48a",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/xtend/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "82e67379203d5794e7c44549847d8d64ae6904591381682360470898bd306821",
+        "text": "licenses/82e67379203d5794e7c44549847d8d64ae6904591381682360470898bd306821.txt"
+      }
+    ]
+  },
+  {
+    "name": "zod",
+    "version": "4.4.3",
+    "private": false,
+    "path": "runtime/node_modules/zod/package.json",
+    "manifestSha256": "c630bd10b52dcf71c112a2bf78dbf2734b9db58d62de663b8d86c2ec2c8cda2e",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/zod/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "3f1189b28e3866e0d979968d466b78f813f76827cfdca1fbb124cc0a5c8841f8",
+        "text": "licenses/3f1189b28e3866e0d979968d466b78f813f76827cfdca1fbb124cc0a5c8841f8.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/sync-reference",
+    "version": null,
+    "private": true,
+    "path": "runtime/package.json",
+    "manifestSha256": "77bb049d662be8de38db431c74399542e482ea06f4e900a37d4b4cea9eec1bfb",
+    "declaredLicense": null,
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@esbuild/linux-x64",
+    "version": "0.28.2",
+    "private": false,
+    "path": "tooling/node_modules/@esbuild/linux-x64/package.json",
+    "manifestSha256": "a3924c1835c7849adeb3d82ac24525da0d4190607b60d05265dc6746bde2ddb8",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "runtime/node_modules/esbuild/LICENSE.md",
+        "sourceKind": "matching-version-project-license",
+        "rationale": "esbuild platform binary uses matching installed esbuild version/license text",
+        "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+        "text": "licenses/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/provider-caldav",
+    "version": null,
+    "private": true,
+    "path": "tooling/node_modules/@musubi/provider-caldav/package.json",
+    "manifestSha256": "142971785cc86eecb39af96f49c3b2674febf16f7746f6255ba6e47432e98ff7",
+    "declaredLicense": null,
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/provider-google",
+    "version": null,
+    "private": true,
+    "path": "tooling/node_modules/@musubi/provider-google/package.json",
+    "manifestSha256": "126ca8b4b1efb48432cf4aeb79e9fdc86d84cdafdefdbdbcc75f7750649d034d",
+    "declaredLicense": null,
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/provider-microsoft",
+    "version": null,
+    "private": true,
+    "path": "tooling/node_modules/@musubi/provider-microsoft/package.json",
+    "manifestSha256": "352c196a5f4b1841e106c3fa4e57c19816539ab8cc79b8fd95de9452313335a5",
+    "declaredLicense": null,
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/sync-codec",
+    "version": null,
+    "private": true,
+    "path": "tooling/node_modules/@musubi/sync-codec/package.json",
+    "manifestSha256": "e60c7611d0555cf0c6b3fb6a8a375596c64fddaa41a3469a7462f7e615efa92a",
+    "declaredLicense": null,
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/sync-runtime",
+    "version": null,
+    "private": true,
+    "path": "tooling/node_modules/@musubi/sync-runtime/package.json",
+    "manifestSha256": "36d6269d650f343b54cf777cae55550816b534ae9ad144a1bde6ec1fe651cb22",
+    "declaredLicense": null,
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@musubi/types",
+    "version": null,
+    "private": true,
+    "path": "tooling/node_modules/@musubi/types/package.json",
+    "manifestSha256": "f2c074c6afa618eb8d549837069852cdecc703cf610960fa774e54c416e71577",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "LICENSE",
+        "sourceKind": "repository-original-license",
+        "rationale": "original license for repository-owned code",
+        "sha256": "7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832",
+        "text": "licenses/7baed7287eb68e5927f71038f0c7617d734b82c1ee830f102331fd4340d39832.txt"
+      }
+    ]
+  },
+  {
+    "name": "@types/node",
+    "version": "25.9.5",
+    "private": false,
+    "path": "tooling/node_modules/@types/node/package.json",
+    "manifestSha256": "46650c7cede37be2d236fc61836ca10d3d5ebec76b806366ea7f24119f062852",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/@types/node/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+        "text": "licenses/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt"
+      }
+    ]
+  },
+  {
+    "name": "@types/pg",
+    "version": "8.23.1",
+    "private": false,
+    "path": "tooling/node_modules/@types/pg/package.json",
+    "manifestSha256": "d122ef1e1bdb760edd5cff70d39597b9b3ae757c80e829bc297cd34fb7f01bd3",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/@types/pg/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+        "text": "licenses/c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383.txt"
+      }
+    ]
+  },
+  {
+    "name": "esbuild",
+    "version": "0.28.2",
+    "private": false,
+    "path": "tooling/node_modules/esbuild/package.json",
+    "manifestSha256": "9d0bc453f4e791553c4cc2298ba023b409241fd9801e494741666eb0f6051490",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/esbuild/LICENSE.md",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681",
+        "text": "licenses/b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681.txt"
+      }
+    ]
+  },
+  {
+    "name": "ical.js",
+    "version": "2.2.1",
+    "private": false,
+    "path": "tooling/node_modules/ical.js/package.json",
+    "manifestSha256": "dc7aabab93308e64a72817dca00897e6719afa20b9b2ca4f509cdbf1bb6ded2c",
+    "declaredLicense": "MPL-2.0",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/ical.js/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5",
+        "text": "licenses/1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5.txt"
+      }
+    ]
+  },
+  {
+    "name": "ipaddr.js",
+    "version": "1.9.1",
+    "private": false,
+    "path": "tooling/node_modules/ipaddr.js/package.json",
+    "manifestSha256": "fc1071893728a0e78fa40ce0dbe04c5a1021179fdcb5b229f274e3556d6a87cd",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/ipaddr.js/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "62568a2d1337b77171ecca9db10579163446de1ba6151678e81f06cdc199971b",
+        "text": "licenses/62568a2d1337b77171ecca9db10579163446de1ba6151678e81f06cdc199971b.txt"
+      }
+    ]
+  },
+  {
+    "name": "pg-cloudflare",
+    "version": "1.4.0",
+    "private": false,
+    "path": "tooling/node_modules/pg-cloudflare/package.json",
+    "manifestSha256": "26a5017fe5fa14bb2eaa90fb87a2c54becc2666516ef79ee591694bcb9533531",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/pg-cloudflare/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "192b8f5c96900f04a1271dec39688655d7416c1c6ea84a508e18b50d2b6751f3",
+        "text": "licenses/192b8f5c96900f04a1271dec39688655d7416c1c6ea84a508e18b50d2b6751f3.txt"
+      }
+    ]
+  },
+  {
+    "name": "pg-connection-string",
+    "version": "2.14.0",
+    "private": false,
+    "path": "tooling/node_modules/pg-connection-string/package.json",
+    "manifestSha256": "5e07e70c64af1e8695a91f9371b713106eeed3b52a1d6b7f7238a33f01dd3f20",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/pg-connection-string/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "2244b5486c4427001b6756a87b9a297d427c111dcc3ba64a097492a8979c23d0",
+        "text": "licenses/2244b5486c4427001b6756a87b9a297d427c111dcc3ba64a097492a8979c23d0.txt"
+      }
+    ]
+  },
+  {
+    "name": "pg-int8",
+    "version": "1.0.1",
+    "private": false,
+    "path": "tooling/node_modules/pg-int8/package.json",
+    "manifestSha256": "147155887a41bb6f69ff98b3dde827b7e6a8214c3a71938da4babf8e12adff2e",
+    "declaredLicense": "ISC",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/pg-int8/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "4e8e87ccdfc7e4b47fd89015f78468aa53b6bf43ab6e6e12d43e8f55294911de",
+        "text": "licenses/4e8e87ccdfc7e4b47fd89015f78468aa53b6bf43ab6e6e12d43e8f55294911de.txt"
+      }
+    ]
+  },
+  {
+    "name": "pg-pool",
+    "version": "3.14.0",
+    "private": false,
+    "path": "tooling/node_modules/pg-pool/package.json",
+    "manifestSha256": "0a9924def9e06f791b09a44eaefb227f323a39199887f6ce17b44cb5a9193134",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/pg-pool/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "4f15ee7fc2a72082859d7e0d12dfa4bcdd70b1c744ad3850d07780730ac08557",
+        "text": "licenses/4f15ee7fc2a72082859d7e0d12dfa4bcdd70b1c744ad3850d07780730ac08557.txt"
+      }
+    ]
+  },
+  {
+    "name": "pg-protocol",
+    "version": "1.16.0",
+    "private": false,
+    "path": "tooling/node_modules/pg-protocol/package.json",
+    "manifestSha256": "4ee6a91e60a002e828e64dfab04c232bba566db233a905a1a15e475a0336c73d",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/pg-protocol/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "192b8f5c96900f04a1271dec39688655d7416c1c6ea84a508e18b50d2b6751f3",
+        "text": "licenses/192b8f5c96900f04a1271dec39688655d7416c1c6ea84a508e18b50d2b6751f3.txt"
+      }
+    ]
+  },
+  {
+    "name": "pg-types",
+    "version": "2.2.0",
+    "private": false,
+    "path": "tooling/node_modules/pg-types/package.json",
+    "manifestSha256": "3ec0293cb38cc8d9475e3eb32ac5f19d195bf9fccc8b19a0714e6ecd6e7c2cf0",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/pg-types/README.md",
+        "sourceKind": "embedded-license-readme",
+        "rationale": "same-package declared MIT with explicit heading, copyright and complete grant/condition/warranty/liability; entire README retained",
+        "sha256": "ecda9bca71d3f0cee4e600d1dd2bef336213f39ef2e8fca6a1a1c1c8723f643a",
+        "text": "licenses/ecda9bca71d3f0cee4e600d1dd2bef336213f39ef2e8fca6a1a1c1c8723f643a.txt"
+      }
+    ]
+  },
+  {
+    "name": "pg",
+    "version": "8.23.0",
+    "private": false,
+    "path": "tooling/node_modules/pg/package.json",
+    "manifestSha256": "e42dd36cba6e9dd8dbb6f773a2f7be8a8c3c273e18b155e42e75961a4cb8bc28",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/pg/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "192b8f5c96900f04a1271dec39688655d7416c1c6ea84a508e18b50d2b6751f3",
+        "text": "licenses/192b8f5c96900f04a1271dec39688655d7416c1c6ea84a508e18b50d2b6751f3.txt"
+      }
+    ]
+  },
+  {
+    "name": "pgpass",
+    "version": "1.0.5",
+    "private": false,
+    "path": "tooling/node_modules/pgpass/package.json",
+    "manifestSha256": "d75240eb4fe759c10db9f903838275348676a8bdc1f329e20a833713cd7c99bd",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/pgpass/README.md",
+        "sourceKind": "embedded-license-readme",
+        "rationale": "same-package declared MIT with explicit heading, copyright and complete grant/condition/warranty/liability; entire README retained",
+        "sha256": "62549909404b5a0dcb2b4b74c9a930baf8095dbcfa1543c4ffc79378acd22b57",
+        "text": "licenses/62549909404b5a0dcb2b4b74c9a930baf8095dbcfa1543c4ffc79378acd22b57.txt"
+      }
+    ]
+  },
+  {
+    "name": "postgres-array",
+    "version": "2.0.0",
+    "private": false,
+    "path": "tooling/node_modules/postgres-array/package.json",
+    "manifestSha256": "dcd6a505fcbc032b409ee2838ab2c776dea3a9cfe02b736364b6cb82a946665f",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/postgres-array/license",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "f057f36739d53d228a746de4440c1e0c644ecde06d6beab45337d39c9d12a393",
+        "text": "licenses/f057f36739d53d228a746de4440c1e0c644ecde06d6beab45337d39c9d12a393.txt"
+      }
+    ]
+  },
+  {
+    "name": "postgres-bytea",
+    "version": "1.0.1",
+    "private": false,
+    "path": "tooling/node_modules/postgres-bytea/package.json",
+    "manifestSha256": "9125568c5fb51a65b8f11adb0080c2775b99ee82822d73bff8b56b2a9d47d7aa",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/postgres-bytea/license",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "f057f36739d53d228a746de4440c1e0c644ecde06d6beab45337d39c9d12a393",
+        "text": "licenses/f057f36739d53d228a746de4440c1e0c644ecde06d6beab45337d39c9d12a393.txt"
+      }
+    ]
+  },
+  {
+    "name": "postgres-date",
+    "version": "1.0.7",
+    "private": false,
+    "path": "tooling/node_modules/postgres-date/package.json",
+    "manifestSha256": "03f9edefa96697072075e02df045cc61ed4ca2f8dfffb1ff87f4070bc3404151",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/postgres-date/license",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "f057f36739d53d228a746de4440c1e0c644ecde06d6beab45337d39c9d12a393",
+        "text": "licenses/f057f36739d53d228a746de4440c1e0c644ecde06d6beab45337d39c9d12a393.txt"
+      }
+    ]
+  },
+  {
+    "name": "postgres-interval",
+    "version": "1.2.0",
+    "private": false,
+    "path": "tooling/node_modules/postgres-interval/package.json",
+    "manifestSha256": "cc3056db105e66c9128cb8a387cda782d5f1ae9281be90de0b8d26a90af89c57",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/postgres-interval/license",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "f057f36739d53d228a746de4440c1e0c644ecde06d6beab45337d39c9d12a393",
+        "text": "licenses/f057f36739d53d228a746de4440c1e0c644ecde06d6beab45337d39c9d12a393.txt"
+      }
+    ]
+  },
+  {
+    "name": "sax",
+    "version": "1.6.1",
+    "private": false,
+    "path": "tooling/node_modules/sax/package.json",
+    "manifestSha256": "d7e5ff764b48b9532d1b9a8b481b8d54336e6309e362571e993645b790bea657",
+    "declaredLicense": "BlueOak-1.0.0",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/sax/LICENSE.md",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "8a1af140fdfbf5afd3df27f7e662f989c5b963a300020dfafce42033cae9e004",
+        "text": "licenses/8a1af140fdfbf5afd3df27f7e662f989c5b963a300020dfafce42033cae9e004.txt"
+      }
+    ]
+  },
+  {
+    "name": "split2",
+    "version": "4.2.0",
+    "private": false,
+    "path": "tooling/node_modules/split2/package.json",
+    "manifestSha256": "87b734c3087c8d9ed5d76d1bff00db30f960831ba8705dd18d73b180d08d2140",
+    "declaredLicense": "ISC",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/split2/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "c372ef2fa1dfcb124ed807609751e75e3a009f108c5724916b489288fcb88a0c",
+        "text": "licenses/c372ef2fa1dfcb124ed807609751e75e3a009f108c5724916b489288fcb88a0c.txt"
+      }
+    ]
+  },
+  {
+    "name": "tsx",
+    "version": "4.23.12",
+    "private": false,
+    "path": "tooling/node_modules/tsx/package.json",
+    "manifestSha256": "96aee9fd252d0cc31f3c01468250961f5b338c797bc208700d7db926450c7659",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/tsx/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "8dded67841a9261a622c739fb61c81785e93765de852828ceeb9403d20a74581",
+        "text": "licenses/8dded67841a9261a622c739fb61c81785e93765de852828ceeb9403d20a74581.txt"
+      }
+    ]
+  },
+  {
+    "name": "typescript",
+    "version": "6.0.3",
+    "private": false,
+    "path": "tooling/node_modules/typescript/package.json",
+    "manifestSha256": "9332e97c30d3e53ed54910b89207ed657fb444066484df6e5b6965bf130865e9",
+    "declaredLicense": "Apache-2.0",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/typescript/LICENSE.txt",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47",
+        "text": "licenses/a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47.txt"
+      },
+      {
+        "source": "tooling/node_modules/typescript/ThirdPartyNoticeText.txt",
+        "sourceKind": "third-party-notice",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "1af3c68039c57e539422da82a4faada506ce6d0ea6f90e0b699d02dbcdb7a90c",
+        "text": "licenses/1af3c68039c57e539422da82a4faada506ce6d0ea6f90e0b699d02dbcdb7a90c.txt"
+      }
+    ]
+  },
+  {
+    "name": "undici-types",
+    "version": "7.24.6",
+    "private": false,
+    "path": "tooling/node_modules/undici-types/package.json",
+    "manifestSha256": "541adf5ec10733ecbf9278ec706914c76b1e5b25cccebdadb7ade8f3066ae052",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/undici-types/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27",
+        "text": "licenses/a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27.txt"
+      }
+    ]
+  },
+  {
+    "name": "undici",
+    "version": "7.29.0",
+    "private": false,
+    "path": "tooling/node_modules/undici/package.json",
+    "manifestSha256": "d2fb5736b5adad6a74c3fba9345d756258e1e953a3a2a13c03fca1bd6c9f6c52",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/undici/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27",
+        "text": "licenses/a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27.txt"
+      }
+    ]
+  },
+  {
+    "name": "xml-js",
+    "version": "1.6.11",
+    "private": false,
+    "path": "tooling/node_modules/xml-js/package.json",
+    "manifestSha256": "71b38b1b2915848c890fe8c5effd006b61aff674e163fe87cf47aa0dbb2f61ba",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/xml-js/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "8ada61091ef0ef154a69321483e5ffadf5c50693ca945047ffb90a6b4b12b088",
+        "text": "licenses/8ada61091ef0ef154a69321483e5ffadf5c50693ca945047ffb90a6b4b12b088.txt"
+      }
+    ]
+  },
+  {
+    "name": "xtend",
+    "version": "4.0.2",
+    "private": false,
+    "path": "tooling/node_modules/xtend/package.json",
+    "manifestSha256": "b02ffef8cda96c5c3ee00a00390e63f608362c2ddfb3ed754e181d013a45d48a",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/xtend/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "82e67379203d5794e7c44549847d8d64ae6904591381682360470898bd306821",
+        "text": "licenses/82e67379203d5794e7c44549847d8d64ae6904591381682360470898bd306821.txt"
+      }
+    ]
+  },
+  {
+    "name": "zod",
+    "version": "4.4.3",
+    "private": false,
+    "path": "tooling/node_modules/zod/package.json",
+    "manifestSha256": "c630bd10b52dcf71c112a2bf78dbf2734b9db58d62de663b8d86c2ec2c8cda2e",
+    "declaredLicense": "MIT",
+    "licenseReview": "pending-owner-review",
+    "licenses": [
+      {
+        "source": "tooling/node_modules/zod/LICENSE",
+        "sourceKind": "package-license-file",
+        "rationale": "included same-package license/notice file; no compatibility conclusion",
+        "sha256": "3f1189b28e3866e0d979968d466b78f813f76827cfdca1fbb124cc0a5c8841f8",
+        "text": "licenses/3f1189b28e3866e0d979968d466b78f813f76827cfdca1fbb124cc0a5c8841f8.txt"
+      }
+    ]
+  }
+]

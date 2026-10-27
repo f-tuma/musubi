@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-root-source-gates-final-summary",
+  "source": {
+    "head": "d3a8867bc6fa91334f3787ac91feffb21989bbfd",
+    "tree": "db1be7c150ee9e1f5b128beef2ddedb1e4eeb144",
+    "archiveSha256": "03f413b0ee18b7b96af47227af952400c50bcb05cffabb2f1079f0dfef94c339"
+  },
+  "receipt": "/tmp/musu42-root-isolated-d3a8867bc6fa-v3/receipt.json",
+  "receiptSha256": "31c4844d9cabbbd07549e01b951bec10a041331c8d1011631b3b61d453883373",
+  "runnerSha256": "e346760211a615758fcfa78d370dbc652a52a866e9c438e7221698c2a83f3ad2",
+  "allCommandsExit0": true,
+  "behavior": {
+    "passed": 598,
+    "failed": 0,
+    "errors": 0,
+    "durationMs": 11263
+  },
+  "suites": 17,
+  "hostPrograms": 6,
+  "hostDatabase": {
+    "database": "c10host_78534e23bf7445cf803d2137bf86b718",
+    "port": 55446,
+    "createExitCode": 0,
+    "create": "{\"database\":\"c10host_78534e23bf7445cf803d2137bf86b718\",\"absentBeforeCreate\":true}\n{\"created\":\"c10host_78534e23bf7445cf803d2137bf86b718\"}",
+    "createStderr": "",
+    "testExitCode": 0,
+    "cleanupExitCode": 0,
+    "cleanup": "{\"database\":\"c10host_78534e23bf7445cf803d2137bf86b718\",\"zeroSessions\":true,\"plainDrop\":true,\"remaining\":0}",
+    "cleanupStderr": ""
+  },
+  "trackedInputChanges": [],
+  "sourceStillCurrent": true,
+  "gitCleanAfter": true,
+  "installedCandidate": false,
+  "liveProvider": false,
+  "deployed": false
+}

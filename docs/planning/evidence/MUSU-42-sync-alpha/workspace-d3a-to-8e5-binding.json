@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-historical-workspace-to-current-source-binding",
+  "historicalSource": {
+    "head": "d3a8867bc6fa91334f3787ac91feffb21989bbfd",
+    "tree": "db1be7c150ee9e1f5b128beef2ddedb1e4eeb144"
+  },
+  "currentSource": {
+    "head": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+    "tree": "dd2c9c7684533f98e898dc3278331c011c313e52"
+  },
+  "historicalProof": "/tmp/musu42-root-source-d3a-final-summary.json",
+  "historicalProofSha256": "25259e843a16d3e705ea5c6c65a521b57eab0183da63ab56b089d92ddcfec76b",
+  "unchangedScopes": [
+    {
+      "path": "apps/api",
+      "historicalGitObject": "8155fb1132b7f4ecebdf33e5a979afeec69d853a",
+      "currentGitObject": "8155fb1132b7f4ecebdf33e5a979afeec69d853a",
+      "equal": true
+    },
+    {
+      "path": "apps/web",
+      "historicalGitObject": "11913751799230384ccfac55231a2864ab6c7841",
+      "currentGitObject": "11913751799230384ccfac55231a2864ab6c7841",
+      "equal": true
+    },
+    {
+      "path": "apps/client",
+      "historicalGitObject": "ebac88b738f14b3f8a1720025ac0484186908b05",
+      "currentGitObject": "ebac88b738f14b3f8a1720025ac0484186908b05",
+      "equal": true
+    },
+    {
+      "path": "apps/ui-catalog",
+      "historicalGitObject": "ed5749c15f4cf4ba943956fb6759af7c180e23d9",
+      "currentGitObject": "ed5749c15f4cf4ba943956fb6759af7c180e23d9",
+      "equal": true
+    },
+    {
+      "path": "apps/sync-reference/src",
+      "historicalGitObject": "0e28b0df1362fadeb4d4166089b0cdef4b118de8",
+      "currentGitObject": "0e28b0df1362fadeb4d4166089b0cdef4b118de8",
+      "equal": true
+    },
+    {
+      "path": "apps/sync-reference/package.json",
+      "historicalGitObject": "d1ad4503e0d7b066c8b02fdf049997f1a524b5a9",
+      "currentGitObject": "d1ad4503e0d7b066c8b02fdf049997f1a524b5a9",
+      "equal": true
+    },
+    {
+      "path": "apps/sync-reference/README.md",
+      "historicalGitObject": "25894abfac5d45c1923f55233cebcd55a77f4c62",
+      "currentGitObject": "25894abfac5d45c1923f55233cebcd55a77f4c62",
+      "equal": true
+    },
+    {
+      "path": "packages",
+      "historicalGitObject": "bdd06feaf7d97d8a1e769f9738c7ee2ff7b39ced",
+      "currentGitObject": "bdd06feaf7d97d8a1e769f9738c7ee2ff7b39ced",
+      "equal": true
+    },
+    {
+      "path": "package.json",
+      "historicalGitObject": "1de6235743255dbe8c7e1d2cffb976850cda7299",
+      "currentGitObject": "1de6235743255dbe8c7e1d2cffb976850cda7299",
+      "equal": true
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "historicalGitObject": "0875ea063cf8890ff316657e86b5665ad3ab9fef",
+      "currentGitObject": "0875ea063cf8890ff316657e86b5665ad3ab9fef",
+      "equal": true
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "historicalGitObject": "77751fcbf7a4625bcabf1cf066cff7139ff40d43",
+      "currentGitObject": "77751fcbf7a4625bcabf1cf066cff7139ff40d43",
+      "equal": true
+    },
+    {
+      "path": ".github/workflows/quality.yml",
+      "historicalGitObject": "fc1020a1fdb64b3b68b8f8968016fc5916fc9277",
+      "currentGitObject": "fc1020a1fdb64b3b68b8f8968016fc5916fc9277",
+      "equal": true
+    },
+    {
+      "path": "scripts/test-behavior.mjs",
+      "historicalGitObject": "85fb8cb5c686f38439f76e6181bff0eb0332b5c0",
+      "currentGitObject": "85fb8cb5c686f38439f76e6181bff0eb0332b5c0",
+      "equal": true
+    },
+    {
+      "path": "scripts/test-behavior.test.mjs",
+      "historicalGitObject": "a8f6f77ec27f8f0e09f9a929fe1292761f31ea94",
+      "currentGitObject": "a8f6f77ec27f8f0e09f9a929fe1292761f31ea94",
+      "equal": true
+    },
+    {
+      "path": "scripts/ci-shards.mjs",
+      "historicalGitObject": "2385747c440a63b4c7a22971dfe91663641d1e20",
+      "currentGitObject": "2385747c440a63b4c7a22971dfe91663641d1e20",
+      "equal": true
+    },
+    {
+      "path": "scripts/ci-shards.test.mjs",
+      "historicalGitObject": "6dec3924c0316ee6297ebd6e746c11ead49f1876",
+      "currentGitObject": "6dec3924c0316ee6297ebd6e746c11ead49f1876",
+      "equal": true
+    }
+  ],
+  "changedPaths": [
+    "apps/sync-reference/conformance/manifest.v1.json",
+    "apps/sync-reference/conformance/runner.test.mjs",
+    "docs/sync-alpha/README.md",
+    "scripts/package-sync-alpha.mjs",
+    "scripts/sync-alpha-common.mjs",
+    "scripts/sync-alpha.test.mjs",
+    "scripts/verify-sync-alpha.mjs"
+  ],
+  "scope": "The full pnpm check, 598 JSON and six real host DB programs ran on d3a only. This records unchanged production/host/frontend/fixture/lock/CI scopes, not a rerun on the current head. New packaging/tooling behavior has focused alpha12 and current source/installed conformance gates; all final PR current-head CI checks remain required.",
+  "workspaceCheckRerunOnCurrentHead": false,
+  "hostDatabaseRerunOnCurrentHead": false,
+  "liveProvider": false,
+  "deployed": false
+}

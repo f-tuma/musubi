@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "kind": "actual-production-fair-work-lost-due-wake-reproduction",
+  "status": "REPRODUCED",
+  "source": "/home/flamendrin/workspace/musubi/packages/sync-runtime/src/fair-work.ts",
+  "sourceSha256": "69d4f6d0c328d65018ca4562b506cfe75b015a16095efc1d5c986c89f16a963d",
+  "clockReads": [
+    {
+      "read": 1,
+      "value": 1000
+    },
+    {
+      "read": 2,
+      "value": 1000
+    },
+    {
+      "read": 3,
+      "value": 1000
+    },
+    {
+      "read": 4,
+      "value": 1001
+    },
+    {
+      "read": 5,
+      "value": 1001
+    },
+    {
+      "read": 6,
+      "value": 1001
+    },
+    {
+      "read": 7,
+      "value": 1001
+    }
+  ],
+  "strandedSnapshot": {
+    "active": 0,
+    "logicalActive": 1,
+    "regularLogical": 1,
+    "auxiliaryLogical": 0,
+    "parked": 1,
+    "pending": 1,
+    "activeAccounts": 0,
+    "heldCollisions": 0
+  },
+  "scheduledWakeupsAtStranding": 0,
+  "completionBeforeExternalKick": false,
+  "completionAfterExternalKick": true,
+  "after": {
+    "active": 0,
+    "logicalActive": 0,
+    "regularLogical": 0,
+    "auxiliaryLogical": 0,
+    "parked": 0,
+    "pending": 0,
+    "activeAccounts": 0,
+    "heldCollisions": 0
+  },
+  "ports": "Actual production createFairWorkCoordinator with explicit clock/schedule/host dependency ports; no scheduler logic copied.",
+  "realDatabase": false,
+  "liveProvider": false,
+  "productionDeployment": false
+}

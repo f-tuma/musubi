@@ -42,7 +42,74 @@ export async function loadFairWorkSuite() {
 }
 export async function runFairWorkScenario(scenario: FairWorkScenario): Promise<Record<string, unknown>> {
   let summary: Record<string, unknown>;
-  if (scenario.id === "active-deferral-releases-submitters") {
+  if (["due-crosses-during-wake-scan", "parked-due-crosses-before-timer"].includes(scenario.id)) {
+    const parked = scenario.id === "parked-due-crosses-before-timer";
+    let completions = 0;
+    for (let crossing = 1; crossing <= 8; crossing++) {
+      let time = 1000, armed = !parked, reads = 0, completed = false;
+      const timers: { at: number; run(): void; active: boolean }[] = [];
+      const coordinator = createFairWorkCoordinator<string>({ capacity: 1,
+        nowMs() { if (armed && ++reads === crossing) time = Math.max(time, 1001); return time; },
+        schedule(run, delay) { const timer = { at: time + delay, run, active: true }; timers.push(timer); return () => { timer.active = false; }; },
+        host: { candidates: async () => ({ candidates: [] }), async execute(_candidate, permit) {
+          if (parked) { armed = true; await coordinator.park(permit, 1001); }
+          completed = true; return settled;
+        } },
+      });
+      const execution = coordinator.submit({ ...candidate("crossing"), dueAtMs: parked ? 1000 : 1001 });
+      void execution.catch(() => {});
+      try {
+        await tick();
+        for (let wake = 0; !completed && wake < 8; wake++) {
+          const timer = timers.find(item => item.active);
+          assert.ok(timer, `Clock crossing ${crossing} must retain an automatic wake for ${parked ? "parked" : "queued"} work`);
+          timer.active = false; time = Math.max(time, timer.at); timer.run(); await tick();
+        }
+        assert.equal(completed, true, `Clock crossing ${crossing} must complete without an unrelated kick`);
+        await execution; await tick(); assert.equal(coordinator.snapshot().active, 0); assert.equal(coordinator.snapshot().pending, 0);
+        completions++;
+      } finally { coordinator.close(); await execution.catch(() => {}); }
+    }
+    summary = { clockCrossings: 8, completions, externalKicks: 0, active: 0, pending: 0 };
+  } else if (scenario.id === "async-future-hint-crosses-due") {
+    let time = 1000, lookups = 0, starts = 0;
+    const timers: { at: number; run(): void; active: boolean }[] = [];
+    const coordinator = createFairWorkCoordinator<string>({ capacity: 1, nowMs: () => time,
+      schedule(run, delay) { const timer = { at: time + delay, run, active: true }; timers.push(timer); return () => { timer.active = false; }; },
+      host: { async candidates(input) {
+        if (++lookups === 1) { assert.equal(input.nowMs, 1000); time = 1001; return { candidates: [], nextWakeAtMs: 1001 }; }
+        return { candidates: starts ? [] : [candidate("late-host")], nextWakeAtMs: 1001 };
+      }, async execute() { starts++; return settled; } },
+    });
+    try {
+      coordinator.kick(); await tick();
+      const timer = timers.find(item => item.active); assert.ok(timer, "A hint future at lookup must survive becoming due during its async response");
+      timer.active = false; time = Math.max(time, timer.at); timer.run(); await tick();
+      assert.equal(starts, 1); assert.ok(lookups <= 4);
+      summary = { starts, unrelatedKicks: 0, timersForRepeatedPastHint: timers.filter(item => item.active).length, active: coordinator.snapshot().active };
+    } finally { coordinator.close(); }
+  } else if (scenario.id === "due-collision-waits-for-release") {
+    let time = 0, blockedStarts = 0;
+    const held = deferred<void>(), started = deferred<void>(), timers: { at: number; run(): void; active: boolean }[] = [];
+    const coordinator = createFairWorkCoordinator<string>({ capacity: 2, nowMs: () => time,
+      schedule(run, delay) { const timer = { at: time + delay, run, active: true }; timers.push(timer); return () => { timer.active = false; }; },
+      host: { candidates: async () => ({ candidates: [] }), async execute(c) {
+        if (c.key === "holder") { started.resolve(); await held.promise; } else blockedStarts++;
+        return settled;
+      } },
+    });
+    const holder = coordinator.submit(candidate("holder", "A", "pull", "A", "resource"));
+    let blocked: Promise<WorkExecutionResult> | undefined;
+    try {
+      await started.promise;
+      blocked = coordinator.submit({ ...candidate("blocked", "B", "pull", "B", "resource"), dueAtMs: 1 }); await tick();
+      const timer = timers.find(item => item.active); assert.ok(timer); timer.active = false; time = timer.at; timer.run(); await tick();
+      const pendingTimers = timers.filter(item => item.active).length;
+      assert.equal(blockedStarts, 0); assert.equal(pendingTimers, 0, "A due resource-blocked job must wait for release without a timer loop");
+      held.resolve(); await Promise.all([holder, blocked]); await tick();
+      summary = { startsBeforeRelease: 0, timersWhileBlocked: pendingTimers, startsAfterRelease: blockedStarts, active: coordinator.snapshot().active };
+    } finally { held.resolve(); coordinator.close(); await Promise.all([holder, blocked].map(item => item?.catch(() => {}))); }
+  } else if (scenario.id === "active-deferral-releases-submitters") {
     const until = 253_402_300_799_999, gate = deferred<void>(), started = deferred<void>();
     let time = 0, offered = false, executions = 0;
     const results: WorkExecutionResult[] = [];

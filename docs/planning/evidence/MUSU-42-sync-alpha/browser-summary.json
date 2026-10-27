@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-final-running-web-summary",
+  "source": {
+    "head": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+    "tree": "dd2c9c7684533f98e898dc3278331c011c313e52",
+    "archiveSha256": "cb14f7c79aaef6854c278fdc1e44dfba9b53e9bfeef26f4050824f11959a6c93"
+  },
+  "archiveScope": "Full tracked repository archive for web/host dependency installation; distinct from the selected standalone packaging-source archive",
+  "runningRoot": "/tmp/musu42-root-isolated-8e5e202c4912-ui-v1/source",
+  "receipt": "/tmp/musu42-root-isolated-8e5e202c4912-ui-v1/final-browser-8e5e202c4912-33f66722b2e8/receipt.json",
+  "receiptSha256": "2425ec1460118a02b0261c779aa93de677e58de3d8a343c814774b2068269538",
+  "interactions": {
+    "required": 22,
+    "passed": 22,
+    "failed": 0,
+    "skipped": 0,
+    "retries": 0
+  },
+  "requiredScreenshots": 26,
+  "freshRetainedScreenshots": 26,
+  "screenshotInventoryComplete": true,
+  "visualInspection": {
+    "reviewer": "root",
+    "actualImagesViewed": [
+      {
+        "originalPath": "/tmp/musubi-k12-live/caldav-rsvp-browser-light.png",
+        "path": "/tmp/musu42-root-isolated-8e5e202c4912-ui-v1/final-browser-8e5e202c4912-33f66722b2e8/screenshots/caldav-rsvp-browser-light.png",
+        "sha256": "ce4316df2796ad202e92f4d44d4290c764f569acaf35081e256735c95fc31836",
+        "size": 17753,
+        "mtimeNs": 1793051252509820039
+      },
+      {
+        "originalPath": "/tmp/musubi-k12-live/caldav-rsvp-browser-dark.png",
+        "path": "/tmp/musu42-root-isolated-8e5e202c4912-ui-v1/final-browser-8e5e202c4912-33f66722b2e8/screenshots/caldav-rsvp-browser-dark.png",
+        "sha256": "fb47d2467013689d88d04dd444f0cb25e2237ab4df7466a74e50ae53fd514a11",
+        "size": 14788,
+        "mtimeNs": 1793051252775824180
+      },
+      {
+        "originalPath": "/tmp/musu42-root-isolated-8e5e202c4912-ui-v1/final-browser-8e5e202c4912-33f66722b2e8/tmp/musubi-behavior-edit-preserves-content-desktop.png",
+        "path": "/tmp/musu42-root-isolated-8e5e202c4912-ui-v1/final-browser-8e5e202c4912-33f66722b2e8/screenshots/musubi-behavior-edit-preserves-content-desktop.png",
+        "sha256": "5416642ae34c1cf096cceb5c913433ef3529ab43928521721da46bafebb180d4",
+        "size": 70744,
+        "mtimeNs": 1793051232629510521
+      },
+      {
+        "originalPath": "/tmp/musu42-root-isolated-8e5e202c4912-ui-v1/final-browser-8e5e202c4912-33f66722b2e8/tmp/musubi-behavior-edit-preserves-content-narrow.png",
+        "path": "/tmp/musu42-root-isolated-8e5e202c4912-ui-v1/final-browser-8e5e202c4912-33f66722b2e8/screenshots/musubi-behavior-edit-preserves-content-narrow.png",
+        "sha256": "bc42b9e4aa1ea5891a3fd76cbc9806ac7ae28b0ebc9db7d7bd303fa4579fe757",
+        "size": 22504,
+        "mtimeNs": 1793051236315247974
+      }
+    ],
+    "observations": [
+      "Light desktop task detail and dark narrow task inspector retain readable status, priority, recurrence, URL and notes with visible Edit action.",
+      "CalDAV RSVP light and dark dialogs show the response picker and primary/secondary actions without clipping."
+    ],
+    "scope": "Four actual retained screenshots viewed; interaction corpus separately asserts its DOM, request, theme, error and overflow contracts."
+  },
+  "cleanup": {
+    "ownedProcessGroup": 1829905,
+    "reaped": true,
+    "groups": [
+      {
+        "pid": 1829797,
+        "directChildReaped": true,
+        "groupAbsent": true
+      },
+      {
+        "pid": 1830079,
+        "directChildReaped": true,
+        "groupAbsent": true
+      },
+      {
+        "pid": 1830188,
+        "directChildReaped": true,
+        "groupAbsent": true
+      },
+      {
+        "pid": 1829905,
+        "directChildReaped": true,
+        "groupAbsent": true
+      }
+    ]
+  },
+  "trackedInputChanges": [],
+  "attemptHistory": {
+    "firstRun": "21/22; HTTP504 Outdated Optimize Dep during cold Vite optimization reload; failed receipt/log/trace retained",
+    "failureEvidence": "browser-cold-start-failure.json",
+    "finalRun": "22/22 on populated optimizer cache, no application/assertion changes or automatic retries"
+  },
+  "realAuthenticationDatabaseProviderEvidence": "Separate from these synthetic API browser fixtures",
+  "productionDeployed": false
+}

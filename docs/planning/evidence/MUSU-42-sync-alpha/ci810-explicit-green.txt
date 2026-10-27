@@ -1,0 +1,3 @@
+{"fixture":{"database":"reference_cross_account_86993a24faa24a5d8ff444c21008b2a7","boundary":"paired-independent-reference"}}
+{"schemaVersion":1,"suite":"reference-cross-account","results":[{"id":"paired-identical-native-locators-foreign-receipt-adoption-ack","status":"passed"},{"id":"denied-a-does-not-authorize-or-block-b","status":"passed"}],"liveProvider":false}
+{"cleanup":{"database":"reference_cross_account_86993a24faa24a5d8ff444c21008b2a7","sessionsBeforeDrop":0,"plainDrop":true,"databaseAbsent":true}}

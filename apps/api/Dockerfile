@@ -36,6 +36,7 @@ RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack 
     /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/pnpm /usr/local/bin/pnpx
 WORKDIR /app
 COPY --from=deploy /prod/api /app
+COPY LICENSE /app/LICENSE
 RUN mkdir -p /app/data/media && chown -R node:node /app/data
 ENV NODE_ENV=production
 

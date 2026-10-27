@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Pool } from "pg";
+import { dropOwnedTestDatabase } from "./owned_database_fixture_cleanup";
 import { EVENT_COMPATIBILITY_BASELINE, EVENT_COMPATIBILITY_BASELINE_SHA256, EVENT_COMPATIBILITY_FIXTURES, EVENT_COMPATIBILITY_CI_FIXTURES, EVENT_COMPATIBILITY_PROCESS_FIXTURES, EVENT_COMPATIBILITY_PROCESS_PHASES, EVENT_COMPATIBILITY_TABLES,
   EVENT_COMPATIBILITY_MICROSOFT_READ_NOW, eventCompatibilityMicrosoftReadClock, eventCompatibilityFixtureSource, eventCompatibilityDataHash, eventCompatibilityNormalizedWitnessInput, eventCompatibilityGeneratedClockResource, eventCompatibilityAlarmWitnessInput, eventCompatibilityNormalizedAlarmWitnessInput, type EventCompatibilityWitness, type EventCompatibilityEchoObservation, type EventCompatibilitySerializerClock, type EventCompatibilityAlarmWitness, type EventFixtureSuite } from "./event_compatibility_fixture_manifest";
 
@@ -336,9 +337,8 @@ async function main() {
               console.log(`Event compatibility ${mode}: ${spec.id}${phase ? `/${phase}: actual SIGKILL and restart` : `: independent fixture assertions and ${receipt.records.length} delivery snapshots`}: PASS`);
             }
           } finally {
-            const sessions = await admin.query("SELECT count(*)::int AS count FROM pg_stat_activity WHERE datname=$1", [database]);
-            assert.equal(sessions.rows[0].count, 0, "Every owned process and pool must close before removing its nonce database");
-            await admin.query(`DROP DATABASE "${database}"`);
+            const cleanup = await dropOwnedTestDatabase(admin, database, "event_compat_");
+            console.log(JSON.stringify({ cleanup, fixture: spec.id, label }));
             console.log(`Event compatibility cleanup: ${spec.id}/${label}: zero sessions, nonce DB dropped without FORCE: PASS`);
           }
         }

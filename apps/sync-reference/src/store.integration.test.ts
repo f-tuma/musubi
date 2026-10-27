@@ -1,3 +1,4 @@
+import { referenceTestDatabaseName } from "../conformance/database-name.js";
 import assert from "node:assert/strict";
 import { randomUUID, createHash } from "node:crypto";
 import { setTimeout as pause } from "node:timers/promises";
@@ -12,7 +13,7 @@ const fallbackUrl = process.env.ENVIRONMENT === "test" ? process.env.DATABASE_UR
 if (!explicitUrl && !fallbackUrl) throw new Error("An explicit reference database or disposable test database is required");
 // CI's Musubi fixture URL is an administrative bootstrap only: host tables
 // are created in a nonce-owned independent database, never its product schema.
-const ownedDatabase = explicitUrl ? undefined : `reference_ledger_${randomUUID().replace(/-/g, "")}`;
+const ownedDatabase = explicitUrl ? undefined : referenceTestDatabaseName("reference_ledger_");
 const admin = ownedDatabase ? new Pool({ connectionString: fallbackUrl, max: 1 }) : undefined;
 const database = new URL(explicitUrl ?? fallbackUrl!);
 if (ownedDatabase) database.pathname = `/${ownedDatabase}`;
@@ -264,7 +265,7 @@ test("admission snapshots immutable A before blocked PostgreSQL locks despite ca
   const f = await fixture();
   const original: ReferenceAdmission = { ...f.input, patch: { name: "Accepted A", notes: "Notes A", place: "Place A" } };
   const supplied: ReferenceAdmission = { ...original, patch: { ...original.patch } };
-  const application = `reference_snapshot_${randomUUID().replace(/-/g, "")}`;
+  const application = referenceTestDatabaseName("reference_snapshot_");
   const delayedPool = new Pool({ connectionString: database.href, max: 1, application_name: application });
   const delayedStore = new ReferenceStore(delayedPool, "ab".repeat(32));
   const blocker = await pool.connect(); let blocked = true;
@@ -331,7 +332,7 @@ test("seed snapshots content, identities and credential AAD before blocked pool 
 test("strong observation validator and full target stay stable across blocked ACK locks", async () => {
   const f = await claimed(); await acceptedAndConfirmed(f.claim);
   const observation = { etag: '"native-v2"', projection: { ...savedProjection(f.claim) } };
-  const application = `reference_ack_${randomUUID().replace(/-/g, "")}`;
+  const application = referenceTestDatabaseName("reference_ack_");
   const delayedPool = new Pool({ connectionString: database.href, max: 1, application_name: application });
   const delayedStore = new ReferenceStore(delayedPool, "ab".repeat(32));
   const blocker = await pool.connect(); let blocked = true;
@@ -409,7 +410,7 @@ test("durable reconnect delay and finish code cannot change during blocked pool 
 
 test("cancelled ACK waiting on PostgreSQL authority lock rolls back despite a live lease", async () => {
   const f = await claimed(); await acceptedAndConfirmed(f.claim);
-  const application = `reference_cancelled_ack_${randomUUID().replace(/-/g, "")}`;
+  const application = referenceTestDatabaseName("reference_cancelled_ack_");
   const delayedPool = new Pool({ connectionString: database.href, max: 1, application_name: application });
   const delayedStore = new ReferenceStore(delayedPool, "ab".repeat(32));
   const blocker = await pool.connect(); let blocked = true;

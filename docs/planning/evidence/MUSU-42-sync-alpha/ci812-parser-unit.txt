@@ -1,0 +1,76 @@
+TAP version 13
+# Subtest: manifest binds exact mode expansion and every declared profile entry
+ok 1 - manifest binds exact mode expansion and every declared profile entry
+  ---
+  duration_ms: 6.156771
+  type: 'test'
+  ...
+# Subtest: portable mode cannot silently select a host-only API file
+ok 2 - portable mode cannot silently select a host-only API file
+  ---
+  duration_ms: 0.669814
+  type: 'test'
+  ...
+# Subtest: JSON proof refuses dropped duplicate skipped and unconsumed inventory
+ok 3 - JSON proof refuses dropped duplicate skipped and unconsumed inventory
+  ---
+  duration_ms: 0.381759
+  type: 'test'
+  ...
+# Subtest: native Node results require a completed module and no skipped TODO or failed cases
+ok 4 - native Node results require a completed module and no skipped TODO or failed cases
+  ---
+  duration_ms: 0.327618
+  type: 'test'
+  ...
+# Subtest: paired reference proof cannot omit either foreign-identity or rights assertion
+ok 5 - paired reference proof cannot omit either foreign-identity or rights assertion
+  ---
+  duration_ms: 0.175119
+  type: 'test'
+  ...
+# Subtest: CLI cannot confuse listing selection duplicate flags and an absent mode
+ok 6 - CLI cannot confuse listing selection duplicate flags and an absent mode
+  ---
+  duration_ms: 0.105091
+  type: 'test'
+  ...
+# Subtest: every module rejects a loaded sentinel without its actual assertion evidence
+ok 7 - every module rejects a loaded sentinel without its actual assertion evidence
+  ---
+  duration_ms: 0.638443
+  type: 'test'
+  ...
+# Subtest: expanded causal cases and external packaging names are required individually
+ok 8 - expanded causal cases and external packaging names are required individually
+  ---
+  duration_ms: 0.213618
+  type: 'test'
+  ...
+# Subtest: an omitted side-effect imported runtime test module cannot satisfy index registration
+ok 9 - an omitted side-effect imported runtime test module cannot satisfy index registration
+  ---
+  duration_ms: 0.461757
+  type: 'test'
+  ...
+# Subtest: every source-expanded loop assertion is required even in a module with other literal tests
+ok 10 - every source-expanded loop assertion is required even in a module with other literal tests
+  ---
+  duration_ms: 1.430711
+  type: 'test'
+  ...
+# Subtest: failed bootstrap reconciliation evidence survives serialization after temporary files are removed
+ok 11 - failed bootstrap reconciliation evidence survives serialization after temporary files are removed
+  ---
+  duration_ms: 0.24431
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 17.070843

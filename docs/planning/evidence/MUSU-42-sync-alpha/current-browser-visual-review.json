@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "kind": "final-fb361-running-web-visual-review",
+  "at": "2026-10-27T08:08:19.668751+00:00",
+  "source": {
+    "head": "fb36100c151bb75323573be8cc9afd9fd689261b",
+    "tree": "0d54cbc311100fbe66d3f835144767fbf2911378",
+    "archiveSha256": "d34b6dda9c6c1f43ee0e62ed79d0f02714332a85832bd51aa9df95475fda0b98"
+  },
+  "receipt": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/receipt.json",
+  "receiptSha256": "4a9d715e8697dee33a3d855d01de70ac8048549bfbe8fc8df60b75e73ef3b9e1",
+  "browserPlugin": "absent",
+  "fallbackReason": "Browser plugin not available; use existing repository Playwright",
+  "requiredPassed": 22,
+  "failed": 0,
+  "skipped": 0,
+  "automaticRetries": 0,
+  "manualAttempts": 3,
+  "retainedFreshScreenshots": 26,
+  "screenshotsInventoryComplete": true,
+  "imagesActuallyViewed": [
+    {
+      "file": "musubi-behavior-edit-preserves-content-desktop.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/musubi-behavior-edit-preserves-content-desktop.png",
+      "sha256": "01399948a8a5a9d27b225d61738818fd86c14ac0e323b692c331f1de5b97c5ef",
+      "width": 1280,
+      "height": 900,
+      "actuallyViewedWith": "tools.view_image in the third run",
+      "assessment": "Title and controls readable; preserved task details or RSVP selection visible; primary action visible; no clipping or overlap observed."
+    },
+    {
+      "file": "musubi-behavior-edit-preserves-content-narrow.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/musubi-behavior-edit-preserves-content-narrow.png",
+      "sha256": "bc42b9e4aa1ea5891a3fd76cbc9806ac7ae28b0ebc9db7d7bd303fa4579fe757",
+      "width": 390,
+      "height": 844,
+      "actuallyViewedWith": "tools.view_image in the third run",
+      "assessment": "Title and controls readable; preserved task details or RSVP selection visible; primary action visible; no clipping or overlap observed."
+    },
+    {
+      "file": "caldav-rsvp-browser-light.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/caldav-rsvp-browser-light.png",
+      "sha256": "ce4316df2796ad202e92f4d44d4290c764f569acaf35081e256735c95fc31836",
+      "width": 440,
+      "height": 238,
+      "actuallyViewedWith": "tools.view_image in the third run",
+      "assessment": "Title and controls readable; preserved task details or RSVP selection visible; primary action visible; no clipping or overlap observed."
+    },
+    {
+      "file": "caldav-rsvp-browser-dark.png",
+      "path": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-4670733a4826/screenshots/caldav-rsvp-browser-dark.png",
+      "sha256": "fb47d2467013689d88d04dd444f0cb25e2237ab4df7466a74e50ae53fd514a11",
+      "width": 390,
+      "height": 303,
+      "actuallyViewedWith": "tools.view_image in the third run",
+      "assessment": "Title and controls readable; preserved task details or RSVP selection visible; primary action visible; no clipping or overlap observed."
+    }
+  ],
+  "sourceTrackedChanges": [],
+  "ownedGroupsAllReaped": true,
+  "firstAttemptRetained": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-590aaef22876/receipt.json",
+  "firstAttemptResult": "20/22; two raw traces show HTTP504 Outdated Optimize Dep during Vite cache renewal. Whole unchanged suite rerun manually; assertions and retry count unchanged.",
+  "authDatabaseNativeScope": "Browser synthetic API fixtures only; actual PostgreSQL/native HTTP boundary proofs are separate. No live-provider or production claim.",
+  "userExplicitlyRequestedAdditionalRun": true,
+  "consecutiveCompleteWarmPasses": 2,
+  "previousCompleteWarmReceipt": "/tmp/musu42-root-isolated-fb36100c151b-ui-v1/final-browser-fb36100c151b-14d5c55ebfe6/receipt.json",
+  "previousVisualProof": "/tmp/musu42-final-fb36100-ui-visual-review.json",
+  "previousVisualProofSha256": "f6d3407cbc4c22a7e725f4ad73a8cb48742e7f205827e4926cc304b8cd60844a"
+}

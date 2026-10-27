@@ -1,3 +1,4 @@
+import { referenceTestDatabaseName } from "../conformance/database-name.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -15,7 +16,7 @@ const baseline = { title: content.name, notes: content.notes, status: "needsActi
 const deferred = () => { let resolve!: () => void, reject!: (reason: unknown) => void; const promise = new Promise<void>((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
 async function main() {
   const adminUrl = process.env.REFERENCE_DATABASE_URL ?? (process.env.ENVIRONMENT === "test" ? process.env.DATABASE_URL : undefined); assert(adminUrl, "Explicit disposable database required");
-  const name = `reference_task_process_${randomUUID().replaceAll("-", "")}`, url = new URL(adminUrl); url.pathname = `/${name}`;
+  const name = referenceTestDatabaseName("reference_task_process_"), url = new URL(adminUrl); url.pathname = `/${name}`;
   const admin = new Pool({ connectionString: adminUrl, max: 1 }); await admin.query(`CREATE DATABASE "${name}"`);
   const pool = new Pool({ connectionString: url.href, max: 4 }), store = new ReferenceTaskStore(pool, key), events = new ReferenceStore(pool, key), children = new Set<ChildProcess>();
   let taskListId = "", taskId = "", operationId = "", mode = "healthy", remote: Record<string, unknown> = {}, methods: string[] = [], bodies: string[] = [], failures: unknown[] = [], metrics = 0, passed = 0;

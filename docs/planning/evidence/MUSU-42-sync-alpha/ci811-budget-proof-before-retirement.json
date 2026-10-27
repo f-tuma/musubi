@@ -1,0 +1,270 @@
+{
+  "schemaVersion": 1,
+  "kind": "C10-CI811-owned-database-cleanup-correction-proof",
+  "status": "PASS",
+  "baseHead": "214d4a28a1ad19daf5301fe4fe7be4b368882e20",
+  "fixtureFile": "apps/api/src/sync/provider_budget.integration.test.ts",
+  "fixtureBeforeSha256": "7d032c4df7f4f89cc45b4f32b35d11111c4ed8260b07ee587329fbb327d4ceb6",
+  "fixtureAfterSha256": "cc7b674880d2690362d72bb0b904d610d1307b0c7716d8eab161ce49210aba0d",
+  "helperFile": "apps/api/src/sync/owned_database_fixture_cleanup.ts",
+  "helperSha256": "9fa48166c23eb3737e79f246e68570e2aa2f15408ed290fd1ededbeff06523dd",
+  "actualProductionProofSources": 47,
+  "allProductionProofBytesMatchBaseGitAndBeforeAfter": true,
+  "inputCount": 49,
+  "inputBeforeReport": "/tmp/musu42-ci811-budget-before-v2.json",
+  "inputBeforeReportSha256": "0834426e2779907bf7b8087259d4a6f5c7d89bcda87ea7d21be284fdecf02077",
+  "inputChangesDuringFinalRun": [],
+  "qa": {
+    "ownedContainer": "2340c3e8fd51185a832bdb299095d780af74bf3cca87e0b72fa712973328d256",
+    "name": "musubi-c10-ci811-qa-20261027",
+    "port": 55448,
+    "imageId": "sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73",
+    "serverVersion": "17.11",
+    "userQa55437Untouched": true,
+    "retirement": "Root owns final retirement after its separate event compatibility run releases."
+  },
+  "ciFailureBoundary": "CI811 reported all budget/native behavior assertions before its immediate session-count cleanup failed with1. Original remaining PID/owner/state were not captured; this proof does not claim the actual CI session was transient.",
+  "diagnosis": {
+    "installedPgPool": "3.14.0",
+    "installedPgPoolSourceSha256": "6f304776edaabde2954cbf8c4366fa6d9512bfba0e408e78cc56b3c46c69d058",
+    "observedSource": "_remove removes the client from _clients before asynchronous client.end(callback); _pulseQueue resolves _endCallback once _clients is empty. Pool.end completion is not an actual backend-absence observation.",
+    "postgresStatistics": "pg_stat_activity current-query information is up-to-date but captured within a transaction; cleanup queries use separate autocommit transactions. No one-second statistics-flush delay is claimed.",
+    "primaryReferences": [
+      "https://node-postgres.com/apis/pool#poolend",
+      "https://www.postgresql.org/docs/17/monitoring-stats.html#MONITORING-STATS-VIEWS"
+    ]
+  },
+  "correction": "Shared fixture-only helper accepts only registered prefixes+32hex nonce, observes actual sessions with sanitized PID/application/state/wait type until zero, bounds waiting and each observation query, then plain DROP and catalog-absence assertion. No fixed sleep establishes success. Main finally always closes admin; combined behavior/cleanup failures preserve both errors.",
+  "regression": "Normal budget integration and focused --cleanup-probe both invoke the same helper. Actual pg client disconnect is gated at its existing dependency port to establish real owned idle backend after real Pool.end. Old immediate assertion is RED; delayed close becomes GREEN only after actual zero. Persistent own client fails bound, leaves DB present and same client usable; explicit client closure then permits cleanup.",
+  "finalActualSummaries": [
+    {
+      "boundary": "actual-postgres-budget-fixture-cleanup",
+      "legacyImmediateAssertion": "RED",
+      "delayedOwnedBackend": {
+        "pid": 95,
+        "state": "idle",
+        "applicationName": "c10-cleanup-delayed-owned",
+        "cleanup": {
+          "database": "c09budget_ce6085ddab2040709e5efc0782646dbb",
+          "sessionsBeforeDrop": 0,
+          "plainDrop": true,
+          "databaseAbsent": true,
+          "checks": 2,
+          "waitMs": 43,
+          "firstSessions": [
+            {
+              "pid": 95,
+              "application_name": "c10-cleanup-delayed-owned",
+              "state": "idle",
+              "wait_event_type": "Client"
+            }
+          ]
+        }
+      },
+      "persistentOwnedBackend": {
+        "pid": 96,
+        "boundedRefusal": true,
+        "configuredWaitMs": 100,
+        "observedWaitMs": 102,
+        "databaseRetained": true,
+        "clientStillUsable": true,
+        "cleanup": {
+          "database": "c09budget_74403c6672db49cbb00baec9d925a3f9",
+          "sessionsBeforeDrop": 0,
+          "plainDrop": true,
+          "databaseAbsent": true,
+          "checks": 1,
+          "waitMs": 19,
+          "firstSessions": []
+        }
+      },
+      "forcedDrop": false,
+      "backendsTerminated": false,
+      "liveProvider": false
+    },
+    {
+      "boundary": "actual-postgres-api-budget-coordinator-native-http",
+      "buckets": {
+        "capacity": 1,
+        "refillPerSecond": 100
+      },
+      "pages": {
+        "discoveryA": 4,
+        "collectionA": 5,
+        "repeatedPageZero": false
+      },
+      "cold401": {
+        "gets401": 1,
+        "tokenPosts": 1,
+        "retryGet": true
+      },
+      "leaderCancellationSharedRefresh": true,
+      "optionalTasksRepeatedStrict": true,
+      "persistedCooldownChildNoSend": true,
+      "acceptedCreateReadback429SqlFault": {
+        "nativeStatus": 201,
+        "readbackStatus": 429,
+        "durableStatus": "unconfirmed",
+        "retainedResponseAddress": true,
+        "failClosedThenRecovered": true
+      },
+      "taskPreflightBudgetDeferral": {
+        "noSavedValidationPoison": true,
+        "realCanonicalAdmission": true,
+        "frozenProjectionRetained": true,
+        "actualRetryCompleted": true,
+        "realValidationErrorRetained": true
+      },
+      "preparedEventDurableClosure": {
+        "wholeOperationCapability": true,
+        "nativeMethods": [
+          "GET",
+          "GET",
+          "PATCH"
+        ],
+        "completedReceipt": true,
+        "repeatedClosureNoSend": true
+      },
+      "malformedHints": {
+        "invalidIgnored": true,
+        "unsupportedPhysicalAccountQuarantine": true,
+        "healthyBProgress": true
+      },
+      "alarmPreviewLinkUserScope": true,
+      "coordinatorClosedDuringCredentialWaitNoSend": true,
+      "stoppedPrequeueIdentityCannotAttachToReactivatedBudget": true,
+      "longQuotaHoldsReleaseRegularCapacity": {
+        "accounts": 4,
+        "exactFutureDue": true,
+        "noFalseAck": true,
+        "noNativeDispatch": true,
+        "healthyBProgress": true
+      },
+      "maxActiveHTTP": 2,
+      "fourSlotSaturationProved": false,
+      "installed": false,
+      "liveProvider": false,
+      "productionDeployment": false,
+      "source": {
+        "apps/api/src/sync/engine.ts": "088ea6b0c378df37c5bac77b023ffd389360d547dbc810b2ac3940fec2bc6d6d",
+        "apps/api/src/sync/work_coordinator.ts": "45c273cc96e38d1fe4f9a197034e550d9ffa7ea42f87f993e82fbbedd17e1ed1",
+        "apps/api/src/sync/provider_budget.ts": "17da453d79e467fb60f656cbe05dc0fd748655e3d80a9497fae8b8d0fd229016",
+        "apps/api/src/sync/oauth.ts": "e8a82629c0dd5e2d25038a1073b4f5fb7e2aaf944e3765797ae66a699b2f57ca",
+        "apps/api/src/sync/provider_http_metrics.ts": "30d170655e9ff58d744d749c7cc63a01fc64320647e3684384e20c906a279856",
+        "apps/api/src/sync/task_delivery.ts": "7765093a8cb67ced78c9c0183dcc193780113c837aed1de01b8ea51384cf82e7",
+        "apps/api/src/sync/google_shared_task_create_delivery.ts": "6658af69ad7616e395653aada6fd022f2552eed50769f8ce52b76fe8b8044ad5",
+        "apps/api/src/sync/adapters/google.ts": "c17c1933420ebac3604105609b2e51744c13c70c412970e8aee81c3cbebc9ffe",
+        "apps/api/src/sync/adapters/google_task_provider_bridge.ts": "d53d39ef2227441109ede032d0b351e911eb1e83cc5548eaf43a56b0c68f6bbb",
+        "apps/api/src/tokenCrypto.ts": "0dade559087ce870b033f57eede7c2853d22639e0ba4a247feb80e5edae8f5c3",
+        "packages/sync-runtime/src/fair-work.ts": "69d4f6d0c328d65018ca4562b506cfe75b015a16095efc1d5c986c89f16a963d",
+        "packages/sync-runtime/src/provider-budget.ts": "0e4e96d47ce20752a361b46872f21c20e18d29db8b2ac7a1fa080516cc092e47",
+        "packages/sync-runtime/src/http-dispatch.ts": "dd893cdf98cb1683529fc17dd69c062aa66228ceca7f250366b9fe1c4e779b2e",
+        "packages/sync-runtime/src/google-task-create.ts": "2adc3c911e4351e0a7b2cf55190a48d7b810e64cb146b08165fa5e106d0a1722",
+        "packages/provider-google/src/task-create.ts": "4a981bc323a48c327e52ada540dbdb08b5536cebd8e0568738f891691e4cc524",
+        "packages/provider-google/src/task-transport.ts": "ff5462aa8ab74dfbf35ac501aee866a04e5036763e7e0dbd705cc423fcdad990",
+        "packages/provider-google/src/http-dispatch.ts": "5af62f481bf5c52a504462efea0e6ff6eb33ded26ae55efcb6e1598d3326e12f",
+        "packages/db/src/schema.ts": "06fb1c62c17fbd910c7859c61c5fd3ae537d7661b3d51985e2928dc83bac956e",
+        "packages/config/src/index.ts": "e74dbb3f0904114f06c3b583582d1b2ef9f435e9ce1e71067f68c27ce97177ad",
+        "packages/config/src/provider-budget.ts": "7c9dea5294f920469d1d9e61fac8be3162c7e31775c6e5d277371f6edddcb205",
+        "packages/db/src/queries/sync-read-work.ts": "8564594a8506a82d381af5e1ba498fb9a3eae0b369da008c3a4fbeed7bb61a6c",
+        "packages/db/src/queries/sync-work-candidates.ts": "e056f7a094c0cf691a4723011465e2139bbc3b70e3b0a3a978448e40fcfdccef",
+        "packages/db/src/queries/provider-budget-cooldowns.ts": "38299ecb64d95460277979f41fd37ca488fd3b78df6ed18aa523c732d7cab3fb",
+        "packages/db/src/queries/read-work-transaction.ts": "01323744ac48dcd114e2cdcea4cdd682d5c2e7ccbf5961f9abe984f7a2c706f5",
+        "packages/db/src/queries/oauth.ts": "319b247f60176b49165816f8724e50f4d2d1aea8d8dda78d0ba4e32be3c10373",
+        "packages/db/src/queries/task-outbox.ts": "d39ba7d825e07bed4a05ce13d5d046aa5bde27188613168953f5fb5e119ee3c2",
+        "packages/db/src/queries/operation-admission.ts": "024b5426a9c853c23659d34c28016b79b78004f2d3211f3e25451ce05bab0e71",
+        "packages/db/drizzle/0086_sync_scheduling.sql": "ac6a559f6cde11074e02464f0ac029b259c510722751004867a144909b0cf402",
+        "apps/api/src/sync/adapters/caldav.ts": "c3cf1b363d89d2b46d121e903d867c5e4f484518c7079d020554227aa4dd5e1e",
+        "apps/api/src/sync/caldav_client.ts": "c0bdc8f4af3480d78d3db01de3d1756f6816f8357c7bccf4359c9a2d67e667db",
+        "apps/api/src/sync/adapters/caldav_alarms.ts": "13d160e2b4096bdd72d3f29ea3e4c68ab70c46ba793872f7b4045d91ed9afdba",
+        "apps/api/src/sync/adapters/caldav_time.ts": "4746ec0ae9d027dcdf9cb3f4b16339289b7a178520eabb9b603e2db8edce16c1",
+        "packages/db/src/queries/caldav.ts": "a640468f1512751a15a0550ef858d4b74da4dcd802829db099427ef9cec9adec",
+        "packages/db/src/queries/caldav-alarms.ts": "e0481d015d40791de5ab7429a3b0c82d833e01408308655aaa31fdf4813d91c7",
+        "packages/provider-caldav/src/network.ts": "55ee2d4e0b8e8b479e6251a75fb1958164b912ea1dd9a0e782a1cf768c646936",
+        "apps/api/src/sync/read_attempt.ts": "44d9070dc9181b1493e1d0ef72eaa2d4fb19295b8baf0962fb6bea597177379a",
+        "packages/db/src/queries/external.ts": "bed2b309b91b1637f5812c467d18a99b6fbc615745292b5fd72b4aec72f257d2",
+        "packages/db/src/queries/source-read.ts": "13b42fae7259958609208a72cef038a7a638c501dab38add085c5e4c1e60fe38",
+        "packages/db/src/queries/tasks.ts": "da506c8e937876950e824cb7ba966c963282b0ef6070c77268aa8dd54331dd46",
+        "packages/db/src/queries/events.ts": "2d0c8a4f0b638d2d2e85c087558091b913f5bf37f7e087a85cd10cfa942cab04",
+        "packages/db/src/queries/event-outbox.ts": "2bef44687ee324cee11ac80c2b7e0c27eda63c02f38802a9062822e73cf2a72c",
+        "packages/db/src/queries/event-outbox-delivery.ts": "8c9c394f9dc8e57a483f3b94b298dd35c0e3fb5a4616fc9a6eea5b8091fe0d9f",
+        "apps/api/src/sync/event_delivery.ts": "3360a12ec94a20de778a41c99b5cfd6b14589d255fa708aeb67a95454c7813fc",
+        "apps/api/src/sync/google_shared_delivery.ts": "00bc36e442ccfce736c451c1d5dd8a7c065b6862028e5bb08e76fd2df68303e6",
+        "apps/api/src/sync/adapters/google_provider_bridge.ts": "c13df72703092c9317be2d932162d5fc854886f296621682d9e77573e03391f3",
+        "packages/sync-runtime/src/google-personal-update.ts": "934d24c746c4e599db18783fd8ae2543fbeb803f4a05781b891e39c13006b56e",
+        "packages/provider-google/src/index.ts": "52cd14888c9bb0eee4469b603e134b12eab8b29fa8b71a43e459e65430b673e7"
+      }
+    },
+    {
+      "cleanup": {
+        "database": "c09budget_60caa9074de140439f680fb5c1dce2d1",
+        "sessionsBeforeDrop": 0,
+        "plainDrop": true,
+        "databaseAbsent": true,
+        "checks": 1,
+        "waitMs": 27,
+        "firstSessions": []
+      }
+    }
+  ],
+  "finalOwnedResourceAudit": {
+    "qaPort": 55448,
+    "ownedPrefix": "c09budget_",
+    "databases": [],
+    "sessions": [],
+    "otherFixtureDatabasesNotTargeted": true,
+    "noBackendsTerminated": true,
+    "auditPoolEnded": true
+  },
+  "logs": {
+    "cleanup-probe-v1": {
+      "path": "/tmp/musu42-ci811-cleanup-probe-v1.log",
+      "sha256": "7d7b252d98ddd4df46aaab16a53851ce815a91d4c1d57a93013998d40ade4777",
+      "exitCode": 1
+    },
+    "cleanup-probe-v2": {
+      "path": "/tmp/musu42-ci811-cleanup-probe-v2.log",
+      "sha256": "f37b1f76e685bcf445ff1938580f0edb1e7b5d353ba11204b6b9c480c9725b30",
+      "exitCode": 0
+    },
+    "cleanup-probe-v3": {
+      "path": "/tmp/musu42-ci811-cleanup-probe-v3.log",
+      "sha256": "095af278a482e3d71519a5bdf62569df7038da7ef8d12df403ecf4684183a811",
+      "exitCode": 0
+    },
+    "budget-full-v1": {
+      "path": "/tmp/musu42-ci811-budget-full-v1.log",
+      "sha256": "f4ca3fc0d2c72357258b4ce1d4e4b68708a30f529dffd6abab8ccf10f0908b19",
+      "exitCode": 0
+    },
+    "budget-full-v2": {
+      "path": "/tmp/musu42-ci811-budget-full-v2.log",
+      "sha256": "bcc585661484ab2ba05f7a8ea5f5aa1e722a546a75e37704b336579eaba60136",
+      "exitCode": 0
+    },
+    "api-typecheck-v1": {
+      "path": "/tmp/musu42-ci811-api-typecheck-v1.log",
+      "sha256": "5d583265f269e89df33f7d181ff2d87489572573f60b18db8562b907c9765428",
+      "exitCode": 2
+    },
+    "api-typecheck-v2": {
+      "path": "/tmp/musu42-ci811-api-typecheck-v2.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0
+    },
+    "api-typecheck-v3": {
+      "path": "/tmp/musu42-ci811-api-typecheck-v3.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0
+    }
+  },
+  "diagnosticFailuresRetained": [
+    "Probev1 last query was given1ms at deadline and timed out before diagnostic assertion; fixed no-new-query afterdeadline plus bounded1s in-flight query.",
+    "Typecheckv1 ESlib lacks AggregateError; replaced with plain Error carrying both original errors, no compiler setting change."
+  ],
+  "installedRuntime": false,
+  "liveProvider": false,
+  "publication": false,
+  "deployed": false,
+  "requiresNewCurrentHeadCI": true
+}

@@ -1,3 +1,4 @@
+import { referenceTestDatabaseName } from "../conformance/database-name.js";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -14,7 +15,7 @@ const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(valu
 const deferred = () => { let resolve!:()=>void,reject!:(error:unknown)=>void;const promise=new Promise<void>((a,b)=>{resolve=a;reject=b;});return{promise,resolve,reject}; };
 async function main() {
   const adminUrl=process.env.REFERENCE_DATABASE_URL??(process.env.ENVIRONMENT === "test"?process.env.DATABASE_URL:undefined);assert(adminUrl,"Disposable independent DB required");
-  const name=`reference_delete_process_${randomUUID().replace(/-/g,"")}`,database=new URL(adminUrl);database.pathname=`/${name}`;
+  const name=referenceTestDatabaseName("reference_delete_process_"),database=new URL(adminUrl);database.pathname=`/${name}`;
   const admin=new Pool({connectionString:adminUrl,max:1});await admin.query(`CREATE DATABASE "${name}"`);
   const pool=new Pool({connectionString:database.href,max:4}),store=new ReferenceStore(pool,key),children=new Set<ChildProcess>();
   let calendarId="",eventId="",mode="healthy",absent=false,writes=0,methods:string[]=[],failures:unknown[]=[],metrics=0;

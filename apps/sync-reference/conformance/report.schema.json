@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sync conformance receipt v1",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "kind",
+    "mode",
+    "source",
+    "candidate",
+    "inventory",
+    "results",
+    "totals",
+    "status",
+    "partial",
+    "installedRuntime",
+    "liveProvider",
+    "deployed"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "sync-conformance-report"
+    },
+    "mode": {
+      "enum": [
+        "deterministic",
+        "reference-db",
+        "host-compat"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "head",
+        "tree"
+      ],
+      "properties": {
+        "head": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "tree": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "candidate": {
+      "type": "object",
+      "required": [
+        "root",
+        "manifestSha256"
+      ],
+      "properties": {
+        "root": {
+          "type": "string",
+          "minLength": 1
+        },
+        "manifestSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "archiveSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "inventory": {
+      "type": "object",
+      "required": [
+        "requiredCaseIDs",
+        "selectedCaseIDs"
+      ],
+      "properties": {
+        "requiredCaseIDs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "selectedCaseIDs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "durationMs",
+          "exitCode",
+          "skipped",
+          "todo",
+          "cleanup"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "passed",
+              "failed"
+            ]
+          },
+          "durationMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "exitCode": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "skipped": {
+            "const": 0
+          },
+          "todo": {
+            "const": 0
+          },
+          "cleanup": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "required",
+                  "completed"
+                ],
+                "properties": {
+                  "required": {
+                    "type": "boolean"
+                  },
+                  "completed": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
+          },
+          "errorCode": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "cleanupEvidence": {
+            "type": "object",
+            "description": "Sanitized owned-fixture allocation/reconciliation facts, retained after temporary logs are removed."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "totals": {
+      "type": "object",
+      "required": [
+        "required",
+        "selected",
+        "passed",
+        "failed",
+        "skipped",
+        "todo"
+      ],
+      "properties": {
+        "required": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "selected": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "todo": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "status": {
+      "enum": [
+        "passed",
+        "failed",
+        "listed"
+      ]
+    },
+    "partial": {
+      "type": "boolean"
+    },
+    "installedRuntime": {
+      "const": false
+    },
+    "liveProvider": {
+      "const": false
+    },
+    "deployed": {
+      "const": false
+    }
+  },
+  "additionalProperties": false
+}

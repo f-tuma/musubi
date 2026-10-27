@@ -1,0 +1,13 @@
+AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+  assert.ok(refusal instanceof assert.AssertionError)
+
+    at cleanupProbe (/home/flamendrin/workspace/musubi/apps/api/src/sync/provider_budget.integration.test.ts:53:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}

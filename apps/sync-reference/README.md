@@ -4,12 +4,12 @@ C05–C07 / MUSU-37–39 runs bounded Google personal event CREATE, UPDATE and D
 PostgreSQL ledger. It uses the C04 native provider ports, the C06 shared `@musubi/sync-runtime`
 already-claimed runner and the published v1 schema/plan validator, with no dependency on Musubi DB, auth, app config or API.
 Its event content model is `ReferenceContent`; bounded Google Task CREATE/UPDATE uses
-the independent richer `ReferenceTaskContent` and four separate task ledger tables.
+the independent richer `ReferenceTaskContent` and five separate task ledger tables.
 Addressed Google Task DELETE uses that task namespace with its own canonical
 tombstone, response evidence and scoped absence ACK. Google Task CREATE reserves
 an unknown native address and adopts it only after an exact full-target readback.
 
-This is an extraction fixture and CLI. It is not the future Calendar Relay
+This is a bounded reference CLI and private technical alpha candidate. It is not the future Calendar Relay
 service. It has no account onboarding, OAuth refresh, scheduler, public API,
 meeting/recurrence support or task hierarchy. Google event CREATE reserves a new personal, nonrecurring timed event using an immutable operation UUID and exact UTC time endpoints. Google DELETE targets an existing exact native address with a strong accepted validator. Microsoft DELETE uses its original native weak ETag for a guarded preflight, with observe-only recovery and no CAS guarantee. Only `name`, `notes` and
 `place` can be changed on an existing personal nonrecurring timed event. The
@@ -21,7 +21,7 @@ The executable reads only `REFERENCE_DATABASE_URL`,
 `REFERENCE_CREDENTIAL_KEY` (64 hexadecimal characters), and optional
 `REFERENCE_ALLOW_PRIVATE_NETWORK` (`true` or `false`, default `false`) for its
 CalDAV network policy. Use its own database;
-`migrate` applies the five event tables and four task ledger tables, never Musubi migrations.
+`migrate` applies the five event tables and five task ledger tables, never Musubi migrations.
 The key protects stored access tokens and strict Basic credential envelopes with AES-256-GCM and connection identity
 as authenticated data. Changing the key requires an explicit credential migration.
 Credentials are never written into operation envelopes or delivery receipts.
@@ -682,3 +682,13 @@ PostgreSQL lineage/authority/rollback cases and native HTTP/CLI/SIGKILL cases
 exercise the actual production store and shared runners. Installed extraction,
 publication, deployment, live providers and full C08 acceptance remain separate
 evidence.
+
+## Reproducible private candidate
+
+The standalone alpha packet is under `docs/sync-alpha` at the repository root.
+Its checked-in packaging and verification commands exercise a frozen Node 22 +
+pinned TSX source artifact, an external consumer and the independent conformance
+corpus. Host-only lifecycle and actual Musubi DB evidence remain separate gates.
+A packaged candidate includes `ARTIFACT-NAVIGATION.md` for local/source links.
+No public package release, live-provider certification or production deployment
+is implied by building or testing that candidate.

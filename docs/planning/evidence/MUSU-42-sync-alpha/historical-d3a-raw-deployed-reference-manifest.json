@@ -1,0 +1,27 @@
+{
+  "name": "@musubi/sync-reference",
+  "private": true,
+  "type": "module",
+  "description": "Independent durable host for bounded event profiles and Google Task CREATE/UPDATE/DELETE with its own task ledger.",
+  "scripts": {
+    "start": "tsx src/cli.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsx src/admission.test.ts && tsx src/runner.test.ts && tsx src/delete.test.ts && tsx src/create.test.ts && tsx src/graph-delete.test.ts && tsx src/caldav-delete.test.ts && tsx src/graph-create.test.ts && tsx src/caldav-create.test.ts && tsx src/task-admission.test.ts && tsx src/task-runner.test.ts && tsx src/task-delete.test.ts && tsx src/task-delete-runner.test.ts && tsx src/task-create.test.ts && tsx src/task-create-runner.test.ts && tsx src/task-intent.test.ts",
+    "test:db": "tsx src/store.integration.test.ts && tsx src/process.integration.test.ts && tsx src/delete.integration.test.ts && tsx src/delete-process.integration.test.ts && tsx src/create.integration.test.ts && tsx src/create-process.integration.test.ts && tsx src/graph-delete.integration.test.ts && tsx src/graph-delete-process.integration.test.ts && tsx src/caldav-delete.integration.test.ts && tsx src/caldav-delete-process.integration.test.ts && tsx src/graph-create.integration.test.ts && tsx src/graph-create-process.integration.test.ts && tsx src/caldav-create.integration.test.ts && tsx src/caldav-create-process.integration.test.ts && tsx src/task-update.integration.test.ts && tsx src/task-update-process.integration.test.ts && tsx src/task-delete.integration.test.ts && tsx src/task-delete-process.integration.test.ts && tsx src/task-create.integration.test.ts && tsx src/task-create-process.integration.test.ts && tsx src/task-intent.integration.test.ts && tsx src/task-intent-process.integration.test.ts && tsx src/cross-account.integration.test.ts"
+  },
+  "dependencies": {
+    "@musubi/provider-caldav": "@musubi/provider-caldav@file:///tmp/sync-alpha-build-SUa9Bm/source/packages/provider-caldav",
+    "@musubi/provider-google": "@musubi/provider-google@file:///tmp/sync-alpha-build-SUa9Bm/source/packages/provider-google",
+    "@musubi/provider-microsoft": "@musubi/provider-microsoft@file:///tmp/sync-alpha-build-SUa9Bm/source/packages/provider-microsoft",
+    "@musubi/sync-codec": "@musubi/sync-codec@file:///tmp/sync-alpha-build-SUa9Bm/source/packages/sync-codec",
+    "@musubi/types": "@musubi/types@file:///tmp/sync-alpha-build-SUa9Bm/source/packages/types",
+    "pg": "8.23.0",
+    "tsx": "4.23.12",
+    "@musubi/sync-runtime": "@musubi/sync-runtime@file:///tmp/sync-alpha-build-SUa9Bm/source/packages/sync-runtime"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1",
+    "typescript": "6.0.3"
+  },
+  "optionalDependencies": {}
+}

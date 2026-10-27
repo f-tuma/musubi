@@ -1,0 +1,3 @@
+{"scenario":"environment-required","status":"passed","poolConstructions":0,"queries":0,"realDatabase":false}
+(node:1858078) ExperimentalWarning: Module mocking is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)

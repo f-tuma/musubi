@@ -1,0 +1,45 @@
+{
+  "command": "node --import tsx imports actual checked-in fair-work scenario driver; four new scenarios",
+  "passed": 4,
+  "failed": 0,
+  "results": [
+    {
+      "id": "due-crosses-during-wake-scan",
+      "result": {
+        "clockCrossings": 8,
+        "completions": 8,
+        "externalKicks": 0,
+        "active": 0,
+        "pending": 0
+      }
+    },
+    {
+      "id": "parked-due-crosses-before-timer",
+      "result": {
+        "clockCrossings": 8,
+        "completions": 8,
+        "externalKicks": 0,
+        "active": 0,
+        "pending": 0
+      }
+    },
+    {
+      "id": "async-future-hint-crosses-due",
+      "result": {
+        "starts": 1,
+        "unrelatedKicks": 0,
+        "timersForRepeatedPastHint": 0,
+        "active": 0
+      }
+    },
+    {
+      "id": "due-collision-waits-for-release",
+      "result": {
+        "startsBeforeRelease": 0,
+        "timersWhileBlocked": 0,
+        "startsAfterRelease": 1,
+        "active": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "suite": "event-compatibility-pg-native",
+  "mode": "new-only",
+  "processAcceptance": false,
+  "suites": [
+    {
+      "suite": "generic-native",
+      "mode": "new-only",
+      "deliveries": 18,
+      "nativeRequests": 78,
+      "families": [
+        "generic"
+      ],
+      "fixtureSha256": "577c57e22b91db9c807cf6991e0f2af51e6be93457fce93934463d30035a92ba",
+      "normalizedSha256": "a8b774c4732d12dd894d08d0b81eb5d958175506d70345e75fb77371d8d5736c",
+      "productionSha256": "8eded235c19a40ded4101590427ac959d291f188f80385253b54865ab4e848ba",
+      "harnessSha256": "7fafcf8d5b2d23126412baaa39579a02aad302d74f680746d5ac72ea5f65c76f",
+      "sourceStable": true,
+      "executorSourceSha256": "3360a12ec94a20de778a41c99b5cfd6b14589d255fa708aeb67a95454c7813fc"
+    }
+  ],
+  "output": "/tmp/musu42-ci811-event-generic-v1-output"
+}

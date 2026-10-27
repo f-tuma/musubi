@@ -32,3 +32,5 @@ for (const args of [["--unknown", "--json"], ["--scenario", "absent", "--json"],
 const listed: string[] = []; assert.equal(await runCli(["--list", "--json"], line => listed.push(line)), 0);
 assert.deepEqual(JSON.parse(listed[0]!).scenarios.map((item: { id: string }) => item.id), suite.scenarios.map(item => item.id));
 console.log(`Google task DELETE: ${suite.scenarios.length} actual codec/kernel/provider scenarios + ${negative} fail-closed schema/harness checks passed; no DB or live-provider claim.`);
+
+console.log("SYNC_CONFORMANCE_COMPLETE:harness/google-task-delete-harness");

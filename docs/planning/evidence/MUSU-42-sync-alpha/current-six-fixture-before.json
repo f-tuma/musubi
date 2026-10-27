@@ -1,0 +1,9 @@
+{
+  "apps/api/src/sync/task_compatibility_delivery.integration.test.ts": "575d3ab57903d3d0d18d7e6709fb09827b79295b9b7274635d319430d2141031",
+  "apps/api/src/sync/google_task_causal_delivery.integration.test.ts": "6c7c277c73b7fa7aece69788814692c7c8edfb4d311e0437d86ce22fed597406",
+  "apps/api/src/sync/google_shared_task_update_delivery.integration.test.ts": "122573fe3130862bc74593a7aff25d41784b53e87d283b2061cb82f57bba18d2",
+  "apps/api/src/sync/google_shared_task_delete_delivery.integration.test.ts": "d8bdba9954bd10d52a5a012c6e2fe09b64eb6637eb8bd861bacefc228b38617e",
+  "apps/api/src/sync/google_shared_task_create_delivery.integration.test.ts": "12480bb505869969846a7c1f5bf0271960c2eb1a5c127997fc0c9e90c1b955bb",
+  "apps/api/src/sync/task_ack_delivery.integration.test.ts": "44535f4354a294bcab3ecccb5aaaa20f659b10a7ab0dd163c77a53ef8413773e",
+  "apps/api/src/sync/owned_database_fixture_cleanup.ts": "9fa48166c23eb3737e79f246e68570e2aa2f15408ed290fd1ededbeff06523dd"
+}

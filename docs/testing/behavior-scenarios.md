@@ -4,8 +4,17 @@ Use small JSON scenarios while editing. Run the affected flow through the
 application after the fast loop passes. The drivers execute production code;
 fixtures supply its dependencies at the existing boundaries.
 
+The Google event UPDATE suite now drives the actual shared kernel, decoder and
+native provider through eight JSON cases, including the distinct reference and
+Musubi completion policies. Start with
+`pnpm test:behavior --suite google-update --scenario fresh-reference-title-update --json`.
+The [standalone alpha corpus](../sync-alpha/README.md) adds exact assertion
+inventories and frozen installed verification. Its pure host compatibility lane
+is separate from the [actual host DB gate](../sync-alpha/host-database.md).
+
 ```sh
 pnpm test:behavior --list
+pnpm test:behavior --suite fair-work --scenario due-crosses-during-wake-scan --json
 pnpm test:behavior --suite read-attempt --scenario steady-large-pagination --json
 pnpm test:behavior --suite read-attempt --json
 pnpm --filter @musubi/api test:read-attempt
@@ -58,6 +67,10 @@ The sync suite covers a conditional write, exact absence without mutation,
 version conflict before mutation, lost response followed by read-only observation,
 and `Retry-After` without immediate replay. Its bounded summary asserts every
 request method and validator, completion evidence and dispatch uncertainty.
+
+The fair-work suite drives the actual scheduler through its clock, timer and
+candidate ports. Its due-crossing scenarios cover queued and parked work,
+asynchronous candidate lookup, and collision waits without a timer loop.
 
 The read-attempt suite advances 190 progressing leaves and a DB apply through
 95.5 seconds, proving that active pagination has no aggregate 90-second cap.

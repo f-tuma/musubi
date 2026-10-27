@@ -1,3 +1,4 @@
+import { referenceTestDatabaseName } from "../conformance/database-name.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -12,7 +13,7 @@ import type { ReferenceTaskClaim, ReferenceTaskContent } from "./task-model.js";
 import { projectMicrosoftCreatedEvent, type RuntimeTaskNativeFacts } from "@musubi/sync-runtime";
 const adminUrl = process.env.REFERENCE_DATABASE_URL ?? (process.env.ENVIRONMENT === "test" ? process.env.DATABASE_URL : undefined);
 if (!adminUrl) throw new Error("Explicit disposable independent DB required");
-const name = `reference_task_${randomUUID().replaceAll("-", "")}`, url = new URL(adminUrl); url.pathname = `/${name}`;
+const name = referenceTestDatabaseName("reference_task_"), url = new URL(adminUrl); url.pathname = `/${name}`;
 const admin = new Pool({ connectionString: adminUrl, max: 1 }), pool = new Pool({ connectionString: url.href, max: 6 }), key = "ab".repeat(32);
 const events = new ReferenceStore(pool, key), store = new ReferenceTaskStore(pool, key), scope = "https://www.googleapis.com/auth/tasks";
 const content: ReferenceTaskContent = { name: "Independent task", notes: "Original notes", state: "doing", dueAt: "2026-10-26T14:45:30.123Z", importance: "high" };

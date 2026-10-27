@@ -1,3 +1,4 @@
+import { referenceTestDatabaseName } from "../conformance/database-name.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -14,7 +15,7 @@ import type { ReferenceTaskCreateAdmission } from "./task-create-model.js";
 
 async function main() {
   const adminUrl = process.env.REFERENCE_DATABASE_URL ?? (process.env.ENVIRONMENT === "test" ? process.env.DATABASE_URL : undefined); if (!adminUrl) throw new Error("Explicit disposable DB required");
-  const name = `reference_task_create_process_${randomUUID().replaceAll("-", "")}`, url = new URL(adminUrl); url.pathname = `/${name}`;
+  const name = referenceTestDatabaseName("reference_task_create_process_"), url = new URL(adminUrl); url.pathname = `/${name}`;
   const admin = new Pool({ connectionString: adminUrl, max: 1 }); await admin.query(`CREATE DATABASE "${name}"`);
   const pool = new Pool({ connectionString: url.href, max: 6 }), key = "ad".repeat(32), events = new ReferenceStore(pool, key), store = new ReferenceTaskStore(pool, key), children = new Set<ChildProcess>();
   const content = { name: "Independent native task", notes: null, state: "doing" as const, dueAt: "2026-10-26T14:45:30.123Z", importance: "high" as const }, token = "synthetic-native-create-token";

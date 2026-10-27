@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "reinstallSupported": false,
+  "files": [
+    {
+      "from": "runtime/pnpm-lock.yaml",
+      "to": "provenance/generated-manager/runtime/pnpm-lock.yaml",
+      "sha256": "a08da32a37c07b2c7a90b8953b663ceb0831005713ad475fbb934cd2d4593fe3",
+      "bytes": 867581,
+      "mode": 420
+    },
+    {
+      "from": "runtime/pnpm-workspace.yaml",
+      "to": "provenance/generated-manager/runtime/pnpm-workspace.yaml",
+      "sha256": "0aac183cfd6b2f69f23da0df89da73b816a965ffdc45d39480687d23dc72abb2",
+      "bytes": 209,
+      "mode": 420
+    },
+    {
+      "from": "runtime/node_modules/.modules.yaml",
+      "to": "provenance/generated-manager/runtime/node_modules/.modules.yaml",
+      "sha256": "b108cc439f09fcb8203e32fc9fc1f8b53449aee0053bc55efcec21d4aeef730c",
+      "bytes": 4011,
+      "mode": 420
+    },
+    {
+      "from": "runtime/node_modules/.pnpm/lock.yaml",
+      "to": "provenance/generated-manager/runtime/node_modules/.pnpm/lock.yaml",
+      "sha256": "dd1e0ffb5a1196e8a05ac90b65d0aa854a6e984149b64d8da96d71ffdb59583d",
+      "bytes": 18097,
+      "mode": 420
+    },
+    {
+      "from": "tooling/pnpm-lock.yaml",
+      "to": "provenance/generated-manager/tooling/pnpm-lock.yaml",
+      "sha256": "a08da32a37c07b2c7a90b8953b663ceb0831005713ad475fbb934cd2d4593fe3",
+      "bytes": 867581,
+      "mode": 420
+    },
+    {
+      "from": "tooling/pnpm-workspace.yaml",
+      "to": "provenance/generated-manager/tooling/pnpm-workspace.yaml",
+      "sha256": "0aac183cfd6b2f69f23da0df89da73b816a965ffdc45d39480687d23dc72abb2",
+      "bytes": 209,
+      "mode": 420
+    },
+    {
+      "from": "tooling/node_modules/.modules.yaml",
+      "to": "provenance/generated-manager/tooling/node_modules/.modules.yaml",
+      "sha256": "8701cde3d99ec8206f565ca83cd14c4fa3a69dead94b88c6543bb4f551378ea2",
+      "bytes": 4277,
+      "mode": 420
+    },
+    {
+      "from": "tooling/node_modules/.pnpm/lock.yaml",
+      "to": "provenance/generated-manager/tooling/node_modules/.pnpm/lock.yaml",
+      "sha256": "ec6104b556b599d324915443769541147b8e20be672f2970645359e0d9702a1a",
+      "bytes": 19132,
+      "mode": 420
+    }
+  ]
+}

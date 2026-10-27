@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-ci811-generic-native-cleanup-correction-evidence",
+  "source": {
+    "priorHead": "214d4a28a1ad19daf5301fe4fe7be4b368882e20",
+    "correctiveHead": "92ea324ed40795d21e74a6ff330c5b430144f07a",
+    "correctiveTree": "d0aaabc64378ecca448b0f9b7e4579eae549c2b1"
+  },
+  "receipt": "ci811-event-generic-receipt.json",
+  "receiptSha256": "d98886c89a6343aed9a1872b0c41e7d89c271a9571eda2f93ca5054d086f879b",
+  "executedRunner": "ci811-event-generic-runner.py",
+  "executedRunnerSha256": "114dbb85af990ac9c05f12a7111a6c209ef3e1062780a485d6d8cefeb1754408",
+  "actualCommand": {
+    "argv": [
+      "pnpm",
+      "--filter",
+      "@musubi/api",
+      "exec",
+      "tsx",
+      "src/sync/event_compatibility_delivery.integration.test.ts"
+    ],
+    "cwd": "/home/flamendrin/workspace/musubi",
+    "explicitEnvironmentKeys": [
+      "ENVIRONMENT",
+      "DATABASE_URL",
+      "MUSUBI_EVENT_COMPATIBILITY_SUITE",
+      "MUSUBI_EVENT_COMPATIBILITY_OUTPUT"
+    ],
+    "suite": "generic-native",
+    "ownSyntheticQaPort": 55448,
+    "timeoutSeconds": 300,
+    "exitCode": 0
+  },
+  "inputs": {
+    "files": 2286,
+    "report": "ci811-event-generic-inputs.json",
+    "reportSha256": "850a0aadf3a3b1d722f3b6ed73f964cc9ed9781605a372dc89182782ac69e50a",
+    "interpretation": "Each regular-file value is SHA256(b'file:' + raw file bytes); each symlink value is SHA256(b'symlink:' + literal os.readlink target bytes). These are domain-separated inventory digests, NOT raw content SHA256s. The executed runner is retained verbatim.",
+    "allInputsUnchangedDuringActualRun": true,
+    "allInputsReconciledToCorrectiveGit": true
+  },
+  "summary": "ci811-event-generic-summary.json",
+  "deliveries": 18,
+  "nativeHttpRequests": 78,
+  "productionFingerprint": {
+    "sha256": "8eded235c19a40ded4101590427ac959d291f188f80385253b54865ab4e848ba",
+    "files": 380,
+    "allFingerprintBytesMatchPrior214AndCorrective92Git": true,
+    "method": "The existing eventCompatibilityProductionFingerprint excludes test/fixture paths, including _fixture_. The new helper is separately captured by the unchanged harness fingerprint predicate; no fingerprint rule was relaxed."
+  },
+  "harnessFingerprintSha256": "7fafcf8d5b2d23126412baaa39579a02aad302d74f680746d5ac72ea5f65c76f",
+  "helperSha256": "9fa48166c23eb3737e79f246e68570e2aa2f15408ed290fd1ededbeff06523dd",
+  "executorSourceSha256": "3360a12ec94a20de778a41c99b5cfd6b14589d255fa708aeb67a95454c7813fc",
+  "ownedPoolsClosed": 2,
+  "cleanup": "Actual log retains sessionsBeforeDrop0, plainDROPtrue, databaseAbsenttrue.",
+  "rawNativeReport": {
+    "path": "/tmp/musu42-ci811-event-generic-v1-output/generic-native-new.json",
+    "bytes": 642736,
+    "sha256": "065d1c3c309fb00a1bf9f4bbbac554aa06800eacd55292f6395dea8681da838b",
+    "scope": "Private raw fixture record; this packet retains its actual completion summary/input inventory/log and reconciles its production/harness metadata. Full payload snapshots are not copied into this summary."
+  },
+  "wholeEventCorpusRerun": false,
+  "requiresNewCurrentHeadCI": true,
+  "deployed": false
+}

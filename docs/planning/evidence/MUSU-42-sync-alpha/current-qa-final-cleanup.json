@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "kind": "MUSU-42-final-owned-QA-cleanup",
+  "at": "2026-10-27T07:52:25.213Z",
+  "status": "passed",
+  "containerId": "a4d5d0fab1e830f1fb0969f88f8190f205d1e049f8f2e3f7054233fbb672ebbc",
+  "port": 55450,
+  "nonMaintenanceDatabases": [],
+  "otherClients": [],
+  "observerPoolEnded": true,
+  "rootHostAndExtraSixReleased": true,
+  "referenceRequiredCleanupCompleted": 23,
+  "production": false
+}

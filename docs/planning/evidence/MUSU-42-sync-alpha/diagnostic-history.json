@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "kind": "c10-diagnostic-history",
+  "scope": "Historical failures and older-candidate probes explain the final gates; none is relabelled as final candidate acceptance.",
+  "entries": [
+    {
+      "stage": "initial-pnpm-pin",
+      "source": "d5402b174e5f1b5f4bd7913499bc7d726105825c",
+      "outcome": "Build stopped before deploy: unrelated clean cwd resolved global pnpm12.4.2; archived packageManager pin must be checked from extracted source.",
+      "correctionEvidence": {
+        "path": "/tmp/musu42-pnpm-archive-diagnostic-v1.json",
+        "sha256": "2500b32f3a4b978b71e038bae724c5af1a8999a90248c2d9447e96ad8d757d08"
+      }
+    },
+    {
+      "stage": "deployed-metadata",
+      "source": "d3a8867bc6fa91334f3787ac91feffb21989bbfd",
+      "outcome": "Both frozen deploys succeeded; validator rejected real pnpm exact-version and workspace URI normalization. Generated installation metadata also retained temporary build paths.",
+      "resolution": "Validate each importer inside its own installed closure; preserve source/raw/normalized manifests and raw generated metadata; use bounded relative targets in preinstalled snapshot. Production source/SQL unchanged.",
+      "rawReferenceManifest": "historical-d3a-raw-deployed-reference-manifest.json"
+    },
+    {
+      "stage": "scheme-only-builtins",
+      "source": "4c32d8bb9652598efb4fb4f0308862a8d5bb70dc",
+      "outcome": "Import audit treated node:test as a file because builtinModules omitted scheme-only builtins.",
+      "correctionEvidence": {
+        "path": "/tmp/musu42-import-audit-4c32-diagnostic-v2.json",
+        "sha256": "963e0a456fb0237dced880e52e37c11108bba76b1d00061ee4e99dfdc5776b87"
+      }
+    },
+    {
+      "stage": "included-license-notices",
+      "source": "4c32d8bb9652598efb4fb4f0308862a8d5bb70dc",
+      "outcome": "Read-only preflight found full MIT notices in installed pg-types and pgpass READMEs and a TypeScript ThirdPartyNoticeText filename.",
+      "correctionEvidence": {
+        "path": "/tmp/musu42-license-discovery-4c32-v2.json",
+        "sha256": "57498b93e2c171cbbdb667570d88c2f8c23c21d27bcf8d970d5c2bd7c2eac62c"
+      },
+      "scopeLimit": "Older-candidate diagnostic; actual final8e5 artifact and all retained notice hashes were verified separately. No legal compatibility decision."
+    },
+    {
+      "stage": "external-consumer-preflight",
+      "source": "4c32d8bb9652598efb4fb4f0308862a8d5bb70dc",
+      "evidence": {
+        "path": "/tmp/musu42-exact-consumer-preflight-4c32-v1.json",
+        "sha256": "594d34b7d1d4cd7d4a13ab22d9c909824ced977badc79e1d3574c1664a0e1494"
+      },
+      "scopeLimit": "Exact consumer literal/args against older installed bytes. Not a full-build or artifact-acceptance substitute."
+    },
+    {
+      "stage": "first-running-web",
+      "source": "8e5e202c4912748e97c02646a8969a4a02543c3c",
+      "outcome": "21/22; trace shows HTTP504 Outdated Optimize Dep during cold Vite reoptimization.",
+      "evidence": "browser-cold-start-failure.json",
+      "resolution": "Identical sources/assertions/retries0; final warm-cache full run22/22 with26 screenshots and all owned groups reaped."
+    }
+  ],
+  "rootWorkspaceSetup": "Initial clean-HOME offline attempts lacked the pinned pnpm metadata and one existing Storybook tarball. Normal frozen install succeeded before the historical d3 pnpm check; no dependency versions or lock inputs were changed.",
+  "productionDeployed": false,
+  "publicRegistryPublished": false
+}

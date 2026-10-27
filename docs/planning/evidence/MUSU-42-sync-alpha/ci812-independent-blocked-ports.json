@@ -1,0 +1,36 @@
+{
+  "actualProductionCoordinator": true,
+  "passed": 2,
+  "results": [
+    {
+      "kind": "account",
+      "timersWhileDueBlocked": 0,
+      "startsAfterRelease": 1,
+      "snapshot": {
+        "active": 0,
+        "logicalActive": 0,
+        "regularLogical": 0,
+        "auxiliaryLogical": 0,
+        "parked": 0,
+        "pending": 0,
+        "activeAccounts": 0,
+        "heldCollisions": 0
+      }
+    },
+    {
+      "kind": "capacity",
+      "timersWhileDueBlocked": 0,
+      "startsAfterRelease": 1,
+      "snapshot": {
+        "active": 0,
+        "logicalActive": 0,
+        "regularLogical": 0,
+        "auxiliaryLogical": 0,
+        "parked": 0,
+        "pending": 0,
+        "activeAccounts": 0,
+        "heldCollisions": 0
+      }
+    }
+  ]
+}

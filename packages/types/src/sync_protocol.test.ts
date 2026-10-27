@@ -210,3 +210,5 @@ assert.equal(SyncErrorSchema.safeParse({ code: "uncertain-dispatch", retry: "aft
 assert.deepEqual(SyncErrorSchema.parse({ code: "uncertain-dispatch", retry: "observe-only" }), { code: "uncertain-dispatch", retry: "observe-only" });
 
 console.log("Host-independent sync profile contracts: OK");
+
+console.log("SYNC_CONFORMANCE_COMPLETE:unit/types/protocol");
