@@ -269,6 +269,9 @@
         "restart-shared-cooldown",
         "parked-pages-b-progress",
         "park-until-auxiliary-cold-chain",
+        "shared-permit-abort-fallback",
+        "shared-permit-parallel-http",
+        "shared-permit-inflight-collision",
         "finite-boundary-cooldown-clocks",
         "max-cooldown-fractional-clocks",
         "long-cooldown-releases-continuations",
@@ -1319,7 +1322,26 @@
         "overlapping inherited children cannot send concurrently under one parent permit",
         "unclaimable re-offers back off while a ready account progresses",
         "parked account cannot fill pending capacity and cancelled continuation never sends",
-        "four parked regular jobs reserve auxiliary headroom and overload new regular work explicitly"
+        "four parked regular jobs reserve auxiliary headroom and overload new regular work explicitly",
+        "HTTP leaf failure rejects queued siblings but permits a subsequently handled fallback",
+        "cancelling a queued HTTP leaf removes only that waiter and preserves FIFO",
+        "an active HTTP caller abort preserves a later fallback until the old dispatch settles",
+        "closing parent work rejects active and queued HTTP leaves before another send",
+        "HTTP cannot enter under an independently parked or expired permit"
+      ],
+      "requiredLogCases": []
+    },
+    {
+      "id": "unit/sync-runtime/fair-work-diagnostics",
+      "mode": "deterministic",
+      "kind": "module",
+      "required": true,
+      "file": "packages/sync-runtime/src/fair-work-diagnostics.test.ts",
+      "timeoutMs": 120000,
+      "requiredNodeCases": [
+        "execution failure retains its original error and bounded phase/family context",
+        "candidate lookup failure is reported without candidate/account identity",
+        "a failing diagnostic sink cannot replace the original execution failure"
       ],
       "requiredLogCases": []
     },
@@ -3059,6 +3081,9 @@
         "json/fair-work/restart-shared-cooldown",
         "json/fair-work/parked-pages-b-progress",
         "json/fair-work/park-until-auxiliary-cold-chain",
+        "json/fair-work/shared-permit-abort-fallback",
+        "json/fair-work/shared-permit-parallel-http",
+        "json/fair-work/shared-permit-inflight-collision",
         "json/fair-work/finite-boundary-cooldown-clocks",
         "json/fair-work/max-cooldown-fractional-clocks",
         "json/fair-work/long-cooldown-releases-continuations",
@@ -3359,6 +3384,7 @@
         "unit/sync-runtime/task-create",
         "unit/sync-runtime/task-causal",
         "unit/sync-runtime/fair-work",
+        "unit/sync-runtime/fair-work-diagnostics",
         "harness/harness",
         "harness/create-harness",
         "harness/microsoft-delete-harness",
