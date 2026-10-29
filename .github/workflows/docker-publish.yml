@@ -1,262 +1,57 @@
-name: Publish Docker images
-
-# Manual release. Build each image on native AMD64 and ARM64 runners, then
-# publish the version and latest manifests only after all builds succeed.
-# The Git tag is created only after both manifests exist and is the sole Dokploy
-# deployment signal. The X.Y alias is not published.
+name: Read-only release API diagnostic
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version, no leading v (e.g. 0.1.2)"
         required: true
         type: string
       expected_source_sha:
-        description: "Approved full 40-character main commit SHA"
         required: true
         type: string
-
 permissions:
   contents: read
-
-concurrency:
-  group: production-release
-  cancel-in-progress: false
-
 jobs:
-  quality-proof:
-    name: Quality provenance
+  diagnose:
+    name: Diagnose GitHub metadata reads only
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions:
-      contents: read
-      actions: read
-    outputs:
-      run_id: ${{ steps.proof.outputs.run_id }}
-      run_attempt: ${{ steps.proof.outputs.run_attempt }}
-      proof_sha256: ${{ steps.proof.outputs.proof_sha256 }}
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-        with:
-          ref: ${{ github.sha }}
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
-        with:
-          node-version: 22
-      - name: Verify all 21 jobs from the exact trusted main push
-        id: proof
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_VERSION: ${{ inputs.version }}
-          EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
-          QUALITY_PROOF_PATH: ${{ runner.temp }}/quality-proof.json
-        run: node scripts/quality-proof.mjs record
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: quality-proof-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/quality-proof.json
-          if-no-files-found: error
-          retention-days: 30
-          overwrite: false
-
-  prepare:
-    needs: quality-proof
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-      actions: read
-    outputs:
-      version: ${{ steps.ver.outputs.version }}
-    steps:
-      - uses: >-
-          actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-        with:
-          ref: ${{ github.sha }}
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
-        with:
-          node-version: 22
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: quality-proof-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/quality-proof
-      - id: ver
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_VERSION: ${{ inputs.version }}
-          EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
-          QUALITY_PROOF_PATH: ${{ runner.temp }}/quality-proof/quality-proof.json
-          QUALITY_PROOF_SHA256: ${{ needs.quality-proof.outputs.proof_sha256 }}
-          QUALITY_RUN_ID: ${{ needs.quality-proof.outputs.run_id }}
-          QUALITY_RUN_ATTEMPT: ${{ needs.quality-proof.outputs.run_attempt }}
-        run: |
-          node scripts/release-guard.mjs check
-          V="$RELEASE_VERSION"
-          node scripts/verify-release.mjs "$V"
-          echo "version=$V" >> "$GITHUB_OUTPUT"
-
-  build:
-    name: Build ${{ matrix.image.scope }} (${{ matrix.platform.arch }})
-    needs: prepare
-    runs-on: ${{ matrix.platform.runner }}
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        image:
-          - name: frgtndev/musubi
-            dockerfile: apps/api/Dockerfile
-            scope: api
-          - name: frgtndev/musubi-web
-            dockerfile: apps/web/Dockerfile
-            scope: web
-        platform:
-          - name: linux/amd64
-            arch: amd64
-            runner: ubuntu-24.04
-          - name: linux/arm64
-            arch: arm64
-            runner: ubuntu-24.04-arm
-    steps:
-      - uses: >-
-          actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-        with:
-          ref: ${{ github.sha }}
-      # Native runners avoid QEMU's illegal-instruction crash during pnpm deploy.
-      - uses: >-
-          docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
-      - uses: >-
-          docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - id: build
-        uses: >-
-          docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
-        with:
-          context: .
-          file: ${{ matrix.image.dockerfile }}
-          platforms: ${{ matrix.platform.name }}
-          outputs: type=image,name=${{ matrix.image.name }},push-by-digest=true,name-canonical=true,push=true
-          labels: org.opencontainers.image.revision=${{ github.sha }}
-          cache-from: type=gha,scope=${{ matrix.image.scope }}-${{ matrix.platform.arch }}
-          cache-to: type=gha,scope=${{ matrix.image.scope }}-${{ matrix.platform.arch }},mode=max
-      - name: Record image digest
-        env:
-          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
-        run: |
-          [[ "$IMAGE_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]
-          mkdir -p "$RUNNER_TEMP/digests"
-          touch "$RUNNER_TEMP/digests/${IMAGE_DIGEST#sha256:}"
-      - uses: >-
-          actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: digests-${{ matrix.image.scope }}-${{ matrix.platform.arch }}
-          path: ${{ runner.temp }}/digests/*
-          if-no-files-found: error
-          retention-days: 1
-          overwrite: true
-
-  publish:
-    name: Publish ${{ matrix.scope }} manifest
-    needs: [prepare, build]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - image: frgtndev/musubi
-            scope: api
-          - image: frgtndev/musubi-web
-            scope: web
-    steps:
-      - uses: >-
-          actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          path: ${{ runner.temp }}/digests
-          pattern: digests-${{ matrix.scope }}-*
-          merge-multiple: true
-      - uses: >-
-          docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
-      - uses: >-
-          docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Validate and publish both architectures
-        env:
-          IMAGE: ${{ matrix.image }}
-          VERSION: ${{ needs.prepare.outputs.version }}
-        run: |
-          shopt -s nullglob
-          digests=("$RUNNER_TEMP/digests/"*)
-          [[ ${#digests[@]} -eq 2 ]] || {
-            echo "::error::Expected one digest for each architecture"
-            exit 1
-          }
-          sources=()
-          for path in "${digests[@]}"; do
-            digest="${path##*/}"
-            [[ "$digest" =~ ^[a-f0-9]{64}$ ]]
-            sources+=("$IMAGE@sha256:$digest")
-          done
-          docker buildx imagetools create --dry-run "${sources[@]}" \
-            > "$RUNNER_TEMP/manifest.json"
-          jq -e '[.manifests[] | select(.platform.os == "linux") | .platform.architecture] | sort == ["amd64", "arm64"]' \
-            "$RUNNER_TEMP/manifest.json"
-          docker buildx imagetools create \
-            --tag "$IMAGE:$VERSION" --tag "$IMAGE:latest" "${sources[@]}"
-
-  release:
-    needs: [quality-proof, prepare, publish]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
     permissions:
       contents: write
       actions: read
     steps:
-      - uses: >-
-          actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-        with:
-          ref: ${{ github.sha }}
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
           node-version: 22
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: quality-proof-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/quality-proof
-      # This fresh, non-force tag push may start Dokploy immediately. Every
-      # production backup/maintenance prerequisite must already be satisfied.
-      # A later release-body failure requires operator reconciliation; never
-      # delete/recreate the tag or silently edit a pre-existing release.
-      - name: Create the deployment tag at the approved source
-        id: deployment_tag
+      - name: Read actual metadata using the job token without publishing
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
           EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
-          QUALITY_PROOF_PATH: ${{ runner.temp }}/quality-proof/quality-proof.json
-          QUALITY_PROOF_SHA256: ${{ needs.quality-proof.outputs.proof_sha256 }}
-          QUALITY_RUN_ID: ${{ needs.quality-proof.outputs.run_id }}
-          QUALITY_RUN_ATTEMPT: ${{ needs.quality-proof.outputs.run_attempt }}
-          QUALITY_RECHECK_PATH: ${{ runner.temp }}/quality-recheck.json
         run: |
-          node scripts/release-guard.mjs tag
-          echo "source_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
-      - name: Retain the final sampled Quality revalidation
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: quality-recheck-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/quality-recheck.json
-          if-no-files-found: warn
-          retention-days: 30
-          overwrite: false
-      - name: Create the GitHub release without updating an existing release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
-          EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
-          OWNED_TAG_SOURCE_SHA: ${{ steps.deployment_tag.outputs.source_sha }}
-        run: node scripts/release-guard.mjs release
+          node --input-type=module <<'JS'
+          const source=process.env.EXPECTED_SOURCE_SHA;
+          if(source!=="6cf27c71a4bd922cc7dbbec9eda069c1a48d4e14") throw new Error("Unexpected diagnostic target");
+          const paths=[
+           ["absence-main","/git/ref/heads/main"], ["absence-tag","/git/ref/tags/v0.2.12"],
+           ["absence-release","/releases/tags/v0.2.12"], ["absence-release-list","/releases?per_page=100&page=1"],
+           ["repository",""], ["main","/git/ref/heads/main"], ["quality-workflow","/actions/workflows/quality.yml"],
+           ["quality-run-list",`/actions/workflows/318873480/runs?head_sha=${source}&event=push&branch=main&per_page=100&page=1`],
+           ["quality-run","/actions/runs/40555107985"], ["quality-jobs","/actions/runs/40555107985/attempts/1/jobs?per_page=100&page=1"],
+           ["quality-run-recheck","/actions/runs/40555107985"],
+           ["quality-run-list-recheck",`/actions/workflows/318873480/runs?head_sha=${source}&event=push&branch=main&per_page=100&page=1`],
+           ["quality-workflow-recheck","/actions/workflows/quality.yml"]
+          ];
+          for(const [endpoint,path] of paths){
+           const result={endpoint,method:"GET"};
+           try{
+            const r=await fetch("https://api.github.com/repos/f-tuma/musubi"+path,{method:"GET",headers:{Accept:"application/vnd.github+json",Authorization:"Bearer "+process.env.GH_TOKEN,"X-GitHub-Api-Version":"2022-11-28"},redirect:"error",signal:AbortSignal.timeout(15000)});
+            result.status=r.status;result.redirected=r.redirected;
+            result.validContentType=/^application\/(?:json|vnd\.github\+json)(?:\s*;|$)/i.test(r.headers.get("content-type")??"");
+            result.hasNextPage=/rel="next"/.test(r.headers.get("link")??"");
+            result.declaredSizeAcceptable=Number(r.headers.get("content-length")??0)<=2*1024*1024;
+            const text=await r.text();result.bodyBytes=Buffer.byteLength(text);
+            try{const body=JSON.parse(text);result.jsonValid=true;result.errorClass=["Bad credentials","Resource not accessible by integration","API rate limit exceeded","Not Found"].find(v=>typeof body.message==="string"&&body.message.startsWith(v))??null;}catch{result.jsonValid=false;}
+           }catch{result.transportFailed=true;}
+           console.log(JSON.stringify(result));
+          }
+          console.log("READ ONLY diagnostic complete; no proof/tag/release/image operation performed");
+          JS

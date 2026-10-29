@@ -221,6 +221,62 @@ test("transport, HTTP, redirects, malformed JSON and paginated replies fail clos
   }
 });
 
+test("read diagnostics identify the actual failing endpoint without retrying or exposing its URL", async (t) => {
+  for (const [key, endpoint] of [
+    ["repository", "repository"], ["main", "main"], ["workflow", "quality-workflow"],
+    ["listing", "quality-run-list"], ["run", "quality-run"], ["jobs", "quality-jobs"],
+  ]) {
+    const f = fixture(t);
+    f.respond = (readKey, _n, data) => readKey === key
+      ? response({ private: "fixture-private-token https://private.invalid/body" }, { status: 403 })
+      : response(data);
+    await assert.rejects(f.collect(), (error) => {
+      assert.equal(error.message, "Quality proof: GitHub read failed, was incomplete, or returned malformed data " +
+        `(endpoint=${endpoint}, stage=http-status, status=403)`);
+      assert.doesNotMatch(error.stack, /fixture-private-token|private\.invalid|Bearer|https?:\/\//);
+      assert.equal(error.cause, undefined);
+      return true;
+    });
+    assert.equal(f.readCounts[key], 1, "failed reads are not retried");
+    assert.equal(f.calls.length, ["repository", "main", "workflow", "listing", "run", "jobs"].indexOf(key) + 1);
+  }
+});
+
+test("later job-read failures expose only static stage and safe numeric status", async (t) => {
+  const secret = "fixture-private-token https://private.invalid/secret-body";
+  const headers = { "content-type": "application/json" };
+  const cases = [
+    { stage: "transport", status: "unknown", respond: () => { throw new Error(secret); } },
+    { stage: "http-status", status: 403, respond: () => response({ private: secret }, { status: 403 }) },
+    { stage: "http-status", status: 403, respond: () => {
+      let reads = 0;
+      return { get status() { return ++reads === 4 ? secret : 403; } };
+    } },
+    { stage: "http-status", status: "unknown", respond: () => ({ status: secret }) },
+    { stage: "redirect", status: 200, respond: () => ({ status: 200, redirected: true, headers: new Headers(headers) }) },
+    { stage: "content-type", status: 200, respond: () => new Response(secret, { headers: { "content-type": "text/html" } }) },
+    { stage: "pagination", status: 200, respond: () => response({ private: secret }, { headers: { ...headers, link: '<https://private.invalid/next>; rel="next"' } }) },
+    { stage: "declared-size", status: 200, respond: () => response({ private: secret }, { headers: { ...headers, "content-length": "2097153" } }) },
+    { stage: "body-read", status: 200, respond: () => ({ status: 200, redirected: false, headers: new Headers(headers), text: async () => { throw new Error(secret); } }) },
+    { stage: "body-size", status: 200, respond: () => new Response(secret + " ".repeat(2 * 1024 * 1024), { headers }) },
+    { stage: "json", status: 200, respond: () => new Response(secret, { headers }) },
+  ];
+  for (const { stage, status, respond } of cases) {
+    const f = fixture(t);
+    f.respond = (key, _n, data) => key === "jobs" ? respond() : response(data);
+    await assert.rejects(f.collect(), (error) => {
+      assert.equal(error.message, "Quality proof: GitHub read failed, was incomplete, or returned malformed data " +
+        `(endpoint=quality-jobs, stage=${stage}, status=${status})`);
+      assert.doesNotMatch(error.stack, /fixture-private-token|private\.invalid|Bearer|https?:\/\//);
+      assert.equal(error.cause, undefined);
+      return true;
+    });
+    assert.equal(f.readCounts.jobs, 1);
+    assert.equal(f.readCounts.run, 1, "failed snapshot never reaches the final run recheck");
+    assert.equal(f.calls.length, 6);
+  }
+});
+
 test("proof serialization and externally pinned hash preserve all sanitized fields", async (t) => {
   const f = fixture(t); const proof = await f.collect();
   const bytes = `${JSON.stringify(proof, null, 2)}\n`;
