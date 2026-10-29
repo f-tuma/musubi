@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { createGoogleTaskCreateProvider } from "@musubi/provider-google";
 import { createMicrosoftPersonalEventCreateProvider } from "@musubi/provider-microsoft";
 import { dispatchNativeHttp } from "../../../provider-google/src/http-dispatch";
+import { dispatchNativeHttp as dispatchCaldavHttp } from "../../../provider-caldav/src/http-dispatch";
 import { TaskSchema, SyncOperationEnvelopeSchema } from "@musubi/types";
 import { encodeTaskV1 } from "@musubi/sync-codec";
 import { createFairWorkCoordinator, type WorkCandidate, type WorkExecutionResult, type WorkPermit } from "../fair-work";
@@ -206,6 +207,12 @@ export async function runFairWorkScenario(scenario: FairWorkScenario): Promise<R
     f.budget.admit(leaf("B")); summary = { coldReason, aReason, bReady: true, tenantScopes: leaf("A").scopes.filter(s => s.dimension === "tenant").length }; f.budget.close();
   } else if (scenario.id === "parked-pages-b-progress") {
     summary = await parkedPages();
+  } else if (scenario.id === "shared-permit-parallel-http") {
+    summary = await parallelHttpLeaves();
+  } else if (scenario.id === "shared-permit-inflight-collision") {
+    summary = await httpLeafCollision();
+  } else if (scenario.id === "shared-permit-abort-fallback") {
+    summary = await httpLeafAbortFallback();
   } else if (scenario.id === "park-until-auxiliary-cold-chain") {
     summary = await auxiliaryColdChain();
   } else if (scenario.id === "finite-boundary-cooldown-clocks") {
@@ -296,6 +303,89 @@ export async function runFairWorkScenario(scenario: FairWorkScenario): Promise<R
     summary = { statuses, writes, blocked: f.budget.snapshot().persistenceBlocked, parsed: parseProviderRetryAfter("not-a-date", 0).kind }; f.budget.close();
   } else throw new Error("Unknown fair work scenario.");
   assert.deepEqual(summary, scenario.expected); return summary;
+}
+
+async function httpLeafAbortFallback(): Promise<Record<string, unknown>> {
+  const entered = deferred<void>(), release = deferred<void>(), fallbackQueued = deferred<void>();
+  const aborted = new AbortController(); let oldSettled = false, fallbackBeforeSettlement = false, siblings = 0, fallbacks = 0;
+  const coordinator = createFairWorkCoordinator<string>({ capacity: 1, host: { async execute(_candidate, permit, signal): Promise<WorkExecutionResult> {
+    const first = coordinator.runHttpLeaf(permit, assertCurrent => dispatchCaldavHttp({ dispatch: (_request, send) => send(() => { assertCurrent(); return undefined; }) },
+      "https://fixture.test/dav/first", { method: "PROPFIND", signal: aborted.signal }, async () => {
+        entered.resolve(); await release.promise; oldSettled = true; aborted.signal.throwIfAborted(); return new Response(null, { status: 207 });
+      }, { nowMonotonicMs: () => 0 }, () => {}), aborted.signal);
+    const sibling = coordinator.runHttpLeaf(permit, async assertCurrent => { assertCurrent(); siblings++; }, signal);
+    const cancelled = await Promise.allSettled([first, sibling]);
+    assert.ok(cancelled.every(result => result.status === "rejected" && result.reason === aborted.signal.reason));
+    const fallback = coordinator.runHttpLeaf(permit, assertCurrent => dispatchCaldavHttp({ dispatch: (_request, send) => send(() => { assertCurrent(); return undefined; }) },
+      "https://fixture.test/dav/fallback", { method: "PROPFIND", signal }, async () => {
+        fallbackBeforeSettlement = !oldSettled; fallbacks++; return new Response(null, { status: 207 });
+      }, { nowMonotonicMs: () => 0 }, () => {}), signal);
+    fallbackQueued.resolve(); const response = await fallback; assert.equal(response.status, 207); return settled;
+  } } });
+  const work = coordinator.submit(candidate("A")); void work.catch(() => {});
+  try { await entered.promise; aborted.abort(new Error("Controlled active leaf cancellation")); await fallbackQueued.promise;
+    assert.equal(fallbacks, 0); release.resolve(); await work; await tick();
+    return { siblings, fallbacks, fallbackBeforeSettlement, logicalActive: coordinator.snapshot().logicalActive };
+  } finally { release.resolve(); coordinator.close(); }
+}
+
+async function parallelHttpLeaves(): Promise<Record<string, unknown>> {
+  const f = fixture(undefined, true, 1); await f.budget.ready();
+  let raw = 0, maxRaw = 0, sends = 0, parks = 0, bComplete = false, bBeforeA = false, finished = false;
+  let statuses: number[] = [];
+  const coordinator = createFairWorkCoordinator<string>({ capacity: 2, nowMs: f.clock.nowEpochMs, schedule: () => () => {}, host: {
+    async execute(c, permit, signal) {
+      if (c.key === "B") { bComplete = true; return settled; }
+      const responses = await Promise.all(["one", "two"].map(label => coordinator.runHttpLeaf(permit, async assertCurrent => {
+        const http = f.budget.decorate(() => ({ ...leaf("A"), targetKey: label }), () => { assertCurrent(); signal.throwIfAborted(); },
+          undefined, undefined, deferral => { parks++; return coordinator.park(permit, deferral.retryAtMs, signal); });
+        return dispatchCaldavHttp(http, `https://fixture.test/dav/${label}`, { method: "PROPFIND", signal }, async () => {
+          raw++; maxRaw = Math.max(raw, maxRaw); sends++;
+          try { await Promise.resolve(); return new Response(null, { status: 207 }); } finally { raw--; }
+        }, f.clock, () => {});
+      }, signal)));
+      statuses = responses.map(response => response.status); bBeforeA = bComplete; return settled;
+    },
+  } });
+  try {
+    const work = Promise.all([coordinator.submit(candidate("A")), coordinator.submit(candidate("B"))]).then(() => { finished = true; });
+    for (let i = 0; i < 30 && !finished; i++) { await tick(); f.advance(500); coordinator.kick(); }
+    assert(finished, "Concurrent SDK leaves must each resume through their original native continuation"); await work; await tick();
+    return { statuses, sends, parks, maxRaw, bBeforeA, logicalActive: coordinator.snapshot().logicalActive };
+  } finally { coordinator.close(); f.budget.close(); }
+}
+
+async function httpLeafCollision(): Promise<Record<string, unknown>> {
+  const f = fixture(undefined, true, 1); await f.budget.ready();
+  assert.throws(() => f.budget.admit(leaf("A")), ProviderDispatchDeferred); f.advance(500);
+  const entered = deferred<void>(), release = deferred<void>();
+  let raw = 0, maxRaw = 0, parks = 0, sends = 0, bComplete = false, bWhileRaw = false, bBeforeSecond = false, finished = false;
+  const coordinator = createFairWorkCoordinator<string>({ capacity: 2, nowMs: f.clock.nowEpochMs, schedule: () => () => {}, host: {
+    async execute(c, permit, signal) {
+      if (c.key === "B") { bWhileRaw = raw !== 0; bComplete = true; return settled; }
+      await Promise.all(["one", "two"].map(label => coordinator.runHttpLeaf(permit, async assertCurrent => {
+        const http = f.budget.decorate(() => ({ ...leaf("A"), targetKey: label }), () => { assertCurrent(); signal.throwIfAborted(); },
+          undefined, undefined, deferral => { parks++; return coordinator.park(permit, deferral.retryAtMs, signal); });
+        await dispatchCaldavHttp(http, `https://fixture.test/dav/${label}`, { method: "PROPFIND", signal }, async () => {
+          raw++; maxRaw = Math.max(raw, maxRaw); sends++;
+          try { if (label === "one") { entered.resolve(); await release.promise; } else bBeforeSecond = bComplete;
+            return new Response(null, { status: 207 });
+          } finally { raw--; }
+        }, f.clock, () => {});
+      }, signal)));
+      return settled;
+    },
+  } });
+  try {
+    const a = coordinator.submit(candidate("A", "A", "pull", "A", "shared")); await entered.promise;
+    const b = coordinator.submit(candidate("B", "B", "pull", "B", "shared")); await tick();
+    const bBeforeFirstRelease = bComplete, heldWhileRaw = coordinator.snapshot().heldCollisions;
+    assert.equal(parks, 0, "Queued siblings cannot park while the first raw HTTP request is in flight");
+    release.resolve(); const work = Promise.all([a, b]).then(() => { finished = true; });
+    for (let i = 0; i < 30 && !finished; i++) { await tick(); f.advance(500); coordinator.kick(); }
+    assert(finished); await work; await tick();
+    return { bBeforeFirstRelease, heldWhileRaw, bBeforeSecond, bWhileRaw, sends, parks, maxRaw, logicalActive: coordinator.snapshot().logicalActive };
+  } finally { release.resolve(); coordinator.close(); f.budget.close(); }
 }
 
 async function parkedPages(): Promise<Record<string, unknown>> {

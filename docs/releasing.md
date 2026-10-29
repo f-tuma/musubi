@@ -1,29 +1,34 @@
 # Releasing
 
-Current published release: **[0.2.11](https://github.com/f-tuma/musubi/releases/tag/v0.2.11)**
-(16 October 2026). The 27 October assessment is **HOLD for a complete server,
-web, Android and iOS release**. The versioned **0.2.12 candidate** is described in
-[the hardening record](releases/0.2.12-hardening.md); it has not been published.
-Check remote names again at publication time. See the
-[current readiness assessment and operator runbook](releases/0.2.12-readiness.md),
-[release status](https://musubi.pro/docs/operations/releases/) and
-[capability matrix](https://musubi.pro/docs/operations/capabilities/).
+Current published release: **[0.2.12](https://github.com/f-tuma/musubi/releases/tag/v0.2.12)**
+(29 October 2026), source `02e6adc86f412e58627ee0669731b81b30027be6`.
+[Publication](https://github.com/f-tuma/musubi/actions/runs/40918888724)
+passed all nine jobs after the exact-main
+[Quality run](https://github.com/f-tuma/musubi/actions/runs/40915538537)
+passed all 21 jobs. API/web deployment was independently observed at that source,
+with the complete 88-entry migration journal, domain associations and the
+canonical notification worker's no-store response verified. These observations
+do not establish every provider account's health or physical-device acceptance.
 
-The audited source is main `3573a1e8204d111e39725e76665800811f0f4737`:
-[Quality 816](https://github.com/f-tuma/musubi/actions/runs/40489926411)
-passed all 21 jobs and
-[iOS 23](https://github.com/f-tuma/musubi/actions/runs/40489926576) passed.
-These are source checks, not publication or deployment. The final version-bumped
-candidate needs its own exact-source checks. Dependency security, Android App
-Links, the public worker's four-hour cache response, production inventory and
-verified restore, and signed/distributed mobile acceptance remain release
-conditions. Historical Core activation records do not authorize new gates.
+The **0.2.13 maintenance candidate** addresses the CalDAV concurrent-worker
+failure, bounded worker diagnostics and expected-deferral accounting; see its
+[release notes](releases/0.2.13-notes.md). It has not been published. Existing
+0.2.12 mobile builds remain compatible; this server correction does not require
+new native distribution. Keep source checks, publication, actual deployment and
+subsequent provider behavior as separate checkpoints.
 
-The [current publication contract](releases/publication.md) is nine publication
+The [27 October readiness assessment](releases/0.2.12-readiness.md) and
+[hardening record](releases/0.2.12-hardening.md) are historical preparation
+records. Their then-open publication/cache/domain-association conditions must
+not be presented as current observations. Production backup and deployment use
+the operator-confirmed automation; verify its actual result and the selected
+runtime rather than inferring deployment from a successful build.
+
+The [publication contract](releases/publication.md) remains nine publication
 jobs plus evidence of all 21 jobs from the exact trusted main-push Quality run;
 publication does not rerun Quality. Version and `latest` image pointers move
-before the deployment tag, so establish the approved maintenance and old-writer
-stop before dispatch. The workflow does not enforce the deployment sequence.
+before the deployment tag. Reconcile existing refs and deployment consumers
+before dispatch; never bypass checks or blindly repeat an uncertain release.
 
 Three things ship on their own clock — the API, the web app, and a phone build
 — and they have to keep talking to each other across the gaps. This is what

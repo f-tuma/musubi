@@ -151,6 +151,8 @@ async function main() {
   let fixtureFailure: unknown, activeHTTP = 0, maxActiveHTTP = 0;
   let taskFailure = false, tokenHold: ReturnType<typeof deferred> | undefined, tokenEntered: ReturnType<typeof deferred> | undefined;
   let aHold: ReturnType<typeof deferred> | undefined, aEntered: ReturnType<typeof deferred> | undefined;
+  let davFanoutHold: ReturnType<typeof deferred> | undefined, davFanoutEntered: ReturnType<typeof deferred> | undefined;
+  let davFanoutScopes = 0, davFanoutActive = 0, davFanoutMaxActive = 0;
   let faultRemote: Record<string, unknown> | undefined;
   let preparedTaskRemote: Record<string, unknown> | undefined;
   const preparedEventRemote = { id: "event-logical", etag: '"event-accepted"', status: "confirmed", summary: "Before pooled closure",
@@ -173,6 +175,23 @@ async function main() {
       res.writeHead(status, { "content-type": "application/json", ...headers }); res.end(JSON.stringify(value));
     };
     try {
+      if (url.pathname.startsWith("/dav/fanout/")) {
+        assert.equal(req.method, "PROPFIND");
+        assert.equal(req.headers.authorization, `Basic ${Buffer.from("fixture:fixture-password").toString("base64")}`);
+        davFanoutActive++; davFanoutMaxActive = Math.max(davFanoutMaxActive, davFanoutActive);
+        res.once("close", () => { davFanoutActive--; });
+        let body = ""; for await (const chunk of req) body += chunk;
+        const reports = body.includes("supported-report-set");
+        assert.ok(reports || url.pathname === "/dav/fanout/", "Only the actual cached SDK discovery/report-set flow is accepted");
+        trace.push({ account: "dav-fanout", method: req.method!, path: url.pathname, status: 207 });
+        const row = (href: string, props: string) => `<d:response><d:href>${href}</d:href><d:propstat><d:prop>${props}</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>`;
+        const rows = reports ? row(url.pathname, "<d:supported-report-set/>") :
+          row("/dav/fanout/", "<d:resourcetype><d:collection/></d:resourcetype>") + ["one", "two", "three"].map(label =>
+            row(`/dav/fanout/${label}/`, `<d:resourcetype><d:collection/><c:calendar/></d:resourcetype><d:displayname>${label}</d:displayname><c:supported-calendar-component-set><c:comp name="VEVENT"/></c:supported-calendar-component-set>`)).join("");
+        if (reports && davFanoutHold) { const hold = davFanoutHold; davFanoutHold = undefined; davFanoutEntered?.resolve(); await hold.promise; }
+        res.writeHead(207, { "content-type": "application/xml" });
+        return res.end(`<d:multistatus xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">${rows}</d:multistatus>`);
+      }
       if (url.pathname.startsWith("/dav/")) {
         assert.equal(req.headers.authorization, `Basic ${Buffer.from("fixture:fixture-password").toString("base64")}`);
         assert.ok(["PROPFIND", "GET"].includes(req.method!), "Alarm preview is read-only");
@@ -567,10 +586,24 @@ async function main() {
         { dimension: "account", provider: "google", physicalAccountRowID: value.physicalID }) }] })));
     budget.stopProviderBudget(); await budget.bootstrapProviderBudget({ onRecovered: work.kickSyncWork });
     const beforeLong = trace.length;
+    const { metricsRegistry } = await import("../metrics");
+    const metricValue = async (name: string, labels: Record<string, string>) => {
+      const metric = await metricsRegistry.getSingleMetric(name)?.get();
+      return metric?.values.filter(value => Object.entries(labels).every(([key, label]) => value.labels[key] === label))
+        .reduce((total, value) => total + value.value, 0) ?? 0;
+    };
+    const longMetricsBefore = {
+      failures: await metricValue("musubi_external_sync_failures_total", { provider: "google", stage: "account" }),
+      runs: await metricValue("musubi_sync_runs_total", { provider: "google", outcome: "deferred" }),
+      deferrals: await metricValue("musubi_sync_deferrals_total", { provider: "google", stage: "account", reason: "queued-read" }),
+    };
     const longResults = await deadline(Promise.all(longAccounts.map(value => engine.syncUser(value.userID,
       { provider: "google", accountId: value.accountID, throwOnError: true }).then(() => null, error => error))), "Long quota claims released", 5000);
     assert.ok(longResults.every(error => error instanceof engine.SyncWorkDeferred));
     assert.equal(trace.length, beforeLong);
+    assert.equal(await metricValue("musubi_external_sync_failures_total", { provider: "google", stage: "account" }), longMetricsBefore.failures);
+    assert.equal(await metricValue("musubi_sync_runs_total", { provider: "google", outcome: "deferred" }), longMetricsBefore.runs + 4);
+    assert.equal(await metricValue("musubi_sync_deferrals_total", { provider: "google", stage: "account", reason: "queued-read" }), longMetricsBefore.deferrals + 4);
     for (const value of longAccounts) {
       const [row] = await s.db.select().from(s.syncReadWork).where(eq(s.syncReadWork.userID, value.userID)); assert.ok(row);
       const state = (await s.getSyncReadWorkStatus(row.id))!;
@@ -581,12 +614,70 @@ async function main() {
     assert.equal((await deadline(budget.withAccountBudgetScope("google", owners.b, accounts.b,
       () => metrics.observedProviderFetch("https://www.googleapis.com/calendar/v3/probe", { headers: { authorization: "Bearer access-b" } })), "B after four long quota holds")).status, 200);
 
+    // Real tsdav fetchCalendars fans out supported-report-set requests with
+    // Promise.all. All leaves inherit one regular work permit, but each nested
+    // credential/budget scope and HTTP response remains its own original call.
+    const { encryptSecret } = await import("./crypto");
+    const { createCaldavClient } = await import("./caldav_client");
+    const fanoutOwner = `budget-dav-fanout-${randomUUID()}`;
+    await s.db.insert(s.user).values({ id: fanoutOwner, name: "DAV fanout", email: `${fanoutOwner}@example.test` });
+    const fanoutAccount = await s.saveCaldavAccount(fanoutOwner, `${origin}/dav/`, "fixture", encryptSecret("fixture-password"));
+    const fanoutBinding = (await s.getOwnedCaldavAccountBinding(fanoutOwner, fanoutAccount.id))!;
+    const fanoutPolicy = config.api.providerBudgetLimits.caldav;
+    config.api.providerBudgetLimits.caldav = { provider: { capacity: 1, refillPerSecond: 10 },
+      application: { capacity: 1, refillPerSecond: 10 }, account: { capacity: 1, refillPerSecond: 10 } };
+    const cachedRoute = { rootUrl: `${origin}/dav/`, principalUrl: `${origin}/dav/principal/`, homeUrl: `${origin}/dav/fanout/` };
+    let fanoutCommits = 0, fanoutInvalidations = 0;
+    const readFanout = () => metrics.withProviderCallMetrics("caldav", "event", () => budget.withAccountBudgetScope("caldav", fanoutOwner, fanoutAccount.id, async () => {
+      const signal = work.currentSyncWorkSignal();
+      const client = await createCaldavClient(`${origin}/dav/`, "fixture", "fixture-password", signal,
+        { material: cachedRoute, commit() { fanoutCommits++; }, invalidate() { fanoutInvalidations++; } },
+        run => { davFanoutScopes++; return budget.withCaldavBudgetScope(fanoutBinding, run, { signal }); });
+      return client.fetchCalendars();
+    }));
+    try {
+      budget.stopProviderBudget(); await budget.bootstrapProviderBudget({ onRecovered: work.kickSyncWork });
+      davFanoutHold = deferred(); davFanoutEntered = deferred(); const heldReports = davFanoutHold;
+      const beforeFanout = trace.length;
+      const fanout = readFanout().then(value => ({ value, error: undefined }), error => ({ value: undefined, error }));
+      try {
+        await deadline(davFanoutEntered.promise, "First actual tsdav report-set request");
+        assert.equal(davFanoutScopes, 4, "The real SDK scheduled home + three concurrent report-set leaves");
+        assert.equal(trace.slice(beforeFanout).filter(row => row.account === "dav-fanout").length, 2,
+          "Only home and the first report may reach HTTP while that report is held");
+        assert.equal(davFanoutMaxActive, 1);
+      } finally { heldReports.resolve(); }
+      const fanoutResult = await deadline(fanout, "Actual tsdav concurrent report-set discovery");
+      assert.equal(fanoutResult.error, undefined); assert.equal(fanoutResult.value!.length, 3);
+      assert.equal(fanoutCommits, 1); assert.equal(fanoutInvalidations, 0);
+      const fanoutPaths = trace.slice(beforeFanout).filter(row => row.account === "dav-fanout").map(row => row.path);
+      assert.equal(fanoutPaths[0], "/dav/fanout/");
+      assert.deepEqual(fanoutPaths.slice(1).sort(), ["/dav/fanout/one/", "/dav/fanout/three/", "/dav/fanout/two/"],
+        "Every SDK sibling is dispatched once; asynchronous credential reads may reach the queue in any order");
+
+      // A queued leaf must refresh the captured credential authority before
+      // admission/raw send; changing the nonce DB binding invalidates siblings.
+      davFanoutScopes = 0; davFanoutHold = deferred(); davFanoutEntered = deferred(); const heldBeforeRotation = davFanoutHold;
+      const beforeRotation = trace.length;
+      const rotated = readFanout().then(value => ({ value, error: undefined }), error => ({ value: undefined, error }));
+      try {
+        await deadline(davFanoutEntered.promise, "Queued SDK siblings before credential rotation");
+        assert.equal(davFanoutScopes, 4);
+        await s.saveCaldavAccount(fanoutOwner, `${origin}/dav/`, "fixture", encryptSecret("rotated-fixture-password"));
+      } finally { heldBeforeRotation.resolve(); }
+      const rotationResult = await deadline(rotated, "Queued SDK credential fence");
+      assert.ok(rotationResult.error); assert.match(String(rotationResult.error), /Provider budget connection changed/);
+      assert.equal(fanoutCommits, 1, "Failed queued discovery never commits authoritative material");
+      assert.equal(trace.slice(beforeRotation).filter(row => row.account === "dav-fanout").length, 2,
+        "Only calls already admitted before the change may have reached the fixture");
+      assert.equal(davFanoutMaxActive, 1);
+    } finally { config.api.providerBudgetLimits.caldav = fanoutPolicy; davFanoutHold?.resolve(); }
+
     // Real alarm preview context owns its actor in link.userID rather than
     // address.actorID. The actual wrapped CalDAV adapter must scope both native
     // ACL and resource reads, without granting another connection's identity.
     const alarmOwner = `budget-alarm-${randomUUID()}`;
     await s.db.insert(s.user).values({ id: alarmOwner, name: "Alarm scope", email: `${alarmOwner}@example.test` });
-    const { encryptSecret } = await import("./crypto");
     const { normalizeCaldavResource } = await import("./adapters/caldav_time");
     const { caldavAdapter } = await import("./adapters/caldav");
     const alarmAccount = await s.saveCaldavAccount(alarmOwner, `${origin}/dav/`, "fixture", encryptSecret("fixture-password"));
@@ -666,12 +757,13 @@ async function main() {
       malformedHints: { invalidIgnored: true, unsupportedPhysicalAccountQuarantine: true, healthyBProgress: true },
       alarmPreviewLinkUserScope: true, coordinatorClosedDuringCredentialWaitNoSend: true,
       stoppedPrequeueIdentityCannotAttachToReactivatedBudget: true,
+      actualCaldavSdkFanout: { calendars: 3, nestedScopes: 4, serialNativeDispatch: true, queuedCredentialChangeNoSend: true },
       longQuotaHoldsReleaseRegularCapacity: { accounts: 4, exactFutureDue: true, noFalseAck: true, noNativeDispatch: true, healthyBProgress: true },
       maxActiveHTTP, fourSlotSaturationProved: false, installed: false, liveProvider: false, productionDeployment: false, source }));
   } catch (error) { behaviorFailed = true; behaviorFailure = error; throw error; }
   finally {
     try {
-    tokenHold?.resolve(); aHold?.resolve();
+    tokenHold?.resolve(); aHold?.resolve(); davFanoutHold?.resolve();
     stopCoordinator?.(); stopBudget?.(); globalThis.fetch = realFetch;
     fixture.closeAllConnections();
     await new Promise<void>(resolve => fixture.close(() => resolve()));

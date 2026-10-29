@@ -4,6 +4,7 @@ import { createFairWorkCoordinator, type WorkExecutionResult, type WorkPermit } 
 import * as database from "@musubi/db";
 import type { SyncWorkFamily, SyncWorkReference } from "@musubi/db";
 import { logger } from "@musubi/config";
+import { describeSyncWorkFailure } from "./work_failure";
 
 type AuxiliaryReference = { readonly auxiliary: true; readonly execute: (signal: AbortSignal) => Promise<void> };
 type RuntimeReference = SyncWorkReference | AuxiliaryReference;
@@ -28,7 +29,11 @@ export function initializeSyncWorkCoordinator(options: {
         if ("auxiliary" in candidate.hostRef) { signal.throwIfAborted(); await candidate.hostRef.execute(signal); return { kind: "settled" as const, changedCalendarIDs: [] }; }
         return options.execute(candidate.hostRef, signal);
       })),
-      onFailure: () => logger.error("sync.work.failed", { code: "sync-work-unavailable" }),
+      onFailure: (error, context) => {
+        const { level, fields } = describeSyncWorkFailure(error, context);
+        if (level === "warn") logger.info("sync.work.deferred", fields);
+        else logger.error("sync.work.failed", fields);
+      },
     },
   });
 }
@@ -45,6 +50,13 @@ export function currentSyncWorkParking(): ((retryAtMs: number, signal?: AbortSig
   if (!permit || !coordinator) return;
   const owner = coordinator;
   return (retryAtMs, signal) => owner.park(permit, retryAtMs, signal);
+}
+
+/** Preserve every caller's scope/metrics context while sequencing all HTTP
+ * leaves that inherit one work permit, including across nested SDK scopes. */
+export function withSyncWorkHttpLeaf<T>(run: (assertCurrent: () => void) => Promise<T>, signal?: AbortSignal): Promise<T> {
+  const permit = currentPermit.getStore(), owner = coordinator;
+  return permit && owner ? owner.runHttpLeaf(permit, AsyncLocalStorage.bind(run), signal) : run(() => {});
 }
 
 /** Waiter cancellation never cancels shared work. Reacquire fairly before continuing. */

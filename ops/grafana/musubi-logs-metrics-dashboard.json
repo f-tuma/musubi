@@ -409,7 +409,7 @@
             "transformations": []
           }
         },
-        "description": "Failed calendar synchronizations grouped by provider.",
+        "description": "Actual account sync failures by provider, including retryable network warnings. Explicit scheduler/budget deferrals have separate events and a separate panel on updated servers.",
         "id": 12,
         "links": [],
         "title": "Sync failures by provider",
@@ -598,7 +598,7 @@
             "transformations": []
           }
         },
-        "description": "Calendar account synchronization failures with provider and error details.",
+        "description": "Actual account sync failures with provider and error details. Explicit scheduler/budget deferrals use separate .deferred events; older server logs may still count them here.",
         "id": 14,
         "links": [],
         "title": "Calendar sync failures",
@@ -1015,7 +1015,7 @@
             "transformations": []
           }
         },
-        "description": "Number of sync.account.failed log events in the selected time range.",
+        "description": "Number of sync.account.failed events in the selected range. Updated servers use separate .deferred events for explicit scheduler/budget deferrals; older logs may include those deferrals.",
         "id": 6,
         "links": [],
         "title": "Sync failures",
@@ -1559,6 +1559,130 @@
           "version": "13.1.0"
         }
       }
+    },
+    "panel-15": {
+      "kind": "Panel",
+      "spec": {
+        "data": {
+          "kind": "QueryGroup",
+          "spec": {
+            "queries": [
+              {
+                "kind": "PanelQuery",
+                "spec": {
+                  "hidden": false,
+                  "query": {
+                    "datasource": {
+                      "name": "efsahw870sn40e"
+                    },
+                    "group": "loki",
+                    "kind": "DataQuery",
+                    "spec": {
+                      "direction": "backward",
+                      "editorMode": "code",
+                      "expr": "sum by (provider,reason) (count_over_time({compose_project=\"$project\", service=\"api\"} | json | message =~ \"sync[.](account|provider)[.]deferred\" [$__auto]))",
+                      "legendFormat": "{{provider}} / {{reason}}",
+                      "queryType": "range"
+                    },
+                    "version": "v0"
+                  },
+                  "refId": "A"
+                }
+              }
+            ],
+            "queryOptions": {},
+            "transformations": []
+          }
+        },
+        "description": "Explicit .deferred scheduler/provider-budget events at info level, separate from actual failures. Deferral is not an ACK or successful provider synchronization.",
+        "id": 15,
+        "links": [],
+        "title": "Sync deferrals by provider and reason",
+        "vizConfig": {
+          "group": "timeseries",
+          "kind": "VizConfig",
+          "spec": {
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "palette-classic"
+                },
+                "custom": {
+                  "axisBorderShow": false,
+                  "axisCenteredZero": false,
+                  "axisColorMode": "text",
+                  "axisLabel": "",
+                  "axisPlacement": "auto",
+                  "barAlignment": 0,
+                  "barWidthFactor": 0.6,
+                  "drawStyle": "bars",
+                  "fillOpacity": 60,
+                  "gradientMode": "opacity",
+                  "hideFrom": {
+                    "legend": false,
+                    "tooltip": false,
+                    "viz": false
+                  },
+                  "insertNulls": false,
+                  "lineInterpolation": "linear",
+                  "lineWidth": 1,
+                  "pointSize": 4,
+                  "scaleDistribution": {
+                    "type": "linear"
+                  },
+                  "showPoints": "never",
+                  "showValues": false,
+                  "spanNulls": false,
+                  "stacking": {
+                    "group": "A",
+                    "mode": "normal"
+                  },
+                  "thresholdsStyle": {
+                    "mode": "off"
+                  }
+                },
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "red",
+                      "value": 80
+                    }
+                  ]
+                },
+                "unit": "short"
+              },
+              "overrides": []
+            },
+            "options": {
+              "annotations": {
+                "clustering": -1,
+                "multiLane": false
+              },
+              "legend": {
+                "calcs": [
+                  "sum"
+                ],
+                "displayMode": "table",
+                "enableFacetedFilter": false,
+                "overflow": "ellipsis",
+                "placement": "bottom",
+                "showLegend": true
+              },
+              "tooltip": {
+                "hideZeros": false,
+                "mode": "multi",
+                "sort": "desc"
+              }
+            }
+          },
+          "version": "13.1.0"
+        }
+      }
     }
   },
   "layout": {
@@ -1745,6 +1869,19 @@
             "width": 12,
             "x": 12,
             "y": 35
+          }
+        },
+        {
+          "kind": "GridLayoutItem",
+          "spec": {
+            "element": {
+              "kind": "ElementReference",
+              "name": "panel-15"
+            },
+            "height": 10,
+            "width": 24,
+            "x": 0,
+            "y": 45
           }
         }
       ]

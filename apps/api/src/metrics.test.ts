@@ -14,6 +14,8 @@ import { EventEmitter } from "node:events";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import type { Request, Response } from "express";
+import { ProviderDispatchDeferred } from "@musubi/sync-runtime";
+import { observeSyncRun, observeSyncFailure, SyncWorkDeferred } from "./sync/sync_outcome";
 
 // `@musubi/config` reads the root .env at import time and refuses to load
 // without these. Same three the CI workflow provides; defaulted here so the
@@ -41,7 +43,7 @@ const DERIVED_SUFFIX = /_(bucket|count|sum|total_created|created)$/;
 const PROMETHEUS_OWN = new Set(["up"]);
 
 async function main() {
-  const { metricRoute, metricsRegistry, middlewareMetrics, boundedOutboxRows } = await import("./metrics");
+  const { metricRoute, metricsRegistry, middlewareMetrics, boundedOutboxRows, recordSyncRun, recordSyncDeferral, recordExternalSyncFailure } = await import("./metrics");
 
   const registered = new Set(
     metricsRegistry.getMetricsAsArray().map((metric) => metric.name),
@@ -205,6 +207,41 @@ async function main() {
   assert.equal(sanitized.find(row => row.provider === "google" && row.status === "pending")?.count, 0,
     "empty healthy queues have explicit zero values");
   assert.ok(!JSON.stringify(sanitized).includes("private-provider"));
+
+  // Real production observers and registry: deferrals retain their own outcome,
+  // while an actual DB fence and real warning-level network failure still alert.
+  const { SyncReadWorkChanged } = await import("@musubi/db");
+  const total = async (name: string) => (await metricsRegistry.getSingleMetric(name)!.get()).values.reduce((n, row) => n + row.value, 0);
+  const beforeFailures = await total("musubi_external_sync_failures_total");
+  const errors = [new SyncWorkDeferred(12345), new ProviderDispatchDeferred({ reason: "credit", retryAtMs: 12345, blockedDimensions: [] }),
+    new SyncReadWorkChanged(), new Error("Outlook 503: Service Unavailable")];
+  const observedLogs: { level: string; event: string }[] = [];
+  for (const error of errors) {
+    await assert.rejects(observeSyncRun("google", async () => { throw error; }, recordSyncRun), caught => caught === error);
+    observeSyncFailure({ provider: "google", stage: "account", error }, "private-fixture-user", {
+      failure: recordExternalSyncFailure, deferred: recordSyncDeferral,
+      log(level, event) { observedLogs.push({ level, event }); },
+    });
+  }
+  assert.equal(await total("musubi_external_sync_failures_total") - beforeFailures, 2);
+  assert.deepEqual(observedLogs, [{ level: "info", event: "sync.account.deferred" }, { level: "info", event: "sync.account.deferred" },
+    { level: "error", event: "sync.account.failed" }, { level: "warn", event: "sync.account.failed" }]);
+  const runs = await metricsRegistry.getSingleMetric("musubi_sync_runs_total")!.get();
+  assert.equal(runs.values.find(row => row.labels.provider === "google" && row.labels.outcome === "deferred")?.value, 2);
+  assert.equal(runs.values.find(row => row.labels.provider === "google" && row.labels.outcome === "failed")?.value, 2);
+  recordSyncDeferral("account", "private-provider-secret", "private-reason-secret");
+  const deferrals = await metricsRegistry.getSingleMetric("musubi_sync_deferrals_total")!.get();
+  assert(deferrals.values.some(row => row.labels.provider === "unknown" && row.labels.reason === "unknown"));
+  assert(!JSON.stringify(deferrals).includes("private-"));
+  for (const row of deferrals.values) assert.deepEqual(Object.keys(row.labels).sort(), ["provider", "reason", "stage"]);
+  const logsDashboard = JSON.parse(readFileSync(new URL("musubi-logs-metrics-dashboard.json", grafanaDir), "utf8"));
+  const expressionFor = (key: string) => logsDashboard.elements[key].spec.data.spec.queries[0].spec.query.spec.expr;
+  assert.equal(expressionFor("panel-13"), '{compose_project="$project", service="api"} | json | level = "error"');
+  assert.equal(expressionFor("panel-5"), 'sum(count_over_time({compose_project="$project", service="api"} | json | level = "error" [$__range]))');
+  assert(expressionFor("panel-15").includes("deferred"), "Deferred scheduler work has its own log panel");
+  const syncAlert = rules.find(([, name]) => name === "MusubiExternalSyncFailure")!;
+  assert(syncAlert[2]!.includes("increase(musubi_external_sync_failures_total[15m])"));
+  assert(!syncAlert[2]!.includes("musubi_sync_deferrals_total"), "Expected deferrals must not trigger the failure alert");
 
   console.log(
     `Observability contract verified: ${referenced.size} series read by ops/, ` +

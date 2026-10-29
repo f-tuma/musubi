@@ -24,11 +24,15 @@ export interface CandidatePage<HostRef> {
   readonly nextAccountCursor?: string;
   readonly nextWakeAtMs?: number;
 }
+export type WorkFailureContext = Readonly<{
+  phase: "candidates" | "execute";
+  family?: WorkFamily;
+}>;
 export interface WorkHost<HostRef> {
   candidates?(input: { nowMs: number; limit: number; accountCursor?: string;
     excludedAccounts: readonly string[]; excludedCollisionKeys: readonly string[] }): Promise<CandidatePage<HostRef>>;
   execute(candidate: WorkCandidate<HostRef>, permit: WorkPermit, signal: AbortSignal): Promise<WorkExecutionResult>;
-  onFailure?(error: unknown): void;
+  onFailure?(error: unknown, context: WorkFailureContext): void;
 }
 export interface FairWorkOptions<HostRef> {
   readonly capacity: number;
@@ -40,6 +44,15 @@ export interface FairWorkOptions<HostRef> {
 type Waiter = { resolve(value: WorkExecutionResult): void; reject(error: unknown): void };
 type Pending<H> = { candidate: WorkCandidate<H>; waiters: Waiter[]; queueKey: string | WorkPermit;
   resume?: { permit: WorkPermit; resolve(): void; reject(error: unknown): void; detach(): void } };
+type HttpLeaf = {
+  run(assertCurrent: () => void): Promise<void>;
+  reject(error: unknown): void;
+  detach(): void;
+  readonly signal?: AbortSignal;
+  ended: boolean;
+};
+type PermitState<H> = { account: string; keys: Set<string>; controller: AbortController; item: Pending<H>;
+  held: boolean; childActive: boolean; httpQueue: HttpLeaf[]; httpActive?: HttpLeaf; httpClosed: boolean };
 
 export function createFairWorkCoordinator<H>(options: FairWorkOptions<H>) {
   if (!Number.isInteger(options.capacity) || options.capacity < 1 ||
@@ -49,7 +62,7 @@ export function createFairWorkCoordinator<H>(options: FairWorkOptions<H>) {
   const schedule = options.schedule ?? ((run, delay) => { const timer = setTimeout(run, Math.min(2_147_483_647, delay)); return () => clearTimeout(timer); });
   const pending = new Map<string | WorkPermit, Pending<H>>(), accounts = new Set<string>(), collisions = new Map<string, WorkPermit>();
   const active = new Map<string, { permit: WorkPermit; controller: AbortController }>();
-  const permits = new Map<WorkPermit, { account: string; keys: Set<string>; controller: AbortController; item: Pending<H>; held: boolean; childActive: boolean }>();
+  const permits = new Map<WorkPermit, PermitState<H>>();
   const lastFamily = new Map<string, string>();
   const refused = new Map<string, number>();
   const parkedWaits = new Map<WorkPermit, { reject(error: unknown): void; detach(): void }>();
@@ -124,6 +137,33 @@ export function createFairWorkCoordinator<H>(options: FairWorkOptions<H>) {
     recoveryStreak.set(account, choice.candidate.family === "pull" ? 0 : (recoveryStreak.get(account) ?? 0) + 1);
     return choice;
   }
+  function rejectQueuedHttp(state: PermitState<H>, error: unknown) {
+    for (const leaf of state.httpQueue.splice(0)) leaf.reject(error);
+  }
+  function closeHttp(state: PermitState<H>, error: unknown) {
+    state.httpClosed = true; rejectQueuedHttp(state, error); state.httpActive?.reject(error);
+  }
+  function startHttp(permit: WorkPermit, state: PermitState<H>) {
+    if (state.httpActive || state.httpClosed) return;
+    const leaf = state.httpQueue.shift(); if (!leaf) return;
+    state.httpActive = leaf;
+    const assertCurrent = () => {
+      leaf.signal?.throwIfAborted(); state.controller.signal.throwIfAborted();
+      if (closed || state.httpClosed || permits.get(permit) !== state || state.httpActive !== leaf || leaf.ended || !state.held)
+        throw new Error("Cannot dispatch HTTP under an inactive work permit.");
+    };
+    void Promise.resolve().then(() => { assertCurrent(); return leaf.run(assertCurrent); }).catch(error => {
+      // Already queued SDK siblings must not dispatch after this failure. A
+      // handled, subsequently submitted fallback can still use the live permit.
+      // An active caller abort already rejected its then-queued siblings. Its
+      // native execution can settle later, after the caller queued a fallback.
+      if (!leaf.ended) rejectQueuedHttp(state, error);
+      leaf.reject(error);
+    }).finally(() => {
+      leaf.detach(); if (state.httpActive === leaf) state.httpActive = undefined;
+      startHttp(permit, state);
+    });
+  }
   function start(item: Pending<H>) {
     if (item.resume) {
       const state = permits.get(item.resume.permit); pending.delete(item.queueKey);
@@ -134,16 +174,20 @@ export function createFairWorkCoordinator<H>(options: FairWorkOptions<H>) {
     const c = item.candidate, controller = new AbortController(), permit = Object.freeze({}) as WorkPermit;
     pending.delete(item.queueKey); accounts.add(c.accountFairnessKey);
     active.set(c.key, { permit, controller });
-    const state = { account: c.accountFairnessKey, keys: new Set(c.collisionKeys), controller, item, held: true, childActive: false };
+    const state: PermitState<H> = { account: c.accountFairnessKey, keys: new Set(c.collisionKeys), controller, item,
+      held: true, childActive: false, httpQueue: [], httpClosed: false };
+    controller.signal.addEventListener("abort", () => closeHttp(state, controller.signal.reason), { once: true });
     permits.set(permit, state); for (const key of state.keys) collisions.set(key, permit);
     void Promise.resolve().then(() => options.host.execute(c, permit, controller.signal)).then(result => {
+      closeHttp(state, new Error("Work execution finished while HTTP was queued."));
       if (result.kind === "skipped" && ["not-eligible", "lost-lease"].includes(result.reason)) backoff(c.key, now() + 100);
       else if (result.kind === "deferred") backoff(c.key, result.retryAtMs, result);
       for (const waiter of item.waiters) waiter.resolve(result);
     }, error => {
+      closeHttp(state, error);
       backoff(c.key, now() + 1000);
       for (const waiter of item.waiters) waiter.reject(error);
-      try { options.host.onFailure?.(error); } catch { /* Diagnostics have no authority. */ }
+      try { options.host.onFailure?.(error, { phase: "execute", family: c.family }); } catch { /* Diagnostics have no authority. */ }
     }).finally(() => {
       controller.abort(new Error("Fair work execution finished."));
       const parked = pending.get(permit);
@@ -185,7 +229,7 @@ export function createFairWorkCoordinator<H>(options: FairWorkOptions<H>) {
       // crossing the due time during this scan must not strand queued/resumed
       // work. Already-due collision/capacity waits still rely on release kicks.
       for (const { candidate } of pending.values()) if (candidate.dueAtMs > selectionAtMs) nextWake = Math.min(nextWake ?? Infinity, candidate.dueAtMs);
-    } catch (error) { try { options.host.onFailure?.(error); } catch { /* Diagnostics only. */ } }
+    } catch (error) { try { options.host.onFailure?.(error, { phase: "candidates" }); } catch { /* Diagnostics only. */ } }
     finally {
       pumping = false;
       if (!closed && nextWake !== undefined && Number.isFinite(nextWake)) cancelTimer = schedule(kick, Math.max(1, nextWake - now()));
@@ -223,6 +267,29 @@ export function createFairWorkCoordinator<H>(options: FairWorkOptions<H>) {
     submit(candidate: WorkCandidate<H>): Promise<WorkExecutionResult> {
       if (closed) return Promise.reject(new Error("Fair work coordinator is closed."));
       return new Promise((resolve, reject) => { try { add(candidate, { resolve, reject }); kick(); } catch (error) { reject(error); } });
+    },
+    /** One entire HTTP leaf owns a permit's continuation at a time. Queue
+     * waiters never park the permit that its active sibling may be using. */
+    runHttpLeaf<T>(permit: WorkPermit, execute: (assertCurrent: () => void) => Promise<T>, signal?: AbortSignal): Promise<T> {
+      const state = permits.get(permit);
+      if (!state || state.httpClosed || closed || state.controller.signal.aborted)
+        return Promise.reject(new Error("Cannot dispatch HTTP under an inactive work permit."));
+      if (signal?.aborted) return Promise.reject(signal.reason);
+      return new Promise<T>((resolve, reject) => {
+        const aborted = () => {
+          const index = state.httpQueue.indexOf(leaf); if (index !== -1) state.httpQueue.splice(index, 1);
+          if (state.httpActive === leaf) rejectQueuedHttp(state, signal!.reason);
+          leaf.reject(signal!.reason);
+        };
+        const leaf: HttpLeaf = { signal, ended: false,
+          detach() { signal?.removeEventListener("abort", aborted); },
+          reject(error) { if (!leaf.ended) { leaf.ended = true; leaf.detach(); reject(error); } },
+          async run(assertCurrent) { const value = await execute(assertCurrent);
+            if (!leaf.ended) { leaf.ended = true; leaf.detach(); resolve(value); } },
+        };
+        signal?.addEventListener("abort", aborted, { once: true });
+        state.httpQueue.push(leaf); startHttp(permit, state);
+      });
     },
     async runChild(parent: WorkPermit, child: WorkCandidate<H>, execute: () => Promise<WorkExecutionResult>): Promise<WorkExecutionResult> {
       const state = permits.get(parent);

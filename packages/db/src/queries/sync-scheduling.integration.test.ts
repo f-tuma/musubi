@@ -143,10 +143,73 @@ async function main() {
         let pid = 0, signal!: () => void; const started = new Promise<void>(resolve => { signal = resolve; });
         const applying = s.db.transaction(async tx => { pid = (await tx.execute<{ pid: number }>(sql`select pg_backend_pid() as pid`)).rows[0]!.pid;
           await tx.update(s.user).set({ name: "Must roll back" }).where(eq(s.user.id, f.userID)); signal(); await s.ackSyncReadWorkInTransaction(tx, capture); });
-        const rejected = assert.rejects(applying, s.SyncReadWorkChanged);
+        const rejected = assert.rejects(applying, error => {
+          assert(error instanceof s.SyncReadWorkChanged);
+          assert.deepEqual(error.cause, { code: "sync-read-work-changed", reason: "claim-guard-failed" });
+          return true;
+        });
         await started; await waitForLock(pid); await pause(180); await blocker.query("commit"); await rejected;
         assert.equal((await s.db.select().from(s.user).where(eq(s.user.id, f.userID)))[0]!.name, "Before");
       } finally { await blocker.query("rollback"); blocker.release(); await f.cleanup(); }
+    });
+    await run("final-fence-diagnostics-preserve-rollback-and-ack", async () => {
+      const { StructuredLogger } = await import("@musubi/config");
+      for (const reason of ["missing-work-row", "current-binding-mismatch", "captured-binding-mismatch", "checkpoint-mismatch", "claim-guard-failed"] as const) {
+        const f = await fixture();
+        try {
+          const calendar = await s.importExternalCalendar("google", f.userID, f.accountID, "Fixture", {
+            externalId: "native", name: "Fixture", color: "red", supportsEvents: true,
+          });
+          const [source] = await s.db.select().from(s.externalCalendars).where(eq(s.externalCalendars.calendarID, calendar.id)); assert(source);
+          const address = { ...f.address, sourceID: source.id, stream: "events" as const, configurationFingerprint: "fence-events-v1" };
+          const request = await s.requestSyncReadWork(address), capture = await claimed(request.workID);
+          let rejectedCapture = capture;
+          if (reason === "missing-work-row") await s.db.delete(s.syncReadWork).where(eq(s.syncReadWork.id, request.workID));
+          if (reason === "current-binding-mismatch") await s.db.update(s.syncReadWork).set({ configurationFingerprint: "other-work-binding" }).where(eq(s.syncReadWork.id, request.workID));
+          if (reason === "captured-binding-mismatch") rejectedCapture = { ...capture, binding: { ...capture.binding,
+            source: { ...capture.binding.source!, fingerprint: "other-captured-binding" } } };
+          if (reason === "checkpoint-mismatch") await s.db.update(s.externalCalendars).set({ cursor: "other-pull-cursor",
+            checkpointRevision: sql`${s.externalCalendars.checkpointRevision}+1` }).where(eq(s.externalCalendars.id, source.id));
+          if (reason === "claim-guard-failed") rejectedCapture = { ...capture, claimToken: randomUUID() };
+          let diagnosed: InstanceType<typeof s.SyncReadWorkChanged> | undefined;
+          const rejectFence = (error: unknown) => {
+            assert(error instanceof s.SyncReadWorkChanged);
+            assert.deepEqual(error.cause, { code: "sync-read-work-changed", reason });
+            assert(Object.isFrozen(error.cause)); diagnosed = error; return true;
+          };
+          await assert.rejects(s.db.transaction(async tx => {
+            await tx.update(s.user).set({ name: "Must roll back" }).where(eq(s.user.id, f.userID));
+            await s.assertSyncReadWorkCurrentInTransaction(tx, rejectedCapture);
+          }), rejectFence);
+          assert.equal((await s.db.select().from(s.user).where(eq(s.user.id, f.userID)))[0]!.name, "Before");
+          const status = await s.getSyncReadWorkStatus(request.workID);
+          if (reason === "missing-work-row") assert.equal(status, null);
+          else { assert.equal(status!.completedGeneration, "0"); assert.equal(status!.requestedGeneration, "1"); }
+          // ACK intentionally skips only the old checkpoint after the caller's
+          // final cursor CAS. All other final fences still reject an ACK.
+          if (reason !== "checkpoint-mismatch") await assert.rejects(s.db.transaction(tx => s.ackSyncReadWorkInTransaction(tx, rejectedCapture)), rejectFence);
+          else {
+            assert.equal(await s.releaseSyncReadWork(capture), true);
+            const fresh = await claimed(request.workID);
+            await s.setCursor(calendar.id, "accepted-after-fresh-capture", undefined, { capture: fresh, signal: new AbortController().signal });
+            assert.equal((await s.getSyncReadWorkStatus(request.workID))!.completedGeneration, "1");
+            assert.equal((await s.db.select().from(s.externalCalendars).where(eq(s.externalCalendars.id, source.id)))[0]!.cursor, "accepted-after-fresh-capture");
+          }
+          // The existing logger exports exactly the bounded cause, not any
+          // compared source/claim/cursor values from the failed guard.
+          let line = ""; const write = process.stderr.write;
+          try {
+            process.stderr.write = ((chunk: unknown) => { line += String(chunk); return true; }) as typeof write;
+            new StructuredLogger("error").error("sync.account.failed", { error: diagnosed });
+          } finally { process.stderr.write = write; }
+          const logged = JSON.parse(line);
+          assert.deepEqual(logged.error.cause, { code: "sync-read-work-changed", reason });
+          for (const privateValue of [f.userID, f.accountID, capture.workID, capture.claimToken, capture.bindingToken, source.id, calendar.id, "other-pull-cursor", "other-captured-binding"])
+            assert.equal(JSON.stringify(logged.error).includes(privateValue), false);
+        } finally { await f.cleanup(); }
+      }
+      assert.deepEqual(new s.SyncReadWorkChanged().cause, { code: "sync-read-work-changed", reason: "source-or-claim-changed" });
+      assert.deepEqual(new s.SyncReadWorkChanged("private-value" as never).cause, { code: "sync-read-work-changed", reason: "source-or-claim-changed" });
     });
     await run("sigkill-preserves-newer-generation", async () => {
       const f = await fixture(); try {
