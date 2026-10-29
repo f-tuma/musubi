@@ -28,10 +28,21 @@ export type SyncReadWorkCapture = Readonly<{
   workID: string; bindingToken: string; claimToken: string;
   capturedGeneration: string; binding: SyncReadWorkBinding;
 }>;
+export type SyncReadWorkChangeReason = "source-or-claim-changed" | "missing-work-row" | "current-binding-mismatch"
+  | "captured-binding-mismatch" | "checkpoint-mismatch" | "claim-guard-failed";
+const readWorkChangeReasons = new Set<unknown>(["source-or-claim-changed", "missing-work-row", "current-binding-mismatch",
+  "captured-binding-mismatch", "checkpoint-mismatch", "claim-guard-failed"]);
 export class SyncReadWorkChanged extends Error {
-  constructor() { super("Sync read work source or claim changed."); this.name = "SyncReadWorkChanged"; }
+  readonly cause: Readonly<{ code: "sync-read-work-changed"; reason: SyncReadWorkChangeReason }>;
+  constructor(reason: SyncReadWorkChangeReason = "source-or-claim-changed") {
+    super("Sync read work source or claim changed."); this.name = "SyncReadWorkChanged";
+    // Error.cause reaches the existing structured logger. Never attach the
+    // capture, source, cursor, credentials or compared values to this error.
+    this.cause = Object.freeze({ code: "sync-read-work-changed", reason: typeof reason === "string" && reason.length <= 32 && readWorkChangeReasons.has(reason)
+      ? reason : "source-or-claim-changed" });
+  }
 }
-function changed(): never { throw new SyncReadWorkChanged(); }
+function changed(reason?: SyncReadWorkChangeReason): never { throw new SyncReadWorkChanged(reason); }
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 function boundedFingerprint(value: string) {
   if (typeof value !== "string" || !value || value.trim() !== value || value.length > 2048) throw new TypeError("Invalid sync read configuration.");
@@ -188,10 +199,13 @@ export async function assertSyncReadWorkCurrentInTransaction(tx: DbTransaction, 
     ...(capture.binding.source ? { sourceID: capture.binding.source.id } : {}) };
   const binding = await currentBinding(tx, input, options.lockLifecycle !== false);
   const [row] = await tx.select().from(syncReadWork).where(eq(syncReadWork.id, capture.workID)).for("update");
-  if (!row || !matches(row, binding) || !matches(row, capture.binding) ||
-    options.checkCheckpoint !== false && capture.binding.source && (binding.source?.checkpointRevision !== capture.binding.source.checkpointRevision || binding.source.cursor !== capture.binding.source.cursor)) changed();
+  if (!row) changed("missing-work-row");
+  if (!matches(row, binding)) changed("current-binding-mismatch");
+  if (!matches(row, capture.binding)) changed("captured-binding-mismatch");
+  if (options.checkCheckpoint !== false && capture.binding.source &&
+    (binding.source?.checkpointRevision !== capture.binding.source.checkpointRevision || binding.source.cursor !== capture.binding.source.cursor)) changed("checkpoint-mismatch");
   const [live] = await tx.select({ id: syncReadWork.id }).from(syncReadWork).where(claimGuard(capture));
-  if (!live) changed();
+  if (!live) changed("claim-guard-failed");
 }
 export async function ackSyncReadWorkInTransaction(tx: DbTransaction, capture: SyncReadWorkCapture,
   options: { lockLifecycle?: boolean } = {}) {

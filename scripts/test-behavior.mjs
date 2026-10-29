@@ -13,6 +13,7 @@ const SUITES = {
   "web-edge": "apps/web/src/tests/behavior/web-edge.json",
   "project-news": "apps/api/src/behavior/project-news.json",
   "read-attempt": "apps/api/src/sync/behavior/read-attempt.json",
+  "sync-outcome": "apps/api/src/sync/behavior/sync-outcome.json",
   "fair-work": "packages/sync-runtime/src/behavior/fair-work.json",
   "caldav-discovery": "apps/api/src/sync/behavior/caldav-discovery.json",
   "google-delete": "packages/sync-runtime/src/behavior/google-delete.json",
@@ -185,8 +186,8 @@ async function runSuite(selection, options, { root, execute, env }) {
       child = await execute(process.execPath, [join(root, "ops/behavior/postgres-restore-cli.mjs"), "--json",
         ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });
       results = runtimeResults(child.stdout, selection);
-    } else if (selection.name === "read-attempt") {
-      child = await execute(process.execPath, ["--import", "tsx", join(root, "apps/api/src/sync/behavior/read-attempt-cli.ts"), "--json",
+    } else if (["read-attempt", "sync-outcome"].includes(selection.name)) {
+      child = await execute(process.execPath, ["--import", "tsx", join(root, `apps/api/src/sync/behavior/${selection.name}-cli.ts`), "--json",
         ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });
       results = runtimeResults(child.stdout, selection);
     } else if (["caldav-discovery", "task-delivery", "event-delivery", "google-rsvp-delivery"].includes(selection.name)) {

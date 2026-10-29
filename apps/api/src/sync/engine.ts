@@ -60,11 +60,11 @@ import { caldavAdapter } from "./adapters/caldav";
 import { microsoftAdapter } from "./adapters/microsoft";
 import {
   isOptionalTaskError,
-  isTransientSyncError,
-  providerAuthErrorFields,
   ProviderAuthError,
 } from "./errors";
-import { recordExternalSyncFailure, recordSyncRun, recordSyncObjects } from "../metrics";
+import { recordExternalSyncFailure, recordSyncRun, recordSyncObjects, recordSyncDeferral } from "../metrics";
+import { SyncWorkDeferred, observeSyncRun, observeSyncFailure } from "./sync_outcome";
+export { SyncWorkDeferred } from "./sync_outcome";
 import { ProviderEventWriteError, requireEventPatch } from "./event_write";
 import { withDeliveryDeadline } from "./delivery_policy";
 import { type ProviderSyncOptions, runProviderSyncs } from "./orchestrator";
@@ -714,9 +714,6 @@ function saveReadReceipt(workID: string, receipt: ReadReceipt) {
   readReceipts.delete(workID); readReceipts.set(workID, receipt);
   while (readReceipts.size > 2000) readReceipts.delete(readReceipts.keys().next().value!);
 }
-export class SyncWorkDeferred extends Error {
-  constructor(readonly retryAtMs: number) { super("Synchronization is pending a later opportunity."); this.name = "SyncWorkDeferred"; }
-}
 function readConfiguration(provider: string, stream: SyncReadWorkAddress["stream"]) {
   if (provider === "microsoft" && stream === "events") return graphReadConfigurationFingerprint();
   return JSON.stringify({ profile: SYNC_PROFILE_V1, reader: "queued-read-v1", provider, stream,
@@ -873,15 +870,7 @@ async function syncProviderImpl(
 }
 
 export async function syncProvider(...args: Parameters<typeof syncProviderImpl>) {
-  const started = performance.now();
-  try {
-    const result = await syncProviderImpl(...args);
-    recordSyncRun(args[0].provider, "success", (performance.now() - started) / 1000);
-    return result;
-  } catch (error) {
-    recordSyncRun(args[0].provider, "failed", (performance.now() - started) / 1000);
-    throw error;
-  }
+  return observeSyncRun(args[0].provider, () => syncProviderImpl(...args), recordSyncRun);
 }
 
 // Sync every connected account of every registered provider. listAccounts returns
@@ -901,24 +890,11 @@ export async function syncUser(
       syncAccount: syncProvider,
       metadataOnly: syncWorkCoordinatorEnabled(),
       concurrent: syncWorkCoordinatorEnabled(),
-      onFailure: ({ stage, provider, accountId, error }) => {
-        recordExternalSyncFailure(stage, provider);
-        // Provider/network hiccups are warn: the next poll retries them. error
-        // is reserved for what a human has to act on (revoked grant, our bug).
-        const level = error instanceof SyncWorkDeferred || providerDeferral(error) || isTransientSyncError(error) ? "warn" : "error";
-        logger[level](
-          stage === "discovery"
-            ? "sync.provider.failed"
-            : "sync.account.failed",
-          {
-            provider,
-            userId: userID,
-            ...(accountId ? { accountId } : {}),
-            error,
-            ...providerAuthErrorFields(error),
-          },
-        );
-      },
+      onFailure: failure => observeSyncFailure(failure, userID, {
+        failure: recordExternalSyncFailure,
+        deferred: recordSyncDeferral,
+        log: (level, event, fields) => logger[level](event, fields),
+      }),
     },
   );
 

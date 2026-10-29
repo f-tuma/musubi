@@ -47,6 +47,12 @@ const externalSyncFailures = new Counter({
   labelNames: ["stage", "provider"] as const,
   registers: [registry],
 });
+const syncDeferrals = new Counter({
+  name: "musubi_sync_deferrals_total",
+  help: "Account/discovery attempts deferred by explicit scheduler or provider-budget control flow, not failures.",
+  labelNames: ["stage", "provider", "reason"] as const,
+  registers: [registry],
+});
 
 const scheduledTaskSkips = new Counter({
   name: "musubi_scheduled_task_skips_total",
@@ -94,6 +100,13 @@ export function recordExternalSyncFailure(
     stage,
     provider: KNOWN_SYNC_PROVIDERS.has(provider) ? provider : "unknown",
   });
+}
+
+const SYNC_DEFERRAL_REASONS = new Set(["queued-read", "credit", "cooldown", "budget-persistence-pending", "work-capacity"]);
+export function recordSyncDeferral(stage: "account" | "discovery", provider: string, reason: string) {
+  syncDeferrals.inc({ stage: stage === "account" || stage === "discovery" ? stage : "unknown",
+    provider: KNOWN_SYNC_PROVIDERS.has(provider) ? provider : "unknown",
+    reason: SYNC_DEFERRAL_REASONS.has(reason) ? reason : "unknown" });
 }
 
 // --- Usage snapshots (DB-backed gauges) --------------------------------------
@@ -337,7 +350,7 @@ new Gauge({
 const syncRuns = new Counter({ name: "musubi_sync_runs_total", help: "Completed account sync attempts, not individual HTTP calls.", labelNames: ["provider", "outcome"] as const, registers: [registry] });
 const syncDuration = new Histogram({ name: "musubi_sync_run_duration_seconds", help: "Account synchronization duration including discovery and persistence.", labelNames: ["provider", "outcome"] as const, buckets: [0.1, 0.5, 1, 2, 5, 10, 30, 60, 120, 300], registers: [registry] });
 const syncObjects = new Counter({ name: "musubi_sync_objects_received_total", help: "Objects received during successful calendar syncs, including repeated full reads; not unique objects.", labelNames: ["provider", "kind"] as const, registers: [registry] });
-export function recordSyncRun(provider: string, outcome: "success" | "failed", seconds: number) {
+export function recordSyncRun(provider: string, outcome: "success" | "failed" | "deferred", seconds: number) {
   const labels = { provider: providerFamily(provider), outcome };
   syncRuns.inc(labels); syncDuration.observe(labels, seconds);
 }

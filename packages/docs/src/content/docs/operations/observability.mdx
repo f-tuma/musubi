@@ -52,6 +52,23 @@ tokens therefore do not become high-cardinality labels.
 classes. `stage` is one of `account`, `discovery`, `push`, or `scheduler`;
 provider is a known provider name, `all`, or `unknown`.
 
+Explicit `SyncWorkDeferred` and `ProviderDispatchDeferred` scheduler/budget
+control flow is recorded separately, not as a failure:
+
+- `musubi_sync_runs_total{provider,outcome="deferred"}` counts deferred account attempts;
+- `musubi_sync_deferrals_total{provider,stage,reason}` counts account/discovery deferrals;
+- `sync.account.deferred` / `sync.provider.deferred` are info-level events carrying
+  a bounded reason and retry timestamp, not provider error contents.
+
+Reasons are `queued-read`, `credit`, `cooldown`, `budget-persistence-pending`,
+and `work-capacity`. Deferral is neither successful synchronization nor a dirty
+work ACK. Real network/provider errors still increment failure counters even
+when their log severity is `warn`; source/claim authority fences and unknown
+errors remain visible as failures. The failure alert reads only the failure
+counter, while the product/log dashboards show separate deferral panels.
+Historical samples from older servers retain their previous failure counting;
+upgrading does not rewrite stored metrics or logs.
+
 Task delivery failures also contribute to the bounded `stage="push"` counter.
 That counter does not distinguish task/event queue depth or prove delivery of an
 individual mutation.

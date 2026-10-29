@@ -1,0 +1,297 @@
+{
+  "schemaVersion": 1,
+  "suite": "sync-outcome",
+  "driver": "sync-outcome",
+  "scenarios": [
+    {
+      "id": "success-account",
+      "title": "Successful native work remains successful",
+      "input": {
+        "kind": "success",
+        "stage": "account",
+        "provider": "google"
+      },
+      "expected": {
+        "outcome": "success",
+        "seconds": 0.25,
+        "failureCount": 0,
+        "deferredReasons": [],
+        "level": null,
+        "event": null,
+        "originalResult": true,
+        "originalError": false,
+        "deferralFieldsBounded": true
+      }
+    },
+    {
+      "id": "queued-read-account",
+      "title": "Queued read is deferred without a sync failure",
+      "input": {
+        "kind": "queued-read",
+        "stage": "account",
+        "provider": "google"
+      },
+      "expected": {
+        "outcome": "deferred",
+        "seconds": 0.25,
+        "failureCount": 0,
+        "deferredReasons": [
+          "queued-read"
+        ],
+        "level": "info",
+        "event": "sync.account.deferred",
+        "originalResult": false,
+        "originalError": true,
+        "deferralFieldsBounded": true
+      }
+    },
+    {
+      "id": "credit-account",
+      "title": "Provider credit refusal is deferred without a sync failure",
+      "input": {
+        "kind": "credit",
+        "stage": "account",
+        "provider": "caldav"
+      },
+      "expected": {
+        "outcome": "deferred",
+        "seconds": 0.25,
+        "failureCount": 0,
+        "deferredReasons": [
+          "credit"
+        ],
+        "level": "info",
+        "event": "sync.account.deferred",
+        "originalResult": false,
+        "originalError": true,
+        "deferralFieldsBounded": true
+      }
+    },
+    {
+      "id": "cooldown-discovery",
+      "title": "Provider cooldown discovery is deferred",
+      "input": {
+        "kind": "cooldown",
+        "stage": "discovery",
+        "provider": "microsoft"
+      },
+      "expected": {
+        "outcome": "deferred",
+        "seconds": 0.25,
+        "failureCount": 0,
+        "deferredReasons": [
+          "cooldown"
+        ],
+        "level": "info",
+        "event": "sync.provider.deferred",
+        "originalResult": false,
+        "originalError": true,
+        "deferralFieldsBounded": true
+      }
+    },
+    {
+      "id": "budget-persistence-pending-account",
+      "title": "Budget persistence refusal is deferred",
+      "input": {
+        "kind": "budget-persistence-pending",
+        "stage": "account",
+        "provider": "google"
+      },
+      "expected": {
+        "outcome": "deferred",
+        "seconds": 0.25,
+        "failureCount": 0,
+        "deferredReasons": [
+          "budget-persistence-pending"
+        ],
+        "level": "info",
+        "event": "sync.account.deferred",
+        "originalResult": false,
+        "originalError": true,
+        "deferralFieldsBounded": true
+      }
+    },
+    {
+      "id": "work-capacity-account",
+      "title": "Work capacity refusal is deferred",
+      "input": {
+        "kind": "work-capacity",
+        "stage": "account",
+        "provider": "microsoft"
+      },
+      "expected": {
+        "outcome": "deferred",
+        "seconds": 0.25,
+        "failureCount": 0,
+        "deferredReasons": [
+          "work-capacity"
+        ],
+        "level": "info",
+        "event": "sync.account.deferred",
+        "originalResult": false,
+        "originalError": true,
+        "deferralFieldsBounded": true
+      }
+    },
+    {
+      "id": "provider-503-account",
+      "title": "Transient HTTP failure remains a failure despite warning severity",
+      "input": {
+        "kind": "provider-503",
+        "stage": "account",
+        "provider": "microsoft"
+      },
+      "expected": {
+        "outcome": "failed",
+        "seconds": 0.25,
+        "failureCount": 1,
+        "deferredReasons": [],
+        "level": "warn",
+        "event": "sync.account.failed",
+        "originalResult": false,
+        "originalError": true,
+        "deferralFieldsBounded": true
+      }
+    },
+    {
+      "id": "network-account",
+      "title": "Transient socket failure remains a failed attempt",
+      "input": {
+        "kind": "network",
+        "stage": "account",
+        "provider": "caldav"
+      },
+      "expected": {
+        "outcome": "failed",
+        "seconds": 0.25,
+        "failureCount": 1,
+        "deferredReasons": [],
+        "level": "warn",
+        "event": "sync.account.failed",
+        "originalResult": false,
+        "originalError": true,
+        "deferralFieldsBounded": true
+      }
+    },
+    {
+      "id": "auth-discovery",
+      "title": "Revoked grant remains a discovery failure",
+      "input": {
+        "kind": "auth",
+        "stage": "discovery",
+        "provider": "google"
+      },
+      "expected": {
+        "outcome": "failed",
+        "seconds": 0.25,
+        "failureCount": 1,
+        "deferredReasons": [],
+        "level": "error",
+        "event": "sync.provider.failed",
+        "originalResult": false,
+        "originalError": true,
+        "deferralFieldsBounded": true
+      }
+    },
+    {
+      "id": "source-changed-account",
+      "title": "Source authority fence remains a visible failure",
+      "input": {
+        "kind": "source-changed",
+        "stage": "account",
+        "provider": "google"
+      },
+      "expected": {
+        "outcome": "failed",
+        "seconds": 0.25,
+        "failureCount": 1,
+        "deferredReasons": [],
+        "level": "error",
+        "event": "sync.account.failed",
+        "originalResult": false,
+        "originalError": true,
+        "deferralFieldsBounded": true
+      }
+    },
+    {
+      "id": "unknown-account",
+      "title": "Unknown private error remains a failure",
+      "input": {
+        "kind": "unknown",
+        "stage": "account",
+        "provider": "caldav"
+      },
+      "expected": {
+        "outcome": "failed",
+        "seconds": 0.25,
+        "failureCount": 1,
+        "deferredReasons": [],
+        "level": "error",
+        "event": "sync.account.failed",
+        "originalResult": false,
+        "originalError": true,
+        "deferralFieldsBounded": true
+      }
+    },
+    {
+      "id": "fake-budget-account",
+      "title": "Budget error name and message do not confer control flow",
+      "input": {
+        "kind": "fake-budget",
+        "stage": "account",
+        "provider": "google"
+      },
+      "expected": {
+        "outcome": "failed",
+        "seconds": 0.25,
+        "failureCount": 1,
+        "deferredReasons": [],
+        "level": "error",
+        "event": "sync.account.failed",
+        "originalResult": false,
+        "originalError": true,
+        "deferralFieldsBounded": true
+      }
+    },
+    {
+      "id": "fake-queue-account",
+      "title": "Queued error name and retry timestamp do not confer control flow",
+      "input": {
+        "kind": "fake-queue",
+        "stage": "account",
+        "provider": "google"
+      },
+      "expected": {
+        "outcome": "failed",
+        "seconds": 0.25,
+        "failureCount": 1,
+        "deferredReasons": [],
+        "level": "error",
+        "event": "sync.account.failed",
+        "originalResult": false,
+        "originalError": true,
+        "deferralFieldsBounded": true
+      }
+    },
+    {
+      "id": "plain-object-account",
+      "title": "Plain error data cannot impersonate a queued deferral",
+      "input": {
+        "kind": "plain-object",
+        "stage": "account",
+        "provider": "google"
+      },
+      "expected": {
+        "outcome": "failed",
+        "seconds": 0.25,
+        "failureCount": 1,
+        "deferredReasons": [],
+        "level": "error",
+        "event": "sync.account.failed",
+        "originalResult": false,
+        "originalError": true,
+        "deferralFieldsBounded": true
+      }
+    }
+  ]
+}

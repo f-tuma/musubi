@@ -188,6 +188,37 @@
       }
     },
     {
+      "id": "shared-permit-abort-fallback",
+      "title": "Handled active HTTP cancellation rejects old siblings and preserves a fresh fallback after native settlement",
+      "expected": { "siblings": 0, "fallbacks": 1, "fallbackBeforeSettlement": false, "logicalActive": 0 }
+    },
+    {
+      "id": "shared-permit-parallel-http",
+      "title": "Concurrent SDK HTTP leaves queue under one permit and resume fairly beyond a cold burst",
+      "expected": {
+        "statuses": [207, 207],
+        "sends": 2,
+        "parks": 2,
+        "maxRaw": 1,
+        "bBeforeA": true,
+        "logicalActive": 0
+      }
+    },
+    {
+      "id": "shared-permit-inflight-collision",
+      "title": "A queued SDK sibling cannot release collision holds while another raw HTTP leaf is in flight",
+      "expected": {
+        "bBeforeFirstRelease": false,
+        "heldWhileRaw": 1,
+        "bBeforeSecond": true,
+        "bWhileRaw": false,
+        "sends": 2,
+        "parks": 1,
+        "maxRaw": 1,
+        "logicalActive": 0
+      }
+    },
+    {
       "id": "finite-boundary-cooldown-clocks",
       "title": "Finite boundary cooldowns cap control eligibility and still expire independently",
       "expected": {

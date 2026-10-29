@@ -1,7 +1,7 @@
 {
   "name": "musubi",
   "private": true,
-  "version": "0.2.12",
+  "version": "0.2.13",
   "description": "Musubi monorepo \u2014 open, self-hostable shared calendar.",
   "workspaces": [
     "apps/*",

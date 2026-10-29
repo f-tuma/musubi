@@ -604,7 +604,7 @@
       "id": 15,
       "type": "timeseries",
       "title": "Account sync attempts / second",
-      "description": "An account attempt includes discovery and persistence. Failure before account invocation appears in external sync failures, not here.",
+      "description": "Account attempts include discovery and persistence. Outcomes distinguish successful, failed and explicitly deferred scheduler/budget work. Deferrals are not failures; discovery before account invocation is counted separately.",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
@@ -730,7 +730,7 @@
       "id": 18,
       "type": "timeseries",
       "title": "Provider failures in selected interval",
-      "description": "Separate stages: discovery, account, push, scheduler.",
+      "description": "Actual provider/account failures, including retryable network warnings. Explicit queued-read and provider-budget deferrals are counted separately; historical samples from older servers may include them.",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
@@ -830,6 +830,48 @@
           "refId": "A",
           "expr": "max by (provider,status) (musubi_event_outbox_oldest_seconds{job=\"musubi-api\"})",
           "legendFormat": "{{provider}} / {{status}}",
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Sync deferrals in selected interval",
+      "description": "Explicit queued-read and provider-budget scheduling deferrals, not provider failures. Dirty work remains pending until its eligible retry; this does not prove successful synchronization.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 80,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (provider,stage,reason) (increase(musubi_sync_deferrals_total{job=\"musubi-api\"}[$__range]))",
+          "legendFormat": "{{provider}} / {{stage}} / {{reason}}",
           "instant": false
         }
       ],

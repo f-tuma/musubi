@@ -22,6 +22,8 @@ pnpm test:behavior --suite postgres-restore --scenario create-failure --json
 pnpm test:behavior --suite project-news --scenario first-baseline --json
 pnpm test:behavior --suite fair-work --scenario due-crosses-during-wake-scan --json
 pnpm test:behavior --suite read-attempt --scenario steady-large-pagination --json
+pnpm test:behavior --suite sync-outcome --scenario credit-account --json
+pnpm test:behavior --suite sync-outcome --json
 pnpm test:behavior --suite read-attempt --json
 pnpm --filter @musubi/api test:read-attempt
 pnpm test:behavior --suite google-delete --scenario already-absent --json
@@ -60,6 +62,7 @@ not committed. The root runner can also be called as
 | `web-edge` | Real worker route and push-registration function | Browser registration/push subscription ports | Vitest/jsdom; final Chromium test uses the actual served worker |
 | `postgres-restore` | Shipped restore shell helper, ownership, archive handling, deadlines and preservation comparison | Strict Docker/sleep command receipts | No Docker daemon; real database restore is a separate final check |
 | `project-news` | Actual common-news reader/cache, source schema, API baseline and legacy read-marker bridge | Fetch, clock and account-settings ports | None; no DB or external HTTP |
+| `sync-outcome` | Actual account run and failure observers, explicit scheduler/budget deferral classification, severity and event selection | Native work result/error receipts, clock and telemetry sinks | None; the metrics contract separately uses the actual registry and DB fence class |
 | `read-attempt` | Actual pull progress watchdog, pause/resume, lease heartbeat, cancellation and disposal | Explicit production clock port and renewal receipts | None; virtual time, no DB/provider calls |
 | `google-delete` | Claimed delivery runtime, Google provider preflight/conditional DELETE/recovery | Host persistence/lease/credential ports, HTTP responses and clock | None |
 | `google-create` | Admitted codec identity/body, CREATE delivery runtime and provider preflight/write/recovery | Host persistence/lease/credential ports, ordered HTTP responses and clock | None |

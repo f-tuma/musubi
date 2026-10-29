@@ -5,7 +5,7 @@ import * as database from "@musubi/db";
 import { createProviderBudget, ProviderDispatchDeferred, providerDeferral, parseProviderRetryAfter, requireBudgetContinuationWindow, type BudgetLeaf, type BudgetScope, type HttpDispatchPort,
   type HttpDispatchRequest, type MutationReservation, type SendRawOnce } from "@musubi/sync-runtime";
 import type { CalendarAdapter } from "./adapter";
-import { currentSyncWorkParking, currentSyncWorkSignal, runScopedProviderWork, runCapabilityProviderWork, syncWorkCoordinatorEnabled } from "./work_coordinator";
+import { currentSyncWorkParking, currentSyncWorkSignal, runScopedProviderWork, runCapabilityProviderWork, syncWorkCoordinatorEnabled, withSyncWorkHttpLeaf } from "./work_coordinator";
 
 export { ProviderDispatchDeferred, providerDeferral };
 type Provider = "google" | "microsoft" | "caldav";
@@ -204,16 +204,17 @@ export const rawProviderFetch: typeof fetch = (input, init) => {
   return globalThis.fetch(input, { ...init, signal });
 };
 export async function dispatchProviderHttp(request: HttpDispatchRequest, send: SendRawOnce): Promise<Response> {
-  budgetAttemptSignal(request.signal)?.throwIfAborted();
+  const signal = budgetAttemptSignal(request.signal); signal?.throwIfAborted();
   const instance = runtime; if (!instance) return send();
   const scope = context.getStore(); if (!scope?.live) throw new Error("Provider HTTP requires an explicit live execution budget context.");
   const progress = () => { try { scope.onProgress?.(); } catch { /* Watchdog diagnostics have no provider authority. */ } };
-  progress();
-  await verify(scope);
-  const decoration = instance.decorate(r => budgetLeaf(scope, r), () => { scope.signal?.throwIfAborted(); },
-    (leaf, response) => { progress(); return cooldown(scope, leaf, response); }, leaf => scope.reservations.get(leaf.targetKey)?.token,
-    scope.park ? async (_deferral, error) => waitBudgetContinuation(error, scope, request.signal) : undefined);
-  return decoration.dispatch!(request, send);
+  return withSyncWorkHttpLeaf(async assertCurrent => {
+    assertCurrent(); progress(); await verify(scope);
+    const decoration = instance.decorate(r => budgetLeaf(scope, r), () => { assertCurrent(); scope.signal?.throwIfAborted(); },
+      (leaf, response) => { progress(); return cooldown(scope, leaf, response); }, leaf => scope.reservations.get(leaf.targetKey)?.token,
+      scope.park ? async (_deferral, error) => waitBudgetContinuation(error, scope, request.signal) : undefined);
+    return decoration.dispatch!(request, send);
+  }, signal);
 }
 export function createSdkBudgetHttp(provider: Provider, userID: string, accountID: string,
   expected?: { connectionId: string; connectionGeneration?: string | number },

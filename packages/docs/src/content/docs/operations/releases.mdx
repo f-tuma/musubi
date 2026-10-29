@@ -10,7 +10,40 @@ remaining acceptance. Provider support has its own
 [capability matrix](/docs/operations/capabilities/); an API version or a green
 build does not certify every provider operation.
 
-## Current assessment — 27 October 2026
+## Current record — 29 October 2026
+
+[v0.2.12](https://github.com/f-tuma/musubi/releases/tag/v0.2.12) is published from
+`02e6adc86f412e58627ee0669731b81b30027be6`.
+[Publication](https://github.com/f-tuma/musubi/actions/runs/40918888724) passed
+all nine jobs, linked to the exact-main
+[Quality run](https://github.com/f-tuma/musubi/actions/runs/40915538537) with
+all 21 jobs successful. The observed production API/web image revisions and
+immutable digests match that source. The API reports 0.2.12, and all 88
+migration hashes through 0087 matched the committed journal.
+
+Android website association now serves both supplied public Play signing
+fingerprints. The canonical `/app/sw.js` serves JavaScript with no-store and
+Cloudflare BYPASS on ordinary requests. A real authenticated local task
+survived deployment, completed and was removed; this does not prove external
+provider writes or every account's synchronization. Native distribution was
+reported by the owner and retains its separate Android/iOS artifact provenance;
+HTTP associations do not establish physical-device link acceptance.
+
+Subsequent monitoring found CalDAV worker-permit errors, repeated authority
+fences and overly broad synchronization failure accounting. The **0.2.13
+maintenance candidate** addresses concurrent HTTP worker ownership, bounded
+failure diagnostics and explicit deferral classification. Its
+[release notes](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.13-notes.md)
+describe source changes, not completed publication or deployment. It changes no
+database schema or client wire contract; installed 0.2.12 apps remain compatible.
+The operator-confirmed release/tag deployment and backup automation stay in
+place. Verify the actual next deployment and fresh provider activity separately.
+
+## Historical assessment — 27 October 2026
+
+The following table and blockers describe the pre-release audit on that date;
+they are retained as preparation history, not the current production state.
+
 
 **HOLD for a complete server, web, Android and iOS production release.** The
 latest published release is
@@ -47,7 +80,7 @@ correct the effective origin/CDN behavior and verify worker updates; the cause
 has not been established. The worker handles notifications and has no app-shell
 fetch cache. The runbook owns the detailed blocker and native acceptance lists.
 
-### Current database and delivery boundary
+### Database and delivery boundary recorded in that assessment
 
 The source API migration journal has 88 entries, ending at
 `0087_project_news` (index 87); `0086_sync_scheduling` precedes it. The actual
@@ -75,7 +108,7 @@ writes blocked and all API/consumer processes stopped. An older Graph reader
 can resume destructive window sweeps; an image switch is insufficient rollback
 evidence for coverage, persisted v1 operations or the contracted news schema.
 
-### Current publication contract
+### Publication contract
 
 The publication workflow takes the full approved `expected_source_sha` and
 version. It requires main and the matching captured/checkout SHA, and reuses the

@@ -168,3 +168,101 @@ test("four parked regular jobs reserve auxiliary headroom and overload new regul
     assert.equal(auxiliary, 4); assert(coordinator.snapshot().regularLogical <= 4); assert(coordinator.snapshot().auxiliaryLogical <= 4);
   } finally { coordinator.close(); await Promise.all(parents); }
 });
+
+test("HTTP leaf failure rejects queued siblings but permits a subsequently handled fallback", async () => {
+  const entered = deferred<void>(), release = deferred<void>(); let siblingSends = 0, fallbackSends = 0;
+  let retained!: () => void;
+  const item: WorkCandidate<string> = { key: "A", family: "pull", accountFairnessKey: "A", laneKey: "A", orderKey: "A", dueAtMs: 0, collisionKeys: ["resource"], hostRef: "A" };
+  const coordinator = createFairWorkCoordinator({ capacity: 1, host: { async execute(_c, permit, signal) {
+    const failure = new Error("Controlled native failure");
+    const first = coordinator.runHttpLeaf(permit, async assertCurrent => {
+      retained = assertCurrent; entered.resolve(); await release.promise; throw failure;
+    }, signal);
+    const sibling = coordinator.runHttpLeaf(permit, async assertCurrent => { assertCurrent(); siblingSends++; return new Response(); }, signal);
+    const results = await Promise.allSettled([first, sibling]);
+    assert.ok(results.every(result => result.status === "rejected" && result.reason === failure));
+    assert.throws(retained, /inactive work permit/);
+    const fallback = await coordinator.runHttpLeaf(permit, async assertCurrent => { assertCurrent(); fallbackSends++; return new Response(null, { status: 404 }); }, signal);
+    assert.equal(fallback.status, 404, "Returned HTTP failure statuses are not thrown or rewritten");
+    const throttle = await coordinator.runHttpLeaf(permit, async assertCurrent => { assertCurrent(); return new Response(null, { status: 429 }); }, signal);
+    assert.equal(throttle.status, 429);
+    return { kind: "settled" as const, changedCalendarIDs: [] };
+  } } });
+  try { const work = coordinator.submit(item); await entered.promise; release.resolve(); await work;
+    assert.equal(siblingSends, 0); assert.equal(fallbackSends, 1);
+  } finally { release.resolve(); coordinator.close(); }
+});
+
+test("cancelling a queued HTTP leaf removes only that waiter and preserves FIFO", async () => {
+  const entered = deferred<void>(), release = deferred<void>(), queued = new AbortController(); const sends: string[] = [];
+  const item: WorkCandidate<string> = { key: "A", family: "pull", accountFairnessKey: "A", laneKey: "A", orderKey: "A", dueAtMs: 0, collisionKeys: [], hostRef: "A" };
+  const coordinator = createFairWorkCoordinator({ capacity: 1, host: { async execute(_c, permit, signal) {
+    const first = coordinator.runHttpLeaf(permit, async assertCurrent => { entered.resolve(); await release.promise; assertCurrent(); sends.push("first"); }, signal);
+    const cancelled = coordinator.runHttpLeaf(permit, async assertCurrent => { assertCurrent(); sends.push("cancelled"); }, queued.signal);
+    const last = coordinator.runHttpLeaf(permit, async assertCurrent => { assertCurrent(); sends.push("last"); }, signal);
+    const result = await Promise.allSettled([first, cancelled, last]);
+    assert.deepEqual(result.map(value => value.status), ["fulfilled", "rejected", "fulfilled"]);
+    assert.equal(result[1]!.status === "rejected" && result[1]!.reason, queued.signal.reason);
+    return { kind: "settled" as const, changedCalendarIDs: [] };
+  } } });
+  try { const work = coordinator.submit(item); await entered.promise; queued.abort(new Error("Queued caller cancelled")); release.resolve(); await work;
+    assert.deepEqual(sends, ["first", "last"]);
+  } finally { release.resolve(); coordinator.close(); }
+});
+
+test("an active HTTP caller abort preserves a later fallback until the old dispatch settles", async () => {
+  const entered = deferred<void>(), release = deferred<void>(), fallbackQueued = deferred<void>();
+  const caller = new AbortController(); let siblingSends = 0, fallbackSends = 0, oldSettled = false;
+  const item: WorkCandidate<string> = { key: "A", family: "pull", accountFairnessKey: "A", laneKey: "A", orderKey: "A", dueAtMs: 0, collisionKeys: ["resource"], hostRef: "A" };
+  const coordinator = createFairWorkCoordinator({ capacity: 1, host: { async execute(_c, permit, signal) {
+    const first = coordinator.runHttpLeaf(permit, async () => {
+      entered.resolve(); await release.promise; oldSettled = true; caller.signal.throwIfAborted();
+    }, caller.signal);
+    const sibling = coordinator.runHttpLeaf(permit, async assertCurrent => { assertCurrent(); siblingSends++; }, signal);
+    const results = await Promise.allSettled([first, sibling]);
+    assert.ok(results.every(result => result.status === "rejected" && result.reason === caller.signal.reason));
+    const fallback = coordinator.runHttpLeaf(permit, async assertCurrent => {
+      assertCurrent(); assert.ok(oldSettled, "Fallback waits for the aborted native execution to settle"); fallbackSends++;
+    }, signal);
+    fallbackQueued.resolve(); await fallback;
+    return { kind: "settled" as const, changedCalendarIDs: [] };
+  } } });
+  try { const work = coordinator.submit(item); void work.catch(() => {});
+    await entered.promise; caller.abort(new Error("Active caller cancelled")); await fallbackQueued.promise;
+    assert.equal(fallbackSends, 0); release.resolve(); await work;
+    assert.equal(siblingSends, 0); assert.equal(fallbackSends, 1);
+  } finally { release.resolve(); coordinator.close(); }
+});
+
+test("closing parent work rejects active and queued HTTP leaves before another send", async () => {
+  const entered = deferred<void>(), release = deferred<void>(); let sends = 0;
+  const item: WorkCandidate<string> = { key: "A", family: "pull", accountFairnessKey: "A", laneKey: "A", orderKey: "A", dueAtMs: 0, collisionKeys: ["resource"], hostRef: "A" };
+  const coordinator = createFairWorkCoordinator({ capacity: 1, host: { async execute(_c, permit, signal) {
+    const first = coordinator.runHttpLeaf(permit, async assertCurrent => { entered.resolve(); await release.promise; assertCurrent(); sends++; }, signal);
+    const sibling = coordinator.runHttpLeaf(permit, async assertCurrent => { assertCurrent(); sends++; }, signal);
+    const result = await Promise.allSettled([first, sibling]);
+    assert.deepEqual(result.map(value => value.status), ["rejected", "rejected"]);
+    return { kind: "settled" as const, changedCalendarIDs: [] };
+  } } });
+  try { const work = coordinator.submit(item); await entered.promise; coordinator.close(); release.resolve(); await work;
+    assert.equal(sends, 0);
+  } finally { release.resolve(); coordinator.close(); }
+});
+
+test("HTTP cannot enter under an independently parked or expired permit", async () => {
+  const parked = deferred<void>(); let now = 0, sends = 0, captured!: Parameters<ReturnType<typeof createFairWorkCoordinator>["park"]>[0];
+  const item: WorkCandidate<string> = { key: "A", family: "pull", accountFairnessKey: "A", laneKey: "A", orderKey: "A", dueAtMs: 0, collisionKeys: ["resource"], hostRef: "A" };
+  const coordinator = createFairWorkCoordinator({ capacity: 1, nowMs: () => now, schedule: () => () => {}, host: { async execute(_c, permit, signal) {
+    captured = permit; const waiting = coordinator.park(permit, 1000, signal); parked.resolve();
+    await assert.rejects(coordinator.runHttpLeaf(permit, async assertCurrent => { assertCurrent(); sends++; }, signal), /inactive work permit/);
+    await waiting;
+    return { kind: "settled" as const, changedCalendarIDs: [] };
+  } } });
+  try { const work = coordinator.submit(item); await parked.promise;
+    for (let i = 0; i < 30; i++) await Promise.resolve();
+    now = 1000; coordinator.kick(); await work;
+    for (let i = 0; i < 30; i++) await Promise.resolve();
+    await assert.rejects(coordinator.runHttpLeaf(captured, async () => { sends++; }), /inactive work permit/);
+    assert.equal(sends, 0);
+  } finally { coordinator.close(); }
+});
