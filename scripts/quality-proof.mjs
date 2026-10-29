@@ -111,22 +111,47 @@ function input(env, cwd, git) {
   };
 }
 
+function githubReadEndpoint(path) {
+  if (path === "") return "repository";
+  if (path === "/git/ref/heads/main") return "main";
+  if (path === "/actions/workflows/quality.yml") return "quality-workflow";
+  if (/^\/actions\/workflows\/[1-9]\d*\/runs\?head_sha=[a-f0-9]{40}&event=push&branch=main&per_page=100&page=1$/.test(path)) return "quality-run-list";
+  if (/^\/actions\/runs\/[1-9]\d*$/.test(path)) return "quality-run";
+  if (/^\/actions\/runs\/[1-9]\d*\/attempts\/[1-9]\d*\/jobs\?per_page=100&page=1$/.test(path)) return "quality-jobs";
+  return "unknown";
+}
+
 async function readGitHub(path, env, fetchImpl) {
-  let response, body;
+  let response, body, status;
+  let stage = "transport";
   try {
     response = await fetchImpl(`https://api.github.com/repos/${repositoryName}${path}`, {
       method: "GET", headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${env.GH_TOKEN}`,
         "X-GitHub-Api-Version": "2022-11-28" }, redirect: "error", signal: AbortSignal.timeout(15_000),
     });
-    require(response?.status === 200 && !response.redirected && /^application\/(?:json|vnd\.github\+json)(?:\s*;|$)/i.test(response.headers?.get("content-type") ?? ""), "GitHub read did not return a successful JSON response");
+    stage = "http-status";
+    const rawStatus = response?.status;
+    if (Number.isInteger(rawStatus) && rawStatus >= 100 && rawStatus <= 599) status = rawStatus;
+    require(rawStatus === 200, "GitHub read did not return a successful JSON response");
+    stage = "redirect";
+    require(!response.redirected, "GitHub read did not return a successful JSON response");
+    stage = "content-type";
+    require(/^application\/(?:json|vnd\.github\+json)(?:\s*;|$)/i.test(response.headers?.get("content-type") ?? ""), "GitHub read did not return a successful JSON response");
+    stage = "pagination";
     require(!/rel="next"/.test(response.headers?.get("link") ?? ""), "incomplete or ambiguous paginated GitHub response");
+    stage = "declared-size";
     require(Number(response.headers?.get("content-length") ?? 0) <= 2 * 1024 * 1024, "GitHub response exceeds the proof limit");
+    stage = "body-read";
     body = await response.text();
+    stage = "body-size";
     require(Buffer.byteLength(body) <= 2 * 1024 * 1024, "GitHub response exceeds the proof limit");
+    stage = "json";
     return JSON.parse(body);
   } catch {
     // Transport, parser and remote errors may contain tokens or private URLs.
-    throw new Error("Quality proof: GitHub read failed, was incomplete, or returned malformed data");
+    // Only locally classified endpoint/stage names and bounded HTTP status escape.
+    throw new Error("Quality proof: GitHub read failed, was incomplete, or returned malformed data " +
+      `(endpoint=${githubReadEndpoint(path)}, stage=${stage}, status=${status ?? "unknown"})`);
   }
 }
 
