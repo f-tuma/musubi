@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("production asset links resolve from the initial SSR HTML before hydration", async ({ page, request }, testInfo) => {
+test("production asset links resolve from the initial SSR HTML before hydration", async ({ browser, page, request }, testInfo) => {
   const initial = await request.get("/login");
   expect(initial.status()).toBe(200);
   expect(initial.headers()["content-type"]).toMatch(/^text\/html\b/);
@@ -29,6 +29,28 @@ test("production asset links resolve from the initial SSR HTML before hydration"
   }
   await testInfo.attach("initial-ssr-stylesheets", { body: JSON.stringify(stylesheets, null, 2), contentType: "application/json" });
 
+  // The server-rendered mark must fit before either styles or hydration can
+  // supply its size. A delayed stylesheet used to let the SVG fill the page.
+  for (const width of [390, 1280]) {
+    const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width, height: 844 } });
+    try {
+      const firstPaint = await context.newPage();
+      await firstPaint.route("**/*", route => route.request().resourceType() === "stylesheet" ? route.abort() : route.continue());
+      await firstPaint.goto(new URL("/login", origin).href, { waitUntil: "domcontentloaded" });
+      const mark = firstPaint.locator('header svg[aria-label="Musubi"]');
+      await expect(mark).toHaveCount(1);
+      const bounds = await mark.boundingBox();
+      await testInfo.attach(`unstyled-brand-${width}`, { body: await firstPaint.screenshot(), contentType: "image/png" });
+      expect(bounds).not.toBeNull();
+      expect(bounds!.width).toBeGreaterThan(0);
+      expect(bounds!.width).toBeLessThanOrEqual(64);
+      expect(bounds!.height).toBeLessThanOrEqual(64);
+      expect(bounds!.height).toBe(bounds!.width);
+    } finally {
+      await context.close();
+    }
+  }
+
   // Only the login's API dependencies are replaced. All HTML, CSS, fonts and
   // executable chunks continue to come from the running production server.
   await page.route("**/api/auth/get-session", route => route.fulfill({ json: null }));
@@ -41,6 +63,8 @@ test("production asset links resolve from the initial SSR HTML before hydration"
   await expect(page).toHaveURL(/\/login$/);
   await expect(page).toHaveTitle(/Musubi/);
   await expect(page.getByRole("heading", { name: "Sign in", exact: true })).toBeVisible();
+  await expect(page.locator('header svg[aria-label="Musubi"]')).toHaveCSS("width", "28px");
+  await expect(page.locator('header svg[aria-label="Musubi"]')).toHaveCSS("height", "28px");
   await expect(page.locator("vite-error-overlay")).toHaveCount(0);
   await page.getByRole("button", { name: "Create one", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Create your account", exact: true })).toBeVisible();

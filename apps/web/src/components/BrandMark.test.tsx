@@ -39,13 +39,15 @@ it("keeps the complete fallback until both arms load and restores it on failure"
 });
 
 it("isolates multiple marks and preserves decorative callers' SVG props", () => {
-  const { container } = render(<><BrandMark aria-hidden="true" focusable="false" className="size-4" /><BrandMark /></>);
+  const { container } = render(<><BrandMark aria-hidden="true" focusable="false" className="size-4" width="32" height="32" /><BrandMark /></>);
   const [first, second] = Array.from(container.querySelectorAll("svg"));
   const maskIds = Array.from(container.querySelectorAll("mask")).map((mask) => mask.id);
   expect(new Set(maskIds).size).toBe(4);
   expect(first!.getAttribute("aria-hidden")).toBe("true");
   expect(first!.getAttribute("focusable")).toBe("false");
   expect(first!.getAttribute("class")).toBe("size-4");
+  expect(first!.getAttribute("width")).toBe("32");
+  expect(first!.getAttribute("height")).toBe("32");
   for (const image of first!.querySelectorAll("image")) fireEvent.load(image);
   expect(paths(first!).every((path) => path.hasAttribute("mask"))).toBe(true);
   expect(paths(second!).every((path) => !path.hasAttribute("mask"))).toBe(true);

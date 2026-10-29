@@ -36,10 +36,10 @@ function LiveArms() {
   );
 }
 
-/** Native image masks keep theme/pigment colours local; loading/offline uses the original paths. */
+/** Intrinsic dimensions bound the SSR mark before CSS; themed sizes override them. */
 export function BrandMark(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 48 48" fill="none" role="img" aria-label="Musubi" {...props}>
+    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" role="img" aria-label="Musubi" {...props}>
       <ClientOnly fallback={<Arms />}>
         <LiveArms />
       </ClientOnly>
