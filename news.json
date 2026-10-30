@@ -1,4 +1,15 @@
 {
   "schemaVersion": 1,
-  "items": []
+  "items": [
+    {
+      "id": "2026-10-30-2",
+      "title": "Musubi 0.2.13: More reliable sync",
+      "body": "Improved calendar and task synchronization, with clearer diagnostics. Expected waits during account sync are now reported separately from failures.\n\nThis API and web maintenance update works with the 0.2.12 mobile apps.\n\nhttps://github.com/f-tuma/musubi/releases/tag/v0.2.13"
+    },
+    {
+      "id": "2026-10-30-1",
+      "title": "Musubi 0.2.12: Sync, widgets and shared news",
+      "body": "Calendar and task sync improvements, updated Android widgets, and layout fixes. The web app opens without the oversized logo flash, and project news is now shared across Musubi servers.\n\nIncludes web and server security updates.\n\nhttps://github.com/f-tuma/musubi/releases/tag/v0.2.12"
+    }
+  ]
 }

@@ -24,7 +24,7 @@ Keep it newest first. For example:
 ```
 
 Run `pnpm news:check` before publishing. Normal checks run the same validator.
-The feed is initially empty: this change does not invent a release announcement.
+Validation uses the same schema as the server reader.
 
 - A title has at most 200 characters; a body has at most 4000. The complete
   UTF-8 file is limited to 128 KiB and 100 items.
