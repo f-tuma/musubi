@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spec Review"
+  short_description: "Review a proposal in a fresh context"
+  default_prompt: "Use $spec-review to examine the current design against its requirements and real code."

@@ -1,0 +1,7 @@
+{
+  "name": "spec-pilot",
+  "version": "0.1.0",
+  "description": "Guide bounded spec-driven coding work, reuse project sources, and check document structure and evidence freshness.",
+  "author": {"name": "Musubi contributors"},
+  "license": "MIT"
+}

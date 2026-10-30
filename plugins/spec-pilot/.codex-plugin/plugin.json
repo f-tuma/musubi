@@ -1,0 +1,17 @@
+{
+  "name": "spec-pilot",
+  "version": "0.1.0",
+  "description": "Guide bounded spec-driven coding work, reuse project sources, and check document structure and evidence freshness.",
+  "author": {"name": "Musubi contributors"},
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Spec Pilot",
+    "shortDescription": "Specifikace, testy a kontrola",
+    "longDescription": "Three local coding workflows: project orientation and planning, fresh-context design review, and bounded implementation with verification. Includes a standard-library Python checker for mapped documents and evidence hashes. Semantic judgments and project checks remain explicit.",
+    "developerName": "Musubi contributors",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "Use Spec Pilot to map this repository and identify the next bounded development step."
+  }
+}
