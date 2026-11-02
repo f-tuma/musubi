@@ -129,6 +129,15 @@ Assess its scope, including whether personal data is processed beyond what is
 necessary for providing the service or complying with law. If targeting Czech
 consumers, review the language of required disclosures as part of that assessment.
 
+For future EU App Store publication, assess the app's DSA trader status separately
+from the account's individual/organization label. Apple requires an individual
+trader's public address (or verified P.O. Box), telephone and email. Google Play
+requires a verified legal address for its account even where the public profile
+shows only country; monetization and regional rules can require public disclosure.
+Do not select non-trader merely to hide an address.
+[Apple DSA requirements](https://developer.apple.com/help/app-store-connect/manage-compliance-information/manage-european-union-digital-services-act-trader-requirements/),
+[Google account information](https://support.google.com/googleplay/android-developer/answer/13628312?hl=en).
+
 ## Corrections prepared in the website candidate
 
 - Replace exclusive Brno jurisdiction with courts competent under applicable law;
