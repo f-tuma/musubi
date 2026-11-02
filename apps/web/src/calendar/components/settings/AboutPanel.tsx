@@ -24,7 +24,7 @@ function openProblemReport() {
     "What happened?",
     "",
   ].join("\n");
-  window.location.href = `mailto:hello@frgtn.dev?subject=${encodeURIComponent(
+  window.location.href = `mailto:hello@f-tuma.dev?subject=${encodeURIComponent(
     "Musubi problem report",
   )}&body=${encodeURIComponent(body)}`;
 }

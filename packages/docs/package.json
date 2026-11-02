@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "description": "Astro Starlight documentation site for Musubi.",
-  "author": "frgtn.dev",
+  "author": "Filip Tůma (https://f-tuma.dev)",
   "license": "MIT",
   "scripts": {
     "dev": "astro dev",

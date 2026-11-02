@@ -4,11 +4,11 @@
 #
 #   1. Download this file, the gateway config and an env file:
 #        curl -O \
-#          https://raw.githubusercontent.com/frgtn-dot-dev/musubi/main/docker-compose.yml
+#          https://raw.githubusercontent.com/f-tuma/musubi/main/docker-compose.yml
 #        curl -o .env \
-#          https://raw.githubusercontent.com/frgtn-dot-dev/musubi/main/.env.example
+#          https://raw.githubusercontent.com/f-tuma/musubi/main/.env.example
 #        mkdir -p ops/gateway
-#        base=https://raw.githubusercontent.com/frgtn-dot-dev/musubi/main
+#        base=https://raw.githubusercontent.com/f-tuma/musubi/main
 #        curl -o ops/gateway/Caddyfile "$base/ops/gateway/Caddyfile"
 #   2. Edit .env — at minimum POSTGRES_PASSWORD, BETTER_AUTH_SECRET and
 #      BETTER_AUTH_URL (your public https:// origin). This production stack

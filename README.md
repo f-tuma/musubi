@@ -137,7 +137,7 @@ Fork, branch, open a PR against `main`. For bigger ideas, open an issue first so
 
 ## License
 
-[MIT](LICENSE) © 2026 [FRGTN.dev](https://frgtn.dev) — take it, host it, build on it.
+[MIT](LICENSE) © 2026 [Filip Tůma](https://f-tuma.dev) — take it, host it, build on it.
 
 <div align="center">
 <sub>結 — <em>tied together</em></sub>

@@ -59,7 +59,7 @@ import { router } from "expo-router";
 import { useCalendarsStore } from "@/store/useCalendarsStore";
 import { OptionPicker, type PickerOption } from "@/components/ui/OptionPicker";
 
-const SUPPORT_EMAIL = "hello@frgtn.dev";
+const SUPPORT_EMAIL = "hello@f-tuma.dev";
 const FEEDBACK_URL = "https://feedback.musubi.pro/";
 const KOFI_URL = "https://ko-fi.com/frgtn";
 const PRIVACY_URL = "https://musubi.pro/privacy/";

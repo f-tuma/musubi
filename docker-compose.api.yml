@@ -5,7 +5,7 @@
 # which puts it and the API on one origin behind a gateway.
 #
 #   1. Download this file and an env file next to it:
-#        base=https://raw.githubusercontent.com/frgtn-dot-dev/musubi/main
+#        base=https://raw.githubusercontent.com/f-tuma/musubi/main
 #        curl -O "$base/docker-compose.api.yml"
 #        curl -o .env "$base/.env.example"
 #   2. Edit .env — at minimum POSTGRES_PASSWORD, BETTER_AUTH_SECRET and

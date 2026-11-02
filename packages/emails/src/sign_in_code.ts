@@ -85,7 +85,7 @@ Didn&#x27;t ask for a code? Someone typed your address into
                                   rel="noopener noreferrer nofollow"
                                   style="color:#C8553D;text-decoration-line:none;text-decoration:underline"
                                   target="_blank"
-                                  >Musubi</a><br /><br />© ${new Date().getFullYear()} FRGTN
+                                  >Musubi</a><br /><br />© ${new Date().getFullYear()} Filip Tůma
                               </p>
                             </td>
                           </tr>

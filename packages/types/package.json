@@ -11,7 +11,7 @@
     "test": "tsx src/event.test.ts && tsx src/event_time.test.ts && tsx src/sync_protocol.test.ts && tsx src/sync_operation.test.ts && tsx src/task.test.ts && tsx src/announcement.test.ts && tsx src/reminder_options.test.ts && tsx src/settings.test.ts && tsx src/wire.test.ts && tsx src/icloud-rsvp.test.ts"
   },
   "keywords": [],
-  "author": "frgtn.dev",
+  "author": "Filip Tůma (https://f-tuma.dev)",
   "license": "MIT",
   "dependencies": {
     "zod": "^4.6.6"

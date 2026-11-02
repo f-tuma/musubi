@@ -10,7 +10,7 @@
     "test": "tsx src/index.test.ts && tsx src/logger.test.ts && tsx src/provider-budget.test.ts"
   },
   "keywords": [],
-  "author": "frgtn.dev",
+  "author": "Filip Tůma (https://f-tuma.dev)",
   "license": "MIT",
   "dependencies": {
     "dotenv": "^17.4.2",
