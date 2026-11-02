@@ -10,7 +10,7 @@
     "test": "tsx src/lib/auth.test.ts && tsx src/lib/apple_secret.test.ts"
   },
   "keywords": [],
-  "author": "frgtn.dev",
+  "author": "Filip Tůma (https://f-tuma.dev)",
   "license": "MIT",
   "dependencies": {
     "@better-auth/expo": "1.6.23",

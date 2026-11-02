@@ -10,7 +10,7 @@
     "test:read-attempt": "tsx src/sync/behavior/read-attempt-harness.test.ts && tsx src/sync/behavior/read-attempt-cli.ts"
   },
   "keywords": [],
-  "author": "frgtn.dev",
+  "author": "Filip Tůma (https://f-tuma.dev)",
   "license": "MIT",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1116.0",

@@ -101,7 +101,7 @@ export function getCalendarInviteHtml(
                                   rel="noopener noreferrer nofollow"
                                   style="color:#C8553D;text-decoration-line:none;text-decoration:underline"
                                   target="_blank"
-                                  >Musubi</a><br /><br />© ${new Date().getFullYear()} FRGTN
+                                  >Musubi</a><br /><br />© ${new Date().getFullYear()} Filip Tůma
                               </p>
                             </td>
                           </tr>

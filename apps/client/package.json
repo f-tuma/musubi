@@ -2,7 +2,7 @@
   "name": "@musubi/client",
   "main": "expo-router/entry",
   "description": "Musubi mobile client (Expo / React Native).",
-  "author": "frgtn.dev",
+  "author": "Filip Tůma (https://f-tuma.dev)",
   "license": "MIT",
   "scripts": {
     "dev": "expo start --clear --localhost",

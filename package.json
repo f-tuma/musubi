@@ -60,7 +60,7 @@
     "news:check": "node --import tsx --test scripts/check-news.test.mjs && node --import tsx scripts/check-news.mjs"
   },
   "keywords": [],
-  "author": "frgtn.dev",
+  "author": "Filip Tůma (https://f-tuma.dev)",
   "license": "MIT",
   "packageManager": "pnpm@11.8.0",
   "devDependencies": {

@@ -12,7 +12,7 @@
     "test:scheduling": "tsx src/queries/sync-scheduling.integration.test.ts"
   },
   "keywords": [],
-  "author": "frgtn.dev",
+  "author": "Filip Tůma (https://f-tuma.dev)",
   "license": "MIT",
   "dependencies": {
     "@musubi/config": "workspace:*",
