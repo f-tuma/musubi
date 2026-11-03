@@ -1,28 +1,28 @@
 # Releasing
 
-Current published release: **[0.2.12](https://github.com/f-tuma/musubi/releases/tag/v0.2.12)**
-(29 October 2026), source `02e6adc86f412e58627ee0669731b81b30027be6`.
-[Publication](https://github.com/f-tuma/musubi/actions/runs/40918888724)
+Current published release: **[0.2.13](https://github.com/f-tuma/musubi/releases/tag/v0.2.13)**
+(29 October 2026), source `993f8fe67b7d5b4a43338e6b50875f5a1ed088ab`.
+[Publication](https://github.com/f-tuma/musubi/actions/runs/40974345823)
 passed all nine jobs after the exact-main
-[Quality run](https://github.com/f-tuma/musubi/actions/runs/40915538537)
-passed all 21 jobs. API/web deployment was independently observed at that source,
-with the complete 88-entry migration journal, domain associations and the
-canonical notification worker's no-store response verified. These observations
-do not establish every provider account's health or physical-device acceptance.
+[Quality run](https://github.com/f-tuma/musubi/actions/runs/40972215279)
+passed all 21 jobs. API/web publication and runtime acceptance were separately
+recorded on 29 October; these historical observations do not establish every
+provider account's current health.
 
-The **0.2.13 maintenance candidate** addresses the CalDAV concurrent-worker
-failure, bounded worker diagnostics and expected-deferral accounting; see its
-[release notes](releases/0.2.13-notes.md). It has not been published. Existing
-0.2.12 mobile builds remain compatible; this server correction does not require
-new native distribution. Keep source checks, publication, actual deployment and
-subsequent provider behavior as separate checkpoints.
+The **0.2.14 maintenance candidate** fixes initial iCloud collection queueing,
+literal HTML declarations inside event CDATA, and oversized CalDAV multiget
+responses. See its [release notes](releases/0.2.14-notes.md) and
+[release preparation and acceptance plan](releases/0.2.14-readiness.md).
+It has not been published. Existing mobile builds remain compatible; no new
+native distribution is required. Support-contact and email-branding source
+changes since 0.2.13 are included in the API/web release; native apps receive
+those source updates with their next store build.
 
-The [27 October readiness assessment](releases/0.2.12-readiness.md) and
-[hardening record](releases/0.2.12-hardening.md) are historical preparation
-records. Their then-open publication/cache/domain-association conditions must
-not be presented as current observations. Production backup and deployment use
-the operator-confirmed automation; verify its actual result and the selected
-runtime rather than inferring deployment from a successful build.
+The [27 October readiness assessment](releases/0.2.12-readiness.md),
+[hardening record](releases/0.2.12-hardening.md) and version-specific notes are
+historical records. Production backup and deployment use the operator-confirmed
+automation; verify the actual selected runtime, backup result and provider
+recovery at execution time.
 
 The [publication contract](releases/publication.md) remains nine publication
 jobs plus evidence of all 21 jobs from the exact trusted main-push Quality run;
