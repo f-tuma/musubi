@@ -2,6 +2,11 @@
   "schemaVersion": 1,
   "items": [
     {
+      "id": "2026-11-03",
+      "title": "Musubi 0.2.14: iCloud import fixes",
+      "body": "Fixed initial iCloud imports for accounts with many calendars and large CalDAV calendars. Event notes containing HTML text now import correctly, and pending sync is shown separately from failures.\n\nThis API and web maintenance update works with existing mobile apps.\n\nhttps://github.com/f-tuma/musubi/releases/tag/v0.2.14"
+    },
+    {
       "id": "2026-10-30-2",
       "title": "Musubi 0.2.13: More reliable sync",
       "body": "Improved calendar and task synchronization, with clearer diagnostics. Expected waits during account sync are now reported separately from failures.\n\nThis API and web maintenance update works with the 0.2.12 mobile apps.\n\nhttps://github.com/f-tuma/musubi/releases/tag/v0.2.13"
