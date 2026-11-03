@@ -23,6 +23,9 @@ pnpm test:behavior --suite project-news --scenario first-baseline --json
 pnpm test:behavior --suite fair-work --scenario due-crosses-during-wake-scan --json
 pnpm test:behavior --suite read-attempt --scenario steady-large-pagination --json
 pnpm test:behavior --suite sync-outcome --scenario credit-account --json
+pnpm test:behavior --suite collection-reads --scenario nine-collections --json
+pnpm test:behavior --suite dav-response --scenario cdata-html-doctype --json
+pnpm test:behavior --suite dav-response --scenario bounded-multiget --json
 pnpm test:behavior --suite sync-outcome --json
 pnpm test:behavior --suite read-attempt --json
 pnpm --filter @musubi/api test:read-attempt
@@ -63,6 +66,8 @@ not committed. The root runner can also be called as
 | `postgres-restore` | Shipped restore shell helper, ownership, archive handling, deadlines and preservation comparison | Strict Docker/sleep command receipts | No Docker daemon; real database restore is a separate final check |
 | `project-news` | Actual common-news reader/cache, source schema, API baseline and legacy read-marker bridge | Fetch, clock and account-settings ports | None; no DB or external HTTP |
 | `sync-outcome` | Actual account run and failure observers, explicit scheduler/budget deferral classification, severity and event selection | Native work result/error receipts, clock and telemetry sinks | None; the metrics contract separately uses the actual registry and DB fence class |
+| `collection-reads` | Production collection waiter and fair coordinator; nine same-account reads, exact deferrals and genuine failure precedence | Read receipts/errors at the existing waiter port | None; the initial CalDAV integration separately proves authenticated HTTP, real DB generations and ACKs |
+| `dav-response` | Production DAV validator and guarded client; CDATA, DTD/entity refusal, response bounds, exact multiget batches and late-batch failure | Synthetic XML response bytes; existing fetch port for the actual client | No DB or native network; native iCloud verification retains only structural diagnostics, never private XML |
 | `read-attempt` | Actual pull progress watchdog, pause/resume, lease heartbeat, cancellation and disposal | Explicit production clock port and renewal receipts | None; virtual time, no DB/provider calls |
 | `google-delete` | Claimed delivery runtime, Google provider preflight/conditional DELETE/recovery | Host persistence/lease/credential ports, HTTP responses and clock | None |
 | `google-create` | Admitted codec identity/body, CREATE delivery runtime and provider preflight/write/recovery | Host persistence/lease/credential ports, ordered HTTP responses and clock | None |
@@ -86,6 +91,17 @@ request method and validator, completion evidence and dispatch uncertainty.
 The fair-work suite drives the actual scheduler through its clock, timer and
 candidate ports. Its due-crossing scenarios cover queued and parked work,
 asynchronous candidate lookup, and collision waits without a timer loop.
+
+CalDAV connection returns HTTP 200 after the initial import completes and HTTP
+202 with `status: pending` and the exact `retryAt` for an explicit scheduler
+deferral. Both retain the saved connection; 202 does not acknowledge unread work.
+Genuine provider/validation failures remain errors. The
+`caldav_initial_sync.integration.test.ts` test uses an authenticated running API,
+an isolated PostgreSQL database and a loopback DAV server with nine collections
+and 213 events, including one 205-resource collection read in batches of 100.
+It checks every discovery/collection ACK, pending generations, preserved HTML
+notes and retention of imported events after the last batch fails. It does
+not establish that a production user's remaining collections have completed.
 
 The read-attempt suite advances 190 progressing leaves and a DB apply through
 95.5 seconds, proving that active pagination has no aggregate 90-second cap.

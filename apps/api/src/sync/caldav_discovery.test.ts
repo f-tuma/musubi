@@ -48,6 +48,7 @@ async function main() {
     if (mode === "unsupported-components") data = data.replace(/name="V(?:EVENT|TODO)"/g, 'name="VJOURNAL"');
     if (mode === "outer-whitespace-resource") data = data.replace("BEGIN:VCALENDAR&#13;&#10;END:VCALENDAR", "&#13;&#10; BEGIN:VCALENDAR&#13;&#10;END:VCALENDAR&#13;&#10; ");
     if (mode === "whitespace-resource") data = data.replace("BEGIN:VCALENDAR&#13;&#10;END:VCALENDAR", "<![CDATA[BEGIN:VCALENDAR\r\nSUMMARY:A]]> <![CDATA[B]]>\r\n<![CDATA[END:VCALENDAR]]>");
+    if (mode === "doctype-resource") data = data.replace("BEGIN:VCALENDAR&#13;&#10;END:VCALENDAR", "<![CDATA[BEGIN:VCALENDAR\r\nDESCRIPTION:<!DOCTYPE html><html>Notes</html>\r\nEND:VCALENDAR]]>");
     if (mode === "scalar-resourcetype") data = data.replace(/<d:resourcetype>.*?<\/d:resourcetype>/g, "<d:resourcetype>junk</d:resourcetype>");
     if (mode === "scalar-marker") data = data.replace("<c:calendar/>", "<c:calendar>junk</c:calendar>");
     if (mode === "nested-marker") data = data.replace("<c:calendar/>", "<c:calendar><c:comp/></c:calendar>");
@@ -111,6 +112,8 @@ async function main() {
     assert.equal((await readObjects())[0]!.data, "BEGIN:VCALENDAR\r\nSUMMARY:A B\r\nEND:VCALENDAR", "Whitespace-only separators between CDATA segments remain exact");
     mode = "outer-whitespace-resource";
     assert.equal((await readObjects())[0]!.data, "\r\n BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n ", "Return the exact validated resource, including leading/trailing CRLF and spaces");
+    mode = "doctype-resource";
+    assert.equal((await readObjects())[0]!.data, "BEGIN:VCALENDAR\r\nDESCRIPTION:<!DOCTYPE html><html>Notes</html>\r\nEND:VCALENDAR", "Literal HTML declarations remain event text through the real tsdav client");
     for (const failure of ["redirect-resource", "partial-propstat"]) {
       mode = failure;
       await assert.rejects(readObjects(), "Redirected or partial resource proof cannot authorize original resource mutation");

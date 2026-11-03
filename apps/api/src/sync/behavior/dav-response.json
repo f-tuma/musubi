@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "suite": "dav-response",
+  "scenarios": [
+    {
+      "id": "cdata-html-doctype",
+      "title": "A literal HTML doctype inside calendar data is ordinary event content",
+      "data": "<![CDATA[BEGIN:VCALENDAR\r\nDESCRIPTION:<!DOCTYPE html><html>Private fixture</html>\r\nEND:VCALENDAR]]>",
+      "valid": true
+    },
+    {
+      "id": "cdata-entity-text",
+      "title": "A literal entity declaration inside CDATA cannot declare an XML entity",
+      "data": "<![CDATA[BEGIN:VCALENDAR\r\nDESCRIPTION:<!ENTITY example 'text'>\r\nEND:VCALENDAR]]>",
+      "valid": true
+    },
+    {
+      "id": "comment-doctype",
+      "title": "A comment cannot declare a DTD",
+      "prefix": "<!-- <!DOCTYPE fixture> -->",
+      "data": "BEGIN:VCALENDAR&#13;&#10;END:VCALENDAR",
+      "valid": true
+    },
+    {
+      "id": "real-doctype",
+      "title": "A real document type declaration remains rejected before XML parsing",
+      "prefix": "<!DOCTYPE d:multistatus>",
+      "data": "BEGIN:VCALENDAR",
+      "valid": false
+    },
+    {
+      "id": "external-entity",
+      "title": "A DTD containing an external entity remains rejected",
+      "prefix": "<!DOCTYPE d:multistatus [<!ENTITY example SYSTEM 'file:///private-fixture'>]>",
+      "data": "&example;",
+      "valid": false
+    },
+    {
+      "id": "entity-after-comment",
+      "title": "A safe comment does not hide a later real DTD",
+      "prefix": "<!-- <!DOCTYPE text> --><!DOCTYPE d:multistatus [<!ENTITY example 'value'>]>",
+      "data": "&example;",
+      "valid": false
+    },
+    {
+      "id": "unterminated-cdata",
+      "title": "An unterminated CDATA section cannot turn an incomplete response into success",
+      "data": "<![CDATA[BEGIN:VCALENDAR\r\nDESCRIPTION:<!DOCTYPE html>",
+      "valid": false
+    },
+    {
+      "id": "body-limit-retained",
+      "title": "CDATA does not bypass the existing complete-response size limit",
+      "data": "<![CDATA[BEGIN:VCALENDAR]]>",
+      "padding": 4194304,
+      "valid": false
+    },
+    {
+      "id": "bounded-multiget",
+      "title": "A large collection is read in bounded exact batches through the actual DAV client",
+      "batchObjects": 205,
+      "batchSizes": [
+        100,
+        100,
+        5
+      ],
+      "valid": true
+    },
+    {
+      "id": "last-batch-failure",
+      "title": "A later incomplete batch cannot return a partial collection",
+      "batchObjects": 205,
+      "failBatch": 3,
+      "batchSizes": [
+        100,
+        100,
+        5
+      ],
+      "valid": false
+    }
+  ]
+}

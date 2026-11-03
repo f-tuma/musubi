@@ -64,6 +64,7 @@ import {
 } from "./errors";
 import { recordExternalSyncFailure, recordSyncRun, recordSyncObjects, recordSyncDeferral } from "../metrics";
 import { SyncWorkDeferred, observeSyncRun, observeSyncFailure } from "./sync_outcome";
+import { awaitCollectionReads } from "./collection_reads";
 export { SyncWorkDeferred } from "./sync_outcome";
 import { ProviderEventWriteError, requireEventPatch } from "./event_write";
 import { withDeliveryDeadline } from "./delivery_policy";
@@ -823,7 +824,7 @@ async function syncProviderQueued(adapter: CalendarAdapter, userID: string, acco
     stream: "discovery", configurationFingerprint: readConfiguration(provider, "discovery"), policyFingerprint: readPolicy() }));
   if (!receipt.discovery || !receipt.collections) throw new Error("Sync discovery receipt is unavailable.");
   const changed = [...receipt.changedCalendarIDs];
-  for (const result of await Promise.all(receipt.collections.map(awaitReadGeneration))) changed.push(...result.changedCalendarIDs);
+  changed.push(...await awaitCollectionReads(receipt.collections, awaitReadGeneration));
   if (receipt.discovery.eventCalendarDiscoveryError) throw receipt.discovery.eventCalendarDiscoveryError;
   return [...new Set(changed)];
 }

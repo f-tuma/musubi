@@ -10,6 +10,7 @@ import { encryptSecret } from "../sync/crypto";
 import { createCaldavClient } from "../sync/caldav_client";
 import { syncUser } from "../sync/engine";
 import { withPreconnectionBudgetScope } from "../sync/provider_budget";
+import { syncDeferral } from "../sync/sync_outcome";
 
 export async function handlerConnectCaldav(req: Request, res: Response) {
   // Trim: pasted app-specific passwords routinely carry a trailing space/newline
@@ -38,13 +39,18 @@ export async function handlerConnectCaldav(req: Request, res: Response) {
 
   const account = await saveCaldavAccount(req.user!.id, serverUrl, username, encryptSecret(password));
 
-  // Connecting is not complete until the account's calendars and events can be
-  // imported. Keep this strict (unlike the scheduled best-effort sync) so the
-  // client never reports success after discovery passed but event fetching did
-  // not — notably the failure mode iCloud had with calendar-query REPORTs.
+  // 200 means the initial import finished. Explicit scheduler waits retain the
+  // saved connection and durable work, but return 202 rather than claiming an
+  // import completed. Genuine native failures must still reject the request.
   try {
     await syncUser(req.user!.id, { provider: "caldav", accountId: account.id, throwOnError: true });
   } catch (err) {
+    const pending = syncDeferral(err);
+    if (pending) {
+      logger.info("caldav.connect.initial_sync_pending", { reason: pending.reason, retryAtMs: pending.retryAtMs });
+      res.status(202).json({ status: "pending", retryAt: new Date(pending.retryAtMs).toISOString() });
+      return;
+    }
     logger.warn("caldav.connect.initial_sync_failed", {
       userId: req.user!.id,
       accountId: account.id,

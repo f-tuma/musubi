@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "suite": "collection-reads",
+  "scenarios": [
+    { "id": "nine-collections", "title": "Nine collections finish through the real bounded same-account coordinator", "outcomes": ["success","success","success","success","success","success","success","success","success"], "expected": {"visited":9,"maximumActive":1,"changed":9,"errorIndex":null} },
+    { "id": "pending-keeps-later-reads", "title": "A queued collection does not prevent later ready collections", "outcomes": ["queued","success","success"], "expected": {"visited":3,"maximumActive":1,"changed":0,"errorIndex":0} },
+    { "id": "failure-beats-pending", "title": "A later native failure is not hidden by a scheduler deferral", "outcomes": ["capacity","success","failure"], "expected": {"visited":3,"maximumActive":1,"changed":0,"errorIndex":2} },
+    { "id": "failure-keeps-later-reads", "title": "A failed child leaves later durable reads available", "outcomes": ["failure","success","queued"], "expected": {"visited":3,"maximumActive":1,"changed":0,"errorIndex":0} },
+    { "id": "earliest-exact-deferral", "title": "The earliest explicit deferral preserves the original error and due time", "outcomes": ["queued","capacity"], "expected": {"visited":2,"maximumActive":1,"changed":0,"errorIndex":1} },
+    { "id": "counterfeit-is-failure", "title": "A matching name does not turn a genuine error into pending control flow", "outcomes": ["queued","counterfeit"], "expected": {"visited":2,"maximumActive":1,"changed":0,"errorIndex":1} }
+  ]
+}
