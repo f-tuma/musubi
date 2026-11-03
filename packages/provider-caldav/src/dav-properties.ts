@@ -85,7 +85,18 @@ function status(node: DavNode): number {
 }
 /** Strict XML identity shared by discovery and scheduling. No namespace flattening. */
 function parseDavMultistatus(xml: string, expectedURL: string, allowSyncToken: boolean): { responses: DavResponse[]; syncToken?: string } {
-  if (xml.length > 4 * 1024 * 1024 || /<!DOCTYPE|<!ENTITY/i.test(xml)) invalid();
+  if (xml.length > 4 * 1024 * 1024) invalid();
+  // Calendar descriptions can contain literal HTML declarations inside CDATA.
+  // Those bytes cannot declare an XML DTD. Skip only complete lexical CDATA /
+  // comment sections; real declarations still fail before the XML parser runs.
+  for (let at = xml.indexOf("<!"); at !== -1; at = xml.indexOf("<!", at + 2)) {
+    const cdata = xml.startsWith("<![CDATA[", at), comment = xml.startsWith("<!--", at);
+    if (cdata || comment) {
+      const end = xml.indexOf(cdata ? "]]>" : "-->", at + (cdata ? 9 : 4));
+      if (end < 0) invalid("invalid-xml");
+      at = end + 1;
+    } else if (/^<!DOCTYPE|^<!ENTITY/i.test(xml.slice(at, at + 9))) invalid();
+  }
   for (const match of xml.matchAll(/<(?:(?:[^"'>]|"[^"]*"|'[^']*')*)>/g)) {
     if (!/^<[A-Za-z_]/.test(match[0])) continue;
     const attributes = [...match[0].matchAll(/([^\s=]+)\s*=\s*("[^"]*"|'[^']*')/g)].map(item => item[1]);
