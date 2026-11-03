@@ -1,22 +1,22 @@
 # Releasing
 
-Current published release: **[0.2.13](https://github.com/f-tuma/musubi/releases/tag/v0.2.13)**
-(29 October 2026), source `993f8fe67b7d5b4a43338e6b50875f5a1ed088ab`.
-[Publication](https://github.com/f-tuma/musubi/actions/runs/40974345823)
+Current published release: **[0.2.14](https://github.com/f-tuma/musubi/releases/tag/v0.2.14)**
+(3 November 2026), source `807873339037f5cf3a5bc681d20eba767ea7e83c`.
+[Publication](https://github.com/f-tuma/musubi/actions/runs/41631842469)
 passed all nine jobs after the exact-main
-[Quality run](https://github.com/f-tuma/musubi/actions/runs/40972215279)
-passed all 21 jobs. API/web publication and runtime acceptance were separately
-recorded on 29 October; these historical observations do not establish every
-provider account's current health.
+[Quality run](https://github.com/f-tuma/musubi/actions/runs/41627686138)
+passed all 21 jobs. API/web publication, immutable image verification and actual
+runtime acceptance were recorded separately on 3 November. See the
+[acceptance record](releases/0.2.14-acceptance.md) for scope and limitations;
+this does not establish every provider account's health.
 
-The **0.2.14 maintenance candidate** fixes initial iCloud collection queueing,
+The **0.2.14 maintenance release** fixes initial iCloud collection queueing,
 literal HTML declarations inside event CDATA, and oversized CalDAV multiget
 responses. See its [release notes](releases/0.2.14-notes.md) and
-[release preparation and acceptance plan](releases/0.2.14-readiness.md).
-It has not been published. Existing mobile builds remain compatible; no new
-native distribution is required. Support-contact and email-branding source
-changes since 0.2.13 are included in the API/web release; native apps receive
-those source updates with their next store build.
+[dated preparation plan](releases/0.2.14-readiness.md). Existing mobile builds
+remain compatible; no native distribution or database migration was included.
+Support-contact and email-branding changes since 0.2.13 are included in API/web;
+native apps receive those source updates with their next store build.
 
 The [27 October readiness assessment](releases/0.2.12-readiness.md),
 [hardening record](releases/0.2.12-hardening.md) and version-specific notes are
@@ -112,7 +112,7 @@ released artifact.
 
 The owner approved raising **both client and federation peer floors to 0.2.0**.
 That coordinated break superseded the normal additive API→web→phone order.
-The current source and the 27 October public 0.2.11 server observation retain
+The current source and the 3 November public 0.2.14 server observation retain
 minimum client 0.2.0; the source peer floor is also 0.2.0. This describes the
 current contract, not a pending instruction to repeat the historical rollout.
 Connected peers and installed

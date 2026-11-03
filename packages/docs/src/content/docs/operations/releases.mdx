@@ -12,31 +12,35 @@ build does not certify every provider operation.
 
 ## Current record — 3 November 2026
 
-[v0.2.13](https://github.com/f-tuma/musubi/releases/tag/v0.2.13) is published from
-`993f8fe67b7d5b4a43338e6b50875f5a1ed088ab`.
-[Publication](https://github.com/f-tuma/musubi/actions/runs/40974345823) passed
+[v0.2.14](https://github.com/f-tuma/musubi/releases/tag/v0.2.14) is published from
+`807873339037f5cf3a5bc681d20eba767ea7e83c`.
+[Publication](https://github.com/f-tuma/musubi/actions/runs/41631842469) passed
 all nine jobs, linked to the exact-main
-[Quality run](https://github.com/f-tuma/musubi/actions/runs/40972215279) with
-all 21 jobs successful. API/web runtime acceptance was recorded separately on
-29 October. This is deployment history, not a claim that every connected
-provider account is healthy.
+[Quality run](https://github.com/f-tuma/musubi/actions/runs/41627686138) with
+all 21 jobs successful. Actual API/web image digests and source revisions,
+healthy containers, one API replica and all 88 unchanged migration records
+were verified separately on 3 November. See the
+[acceptance record](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.14-acceptance.md).
+This does not certify every connected provider account.
 
-The **0.2.14 maintenance candidate** fixes iCloud initial-import queue saturation,
+The **0.2.14 maintenance release** fixes iCloud initial-import queue saturation,
 HTML declaration text inside event CDATA, and large CalDAV collection responses.
 Explicit object reads use batches of at most 100 while retaining complete
 collection coverage and the existing response validation/size bounds.
 See the [release notes](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.14-notes.md)
-and [preparation and acceptance plan](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.14-readiness.md).
-The candidate is not published or deployed. No database migration or new mobile
-build is required; client and peer minimums remain 0.2.0. Current installed apps
+and [dated preparation plan](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.14-readiness.md).
+No database migration or new mobile build was included; client and peer minimums
+remain 0.2.0. Current installed apps
 remain compatible. Pending CalDAV imports are reported as pending rather than
 completed; genuine provider/validation failures still fail.
 
-Use the existing operator-confirmed backup and release/tag deployment automation.
-Before publication, verify its fresh result and the exact main-push Quality
-source. After deployment, separately verify runtime digests, journal, healthy
-processes and actual provider work generations/ACKs. Native structural reads and
-loopback integration tests alone do not prove production recovery.
+The operator confirmed the current automatic backup file is present in S3;
+no restore was performed for this release. Production work generations confirm
+that the previously failing iCloud collections completed their initial imports.
+Authenticated web checks covered calendar/task navigation and About/version;
+native device testing was not repeated. The fresh Grafana interval still shows
+the known Microsoft `MailboxNotEnabledForRESTAPI` limitation, which this iCloud
+maintenance release does not resolve.
 
 ## Historical assessment — 27 October 2026
 
