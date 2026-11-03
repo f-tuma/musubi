@@ -41,7 +41,7 @@ export async function runCli(args: string[]) {
     const results = [];
     for (const item of chosen) {
       const at = performance.now(),
-        summary = runDavResponseScenario(item);
+        summary = await runDavResponseScenario(item);
       results.push({
         id: item.id,
         title: item.title,

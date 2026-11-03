@@ -25,6 +25,7 @@ async function main() {
   config.security.federationAllowPrivateHosts = true;
   const { initializeSyncEngine } = await import("./engine");
   const { stopSyncWorkCoordinator } = await import("./work_coordinator");
+  const { requestedDavHrefs } = await import("./caldav_properties");
   const { handlerConnectCaldav } = await import("../handlers/caldav");
   const { requireAuth } = await import("../middleware/require_auth");
   const { middlewareErrorHandler } =
@@ -38,6 +39,8 @@ async function main() {
     invalidResource = false,
     fixtureFailure: unknown;
   const nativeMethods: string[] = [];
+  const batches: { calendar: number; size: number }[] = [];
+  const expectedEvents = 213;
   const description = "<!DOCTYPE html><html>Preserved fixture notes</html>";
   const document = (rows: string) =>
     `<d:multistatus xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">${rows}</d:multistatus>`;
@@ -87,24 +90,36 @@ async function main() {
       else if (body.includes("supported-report-set"))
         rows = row(href, "<d:supported-report-set/>");
       else if (body.includes("calendar-multiget")) {
-        const data = [
-          "BEGIN:VCALENDAR",
-          "VERSION:2.0",
-          "BEGIN:VEVENT",
-          `UID:event-${index}`,
-          "DTSTART:20261101T090000Z",
-          "DTEND:20261101T100000Z",
-          `SUMMARY:Calendar ${index}`,
-          `DESCRIPTION:${description}`,
-          "END:VEVENT",
-          "END:VCALENDAR",
-          "",
-        ].join("\r\n");
-        rows = row(
-          `${origin}/home/calendar-${index}/event.ics`,
-          `<d:getetag>"event-${index}"</d:getetag><c:calendar-data><![CDATA[${data}]]></c:calendar-data>`,
-        );
-        if (invalidResource && index === 0) {
+        const hrefs = requestedDavHrefs(body);
+        batches.push({ calendar: index, size: hrefs.length });
+        rows = hrefs
+          .map((resource) => {
+            const object = /event-(\d+)\.ics/.exec(resource)?.[1];
+            assert.ok(object);
+            const data = [
+              "BEGIN:VCALENDAR",
+              "VERSION:2.0",
+              "BEGIN:VEVENT",
+              `UID:event-${index}-${object}`,
+              "DTSTART:20261101T090000Z",
+              "DTEND:20261101T100000Z",
+              `SUMMARY:${invalidResource && index === 0 ? "Uncommitted" : "Calendar"} ${index}`,
+              `DESCRIPTION:${description}`,
+              "END:VEVENT",
+              "END:VCALENDAR",
+              "",
+            ].join("\r\n");
+            return row(
+              new URL(resource, origin).href,
+              `<d:getetag>"event-${index}"</d:getetag><c:calendar-data><![CDATA[${data}]]></c:calendar-data>`,
+            );
+          })
+          .join("");
+        if (
+          invalidResource &&
+          index === 0 &&
+          hrefs.some((resource) => resource.endsWith("event-200.ics"))
+        ) {
           res.writeHead(207, { "content-type": "application/xml" });
           res.end("<!DOCTYPE d:multistatus>" + document(rows));
           return;
@@ -123,7 +138,12 @@ async function main() {
       } else
         rows =
           row(href, '<d:getetag>"collection"</d:getetag>') +
-          row(href + "event.ics", `<d:getetag>"event-${index}"</d:getetag>`);
+          Array.from({ length: index === 0 ? 205 : 1 }, (_, object) =>
+            row(
+              href + `event-${object}.ics`,
+              `<d:getetag>"event-${index}-${object}"</d:getetag>`,
+            ),
+          ).join("");
       res.writeHead(207, { "content-type": "application/xml" });
       res.end(document(rows));
     } catch (error) {
@@ -160,14 +180,12 @@ async function main() {
       }),
       signal: AbortSignal.timeout(45_000),
     });
-  await db
-    .insert(user)
-    .values({
-      id: owner,
-      name: "Owned initial sync fixture",
-      email: `${owner}@example.test`,
-      isExternal: true,
-    });
+  await db.insert(user).values({
+    id: owner,
+    name: "Owned initial sync fixture",
+    email: `${owner}@example.test`,
+    isExternal: true,
+  });
   await db
     .insert(memberTokens)
     .values({ userID: owner, tokenHash: token.tokenHash });
@@ -196,7 +214,11 @@ async function main() {
       .select()
       .from(events)
       .where(eq(events.creatorID, owner));
-    assert.equal(imported.length, 9);
+    assert.equal(imported.length, expectedEvents);
+    assert.deepEqual(
+      batches.filter((item) => item.calendar === 0).map((item) => item.size),
+      [100, 100, 5],
+    );
     assert.ok(imported.every((event) => event.description === description));
     const work = await db
       .select()
@@ -232,7 +254,7 @@ async function main() {
     assert.equal(
       (await db.select().from(events).where(eq(events.creatorID, owner)))
         .length,
-      9,
+      expectedEvents,
     );
 
     await db
@@ -265,14 +287,23 @@ async function main() {
     assert.equal(
       (await db.select().from(events).where(eq(events.creatorID, owner)))
         .length,
-      9,
+      expectedEvents,
       "No partial response sweep",
+    );
+    assert.ok(
+      (await db.select().from(events).where(eq(events.creatorID, owner))).every(
+        (event) => !event.title.startsWith("Uncommitted"),
+      ),
+      "Earlier batches cannot apply before the final batch succeeds",
     );
     assert.equal(fixtureFailure, undefined);
     console.log(
       JSON.stringify({
         boundary: "authenticated-http-postgres-real-engine-loopback-dav",
         collections: 9,
+        events: expectedEvents,
+        multigetBatchSizes: [100, 100, 5],
+        lateBatchFailure: true,
         initialStatus: 200,
         allTenWorkRowsAcknowledged: true,
         pendingStatus: 202,

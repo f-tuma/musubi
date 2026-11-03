@@ -17,6 +17,7 @@ export type CaldavDiscoveryMaterialPort = Readonly<{
   invalidate(): void;
 }>;
 export type CaldavRequestScope = <T>(run: () => Promise<T>) => Promise<T>;
+const CALDAV_MULTIGET_BATCH_SIZE = 100;
 
 const fetchPinned = createPinnedCaldavFetch(observedProviderFetch);
 /** New provider telemetry records each raw leaf; legacy leaves remain observed above. */
@@ -147,7 +148,18 @@ export function createCaldavClient(
     };
     const fetchObjects = client.fetchCalendarObjects.bind(client);
     client.fetchCalendarObjects = parameters => resourceReads.run(new Map(), async () => {
-      const objects = await fetchObjects(parameters);
+      const urls = parameters.objectUrls;
+      let objects: Awaited<ReturnType<typeof fetchObjects>>;
+      if (urls && urls.length > CALDAV_MULTIGET_BATCH_SIZE) {
+        objects = [];
+        // Bound each native XML response without shortening collection coverage.
+        // Nothing is returned to the host (or applied/ACKed) until every exact
+        // requested batch succeeds under the same guarded request context.
+        for (let at = 0; at < urls.length; at += CALDAV_MULTIGET_BATCH_SIZE) {
+          signal?.throwIfAborted();
+          objects.push(...await fetchObjects({ ...parameters, objectUrls: urls.slice(at, at + CALDAV_MULTIGET_BATCH_SIZE) }));
+        }
+      } else objects = await fetchObjects(parameters);
       const resources = resourceReads.getStore()!;
       // Use the validated namespace-preserving scalar, not tsdav's trimmed text.
       // The map belongs to this read only, including concurrent calls.
