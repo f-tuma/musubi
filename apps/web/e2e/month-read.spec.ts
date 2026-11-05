@@ -2,13 +2,12 @@ import { setTestTheme } from "./theme";
 import AxeBuilder from "@axe-core/playwright";
 import { PRODUCT_VERSION, type Calendar } from "@musubi/types";
 import {
-	expect,
-	test,
 	type BrowserContext,
 	type Locator,
 	type Page,
 	type Route,
 } from "@playwright/test";
+import { expect, installExternalBrandFixture, test } from "./external-brand";
 
 async function chooseTimeZone(control: Locator, zone: string) {
   await control.click();
@@ -6433,7 +6432,7 @@ test("leaves nothing of the last account on a shared computer", async ({
 test("carries one session's edit into the other over the stream", async ({
 	browser,
 	browserName,
-}) => {
+}, testInfo) => {
 	test.skip(
 		browserName === "firefox",
 		"Playwright Firefox does not reliably dispatch finite mocked SSE responses.",
@@ -6441,66 +6440,71 @@ test("carries one session's edit into the other over the stream", async ({
 	// One context, one mock, two pages: two tabs of the same account against the
 	// same backend, which is what the server's SSE fan-out is for.
 	const context = await browser.newContext();
-	await mockAuthenticatedReads(context);
+	const externalBrand = await installExternalBrandFixture(context);
+	try {
+		await mockAuthenticatedReads(context);
 
-	// Frames the second session is waiting for. Playwright cannot push into an
-	// open response, so instead its stream request parks until there is something
-	// to say, then delivers that frame and ends — the client reconnects on its own.
-	const pending: string[] = [];
-	await context.route("**/api/v1/events", async (route) => {
-		if (route.request().method() === "PATCH") {
-			pending.push("event_updated");
-		}
-		return route.fallback();
-	});
-
-	const first = await context.newPage();
-	const second = await context.newPage();
-	await second.route("**/api/stream?clientVersion=*", async (route) => {
-		expect(new URL(route.request().url()).searchParams.get("clientVersion")).toBe(
-			PRODUCT_VERSION,
-		);
-		for (let waited = 0; pending.length === 0 && waited < 10_000; waited += 50) {
-			await new Promise((resolve) => setTimeout(resolve, 50));
-		}
-		const type = pending.shift();
-		if (!type) return route.abort();
-		return route.fulfill({
-			body: `data: ${JSON.stringify({ payload: {}, type })}\n\n`,
-			contentType: "text/event-stream",
+		// Frames the second session is waiting for. Playwright cannot push into an
+		// open response, so instead its stream request parks until there is something
+		// to say, then delivers that frame and ends — the client reconnects on its own.
+		const pending: string[] = [];
+		await context.route("**/api/v1/events", async (route) => {
+			if (route.request().method() === "PATCH") {
+				pending.push("event_updated");
+			}
+			return route.fallback();
 		});
-	});
 
-	const url = `/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-26`;
-	await first.goto(url);
-	await second.goto(url);
-	await expect(
-		second.getByRole("button", { name: /Client call/ }).first(),
-	).toBeVisible({ timeout: 15_000 });
+		const first = await context.newPage();
+		const second = await context.newPage();
+		await second.route("**/api/stream?clientVersion=*", async (route) => {
+			expect(new URL(route.request().url()).searchParams.get("clientVersion")).toBe(
+				PRODUCT_VERSION,
+			);
+			for (let waited = 0; pending.length === 0 && waited < 10_000; waited += 50) {
+				await new Promise((resolve) => setTimeout(resolve, 50));
+			}
+			const type = pending.shift();
+			if (!type) return route.abort();
+			return route.fulfill({
+				body: `data: ${JSON.stringify({ payload: {}, type })}\n\n`,
+				contentType: "text/event-stream",
+			});
+		});
 
-	await first
-		.getByRole("button", { name: /Client call/ })
-		.first()
-		.click();
-	await first.getByRole("button", { exact: true, name: "Edit" }).click();
-	await first
-		.getByRole("textbox", { name: "Event title" })
-		.fill("Renamed in the first tab");
-	await first.getByRole("button", { name: "Save" }).click();
-	await expect(first.getByRole("status")).toContainText("Event updated.");
+		const url = `/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-26`;
+		await first.goto(url);
+		await second.goto(url);
+		await expect(
+			second.getByRole("button", { name: /Client call/ }).first(),
+		).toBeVisible({ timeout: 15_000 });
 
-	// The frame carries no event data — `07-realtime-offline-federation.md:35` is
-	// explicit that there is no durable log to replay, so a notification is a cue
-	// to refetch, not the change itself. The second tab must land on the new title
-	// without anybody reloading it.
-	await expect(
-		second.getByRole("button", { name: /Renamed in the first tab/ }).first(),
-	).toBeVisible({ timeout: 15_000 });
-	await expect(second.getByRole("button", { name: /Client call/ })).toHaveCount(
-		0,
-	);
+		await first
+			.getByRole("button", { name: /Client call/ })
+			.first()
+			.click();
+		await first.getByRole("button", { exact: true, name: "Edit" }).click();
+		await first
+			.getByRole("textbox", { name: "Event title" })
+			.fill("Renamed in the first tab");
+		await first.getByRole("button", { name: "Save" }).click();
+		await expect(first.getByRole("status")).toContainText("Event updated.");
 
-	await context.close();
+		// The frame carries no event data — `07-realtime-offline-federation.md:35` is
+		// explicit that there is no durable log to replay, so a notification is a cue
+		// to refetch, not the change itself. The second tab must land on the new title
+		// without anybody reloading it.
+		await expect(
+			second.getByRole("button", { name: /Renamed in the first tab/ }).first(),
+		).toBeVisible({ timeout: 15_000 });
+		await expect(second.getByRole("button", { name: /Client call/ })).toHaveCount(
+			0,
+		);
+
+		await externalBrand.finish(testInfo, "external-brand-routes-stream-context");
+	} finally {
+		await context.close();
+	}
 });
 
 // 200% is where a person with low vision lives all day; 320 CSS px is what WCAG
@@ -7629,86 +7633,91 @@ for (const [width, end] of [
 for (const editor of ["full", "handoff"] as const) {
 	test(`K06 two real ${editor} drafts keep original revision across SSE and reject stale title without restoring time`, async ({
 		browser,
-	}) => {
+	}, testInfo) => {
 		const context = await browser.newContext({ timezoneId: "Europe/Prague" });
-		const item = event(
-			"k06-night",
-			"K06 night",
-			"personal",
-			"#b3492f",
-			"2026-07-08T23:00:00+02:00",
-			"2026-07-10T02:00:00+02:00",
-		);
-		await mockAuthenticatedReads(context, { ...events, events: [item] });
-		const first = await context.newPage();
-		const second = await context.newPage();
-		let changed = false;
-		let readsAfterChange = 0;
-		await second.route("**/api/stream?clientVersion=*", async (route) => {
-			expect(
-				new URL(route.request().url()).searchParams.get("clientVersion"),
-			).toBe(PRODUCT_VERSION);
-			while (!changed) await new Promise((resolve) => setTimeout(resolve, 20));
-			await route.fulfill({
-				contentType: "text/event-stream",
-				body: 'data: {"type":"event_updated","payload":{}}\n\n',
+		const externalBrand = await installExternalBrandFixture(context);
+		try {
+			const item = event(
+				"k06-night",
+				"K06 night",
+				"personal",
+				"#b3492f",
+				"2026-07-08T23:00:00+02:00",
+				"2026-07-10T02:00:00+02:00",
+			);
+			await mockAuthenticatedReads(context, { ...events, events: [item] });
+			const first = await context.newPage();
+			const second = await context.newPage();
+			let changed = false;
+			let readsAfterChange = 0;
+			await second.route("**/api/stream?clientVersion=*", async (route) => {
+				expect(
+					new URL(route.request().url()).searchParams.get("clientVersion"),
+				).toBe(PRODUCT_VERSION);
+				while (!changed) await new Promise((resolve) => setTimeout(resolve, 20));
+				await route.fulfill({
+					contentType: "text/event-stream",
+					body: 'data: {"type":"event_updated","payload":{}}\n\n',
+				});
 			});
-		});
-		await second.route(/\/api\/v1\/events(?:\?.*)?$/, async (route) => {
-			if (route.request().method() === "GET" && changed) readsAfterChange++;
-			return route.fallback();
-		});
-		const path = `/app/p/${DEFAULT_PAGE_ID}/month/event/k06-night?date=2026-07-08`;
-		await first.goto(path);
-		if (editor === "full") await second.goto(path);
-		else {
-			await second.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-08`);
-			await second
-				.getByRole("button", { name: /K06 night/ })
-				.first()
-				.click();
-			await second.getByRole("button", { name: "Edit", exact: true }).click();
+			await second.route(/\/api\/v1\/events(?:\?.*)?$/, async (route) => {
+				if (route.request().method() === "GET" && changed) readsAfterChange++;
+				return route.fallback();
+			});
+			const path = `/app/p/${DEFAULT_PAGE_ID}/month/event/k06-night?date=2026-07-08`;
+			await first.goto(path);
+			if (editor === "full") await second.goto(path);
+			else {
+				await second.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-07-08`);
+				await second
+					.getByRole("button", { name: /K06 night/ })
+					.first()
+					.click();
+				await second.getByRole("button", { name: "Edit", exact: true }).click();
+			}
+			const secondTitle = second.getByRole("textbox", { name: "Event title" });
+			await secondTitle.fill("K06 retained title");
+			const write = first.waitForResponse(
+				(response) =>
+					response.request().method() === "PATCH" &&
+					response.url().endsWith("/api/v1/events"),
+			);
+			await first.getByRole("combobox", { name: "Start time" }).fill("22:00");
+			await first.getByRole("combobox", { name: "Start time" }).press("Tab");
+			await first.getByRole("button", { name: "Save", exact: true }).click();
+			const firstResponse = await write;
+			expect(firstResponse.status()).toBe(200);
+			const authoritative = await firstResponse.json();
+			expect(authoritative.revision).toBe(2);
+			expect(authoritative.start).not.toBe(item.start);
+			changed = true;
+			await expect.poll(() => readsAfterChange).toBeGreaterThan(0);
+			await expect(secondTitle).toHaveValue("K06 retained title");
+			if (editor === "handoff")
+				await second.getByRole("button", { name: "Expand event editor" }).click();
+			const stale = second.waitForResponse(
+				(response) =>
+					response.request().method() === "PATCH" &&
+					response.url().endsWith("/api/v1/events"),
+			);
+			await second.getByRole("button", { name: "Save", exact: true }).click();
+			const response = await stale;
+			expect(response.request().postDataJSON()).toEqual({
+				id: item.id,
+				expectedRevision: 1,
+				patch: { title: "K06 retained title" },
+			});
+			expect(response.status()).toBe(409);
+			expect((await response.json()).current.start).toBe(authoritative.start);
+			await expect(secondTitle).toHaveValue("K06 retained title");
+			await expect(second.getByRole("alert")).toContainText(
+				"Refresh and reconcile",
+			);
+			expect(second.url()).not.toContain("expectedRevision");
+			await externalBrand.finish(testInfo, `external-brand-routes-k06-${editor}-context`);
+		} finally {
+			await context.close();
 		}
-		const secondTitle = second.getByRole("textbox", { name: "Event title" });
-		await secondTitle.fill("K06 retained title");
-		const write = first.waitForResponse(
-			(response) =>
-				response.request().method() === "PATCH" &&
-				response.url().endsWith("/api/v1/events"),
-		);
-		await first.getByRole("combobox", { name: "Start time" }).fill("22:00");
-		await first.getByRole("combobox", { name: "Start time" }).press("Tab");
-		await first.getByRole("button", { name: "Save", exact: true }).click();
-		const firstResponse = await write;
-		expect(firstResponse.status()).toBe(200);
-		const authoritative = await firstResponse.json();
-		expect(authoritative.revision).toBe(2);
-		expect(authoritative.start).not.toBe(item.start);
-		changed = true;
-		await expect.poll(() => readsAfterChange).toBeGreaterThan(0);
-		await expect(secondTitle).toHaveValue("K06 retained title");
-		if (editor === "handoff")
-			await second.getByRole("button", { name: "Expand event editor" }).click();
-		const stale = second.waitForResponse(
-			(response) =>
-				response.request().method() === "PATCH" &&
-				response.url().endsWith("/api/v1/events"),
-		);
-		await second.getByRole("button", { name: "Save", exact: true }).click();
-		const response = await stale;
-		expect(response.request().postDataJSON()).toEqual({
-			id: item.id,
-			expectedRevision: 1,
-			patch: { title: "K06 retained title" },
-		});
-		expect(response.status()).toBe(409);
-		expect((await response.json()).current.start).toBe(authoritative.start);
-		await expect(secondTitle).toHaveValue("K06 retained title");
-		await expect(second.getByRole("alert")).toContainText(
-			"Refresh and reconcile",
-		);
-		expect(second.url()).not.toContain("expectedRevision");
-		await context.close();
 	});
 }
 

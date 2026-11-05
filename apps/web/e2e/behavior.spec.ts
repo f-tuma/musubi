@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
+import { expect, test } from "./external-brand";
 import { CalendarSchema, DEFAULT_CALENDAR_COLOR, PRODUCT_VERSION, SettingsSchema, TaskSchema } from "@musubi/types";
 import { EventsResponseSchema } from "../src/api/contracts";
 import { TaskInspectorSuiteSchema, exchangeReply, taskForScenario, type InspectorScenario, type InspectorStep } from "../src/tests/behavior/task-inspector";

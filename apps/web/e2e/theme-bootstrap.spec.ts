@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./external-brand";
 import { THEME_STORAGE_KEY } from "../src/design/theme";
 
 for (const { stored, system, applied } of [

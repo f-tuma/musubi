@@ -1,5 +1,6 @@
 import { setTestTheme } from "./theme";
-import { expect, test, type Page, type Route } from "@playwright/test";
+import { type Page, type Route } from "@playwright/test";
+import { expect, test } from "./external-brand";
 
 const runtimeErrors = new WeakMap<Page, string[]>();
 test.afterEach(async ({ page }) => {

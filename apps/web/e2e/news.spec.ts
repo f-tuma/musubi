@@ -1,7 +1,8 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CalendarSchema, DEFAULT_CALENDAR_COLOR, PRODUCT_VERSION, SettingsSchema, type AnnouncementsResponse, type PatchSettingsRequest } from "@musubi/types";
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
+import { expect, test } from "./external-brand";
 import { setTestTheme } from "./theme";
 
 const pageId = "11111111-1111-4111-8111-111111111111";

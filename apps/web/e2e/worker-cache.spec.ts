@@ -1,6 +1,6 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./external-brand";
 
 test("notification worker has uncached origin responses and native browser registration", async ({ page, request }, testInfo) => {
   const errors: string[] = [];
