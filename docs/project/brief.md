@@ -9,7 +9,9 @@ Musubi propojuje lidi, sdílené kalendáře, události a úkoly v jednom self-h
 
 Domácí obsah, členství, práva a federace patří Musubi. Sdílené sync jádro poskytuje přenositelné mechanismy s explicitními host porty a doloženými profily. Samostatný reference host ověřuje extrakci; Calendar Relay zůstává samostatným pozdějším produktem.
 
-## Potvrzené cíle této práce
+## Zadání vlastníka a navržený postup
+
+Vlastník požádal o sjednocení projektu, jasné workflow testů/publikace a zahrnutí skutečného zbytku sync přechodu i auditních pozorování. Následující konkrétní postup a ochranné hranice jsou návrh, nikoli zaznamenaný souhlas s implementací:
 
 - Ucelit projekt a zavést srozumitelnou cestu vývoj → rychlý test → integrace/aplikace → PR → publikace → provoz.
 - Zachovat existující funkce a omezení providerů, bezpečnost oprávnění, durable identity a kompatibilitu vydaných klientů.
@@ -34,7 +36,7 @@ Porty a jádro: packages/sync-codec, packages/provider-*, packages/sync-runtime.
 Samostatný technický consumer: apps/sync-reference.
 UI autorita: docs/ui/design-system.md, packages/design-system a apps/web/src/components/ui.
 
-Platí AGENTS.md, sync-profile-v1, sync-operation-v1 a dosavadní provider/host omezení. Produktový a peer floor zůstává 0.2.0; task mutation protokol má vlastní hranici 0.2.2. Návrh neschvaluje jejich zvýšení. MIT licence, soukromé workspace balíčky a omezený alpha kontrakt se samy nemění.
+Platí AGENTS.md, sync-profile-v1, sync-operation-v1 a dosavadní provider/host omezení. Aktuální klientské a peer minimum vlastní middleware require_client_version, task wire smlouva a docs/releasing.md. Brief jejich číselné hodnoty nekopíruje; navržený program sám jejich zvýšení neschvaluje. MIT licence, soukromé workspace balíčky a omezený alpha kontrakt se samy nemění.
 
 ## První hodnotný rozsah a non-goals
 

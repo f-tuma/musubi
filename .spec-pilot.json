@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "mode": "delivery",
-  "goal": "Připravit a nezávisle zrevidovat projektový záměr a OpenSpec plán sjednocení Musubi včetně skutečného dokončení sync přechodu po checkpointech.",
-  "stop_condition": "Skončit po návrhu, mechanických kontrolách a nezávislém review přesných plánovacích artefaktů. Nezačínat apply, neměnit aplikační kód, nepublikovat ani nenasazovat.",
+  "goal": "Udržovat dohledatelný záměr a autority Musubi a navigaci k navrženému programu sjednocení workflow a syncu.",
+  "stop_condition": "Pro každou relaci vybrat pouze výslovně zadaný rozsah a zaznamenat jeho konec v odděleném work-session záznamu. Sdílený index sám neopravňuje k apply, publikaci ani deploymentu.",
   "documents": {
     "brief": [
       "docs/project/brief.md"
@@ -11,7 +11,6 @@
       "AGENTS.md"
     ],
     "architecture": [
-      "openspec/changes/align-project-workflows-and-complete-sync/design.md",
       "docs/protocol/sync-profile-v1.md",
       "docs/protocol/sync-operation-v1.md"
     ],
@@ -39,6 +38,7 @@
     ],
     "active_change": [
       "openspec/changes/align-project-workflows-and-complete-sync/proposal.md",
+      "openspec/changes/align-project-workflows-and-complete-sync/design.md",
       "openspec/changes/align-project-workflows-and-complete-sync/tasks.md"
     ],
     "research": [
@@ -48,13 +48,9 @@
   },
   "checks": {
     "fast": [
-      "pnpm",
-      "test:behavior",
-      "--suite",
-      "fair-work",
-      "--scenario",
-      "parked-pull-request-preflight",
-      "--json"
+      "git",
+      "diff",
+      "--check"
     ],
     "source": [
       "pnpm",

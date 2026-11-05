@@ -25,7 +25,7 @@ Převáděná rodina SHALL mít právě jednu účinnou dispatch cestu a sdílen
 - **THEN** srovnání nesmí vyvolat dvě skutečné mutace a výsledná cesta zachová původní identity, oprávnění a side-effect hranice
 
 ### Requirement: SC-03 Retained data se znovu nekódují
-Upgrade MUST zachovat accepted projection, původní serializer/profile verzi, resource/family identity, original slot, predecessor, source/grant capture a nejistotu. Chybějící envelope smí znamenat jen explicitní retained-v0 profil; přítomný neznámý nebo chybný formát MUST skončit bezpečným HOLD bez fallback write.
+Upgrade MUST zachovat accepted projection, původní serializer/profile verzi, resource/family identity, original slot, predecessor, source/grant capture a nejistotu. Chybějící envelope smí znamenat jen explicitní v0 host profil (legacy-v0 v decoderu, retained-v0 v hostu), včetně živého admission; přítomný neznámý nebo chybný formát MUST skončit bezpečným HOLD bez fallback write.
 
 #### Scenario: Pending operace vznikla před novým encoderem
 - **WHEN** ji převezme nový worker
@@ -47,11 +47,15 @@ Konvergence MUST zachovat conditional, guarded-preflight, observe-only a non-ide
 - **THEN** kompatibilní reader zachová read-only recovery a retry nesmí markerem obnovit právo na další odeslání
 
 ### Requirement: SC-05 Legacy větev má doložený exit gate
-Vyřazení cesty nebo decoderu MUST být schválené po rodině a doložit aktivní i retained data, podporované obnovy/peery, minimální reader a bezpečné zacházení se starým vstupem. Nulový počet současných pending řádků sám nestačí. Nevyřaditelná compatibility SHALL mít jednoznačného správce a testy.
+Vyřazení admission cesty nebo decoderu MUST být schválené po rodině a doložit živé v0 admission, aktivní i retained data, podporované obnovy/peery, minimální reader a bezpečné zacházení se starým vstupem. Nulový počet současných pending řádků sám nestačí. Nevyřaditelná compatibility SHALL mít jednoznačného správce a testy.
 
 #### Scenario: Fronta je nyní prázdná, ale podporovaný backup obsahuje v0
 - **WHEN** se navrhne odstranění v0 decoderu
 - **THEN** checkpoint zůstane blokovaný, dokud není zachovaný kompatibilní reader nebo přijatá a ověřená upgrade/recovery hranice
+
+#### Scenario: Prázdná fronta stále připouští nové v0 operace
+- **WHEN** daná rodina dál používá v0 admission
+- **THEN** její decoder zůstane podporovaný; prázdná fronta není exit gate
 
 #### Scenario: Host-only rodina zůstává dlouhodobě nativní
 - **WHEN** ji nelze bez změny guarantee bezpečně portovat

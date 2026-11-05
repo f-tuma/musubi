@@ -17,6 +17,9 @@ Jde o úplný checkout. Níže je statická revize a čtení uložených záznam
 | C10 | docs/planning/MUSU-42-acceptance.md; 1cf603b1f44c1cd83659336e1afd671e314b2570 | Merge je předkem HEAD; privátní alpha a konformance existují |
 | Alpha hranice | docs/sync-alpha/README.md, supported-matrix.v1.json, compatibility.md | Přesný Node22/Linux/TSX snapshot, 10 profilů; nejde o obecný pull host |
 | Ověřování | package.json, scripts/test-behavior.mjs, ci-shards.mjs, .github/workflows/quality.yml | check/verify nejsou automaticky všechny CI/platformní gates |
+| Current release a runbook | docs/releasing.md; packages/docs/src/content/docs/operations/releases.mdx; README.md; docs/README.md | docs/releasing.md již vlastní current index; CP01 ostatní povrchy převede na odkazy, nezaloží další index |
+| Přispívání a setup | packages/docs/src/content/docs/guides/contributing.mdx, running-locally.mdx, onboarding.mdx; reference/commands.mdx; AGENTS.md | Zachovat existující role; opravit zastaralé příkazy a odkazy místo dalšího quickstartu |
+| Provozní diagnostika | docs/observability.md a jeho Starlight cíl operations/observability.mdx | Rozcestník a incident autorita; ne nový paralelní runbook |
 | Publikace | docs/releases/publication.md, scripts/quality-proof.mjs, verify-publication.mjs, docker-publish.yml | Zachovat přísnější deklarovaný kontrakt čerstvosti a oddělení runtime důkazů |
 | Poslední záznam runtime | docs/releases/0.2.16-acceptance.md | Zdokumentované konkrétní vydání a scope; není nová live inventura |
 | Audit | 11 nezávislých reportů, syntéza a oponentury z 5. listopadu na stejném HEAD | 81 pozorování + K-09 převedeno do audit-disposition.md; soukromé reporty nejsou nutné pro použití plánu |
@@ -66,4 +69,6 @@ Aktuální Dokploy/env flags, složení aktivních durable řádků, registry st
 
 ## Project checks index
 
-.spec-pilot.json má skutečně spuštěný orientační fast příklad výše. Source, database a ui indexují existující příkazy; v této plánovací změně nebyly spuštěné. Neexistuje doložený jediný full příkaz zahrnující celé CI/platformy, proto se zde nevymýšlí checks.full a CP02 jej musí vyřešit. package.json a Quality jsou autorita skutečného rozsahu. Před implementačním checkpointem se fast volba přizpůsobí jeho dotčené rodině včetně příslušných types/lint; nynější jeden scénář není univerzální projektová gate.
+Sdílené checks.fast = git diff --check kontroluje pouze whitespace plánovacích dokumentů, nikoli aplikační chování. Source/database/ui jsou existující příkazy, které tato plánovací změna nespouštěla. Fair-work baseline výše je oddělený příklad, ne univerzální gate. Pro každý přijatý CP brief se do vlastního session záznamu zapíší přesné fast/full/ui argumenty bez přepisování sdíleného cíle.
+
+Jediný doložený lokální příkaz pro celé CI/platformy zatím neexistuje; checks.full se proto nepředstírá pomocí pnpm check/verify. Než CP02 dodá ověřený full plán/preflight, koncový full gate checkpointu je pnpm check plus všech 21 current-head Quality jobů z publication proof kontraktu a všechny skutečné branch-protection checks; relevantní externí/device/live gates jsou navíc. Nedostupný nebo neprovedený gate = HOLD. Konkrétní dostupné kontroly prvních slice CP01 a CP08.1 jsou v tasks.md; každý další slice dostane před apply revidovaný CP brief.
