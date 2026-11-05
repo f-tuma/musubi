@@ -1,0 +1,84 @@
+{
+  "at": "2026-11-05T20:30:17.238967+00:00",
+  "authorization": "User: Ano a pak pokračuj; explicitly approves PR406 squash merge",
+  "mergedPlanningPR": 406,
+  "mergedPlanningSHA": "585dd231c3126ddc51a6ee5972c96bea95cfb15a",
+  "oldPlanningHead": "1bf82a8985113f8c6f3165c2c127aa831326eea4",
+  "rebasedHead": "d72c25ac2da322a2a12e612a5d6019d2e4299b92",
+  "oldCP01Head": "07320d92a9f5080607ae3667bab9dea6c2900878",
+  "planningTreesEqual": true,
+  "CP01TreesEqual": true,
+  "CP01DiffsByteIdentical": true,
+  "approvedPrimaryFingerprint": "78dbe9f90e4c18cbd78a6a85d3b1545a8d34e8c3a70e651cf81f9bf2d0173f54",
+  "allPrimaryHashesMatch": true,
+  "previouslyPendingTargets": {
+    "path": "docs/project/brief.md",
+    "baseContainsPath": true,
+    "baseContainsVlastnictviDokumentuHeading": true,
+    "sources": [
+      "guides/contributing.mdx",
+      "reference/commands.mdx"
+    ]
+  },
+  "mechanicalChecks": [
+    {
+      "argv": [
+        "/home/flamendrin/.local/bin/spec",
+        "check",
+        "--project",
+        "/home/flamendrin/workspace/musubi",
+        "--phase",
+        "orient"
+      ],
+      "startedAt": "2026-11-05T20:30:17.112523+00:00",
+      "exitCode": 0,
+      "stdout": "{\n  \"findings\": [],\n  \"limitations\": [\n    \"Existence and simple placeholders do not establish document quality or requirement completeness.\",\n    \"Supplied hashes check only declared files; omitted dependencies are not detected.\",\n    \"Execution, test counts, outcome interpretation, provenance and human approvals are not authenticated.\",\n    \"This result does not authorize implementation, merge, publication or deployment.\"\n  ],\n  \"mechanical_result\": \"pass\",\n  \"operation\": \"check\",\n  \"phase\": \"orient\",\n  \"schema_version\": 1,\n  \"semantic_result\": \"unknown\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/home/flamendrin/.local/bin/spec",
+        "check",
+        "--project",
+        "/home/flamendrin/workspace/musubi",
+        "--phase",
+        "design"
+      ],
+      "startedAt": "2026-11-05T20:30:17.123547+00:00",
+      "exitCode": 0,
+      "stdout": "{\n  \"findings\": [],\n  \"limitations\": [\n    \"Existence and simple placeholders do not establish document quality or requirement completeness.\",\n    \"Supplied hashes check only declared files; omitted dependencies are not detected.\",\n    \"Execution, test counts, outcome interpretation, provenance and human approvals are not authenticated.\",\n    \"This result does not authorize implementation, merge, publication or deployment.\"\n  ],\n  \"mechanical_result\": \"pass\",\n  \"operation\": \"check\",\n  \"phase\": \"design\",\n  \"schema_version\": 1,\n  \"semantic_result\": \"unknown\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/home/flamendrin/.local/bin/spec",
+        "openspec",
+        "--project",
+        "/home/flamendrin/workspace/musubi",
+        "--",
+        "validate",
+        "align-project-workflows-and-complete-sync",
+        "--strict",
+        "--json"
+      ],
+      "startedAt": "2026-11-05T20:30:17.134825+00:00",
+      "exitCode": 0,
+      "stdout": "{\n  \"output\": \"{\\n  \\\"items\\\": [\\n    {\\n      \\\"id\\\": \\\"align-project-workflows-and-complete-sync\\\",\\n      \\\"type\\\": \\\"change\\\",\\n      \\\"valid\\\": true,\\n      \\\"issues\\\": [],\\n      \\\"durationMs\\\": 21\\n    }\\n  ],\\n  \\\"summary\\\": {\\n    \\\"totals\\\": {\\n      \\\"items\\\": 1,\\n      \\\"passed\\\": 1,\\n      \\\"failed\\\": 0\\n    },\\n    \\\"byType\\\": {\\n      \\\"change\\\": {\\n        \\\"items\\\": 1,\\n        \\\"passed\\\": 1,\\n        \\\"failed\\\": 0\\n      }\\n    }\\n  },\\n  \\\"version\\\": \\\"1.0\\\",\\n  \\\"root\\\": {\\n    \\\"path\\\": \\\"/home/flamendrin/workspace/musubi\\\",\\n    \\\"source\\\": \\\"nearest\\\"\\n  }\\n}\",\n  \"status\": \"completed\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--check",
+        "585dd231c3126ddc51a6ee5972c96bea95cfb15a",
+        "d72c25ac2da322a2a12e612a5d6019d2e4299b92"
+      ],
+      "startedAt": "2026-11-05T20:30:17.233802+00:00",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "CI": "CP01 current-head Quality still required after PR; PR406 green run is not reused as CP01 verification"
+}
