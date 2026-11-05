@@ -2,13 +2,12 @@ import { setTestTheme } from "./theme";
 import AxeBuilder from "@axe-core/playwright";
 import { PRODUCT_VERSION, type Calendar } from "@musubi/types";
 import {
-	expect,
-	test,
 	type BrowserContext,
 	type Locator,
 	type Page,
 	type Route,
 } from "@playwright/test";
+import { expect, test } from "./external-brand";
 
 async function chooseTimeZone(control: Locator, zone: string) {
   await control.click();
