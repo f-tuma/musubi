@@ -18,6 +18,7 @@ Kanonické umístění: `openspec/changes/align-project-workflows-and-complete-s
   - **U5 (R-05):** kontrolní režim headless; headed favicon jako reziduum (§5.1, §10).
   - **U6 (R-06):** skutečná invokace SPEC/OpenSpec validace (§3, §6).
   - **U7 (R-07):** first-paint kontexty bez JS vardum nevolají; fixture je tam obranná (§4, §5.4).
+  - **U8:** pokrytí dvou ručních `browser.newContext()` v `month-read.spec.ts` (tři testové případy) stejným helperem (§4, §5.4, §10). Doplněk `/tmp/musubi-ci-brand-context-coverage.md` (SHA256 `0197fe6693db344ded69246a019c2d6549af6433f27ab5e76c426e6014a47806`; původní subjekt review `-v1.md` `89e2ab8227693b1c062ef3c0fa88ae48c2bfd9c8ab7fa9b2e22a8c9d4898091f`), nezávislé review `/tmp/musubi-ci-brand-context-design-review.md` (Claude Fable 5.1, task `task_2440402e9fcb`; REQUEST_CHANGES jen pro B-01, po textové opravě B-01 a R-01/R-02 apply bez dalšího kola). Mechanismus, allowlist ani helper se nemění.
 
 Podklady: `/tmp/musubi-cp01-pr407-ci-diagnosis.md`, `/tmp/musubi-cp01-vardum-probe.json`
 (obě role `mark-neutral`/`mark-accent` vrátily HTTP 403 za 590/64 ms; to nedokládá globální výpadek ani obnovenou dostupnost).
@@ -58,7 +59,8 @@ K tomu jeden řádek TEST-08 v `audit-disposition.md` s odkazem na tento brief j
 | Soubor | Změna |
 |---|---|
 | `apps/web/e2e/external-brand.ts` (nový, jediný helper) | `installExternalBrandFixture(context)` + `test`/`expect` rozšířené o auto fixture nad `context` (viz §5). |
-| `apps/web/e2e/month-read.spec.ts`, `dst-grid.spec.ts`, `news.spec.ts`, `behavior.spec.ts`, `theme-bootstrap.spec.ts`, `worker-cache.spec.ts` | Jen import `test`/`expect` z `./external-brand` místo `@playwright/test` (typy dál z `@playwright/test`). Žádná jiná změna. |
+| `apps/web/e2e/dst-grid.spec.ts`, `news.spec.ts`, `behavior.spec.ts`, `theme-bootstrap.spec.ts`, `worker-cache.spec.ts` | Jen import `test`/`expect` z `./external-brand` místo `@playwright/test` (typy dál z `@playwright/test`). Žádná jiná změna. |
+| `apps/web/e2e/month-read.spec.ts` | Import `expect`/`installExternalBrandFixture`/`test` z `./external-brand`. **[U8]** U dvou ručních `browser.newContext()` (test „carries one session's edit into the other over the stream“ a obě varianty „K06 two real {full,handoff} drafts …“) hned po `newContext` `installExternalBrandFixture(context)`, callback přebírá `testInfo`, a vzor shodný s `assets.spec.ts`: `try { …stávající tělo…; await externalBrand.finish(testInfo, "<název>"); } finally { await context.close(); }`; koncové `context.close()` z těla odpadá. Akce, aserce a výběr případů se nemění. |
 | `apps/web/production-e2e/assets.spec.ts` | Import z `../e2e/external-brand`. Ručně vytvořené first-paint kontexty (ř. 35) dostanou `installExternalBrandFixture(context)` (obranně, viz §5.4 **[U7]**). Na ř. 38 `route.continue()` → `route.fallback()` pro ne-stylesheet požadavky, viz §5.4. Komentář ř. 54-55 doplní externí brand host jako nahrazenou hranici. |
 | `openspec/.../tasks.md` (1 věta), `audit-disposition.md` (řádek TEST-08), `checkpoints/CI-brand-fixtures.md` (tento brief), `reviews/CI-brand-fixtures-design.md` a acceptance záznam | Viz §3 a §8. |
 | `.spec-pilot.json` **[U3]** | Dočasná branch mapa kontrol (§6.1). Původní bajty se uloží mimo repo a před finálním review se přesně vrátí; `goal`/`stop_condition` se nemění. Ve finálním diffu se soubor nemění. |
@@ -99,6 +101,7 @@ Port: `BrowserContext.route("https://vardum.com/**", handler)`. **[U1]** Kontext
 - Výchozí `context` každého testu: auto fixture (`{ auto: true }`) v `external-brand.ts` volá `installExternalBrandFixture(context)` před `use()`.
 - `assets.spec.ts` first-paint kontexty z `browser.newContext` (ř. 35) dostanou explicitní `installExternalBrandFixture(context)` a teardown kontrolu před `context.close()`. **[U7]** Tyto kontexty mají `javaScriptEnabled: false` a SSR neobsahuje `<image>` (`BrandMark.test.tsx:12`), takže vardum dnes reálně nevolají; fixture je tam obranná. Stávající SSR/style aserce se nemění.
 - Page-level route má přednost před context route. Existující `firstPaint.route("**/*", … route.continue())` (ř. 38) by vardum požadavek poslal upstream, takže se mění na `route.fallback()`. Pro ne-stylesheet požadavky je to sémanticky totéž, protože bez context route jde fallback na síť. Abort stylesheetu zůstává.
+- **[U8]** Dva ruční kontexty v `month-read.spec.ts` (tři případy) navigují na `/app/p/…/month`, kde `Sidebar` vykresluje `BrandMark`; bez obalení by mohly posílat brand požadavky upstream. Dostanou `installExternalBrandFixture(context)` hned po `newContext` (před mock API a navigací) a `finish` jako poslední příkaz `try`, `context.close()` ve `finally`. Při dřívějším selhání aserce se příloha fixture nevytvoří (původní chyba se nepřepíše, zůstává trace); při selhání `finish` se kontext přesto zavře. Příloha nese odlišný název ručního kontextu; auto fixture nad nevyužitým výchozím `context` dál připojí `external-brand-routes`.
 - `request` fixture (APIRequestContext) brand obrázky nenačítá; neřeší se.
 
 ## 6. Kontroly a příkazy
@@ -182,7 +185,7 @@ Klíče `checks` (argv) po dobu implementace; `goal`, `stop_condition`, `documen
 **Stop:** web e2e a production smoke na current head projdou bez upstream `vardum.com`. Jsou splněné G1–G3, D1, D2 a discovery je identická; 21 Quality jobů je green; žádný runtime soubor se nezměnil.
 
 **Return k briefu/designu (box nehotový, zapsat přesný výsledek nebo HOLD), pokud:**
-- je nutná změna `apps/web/src/**`, workflow, Playwright configu, timeoutů, retry nebo aserce;
+- je nutná změna `apps/web/src/**`, workflow, Playwright configu, timeoutů, retry nebo aserce (**[U8]** vlastní teardown kontrola fixture `finish` v ručních kontextech, shodná s `assets.spec.ts`, není změnou existujících asercí a tuto podmínku nespouští; změna helperu, např. příloha i při dřívějším selhání, by byla return);
 - objeví se další vardum cesta nebo jiný externí host jako blokující (v headless kontrolním režimu; headed favicon viz §5.1 **[U5]**);
 - `ci-shards --list` nebo production `--list` se změní;
 - G3 neprojde (zbytková upstream závislost);
