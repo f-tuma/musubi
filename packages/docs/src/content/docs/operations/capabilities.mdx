@@ -1,13 +1,24 @@
 ---
 title: Capability and acceptance matrix
-description: The supported v0.2.2 contracts, their test evidence, deployment status and remaining boundaries.
+description: Dated capability and acceptance matrix reviewed for v0.2.2 on 5 October 2026; the current release pointer is docs/releasing.md.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-This is the current capability summary for **v0.2.2**, reviewed on **5 October
-2026**. Use it with the provider guides and linked contracts. Dated audits retain
-the scope tested on their date; an older “not supported yet” statement does not
+<Aside type="note" title="Dated record">
+This matrix was reviewed for **v0.2.2** on **5 October 2026** and has not been
+re-inventoried for later releases. It is not a statement about the current
+runtime of every provider. The current published release, deployment order and
+upgrade/recovery boundaries are in
+[docs/releasing.md](https://github.com/f-tuma/musubi/blob/main/docs/releasing.md);
+dated release records are on [Releases & Upgrades](/docs/operations/releases/)
+and later release notes live under
+[docs/releases](https://github.com/f-tuma/musubi/tree/main/docs/releases).
+</Aside>
+
+This is the capability summary reviewed for **v0.2.2** on **5 October 2026**.
+Use it with the provider guides and linked contracts. Dated audits retain the
+scope tested on their date; an older “not supported yet” statement does not
 override a later accepted implementation.
 
 ## Reading the evidence
@@ -137,7 +148,7 @@ provider writes require the operator's explicit scope and approval.
 
 ## Maintained and historical records
 
-- This matrix and the provider/task guides describe the current released contract.
+- This matrix records the contracts reviewed for v0.2.2 on 5 October 2026; use the linked provider/task contracts and later dated acceptance for subsequent changes.
 - [September Core checkpoint](https://github.com/f-tuma/musubi/blob/v0.2.2/docs/audits/calendar-core-remaining-work.md)
   retains dated implementation and acceptance history. Its early tables are not
   a current backlog; later Outlook evidence supersedes their earlier limits.
@@ -145,10 +156,12 @@ provider writes require the operator's explicit scope and approval.
   records the owner's selected gates and deferred paths, not verified private
   runtime settings for v0.2.2.
 - [v0.2.2 release](https://github.com/f-tuma/musubi/releases/tag/v0.2.2) and the
-  [maintained deployment runbook](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.2-deployment.md)
+  [historical 0.2.2 deployment record](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.2-deployment.md)
   describe the released artifacts and migration/rollback procedure.
-- The [release status](/docs/operations/releases/) records current distribution
-  and operational acceptance separately from those historical runbooks.
+- [docs/releasing.md](https://github.com/f-tuma/musubi/blob/main/docs/releasing.md)
+  is the current release pointer; the dated
+  [release records](/docs/operations/releases/) keep distribution and
+  operational acceptance separately from those historical runbooks.
 
 Update this page when a contract changes or a new bounded acceptance result is
 recorded. Keep test dates and exact excluded shapes; do not replace “unconfirmed”

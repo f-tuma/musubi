@@ -1,0 +1,106 @@
+{
+  "base": "d9ff9dce5233aa28d25f1592e5f588b96087f09c",
+  "head": "a668814a8409bdb0e4a24bc4ca7a21769a1cd9db",
+  "primaryFiles": [
+    [
+      "README.md",
+      "d03d2abdd84ac25114a1fd52d71fab952ff79d11d84acff4f33cd6ad5ba00061"
+    ],
+    [
+      "docs/README.md",
+      "9fd3a5839063a59a4a2eea5c6c3f99063eef7dd87303faa2e534ab8af95bf362"
+    ],
+    [
+      "docs/planning/sync-refactor-roadmap.md",
+      "b7b4189adc56947d8a98ba08aee8b30e1165216f2233898ec7c757afb0eb171c"
+    ],
+    [
+      "docs/project/brief.md",
+      "6ea5a8bcc8388fcff19e9d3d3c15df9ae7999fd983dac1fe5dce0fcf6d13e26e"
+    ],
+    [
+      "docs/releasing.md",
+      "e97acacb44f332b38a5c48622d943f385e108f766b3856a11b9724e5b8c1d97e"
+    ],
+    [
+      "openspec/changes/align-project-workflows-and-complete-sync/audit-disposition.md",
+      "00e2cb6add377b36fff8254daa5320c522a7f4204bcf854d1d5ca7cb62e87800"
+    ],
+    [
+      "openspec/changes/align-project-workflows-and-complete-sync/checkpoints/CP01-docs-acceptance.md",
+      "7fcc8254c5732edafa893268cf07e696d382702e5c4417e187936d2431e1c10c"
+    ],
+    [
+      "openspec/changes/align-project-workflows-and-complete-sync/checkpoints/CP01-docs-authorities.md",
+      "33aaf9d06527a16cbcc094a9fdc18b4b27d52fb696c74405fe75d45cba76f6b7"
+    ],
+    [
+      "openspec/changes/align-project-workflows-and-complete-sync/design.md",
+      "c8bdc74d0afb244d32e3fd88f3d38cd774d07399c2e40e608ba967b6582d880a"
+    ],
+    [
+      "openspec/changes/align-project-workflows-and-complete-sync/research.md",
+      "13d2ada46901224dac6c7601a202e427cb611c2003ea44f5e4dfcbd3a5f5e1fd"
+    ],
+    [
+      "packages/docs/src/content/docs/guides/contributing.mdx",
+      "ae66032543bafcbe2a4d96bf33586287ce2ed9fd6c7476d625d8b5125c552aec"
+    ],
+    [
+      "packages/docs/src/content/docs/guides/onboarding.mdx",
+      "e8bfb33aeebb04ad71dac559362c061b4c5bd0b5b4c1832fb50d7648a16ca7bf"
+    ],
+    [
+      "packages/docs/src/content/docs/guides/running-locally.mdx",
+      "dce79badb8855112f7c8c0321f0583906a4217b0a542621b8dde1c77d2faf2d1"
+    ],
+    [
+      "packages/docs/src/content/docs/operations/capabilities.mdx",
+      "f5751bff7c837ab41fd57ce0e5f187bd27b8236e5f402b06b67cb2493364147b"
+    ],
+    [
+      "packages/docs/src/content/docs/operations/releases.mdx",
+      "9c23094bda3e8adfaa904d364335d70a9a7a82d58016158a40f1df0a4f4f3efa"
+    ],
+    [
+      "packages/docs/src/content/docs/reference/commands.mdx",
+      "5f040b20b9c040dd375bf42360f2c30919a99fe886a12beb91e1bd84eb7a9e89"
+    ]
+  ],
+  "fingerprint": "2fa2d4b03d06af64354809f26edfbdec0c48422c264e50fee0b0949d7135574f",
+  "algorithm": "SHA256 compact JSON sorted [path,SHA256(file bytes)] pairs, no newline",
+  "allChangedFiles": [
+    "README.md",
+    "docs/README.md",
+    "docs/planning/sync-refactor-roadmap.md",
+    "docs/project/brief.md",
+    "docs/releasing.md",
+    "openspec/changes/align-project-workflows-and-complete-sync/audit-disposition.md",
+    "openspec/changes/align-project-workflows-and-complete-sync/checkpoints/CP01-docs-acceptance.md",
+    "openspec/changes/align-project-workflows-and-complete-sync/checkpoints/CP01-docs-authorities.md",
+    "openspec/changes/align-project-workflows-and-complete-sync/design.md",
+    "openspec/changes/align-project-workflows-and-complete-sync/research.md",
+    "openspec/changes/align-project-workflows-and-complete-sync/reviews/CP01-ci-base-validation.json",
+    "openspec/changes/align-project-workflows-and-complete-sync/reviews/CP01-design.md",
+    "openspec/changes/align-project-workflows-and-complete-sync/reviews/CP01-final.md",
+    "openspec/changes/align-project-workflows-and-complete-sync/reviews/CP01-main-base-validation.json",
+    "openspec/changes/align-project-workflows-and-complete-sync/reviews/CP01-validation.json",
+    "packages/docs/src/content/docs/guides/contributing.mdx",
+    "packages/docs/src/content/docs/guides/onboarding.mdx",
+    "packages/docs/src/content/docs/guides/running-locally.mdx",
+    "packages/docs/src/content/docs/operations/capabilities.mdx",
+    "packages/docs/src/content/docs/operations/releases.mdx",
+    "packages/docs/src/content/docs/reference/commands.mdx"
+  ],
+  "previousReviewedHead": "8010531d1e18622949de79357471f96561fe2f84",
+  "previousFingerprint": "9c384a516656b3c42e4856633d751579ef64b6b0624c781fdf71e17b72295bc7",
+  "changedSincePreviousReview": [
+    "openspec/changes/align-project-workflows-and-complete-sync/checkpoints/CP01-docs-acceptance.md"
+  ],
+  "unchangedPrimaryCount": 15,
+  "scope": "Narrow re-review acceptance and audit decision against actualbase; other15primary bytes identical to prior reviewed8010531. No code or liveMDX changes.",
+  "review": "openspec/changes/align-project-workflows-and-complete-sync/reviews/CP01-final-after-ci.md",
+  "reviewer": "Claude Fable 5.1, fresh-context task_11834a538a10",
+  "verdict": "APPROVE for updated acceptance/audit binding and PR407 update readiness",
+  "evidenceOnly": "Only this manifest and independent report added after review; all16primary hashes remain unchanged. New current-head Quality and actual merge still required; no publication/deployment proof."
+}

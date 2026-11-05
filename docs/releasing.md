@@ -8,6 +8,12 @@ passed all nine jobs after the exact-main
 passed all 21 jobs. Immutable images and actual healthy API/web deployments were
 verified separately. See the [acceptance record](releases/0.2.16-acceptance.md).
 
+This document is the only current release pointer. README, docs/README and the
+Starlight [Releases & Upgrades](https://musubi.pro/docs/operations/releases/)
+page link here instead of restating a version; dated release records under
+[`releases/`](releases/) keep their original scope. Which file owns the other
+project facts is mapped in [docs/project/brief.md](project/brief.md).
+
 This maintenance release lets event preflight and durable delivery progress
 alongside a parked background pull for the same connected account. Native
 account serialization, provider budgets and the global work bound remain.
@@ -106,10 +112,13 @@ store build accepts a temporary native task-write gap. Stop the old API before
 starting the new one. The shared-task migration and old provider writers make
 an image-only rollback unsafe; keep a verified preupgrade database backup and
 retain [0.2.2 deployment and recovery](releases/0.2.2-deployment.md) as the
-historical migration record. Follow the
-[current runbook](releases/0.2.12-readiness.md) for the additional sync/news schema
-and recovery boundaries. A release tag was the operator-reported Dokploy signal;
-reconfirm the actual trigger and mutable-image consumers before publication.
+historical migration record. The historical
+[0.2.12 readiness record](releases/0.2.12-readiness.md) retains the additional
+sync/news schema and recovery boundaries recorded at that time; the general
+boundaries in this document and the current release record at the top of this
+page remain the operative references. A release tag was the operator-reported
+Dokploy signal; reconfirm the actual trigger and mutable-image consumers before
+publication.
 
 ## Current compatibility contract (introduced by K06 / 0.2.0)
 
@@ -153,9 +162,10 @@ forwarding product requests/connecting streams as well as at handshake.
 The additive revision column can remain through an application rollback, but
 rolling back to revision-incapable writers invalidates CAS protection; do not
 advertise safe mixed-version writes. The K06 enforcement and draft-preservation
-implementation is part of the released contract; see the
-[current capability matrix](https://musubi.pro/docs/operations/capabilities/)
-for operation limits and live/device acceptance still requiring evidence.
+implementation is part of the released contract; see the dated
+[capability matrix](https://musubi.pro/docs/operations/capabilities/) (reviewed
+for v0.2.2) for operation limits and the live/device acceptance that still
+required evidence at that review.
 
 ## What the machine checks
 
@@ -325,5 +335,6 @@ Normally split a destructive change across two releases:
 The default is to separate reader removal from the drop. Historical
 `0049_drop_show_kanji` had no remaining reader. The deliberate
 `0087_project_news` table removal has its own stop-first and matching-database
-recovery boundary above and in the current runbook; neither exception makes an
-image-only downgrade safe.
+recovery boundary above and in the historical
+[0.2.12 readiness record](releases/0.2.12-readiness.md); neither exception makes
+an image-only downgrade safe.

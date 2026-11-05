@@ -1,6 +1,6 @@
 ---
 title: Run Musubi locally
-description: A verified development setup for PostgreSQL, the Express API, the native Expo client, and the Starlight docs.
+description: A development setup for PostgreSQL, the Express API, the web and native Expo clients, and the Starlight docs.
 ---
 
 import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
@@ -114,7 +114,16 @@ SQLite. Use a **development build** (`expo run:*` or EAS), not Expo Go.
    # {"ok":true}
    ```
 
-6. **Start the documentation site.**
+6. **Start the web client.**
+
+   ```sh
+   pnpm --filter @musubi/web dev
+   ```
+
+   Open `http://localhost:3000`. The Vite dev server proxies `/api` to the API
+   on port 7531, so keep the API from step 5 running.
+
+7. **Start the documentation site.**
 
    ```sh
    pnpm docs:dev
@@ -122,7 +131,7 @@ SQLite. Use a **development build** (`expo run:*` or EAS), not Expo Go.
 
    Open `http://localhost:4321/docs/`.
 
-7. **Build and start the native client.**
+8. **Build and start the native client.**
 
    <Tabs>
      <TabItem label="Android">
@@ -199,12 +208,13 @@ Once each layer works independently:
 pnpm dev
 ```
 
-Turborepo starts every workspace that declares `dev` and displays the API,
-client, and docs in a terminal UI. Use stream output when logs need to be
-copyable:
+Turborepo starts every workspace `dev` task plus web Storybook and displays the
+API, native Metro, web client, docs and Storybook (port 6006) in a terminal UI.
+The API's `dev` script applies pending migrations first. Use stream output when
+logs need to be copyable:
 
 ```sh
-pnpm exec turbo run dev --ui=stream
+pnpm exec turbo run dev storybook --ui=stream
 ```
 
 ## Verify the setup
@@ -215,10 +225,24 @@ Before editing code, establish the same baseline contributors use:
 pnpm check
 ```
 
-This first validates release/toolchain metadata and peer dependencies, then
-runs client + API typechecks, the twelve existing assertion-based self-checks,
-client lint, and the docs build. Lint has zero errors and a locked budget for
-108 known React Compiler/hook warnings; a net increase fails the command.
+This validates release/toolchain metadata, contracts and peer dependencies,
+typechecks the workspaces, runs the workspace test suites, lints the native and
+web clients, and builds the web client and docs. Tests that load
+`@musubi/config` read the `.env` from step 2. The root `package.json` `check`
+script is the exact definition. It is the local baseline, not the full
+pull-request gate; see
+[Commands & checks](/docs/reference/commands/#continuous-integration).
+
+For a much faster loop while editing, run the smallest relevant JSON scenario,
+for example:
+
+```sh
+pnpm test:behavior --suite task-inspector --scenario conflict-keeps-draft --json
+```
+
+It uses fixture HTTP responses in Vitest/jsdom, so it needs neither the
+database nor the API. See [Contributing](/docs/guides/contributing/#the-verification-loop)
+for how to choose a scenario.
 
 ## What to do in the app
 
