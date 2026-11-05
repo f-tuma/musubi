@@ -2,6 +2,11 @@
   "schemaVersion": 1,
   "items": [
     {
+      "id": "2026-11-05",
+      "title": "Musubi 0.2.15: Google connection fixes",
+      "body": "Fixed Google token refresh interrupting calendar writes and sync when unchanged permissions are returned in a different order. Added safer diagnostics for unexpected event permission-check failures.\n\nThis API and web update works with existing mobile apps.\n\nhttps://github.com/f-tuma/musubi/releases/tag/v0.2.15"
+    },
+    {
       "id": "2026-11-03",
       "title": "Musubi 0.2.14: iCloud import fixes",
       "body": "Fixed initial iCloud imports for accounts with many calendars and large CalDAV calendars. Event notes containing HTML text now import correctly, and pending sync is shown separately from failures.\n\nThis API and web maintenance update works with existing mobile apps.\n\nhttps://github.com/f-tuma/musubi/releases/tag/v0.2.14"

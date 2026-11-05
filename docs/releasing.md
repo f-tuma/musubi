@@ -1,22 +1,24 @@
 # Releasing
 
-Current published release: **[0.2.14](https://github.com/f-tuma/musubi/releases/tag/v0.2.14)**
-(3 November 2026), source `807873339037f5cf3a5bc681d20eba767ea7e83c`.
-[Publication](https://github.com/f-tuma/musubi/actions/runs/41631842469)
+Current published release: **[0.2.15](https://github.com/f-tuma/musubi/releases/tag/v0.2.15)**
+(5 November 2026), source `995d1ce51235193d1d5f7944075e6dc30b5d80f9`.
+[Publication](https://github.com/f-tuma/musubi/actions/runs/42012295947)
 passed all nine jobs after the exact-main
-[Quality run](https://github.com/f-tuma/musubi/actions/runs/41627686138)
-passed all 21 jobs. API/web publication, immutable image verification and actual
-runtime acceptance were recorded separately on 3 November. See the
-[acceptance record](releases/0.2.14-acceptance.md) for scope and limitations;
-this does not establish every provider account's health.
+[Quality run](https://github.com/f-tuma/musubi/actions/runs/42009472164)
+passed all 21 jobs. Immutable images and actual healthy API/web deployments were
+verified separately. See the [acceptance record](releases/0.2.15-acceptance.md).
 
-The **0.2.14 maintenance release** fixes initial iCloud collection queueing,
-literal HTML declarations inside event CDATA, and oversized CalDAV multiget
-responses. See its [release notes](releases/0.2.14-notes.md) and
-[dated preparation plan](releases/0.2.14-readiness.md). Existing mobile builds
-remain compatible; no native distribution or database migration was included.
-Support-contact and email-branding changes since 0.2.13 are included in API/web;
-native apps receive those source updates with their next store build.
+This maintenance release preserves OAuth grant authority when a refresh returns
+the same scopes in another order/format and adds bounded event-preflight
+failure diagnostics. No migration or new mobile distribution is included;
+installed mobile apps remain compatible. Native timeout wording changes are
+source-only until the next store build. See the [release notes](releases/0.2.15-notes.md)
+and [preparation record](releases/0.2.15-readiness.md).
+
+A subsequent support retry still reached the event-preflight deadline. This
+release is not evidence that all event-creation timeouts are resolved; that
+separate failure remains under investigation. The earlier
+[0.2.14 acceptance](releases/0.2.14-acceptance.md) remains a historical record.
 
 The [27 October readiness assessment](releases/0.2.12-readiness.md),
 [hardening record](releases/0.2.12-hardening.md) and version-specific notes are

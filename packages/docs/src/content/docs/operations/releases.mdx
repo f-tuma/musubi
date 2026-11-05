@@ -10,7 +10,31 @@ remaining acceptance. Provider support has its own
 [capability matrix](/docs/operations/capabilities/); an API version or a green
 build does not certify every provider operation.
 
-## Current record — 3 November 2026
+## Current record — 5 November 2026
+
+[v0.2.15](https://github.com/f-tuma/musubi/releases/tag/v0.2.15) is published from
+`995d1ce51235193d1d5f7944075e6dc30b5d80f9`.
+[Publication](https://github.com/f-tuma/musubi/actions/runs/42012295947) passed
+all nine jobs after the exact-main
+[Quality run](https://github.com/f-tuma/musubi/actions/runs/42009472164) passed
+all 21 jobs. Both immutable image indexes, four runtime source labels and actual
+healthy API/web containers were independently verified. One API and one web
+container were running; all 88 migration records remained unchanged.
+See the [acceptance record](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.15-acceptance.md).
+
+This update preserves Google/OAuth grant authority when unchanged permissions
+are returned in a different order or format, and adds bounded event-preflight
+diagnostics. It requires no database migration or mobile update. Native error
+wording improvements arrive with the next store build. See the
+[release notes](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.15-notes.md).
+
+The current S3 backup object was listed, and authenticated calendar/task reads,
+navigation and About/version passed. No restore or native device test was run.
+A later event-create retry still hit a preflight deadline; that issue remains
+under investigation. Known Microsoft mailbox/provider failures also remain.
+This record does not certify every provider account or event write.
+
+## Historical record — 3 November 2026
 
 [v0.2.14](https://github.com/f-tuma/musubi/releases/tag/v0.2.14) is published from
 `807873339037f5cf3a5bc681d20eba767ea7e83c`.
