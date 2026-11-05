@@ -1,16 +1,16 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import express from "express";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { logger } from "@musubi/config";
 import { CLIENT_VERSION_HEADER, PRODUCT_VERSION } from "@musubi/types";
-import { account, calendarEvents, calendarMembers, createCalendar, db, events, eventOutbox, externalCalendars,
-  getOAuthCredentials, replaceMemberToken, updateOAuthTokens, user } from "@musubi/db";
+import { account, calendarEvents, calendarMembers, createCalendar, db, events, eventOutbox, externalCalendars, externalEvents,
+  getOAuthCredentials, replaceMemberToken, requestSyncReadWork, syncReadWork, updateOAuthTokens, user } from "@musubi/db";
 import { issueMemberToken } from "../federation_tokens";
 import { requireAuth } from "../middleware/require_auth";
 import { middlewareErrorHandler } from "../middleware/error_handler";
 import { bootstrapProviderBudget, stopProviderBudget } from "../sync/provider_budget";
-import { stopSyncWorkCoordinator } from "../sync/work_coordinator";
+import { kickSyncWork, stopSyncWorkCoordinator } from "../sync/work_coordinator";
 import { initializeSyncEngine } from "../sync/engine";
 import { handlerCreateEvent } from "./events";
 
@@ -20,6 +20,17 @@ async function main() {
   const scopes = ["https://www.googleapis.com/auth/calendar.events", "https://www.googleapis.com/auth/calendar.calendarlist"];
   const originalScope = scopes.join(",");
   const realFetch = globalThis.fetch, trace: string[] = [];
+  let releaseBackground!: () => void, backgroundParked!: () => void, releaseToken!: () => void, requestAtScheduler!: () => void;
+  const tokenDependency = new Promise<void>(resolve => { releaseToken = resolve; });
+  const requestScheduled = new Promise<void>(resolve => { requestAtScheduler = resolve; });
+  let watchAdmission = false, holdToken = true, nativeWriteBeforeBackgroundRead = false, backgroundReadStarted = false;
+  const originalQuery = db.$client.query;
+  let pendingCreate: Promise<unknown> | undefined;
+  let admissionTimer: ReturnType<typeof setTimeout> | undefined;
+  const backgroundDependency = new Promise<void>(resolve => { releaseBackground = resolve; });
+  const parked = new Promise<void>(resolve => { backgroundParked = resolve; });
+  let holdBackground = true, backgroundFinished = false;
+  let parkTimer: ReturnType<typeof setTimeout> | undefined;
   let failPreflight = false;
   const diagnosticRows: unknown[] = [], originalWarn = logger.warn;
   let calendarRole = "owner", posted: Record<string, unknown> | undefined;
@@ -27,6 +38,14 @@ async function main() {
   const server = app.listen(0, "127.0.0.1"); await new Promise<void>(resolve => server.once("listening", resolve));
   const origin = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
   try {
+    // Observe the real physical-key DB port; the result still comes from PostgreSQL.
+    db.$client.query = ((...args: unknown[]) => {
+      const result = Reflect.apply(originalQuery, db.$client, args);
+      const query = typeof args[0] === "string" ? args[0] : (args[0] as { text?: string })?.text ?? "";
+      if (watchAdmission && /select md5\(jsonb_build_array/.test(query))
+        return Promise.resolve(result).then(value => { requestAtScheduler(); return value; });
+      return result;
+    }) as typeof db.$client.query;
     for (const id of [owner, member]) await db.insert(user).values({ id, name: "Fixture", email: `${id}@example.test`, isExternal: true });
     await replaceMemberToken(owner, token.tokenHash);
     await db.insert(account).values({ id: owner, userId: owner, accountId: owner, providerId: "google", scope: originalScope,
@@ -34,14 +53,15 @@ async function main() {
     const shared = await createCalendar({ creatorID: owner, name: "Shared fixture", color: "red" });
     await db.insert(calendarMembers).values({ calendarID: shared.id, userID: member, role: "editor" });
     const google = await createCalendar({ creatorID: owner, name: "Google fixture", color: "red" });
-    await db.insert(externalCalendars).values({ calendarID: google.id, provider: "google", userID: owner, accountID: owner,
-      externalCalendarID: "fixture-native", cursor: "fixture-cursor", providerAccessRole: "owner", providerAccessRevision: 1 });
+    const [googleSource] = await db.insert(externalCalendars).values({ calendarID: google.id, provider: "google", userID: owner, accountID: owner,
+      externalCalendarID: "fixture-native", cursor: "fixture-cursor", providerAccessRole: "owner", providerAccessRevision: 1 }).returning();
     globalThis.fetch = async (input, init) => {
       const url = new URL(String(input)), method = init?.method ?? "GET";
       if (url.origin === origin) return realFetch(input, init);
       trace.push(`${method} ${url.pathname}`);
       if (url.href === "https://oauth2.googleapis.com/token") {
         assert.equal(method, "POST");
+        if (holdToken) { holdToken = false; backgroundParked(); await tokenDependency; }
         return Response.json({ access_token: "fixture.renewed-token", expires_in: 3600, scope: scopes.slice().reverse().join(" ") });
       }
       assert.equal(url.origin, "https://www.googleapis.com", "No real provider HTTP in this test");
@@ -49,7 +69,18 @@ async function main() {
         if (failPreflight) throw Object.assign(new Error("SENTINEL_private_provider_payload"), { code: "ETIMEDOUT" });
         return Response.json({ id: "fixture-native", accessRole: calendarRole });
       }
+      if (method === "GET" && url.pathname === "/calendar/v3/calendars/fixture-native/events") {
+        // A read claimed before the write may return a stale empty provider listing.
+        const items = holdBackground ? [] : posted ? [{ ...posted, etag: '"fixture-created"' }] : [];
+        backgroundReadStarted = true;
+        if (holdBackground) {
+          holdBackground = false;
+          await backgroundDependency; backgroundFinished = true;
+        }
+        return Response.json({ items, timeZone: "UTC", nextSyncToken: "fixture-read-checkpoint" });
+      }
       if (method === "POST" && url.pathname === "/calendar/v3/calendars/fixture-native/events") {
+        nativeWriteBeforeBackgroundRead = !backgroundReadStarted;
         assert.equal(posted, undefined, "Exactly one Google create");
         posted = JSON.parse(String(init?.body));
         return Response.json({ ...posted, etag: '"fixture-created"' }, { status: 201 });
@@ -62,8 +93,16 @@ async function main() {
       if (message === "sync.event.preflight_failed") diagnosticRows.push(fields);
       else originalWarn.call(logger, message, fields);
     }) as typeof logger.warn;
-    initializeSyncEngine([]);
     await bootstrapProviderBudget();
+    initializeSyncEngine(["pull"]);
+    // Let the engine derive its own current read configuration and policy.
+    await requestSyncReadWork({ userID: owner, provider: "google", accountID: owner, sourceID: googleSource!.id,
+      stream: "events", configurationFingerprint: "fixture-requires-current-configuration", policyFingerprint: "fixture-requires-current-policy" });
+    kickSyncWork();
+    await Promise.race([parked, new Promise<never>((_resolve, reject) => {
+      parkTimer = setTimeout(() => reject(new Error("Actual background reader did not reach its HTTP port")), 8_000);
+    })]);
+    clearTimeout(parkTimer);
     const before = (await getOAuthCredentials(owner, "google", owner))!;
     const source = async () => (await db.select().from(externalCalendars).where(eq(externalCalendars.calendarID, google.id)))[0]!;
     const sourceBefore = await source();
@@ -74,8 +113,18 @@ async function main() {
         [CLIENT_VERSION_HEADER]: PRODUCT_VERSION, authorization: `Bearer ${token.raw}` }, body: JSON.stringify(body), signal: AbortSignal.timeout(15_000) });
       return { status: response.status, body: await response.json() };
     };
-    const event = content(), result = await send(event);
+    const event = content(); watchAdmission = true;
+    const creating = send(event); pendingCreate = creating; void creating.catch(() => {});
+    await Promise.race([requestScheduled, new Promise<never>((_resolve, reject) => {
+      admissionTimer = setTimeout(() => reject(new Error("Create did not reach the production scheduling port")), 8_000);
+    })]);
+    clearTimeout(admissionTimer);
+    for (let turn = 0; turn < 20; turn++) await Promise.resolve();
+    releaseToken();
+    const result = await creating;
+    assert.equal(nativeWriteBeforeBackgroundRead, true, "Foreground create finishes before the parked reader resumes native HTTP");
     assert.equal(result.status, 201, JSON.stringify(result.body));
+    assert.equal(backgroundFinished, false, "Cold OAuth refresh, preflight and durable delivery complete while the actual same-account reader is parked");
     assert.equal(result.body.id, event.id);
     const after = (await getOAuthCredentials(owner, "google", owner))!;
     assert.equal(after.syncReadGeneration, before.syncReadGeneration);
@@ -88,6 +137,21 @@ async function main() {
     assert.deepEqual((await db.select().from(calendarEvents).where(eq(calendarEvents.eventID, event.id))).map(row => row.calendarID).sort(), [shared.id, google.id].sort());
     const rows = await db.select().from(eventOutbox).where(eq(eventOutbox.eventID, event.id));
     assert.equal(rows.length, 1); assert.equal(rows[0]!.status, "completed"); assert.equal(rows[0]!.uncertain, false);
+    releaseBackground();
+    let backgroundSettled = false;
+    for (let turn = 0; turn < 500; turn++) {
+      const active = await db.select({ id: syncReadWork.id }).from(syncReadWork).where(and(eq(syncReadWork.userID, owner), isNull(syncReadWork.retiredAt), isNull(syncReadWork.claimToken)));
+      if (backgroundFinished && active.length) { backgroundSettled = true; break; }
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    assert.equal(backgroundFinished, true);
+    assert.equal(backgroundSettled, true, "Wait for the actual read claim to settle before checking concurrent-write preservation");
+    assert.equal((await db.select().from(events).where(and(eq(events.id, event.id), isNull(events.deletedAt)))).length, 1,
+      "A stale empty read cannot delete the event accepted during its wait");
+    assert.deepEqual((await db.select().from(calendarEvents).where(eq(calendarEvents.eventID, event.id))).map(row => row.calendarID).sort(), [shared.id, google.id].sort(),
+      "The stale read preserves both calendar links");
+    assert.equal((await db.select().from(externalEvents).where(eq(externalEvents.eventID, event.id))).length, 1,
+      "The stale read preserves the newly acknowledged provider mapping");
     const nativeCreates = trace.filter(row => row.startsWith("POST /calendar/")); assert.equal(nativeCreates.length, 1);
     const retry = await send(event); assert.equal(retry.status, 202); // completed receipt, no second provider write
     assert.deepEqual(trace.filter(row => row.startsWith("POST /calendar/")), nativeCreates);
@@ -125,10 +189,12 @@ async function main() {
     const unguardedBefore = (await getOAuthCredentials(owner, "google", owner))!;
     await updateOAuthTokens(owner, "google", owner, { accessToken: "fixture.unguarded", accessTokenExpiresAt: new Date(Date.now() + 3600000), scope: scopes.slice().reverse().join(" ") });
     assert.equal((await getOAuthCredentials(owner, "google", owner))!.syncReadGeneration, unguardedBefore.syncReadGeneration);
-    console.log("Shared + Google CREATE: authenticated HTTP, real DB/OAuth/scheduler/budget, equivalent grant refresh, completed native fixture write, retry, reader rejection, changed-grant/stale-CAS guards and bounded preflight diagnostics: OK");
+    console.log("Shared + Google CREATE during an actual parked read: authenticated HTTP, real DB/OAuth/scheduler/budget, equivalent grant refresh, completed native fixture write, retry, reader rejection, changed-grant/stale-CAS guards and bounded preflight diagnostics: OK");
   } finally {
+    clearTimeout(parkTimer); clearTimeout(admissionTimer); releaseToken(); releaseBackground();
+    db.$client.query = originalQuery;
     stopSyncWorkCoordinator(); stopProviderBudget(); globalThis.fetch = realFetch; logger.warn = originalWarn;
-    server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve()));
+    server.closeAllConnections(); await pendingCreate?.catch(() => {}); await new Promise<void>(resolve => server.close(() => resolve()));
     await db.delete(user).where(eq(user.id, owner));
     await db.delete(user).where(eq(user.id, member));
     await db.$client.end();

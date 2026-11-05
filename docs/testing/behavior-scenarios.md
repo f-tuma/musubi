@@ -21,6 +21,7 @@ pnpm test:behavior --suite app-links --scenario unconfigured-is-not-associated -
 pnpm test:behavior --suite web-edge --scenario worker-response-bypasses-caches --json
 pnpm test:behavior --suite postgres-restore --scenario create-failure --json
 pnpm test:behavior --suite project-news --scenario first-baseline --json
+pnpm test:behavior --suite fair-work --scenario parked-pull-request-preflight --json
 pnpm test:behavior --suite fair-work --scenario due-crosses-during-wake-scan --json
 pnpm test:behavior --suite read-attempt --scenario steady-large-pagination --json
 pnpm test:behavior --suite sync-outcome --scenario credit-account --json
@@ -351,3 +352,13 @@ Actual PostgreSQL tests cover migration and concurrent read-state persistence;
 `pnpm --filter @musubi/web exec playwright test news.spec.ts` confirms the
 reader in the running web app. Its browser API fixtures do not establish live
 GitHub, DB or authentication behavior. See [Project news](../project-news.md).
+
+
+Foreground scheduler cases use the actual coordinator with a parked pull and
+its existing clock/dependency ports. They verify that a same-account request or
+durable delivery progresses, a full pull queue retains one bounded foreground
+place, unrelated accounts progress, and the global regular bound remains four.
+The authenticated shared + Google CREATE integration separately verifies actual
+PostgreSQL, OAuth refresh, permission checks and provider fixture delivery while
+a same-account background capability remains parked. Neither establishes live
+Google latency or the exact phase of a historical production deadline.

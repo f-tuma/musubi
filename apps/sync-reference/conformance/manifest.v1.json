@@ -275,7 +275,11 @@
         "finite-boundary-cooldown-clocks",
         "max-cooldown-fractional-clocks",
         "long-cooldown-releases-continuations",
-        "invalid-retry-after-b-progress"
+        "invalid-retry-after-b-progress",
+        "parked-pull-request-preflight",
+        "parked-pull-durable-delivery",
+        "full-account-pull-queue-request",
+        "parked-foreground-serial"
       ],
       "timeoutMs": 120000
     },
@@ -3088,6 +3092,10 @@
         "json/fair-work/max-cooldown-fractional-clocks",
         "json/fair-work/long-cooldown-releases-continuations",
         "json/fair-work/invalid-retry-after-b-progress",
+        "json/fair-work/parked-pull-request-preflight",
+        "json/fair-work/parked-pull-durable-delivery",
+        "json/fair-work/full-account-pull-queue-request",
+        "json/fair-work/parked-foreground-serial",
         "json/google-create/fresh-create",
         "json/google-create/nullable-create-etag",
         "json/google-create/recover-matching-create",
