@@ -12,6 +12,9 @@ export interface WorkCandidate<HostRef> {
   readonly hostRef: HostRef;
   /** Explicit in-process dependency only; never populated by durable candidate data. */
   readonly auxiliary?: boolean;
+  /** In-process request capability, never populated from durable descriptors.
+   * Shares the regular global bound; may use a parked pull's account turn. */
+  readonly foreground?: boolean;
 }
 export type WorkExecutionResult =
   | { readonly kind: "settled"; readonly changedCalendarIDs: readonly string[] }
@@ -69,14 +72,18 @@ export function createFairWorkCoordinator<H>(options: FairWorkOptions<H>) {
   const lastLane = new Map<string, string>(), recoveryStreak = new Map<string, number>();
   let lastAccount = "", cursor: string | undefined, pumping = false, requested = false, closed = false;
   let cancelTimer: (() => void) | undefined;
+  const foreground = (c: WorkCandidate<H>) => !c.auxiliary && (c.foreground === true || c.family !== "pull");
   function owned(candidate: WorkCandidate<H>): WorkCandidate<H> {
     if (!candidate.key || !candidate.accountFairnessKey || !candidate.laneKey || !Number.isFinite(candidate.dueAtMs))
       throw new TypeError("Invalid work candidate.");
     return Object.freeze({ ...candidate, collisionKeys: Object.freeze([...new Set(candidate.collisionKeys)]) });
   }
   function add(candidate: WorkCandidate<H>, waiter?: Waiter) {
-    const accountPending = [...pending.values()].filter(item => !item.resume && item.candidate.accountFairnessKey === candidate.accountFairnessKey && !item.candidate.auxiliary).length;
-    if (!candidate.auxiliary && !pending.has(candidate.key) && accountPending >= Math.max(4, options.capacity)) {
+    const accountPending = [...pending.values()].filter(item => !item.resume && item.candidate.accountFairnessKey === candidate.accountFairnessKey && !item.candidate.auxiliary);
+    // A full background queue retains one request/recovery place, still inside
+    // the global pending bound. More foreground submissions remain bounded.
+    const foregroundPlace = foreground(candidate) && !accountPending.some(item => foreground(item.candidate));
+    if (!candidate.auxiliary && !pending.has(candidate.key) && accountPending.length >= Math.max(4, options.capacity) && !foregroundPlace) {
       waiter?.reject(new ProviderDispatchDeferred({ retryAtMs: now() + 1000, reason: "work-capacity", blockedDimensions: [] })); return;
     }
     const until = refused.get(candidate.key);
@@ -114,7 +121,11 @@ export function createFairWorkCoordinator<H>(options: FairWorkOptions<H>) {
     const auxiliary = active.size - regular;
     const eligible = [...pending.values()].filter(item => { const c = item.candidate; return c.dueAtMs <= atMs &&
       (item.resume ? permits.has(item.resume.permit) : !active.has(c.key) && (c.auxiliary ? auxiliary : regular) < options.capacity) &&
-      (item.resume || c.auxiliary || ![...permits.values()].some(state => state.account === c.accountFairnessKey && !state.item.candidate.auxiliary)) &&
+      // One parked pull may coexist with one foreground operation. The held
+      // account/collision gates below still serialize native work, while the
+      // regular global capacity and independent OAuth reserve stay unchanged.
+      (item.resume || c.auxiliary || ![...permits.values()].some(state => state.account === c.accountFairnessKey &&
+        !state.item.candidate.auxiliary && (!foreground(c) || foreground(state.item.candidate)))) &&
       !accounts.has(c.accountFairnessKey) && c.collisionKeys.every(key => !collisions.has(key)); });
     const accountKeys = [...new Set(eligible.map(p => p.candidate.accountFairnessKey))].sort();
     const account = accountKeys.find(key => key > lastAccount) ?? accountKeys[0];

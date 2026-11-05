@@ -190,13 +190,21 @@
     {
       "id": "shared-permit-abort-fallback",
       "title": "Handled active HTTP cancellation rejects old siblings and preserves a fresh fallback after native settlement",
-      "expected": { "siblings": 0, "fallbacks": 1, "fallbackBeforeSettlement": false, "logicalActive": 0 }
+      "expected": {
+        "siblings": 0,
+        "fallbacks": 1,
+        "fallbackBeforeSettlement": false,
+        "logicalActive": 0
+      }
     },
     {
       "id": "shared-permit-parallel-http",
       "title": "Concurrent SDK HTTP leaves queue under one permit and resume fairly beyond a cold burst",
       "expected": {
-        "statuses": [207, 207],
+        "statuses": [
+          207,
+          207
+        ],
         "sends": 2,
         "parks": 2,
         "maxRaw": 1,
@@ -270,6 +278,46 @@
         "writes": 0,
         "blocked": false,
         "parsed": "invalid"
+      }
+    },
+    {
+      "id": "parked-pull-request-preflight",
+      "title": "A request progresses while its same-account background pull is parked",
+      "expected": {
+        "foregroundBeforeReadRelease": true,
+        "otherAccountCompleted": true,
+        "queuedBackgroundStarted": 0,
+        "rejection": null
+      }
+    },
+    {
+      "id": "parked-pull-durable-delivery",
+      "title": "Durable delivery progresses while its same-account background pull is parked",
+      "expected": {
+        "foregroundBeforeReadRelease": true,
+        "otherAccountCompleted": true,
+        "queuedBackgroundStarted": 0,
+        "rejection": null
+      }
+    },
+    {
+      "id": "full-account-pull-queue-request",
+      "title": "A full background account queue retains one bounded foreground admission",
+      "expected": {
+        "foregroundBeforeReadRelease": true,
+        "otherAccountCompleted": true,
+        "queuedBackgroundStarted": 0,
+        "rejection": null
+      }
+    },
+    {
+      "id": "parked-foreground-serial",
+      "title": "One foreground operation per account retains its turn while parked",
+      "expected": {
+        "secondBeforeFirstRelease": false,
+        "otherAccountCompleted": true,
+        "secondAfterFirstRelease": true,
+        "maxForegroundLogical": 1
       }
     }
   ]

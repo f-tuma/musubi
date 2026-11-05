@@ -43,7 +43,11 @@ export async function loadFairWorkSuite() {
 }
 export async function runFairWorkScenario(scenario: FairWorkScenario): Promise<Record<string, unknown>> {
   let summary: Record<string, unknown>;
-  if (["due-crosses-during-wake-scan", "parked-due-crosses-before-timer"].includes(scenario.id)) {
+  if (scenario.id === "parked-foreground-serial") {
+    summary = await parkedForegroundSerial();
+  } else if (["parked-pull-request-preflight", "parked-pull-durable-delivery", "full-account-pull-queue-request"].includes(scenario.id)) {
+    summary = await requestDuringParkedPull(scenario.id);
+  } else if (["due-crosses-during-wake-scan", "parked-due-crosses-before-timer"].includes(scenario.id)) {
     const parked = scenario.id === "parked-due-crosses-before-timer";
     let completions = 0;
     for (let crossing = 1; crossing <= 8; crossing++) {
@@ -479,4 +483,64 @@ async function stickyAccepted(): Promise<Record<string, unknown>> {
     return { provider: result.facts.provider.kind, acceptedStatus: result.facts.acceptedStatus, writerTaskId: result.facts.writerResult?.taskId,
       methods, statuses, blocked, nextReason, flushed };
   } finally { f.budget.close(); }
+}
+
+
+async function requestDuringParkedPull(id: string): Promise<Record<string, unknown>> {
+  const releaseRead = deferred<void>(), readParked = deferred<void>();
+  let foregroundStarted = false, otherAccountCompleted = false, queuedBackgroundStarted = 0;
+  let rejection: string | null = null;
+  const jobs: Promise<unknown>[] = [];
+  const coordinator = createFairWorkCoordinator<string>({ capacity: 4, nowMs: () => 0, schedule: () => () => {},
+    host: { async execute(c, permit, signal) {
+      if (c.key === "background") {
+        const parked = coordinator.parkUntil(permit, releaseRead.promise, signal); readParked.resolve(); await parked;
+      } else if (c.key.startsWith("queued-background")) queuedBackgroundStarted++;
+      else if (c.key === "request") foregroundStarted = true;
+      else otherAccountCompleted = true;
+      assert(coordinator.snapshot().regularLogical <= 4, "Foreground work retains the global logical bound");
+      return settled;
+    } } });
+  try {
+    jobs.push(coordinator.submit(candidate("background", "A"))); await readParked.promise;
+    if (id === "full-account-pull-queue-request") for (let i = 0; i < 4; i++)
+      jobs.push(coordinator.submit(candidate(`queued-background-${i}`, "A")));
+    const request = id === "parked-pull-durable-delivery" ? candidate("request", "A", "event-delivery") :
+      { ...candidate("request", "A"), foreground: true };
+    jobs.push(coordinator.submit(request).catch(error => { rejection = error instanceof ProviderDispatchDeferred ? error.deferral.reason : "unexpected"; }));
+    jobs.push(coordinator.submit(candidate("other", "B"))); await tick();
+    return { foregroundBeforeReadRelease: foregroundStarted, otherAccountCompleted, queuedBackgroundStarted, rejection };
+  } finally { releaseRead.resolve(); await Promise.allSettled(jobs); coordinator.close(); }
+}
+
+
+async function parkedForegroundSerial(): Promise<Record<string, unknown>> {
+  const readGate = deferred<void>(), readParked = deferred<void>(), firstGate = deferred<void>(), firstParked = deferred<void>();
+  let secondStarted = false, otherAccountCompleted = false, foregroundLogical = 0, maxForegroundLogical = 0;
+  const jobs: Promise<unknown>[] = [];
+  const coordinator = createFairWorkCoordinator<string>({ capacity: 4, nowMs: () => 0, schedule: () => () => {}, host: {
+    async execute(c, permit, signal) {
+      if (c.key === "background") {
+        const waiting = coordinator.parkUntil(permit, readGate.promise, signal); readParked.resolve(); await waiting;
+      } else if (c.key === "other") otherAccountCompleted = true;
+      else {
+        foregroundLogical++; maxForegroundLogical = Math.max(maxForegroundLogical, foregroundLogical);
+        try {
+          if (c.key === "first") {
+            const waiting = coordinator.parkUntil(permit, firstGate.promise, signal); firstParked.resolve(); await waiting;
+          } else secondStarted = true;
+        } finally { foregroundLogical--; }
+      }
+      return settled;
+    },
+  } });
+  try {
+    jobs.push(coordinator.submit(candidate("background", "A"))); await readParked.promise;
+    jobs.push(coordinator.submit({ ...candidate("first", "A"), foreground: true })); await firstParked.promise;
+    jobs.push(coordinator.submit(candidate("second", "A", "event-delivery")));
+    jobs.push(coordinator.submit(candidate("other", "B"))); await tick();
+    const secondBeforeFirstRelease = secondStarted;
+    firstGate.resolve(); await tick();
+    return { secondBeforeFirstRelease, otherAccountCompleted, secondAfterFirstRelease: secondStarted, maxForegroundLogical };
+  } finally { firstGate.resolve(); readGate.resolve(); await Promise.allSettled(jobs); coordinator.close(); }
 }
