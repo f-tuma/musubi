@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, installExternalBrandFixture, test } from "../e2e/external-brand";
 
 test("production asset links resolve from the initial SSR HTML before hydration", async ({ browser, page, request }, testInfo) => {
   const initial = await request.get("/login");
@@ -34,8 +34,11 @@ test("production asset links resolve from the initial SSR HTML before hydration"
   for (const width of [390, 1280]) {
     const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width, height: 844 } });
     try {
+      // Without JavaScript the SSR mark loads no brand image; the fixture is a
+      // guard. fallback() lets the context's brand route see non-stylesheet requests.
+      const externalBrand = await installExternalBrandFixture(context);
       const firstPaint = await context.newPage();
-      await firstPaint.route("**/*", route => route.request().resourceType() === "stylesheet" ? route.abort() : route.continue());
+      await firstPaint.route("**/*", route => route.request().resourceType() === "stylesheet" ? route.abort() : route.fallback());
       await firstPaint.goto(new URL("/login", origin).href, { waitUntil: "domcontentloaded" });
       const mark = firstPaint.locator('header svg[aria-label="Musubi"]');
       await expect(mark).toHaveCount(1);
@@ -46,13 +49,15 @@ test("production asset links resolve from the initial SSR HTML before hydration"
       expect(bounds!.width).toBeLessThanOrEqual(64);
       expect(bounds!.height).toBeLessThanOrEqual(64);
       expect(bounds!.height).toBe(bounds!.width);
+      await externalBrand.finish(testInfo, `external-brand-routes-first-paint-${width}`);
     } finally {
       await context.close();
     }
   }
 
-  // Only the login's API dependencies are replaced. All HTML, CSS, fonts and
-  // executable chunks continue to come from the running production server.
+  // Only the login's API dependencies and the two external brand mark images
+  // (e2e/external-brand.ts) are replaced. All HTML, CSS, fonts and executable
+  // chunks continue to come from the running production server.
   await page.route("**/api/auth/get-session", route => route.fulfill({ json: null }));
   await page.route("**/api/v1/server", route => route.fulfill({ json: { socialsWeb: [], email: false } }));
   const errors: string[] = [];

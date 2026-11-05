@@ -5,7 +5,7 @@ Každý checkbox obsahuje vlastní ověření; při změně hranice se použijí
 
 Po přijetí návrhu se vybírá **jeden konkrétní checkpoint nebo jeho bounded rodinný slice** a jeho stop condition. Číslování není povolení k nepřerušenému apply celého programu. Jedna session nesmí označit staré acceptance za čerstvý PASS jiného zdroje.
 
-Závislosti: CP01→CP02→CP03; CP04.1–4.2 (K-09) mohou předběhnout CP02; zbytek CP04 používá full plán CP02; CP05 může začít s CP01; CP06 vyžaduje CP02+CP05; CP07 CP02+CP05; prioritní auth reprodukce CP08.1 může začít hned po přijetí scope nezávisle na CP01–07; policy fixy CP08 vyžadují vlastní rozhodnutí; CP09/10 jen odpovídající přijaté kontrakty; CP11 readiness sdružuje dokončený vybraný release scope; CP12 vyžaduje příslušné rodinné a compatibility důkazy, ne nutně veřejnou distribuci.
+Závislosti: CP01→CP02→CP03; prerekvizitní slice CI-brand-fixtures (TEST-08, checkpoints/CI-brand-fixtures.md) odblokuje current-head Quality pro CP01 a smí proběhnout před dokončením CP01 i CP02–CP03, neuzavírá žádný CP02/CP03 box; CP04.1–4.2 (K-09) mohou předběhnout CP02; zbytek CP04 používá full plán CP02; CP05 může začít s CP01; CP06 vyžaduje CP02+CP05; CP07 CP02+CP05; prioritní auth reprodukce CP08.1 může začít hned po přijetí scope nezávisle na CP01–07; policy fixy CP08 vyžadují vlastní rozhodnutí; CP09/10 jen odpovídající přijaté kontrakty; CP11 readiness sdružuje dokončený vybraný release scope; CP12 vyžaduje příslušné rodinné a compatibility důkazy, ne nutně veřejnou distribuci.
 
 ## Přijetí konkrétního checkpointu (CP brief)
 

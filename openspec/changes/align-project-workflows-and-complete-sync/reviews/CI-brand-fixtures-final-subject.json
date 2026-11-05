@@ -1,0 +1,77 @@
+{
+  "base": "585dd231c3126ddc51a6ee5972c96bea95cfb15a",
+  "head": "eef1e1d21f49e801daf249e4f89c7714b2c93163",
+  "allChangedFiles": [
+    "apps/web/e2e/behavior.spec.ts",
+    "apps/web/e2e/dst-grid.spec.ts",
+    "apps/web/e2e/external-brand.ts",
+    "apps/web/e2e/month-read.spec.ts",
+    "apps/web/e2e/news.spec.ts",
+    "apps/web/e2e/theme-bootstrap.spec.ts",
+    "apps/web/e2e/worker-cache.spec.ts",
+    "apps/web/production-e2e/assets.spec.ts",
+    "openspec/changes/align-project-workflows-and-complete-sync/audit-disposition.md",
+    "openspec/changes/align-project-workflows-and-complete-sync/checkpoints/CI-brand-fixtures-acceptance.md",
+    "openspec/changes/align-project-workflows-and-complete-sync/checkpoints/CI-brand-fixtures.md",
+    "openspec/changes/align-project-workflows-and-complete-sync/reviews/CI-brand-fixtures-design.md",
+    "openspec/changes/align-project-workflows-and-complete-sync/tasks.md"
+  ],
+  "primaryFiles": [
+    [
+      "apps/web/e2e/behavior.spec.ts",
+      "429810bdee20e0080fd1bb749a34e28032a7676fa52fba5ba026f2e6c54bbe1e"
+    ],
+    [
+      "apps/web/e2e/dst-grid.spec.ts",
+      "8afcd19f4a558917494cac68ff5f237b0f13401550d49f894f152c08d9feb67b"
+    ],
+    [
+      "apps/web/e2e/external-brand.ts",
+      "9f5e20d2b3c6ef0f0335a409a9d786676b2196cc52dded2e4cb61da2d4adfd61"
+    ],
+    [
+      "apps/web/e2e/month-read.spec.ts",
+      "9aec5cb26ce889b23d8c49e1d4798d37db62535a84db8df2b94578221a2e240d"
+    ],
+    [
+      "apps/web/e2e/news.spec.ts",
+      "1bfb8e72add6e81f4118f63a55c88f71e4c4e05d65b9b0cae5866009e46b5c6b"
+    ],
+    [
+      "apps/web/e2e/theme-bootstrap.spec.ts",
+      "b2e7393fd2203fb668a7547a6eb0e145cc2a02a2a909a5b2866ba77234674409"
+    ],
+    [
+      "apps/web/e2e/worker-cache.spec.ts",
+      "7279a4634345f512270711eb9c83d617703cbdb623186052b9eeec805f8787bb"
+    ],
+    [
+      "apps/web/production-e2e/assets.spec.ts",
+      "10446deb09ad7e2279b8a64e909c0f9d65dba9f14ddb53d4d5c48362f1d57ac9"
+    ],
+    [
+      "openspec/changes/align-project-workflows-and-complete-sync/audit-disposition.md",
+      "260b62acd14aaeeabb94f1bbeac33b9e3f85f5da1bcc7069ec281303d1b7298d"
+    ],
+    [
+      "openspec/changes/align-project-workflows-and-complete-sync/checkpoints/CI-brand-fixtures-acceptance.md",
+      "3176574c1199e965f228683ed8152810b8440577a594cb3562a5708de2e7f2e5"
+    ],
+    [
+      "openspec/changes/align-project-workflows-and-complete-sync/checkpoints/CI-brand-fixtures.md",
+      "1dc03d2225bd99e777cc151ab8fbd2ac12580359e057a0a4ca6efca64dd1c7c8"
+    ],
+    [
+      "openspec/changes/align-project-workflows-and-complete-sync/tasks.md",
+      "be9b324a3c24e99b4e591659e7d2e6382c4da7fc1768997be35cba1adecd93a1"
+    ]
+  ],
+  "fingerprint": "7754c65fbb5c1876fef301f7b938360919ebe5b9456d4c3cd0f3e07c3c235307",
+  "algorithm": "SHA256 compact JSON sorted [path,SHA256(file bytes)] rows, no newline",
+  "excludedFromPrimary": "independent design review copy only; do not read previous review diagnoses",
+  "scope": "whole CI-brand-fixtures diff including U8, acceptance and canonical prerequisite clarification; no PR/CI PASS inferred",
+  "review": "openspec/changes/align-project-workflows-and-complete-sync/reviews/CI-brand-fixtures-final.md",
+  "reviewer": "Claude Fable 5.1, task_d81f0584be83, fresh-context final review",
+  "reviewVerdict": "APPROVE for reviewed content readiness to open PR",
+  "postReviewChange": "Only independent review report and this subject manifest are added; primary bytes unchanged. Current-head Quality still required. No test, merge, publication or deployment proof implied."
+}
