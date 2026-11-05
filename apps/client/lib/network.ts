@@ -28,7 +28,8 @@ export function isAuthorizationError(error: unknown) {
 
 export function isNetworkError(error: unknown) {
   const message = messageOf(error).toLowerCase();
-  const status = statusOf(error);
+  const status = statusOf(error) ?? Number(message.match(/^\d+/)?.[0]);
+  if (status >= 400 && status <= 599) return false;
   return status === 0
     || message.includes("network request failed")
     || message.includes("failed to fetch")
@@ -68,7 +69,7 @@ export function userFacingError(error: unknown, fallback = "Something went wrong
 
   if (isNetworkError(error)) return "No internet connection. Check your connection and try again.";
   if (status === 408 || lower.includes("timeout") || lower.includes("timed out") || lower.includes("abort")) {
-    return "The connection is taking too long. Try again on a stronger network.";
+    return "The request took too long. Please try again.";
   }
   if ([502, 503, 504].includes(status)) {
     return "Musubi could not reach the server. Try again in a moment.";

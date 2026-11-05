@@ -68,6 +68,7 @@ import { awaitCollectionReads } from "./collection_reads";
 export { SyncWorkDeferred } from "./sync_outcome";
 import { ProviderEventWriteError, requireEventPatch } from "./event_write";
 import { withDeliveryDeadline } from "./delivery_policy";
+import { describeSyncWorkFailure } from "./work_failure";
 import { type ProviderSyncOptions, runProviderSyncs } from "./orchestrator";
 import { createReadAttempt } from "./read_attempt";
 import { currentSyncWorkParking, initializeSyncWorkCoordinator, kickSyncWork, submitSyncWork, syncWorkCoordinatorEnabled } from "./work_coordinator";
@@ -1013,6 +1014,13 @@ export async function prepareEventWrites(
           error instanceof ProviderEventWriteError
         )
           throw error;
+        // Keep the public fail-closed response, but retain a bounded cause for
+        // support diagnosis. Never log the event, account, URL or raw error.
+        logger.warn("sync.event.preflight_failed", {
+          ...describeSyncWorkFailure(error, { phase: "execute", family: "event-delivery" }).fields,
+          provider: adapter.provider,
+          action: operation.action,
+        });
         throw new EventWriteError("event-write", "unknown");
       }
       prepared.push({
