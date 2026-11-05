@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "mode": "delivery",
+  "goal": "Připravit a nezávisle zrevidovat projektový záměr a OpenSpec plán sjednocení Musubi včetně skutečného dokončení sync přechodu po checkpointech.",
+  "stop_condition": "Skončit po návrhu, mechanických kontrolách a nezávislém review přesných plánovacích artefaktů. Nezačínat apply, neměnit aplikační kód, nepublikovat ani nenasazovat.",
+  "documents": {
+    "brief": [
+      "docs/project/brief.md"
+    ],
+    "instructions": [
+      "AGENTS.md"
+    ],
+    "architecture": [
+      "openspec/changes/align-project-workflows-and-complete-sync/design.md",
+      "docs/protocol/sync-profile-v1.md",
+      "docs/protocol/sync-operation-v1.md"
+    ],
+    "specification": [
+      "openspec/changes/align-project-workflows-and-complete-sync/specs/client-consistency/spec.md",
+      "openspec/changes/align-project-workflows-and-complete-sync/specs/identity-and-data/spec.md",
+      "openspec/changes/align-project-workflows-and-complete-sync/specs/project-workflow/spec.md",
+      "openspec/changes/align-project-workflows-and-complete-sync/specs/publication-operations/spec.md",
+      "openspec/changes/align-project-workflows-and-complete-sync/specs/sync-convergence/spec.md",
+      "openspec/changes/align-project-workflows-and-complete-sync/specs/sync-reliability/spec.md",
+      "openspec/changes/align-project-workflows-and-complete-sync/specs/verification-workflow/spec.md"
+    ],
+    "commands": [
+      "package.json",
+      ".github/workflows/quality.yml",
+      "docs/testing/behavior-scenarios.md",
+      "scripts/ci-shards.mjs"
+    ],
+    "visual_design": [
+      "docs/ui/design-system.md"
+    ],
+    "release": [
+      "docs/releasing.md",
+      "docs/releases/publication.md"
+    ],
+    "active_change": [
+      "openspec/changes/align-project-workflows-and-complete-sync/proposal.md",
+      "openspec/changes/align-project-workflows-and-complete-sync/tasks.md"
+    ],
+    "research": [
+      "openspec/changes/align-project-workflows-and-complete-sync/research.md",
+      "openspec/changes/align-project-workflows-and-complete-sync/audit-disposition.md"
+    ]
+  },
+  "checks": {
+    "fast": [
+      "pnpm",
+      "test:behavior",
+      "--suite",
+      "fair-work",
+      "--scenario",
+      "parked-pull-request-preflight",
+      "--json"
+    ],
+    "source": [
+      "pnpm",
+      "check"
+    ],
+    "database": [
+      "pnpm",
+      "test:db"
+    ],
+    "ui": [
+      "pnpm",
+      "test:behavior:browser"
+    ]
+  }
+}

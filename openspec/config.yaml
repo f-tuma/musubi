@@ -1,0 +1,56 @@
+schema: spec-driven
+
+# Project context (optional)
+# Add only constraints that should guide OpenSpec artifacts and workflows.
+# Include constraints an agent cannot infer by reading the code.
+# Keep general project documentation and discoverable codebase facts out.
+# Example:
+#   context: |
+#     Designs and tasks must cover Windows, macOS, and Linux
+#     Write all artifacts in Spanish
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always state what is out of scope
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
+
+# SPEC workflow bridge (new configurations only)
+context: |
+  SPEC guides intent, design review and bounded implementation checkpoints.
+  Keep accepted project intent separate from suggestions and assumptions.
+  OpenSpec owns canonical specs and each change's proposal, design and tasks.
+  Review that same design in a fresh context where available.
+  Use real production logic for fast state/action tests; their format is optional.
+  Preserve relevant UI, integration and final CI checks.
+  Tie evidence to its inputs; archive is not proof of publication or deployment.
+rules:
+  proposal:
+    - State the user outcome, scope, non-goals and relevant risk.
+  design:
+    - Reference actual code and boundaries, alternatives and verification.
+  tasks:
+    - Use small checkpoints linked to observable requirements and checks.
+operations:
+  apply:
+    guidance:
+      - Follow SPEC checkpoints and retain relevant project-native checks.
+  archive:
+    guidance:
+      - Report remaining evidence gaps; distinguish implementation and release.
