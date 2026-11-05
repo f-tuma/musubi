@@ -1,0 +1,76 @@
+{
+  "checkedHead": "f2dc329b466b41b206cd1c1fec4dd4f3362917d6",
+  "primaryFingerprint": "78dbe9f90e4c18cbd78a6a85d3b1545a8d34e8c3a70e651cf81f9bf2d0173f54",
+  "scope": "Post-edit mechanical SPEC/OpenSpec and exact-diff checks; does not authenticate test execution or authorize merge/deploy",
+  "results": [
+    {
+      "argv": [
+        "/home/flamendrin/.local/bin/spec",
+        "check",
+        "--project",
+        "/home/flamendrin/workspace/musubi",
+        "--phase",
+        "orient"
+      ],
+      "startedAt": "2026-11-05T16:58:15.571082+00:00",
+      "durationMs": 11,
+      "exitCode": 0,
+      "stdout": "{\n  \"findings\": [],\n  \"limitations\": [\n    \"Existence and simple placeholders do not establish document quality or requirement completeness.\",\n    \"Supplied hashes check only declared files; omitted dependencies are not detected.\",\n    \"Execution, test counts, outcome interpretation, provenance and human approvals are not authenticated.\",\n    \"This result does not authorize implementation, merge, publication or deployment.\"\n  ],\n  \"mechanical_result\": \"pass\",\n  \"operation\": \"check\",\n  \"phase\": \"orient\",\n  \"schema_version\": 1,\n  \"semantic_result\": \"unknown\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/home/flamendrin/.local/bin/spec",
+        "check",
+        "--project",
+        "/home/flamendrin/workspace/musubi",
+        "--phase",
+        "design"
+      ],
+      "startedAt": "2026-11-05T16:58:15.582117+00:00",
+      "durationMs": 11,
+      "exitCode": 0,
+      "stdout": "{\n  \"findings\": [],\n  \"limitations\": [\n    \"Existence and simple placeholders do not establish document quality or requirement completeness.\",\n    \"Supplied hashes check only declared files; omitted dependencies are not detected.\",\n    \"Execution, test counts, outcome interpretation, provenance and human approvals are not authenticated.\",\n    \"This result does not authorize implementation, merge, publication or deployment.\"\n  ],\n  \"mechanical_result\": \"pass\",\n  \"operation\": \"check\",\n  \"phase\": \"design\",\n  \"schema_version\": 1,\n  \"semantic_result\": \"unknown\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/home/flamendrin/.local/bin/spec",
+        "openspec",
+        "--project",
+        "/home/flamendrin/workspace/musubi",
+        "--",
+        "validate",
+        "align-project-workflows-and-complete-sync",
+        "--strict",
+        "--json"
+      ],
+      "startedAt": "2026-11-05T16:58:15.592700+00:00",
+      "durationMs": 102,
+      "exitCode": 0,
+      "stdout": "{\n  \"output\": \"{\\n  \\\"items\\\": [\\n    {\\n      \\\"id\\\": \\\"align-project-workflows-and-complete-sync\\\",\\n      \\\"type\\\": \\\"change\\\",\\n      \\\"valid\\\": true,\\n      \\\"issues\\\": [],\\n      \\\"durationMs\\\": 21\\n    }\\n  ],\\n  \\\"summary\\\": {\\n    \\\"totals\\\": {\\n      \\\"items\\\": 1,\\n      \\\"passed\\\": 1,\\n      \\\"failed\\\": 0\\n    },\\n    \\\"byType\\\": {\\n      \\\"change\\\": {\\n        \\\"items\\\": 1,\\n        \\\"passed\\\": 1,\\n        \\\"failed\\\": 0\\n      }\\n    }\\n  },\\n  \\\"version\\\": \\\"1.0\\\",\\n  \\\"root\\\": {\\n    \\\"path\\\": \\\"/home/flamendrin/workspace/musubi\\\",\\n    \\\"source\\\": \\\"nearest\\\"\\n  }\\n}\",\n  \"status\": \"completed\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--check",
+        "1bf82a8985113f8c6f3165c2c127aa831326eea4",
+        "f2dc329b466b41b206cd1c1fec4dd4f3362917d6"
+      ],
+      "startedAt": "2026-11-05T16:58:15.695090+00:00",
+      "durationMs": 3,
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "remainingGates": [
+    "Explicit user permission and actual PR406 merge",
+    "Rebase/transplant only CP01 delta to actual main and recheck two pending blob/main targets",
+    "Current-head Quality and branch-protection checks for CP01 PR; no PR yet",
+    "Task1.3 remains outside docs slice"
+  ],
+  "primaryBytesUnchanged": true
+}
