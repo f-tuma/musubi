@@ -9,7 +9,7 @@ Závislosti: CP01→CP02→CP03; CP04.1–4.2 (K-09) mohou předběhnout CP02; z
 
 ## Přijetí konkrétního checkpointu (CP brief)
 
-CP01–CP12 níže jsou pracovní balíky programu, nikoli předem přijaté implementační relace. Před apply vybraného boxu/slice vznikne v tomto change soubor checkpoints/<CP-slice>.md s požadavky, konkrétními soubory, jedním očekávaným pozorovatelným výsledkem, přesnými argumenty fast/full/ui, prerequisites, evidence výstupem a stop/return podmínkou. Není to paralelní design; brief zpřesňuje tento design a je před kódem nezávisle revidovaný a přijatý v rozsahu zadání. Chybějící driver se nejprve vymezí jako vlastní testovací slice, ne jako nepozorované rozšíření jednoho boxu. Materiální změna briefu znovu otevírá review. Cíle a výsledky běžící relace patří do odděleného backups/spec-sessions/<session-id>/STATUS.json podle T1.
+CP01–CP12 níže jsou pracovní balíky programu, nikoli předem přijaté implementační relace. Před apply vybraného boxu/slice vznikne v tomto change soubor checkpoints/<CP-slice>.md s požadavky, konkrétními soubory, jedním očekávaným pozorovatelným výsledkem, přesnými argumenty fast/full/ui, prerequisites, evidence výstupem, dotčenými audit ID a aktualizací jejich stavu/odkazů v audit-disposition.md a stop/return podmínkou. Není to paralelní design; brief smí jen zúžit a konkretizovat tento design/tasks/specs. Nový požadavek nebo odchylka scope se nejprve zapíše do těchto kanonických artefaktů a znovu reviduje, teprve potom do briefu. Před prvním briefem i po odchylce projde strict OpenSpec validace. Brief je před kódem nezávisle revidovaný a přijatý v rozsahu zadání. Chybějící driver se nejprve vymezí jako vlastní testovací slice, ne jako nepozorované rozšíření jednoho boxu. Materiální změna briefu znovu otevírá review. Session STATUS.json odkazuje na přijatý brief cestou/hashem a zaznamenává jen průběh/výsledky. Před implementací se podle briefu aktualizují skutečné checks.fast/full/ui v .spec-pilot.json dle T1; nezmění se sdílený goal/stop a souběžné streamy používají oddělené větve/mapy.
 
 Společný return: při rozporu normativního kontraktu, novém policy rozhodnutí, chybějící platformě/přístupu, neočekávaném live side effectu nebo změně scope neoznačit box done; uložit přesný výsledek/HOLD a vrátit se k briefu/designu. Kontrolovaný reprodukovaný defekt je výsledkem reprodukce, nikoli souhlasem jej opravit. Žádné nahrazování povinného gate lokální podmnožinou.
 
@@ -17,11 +17,11 @@ Do dodání full vstupu CP02 je full gate dokončení implementačního slice: `
 
 ### Výchozí kontrolní kontrakty a návrat
 
-Příkazy jsou ověřené existující vstupy, nikoli tvrzení o dnešním spuštění. CP brief vybere nejmenší přesný scénář pomocí `pnpm test:behavior --list`, zaznamená ID a podle něj zúží suite. Široké integrační vstupy níže se v briefu rozepíší podle aktuálního package/CI zdroje; žádné neexistující ID se nespouští.
+<absolute-repo-root> v příkladech znamená skutečný absolutní root vybraného checkoutu, nikoli doslovný argument. Příkazy jsou ověřené existující vstupy, nikoli tvrzení o dnešním spuštění. CP brief vybere nejmenší přesný scénář pomocí `pnpm test:behavior --list`, zaznamená ID a podle něj zúží suite. Široké integrační vstupy níže se v briefu rozepíší podle aktuálního package/CI zdroje; žádné neexistující ID se nespouští.
 
 | Balík | Relevantní existující vstupy a evidence | Return navíc ke společnému |
 | --- | --- | --- |
-| CP01 | `git diff --check`; `pnpm docs:build`; `spec check --project /home/flamendrin/workspace/musubi --phase orient` a `--phase design`. Ruční link ledger pro všechny editované živé odkazy: source, target, existence/anchor nebo HTTP stav; odkazy označené current porovnat s docs/releasing.md. Full gate výše. | Nefunkční živý odkaz, nová duplicitní autorita nebo runtime změna → zpět k 1.1/briefu; historické odkazy se zachovají a označí. |
+| CP01 | `git diff --check`; `pnpm docs:build`; `spec check --project <absolute-repo-root> --phase orient` a `--phase design`. Ruční link ledger pro všechny editované živé odkazy: source, target, existence/anchor nebo HTTP stav; odkazy označené current porovnat s docs/releasing.md. Full gate výše. | Nefunkční živý odkaz, nová duplicitní autorita nebo runtime změna → zpět k 1.1/briefu; historické odkazy se zachovají a označí. |
 | CP02 | `node --test scripts/test-behavior.test.mjs scripts/ci-shards.test.mjs`; skutečné `pnpm test:behavior --list` a vybraný `--scenario … --json`; inventory/mutation diff a explicitní lokální/CI/externí full plán. | Discovery nesouhlasí nebo nový parser ignoruje příkaz → nepřijmout; změna frozen expected IDs vyžaduje nové review. |
 | CP03 | `pnpm test:e2e:radicale`, `pnpm test:behavior:browser`, příslušné widget parser/native joby z Quality; fixture hranice a artifact/device výsledky odděleně. | Nedostupný Mac/device je HOLD příslušného gate, nikoli behavior PASS z DEX scanu. |
 | CP04 | `node --test scripts/quality-proof.test.mjs scripts/verify-publication.test.mjs`; přidané startup/promotion fixtures se jmenovitě uvedou v briefu; schema receipt a redigovaný dry-run. | Jakýkoli posun aliasu/tagu při failure → nepropagovat; neznámý consumer čeká na D3. |
@@ -47,14 +47,14 @@ Požadavky: WF-01 až WF-04. Stop: člověk najde platné příkazy a runbook; a
 - [ ] 1.1 Sjednotit README, docs/README, current capability/release odkazy a označení staré C08–C10 roadmapy; ověřit všechny živé odkazy a rozpor 0.2.2/0.2.16 proti zvolené autoritě, historické receipts ponechat.
 - [ ] 1.2 Opravit existující contributing/running-locally/onboarding, Starlight commands/releases a docs/releasing.md podle T2 ownership mapy; ověřit clone→běh→test→PR→release odkazy a skutečné příkazy. Nevytvářet další quickstart/runbook/current index.
 - [ ] 1.3 Sjednotit deklarovaný toolchain s ověřovaným runtime a lokálními doporučeními; ověřit rozdíl .nvmrc/CI/Docker a doplnit kontrolu koherence bez neověřeného zvýšení major verze.
-- [ ] 1.4 Zdokumentovat vlastníky záměru, protokolů, UI, příkazů, release faktů a history; ověřit SPEC orient/design mapping a nezávislý review tohoto CP včetně návratu při materiální změně.
+- [ ] 1.4 Zdokumentovat vlastníky záměru, protokolů, UI, příkazů, release faktů a history a potvrzenou roli trackeru Its a Plan dle D6 (bez D6 tento box zůstává otevřený); ověřit SPEC orient/design mapping a nezávislý review tohoto CP včetně návratu při materiální změně.
 
 ## 2. CP02 — Jeden inventář a pravdivý ověřovací workflow
 
 Požadavky: VT-01, VT-02, VT-05. Stop: stejné suite/selektory mají ověřený vstup a žádný povinný případ se tiše neztratí.
 
 - [ ] 2.1 Rozšířit existující scripts/test-behavior.test.mjs o root behavior CLI reálným spuštěním existujících driverů včetně --json a unknown/empty/unconsumed chyb; ověřit, že kontrolovaný defekt vstupního lepidla test skutečně shodí.
-- [ ] 2.2 Rozšířit stávající SUITES a test:db/ci-shards odvození o kontrolu package/runner/discovery shody bez nového registru; ověřit registr proti skutečně vybraným případům a proti importovaným child suites, ne jen globu názvů.
+- [ ] 2.2 Rozšířit stávající SUITES a test:db/ci-shards odvození o kontrolu package/runner/discovery shody bez nového registru; jako konkrétní seed ověřit ci-shards.test.mjs v CI i lokálním vstupu a inventář proti skutečně vybraným případům a proti importovaným child suites, ne jen globu názvů.
 - [ ] 2.3 Doplnit inventory guard pro unit/DB scénáře a nezávislý diff frozen conformance; ověřit přidaný i odebraný case, aniž by generátor automaticky přijal nový expected kontrakt.
 - [ ] 2.4 Zajistit count/list guard produkčního browser smoke a přiznaný flaky/skip souhrn; ověřit přejmenování povinného testu jako skutečné selhání selekce.
 - [ ] 2.5 Dodat pouze full plán/preflight: odvodit všech 21 jobů z Quality/proof autority, každý označit lokální/CI/externí a uvést předpoklady; ověřit fail-before-resource při chybějících požadavcích. Implementaci nových platformních runnerů vyčlenit do vlastních přijatých slices; pnpm verify neoznačit jako „vše“.
@@ -105,7 +105,6 @@ Požadavky: SC-02 až SC-07. Stop každého checkboxu: jediná účinná cesta p
 - [ ] 6.10 Potvrdit organizer a RSVP všech tří providerů; ověřit separate notification outcome, permanentní možné-send barrier a markerless GET-only HOLD bez uncertain resend.
 - [ ] 6.11 Ověřit nezávislý reference consumer a actual installed closure dotčených portable profilů; požadované IDs/assertion completion bez skipů, bez Musubi DB/auth/config a bez relabelování starých artifact PASS.
 
-
 ## 7. CP07 — Scheduler, stavy a provozní diagnostika
 
 Požadavky: SR-01 až SR-06, PB-03 pro shutdown. Stop jednotlivého slice: pravdivý stav a zachovaná authority/capacity; ne samotné snížení počtu error logů.
@@ -139,8 +138,8 @@ Požadavky: CL-01 až CL-05, ID-02. Stop: konkrétní klientský tok odpovídá 
 - [ ] 9.3 Sjednotit typované výsledky neuloženo/queued/uncertain/conflict/done a retry identity; ověřit existující native timeout/draft tok a web, bez překlasifikování uložené operace na nový záměr.
 - [ ] 9.4 Sloučit pouze totožné scoped refresh požadavky bez ztráty pozdější invalidace; ověřit server/account switch, foreground/SSE/network souběh a zachovaný full snapshot recovery.
 - [ ] 9.5 Zpřesnit mobile SSE reconnect/session/upgrade policy podle skutečné knihovny; ověřit 401/426, cancellation a bounded retry na produkčním hooku s fixture porty i finálním nativním tokem.
-- [ ] 9.7 Svázat federované requestery s explicitním server/actor lifecycle místo globálního nastavování během renderu; ověřit souběh dvou kontextů, přepnutí serveru a nezměněnou autorizaci bez mount-order závislosti.
-- [ ] 9.6 Doložit změněné UI interakce podle musubi-ui, relevantní Storybook/Playwright, focus/keyboard, narrow a light/dark; native/widget chování ověřit příslušným artefaktem/zařízením, s přiznáním neprovedených platforem.
+- [ ] 9.6 Svázat federované requestery s explicitním server/actor lifecycle místo globálního nastavování během renderu; ověřit souběh dvou kontextů, přepnutí serveru a nezměněnou autorizaci bez mount-order závislosti.
+- [ ] 9.7 Doložit změněné UI interakce podle musubi-ui, relevantní Storybook/Playwright, focus/keyboard, narrow a light/dark; native/widget chování ověřit příslušným artefaktem/zařízením, s přiznáním neprovedených platforem.
 
 ## 10. CP10 — Konfigurace a odchozí trust
 

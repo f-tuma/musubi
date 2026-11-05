@@ -60,4 +60,4 @@ Stávající protokoly vlastní jejich konkrétní sémantiku až do explicitní
 Historické acceptance záznamy zůstávají historií. .spec-pilot.json je navigační index.
 Současná navržená změna: [sjednocení workflow a dokončení sync přechodu](../../openspec/changes/align-project-workflows-and-complete-sync/proposal.md).
 
-Nejbližší krok: nezávisle zrevidovat návrh a implementační checkpointy. Konec této relace: připravené plánovací artefakty a review; implementace vyžaduje další pokyn.
+Role specification v .spec-pilot.json zatím naviguje nepřijaté delta specs této změny, nikoli již účinné main specs. Přijetí a sync/archive mění tento stav výslovně; samotné mapování není souhlas s implementací.

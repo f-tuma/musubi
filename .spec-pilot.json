@@ -47,11 +47,6 @@
     ]
   },
   "checks": {
-    "fast": [
-      "git",
-      "diff",
-      "--check"
-    ],
     "source": [
       "pnpm",
       "check"
@@ -63,6 +58,11 @@
     "ui": [
       "pnpm",
       "test:behavior:browser"
+    ],
+    "planning-whitespace": [
+      "git",
+      "diff",
+      "--check"
     ]
   }
 }
