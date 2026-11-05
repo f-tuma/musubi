@@ -42,6 +42,8 @@ D6 vlastník potvrdil 5. listopadu 2026 a výslovně zadal tracker srovnat. Koor
 
 Upraven jen popis projektu, přidána jedna iniciativa, 12 pointer issues, dva CP01 child issues a 11 relates vazeb ke konkrétním dřívějším úkolům. Re-read potvrdil 70 issue; žádné staré issue nezměnilo stav, parent ani archivaci. Původní acceptance, lidská přiřazení, historie, termíny a struktury projektu se neměnily. Tracker odkazy používají immutable commit 041774e s přijatým briefem/D6 a výslovně říkají, že #406 je otevřený a není v main. Žádný starý live/store/OAuth úkol se tím nepovažuje za hotový.
 
+Finální content revize vyžádala zpřesnění auditních statusů: lokální provedení je uvedené jen u CP01, navazující 2.5/5.1/11.2/11.4 nebyly provedené a původní neověřená třída/store caveat REL-07 jsou zachované. README znovu výslovně upozorňuje, že repository record nepotvrzuje hosted Google OAuth verification; neodvozuje se tím aktuální stav Google Console. Tyto následné úpravy mění pouze Markdown metadata a README text, žádné vykreslované MDX, odkazy, testy nebo runtime; docs build/browser výsledky výše mají nadále stejné vstupy.
+
 ## Kanonické upřesnění a otevřené hranice
 
 T1 upřesňuje dočasné checks overrides a návrat před finálním content review/mergem; T2 pojmenovává datovanou capability autoritu; D6 zapisuje potvrzenou projekci trackeru. Jde o vyjmenované úpravy canonical design/research podle přijatého směru, nezávisle zrevidované před implementací. .spec-pilot.json je před final review byte-identické se sdíleným indexem v 1bf82a8; žádný poslední slice se nestal novým globálním fast/full.

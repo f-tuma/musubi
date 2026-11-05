@@ -69,7 +69,7 @@ boundary introduced in 0.2.2: native task writes need a 0.2.2-or-newer mobile
 client, while older clients keep task reads and compatible calendar/event
 features.
 
-> **Pre-1.0 and actively developing.** This README describes the current source branch; published app and server releases may lag behind it. Google OAuth verification for the hosted project is tracked in [docs/google-oauth-verification.md](docs/google-oauth-verification.md). Expect rough edges and [report issues](https://feedback.musubi.pro).
+> **Pre-1.0 and actively developing.** This README describes the current source branch; published app and server releases may lag behind it. Hosted Google OAuth verification, including Tasks, is not confirmed by the repository verification record; see [docs/google-oauth-verification.md](docs/google-oauth-verification.md) for its status and remaining work. Expect rough edges and [report issues](https://feedback.musubi.pro).
 
 ## What's next
 
