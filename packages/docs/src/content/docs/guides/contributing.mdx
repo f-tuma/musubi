@@ -37,34 +37,66 @@ pnpm workspaces + Turborepo:
 
 | Workspace | What lives there |
 | --- | --- |
-| `apps/api` | Express API — routes, permissions, sync engine |
-| `apps/client` | Expo app (Expo Router) |
+| `apps/api` | Express API — routes, permissions, sync host |
+| `apps/client` | Native Expo app (Expo Router) |
+| `apps/web` | Web client (TanStack Start, Vite) |
+| `apps/sync-reference` | Independent sync reference host with its own PostgreSQL ledger |
 | `packages/db` | Drizzle schema, queries, PostgreSQL migrations |
 | `packages/types` | Shared Zod schemas + types — **change data shapes here first** |
 | `packages/calendar` | Recurrence (RRULE) expansion + date helpers — logic only |
 | `packages/auth` | Better Auth config |
 | `packages/config` | Environment loading |
+| `packages/emails` | Transactional email sending and templates |
+| `packages/design-system` | Design tokens shared by the clients; generates the web theme |
+| `packages/sync-codec`, `packages/sync-runtime` | Provider write serializers and the storage-free sync runtime |
+| `packages/provider-caldav`, `packages/provider-google`, `packages/provider-microsoft` | Storage-free provider transports |
 | `packages/docs` | This documentation site |
+
+Each workspace's `package.json` is the authority for its scripts. The
+[documentation ownership map](https://github.com/f-tuma/musubi/blob/main/docs/project/brief.md#vlastnictví-dokumentů)
+(Czech) names the file that owns each kind of project fact: commands and CI,
+web UI rules, release state, and history.
 
 ## The verification loop
 
-Run the repository baseline from the root:
+While editing, start with the smallest JSON scenario for the behavior you are
+changing:
+
+```sh
+pnpm test:behavior --list
+pnpm test:behavior --suite task-inspector --scenario conflict-keeps-draft --json
+```
+
+The example drives the production web task inspector, serializer and HTTP
+client in Vitest/jsdom with fixture HTTP responses. It is fast because it does
+not touch a database, authentication or a provider, so it proves nothing about
+them. [Behavior scenarios](https://github.com/f-tuma/musubi/blob/main/docs/testing/behavior-scenarios.md)
+lists the suites and the boundary each one replaces; run the matching
+integration check when your change crosses a real boundary.
+
+Then run the repository baseline from the root:
 
 ```sh
 pnpm check
 ```
 
-It performs client/API typechecking, all twelve assertion-based self-checks, and
-client lint before the production docs build. Lint has zero errors and a locked
-budget for 108 existing React Compiler/hook warnings; a new warning fails the
-command when it increases the total. Fix warnings when practical and lower the
-budget with them—never raise it to make a PR pass. For the individual commands
-and self-check inventory, see
-[Command reference](/docs/reference/commands/).
+It checks release metadata, contracts and peer dependencies, typechecks the
+workspaces, runs the workspace test suites, lints the native and web clients,
+and builds the web client and docs. The root `package.json` `check` script is
+the exact definition. Lint has zero errors. The web client allows no warnings;
+the native client has a locked budget for existing React Compiler/hook
+warnings, and a new warning fails the command when it increases the total. Fix
+warnings when practical and lower the budget with them—never raise it to make a
+PR pass. For individual commands, see
+[Commands & checks](/docs/reference/commands/).
 
-Pull requests also run a clean frozen install, verify that generating Drizzle
-migrations leaves no diff, and build the API Docker image. The same workflow
-gates manual releases.
+`pnpm check` is one of the 21 jobs in the
+[Quality workflow](https://github.com/f-tuma/musubi/blob/main/.github/workflows/quality.yml)
+that every pull request runs; that job also verifies that generating Drizzle
+migrations leaves no diff. The other jobs include database integration, web
+E2E, Storybook accessibility, image builds and container smoke tests, so a
+green local `check` is not a green pull request. For releases, start at
+[Releases](/docs/operations/releases/).
 
 ## Database migrations
 
@@ -79,22 +111,35 @@ Commit the generated SQL in `packages/db/drizzle/` **with** your change. See the
 
 ## Code style
 
-TypeScript throughout. The conventions reviewers check:
+TypeScript throughout. These apply everywhere:
+
+- **No inline magic numbers** — name them (a `layout.ts`-style tuning block or `constants/`).
+- **Change data shapes in `packages/types` first**, then thread the type through both apps.
+
+### Native client (`apps/client`)
 
 - **Stores are API-first** — Zustand stores in `apps/client/store/` write state/cache only after the API call succeeds; components read from stores, not local server state. **Merge, don't replace** on calendar updates (SSE payloads omit fields).
 - **UI primitives, not ad-hoc** — use `Tap`/`Btn`/`Empty`/`Toast`/`confirm()` from `components/ui/`; a bare `Pressable` or hand-rolled dialog gets flagged.
 - **Theme at render time** — read `colors`/`fonts` from `constants/theme.ts` inside the component, never into a module-level constant (it freezes to the first-loaded theme). See [theming](/docs/architecture/client/#conventions).
 - **Reanimated v4**, not the legacy `Animated` API. In the custom calendar, keep positions in shared values and use `runOnJS` for React setters.
-- **No inline magic numbers** — name them (a `layout.ts`-style tuning block or `constants/`).
-- **Change data shapes in `packages/types` first**, then thread the type through both apps.
+
+### Web client (`apps/web`)
+
+The native conventions above do not carry over to the web. Web UI follows the
+[Musubi UI rules](https://github.com/f-tuma/musubi/blob/main/.agents/skills/musubi-ui/SKILL.md)
+and the [design system](https://github.com/f-tuma/musubi/blob/main/docs/ui/design-system.md):
+compose the components in `apps/web/src/components/ui`, style with the theme
+generated from `packages/design-system`, and keep
+`pnpm --filter @musubi/web lint` passing.
 
 ## Submitting a pull request
 
 1. Fork and branch from `main`.
 2. Make your change; keep it focused.
-3. Run `pnpm check` and the closest targeted verification.
+3. Run the closest JSON scenario or targeted check, then `pnpm check`.
 4. Test on **iOS and Android** if the change touches the native client; deliberate
-   platform branches make one simulator insufficient.
+   platform branches make one simulator insufficient. For the web client, run
+   the changed flow in a browser.
 5. Update code-coupled documentation, environment examples, and migrations.
 6. Open a PR with a clear description of **what** changed, **why**, risk, and
    verification evidence.

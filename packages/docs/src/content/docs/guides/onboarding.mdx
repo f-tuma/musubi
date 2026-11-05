@@ -17,7 +17,8 @@ docs, and a native development client work independently. Expo Go is not
 supported because the app includes custom native modules.
 
 ```sh
-pnpm install
+corepack enable
+pnpm install --frozen-lockfile
 cp .env.example .env       # fill DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL, ENVIRONMENT=dev
 docker compose up -d db
 pnpm db:migrate
@@ -165,9 +166,12 @@ Two mechanics to understand *now* because everything depends on them:
 Schema edits have a strict workflow: edit `schema.ts` → `pnpm db:generate` → **review the SQL** → `pnpm db:migrate` → commit the migration with your change. Renames aren't detected (drizzle emits DROP+CREATE). [Full workflow + gotchas](/docs/architecture/data-model/#migration-workflow).
 </Aside>
 
-## Step 4 — The client's mental models
+## Step 4 — The native client's mental models
 
-Five patterns explain almost every client file. Read them here, verify each in the code:
+Five patterns explain almost every file in the native client (`apps/client`).
+Read them here, verify each in the code. The web client (`apps/web`) follows
+the [Musubi UI rules](https://github.com/f-tuma/musubi/blob/main/.agents/skills/musubi-ui/SKILL.md)
+instead; do not carry these native patterns over to it.
 
 1. **Stores are thin, API-first, and paired** (`x` / `localX`) — Step 2.2. Plus one hard rule: **merge, don't replace** calendars (`{ ...existing, ...incoming }`) — SSE payloads omit per-user fields like `role`, and replacing once shipped a bug where editing a calendar locked its owner out.
 2. **Two databases.** PostgreSQL on the server (`packages/db`), **SQLite on the device** (`apps/client/db/` + `drizzle/`) as an offline mirror. They have separate schemas and separate migrations. Boot order: settings seed *synchronously* from SQLite (theme correct on the very first frame — an async read flashes), then events/calendars hydrate on tabs mount, then a delta refresh reconciles with the server.
@@ -200,20 +204,26 @@ One rule from Shared Packages worth repeating because it orders your work: **whe
 3. **Server API**: extend the handler (five-beat rhythm) or add a route in `index.ts` — [checklist](/docs/architecture/api/#how-to-add-an-endpoint).
 4. **Client API**: the `useApi` method (`throwOnError` after the fetch, revive dates).
 5. **Client state**: store action (+ `localX` twin if SSE should carry it); if it's cached, add it to the client SQLite schema + generate a *client* migration too.
-6. **UI**: wire it with the primitives; theme colours at render time.
-7. **Verify**: typecheck both apps, run relevant self-checks, test on both platforms, test *offline* and after a cold restart.
+6. **UI**: native — wire it with the primitives, theme colours at render time; web — compose `apps/web/src/components/ui` per the Musubi UI rules.
+7. **Verify**: run the closest JSON scenario or package test, `pnpm typecheck`; on native, test both platforms, *offline* and after a cold restart; on web, run the flow in a browser.
 </Steps>
 
 ### The verification loop
 
 ```sh
-pnpm check       # typecheck + twelve self-checks + lint + production docs build
+pnpm test:behavior --list   # find the smallest scenario for your change
+pnpm test:behavior --suite task-inspector --scenario conflict-keeps-draft --json
+pnpm check                  # local baseline: contracts, typecheck, tests, lint, builds
 ```
 
-Lint passes with a locked budget for known React Compiler/hook warnings, so a
-net increase fails the command. When you extract pure logic, leave a self-check
-behind in the same style — `lib/rrule.test.ts` and `lib/eventForm.test.ts` are
-the pattern.
+The scenario example runs production web code against fixture HTTP responses in
+jsdom; it says nothing about the database, authentication or providers. Native
+lint passes with a locked budget for known React Compiler/hook warnings, so a
+net increase fails the command; web lint allows none. When you extract pure
+logic, leave a test next to it in the convention its package already uses —
+in the native client, `lib/rrule.test.ts` and `lib/eventForm.test.ts` are the
+pattern. `pnpm check` is not the whole pull-request gate; see
+[Commands & checks](/docs/reference/commands/#continuous-integration).
 
 ### What reviewers look for
 
@@ -222,15 +232,16 @@ The condensed checklist (full version in [Contributing](/docs/guides/contributin
 - Data shapes changed in `packages/types` first
 - Handlers follow the five beats; identity fields set server-side; new DB access goes through a query module
 - Stores API-first; calendars merged, not replaced
-- UI primitives used; no module-level colour constants; no magic numbers (named constants, `layout.ts`-style)
-- Reanimated v4; shared values for gesture-driven positions; timers, not animation callbacks
+- Native: UI primitives used; no module-level colour constants; no magic numbers (named constants, `layout.ts`-style)
+- Native: Reanimated v4; shared values for gesture-driven positions; timers, not animation callbacks
+- Web: Musubi UI rules followed and `pnpm --filter @musubi/web lint` passes
 - Migrations committed with the schema change
 - One focused thing per PR, and the description explains **why**
 
 ### Where to find something to do
 
 Check the [GitHub issues](https://github.com/f-tuma/musubi/issues) and the
-[current capability matrix](/docs/operations/capabilities/). Good first
+[dated capability matrix](/docs/operations/capabilities/). Good first
 shapes: a scoped UI polish task inside `components/calendar/`, a documented user
 setting threaded end to end, or a small test around an existing invariant.
 

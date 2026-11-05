@@ -1,6 +1,6 @@
 ---
 title: Commands & checks
-description: The canonical command reference for development, verification, migrations, docs, Docker, backups, and release work.
+description: Common commands for development, verification, migrations, docs, Docker, and backups, with links to the scripts and workflows that define them.
 ---
 
 import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
@@ -9,22 +9,34 @@ Run workspace commands from the repository root unless a section says
 otherwise. Prefer `pnpm --filter <workspace> ...` over changing directories:
 copy-pasted commands then work from the same location in local shells and CI.
 
+This page is a guide to commonly used commands, not a complete inventory. The
+[root `package.json`](https://github.com/f-tuma/musubi/blob/main/package.json)
+scripts, each workspace's own scripts, and the
+[Quality workflow](https://github.com/f-tuma/musubi/blob/main/.github/workflows/quality.yml)
+define what actually runs. The
+[documentation ownership map](https://github.com/f-tuma/musubi/blob/main/docs/project/brief.md#vlastnictví-dokumentů)
+(Czech) lists which file owns each kind of project fact.
+
 ## Daily development
 
 | Goal                                                   | Command                                |
 | ------------------------------------------------------ | -------------------------------------- |
 | Activate the repository's exact pnpm version           | `corepack enable`                      |
 | Install exactly the workspace declared by the lockfile | `pnpm install --frozen-lockfile`       |
-| Start API, client Metro, and docs in the Turbo TUI     | `pnpm dev`                             |
-| Start all dev tasks with copyable logs                 | `pnpm exec turbo run dev --ui=stream`  |
+| Start API, native Metro, web, docs, and web Storybook in the Turbo TUI | `pnpm dev` |
+| Start the same tasks with copyable logs                | `pnpm exec turbo run dev storybook --ui=stream` |
 | Start only the API                                     | `pnpm --filter @musubi/api dev`        |
+| Start only the web client (port 3000)                  | `pnpm --filter @musubi/web dev`        |
+| Start only web Storybook (port 6006)                   | `pnpm storybook:web`                   |
 | Start only Expo/Metro                                  | `pnpm --filter @musubi/client start`   |
 | Build/install Android development client               | `pnpm --filter @musubi/client android` |
 | Build/install iOS development client (macOS)           | `pnpm --filter @musubi/client ios`     |
 | Start only Starlight                                   | `pnpm docs:dev`                        |
 
-The client package's `dev` script uses Metro's `--localhost` mode. Use `start`
-when a physical device needs LAN discovery.
+The API's `dev` script applies pending migrations before it starts. The web
+dev server proxies `/api` to the API on `127.0.0.1:7531`. The native client
+package's `dev` script uses Metro's `--localhost` mode. Use `start` when a
+physical device needs LAN discovery.
 
 ## Verification
 
@@ -32,21 +44,43 @@ when a physical device needs LAN discovery.
 pnpm check
 ```
 
-`check` is the contributor baseline. It validates release metadata and peer
-dependencies, typechecks the design system, native client, API, and web client,
-runs package self-checks and Vitest suites across config, types, email, auth,
-calendar, client, API, database, and web, lints both clients, then builds the
-web client and documentation site.
+`check` is the local contributor baseline. It validates release metadata, the
+API route/realtime/news contracts and peer dependencies, typechecks the
+workspaces, runs the workspace test suites, lints the native and web clients,
+then builds the web client and documentation site. The `check` script in the
+root `package.json` is the exact definition. Packages whose tests import
+`@musubi/config` need the root `.env` from
+[Run Musubi locally](/docs/guides/running-locally/), or `DATABASE_URL`,
+`ENVIRONMENT` and `BETTER_AUTH_URL` in the environment, as the Quality job sets.
 
-**`check` does not run the browser E2E suite.** It is a separate CI job because
-it needs a dev server and a Chromium download, and leaving it out keeps the
-baseline fast. The cost is real: a change can pass `check` and still break E2E,
-which is a thing that has happened. Before opening a pull request that touches
-the web client, run:
+**`check` does not run the browser E2E suite.** A change can pass `check` and
+still break E2E. Before opening a pull request that touches the web client, run:
 
 ```sh
-pnpm verify   # check, then the E2E suite
+pnpm verify   # check, then the web E2E suite
 ```
+
+Neither command is the whole pull-request gate; see
+[Continuous integration](#continuous-integration).
+
+### Fast scenarios while editing
+
+Start with the smallest JSON scenario for the behavior you are changing:
+
+```sh
+pnpm test:behavior --list
+pnpm test:behavior --suite task-inspector --scenario conflict-keeps-draft --json
+```
+
+That example runs the production web task inspector, task serializer and HTTP
+client in Vitest/jsdom with fixture HTTP responses. It needs no database or
+provider, and it proves nothing about real database, authentication or provider
+behavior. Choose the suite that matches your change;
+[behavior-scenarios.md](https://github.com/f-tuma/musubi/blob/main/docs/testing/behavior-scenarios.md)
+describes each suite and the boundary it replaces. After the fast loop passes,
+`pnpm test:behavior:browser` replays the task-inspector scenarios in Chromium
+against the web dev server (Playwright starts one when none is running), still
+with fixture API responses.
 
 Run an individual layer while iterating:
 
@@ -56,12 +90,15 @@ Run an individual layer while iterating:
 | Client TypeScript                      | `pnpm --filter @musubi/client exec tsc --noEmit`                  |
 | API TypeScript                         | `pnpm exec tsc -p apps/api/tsconfig.json --noEmit --skipLibCheck` |
 | Web TypeScript                         | `pnpm --filter @musubi/web typecheck`                             |
-| All existing self-checks               | `pnpm test`                                                       |
-| Browser E2E (Chromium, needs a dev server) | `pnpm test:e2e`                                               |
-| Everything, E2E included               | `pnpm verify`                                                     |
+| Workspace test suites                  | `pnpm test`                                                       |
+| API route, realtime, and news contracts | `pnpm check:contracts`                                           |
+| Browser E2E (Chromium; starts a dev server if none runs) | `pnpm test:e2e`                                 |
+| `check`, then web E2E                  | `pnpm verify`                                                     |
+| Storybook interaction + accessibility  | `pnpm storybook:web:test`                                         |
 | Docs production build + Pagefind index | `pnpm docs:build`                                                 |
-| Root Turbo build                       | `pnpm build`                                                      |
-| Client ESLint                          | `pnpm lint`                                                       |
+| Web + docs build (Turbo)               | `pnpm build`                                                      |
+| Native + web ESLint                    | `pnpm lint`                                                       |
+| Web ESLint only (shadcn rules)         | `pnpm --filter @musubi/web lint`                                  |
 | Workspace peer dependencies            | `pnpm peers:check`                                                |
 | Release/toolchain metadata             | `pnpm release:verify`                                             |
 | Secrets in the browser bundle          | `pnpm scan:bundle`                                                |
@@ -72,8 +109,9 @@ of them turns up in a file the browser can fetch. It also matches private-key
 blocks, credentialled database URLs and provider key prefixes, and — on a machine
 that has a real `.env` — the actual values in it. CI runs it as its own job.
 
-<Aside type="note" title="The lint gate uses a warning budget">
-  `pnpm lint` has zero errors and uses the native client warning budget
+<Aside type="note" title="Native lint uses a warning budget; web lint allows none">
+  `pnpm lint` has zero errors. The web client lint allows no warnings. The
+  native client uses the warning budget
   configured in `apps/client/package.json` for known React Compiler/hook
   diagnostics. Most are Reanimated shared-value, gesture live-ref, and legacy
   effect-dependency findings. The three compiler rules that previously made lint
@@ -84,30 +122,27 @@ that has a real `.env` — the actual values in it. CI runs it as its own job.
 
 ## Continuous integration
 
-`.github/workflows/quality.yml` runs for every pull request and every push to
-`main`. Independent jobs run the clean-install verification and migration-drift
-check, the Chromium web E2E suite, the browser-bundle secret scan, and local
-builds of both production images. The manual release workflow reuses this gate
-before publishing.
+[`.github/workflows/quality.yml`](https://github.com/f-tuma/musubi/blob/main/.github/workflows/quality.yml)
+runs for every pull request and every push to `main`. It has 21 jobs. One of
+them runs `pnpm check` and verifies that generating Drizzle migrations leaves no
+diff. The others cover database integration (four shards against PostgreSQL),
+web E2E (four shards), Storybook interaction and accessibility, the browser
+bundle secret scan, API, web and docs image builds (including arm64), web and
+API container smoke tests, the native Android build, old-client compatibility
+contracts and observability (metrics, log redaction, alert and Prometheus
+configuration). The job names in the workflow are
+the authority.
 
-### Existing self-checks
+A green `pnpm check` or `pnpm verify` on your machine does not mean Quality is
+green. Pull requests merge only when every required check passes for the head
+commit.
 
-These are plain Node assertions executed with `tsx`, not a test-runner suite:
+### Tests
 
-| File                                               | Covers                                                                                    |
-| -------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `apps/client/lib/eventForm.test.ts`                | Event-form validation                                                                     |
-| `apps/client/lib/rrule.test.ts`                    | RRULE building and parsing                                                                |
-| `apps/client/lib/ics.test.ts`                      | Lightweight client `.ics` import                                                          |
-| `apps/api/src/sync/orchestrator.test.ts`           | Provider/account failure isolation, retry, strict/scoped modes                            |
-| `apps/api/src/sync/adapters/provider_http.test.ts` | Fake Google/Graph pagination, `410` reset, partial-page discard, series cache reset/reuse |
-| `apps/api/src/federation.test.ts`                  | Member-token timing, origin validation, invite-preview minimization                       |
-| `apps/api/src/request_validation.test.ts`          | UUID/timestamp guards and HTTP error classification                                       |
-| `apps/api/src/scheduling.test.ts`                  | Non-overlapping scheduled execution and guard recovery                                    |
-| `apps/api/src/handlers/calendars.test.ts`          | Calendar-detail membership authorization and data-read ordering                           |
-| `apps/api/src/sync/oauth.test.ts`                  | OAuth refresh/revoke helpers and token crypto                                             |
-| `apps/api/src/sync/adapters/microsoft.test.ts`     | Graph date/cursor/event conversion                                                        |
-| `packages/db/src/schema.test.ts`                   | One-row settings and event–calendar uniqueness constraints                                |
+Tests live next to the code they cover. Packages use Vitest, `node --test` or
+plain `tsx` assertion files; follow the convention of the package you are
+changing. The root `test` script and each workspace's `test` script list what
+runs.
 
 Federation also has an opt-in database lifecycle check:
 
@@ -121,8 +156,8 @@ and removes scoped fixtures, and verifies expiry cleanup, compare-and-swap
 rotation, unproved-profile isolation, proved shadow reuse and final-membership
 revocation.
 
-When adding pure logic, follow the current assertion style or introduce a
-project-wide runner as one focused change; do not create a third test convention.
+`pnpm test:db` runs the database integration set that CI shards across four
+jobs. Run it only against a disposable, fully migrated PostgreSQL database.
 
 ### Provider database integration
 
@@ -194,6 +229,11 @@ files live under `packages/docs/dist/` and are ignored.
 
 ## Versions and releases
 
+[`docs/releasing.md`](https://github.com/f-tuma/musubi/blob/main/docs/releasing.md)
+is the single pointer to the current release and its runbook; the
+[Releases](/docs/operations/releases/) page explains the release model. The
+commands below are the local version checks.
+
 The root `package.json` is the single source for both the Musubi product version
 and pnpm:
 
@@ -218,7 +258,8 @@ The optional argument represents the version requested by the release job and
 must match the manifest. The validator also rejects nested toolchain/version
 metadata and distribution placeholders. The manual **Publish Docker image**
 workflow runs the same command before logging in to Docker Hub, publishing an
-image, or creating a tag.
+image, or creating a tag; release gating and promotion are described in
+`docs/releasing.md`.
 
 Production iOS builds require a valid App Store or TestFlight update URL.
 The production profile supplies the existing public beta channel through
@@ -308,15 +349,22 @@ script restores into an isolated temporary PostgreSQL container.
 ```sh
 git status --short
 git diff --check
+pnpm test:behavior --suite <suite> --scenario <id> --json   # closest scenario
 pnpm check
 ```
 
 Then run the platform-specific flow you changed. Examples:
 
 - API handler: happy path, unauthorized request, forbidden role, invalid body.
-- Client interaction: iOS and Android where practical, plus cold cache and
-  refreshed data.
+- Native client interaction: iOS and Android where practical, plus cold cache
+  and refreshed data.
+- Web client interaction: the flow in a browser, light and dark themes, a
+  narrow viewport and keyboard use; follow the
+  [Musubi UI rules](https://github.com/f-tuma/musubi/blob/main/.agents/skills/musubi-ui/SKILL.md).
 - Provider adapter: create/update/delete, all-day, recurrence, cursor reset,
   read-only calendar, token expiry.
 - Documentation: desktop + mobile navigation, search, changed links, and a
   production build.
+
+The pull request then needs every required Quality job green for its head
+commit.

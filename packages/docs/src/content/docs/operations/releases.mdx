@@ -6,11 +6,15 @@ description: Recorded release state, mobile compatibility, and the database upgr
 import { Aside } from '@astrojs/starlight/components';
 
 Use this page to distinguish published artifacts, observed deployments and
-remaining acceptance. Provider support has its own
-[capability matrix](/docs/operations/capabilities/); an API version or a green
-build does not certify every provider operation.
+remaining acceptance. The current release pointer, deployment order and general
+upgrade/recovery boundaries are maintained in
+[docs/releasing.md](https://github.com/f-tuma/musubi/blob/main/docs/releasing.md);
+this page keeps the dated release records and the mobile compatibility and
+database recovery boundaries. Provider support has its own dated
+[capability matrix](/docs/operations/capabilities/) (reviewed for v0.2.2); an
+API version or a green build does not certify every provider operation.
 
-## Current record — 5 November 2026 (0.2.16)
+## Record — 5 November 2026 (0.2.16)
 
 [v0.2.16](https://github.com/f-tuma/musubi/releases/tag/v0.2.16) is published from
 `c6c30006fcb1617cf1a459ff3f4318cceea56bb7`.
@@ -100,14 +104,13 @@ The following table and blockers describe the pre-release audit on that date;
 they are retained as preparation history, not the current production state.
 
 
-**HOLD for a complete server, web, Android and iOS production release.** The
-latest published release is
+**HOLD for a complete server, web, Android and iOS production release.** At
+that time the latest published release was
 [v0.2.11](https://github.com/f-tuma/musubi/releases/tag/v0.2.11), published on
-16 October from `b85a57500ad81b47603a705290e215270a642a95`.
-The versioned source is now the **0.2.12 candidate**; see
+16 October from `b85a57500ad81b47603a705290e215270a642a95`, and the versioned
+source was the **0.2.12 candidate**; see
 [candidate hardening](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.12-hardening.md).
-It has not been published. Check tags, drafts and registry names again before
-publication.
+It had not been published. The records above supersede this assessment.
 
 The audited main source is `3573a1e8204d111e39725e76665800811f0f4737`.
 Its trusted main-push
@@ -267,8 +270,12 @@ journal and aggregate data/queue counts. Afterward, compare the journal and
 preservation evidence and run authenticated task/event smoke tests with an
 approved test account. Keep private data and credentials out of release records.
 
-Use the [current production runbook](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.12-readiness.md)
-for preparation and recovery. The historical
+For preparation and recovery, follow the general boundaries in
+[docs/releasing.md](https://github.com/f-tuma/musubi/blob/main/docs/releasing.md)
+and the dated readiness/acceptance records above. The historical
+[0.2.12 readiness record](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.12-readiness.md)
+retains the sync/news schema recovery boundary recorded at that time, and the
+historical
 [0.2.2 deployment record](https://github.com/f-tuma/musubi/blob/main/docs/releases/0.2.2-deployment.md)
 retains that release's migration details and content-free SQL aggregates. Follow
 [self-hosting](/docs/guides/self-hosting/) for stack setup and

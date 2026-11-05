@@ -58,15 +58,18 @@ Musubi (結び) means *a knot or connection* — the idea behind bringing people
 | Apple / iCloud | CalDAV calendars | Depends on the task collections exposed by the server |
 | Other CalDAV servers | Supported calendar collections | Collections that support VTODO |
 
-Sync capabilities depend on the provider, permissions, and item type. A meeting you attend does not have the same editing permissions as one you organize. Some provider writes and Google free/busy availability are separately enabled by the server administrator; they are not all on by default. See [shared tasks](https://musubi.pro/docs/guides/shared-tasks/) and the current [capability matrix](https://musubi.pro/docs/operations/capabilities/). The [Core 0.2.0 activation record](docs/releases/core-0.2.0-activation.md) preserves the earlier decision and is not a new activation instruction.
+Sync capabilities depend on the provider, permissions, and item type. A meeting you attend does not have the same editing permissions as one you organize. Some provider writes and Google free/busy availability are separately enabled by the server administrator; they are not all on by default. See [shared tasks](https://musubi.pro/docs/guides/shared-tasks/) and the dated [capability matrix](https://musubi.pro/docs/operations/capabilities/) (reviewed for v0.2.2). The [Core 0.2.0 activation record](docs/releases/core-0.2.0-activation.md) preserves the earlier decision and is not a new activation instruction.
 
-The current API/web release is **0.2.2**. Every native task write needs the
-0.2.2 mobile client; older clients retain task reads and compatible calendar/event
-features. Installing the mobile update requires signing in again. See
-[release status and upgrade precautions](https://musubi.pro/docs/operations/releases/)
-for store distribution and the database recovery boundary.
+Release facts live in one place: [docs/releasing.md](docs/releasing.md) names
+the current published API/web release and the general upgrade and recovery
+boundaries. This README does not restate a version number.
+[Releases & upgrades](https://musubi.pro/docs/operations/releases/) keeps the
+dated release records, store distribution notes and the mobile task-write
+boundary introduced in 0.2.2: native task writes need a 0.2.2-or-newer mobile
+client, while older clients keep task reads and compatible calendar/event
+features.
 
-> **Pre-1.0 and actively developing.** This README describes the current source branch; published app and server releases may lag behind it. Google Tasks authorization is still awaiting Google verification for the hosted project. Expect rough edges and [report issues](https://feedback.musubi.pro).
+> **Pre-1.0 and actively developing.** This README describes the current source branch; published app and server releases may lag behind it. Google OAuth verification for the hosted project is tracked in [docs/google-oauth-verification.md](docs/google-oauth-verification.md). Expect rough edges and [report issues](https://feedback.musubi.pro).
 
 ## What's next
 
@@ -134,6 +137,12 @@ The most impactful places to jump in:
 - **Bug reports from real usage** — pre-1.0 gold.
 
 Fork, branch, open a PR against `main`. For bigger ideas, open an issue first so we can talk it through.
+
+Where to start and where the facts live:
+
+- [Contributing guide](https://musubi.pro/docs/guides/contributing/) for the workflow and verification phases, and the [local development guide](https://musubi.pro/docs/guides/running-locally/) for setup. [AGENTS.md](AGENTS.md) holds the mandatory rules for agents and reviewers.
+- [Fast JSON behavior scenarios](docs/testing/behavior-scenarios.md) are the smallest checks; the actual scripts in `package.json` and the Quality workflow define the full CI scope.
+- [docs/project/brief.md](docs/project/brief.md) maps which file owns intent, protocols, UI, commands, release facts and history, and links the accepted [workflow and sync convergence program](openspec/changes/align-project-workflows-and-complete-sync/proposal.md).
 
 ## License
 
