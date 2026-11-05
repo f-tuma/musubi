@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import express from "express";
 import { eq } from "drizzle-orm";
+import { logger } from "@musubi/config";
 import { CLIENT_VERSION_HEADER, PRODUCT_VERSION } from "@musubi/types";
 import { account, calendarEvents, calendarMembers, createCalendar, db, events, eventOutbox, externalCalendars,
   getOAuthCredentials, replaceMemberToken, updateOAuthTokens, user } from "@musubi/db";
@@ -19,6 +20,8 @@ async function main() {
   const scopes = ["https://www.googleapis.com/auth/calendar.events", "https://www.googleapis.com/auth/calendar.calendarlist"];
   const originalScope = scopes.join(",");
   const realFetch = globalThis.fetch, trace: string[] = [];
+  let failPreflight = false;
+  const diagnosticRows: unknown[] = [], originalWarn = logger.warn;
   let calendarRole = "owner", posted: Record<string, unknown> | undefined;
   const app = express(); app.use(express.json()); app.post("/events", requireAuth, handlerCreateEvent); app.use(middlewareErrorHandler);
   const server = app.listen(0, "127.0.0.1"); await new Promise<void>(resolve => server.once("listening", resolve));
@@ -42,8 +45,10 @@ async function main() {
         return Response.json({ access_token: "fixture.renewed-token", expires_in: 3600, scope: scopes.slice().reverse().join(" ") });
       }
       assert.equal(url.origin, "https://www.googleapis.com", "No real provider HTTP in this test");
-      if (method === "GET" && url.pathname === "/calendar/v3/users/me/calendarList/fixture-native")
+      if (method === "GET" && url.pathname === "/calendar/v3/users/me/calendarList/fixture-native") {
+        if (failPreflight) throw Object.assign(new Error("SENTINEL_private_provider_payload"), { code: "ETIMEDOUT" });
         return Response.json({ id: "fixture-native", accessRole: calendarRole });
+      }
       if (method === "POST" && url.pathname === "/calendar/v3/calendars/fixture-native/events") {
         assert.equal(posted, undefined, "Exactly one Google create");
         posted = JSON.parse(String(init?.body));
@@ -53,6 +58,10 @@ async function main() {
         return posted ? Response.json({ ...posted, etag: '"fixture-created"' }) : Response.json({}, { status: 404 });
       throw new Error(`Unexpected fixture request: ${method} ${url.pathname}`);
     };
+    logger.warn = ((message: string, fields: Parameters<typeof logger.warn>[1]) => {
+      if (message === "sync.event.preflight_failed") diagnosticRows.push(fields);
+      else originalWarn.call(logger, message, fields);
+    }) as typeof logger.warn;
     initializeSyncEngine([]);
     await bootstrapProviderBudget();
     const before = (await getOAuthCredentials(owner, "google", owner))!;
@@ -89,6 +98,16 @@ async function main() {
     assert.equal((await db.select().from(events).where(eq(events.id, denied.id))).length, 0);
     assert.equal((await db.select().from(eventOutbox).where(eq(eventOutbox.eventID, denied.id))).length, 0);
 
+    calendarRole = "owner"; failPreflight = true;
+    const unavailable = content(), unknown = await send(unavailable);
+    assert.equal(unknown.status, 403); assert.equal(unknown.body.reason, "unknown");
+    assert.equal((await db.select().from(events).where(eq(events.id, unavailable.id))).length, 0);
+    assert.equal((await db.select().from(eventOutbox).where(eq(eventOutbox.eventID, unavailable.id))).length, 0);
+    assert.deepEqual(diagnosticRows, [{ code: "sync-work-unavailable", phase: "execute", family: "event-delivery",
+      reason: "network-error", networkCode: "ETIMEDOUT", provider: "google", action: "create" }]);
+    assert.equal(JSON.stringify(diagnosticRows).includes("SENTINEL_private"), false);
+    failPreflight = false;
+
     // Grant changes still retire authority; stale refresh results still lose CAS.
     for (const scope of [scopes[0]!, originalScope, ""]) {
       const snapshot = (await getOAuthCredentials(owner, "google", owner))!;
@@ -106,9 +125,9 @@ async function main() {
     const unguardedBefore = (await getOAuthCredentials(owner, "google", owner))!;
     await updateOAuthTokens(owner, "google", owner, { accessToken: "fixture.unguarded", accessTokenExpiresAt: new Date(Date.now() + 3600000), scope: scopes.slice().reverse().join(" ") });
     assert.equal((await getOAuthCredentials(owner, "google", owner))!.syncReadGeneration, unguardedBefore.syncReadGeneration);
-    console.log("Shared + Google CREATE: authenticated HTTP, real DB/OAuth/scheduler/budget, equivalent grant refresh, completed native fixture write, retry, reader rejection, changed-grant and stale-CAS guards: OK");
+    console.log("Shared + Google CREATE: authenticated HTTP, real DB/OAuth/scheduler/budget, equivalent grant refresh, completed native fixture write, retry, reader rejection, changed-grant/stale-CAS guards and bounded preflight diagnostics: OK");
   } finally {
-    stopSyncWorkCoordinator(); stopProviderBudget(); globalThis.fetch = realFetch;
+    stopSyncWorkCoordinator(); stopProviderBudget(); globalThis.fetch = realFetch; logger.warn = originalWarn;
     server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve()));
     await db.delete(user).where(eq(user.id, owner));
     await db.delete(user).where(eq(user.id, member));

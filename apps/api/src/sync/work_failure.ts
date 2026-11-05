@@ -44,6 +44,7 @@ const networkCodes = new Set<unknown>([
   "ERR_TLS_CERT_ALTNAME_INVALID", "CERT_HAS_EXPIRED", "DEPTH_ZERO_SELF_SIGNED_CERT", "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
 ]);
 const messages = new Map<string, SyncWorkFailureReason>([
+  ["Delivery attempt timeout.", "deadline"],
   ["Sync read work source or claim changed.", "read-work-changed"],
   ["Sync read source changed.", "read-source-changed"],
   ["Sync read source or membership changed.", "read-source-changed"],

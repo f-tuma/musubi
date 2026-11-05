@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { DeliveryAttemptInterrupted } from "./delivery_policy";
 import { createHash } from "node:crypto";
 import { ProviderDispatchDeferred } from "@musubi/sync-runtime";
 import { ProviderAuthError } from "./errors";
@@ -44,6 +45,7 @@ for (const [reason, expected] of [["idle", "read-idle"], ["lease-lost", "read-le
 }
 assert.equal(describeSyncWorkFailure(new DOMException("private abort details", "AbortError")).fields.reason, "aborted");
 assert.equal(describeSyncWorkFailure(new DOMException("private deadline details", "TimeoutError")).fields.reason, "deadline");
+assert.equal(describeSyncWorkFailure(new DeliveryAttemptInterrupted("timeout")).fields.reason, "deadline");
 assert.equal(describeSyncWorkFailure(new ProviderAuthError("google", "private grant details", undefined, true)).level, "error");
 assert.equal(describeSyncWorkFailure(new ProviderAuthError("google", "private grant details", undefined, true)).fields.reason, "provider-authentication");
 
