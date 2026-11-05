@@ -1,24 +1,27 @@
 # Releasing
 
-Current published release: **[0.2.15](https://github.com/f-tuma/musubi/releases/tag/v0.2.15)**
-(5 November 2026), source `995d1ce51235193d1d5f7944075e6dc30b5d80f9`.
-[Publication](https://github.com/f-tuma/musubi/actions/runs/42012295947)
+Current published release: **[0.2.16](https://github.com/f-tuma/musubi/releases/tag/v0.2.16)**
+(5 November 2026), source `c6c30006fcb1617cf1a459ff3f4318cceea56bb7`.
+[Publication](https://github.com/f-tuma/musubi/actions/runs/42025870754)
 passed all nine jobs after the exact-main
-[Quality run](https://github.com/f-tuma/musubi/actions/runs/42009472164)
+[Quality run](https://github.com/f-tuma/musubi/actions/runs/42022967938)
 passed all 21 jobs. Immutable images and actual healthy API/web deployments were
-verified separately. See the [acceptance record](releases/0.2.15-acceptance.md).
+verified separately. See the [acceptance record](releases/0.2.16-acceptance.md).
 
-This maintenance release preserves OAuth grant authority when a refresh returns
-the same scopes in another order/format and adds bounded event-preflight
-failure diagnostics. No migration or new mobile distribution is included;
-installed mobile apps remain compatible. Native timeout wording changes are
-source-only until the next store build. See the [release notes](releases/0.2.15-notes.md)
-and [preparation record](releases/0.2.15-readiness.md).
+This maintenance release lets event preflight and durable delivery progress
+alongside a parked background pull for the same connected account. Native
+account serialization, provider budgets and the global work bound remain.
+No migration or new mobile distribution is included; installed mobile apps
+remain compatible. Native timeout wording changes are source-only until the
+next store build. See the [release notes](releases/0.2.16-notes.md) and
+[preparation record](releases/0.2.16-readiness.md).
 
-A subsequent support retry still reached the event-preflight deadline. This
-release is not evidence that all event-creation timeouts are resolved; that
-separate failure remains under investigation. The earlier
-[0.2.14 acceptance](releases/0.2.14-acceptance.md) remains a historical record.
+The reproduced wait passed real authenticated HTTP/PostgreSQL regression checks
+using native provider fixtures. Owned production app reads/navigation passed;
+no event was written to a support user's calendars. A new user attempt is still
+needed to confirm their write. Known Microsoft mailbox failures remain.
+The earlier [0.2.15 acceptance](releases/0.2.15-acceptance.md) and
+[0.2.14 acceptance](releases/0.2.14-acceptance.md) remain historical records.
 
 The [27 October readiness assessment](releases/0.2.12-readiness.md),
 [hardening record](releases/0.2.12-hardening.md) and version-specific notes are
