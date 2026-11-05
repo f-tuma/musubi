@@ -4,6 +4,7 @@ import type { GoogleCheck } from "@musubi/types";
 import type { DbTransaction } from "./calendars";
 import { lockCalendarLifecycle, lockUserLifecycle } from "./calendar-lifecycle";
 import { retireExternalSourceReads } from "./source-read-lifecycle";
+import { refreshedOAuthScope } from "./oauth-scopes";
 
 // OAuth calendar-provider account status/tokens — operates on the Better Auth
 // `account` table, not the sync tables. (Sync lives in queries/external.ts.)
@@ -174,12 +175,12 @@ export async function updateOAuthTokens(
   tokens: { accessToken: string; accessTokenExpiresAt: Date; refreshToken?: string; scope?: string },
   expected?: OAuthCredentialSnapshot,
 ) {
-  const save = (tx: Pick<DbTransaction, "update">) => tx.update(account)
+  const save = (tx: Pick<DbTransaction, "update">, scope: string | undefined) => tx.update(account)
     .set({
       accessToken: tokens.accessToken,
       accessTokenExpiresAt: tokens.accessTokenExpiresAt,
       ...(tokens.refreshToken ? { refreshToken: tokens.refreshToken } : {}),
-      ...(tokens.scope === undefined ? {} : { scope: tokens.scope }),
+      ...(scope === undefined ? {} : { scope }),
     })
     .where(and(
       eq(account.userId, userID),
@@ -191,11 +192,13 @@ export async function updateOAuthTokens(
   try {
     // A normal token refresh leaves read authority unchanged. An explicitly
     // changed grant retires old reads atomically without touching write epochs.
-    if (tokens.scope === undefined || expected && tokens.scope === expected.scope) return (await save(db)).length > 0;
+    const scope = expected ? refreshedOAuthScope(expected.scope, tokens.scope) : tokens.scope;
+    if (scope === undefined) return (await save(db, undefined)).length > 0;
     return await withOAuthReadLifecycle(userID, provider, accountID, async tx => {
       const [before] = await tx.select({ scope: account.scope }).from(account).where(and(eq(account.userId, userID), eq(account.providerId, provider), eq(account.accountId, accountID))).for("update");
-      const rows = await save(tx);
-      if (rows.length && before?.scope !== tokens.scope) await retireExternalSourceReads(tx, oauthSourcePredicate(userID, provider, accountID));
+      const changedScope = refreshedOAuthScope(before?.scope ?? null, scope);
+      const rows = await save(tx, changedScope);
+      if (rows.length && changedScope !== undefined) await retireExternalSourceReads(tx, oauthSourcePredicate(userID, provider, accountID));
       return rows.length > 0;
     });
   } catch { throw new Error("OAuth credential update failed"); }

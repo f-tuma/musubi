@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "suite": "oauth-scopes",
+  "scenarios": [
+    {"id":"reordered-grant","title":"Refresh preserves an equivalent grant","previous":"calendar.events,calendar.list","next":"calendar.list calendar.events","expected":null},
+    {"id":"duplicate-whitespace","title":"Repeated scopes and separators do not change authority","previous":"calendar.events calendar.list","next":" calendar.events,calendar.events\tcalendar.list ","expected":null},
+    {"id":"omitted-grant","title":"An omitted scope preserves the grant","previous":"calendar.events","expected":null},
+    {"id":"narrowed-grant","title":"Removed permission changes authority","previous":"calendar.events,calendar.list","next":"calendar.list","expected":"calendar.list"},
+    {"id":"expanded-grant","title":"Added permission changes authority","previous":"calendar.events","next":"calendar.events calendar.list","expected":"calendar.events calendar.list"},
+    {"id":"case-sensitive","title":"Case changes are permission changes","previous":"Calendars.ReadWrite","next":"calendars.readwrite","expected":"calendars.readwrite"},
+    {"id":"known-empty","title":"An explicitly empty grant revokes known permissions","previous":"calendar.events","next":"","expected":""},
+    {"id":"unknown-empty","title":"Unknown and known empty grants differ","previous":null,"next":"","expected":""},
+    {"id":"equivalent-empty","title":"Empty grant separators do not change authority","previous":"","next":" , ","expected":null}
+  ]
+}
