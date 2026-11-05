@@ -32,10 +32,12 @@ with the next store build. See the
 The current S3 backup object was listed. A real authenticated HTTP/PostgreSQL
 regression with provider fixtures reproduced the wait and verified the fix;
 owned production calendar/task reads, navigation and About/version also passed.
-No restore, production event write or native device test was run. The bounded
-post-start logs contained no event-preflight or Google push failures; known
-Microsoft mailbox failures remain. The support user's next write has not been
-observed, and this record does not certify every provider account.
+No restore, agent-created production event or native device test was run. The
+initial bounded post-start logs contained no event-preflight or Google push
+failures; known Microsoft mailbox failures remain. A subsequent Android retry
+was reported successful. Its HTTP 201, two calendar links and completed Google
+CREATE receipt were independently verified. This record does not certify every
+provider account.
 
 ## Historical record — 5 November 2026 (0.2.15)
 

@@ -18,8 +18,10 @@ next store build. See the [release notes](releases/0.2.16-notes.md) and
 
 The reproduced wait passed real authenticated HTTP/PostgreSQL regression checks
 using native provider fixtures. Owned production app reads/navigation passed;
-no event was written to a support user's calendars. A new user attempt is still
-needed to confirm their write. Known Microsoft mailbox failures remain.
+no production event was written by the agent. A subsequent Android retry was
+reported successful: its HTTP 201, two calendar links and completed Google
+CREATE receipt were independently verified. Known Microsoft mailbox failures
+remain.
 The earlier [0.2.15 acceptance](releases/0.2.15-acceptance.md) and
 [0.2.14 acceptance](releases/0.2.14-acceptance.md) remain historical records.
 
