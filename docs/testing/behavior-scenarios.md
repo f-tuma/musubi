@@ -23,6 +23,7 @@ pnpm test:behavior --suite postgres-restore --scenario create-failure --json
 pnpm test:behavior --suite project-news --scenario first-baseline --json
 pnpm test:behavior --suite federation-transport --scenario public-answer-pinned --json
 pnpm test:behavior --suite fair-work --scenario parked-pull-request-preflight --json
+pnpm test:behavior --suite fair-work --scenario four-held-other-accounts-request --json
 pnpm test:behavior --suite fair-work --scenario due-crosses-during-wake-scan --json
 pnpm test:behavior --suite read-attempt --scenario steady-large-pagination --json
 pnpm test:behavior --suite sync-outcome --scenario credit-account --json
@@ -364,3 +365,27 @@ The authenticated shared + Google CREATE integration separately verifies actual
 PostgreSQL, OAuth refresh, permission checks and provider fixture delivery while
 a same-account background capability remains parked. Neither establishes live
 Google latency or the exact phase of a historical production deadline.
+
+Foreground reserve cases (`four-held-other-accounts-request`,
+`four-held-other-accounts-durable-delivery`, `four-parked-other-accounts-request`,
+`reserve-blocks-fourth-background-until-background-release`,
+`reserve-auxiliary-under-full-regular`, `reserve-foreground-deadline-cancel`)
+drive the actual coordinator at the production capacity of four with
+`foregroundReserve: 1` and, in the same scenario, the shared-pool baseline of
+`0`. With the reserve, other accounts' background pulls hold at most three
+regular permits (held or parked), so a foreground preflight or durable
+delivery is admitted without any release and a cancelled 45 s deadline is
+never reached; without it, four pulls fill the pool and the request waits or is
+swept. `reserve-same-account-held-pull-still-waits` pins the known limitation:
+a held pull of the same account still serializes that account's own request
+with or without the reserve. `reserve-all-parked-with-foreground` pins the
+accepted bounded edge: three parked pulls plus one parked foreground still sweep
+a further foreground with a one-second `work-capacity` deferral. The
+`event_create_oauth_refresh.integration.test.ts` program adds four other-account
+readers offered to the actual scheduler and held inside fixture HTTP (three
+admitted, one pending) and asserts an authenticated CREATE returns 201 with a
+completed outbox before any reader releases; it also covers the actual 45 s
+preflight deadline and an actual budget cooldown deferral, both answered as
+503 `provider-busy` with `Retry-After`, no local rows, and a later normal
+create of the same identity. Fixture provider HTTP proves only the provider
+boundary, not remote Google behavior.

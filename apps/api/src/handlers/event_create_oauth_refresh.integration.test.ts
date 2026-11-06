@@ -12,6 +12,7 @@ import { middlewareErrorHandler } from "../middleware/error_handler";
 import { bootstrapProviderBudget, stopProviderBudget } from "../sync/provider_budget";
 import { kickSyncWork, stopSyncWorkCoordinator } from "../sync/work_coordinator";
 import { initializeSyncEngine } from "../sync/engine";
+import { DELIVERY_ATTEMPT_TIMEOUT_MS } from "../sync/delivery_policy";
 import { handlerCreateEvent } from "./events";
 
 async function main() {
@@ -31,9 +32,14 @@ async function main() {
   const parked = new Promise<void>(resolve => { backgroundParked = resolve; });
   let holdBackground = true, backgroundFinished = false;
   let parkTimer: ReturnType<typeof setTimeout> | undefined;
-  let failPreflight = false;
+  let failPreflight = false, hangPreflight = false, cooldownPreflight = false;
   const diagnosticRows: unknown[] = [], originalWarn = logger.warn;
-  let calendarRole = "owner", posted: Record<string, unknown> | undefined;
+  let calendarRole = "owner";
+  const posted = new Map<string, Record<string, unknown>>();
+  // Other-account readers: offered together, held at their native HTTP port.
+  const others = [0, 1, 2, 3].map(index => ({ id: `other-reader-${index}-${randomUUID()}`, native: `other-native-${index}` }));
+  let releaseOthers!: () => void, holdOthers = true, otherReadsStarted = 0, otherReadsFinished = 0;
+  const othersDependency = new Promise<void>(resolve => { releaseOthers = resolve; });
   const app = express(); app.use(express.json()); app.post("/events", requireAuth, handlerCreateEvent); app.use(middlewareErrorHandler);
   const server = app.listen(0, "127.0.0.1"); await new Promise<void>(resolve => server.once("listening", resolve));
   const origin = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
@@ -67,11 +73,27 @@ async function main() {
       assert.equal(url.origin, "https://www.googleapis.com", "No real provider HTTP in this test");
       if (method === "GET" && url.pathname === "/calendar/v3/users/me/calendarList/fixture-native") {
         if (failPreflight) throw Object.assign(new Error("SENTINEL_private_provider_payload"), { code: "ETIMEDOUT" });
+        if (hangPreflight) {
+          // A provider that never answers: only the actual bounded attempt deadline ends this request.
+          hangPreflight = false;
+          await new Promise<never>((_resolve, reject) => {
+            const signal = init?.signal; assert.ok(signal, "Preflight HTTP carries the attempt signal");
+            if (signal.aborted) reject(signal.reason); else signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+          });
+        }
+        if (cooldownPreflight) { cooldownPreflight = false; return new Response(null, { status: 429, headers: { "retry-after": "30" } }); }
         return Response.json({ id: "fixture-native", accessRole: calendarRole });
+      }
+      const other = others.find(entry => url.pathname === `/calendar/v3/calendars/${entry.native}/events`);
+      if (method === "GET" && other) {
+        otherReadsStarted++;
+        if (holdOthers) await othersDependency;
+        otherReadsFinished++;
+        return Response.json({ items: [], timeZone: "UTC", nextSyncToken: "fixture-other-checkpoint" });
       }
       if (method === "GET" && url.pathname === "/calendar/v3/calendars/fixture-native/events") {
         // A read claimed before the write may return a stale empty provider listing.
-        const items = holdBackground ? [] : posted ? [{ ...posted, etag: '"fixture-created"' }] : [];
+        const items = holdBackground ? [] : [...posted.values()].map(item => ({ ...item, etag: '"fixture-created"' }));
         backgroundReadStarted = true;
         if (holdBackground) {
           holdBackground = false;
@@ -80,13 +102,16 @@ async function main() {
         return Response.json({ items, timeZone: "UTC", nextSyncToken: "fixture-read-checkpoint" });
       }
       if (method === "POST" && url.pathname === "/calendar/v3/calendars/fixture-native/events") {
-        nativeWriteBeforeBackgroundRead = !backgroundReadStarted;
-        assert.equal(posted, undefined, "Exactly one Google create");
-        posted = JSON.parse(String(init?.body));
-        return Response.json({ ...posted, etag: '"fixture-created"' }, { status: 201 });
+        if (!posted.size) nativeWriteBeforeBackgroundRead = !backgroundReadStarted;
+        const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        assert.equal(posted.has(String(body.id)), false, "Exactly one Google create per event");
+        posted.set(String(body.id), body);
+        return Response.json({ ...body, etag: '"fixture-created"' }, { status: 201 });
       }
-      if (method === "GET" && url.pathname.startsWith("/calendar/v3/calendars/fixture-native/events/"))
-        return posted ? Response.json({ ...posted, etag: '"fixture-created"' }) : Response.json({}, { status: 404 });
+      if (method === "GET" && url.pathname.startsWith("/calendar/v3/calendars/fixture-native/events/")) {
+        const item = posted.get(decodeURIComponent(url.pathname.slice("/calendar/v3/calendars/fixture-native/events/".length)));
+        return item ? Response.json({ ...item, etag: '"fixture-created"' }) : Response.json({}, { status: 404 });
+      }
       throw new Error(`Unexpected fixture request: ${method} ${url.pathname}`);
     };
     logger.warn = ((message: string, fields: Parameters<typeof logger.warn>[1]) => {
@@ -108,10 +133,18 @@ async function main() {
     const sourceBefore = await source();
     const content = () => ({ id: randomUUID(), creatorID: owner, organizer: owner, title: "Shared and Google", color: "red",
       calendars: [shared.id, google.id], originCalendarID: shared.id, start: "2026-11-06T09:00:00Z", end: "2026-11-06T10:00:00Z", isAllDay: false, isCanceled: false });
-    const send = async (body: unknown) => {
+    const send = async (body: unknown, timeoutMs = 15_000) => {
       const response = await realFetch(origin + "/events", { method: "POST", headers: { "content-type": "application/json",
-        [CLIENT_VERSION_HEADER]: PRODUCT_VERSION, authorization: `Bearer ${token.raw}` }, body: JSON.stringify(body), signal: AbortSignal.timeout(15_000) });
-      return { status: response.status, body: await response.json() };
+        [CLIENT_VERSION_HEADER]: PRODUCT_VERSION, authorization: `Bearer ${token.raw}` }, body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs) });
+      return { status: response.status, retryAfter: response.headers.get("retry-after"), body: await response.json() };
+    };
+    const rowsFor = async (eventID: string) => ({
+      events: (await db.select().from(events).where(eq(events.id, eventID))).length,
+      outbox: (await db.select().from(eventOutbox).where(eq(eventOutbox.eventID, eventID))).length,
+    });
+    const waitFor = async (condition: () => boolean, what: string, limitMs = 8_000) => {
+      const startedAt = Date.now();
+      while (!condition()) { if (Date.now() - startedAt > limitMs) throw new Error(what); await new Promise(resolve => setTimeout(resolve, 10)); }
     };
     const event = content(); watchAdmission = true;
     const creating = send(event); pendingCreate = creating; void creating.catch(() => {});
@@ -156,6 +189,42 @@ async function main() {
     const retry = await send(event); assert.equal(retry.status, 202); // completed receipt, no second provider write
     assert.deepEqual(trace.filter(row => row.startsWith("POST /calendar/")), nativeCreates);
 
+    // Other-account saturation: four other users' pulls are offered to the actual
+    // scheduler and held inside native HTTP. The foreground reserve admits at
+    // most three background pulls, so the fourth stays pending and this
+    // account's preflight and durable delivery are admitted without any release.
+    for (const other of others) {
+      await db.insert(user).values({ id: other.id, name: "Fixture", email: `${other.id}@example.test`, isExternal: true });
+      await db.insert(account).values({ id: other.id, userId: other.id, accountId: other.id, providerId: "google", scope: originalScope,
+        refreshToken: "fixture.other-refresh", accessToken: "fixture.other-token", accessTokenExpiresAt: new Date(Date.now() + 3_600_000) });
+      const calendar = await createCalendar({ creatorID: other.id, name: "Other Google fixture", color: "red" });
+      const [otherSource] = await db.insert(externalCalendars).values({ calendarID: calendar.id, provider: "google", userID: other.id, accountID: other.id,
+        externalCalendarID: other.native, cursor: "fixture-cursor", providerAccessRole: "owner", providerAccessRevision: 1 }).returning();
+      await requestSyncReadWork({ userID: other.id, provider: "google", accountID: other.id, sourceID: otherSource!.id,
+        stream: "events", configurationFingerprint: "fixture-requires-current-configuration", policyFingerprint: "fixture-requires-current-policy" });
+    }
+    kickSyncWork();
+    await waitFor(() => otherReadsStarted >= 3, "Three other-account readers did not reach their HTTP port");
+    await new Promise(resolve => setTimeout(resolve, 300)); kickSyncWork(); await new Promise(resolve => setTimeout(resolve, 300));
+    assert.equal(otherReadsStarted, 3, "The reserve admits three background pulls; the fourth offered pull stays pending");
+    const saturated = content(), saturatedResult = await send(saturated);
+    assert.equal(saturatedResult.status, 201, JSON.stringify(saturatedResult.body));
+    assert.equal(otherReadsFinished, 0, "CREATE answered 201 before any other-account reader released");
+    assert.equal(otherReadsStarted, 3);
+    const saturatedRows = await db.select().from(eventOutbox).where(eq(eventOutbox.eventID, saturated.id));
+    assert.equal(saturatedRows.length, 1); assert.equal(saturatedRows[0]!.status, "completed"); assert.equal(saturatedRows[0]!.uncertain, false);
+    assert.equal(trace.filter(row => row.startsWith("POST /calendar/")).length, 2);
+    holdOthers = false; releaseOthers(); kickSyncWork();
+    await waitFor(() => otherReadsFinished === 4, "All four other-account readers did not complete after release");
+    for (const other of others) {
+      let settled = false;
+      for (let turn = 0; turn < 500 && !settled; turn++) {
+        const claimed = await db.select({ id: syncReadWork.id }).from(syncReadWork).where(and(eq(syncReadWork.userID, other.id), isNull(syncReadWork.retiredAt), isNull(syncReadWork.claimToken)));
+        settled = claimed.length > 0; if (!settled) await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      assert.equal(settled, true, "Other-account read claims settle after release");
+    }
+
     calendarRole = "reader";
     const denied = content(), rejection = await send(denied);
     assert.equal(rejection.status, 403); assert.equal(rejection.body.reason, "denied");
@@ -171,6 +240,42 @@ async function main() {
       reason: "network-error", networkCode: "ETIMEDOUT", provider: "google", action: "create" }]);
     assert.equal(JSON.stringify(diagnosticRows).includes("SENTINEL_private"), false);
     failPreflight = false;
+
+    // The actual bounded attempt deadline (no shortened timer): the provider never
+    // answers, so the typed timeout maps to a retryable 503, not a 403 refusal.
+    diagnosticRows.length = 0; hangPreflight = true;
+    const timedOut = content(), timeoutStartedAt = Date.now();
+    const timeoutResult = await send(timedOut, DELIVERY_ATTEMPT_TIMEOUT_MS + 15_000), timeoutAnsweredAt = Date.now();
+    assert.ok(timeoutAnsweredAt - timeoutStartedAt >= DELIVERY_ATTEMPT_TIMEOUT_MS - 500, `Deadline elapsed: ${timeoutAnsweredAt - timeoutStartedAt} ms`);
+    assert.equal(timeoutResult.status, 503, JSON.stringify(timeoutResult.body));
+    assert.equal(timeoutResult.retryAfter, "5");
+    assert.deepEqual({ ...timeoutResult.body, retryAt: undefined, requestId: undefined },
+      { error: "Calendar writing is temporarily unavailable. No changes were saved. Try again shortly.", code: "provider-busy", localCommitted: false, retryAt: undefined, requestId: undefined });
+    const timeoutRetryAt = Date.parse(timeoutResult.body.retryAt);
+    assert.ok(timeoutRetryAt >= timeoutAnsweredAt + 4_000 && timeoutRetryAt <= timeoutAnsweredAt + 5_500, timeoutResult.body.retryAt);
+    assert.deepEqual(await rowsFor(timedOut.id), { events: 0, outbox: 0 });
+    assert.deepEqual(diagnosticRows, [{ code: "sync-work-unavailable", phase: "execute", family: "event-delivery", reason: "deadline", provider: "google", action: "create" }]);
+    // The same identity later takes the normal create path: a fresh commit and one provider write.
+    const afterTimeout = await send(timedOut);
+    assert.equal(afterTimeout.status, 201, JSON.stringify(afterTimeout.body)); assert.equal(afterTimeout.body.id, timedOut.id);
+    assert.equal(trace.filter(row => row.startsWith("POST /calendar/")).length, 3);
+    assert.deepEqual(await rowsFor(timedOut.id), { events: 1, outbox: 1 });
+
+    // An actual provider budget cooldown (observed from a 429 Retry-After beyond the
+    // continuation window) is a typed pre-dispatch deferral: 503 with the exact retryAt.
+    diagnosticRows.length = 0; cooldownPreflight = true;
+    const throttledAt = Date.now(), throttled = await send(content());
+    assert.equal(throttled.status, 409); assert.equal(throttled.body.code, "provider-write-failed");
+    const deferredEvent = content(), deferredResult = await send(deferredEvent), deferredAnsweredAt = Date.now();
+    assert.equal(deferredResult.status, 503, JSON.stringify(deferredResult.body));
+    assert.equal(deferredResult.body.code, "provider-busy"); assert.equal(deferredResult.body.localCommitted, false);
+    const deferredRetryAt = Date.parse(deferredResult.body.retryAt);
+    assert.ok(deferredRetryAt >= throttledAt + 29_000 && deferredRetryAt <= deferredAnsweredAt + 30_000, deferredResult.body.retryAt);
+    assert.equal(Number(deferredResult.retryAfter), Math.ceil((deferredRetryAt - deferredAnsweredAt) / 1000));
+    assert.deepEqual(await rowsFor(deferredEvent.id), { events: 0, outbox: 0 });
+    assert.deepEqual(diagnosticRows.map(row => (row as { reason: string; deferralReason?: string })), [
+      { code: "sync-work-unavailable", phase: "execute", family: "event-delivery", reason: "deferred", deferralReason: "cooldown", provider: "google", action: "create" }]);
+    assert.equal(trace.filter(row => row.startsWith("POST /calendar/")).length, 3, "No provider write during a deferred preflight");
 
     // Grant changes still retire authority; stale refresh results still lose CAS.
     for (const scope of [scopes[0]!, originalScope, ""]) {
@@ -189,14 +294,15 @@ async function main() {
     const unguardedBefore = (await getOAuthCredentials(owner, "google", owner))!;
     await updateOAuthTokens(owner, "google", owner, { accessToken: "fixture.unguarded", accessTokenExpiresAt: new Date(Date.now() + 3600000), scope: scopes.slice().reverse().join(" ") });
     assert.equal((await getOAuthCredentials(owner, "google", owner))!.syncReadGeneration, unguardedBefore.syncReadGeneration);
-    console.log("Shared + Google CREATE during an actual parked read: authenticated HTTP, real DB/OAuth/scheduler/budget, equivalent grant refresh, completed native fixture write, retry, reader rejection, changed-grant/stale-CAS guards and bounded preflight diagnostics: OK");
+    console.log("Shared + Google CREATE during an actual parked read: authenticated HTTP, real DB/OAuth/scheduler/budget, equivalent grant refresh, completed native fixture write, retry, reader rejection, changed-grant/stale-CAS guards, bounded preflight diagnostics, other-account saturation with the foreground reserve, actual deadline and cooldown deferral 503 mappings: OK");
   } finally {
-    clearTimeout(parkTimer); clearTimeout(admissionTimer); releaseToken(); releaseBackground();
+    clearTimeout(parkTimer); clearTimeout(admissionTimer); releaseToken(); releaseBackground(); holdOthers = false; releaseOthers();
     db.$client.query = originalQuery;
     stopSyncWorkCoordinator(); stopProviderBudget(); globalThis.fetch = realFetch; logger.warn = originalWarn;
     server.closeAllConnections(); await pendingCreate?.catch(() => {}); await new Promise<void>(resolve => server.close(() => resolve()));
     await db.delete(user).where(eq(user.id, owner));
     await db.delete(user).where(eq(user.id, member));
+    for (const other of others) await db.delete(user).where(eq(user.id, other.id));
     await db.$client.end();
   }
 }

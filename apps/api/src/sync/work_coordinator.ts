@@ -23,6 +23,10 @@ export function initializeSyncWorkCoordinator(options: {
   const families = [...options.families];
   coordinator = createFairWorkCoordinator<RuntimeReference>({
     capacity: 4,
+    // One regular permit stays free of background pulls so request preflights
+    // and durable deliveries are admitted while other accounts' pulls saturate
+    // the pool. A held same-account pull still serializes its own account.
+    foregroundReserve: 1,
     host: {
       candidates: input => database.getSyncWorkCandidates({ ...input, families }),
       execute: (candidate, permit, signal) => currentController.run(signal, () => currentPermit.run(permit, async () => {
