@@ -6,6 +6,8 @@ import {
 } from "@musubi/calendar/layout";
 import { describe, expect, it } from "vitest";
 import {
+  getEventDateLabel,
+  getEventRangeLabel,
   getMonthLabel,
   parseDateKey,
 } from "./calendar-math";
@@ -97,5 +99,36 @@ describe("calendar month math", () => {
     ]);
 
     expect([...buckets.keys()]).toEqual(["2026-07-03"]);
+  });
+});
+
+describe("event date labels", () => {
+  const timed = (start: string, end: string): Event => ({
+    ...allDayEvent(start, end),
+    end: new Date(end),
+    isAllDay: false,
+    start: new Date(start),
+    title: "Multi-day event",
+  });
+
+  it.each([
+    ["a multi-day timed event", "2026-11-09T10:00:00", "2026-11-15T16:00:00", "Monday, November 9, 2026 – Sunday, November 15, 2026"],
+    ["an overnight event", "2026-08-10T23:00:00", "2026-08-11T01:00:00", "Monday, August 10, 2026 – Tuesday, August 11, 2026"],
+    ["an end at next midnight", "2026-08-10T10:00:00", "2026-08-11T00:00:00", "Monday, August 10, 2026 – Tuesday, August 11, 2026"],
+    ["a same-day event", "2026-08-10T10:00:00", "2026-08-10T11:00:00", "Monday, August 10, 2026"],
+    ["a zero-length event", "2026-08-10T10:00:00", "2026-08-10T10:00:00", "Monday, August 10, 2026"],
+    ["an end before its start", "2026-08-10T10:00:00", "2026-08-09T10:00:00", "Monday, August 10, 2026"],
+  ])("names the real local start and end dates of %s", (_label, start, end, expected) => {
+    expect(getEventDateLabel(timed(start, end))).toBe(expected);
+  });
+
+  it("keeps all-day labels and the time range unchanged", () => {
+    expect(getEventDateLabel(allDayEvent("2026-07-17T00:00:00Z", "2026-07-21T00:00:00Z"))).toBe(
+      "Friday, July 17, 2026 – Tuesday, July 21, 2026",
+    );
+    expect(getEventDateLabel(allDayEvent("2026-07-03T00:00:00Z", "2026-07-03T00:00:00Z"))).toBe(
+      "Friday, July 3, 2026",
+    );
+    expect(getEventRangeLabel(timed("2026-11-09T10:00:00", "2026-11-15T16:00:00"))).toBe("10:00 – 16:00");
   });
 });
