@@ -4,11 +4,11 @@ import { DeliveryAttemptInterrupted } from "./delivery_policy";
 /** Default client retry hint when the bounded preflight deadline expired. */
 export const EVENT_WRITE_PENDING_RETRY_MS = 5_000;
 
-/** The pre-commit provider preflight could not run: the scheduler or budget
- * deferred it before any raw dispatch, or its bounded attempt deadline expired
- * while it waited. Nothing was written locally or remotely, so the same event
- * identity may be retried. This is not a permission answer (403), not a
- * provider failure and not an uncertain post-dispatch outcome. */
+/** The provider preflight could not finish before event admission. A deadline
+ * may follow read-only HTTP dispatch, but the preflight performs no event
+ * mutation or outbox admission. A caller that already created a calendar must
+ * preserve that earlier commit in its own receipt. This is not a permission
+ * answer or an uncertain event-write outcome. */
 export class EventWritePending extends Error {
   readonly code = "provider-busy" as const;
   constructor(readonly reason: "deferred" | "timeout", readonly retryAtMs: number) {

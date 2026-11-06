@@ -130,7 +130,17 @@ parallel delivery framework:
   the 403 capability-unknown refusal. The scheduler's foreground reserve (one of
   four regular permits is never taken by background pulls) removes the wait that
   other accounts' pulls caused; a held pull of the same account still serializes
-  that account's own preflight and delivery.
+  that account's own preflight and delivery. Every non-auxiliary request
+  submission is foreground-eligible, including preconnection discovery and
+  provider-wide revocation without a physical account row; only background
+  durable pulls are capped at three.
+- Whole-calendar ICS import creates its destination before event preflight.
+  If that preflight is deferred or times out, its 503 retains `provider-busy`,
+  `Retry-After` and `retryAt`, but says the calendar was created and remains empty,
+  with `localCommitted: true`, `calendar` and `imported: 0`. No events or event
+  outbox rows were admitted. The retry hint describes provider eligibility;
+  the whole import is not idempotent and must not be automatically repeated.
+  The same-event-identity retry rule above applies to individual event writes.
 - `ProviderEventWriteError` has `code`: `provider-conflict`,
   `provider-version-unavailable`, `event-diff-unavailable`, or `provider-write-failed`;
   `outcome`: `not-written` or `unconfirmed`; and optional `providerStatus` (412 for

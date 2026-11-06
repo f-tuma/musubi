@@ -87,7 +87,9 @@ function runProviderWork<T>(key: string, provider: "google" | "microsoft" | "cal
       const aborted = () => { owner.cancel(schedulingKey, deadline!.reason); reject(deadline!.reason); };
       deadline?.addEventListener("abort", aborted, { once: true });
       void owner.submit({ key: schedulingKey, family: "pull", auxiliary: isAuxiliary,
-        foreground: !isAuxiliary && Boolean(physicalAccountRowID), accountFairnessKey,
+        // Interactive preconnection discovery and revocation also need the
+        // reserve; foreground eligibility does not assert a physical identity.
+        foreground: !isAuxiliary, accountFairnessKey,
         laneKey: `${isAuxiliary ? "oauth-refresh" : "request"}:${accountFairnessKey}`, dueAtMs: Date.now(), orderKey: key, collisionKeys: [],
         hostRef: { auxiliary: true, async execute(controllerSignal) { try {
           const signal = deadline ? AbortSignal.any([deadline, controllerSignal]) : controllerSignal;

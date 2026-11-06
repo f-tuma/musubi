@@ -21,8 +21,8 @@ export function middlewareErrorHandler(
           errorMessage:
             "Remote event version changed or is unavailable. No changes were saved. Refresh and reconcile before retrying.",
         }
-      // A pre-commit preflight that was deferred or timed out before any raw
-      // dispatch is a known temporary wait, not a permission answer or a failure.
+      // A deferred or timed-out preflight before event admission is a known
+      // temporary wait, not a permission answer or a failed event mutation.
       : err instanceof EventWritePending
       ? { statusCode: 503, errorMessage: err.message }
       : httpErrorFor(err);

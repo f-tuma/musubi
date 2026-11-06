@@ -1022,9 +1022,9 @@ export async function prepareEventWrites(
           provider: adapter.provider,
           action: operation.action,
         });
-        // A typed pre-dispatch deferral or the bounded attempt deadline is a
-        // temporary, retryable wait: nothing was committed and no permission
-        // answer exists. Every other failure stays the fail-closed refusal.
+        // No event has been admitted by this preflight. The deadline may
+        // follow read-only HTTP; callers retain any earlier calendar commit.
+        // Every other failure stays the fail-closed refusal.
         throw eventWritePending(error) ?? new EventWriteError("event-write", "unknown");
       }
       prepared.push({

@@ -4,16 +4,18 @@ import express from "express";
 import { and, eq, isNull } from "drizzle-orm";
 import { logger } from "@musubi/config";
 import { CLIENT_VERSION_HEADER, PRODUCT_VERSION } from "@musubi/types";
+import { ProviderDispatchDeferred } from "@musubi/sync-runtime";
 import { account, calendarEvents, calendarMembers, createCalendar, db, events, eventOutbox, externalCalendars, externalEvents,
   getOAuthCredentials, replaceMemberToken, requestSyncReadWork, syncReadWork, updateOAuthTokens, user } from "@musubi/db";
 import { issueMemberToken } from "../federation_tokens";
 import { requireAuth } from "../middleware/require_auth";
 import { middlewareErrorHandler } from "../middleware/error_handler";
 import { bootstrapProviderBudget, stopProviderBudget } from "../sync/provider_budget";
-import { kickSyncWork, stopSyncWorkCoordinator } from "../sync/work_coordinator";
+import { kickSyncWork, runCapabilityProviderWork, stopSyncWorkCoordinator } from "../sync/work_coordinator";
 import { initializeSyncEngine } from "../sync/engine";
-import { DELIVERY_ATTEMPT_TIMEOUT_MS } from "../sync/delivery_policy";
+import { DELIVERY_ATTEMPT_TIMEOUT_MS, DeliveryAttemptInterrupted } from "../sync/delivery_policy";
 import { handlerCreateEvent } from "./events";
+import { handlerImportCalendar } from "./calendars";
 
 async function main() {
   assert.equal(process.env.ENVIRONMENT, "test");
@@ -36,11 +38,15 @@ async function main() {
   const diagnosticRows: unknown[] = [], originalWarn = logger.warn;
   let calendarRole = "owner";
   const posted = new Map<string, Record<string, unknown>>();
+  const importedCalendars: string[] = [];
+  let importFailure: "deferred" | "timeout" = "deferred", importRetryAtMs = 0;
   // Other-account readers: offered together, held at their native HTTP port.
   const others = [0, 1, 2, 3].map(index => ({ id: `other-reader-${index}-${randomUUID()}`, native: `other-native-${index}` }));
   let releaseOthers!: () => void, holdOthers = true, otherReadsStarted = 0, otherReadsFinished = 0;
   const othersDependency = new Promise<void>(resolve => { releaseOthers = resolve; });
-  const app = express(); app.use(express.json()); app.post("/events", requireAuth, handlerCreateEvent); app.use(middlewareErrorHandler);
+  const app = express(); app.use(express.json()); app.post("/events", requireAuth, handlerCreateEvent);
+  app.post("/import", express.text({ type: "text/calendar" }), requireAuth, handlerImportCalendar);
+  app.use(middlewareErrorHandler);
   const server = app.listen(0, "127.0.0.1"); await new Promise<void>(resolve => server.once("listening", resolve));
   const origin = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
   try {
@@ -71,6 +77,17 @@ async function main() {
         return Response.json({ access_token: "fixture.renewed-token", expires_in: 3600, scope: scopes.slice().reverse().join(" ") });
       }
       assert.equal(url.origin, "https://www.googleapis.com", "No real provider HTTP in this test");
+      if (method === "POST" && url.pathname === "/calendar/v3/calendars") {
+        const id = `fixture-import-${importedCalendars.length + 1}`;
+        importedCalendars.push(id);
+        return Response.json({ id }, { status: 201 });
+      }
+      if (url.pathname.startsWith("/calendar/v3/users/me/calendarList/fixture-import-")) {
+        if (method === "PATCH") return Response.json({});
+        assert.equal(method, "GET");
+        if (importFailure === "timeout") throw new DeliveryAttemptInterrupted("timeout");
+        throw new ProviderDispatchDeferred({ retryAtMs: importRetryAtMs, reason: "work-capacity", blockedDimensions: [] });
+      }
       if (method === "GET" && url.pathname === "/calendar/v3/users/me/calendarList/fixture-native") {
         if (failPreflight) throw Object.assign(new Error("SENTINEL_private_provider_payload"), { code: "ETIMEDOUT" });
         if (hangPreflight) {
@@ -185,9 +202,9 @@ async function main() {
       "The stale read preserves both calendar links");
     assert.equal((await db.select().from(externalEvents).where(eq(externalEvents.eventID, event.id))).length, 1,
       "The stale read preserves the newly acknowledged provider mapping");
-    const nativeCreates = trace.filter(row => row.startsWith("POST /calendar/")); assert.equal(nativeCreates.length, 1);
+    const nativeCreates = trace.filter(row => row === "POST /calendar/v3/calendars/fixture-native/events"); assert.equal(nativeCreates.length, 1);
     const retry = await send(event); assert.equal(retry.status, 202); // completed receipt, no second provider write
-    assert.deepEqual(trace.filter(row => row.startsWith("POST /calendar/")), nativeCreates);
+    assert.deepEqual(trace.filter(row => row === "POST /calendar/v3/calendars/fixture-native/events"), nativeCreates);
 
     // Other-account saturation: four other users' pulls are offered to the actual
     // scheduler and held inside native HTTP. The foreground reserve admits at
@@ -207,13 +224,17 @@ async function main() {
     await waitFor(() => otherReadsStarted >= 3, "Three other-account readers did not reach their HTTP port");
     await new Promise(resolve => setTimeout(resolve, 300)); kickSyncWork(); await new Promise(resolve => setTimeout(resolve, 300));
     assert.equal(otherReadsStarted, 3, "The reserve admits three background pulls; the fourth offered pull stays pending");
+    let capabilityStarted = false;
+    await runCapabilityProviderWork("caldav", async () => { capabilityStarted = true; }, AbortSignal.timeout(1_000));
+    assert.equal(capabilityStarted, true, "Interactive connection/revoke work can use the reserved slot without a physical account");
+    assert.equal(otherReadsFinished, 0, "Capability work completes before any background reader releases");
     const saturated = content(), saturatedResult = await send(saturated);
     assert.equal(saturatedResult.status, 201, JSON.stringify(saturatedResult.body));
     assert.equal(otherReadsFinished, 0, "CREATE answered 201 before any other-account reader released");
     assert.equal(otherReadsStarted, 3);
     const saturatedRows = await db.select().from(eventOutbox).where(eq(eventOutbox.eventID, saturated.id));
     assert.equal(saturatedRows.length, 1); assert.equal(saturatedRows[0]!.status, "completed"); assert.equal(saturatedRows[0]!.uncertain, false);
-    assert.equal(trace.filter(row => row.startsWith("POST /calendar/")).length, 2);
+    assert.equal(trace.filter(row => row === "POST /calendar/v3/calendars/fixture-native/events").length, 2);
     holdOthers = false; releaseOthers(); kickSyncWork();
     await waitFor(() => otherReadsFinished === 4, "All four other-account readers did not complete after release");
     for (const other of others) {
@@ -224,6 +245,38 @@ async function main() {
       }
       assert.equal(settled, true, "Other-account read claims settle after release");
     }
+
+    // A whole-calendar import creates its destination before event preflight.
+    // Both typed failures must preserve that partial commit, with no event writes.
+    const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "BEGIN:VEVENT", "UID:import-fixture",
+      "DTSTART:20261109T090000Z", "DTEND:20261109T100000Z", "SUMMARY:Import fixture", "END:VEVENT", "END:VCALENDAR", ""].join("\r\n");
+    for (const reason of ["deferred", "timeout"] as const) {
+      importFailure = reason; importRetryAtMs = Date.now() + 12_000;
+      const beforeImport = posted.size, remoteCount = importedCalendars.length;
+      const response = await realFetch(`${origin}/import?provider=google&accountId=${encodeURIComponent(owner)}`, {
+        method: "POST", headers: { "content-type": "text/calendar", [CLIENT_VERSION_HEADER]: PRODUCT_VERSION,
+          authorization: `Bearer ${token.raw}` }, body: ics, signal: AbortSignal.timeout(15_000),
+      });
+      const body = await response.json();
+      assert.equal(response.status, 503, JSON.stringify(body));
+      assert.equal(body.localCommitted, true, "Import must acknowledge the calendar already created");
+      assert.equal(body.code, "provider-busy"); assert.equal(body.imported, 0);
+      assert.match(body.error, /calendar was created/i); assert.match(body.error, /no events were imported/i);
+      assert.equal(body.error.includes("No changes were saved"), false);
+      assert.equal(importedCalendars.length, remoteCount + 1, "Exactly one remote destination was created; no automatic import retry");
+      const [link] = await db.select().from(externalCalendars).where(eq(externalCalendars.externalCalendarID, importedCalendars[importedCalendars.length - 1]!));
+      assert.ok(link); assert.ok(link.calendarID, "The created destination is linked to a local calendar");
+      const localCalendarID: string = link.calendarID; assert.equal(body.calendar.id, localCalendarID);
+      assert.equal((await db.select().from(calendarMembers).where(and(eq(calendarMembers.calendarID, localCalendarID), eq(calendarMembers.userID, owner)))).length, 1);
+      assert.equal((await db.select().from(calendarEvents).where(eq(calendarEvents.calendarID, localCalendarID))).length, 0);
+      assert.equal((await db.select().from(eventOutbox).where(eq(eventOutbox.calendarID, localCalendarID))).length, 0);
+      assert.equal(posted.size, beforeImport, "No event was written to the provider");
+      const retryAt = Date.parse(body.retryAt);
+      if (reason === "deferred") assert.equal(retryAt, importRetryAtMs);
+      else assert.ok(retryAt >= Date.now() + 4_000 && retryAt <= Date.now() + 5_500);
+      assert.ok(Number(response.headers.get("retry-after")) >= 1);
+    }
+    diagnosticRows.length = 0;
 
     calendarRole = "reader";
     const denied = content(), rejection = await send(denied);
@@ -258,7 +311,7 @@ async function main() {
     // The same identity later takes the normal create path: a fresh commit and one provider write.
     const afterTimeout = await send(timedOut);
     assert.equal(afterTimeout.status, 201, JSON.stringify(afterTimeout.body)); assert.equal(afterTimeout.body.id, timedOut.id);
-    assert.equal(trace.filter(row => row.startsWith("POST /calendar/")).length, 3);
+    assert.equal(trace.filter(row => row === "POST /calendar/v3/calendars/fixture-native/events").length, 3);
     assert.deepEqual(await rowsFor(timedOut.id), { events: 1, outbox: 1 });
 
     // An actual provider budget cooldown (observed from a 429 Retry-After beyond the
@@ -275,7 +328,7 @@ async function main() {
     assert.deepEqual(await rowsFor(deferredEvent.id), { events: 0, outbox: 0 });
     assert.deepEqual(diagnosticRows.map(row => (row as { reason: string; deferralReason?: string })), [
       { code: "sync-work-unavailable", phase: "execute", family: "event-delivery", reason: "deferred", deferralReason: "cooldown", provider: "google", action: "create" }]);
-    assert.equal(trace.filter(row => row.startsWith("POST /calendar/")).length, 3, "No provider write during a deferred preflight");
+    assert.equal(trace.filter(row => row === "POST /calendar/v3/calendars/fixture-native/events").length, 3, "No provider write during a deferred preflight");
 
     // Grant changes still retire authority; stale refresh results still lose CAS.
     for (const scope of [scopes[0]!, originalScope, ""]) {

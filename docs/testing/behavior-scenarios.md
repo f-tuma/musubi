@@ -389,3 +389,10 @@ preflight deadline and an actual budget cooldown deferral, both answered as
 503 `provider-busy` with `Retry-After`, no local rows, and a later normal
 create of the same identity. Fixture provider HTTP proves only the provider
 boundary, not remote Google behavior.
+The same integration exercises interactive connection/revocation capability
+work without a physical account: it uses the reserved foreground slot before
+any reader releases, while keeping the regular/account/collision bounds.
+It also imports an ICS file through the real authenticated handler. After the
+fixture provider calendar is created, typed deferral and timeout retain a
+truthful partial receipt (`localCommitted: true`, empty calendar, zero imported
+events), with no event/outbox admission or automatic repeat of the import.
