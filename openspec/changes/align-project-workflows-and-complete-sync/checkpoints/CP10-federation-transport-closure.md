@@ -49,6 +49,6 @@ Neuzavírá se 10.1, 10.2, 10.4, 10.5 ani celý CP10. Žádné CP04 boxy: K-09 j
 ## 5. Hranice a nosný PR
 
 - **Source acceptance po merge; žádná publikace advisory, kontakt reportéra ani deployment.**
-- Nosný PR: PR slice CP02 2.1a z větve `codex/cp02-root-behavior-cli` (číslo se doplní při otevření). Bez samostatného bookkeeping PR ani CI cyklu; commit prochází finálním nezávislým review a 21 current-head Quality joby nosného PR.
+- Nosný PR: [#412](https://github.com/f-tuma/musubi/pull/412) (slice CP02 2.1a z větve `codex/cp02-root-behavior-cli`; doplněno 2026-11-06 po nezávislém final review source diffu `7128c651 → e28bf361`, viz acceptance 2.1a §13). Bez samostatného bookkeeping PR ani CI cyklu; 21 current-head Quality jobů nosného PR (run 42224017724 na `e28bf361`, v době zápisu pending), stav branch rules a merge zůstávají otevřené gates, ne PASS.
 - Privacy: před commitem autor prohledal nové a změněné soubory vzorem identifikátoru advisory a vypsal jen počty (0 výskytů); soukromý advisory ani report nečetl.
 - Čerstvé mechanické kontroly na větvi po tomto commitu: strict OpenSpec validate valid; `spec check --phase orient/design` `mechanical_result: pass`, `semantic_result: unknown`; `git diff --check` čistý (raw v gitignored `backups/spec-sessions/cp02-root-behavior-cli-20261106/runs/`).

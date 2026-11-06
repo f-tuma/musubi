@@ -46,6 +46,6 @@ Raw výstupy: gitignored `backups/spec-sessions/cp02-root-behavior-cli-20261106/
 
 ## 6. Nosný PR a provenance
 
-- Nosný PR: PR slice CP02 2.1a z větve `codex/cp02-root-behavior-cli` do `main` (číslo se doplní při otevření; tento commit prochází jeho finálním nezávislým review a 21 current-head Quality joby).
+- Nosný PR: [#412](https://github.com/f-tuma/musubi/pull/412) (slice CP02 2.1a z větve `codex/cp02-root-behavior-cli` do `main`; doplněno 2026-11-06 po nezávislém final review source diffu `7128c651 → e28bf361`, viz acceptance 2.1a §13). Jeho 21 current-head Quality jobů (run 42224017724 na `e28bf361`, v době zápisu pending), stav branch rules a merge zůstávají otevřené gates, ne PASS.
 - Zdroj tohoto closure: přijatý brief CP02 2.1a v3 §8.1 (SHA256 `d0a102384eff15e208147031823a99828be22843b111123ef0dc68d3eb030298`, kanonicky `CP02-2.1a-root-cli.md`), design review v3 §6 (`../reviews/CP02-2.1a-root-cli-design.md`) a vlastní ověření autora: `git rev-parse <commit>^{tree}` pro `e6015977`, `5bfb3413`, `9d08c100`, `1f47561d`; `git diff --stat` reviewed→final head; `gh pr view 407/409 --json state,mergeCommit` (read-only, 2026-11-06). Quality run ID/attempt/počty převzaty z historických review/acceptance a potvrzeny design review v3 §6 (`gh run view`); autor je znovu nedotazoval.
 - Nepřepisuje se žádný historický záznam; checkbox 1.x se nesmí číst jako důkaz publikace docs webu, store buildů ani deploymentu.
