@@ -93,3 +93,10 @@ Vlastní API procesy (privátní i veřejný profil) ukončeny podle pid řetěz
 - R-03/R-04: informace, beze změny (viz final review záznam).
 - Pro docs-only korekci se `pnpm check`, DB ani app testy neopakovaly; ověřeno: strom mimo `openspec/` shodný s reviewovaným headem, strict OpenSpec, mechanický `spec check`, `git diff --check`, nepřítomnost identifikátoru v každém novém commitu (`git grep` nad každým commitem i `git log -p` od base).
 - Tento záznam neznamená schválení nového headu; koordinátor si vyžádá úzký nezávislý review těchto korekcí.
+
+## 8. Post-merge disposition (2026-11-06; připojeno předkódovým commitem CP02 2.1a, §1–§7 beze změny)
+
+- HOLDy z §4 a §6 (úzký nezávislý review korekcí a nezměněného zdroje na aktuálním headu, push/PR, 21/21 current-head Quality, branch protection, squash merge, acceptance 10.3 po merge) jsou **vyřešeny** odkazem na `CP10-federation-transport-closure.md`: final review v2 APPROVE code-only pro `047779c → 194aaa66` (`../reviews/CP10-federation-transport-final.md` §4), PR #411 MERGED, Quality run 42213525733 attempt 1 21/21 na `194aaa66`, squash `7128c651` (tree `781cb6ee…` = tree schváleného headu = tree CI merge checkoutu).
+- Branch protection / GitHub required checks: **not-configured/unknown, ne PASS** (classic protection 404, `rules/branches/main` `[]`, ruleset 19609735 s prázdným `include`); procesní brána 21/21 dodržena, settings beze změny.
+- Původní text a stav „dílčí lokální výsledek“ v úvodu a §1–§7 zůstávají jako historie; nepřepisují se. Task 10.3 je nyní `[x]` s odkazem na closure; TRUST-03 v `../audit-disposition.md` nese přijatý source.
+- Nadále platí: source acceptance po merge; žádná publikace advisory, kontakt reportéra ani deployment; limity closure §3 (jen Linux x86_64 / Node 22.23.4, bez externího DNS/produkce/živého útoku, gateway 500 pre-existing, „native TLS“ = Node TLS stack).

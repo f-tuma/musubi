@@ -4,6 +4,10 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { parseArguments, runBehavior, runCli } from "./test-behavior.mjs";
+import { spawn } from "node:child_process";
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { executeChild } from "./test-behavior.mjs";
 
 const manifests = {
   "oauth-scopes": "packages/db/src/queries/behavior/oauth-scopes.json",
@@ -500,3 +504,124 @@ test("JSON preflight and subprocess failures stay parseable without leaking raw 
     assert.ok(!output[0].includes("PRIVATE CHILD DATA"));
   }
 });
+
+// CP02 2.1a: the real root entry, one real production driver per runSuite branch, and a real child error through the root glue.
+const repository = fileURLToPath(new URL("../", import.meta.url));
+const representatives = [
+  ["google-delete", "already-absent"], // sync-runtime CLI via --import tsx
+  ["oauth-scopes", "reordered-grant"], // db query CLI
+  ["wire-timestamps", "availability-minute-utc"], // public types CLI
+  ["app-links", "unconfigured-is-not-associated"], // apps/api behavior CLI
+  ["postgres-restore", "create-failure"], // shipped ops .mjs without tsx
+  ["read-attempt", "steady-large-pagination"], // apps/api sync CLI
+  ["task-delivery", "ack-signal-forwarded"], // module-mock CLI
+  ["web-edge", "worker-response-bypasses-caches"], // Vitest UI project
+];
+const validDuration = value => typeof value === "number" && Number.isFinite(value) && value >= 0;
+
+async function realManifest(suite) {
+  return JSON.parse(await readFile(join(repository, manifests[suite]), "utf8"));
+}
+
+async function realScenario(suite, id) {
+  const item = (await realManifest(suite)).scenarios.find(scenario => scenario.id === id);
+  assert.ok(item, `${suite}/${id} is missing from ${manifests[suite]}; choose a current representative id`);
+  return { id: item.id, title: item.title };
+}
+
+function rootEntry(args) {
+  return new Promise(resolveResult => {
+    const child = spawn(process.execPath, [join(repository, "scripts/test-behavior.mjs"), ...args],
+      { cwd: repository, shell: false, timeout: 120_000, killSignal: "SIGKILL", stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "", stderr = "";
+    child.stdout.on("data", chunk => { stdout += chunk; });
+    child.stderr.on("data", chunk => { stderr += chunk; });
+    child.on("error", error => resolveResult({ code: null, stdout, stderr: `${stderr}${error.message}` }));
+    child.on("close", code => resolveResult({ code, stdout, stderr }));
+  });
+}
+
+function singleJsonDocument(stdout) {
+  const lines = stdout.split("\n").filter(line => line.length);
+  assert.equal(lines.length, 1, `expected exactly one JSON line on stdout, got ${JSON.stringify(stdout)}`);
+  return JSON.parse(lines[0]);
+}
+
+test("T-A root entry: the package script's real process emits one JSON document with real exit codes", async () => {
+  const pkg = JSON.parse(await readFile(join(repository, "package.json"), "utf8"));
+  assert.equal(pkg.scripts["test:behavior"], "node scripts/test-behavior.mjs");
+  const expected = await realScenario("google-delete", "already-absent");
+
+  const positive = await rootEntry(["--suite", "google-delete", "--scenario", "already-absent", "--json"]);
+  assert.equal(positive.code, 0, positive.stderr);
+  const report = singleJsonDocument(positive.stdout);
+  assert.equal(report.schemaVersion, 1);
+  assert.deepEqual([report.passed, report.failed, report.errors], [1, 0, 0]);
+  assert.equal(report.suites.length, 1);
+  assert.equal(report.suites[0].suite, "google-delete");
+  assert.equal(report.suites[0].results.length, 1);
+  const [result] = report.suites[0].results;
+  assert.deepEqual({ id: result.id, title: result.title, status: result.status }, { ...expected, status: "passed" });
+  assert.ok(validDuration(result.durationMs) && validDuration(report.suites[0].durationMs) && validDuration(report.durationMs));
+
+  const unknownScenario = await rootEntry(["--suite", "google-delete", "--scenario", "no-such-id", "--json"]);
+  assert.equal(unknownScenario.code, 1);
+  const unknownScenarioReport = singleJsonDocument(unknownScenario.stdout);
+  assert.equal(unknownScenarioReport.failed, 1);
+  assert.deepEqual(unknownScenarioReport.suites, []);
+  assert.match(unknownScenarioReport.error, /^Unknown scenario in google-delete/);
+
+  const unknownSuite = await rootEntry(["--suite", "no-such-suite", "--json"]);
+  assert.equal(unknownSuite.code, 1);
+  assert.equal(singleJsonDocument(unknownSuite.stdout).failed, 1);
+
+  const list = await rootEntry(["--list", "--json"]);
+  assert.equal(list.code, 0, list.stderr);
+  const suites = [];
+  for (const suite of Object.keys(manifests)) {
+    suites.push({ suite, scenarios: (await realManifest(suite)).scenarios.map(({ id, title }) => ({ id, title })) });
+  }
+  assert.deepEqual(singleJsonDocument(list.stdout), { schemaVersion: 1, suites });
+});
+
+for (const [suite, id] of representatives) {
+  test(`T-B ${suite}: its runSuite branch runs the real production driver for ${id}`, async () => {
+    const expected = await realScenario(suite, id);
+    const report = await runBehavior(["--suite", suite, "--scenario", id]);
+    assert.deepEqual([report.passed, report.failed, report.errors], [1, 0, 0], JSON.stringify(report));
+    assert.equal(report.suites.length, 1);
+    const [run] = report.suites;
+    assert.equal(run.suite, suite);
+    assert.ok(!Object.hasOwn(run, "error") && !Object.hasOwn(run, "errorCode"));
+    assert.deepEqual(run.results.map(item => ({ id: item.id, title: item.title, status: item.status })), [{ ...expected, status: "passed" }]);
+    assert.ok(run.results.every(item => validDuration(item.durationMs)));
+    assert.ok(validDuration(run.durationMs) && validDuration(report.durationMs));
+  });
+}
+
+for (const [suite, id] of [["google-delete", "already-absent"], ["task-delivery", "ack-signal-forwarded"]]) {
+  test(`T-C ${suite}: a real child's unknown-scenario error reaches the root as a bounded code without child text`, async () => {
+    const expected = await realScenario(suite, id);
+    let child;
+    const execute = async (command, args, options) => {
+      const index = args.indexOf("--scenario");
+      assert.equal(args[index + 1], id);
+      child = await executeChild(command, args.with(index + 1, "no-such-id"), options);
+      return child;
+    };
+    const report = await runBehavior(["--suite", suite, "--scenario", id], { execute });
+    assert.ok(child, "the real child did not run");
+    assert.equal(child.code, 1);
+    const childMessage = JSON.parse(child.stdout).error.message;
+    assert.ok(typeof childMessage === "string" && childMessage.length > 0);
+    assert.deepEqual([report.passed, report.failed, report.errors], [0, 1, 0]);
+    const [run] = report.suites;
+    assert.equal(run.suite, suite);
+    assert.equal(run.errorCode, "unknown-scenario");
+    assert.ok(!Object.hasOwn(run, "scenarioId"));
+    assert.equal(run.error, `${suite}: unknown-scenario. Run the selected suite directly for assertion details.`);
+    assert.deepEqual(run.results, [{ ...expected, status: "failed", durationMs: 0 }]);
+    const serialized = JSON.stringify(report);
+    assert.ok(!serialized.includes(childMessage) && !serialized.includes("no-such-id"));
+  });
+}

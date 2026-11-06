@@ -1,6 +1,6 @@
 # Tasks
 
-Stav: navržené implementační checkpointy, nic z níže uvedeného není nyní vykonané.
+Stav: programové checkpointy. Zaškrtnutý box je skutečně implementovaný, nezávisle revidovaný a squash-sloučený po zelené current-head Quality a se zaznamenaným stavem GitHub required checks (not-configured/unknown není PASS), s odkazem na immutable evidenci; zaškrtnutí není publication ani deployment. Nezaškrtnutý box není vykonaný; částečné stavy (např. 2.1a) nese příslušná acceptance.
 Každý checkbox obsahuje vlastní ověření; při změně hranice se použijí i povinné integrační/aplikační/CI gates z AGENTS. „Ověřit“ není totéž co pouze přidat test.
 
 Po přijetí návrhu se vybírá **jeden konkrétní checkpoint nebo jeho bounded rodinný slice** a jeho stop condition. Číslování není povolení k nepřerušenému apply celého programu. Jedna session nesmí označit staré acceptance za čerstvý PASS jiného zdroje.
@@ -44,10 +44,10 @@ CP08.1 je samostatný prioritní reprodukční brief: produkční Better Auth fa
 
 Požadavky: WF-01 až WF-04. Stop: člověk najde platné příkazy a runbook; app/runtime chování se nezmění.
 
-- [ ] 1.1 Sjednotit README, docs/README, current capability/release odkazy a označení staré C08–C10 roadmapy; ověřit všechny živé odkazy a rozpor 0.2.2/0.2.16 proti zvolené autoritě, historické receipts ponechat.
-- [ ] 1.2 Opravit existující contributing/running-locally/onboarding, Starlight commands/releases a docs/releasing.md podle T2 ownership mapy; ověřit clone→běh→test→PR→release odkazy a skutečné příkazy. Nevytvářet další quickstart/runbook/current index.
-- [ ] 1.3 Sjednotit deklarovaný toolchain s ověřovaným runtime a lokálními doporučeními; ověřit rozdíl .nvmrc/CI/Docker a doplnit kontrolu koherence bez neověřeného zvýšení major verze.
-- [ ] 1.4 Zdokumentovat vlastníky záměru, protokolů, UI, příkazů, release faktů a history a potvrzenou roli trackeru Its a Plan dle D6 (bez D6 tento box zůstává otevřený); ověřit SPEC orient/design mapping a nezávislý review tohoto CP včetně návratu při materiální změně.
+- [x] 1.1 Sjednotit README, docs/README, current capability/release odkazy a označení staré C08–C10 roadmapy; ověřit všechny živé odkazy a rozpor 0.2.2/0.2.16 proti zvolené autoritě, historické receipts ponechat. Evidence: [CP01 closure](checkpoints/CP01-closure.md).
+- [x] 1.2 Opravit existující contributing/running-locally/onboarding, Starlight commands/releases a docs/releasing.md podle T2 ownership mapy; ověřit clone→běh→test→PR→release odkazy a skutečné příkazy. Nevytvářet další quickstart/runbook/current index. Evidence: [CP01 closure](checkpoints/CP01-closure.md).
+- [x] 1.3 Sjednotit deklarovaný toolchain s ověřovaným runtime a lokálními doporučeními; ověřit rozdíl .nvmrc/CI/Docker a doplnit kontrolu koherence bez neověřeného zvýšení major verze. Evidence: [CP01 closure](checkpoints/CP01-closure.md).
+- [x] 1.4 Zdokumentovat vlastníky záměru, protokolů, UI, příkazů, release faktů a history a potvrzenou roli trackeru Its a Plan dle D6 (bez D6 tento box zůstává otevřený); ověřit SPEC orient/design mapping a nezávislý review tohoto CP včetně návratu při materiální změně. Evidence: [CP01 closure](checkpoints/CP01-closure.md).
 
 ## 2. CP02 — Jeden inventář a pravdivý ověřovací workflow
 
@@ -145,11 +145,11 @@ Požadavky: CL-01 až CL-05, ID-02. Stop: konkrétní klientský tok odpovídá 
 
 Požadavky: ID-06, WF-02. Stop: nastavený profil je explicitní, chyby rozlišitelné a upgrade neprovede skrytou změnu authority.
 
-Testovací sub-slice 10.3-T (checkpoints/CP10-federation-transport.md, přijatý brief v3): JSON suite `federation-transport` s vlastním driverem nad produkční `createFederationFetch` je vymezena jako vlastní testovací slice boxu 10.3, nikoli jeho nepozorované rozšíření; box 10.3 zůstává nezaškrtnutý do merge a acceptance.
+Testovací sub-slice 10.3-T (checkpoints/CP10-federation-transport.md, přijatý brief v3): JSON suite `federation-transport` s vlastním driverem nad produkční `createFederationFetch` je vymezena jako vlastní testovací slice boxu 10.3, nikoli jeho nepozorované rozšíření; box 10.3 zůstává nezaškrtnutý do merge a acceptance. Podmínka splněna po merge PR #411; viz checkpoints/CP10-federation-transport-closure.md.
 
 - [ ] 10.1 Sjednotit parse/validate nastavených booleans, intervalů a klíčů a zdroj env dokumentace; ověřit validní legacy hodnoty i konkrétní neplatné vstupy bez secret dumpu.
 - [ ] 10.2 Oddělit nebo výslovně deklarovat private-network/HTTPS výjimky s kompatibilní alias/deprecation politikou; ověřit prod/dev/self-host matrix a žádné tiché rozšíření cílové sítě.
-- [ ] 10.3 Sjednotit outbound guard skutečného připojení a redirectu pro federační cesty; ověřit kontrolovaný DNS rebinding/redirect port, native TLS chování a povolené privátní profily bez živého útoku.
+- [x] 10.3 Sjednotit outbound guard skutečného připojení a redirectu pro federační cesty; ověřit kontrolovaný DNS rebinding/redirect port, native TLS chování a povolené privátní profily bez živého útoku. Evidence: [CP10 10.3 closure](checkpoints/CP10-federation-transport-closure.md).
 - [ ] 10.4 Odvodit CORS/trusted callback origins z přijaté konfigurace; ověřit hosted i cizí self-host a nedokumentovaný hosted fallback.
 - [ ] 10.5 Zajistit validaci známě chybného klíče před novým remote side effectem a rozlišit decrypt/config chybu od provider odmítnutí; ověřit skutečné credential/federation boundaries a aktuální recovery návod.
 
