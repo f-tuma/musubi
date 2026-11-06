@@ -8,6 +8,8 @@
 - Přijetí koordinátorem: srovnání obou blocker korekcí a disposition níže; záznam `CP10.3-coordinator-adoption-v3.json` (SHA256 `0ba7c26813a5c1b77318bf1529b88115e8f293c3933831114cbf9bffbb21a318`), citován beze změny v §0.2. **Není** to nepodmíněné APPROVE, test PASS, povolení merge/release/deploy; fresh-context review finálního diffu před PR zůstává povinný.
 - Kanonická větev `codex/federation-transport-pinning` z origin/main `047779c20adb53f52575876aa8b0c340539fb583` (tree `47f7146140bb8db1cc01690c269ad515a11217f0`); review níže četl kód z lokálního rootu HEAD `5bfb341`, jehož dotčené zdroje jsou s touto base bajtově shodné (viz jeho sekce „Kódová base“). Poznámka k `.nvmrc`: review četl starý lokální root (24.15.0); na origin/main je `.nvmrc` 22.23.4 (F-09 disposition).
 
+- **Disposition po final review (2026-11-06):** nezávislý final review (`reviews/CP10-federation-transport-final.md`, nález R-01) změřil, že Node happy-eyeballs nezačíná vždy IPv6, nýbrž rodinou první adresy v přijaté sadě; řádek F-11 v §0.1 i v těle review níže zůstává historickým zněním (nemění se), kanonický checkpoint §3.1/§4.2 byl upřesněn s datovaným dodatkem v jeho §0. Invariant, přijatá sada ani verdikt tím nejsou dotčeny.
+
 ### 0.1 Disposition nálezů F-01…F-12 (převzato beze změny z `CP10.3-revision-v3.md`, SHA256 `9fd2ea110940a2fc10fa4811426f800afd92626475f3a8eb1c8045bc3a489868`; přesný `diff -u` v2→v3 je v tomtéž souboru)
 
 | ID | Rozhodnutí koordinátora | Zapracováno v v3 | Místo | Ověření/evidence |
