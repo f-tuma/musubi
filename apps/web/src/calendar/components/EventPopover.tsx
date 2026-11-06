@@ -58,6 +58,8 @@ type EventPopoverProps = EventActionHandlers & {
   /** A write for this event is in flight. */
   pending?: boolean;
   showLabel?: boolean;
+  /** Off on the days a timed event continues into: its time is its start's. */
+  showTime?: boolean;
   timeFormat: Settings["timeFormat"];
   weekStartsOn: Settings["weekStartsOn"];
 };
@@ -72,6 +74,7 @@ export function EventPopover({
   onBeginDrag,
   pending = false,
   showLabel = true,
+  showTime = true,
   timeFormat,
   weekStartsOn,
   ...eventActions
@@ -88,7 +91,7 @@ export function EventPopover({
       {...eventActions}
     >
       <button
-        className={eventChipClassName({ allDay: event.isAllDay, continuesAfter, continuesBefore, labelVisible: event.isAllDay && showLabel && continuesAfter })}
+        className={eventChipClassName({ allDay: event.isAllDay, continuesAfter, continuesBefore, labelVisible: showLabel && continuesAfter })}
         type="button"
         aria-label={`${isCalendarTask(event) ? "Task, " : ""}${event.title}, ${getEventDateLabel(
           event,
@@ -97,6 +100,8 @@ export function EventPopover({
         data-ghost={ghost ? "" : undefined}
         data-draggable={onBeginDrag ? "" : undefined}
         data-pending={pending ? "" : undefined}
+        data-continues-after={continuesAfter ? "" : undefined}
+        data-continues-before={continuesBefore ? "" : undefined}
         data-event-chip=""
         data-event-id={event.id}
         data-task-completed={isCalendarTask(event) && event.calendarTask.status === "completed" ? "" : undefined}
@@ -110,12 +115,12 @@ export function EventPopover({
         } as React.CSSProperties}
         onClick={(clickEvent) => clickEvent.stopPropagation()}
       >
-        {!event.isAllDay ? (
+        {!event.isAllDay && showTime ? (
           <span className="flex-none font-mono text-10 group-data-compact/month:not-in-data-[event-list=overflow]:hidden" aria-hidden="true" data-event-time="">
             {getEventRangeLabel(event, timeFormat).split(" ")[0]}
           </span>
         ) : null}
-        <span className={cn("min-w-0 flex-1 truncate text-10 group-data-[task-completed]/chip:line-through in-data-[event-list=overflow]:text-13", event.isAllDay && showLabel && continuesAfter && "overflow-visible text-clip whitespace-nowrap")} aria-hidden="true" data-event-title="">
+        <span className={cn("min-w-0 flex-1 truncate text-10 group-data-[task-completed]/chip:line-through in-data-[event-list=overflow]:text-13", showLabel && continuesAfter && "overflow-visible text-clip whitespace-nowrap")} aria-hidden="true" data-event-title="">
           {showLabel ? event.title : ""}
         </span>
         {showLabel && (isCalendarTask(event) || event.recurrence || event.hasAttendees) ? (

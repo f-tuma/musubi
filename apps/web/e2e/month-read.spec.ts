@@ -2275,6 +2275,185 @@ test("moves an event to another day in the month grid", async ({ page }) => {
 	);
 });
 
+// A timed event that lasts a week is one bar across the days it touches, like
+// an all-day bar, with its time only on the day it really starts.
+const multiDayEvents = {
+	...events,
+	events: [
+		event("multi-day", "Multi-day workshop", "personal", "#b3492f", "2026-11-09T09:00:00.000Z", "2026-11-15T15:00:00.000Z"),
+		event("week-edge", "Week edge event", "family", "#365a92", "2026-11-13T09:00:00.000Z", "2026-11-17T15:00:00.000Z"),
+		event("overnight", "Overnight shift", "studio", "#d6b76b", "2026-11-18T22:00:00.000Z", "2026-11-19T00:00:00.000Z"),
+		...[9, 11, 13].map(hour => event(`busy-${hour}`, `Busy hour ${hour}`, "studio", "#d6b76b", `2026-11-12T${String(hour).padStart(2, "0")}:00:00.000Z`, `2026-11-12T${String(hour + 1).padStart(2, "0")}:00:00.000Z`)),
+	],
+};
+
+async function multiDayChips(page: Page, id: string) {
+	return page.locator(`[data-event-id="${id}"]`).evaluateAll(chips => chips.map(chip => {
+		const box = chip.getBoundingClientRect();
+		return {
+			after: chip.hasAttribute("data-continues-after"),
+			before: chip.hasAttribute("data-continues-before"),
+			day: chip.closest<HTMLElement>("[data-day-key]")!.dataset.dayKey!,
+			left: box.left,
+			right: box.right,
+			time: chip.querySelector<HTMLElement>("[data-event-time]")?.checkVisibility() ? chip.querySelector("[data-event-time]")!.textContent : null,
+			title: chip.querySelector("[data-event-title]")?.textContent ?? "",
+		};
+	}));
+}
+
+for (const theme of ["light", "dark"] as const) {
+	for (const [layout, width, height] of [["desktop", 1280, 900], ["compact", 640, 720], ["phone", 390, 844]] as const) {
+		test(`draws a timed multi-day event across Month days: ${theme} ${layout}`, async ({ page }, testInfo) => {
+			await setTestTheme(page, theme);
+			await page.setViewportSize({ width, height });
+			await mockAuthenticatedReads(page, multiDayEvents);
+			await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-11-15`);
+			const month = page.getByRole("grid", { name: "November 2026 calendar" });
+			await expect(month).toBeVisible();
+			await settleLayout(page);
+			// Below 665 px of grid a cell has no room for a chip's time.
+			if (layout === "desktop") await expect(month).not.toHaveAttribute("data-compact", "");
+			else await expect(month).toHaveAttribute("data-compact", "");
+
+			const span = await multiDayChips(page, "multi-day");
+			expect(span.map(chip => chip.day)).toEqual(["09", "10", "11", "12", "13", "14", "15"].map(day => `2026-11-${day}`));
+			expect(span.map(chip => [chip.before, chip.after])).toEqual([[false, true], ...Array(5).fill([true, true]), [true, false]]);
+			// One bar: each piece meets the next across the cell rule.
+			for (const [index, chip] of span.slice(1).entries()) expect(Math.abs(chip.left - span[index]!.right)).toBeLessThanOrEqual(1);
+			expect(span.slice(1).every(chip => chip.time === null && chip.title === "")).toBe(true);
+			expect(span[0]!.title).toBe("Multi-day workshop");
+			expect(span[0]!.time).toBe(layout === "desktop" ? "10:00" : null);
+
+			// The week edge breaks the bar; the next row names it again without a
+			// time. On a phone its first row sits behind "+N more".
+			const edge = await multiDayChips(page, "week-edge");
+			const edgeDays = ["13", "14", "15", "16", "17"].map(day => `2026-11-${day}`);
+			expect(edge.map(chip => chip.day)).toEqual(Number(await month.getAttribute("data-event-capacity")) > 2 ? edgeDays : edgeDays.slice(3));
+			expect(edge.find(chip => chip.day === "2026-11-16")).toMatchObject({ after: true, before: false, time: null, title: "Week edge event" });
+			if (edge.length === 5) expect(edge[2]).toMatchObject({ after: false, before: true });
+			for (const day of ["13", "15"]) await expect(page.locator(`[data-day-key="2026-11-${day}"]`)).toHaveAttribute("aria-label", /, 2 calendar items$/);
+			expect((await multiDayChips(page, "overnight")).map(chip => [chip.day, chip.title === "" ? null : chip.title])).toEqual([
+				["2026-11-18", "Overnight shift"],
+				["2026-11-19", null],
+			]);
+
+			const range = "Monday, November 9, 2026 – Sunday, November 15, 2026, 10:00 – 16:00";
+			for (const label of await page.locator('[data-event-id="multi-day"]').evaluateAll(chips => chips.map(chip => chip.getAttribute("aria-label")))) {
+				expect(label).toContain(range);
+			}
+			const busyDay = page.locator('[data-day-key="2026-11-12"]');
+			await expect(busyDay).toHaveAttribute("aria-label", "Thursday, November 12, 2026, 4 calendar items");
+			await expect(page.locator('[data-day-key="2026-11-10"]')).toHaveAttribute("aria-label", "Tuesday, November 10, 2026, 1 calendar item");
+			const more = busyDay.getByRole("button", { name: /^\+\d+ more$/ });
+			const crowded = Number(await month.getAttribute("data-event-capacity")) < 4;
+			if (crowded) await expect(more).toBeVisible();
+			else await expect(busyDay.locator("[data-event-id]")).toHaveCount(4);
+			expect(await page.locator("[data-calendar-area]").evaluate(element => element.scrollWidth - element.clientWidth)).toBe(0);
+			await expectNoAccessibilityViolations(page);
+			await page.screenshot({ path: testInfo.outputPath(`multi-day-month-${theme}-${layout}.png`) });
+
+			if (crowded) {
+				await more.click();
+				const overflow = page.getByRole("dialog", { name: "Thursday, November 12, 2026 events" });
+				await expect(overflow.locator("[data-event-id]")).toHaveCount(4);
+				const overflowRow = overflow.locator('[data-event-id="multi-day"]');
+				await expect(overflowRow.locator("[data-event-title]")).toHaveText("Multi-day workshop");
+				await expect(overflowRow.locator("[data-event-time]")).toHaveCount(0);
+				await expect(overflow.locator('[data-event-id="busy-9"] [data-event-time]')).toHaveText("10:00");
+				await expectNoAccessibilityViolations(page);
+				await page.keyboard.press("Escape");
+				await expect(overflow).toHaveCount(0);
+			}
+
+			await page.locator('[data-day-key="2026-11-09"] [data-event-id="multi-day"]').click();
+			const details = page.getByRole("dialog", { name: "Multi-day workshop", exact: true });
+			await expect(details).toBeVisible();
+			await expect(details.getByText(/Monday, November 9, 2026 – Sunday, November 15, 2026/)).toBeVisible();
+			await settleLayout(page);
+			await page.screenshot({ path: testInfo.outputPath(`multi-day-details-${theme}-${layout}.png`) });
+		});
+	}
+}
+
+test("moves a timed multi-day event grabbed by its middle without collapsing the preview", async ({ page }, testInfo) => {
+	await page.setViewportSize({ width: 1280, height: 900 });
+	await mockAuthenticatedReads(page, multiDayEvents);
+	const writes: Array<{ end: string; start: string }> = [];
+	await page.route("**/api/v1/events", async (route) => {
+		if (route.request().method() === "PATCH") {
+			const body = route.request().postDataJSON().patch as { end: string; start: string };
+			writes.push({ end: body.end, start: body.start });
+		}
+		return route.fallback();
+	});
+	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-11-15`);
+	const grabbed = page.locator('[data-day-key="2026-11-12"] [data-event-id="multi-day"]');
+	await expect(grabbed).toBeVisible();
+	await settleLayout(page);
+	const from = (await grabbed.boundingBox())!;
+	const target = page.locator('[data-day-key="2026-11-19"]');
+	const to = (await target.boundingBox())!;
+
+	await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 8 });
+	await expect(target).toHaveAttribute("data-drop-target", "");
+	// The whole week moves by the seven days dragged: it does not restart on the
+	// drop day, and each piece keeps a full cell's width.
+	const previews = page.locator("[data-drag-preview]");
+	await expect(previews).toHaveCount(7);
+	const pieces = await previews.evaluateAll(nodes => nodes.map(node => ({
+		day: node.closest<HTMLElement>("[data-day-key]")!.dataset.dayKey,
+		time: node.querySelector("[data-event-time]")?.textContent ?? null,
+	})));
+	expect(pieces.map(piece => piece.day)).toEqual(["16", "17", "18", "19", "20", "21", "22"].map(day => `2026-11-${day}`));
+	expect(pieces.map(piece => piece.time)).toEqual(["10:00", null, null, null, null, null, null]);
+	const boxes = await previews.evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().toJSON() as DOMRect));
+	for (const [index, box] of boxes.slice(1).entries()) expect(Math.abs(box.left - boxes[index]!.right)).toBeLessThanOrEqual(1);
+	const rowStart = (await page.locator('[data-day-key="2026-11-16"]').boundingBox())!;
+	const rowEnd = (await page.locator('[data-day-key="2026-11-22"]').boundingBox())!;
+	// Inset only by the cells' 6 px padding at the two week edges.
+	expect(Math.abs(boxes[0]!.left - (rowStart.x + 6))).toBeLessThanOrEqual(1.5);
+	expect(Math.abs(boxes[6]!.right - (rowEnd.x + rowEnd.width - 6))).toBeLessThanOrEqual(1.5);
+	await page.screenshot({ path: testInfo.outputPath("multi-day-move-preview.png") });
+	await page.mouse.up();
+
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText("Event moved.");
+	// No clock change lies between these weeks; this proves the day shift only.
+	expect(writes.map(write => [new Date(write.start).toISOString(), new Date(write.end).toISOString()])).toEqual([["2026-11-16T09:00:00.000Z", "2026-11-22T15:00:00.000Z"]]);
+});
+
+test("keeps a timed multi-day event's start time when its middle is dragged across a clock change", async ({ page }) => {
+	await page.setViewportSize({ width: 1280, height: 900 });
+	// 10:00 CEST on Oct 20 to 16:00 CET on Oct 28; clocks go back on Oct 25.
+	const autumn = event("autumn-span", "Autumn span", "personal", "#b3492f", "2026-10-20T08:00:00.000Z", "2026-10-28T15:00:00.000Z");
+	await mockAuthenticatedReads(page, { ...events, events: [autumn] });
+	const writes: Array<{ end: string; start: string }> = [];
+	await page.route("**/api/v1/events", async (route) => {
+		if (route.request().method() === "PATCH") {
+			const body = route.request().postDataJSON().patch as { end: string; start: string };
+			writes.push({ end: body.end, start: body.start });
+		}
+		return route.fallback();
+	});
+	await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-10-15`);
+	const grabbed = page.locator('[data-day-key="2026-10-24"] [data-event-id="autumn-span"]');
+	await expect(grabbed).toBeVisible();
+	await settleLayout(page);
+	const from = (await grabbed.boundingBox())!;
+	const target = page.locator('[data-day-key="2026-10-26"]');
+	const to = (await target.boundingBox())!;
+	await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 8 });
+	await expect(target).toHaveAttribute("data-drop-target", "");
+	await page.mouse.up();
+	await expect(page.locator('[data-slot="toast-region"]')).toContainText("Event moved.");
+	// Two days later at the same wall-clock times: 10:00 CEST to 16:00 CET.
+	expect(writes.map(write => [new Date(write.start).toISOString(), new Date(write.end).toISOString()])).toEqual([["2026-10-22T08:00:00.000Z", "2026-10-30T15:00:00.000Z"]]);
+});
+
 test("moves an event with the keyboard", async ({ page }) => {
 	await mockAuthenticatedReads(page);
 	const writes: Array<{ end: string; start: string }> = [];
