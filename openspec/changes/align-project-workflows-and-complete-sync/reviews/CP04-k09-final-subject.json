@@ -1,0 +1,15 @@
+{
+  "base": "e6015977adba39e909a0824787ac9adcb64a8e99",
+  "head": "fe55449e1222581bb3c9d02fa0dd550416eb1dbe",
+  "root": "/home/flamendrin/orca/workspaces/musubi/codex-cp04-k09-freshness",
+  "subject": {
+    "docs/releases/publication.md": "48afcccb2b025ddc26ed2c5de3a676edae74de6436d1582c4ce3546f0298fddd",
+    "openspec/changes/align-project-workflows-and-complete-sync/audit-disposition.md": "5d7c031042f4b6d6bcd44a189259b0fb7f400e61c5a62c31423b35213a29abae",
+    "openspec/changes/align-project-workflows-and-complete-sync/checkpoints/CP04-k09-acceptance.md": "03e1bd27116cb1be044e6cf68c3830f369c593de05b70d4e1260f9959d95000b",
+    "openspec/changes/align-project-workflows-and-complete-sync/checkpoints/CP04-k09-freshness.md": "9df4d1aa6b62def1b1cb37209ff72213bc7dafc5e1bcb162305d8f206f4bc694",
+    "openspec/changes/align-project-workflows-and-complete-sync/reviews/CP04-k09-design.md": "f9c17575d73ac05bce3d53e49761b79abd151b376e01d0d44af0131e9430c07d",
+    "scripts/quality-proof.mjs": "00324baa17c37acb38a19e2da0260d80c09a771dc0201caf7fc4579af7b48e66",
+    "scripts/quality-proof.test.mjs": "3aa88725e173b6e8fc89ec04b2a27a1e05a831e4fea22ecae8b4c547c3622750",
+    "scripts/verify-publication.test.mjs": "e32294aebf30a21d5ede9f7a86167c8d067424f36c35bb67740977e1597b5094"
+  }
+}
