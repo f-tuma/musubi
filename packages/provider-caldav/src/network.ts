@@ -9,9 +9,20 @@ const pinnedAgents = new Map<string, Agent>();
 return function fetchPinned(
 	url: URL,
 	init: RequestInit,
-	address: LookupAddress,
+	pin: LookupAddress | readonly LookupAddress[],
 ): Promise<Response> {
-	const key = `${url.origin}|${address.address}|${address.family}`;
+	// One address: the CalDAV contract, unchanged (no fallback). An accepted set:
+	// the whole set is handed to one Agent whose lookup answers from the set, so
+	// Node's own address selection stays inside what the caller already admitted.
+	// The hostname in the URL, Host, SNI and native certificate checks are untouched
+	// because only `lookup` is pinned, never the URL.
+	const singleAddress = "address" in pin ? pin : null;
+	const addresses: readonly LookupAddress[] = "address" in pin ? [pin] : pin;
+	if (addresses.length === 0) throw new Error("Pinned fetch needs at least one accepted address.");
+	const first = addresses[0]!;
+	const key = singleAddress
+		? `${url.origin}|${first.address}|${first.family}`
+		: `${url.origin}|${addresses.map(({ address, family }) => `${address}/${family}`).join(",")}`;
 	let dispatcher = pinnedAgents.get(key);
 	if (!dispatcher) {
 		if (pinnedAgents.size >= 256) {
@@ -20,12 +31,22 @@ return function fetchPinned(
 			if (oldest) pinnedAgents.delete(oldest);
 		}
 		dispatcher = new Agent({
-			connect: {
-				autoSelectFamily: false,
-				lookup(_hostname, _options, callback) {
-					callback(null, address.address, address.family);
-				},
-			},
+			connect: singleAddress
+				? {
+						autoSelectFamily: false,
+						lookup(_hostname, _options, callback) {
+							callback(null, first.address, first.family);
+						},
+					}
+				: {
+						lookup(_hostname, options, callback) {
+							if (options.all) {
+								callback(null, addresses.map(({ address, family }) => ({ address, family })));
+							} else {
+								callback(null, first.address, first.family);
+							}
+						},
+					},
 		});
 		pinnedAgents.set(key, dispatcher);
 	}

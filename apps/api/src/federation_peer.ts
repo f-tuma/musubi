@@ -1,5 +1,6 @@
 import { logger } from "@musubi/config";
 import { isCompatibleVersion, MIN_PEER_VERSION } from "@musubi/types";
+import { federationFetch } from "./federation_origin";
 
 const PEER_TIMEOUT_MS = 8_000;
 
@@ -14,7 +15,7 @@ export type Peer = { version: string | null };
 
 export async function readPeer(origin: string): Promise<Peer | null> {
   try {
-    const response = await fetch(`${origin}/api/v1/server`, {
+    const response = await federationFetch(`${origin}/api/v1/server`, {
       headers: { accept: "application/json" },
       redirect: "manual",
       signal: AbortSignal.timeout(PEER_TIMEOUT_MS),

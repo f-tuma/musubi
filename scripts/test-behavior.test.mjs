@@ -13,6 +13,7 @@ const manifests = {
   "postgres-restore": "ops/behavior/postgres-restore.json",
   "web-edge": "apps/web/src/tests/behavior/web-edge.json",
   "project-news": "apps/api/src/behavior/project-news.json",
+  "federation-transport": "apps/api/src/behavior/federation-transport.json",
   "read-attempt": "apps/api/src/sync/behavior/read-attempt.json",
   "sync-outcome": "apps/api/src/sync/behavior/sync-outcome.json",
   "collection-reads": "apps/api/src/sync/behavior/collection-reads.json",
@@ -114,6 +115,7 @@ test("release boundaries use fixed CLIs and reject another boundary's report", a
     ["wire-timestamps", ["--import", "tsx"], "packages/types/src/behavior/wire-timestamps-cli.ts"],
     ["api-json-body", ["--import", "tsx"], "apps/api/src/behavior/api-json-body-cli.ts"],
     ["app-links", ["--import", "tsx"], "apps/api/src/behavior/app-links-cli.ts"],
+    ["federation-transport", ["--import", "tsx"], "apps/api/src/behavior/federation-transport-cli.ts"],
     ["postgres-restore", [], "ops/behavior/postgres-restore-cli.mjs"],
   ]) {
     const selected = await runBehavior(["--suite", suite, "--scenario", "first"], {
@@ -461,7 +463,7 @@ test("default runs every fixed suite and emits one clean aggregate JSON document
   const code = await runCli(["--json"], line => output.push(line), { root, execute: async (_command, args) => {
     launches++;
     if (args.some(arg => arg.endsWith("/postgres-restore-cli.mjs"))) return runtime(scenarios, { suite: "postgres-restore" });
-    if (args.includes("--import")) return runtime(scenarios, { suite: args.some(arg => arg.endsWith("/oauth-scopes-cli.ts")) ? "oauth-scopes" : args.some(arg => arg.endsWith("/wire-timestamps-cli.ts")) ? "wire-timestamps" : args.some(arg => arg.endsWith("/api-json-body-cli.ts")) ? "api-json-body" : args.some(arg => arg.endsWith("/app-links-cli.ts")) ? "app-links" : args.some(arg => arg.endsWith("/project-news-cli.ts")) ? "project-news" : args.some(arg => arg.endsWith("/read-attempt-cli.ts")) ? "read-attempt" : args.some(arg => arg.endsWith("/sync-outcome-cli.ts")) ? "sync-outcome" : args.some(arg => arg.endsWith("/fair-work-cli.ts")) ? "fair-work" : args.some(arg => arg.endsWith("/caldav-discovery-cli.ts")) ? "caldav-discovery" : args.some(arg => arg.endsWith("/google-rsvp-delivery-cli.ts")) ? "google-rsvp-delivery" : args.some(arg => arg.endsWith("/event-delivery-cli.ts")) ? "event-delivery" : args.some(arg => arg.endsWith("/task-delivery-cli.ts")) ? "task-delivery" :
+    if (args.includes("--import")) return runtime(scenarios, { suite: args.some(arg => arg.endsWith("/oauth-scopes-cli.ts")) ? "oauth-scopes" : args.some(arg => arg.endsWith("/wire-timestamps-cli.ts")) ? "wire-timestamps" : args.some(arg => arg.endsWith("/api-json-body-cli.ts")) ? "api-json-body" : args.some(arg => arg.endsWith("/app-links-cli.ts")) ? "app-links" : args.some(arg => arg.endsWith("/project-news-cli.ts")) ? "project-news" : args.some(arg => arg.endsWith("/federation-transport-cli.ts")) ? "federation-transport" : args.some(arg => arg.endsWith("/read-attempt-cli.ts")) ? "read-attempt" : args.some(arg => arg.endsWith("/sync-outcome-cli.ts")) ? "sync-outcome" : args.some(arg => arg.endsWith("/fair-work-cli.ts")) ? "fair-work" : args.some(arg => arg.endsWith("/caldav-discovery-cli.ts")) ? "caldav-discovery" : args.some(arg => arg.endsWith("/google-rsvp-delivery-cli.ts")) ? "google-rsvp-delivery" : args.some(arg => arg.endsWith("/event-delivery-cli.ts")) ? "event-delivery" : args.some(arg => arg.endsWith("/task-delivery-cli.ts")) ? "task-delivery" :
       args.some(arg => arg.endsWith("/collection-reads-cli.ts")) ? "collection-reads" :
       args.some(arg => arg.endsWith("/dav-response-cli.ts")) ? "dav-response" :
       args.some(arg => arg.endsWith("/google-task-create-cli.ts")) ? "google-task-create" :

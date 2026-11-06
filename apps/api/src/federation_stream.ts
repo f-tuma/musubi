@@ -2,7 +2,7 @@ import { getMusubiAccounts } from "@musubi/db";
 import { logger } from "@musubi/config";
 import { CLIENT_VERSION_HEADER, PRODUCT_VERSION } from "@musubi/types";
 import { peerTooOld } from "./federation_peer";
-import { assertPublicOrigin, canonicalHttpOrigin } from "./federation_origin";
+import { assertPublicOrigin, canonicalHttpOrigin, federationFetch } from "./federation_origin";
 import { connectionMemberToken } from "./federation_connections";
 
 // Federated realtime fan-in (ADR-005 phase 2).
@@ -66,7 +66,7 @@ async function streamOne(
       await assertPublicOrigin(origin);
       const incompatible = await peerTooOld(origin);
       if (incompatible) throw new Error(incompatible);
-      const response = await fetch(`${origin}/api/stream`, {
+      const response = await federationFetch(`${origin}/api/stream`, {
         headers: {
           accept: "text/event-stream",
           [CLIENT_VERSION_HEADER]: PRODUCT_VERSION,

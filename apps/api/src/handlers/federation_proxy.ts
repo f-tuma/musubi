@@ -3,7 +3,7 @@ import { BadRequestError, CLIENT_VERSION_HEADER, MIN_PEER_VERSION, NotFoundError
 import { peerTooOld } from "../federation_peer";
 import { Request, Response } from "express";
 import { logger } from "@musubi/config";
-import { assertPublicOrigin, canonicalHttpOrigin } from "../federation_origin";
+import { assertPublicOrigin, canonicalHttpOrigin, federationFetch } from "../federation_origin";
 import { connectionMemberToken } from "../federation_connections";
 
 // Federation gateway (ADR-005). Clients never hold the member token: they call
@@ -92,7 +92,7 @@ export async function handlerFederationProxy(req: Request, res: Response) {
 
   let upstream: globalThis.Response;
   try {
-    upstream = await fetch(target, {
+    upstream = await federationFetch(target, {
       body: hasBody && req.body !== undefined ? JSON.stringify(req.body) : undefined,
       headers,
       method: req.method,

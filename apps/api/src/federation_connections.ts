@@ -2,6 +2,7 @@ import { upsertMusubiAccount } from "@musubi/db";
 import { logger } from "@musubi/config";
 import { shouldRotateMemberToken } from "@musubi/types";
 import { decryptSecret, encryptSecret } from "./sync/crypto";
+import { federationFetch } from "./federation_origin";
 
 // Member-token lifecycle, server side (ADR-005 phase 4).
 //
@@ -35,7 +36,7 @@ export async function connectionMemberToken(
   if (!shouldRotateMemberToken(token)) return token;
 
   try {
-    const response = await fetch(`${origin}/api/v1/federation/token/rotate`, {
+    const response = await federationFetch(`${origin}/api/v1/federation/token/rotate`, {
       headers: {
         accept: "application/json",
         authorization: `Bearer ${token}`,
