@@ -25,7 +25,7 @@ const nativeStepNames = Object.freeze([
   "Build native APK and AAB with system bar verification", "Verify shipped DEX",
 ]);
 
-function validateNativeSteps(steps, android) {
+function validateNativeSteps(steps, android, acceptedStartedAt) {
   require(Array.isArray(steps) && steps.length === (android ? 2 : 0), "native step evidence is incomplete");
   if (!android) return;
   require(steps.every((step, index) => step?.name === nativeStepNames[index]), "native step identity mismatch");
@@ -35,6 +35,7 @@ function validateNativeSteps(steps, android) {
     require(integer(step.number) && !numbers.has(step.number) && step.status === "completed" && step.conclusion === "success" &&
       timestamp(step.startedAt) && timestamp(step.completedAt) && Date.parse(step.completedAt) >= Date.parse(step.startedAt),
     "native APK/AAB build or DEX verification did not succeed");
+    require(Date.parse(step.startedAt) >= Date.parse(acceptedStartedAt), "native verification step started before the accepted attempt");
     numbers.add(step.number);
   }
   require(steps[0].number < steps[1].number, "native verification step order mismatch");
@@ -68,7 +69,8 @@ export function validateQualityProof(proof, { sourceSha, repository = repository
       job.conclusion === "success" && timestamp(job.startedAt) && timestamp(job.completedAt) &&
       Date.parse(job.completedAt) >= Date.parse(job.startedAt), "missing, duplicate, unsuccessful or wrong-attempt Quality job");
     ids.add(job.id);
-    validateNativeSteps(job.nativeSteps, job.name === "Android system bars");
+    validateNativeSteps(job.nativeSteps, job.name === "Android system bars", run.startedAt);
+    require(Date.parse(job.startedAt) >= Date.parse(run.startedAt), "Quality job started before the accepted attempt");
   }
   const publication = proof.publication;
   keys(publication, ["runId", "runAttempt", "workflowRef", "workflowSha", "event", "ref", "version"], "unexpected publication schema");

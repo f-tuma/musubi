@@ -1,0 +1,21 @@
+# Disposition final review — CP04 slice 4.1–4.2 (K-09 freshness accepted attemptu)
+
+Datum: 2026-11-06. Autor: Claude Fable 5.1, Orca task `task_853fbd4c76bf` (follow-up ve stejném worktree, větev `codex/cp04-k09-freshness`).
+
+## Původní reviewovaný subjekt
+
+- Diff `e6015977adba39e909a0824787ac9adcb64a8e99..fe55449e1222581bb3c9d02fa0dd550416eb1dbe` (head `fe55449e…`), 8 souborů.
+- Manifest `reviews/CP04-k09-final-subject.json` (nezměněná kopie `/tmp/musubi-k09-final-subject.json`), SHA256 `7a0baf814cce623159e6ca67fbd35fe6a716ed3c87f7bd3fb3c6c7b0d3f26747`.
+- Report `reviews/CP04-k09-final.md` (nezměněná kopie `/tmp/musubi-k09-final-review.md`, durable kopie `backups/codex-cp01-20261105/reports/K09-final-review.md` původního checkoutu), SHA256 `6959b29b3a86a50e66305cc84ee1f15f0e7d223db50897cb06b66e4b265cfbe2`. Reviewer: Orca task `task_f7194eeecb5c`.
+- Verdikt: **APPROVE** bez blockerů; nálezy FR-01–FR-03 (třída D) s výslovným povolením vyřešit je úpravou acceptance textu v téže větvi bez nového code review.
+
+## Co se po review změnilo (pouze evidence)
+
+- Jediný změněný soubor z manifestu: `checkpoints/CP04-k09-acceptance.md` — původní SHA256 `03e1bd27116cb1be044e6cf68c3830f369c593de05b70d4e1260f9959d95000b` → po FR-01–FR-03 `65da7a18750676af3af400a69522ee8fd75d9ad474b3d3ab42bbc1e9a33f28e4` (commit `d85534d4…`) → `b6445bab2ffa5dff1ac8e65442b62b9588cea22b7df6782fdd3948c73458a7fe` (commit `552ba072…`; stavové zpřesnění: úvod označen jako původní lokální stav před final review, poslední bullet §6 uvádí jen zbývající gates push/PR, 21/21 CI, branch protection, merge, release; v rámci povolených FR-01–FR-03, kód/testy/kontrakt beze změny). Změny: FR-01 (`+3/−2` → `+4/−2`), FR-02 (§5 limit `created_at == run_started_at` v reálném attempt 1; diskriminace jen z fixtures M2/M2b), FR-03 (§6 přiznaná hranice zpětné re-verifikace historických publikací; žádná změna časového kontraktu/politiky) a odkaz na tento final review.
+- Ostatních 7 souborů manifestu (`docs/releases/publication.md`, `audit-disposition.md`, `checkpoints/CP04-k09-freshness.md`, `reviews/CP04-k09-design.md`, `scripts/quality-proof.mjs`, `scripts/quality-proof.test.mjs`, `scripts/verify-publication.test.mjs`): SHA256 beze změny, ověřeno proti manifestu před commitem. `.spec-pilot.json` zůstává `099538b4…10ae`. Kód a testy se neměnily, proto se `pnpm check`, build ani mutace neopakovaly; původní runs platí svými přesnými source hashi (`backups/spec-sessions/cp04-k09-20261106/`).
+- Přidané soubory: `reviews/CP04-k09-final.md`, `reviews/CP04-k09-final-subject.json`, tento soubor. Historický report ani hash manifest se nepřepisují.
+- Nemateriální oprava přesnosti evidence (2026-11-06, po `552ba072`): počet scénářů v inventáři `pnpm test:behavior --list` v acceptance §4 opraven 763 → 758. Příčina: původní počítání řádků s `: ` připočetlo 5 instalačních/log řádků pnpm; správný počet je počet řádků tvaru `^[a-z0-9-]+/[a-z0-9-]+: ` v nezměněném raw `behavior-list.stdout` (SHA256 `e4799938f41d4c691bc2e12678a8fc1b0e15d9290653ed503aab61a04a5ae48e`), 27 suite beze změny, dotčené skripty v inventáři dál nejsou. Acceptance SHA256 `b6445bab…a7fe` → aktuální `64b72da5f50504fdd1c81379100b3db64889c2d10ff8b001903a6613ddf161f4`. Není to nový test PASS ani reviewovaný kód; kód, testy, kontrakt a ostatních 7 souborů manifestu beze změny.
+
+## Skutečný stav
+
+Nezávislý final review: **splněn** (APPROVE pro `fe55449e…`; evidence-only změny výše jej neotevírají). Otevřené: push/PR, 21/21 current-head Quality na PR headu, branch protection, merge, release; runtime publikace/deployment mimo rozsah. Tasks 4.1/4.2 zůstávají nezaškrtnuté.

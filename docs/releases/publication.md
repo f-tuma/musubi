@@ -43,6 +43,8 @@ identity/attempt, completion and success. It then reads that run's
 and requires the exact 21 unique expected job names and IDs. Every job must have
 the same source, run and attempt and a completed successful result. The Android
 job must additionally contain successful native build and shipped DEX steps.
+Every required Quality job and each required native verification step must
+also have started no earlier than the accepted attempt's `run_started_at`.
 
 The run, selected candidate and workflow are read again after job enumeration.
 Pending, failed, skipped, missing, duplicate or extra jobs fail closed, as do

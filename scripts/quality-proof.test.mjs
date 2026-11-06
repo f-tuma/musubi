@@ -114,6 +114,39 @@ test("partial rerun does not reuse successful jobs from an earlier attempt", asy
   await assert.rejects(f.collect(), /21 current-attempt/);
 });
 
+const at = (hhmm) => `2026-10-22T${hhmm}:00Z`;
+function acceptedAttempt(t) {
+  const f = fixture(t);
+  Object.assign(f.data.run, { run_attempt: 2, created_at: at("10:00"), run_started_at: at("10:20"), updated_at: at("10:40") });
+  for (const job of f.data.jobs.jobs) {
+    Object.assign(job, { run_attempt: 2, started_at: at("10:20"), completed_at: at("10:40") });
+    job.steps.forEach((step, n) => Object.assign(step, { started_at: at(n === 0 ? "10:20" : "10:25"), completed_at: at(n === 0 ? "10:30" : "10:35") }));
+  }
+  return f;
+}
+
+test("job carried over from before the accepted attempt start is rejected; a fully fresh attempt 2 passes without a rerun", async (t) => {
+  const f = acceptedAttempt(t);
+  const carried = f.data.jobs.jobs[0];
+  assert.equal(carried.name, "API container boots and serves");
+  Object.assign(carried, { started_at: at("10:05"), completed_at: at("10:10") });
+  await assert.rejects(f.collect(), /Quality job started before the accepted attempt/);
+  Object.assign(carried, { started_at: at("10:20"), completed_at: at("10:30") });
+  const proof = await f.collect();
+  assert.equal(proof.run.attempt, 2);
+  assert.equal(proof.jobs.length, 21);
+  assert.ok(proof.jobs.every((job) => job.runAttempt === 2 && Date.parse(job.startedAt) >= Date.parse(proof.run.startedAt)));
+});
+
+test("native verification steps carried over from before the accepted attempt start are rejected", async (t) => {
+  const f = acceptedAttempt(t);
+  const android = f.data.jobs.jobs.find((job) => job.name === "Android system bars");
+  Object.assign(android, { started_at: at("10:05"), completed_at: at("10:15") });
+  Object.assign(android.steps[0], { started_at: at("10:05"), completed_at: at("10:10") });
+  Object.assign(android.steps[1], { started_at: at("10:10"), completed_at: at("10:15") });
+  await assert.rejects(f.collect(), /native verification step started before the accepted attempt/);
+});
+
 test("invalid publication context or captured source fails before any network access", async (t) => {
   const f = fixture(t);
   const cases = {

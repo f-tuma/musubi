@@ -211,6 +211,19 @@ test("current linked Quality must still be the same full successful attempt and 
   }
 });
 
+test("verifier rejects a frozen proof whose job started before the accepted attempt start", async () => {
+  const f = fixture();
+  f.qualityRun.run_started_at = iso("00:30");
+  f.proof.run.startedAt = iso("00:30");
+  const carried = f.proof.jobs[0];
+  assert.equal(carried.nativeSteps.length, 0);
+  Object.assign(carried, { startedAt: iso("00:05"), completedAt: iso("00:10") });
+  Object.assign(f.qualityJobs.jobs[0], { started_at: iso("00:05"), completed_at: iso("00:10") });
+  f.recheck.proofSha256 = createHash("sha256").update(json(f.proof)).digest("hex");
+  f.setEvidence(0, f.proof); f.setEvidence(1, f.recheck);
+  await assert.rejects(collectPublicationProof(f.options), /Quality job started before the accepted attempt/);
+});
+
 test("main Quality must have completed before provenance acceptance and the pre-tag sample", async () => {
   const f = fixture();
   f.proof.run.updatedAt = iso("11:00");
