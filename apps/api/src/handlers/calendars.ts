@@ -41,6 +41,7 @@ import { getAdapter, prepareEventWrites } from "../sync/engine";
 import { buildInvitePreview } from "../invite_preview";
 import { assertOAuthEventWriteGrant } from "../sync/event_write";
 import { ProviderAuthError } from "../sync/errors";
+import { EventWritePending, eventWritePendingRetryAfterSeconds } from "../sync/event_write_pending";
 
 // External mirror? Then only the person whose provider account backs it may
 // change/delete it — and the change must land on the provider FIRST (throwing
@@ -394,6 +395,20 @@ export async function handlerImportCalendar(req: Request, res: Response) {
 			event, calendarIDs: [created.id], action: "create",
 		})), mutationIdentity);
 	} catch (error) {
+		if (error instanceof EventWritePending) {
+			// Destination creation has already committed. Retain that receipt;
+			// retrying the whole import would create another calendar.
+			res.setHeader("Retry-After", String(eventWritePendingRetryAfterSeconds(error)));
+			return res.status(503).json({
+				error: "The calendar was created, but no events were imported; the calendar remains empty.",
+				code: error.code,
+				localCommitted: true,
+				calendar: created,
+				imported: 0,
+				retryAt: new Date(error.retryAtMs).toISOString(),
+				requestId: req.requestId,
+			});
+		}
 		if (error instanceof EventWriteError) {
 			throw new EventWriteError(error.capability, error.reason,
 				`The new calendar was created, but event writing is ${error.reason}. No events were imported; the calendar remains empty.`);

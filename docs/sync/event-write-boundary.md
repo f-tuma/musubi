@@ -114,6 +114,33 @@ parallel delivery framework:
 - Preflight preserves `EventWriteError` (capability denied/unknown/unsupported),
   `ProviderAuthError`, and `ProviderEventWriteError`. Unknown preflight exceptions
   remain conservative capability-unknown refusals before mutation.
+- Two typed pre-commit waits are not refusals: a scheduler/budget
+  `ProviderDispatchDeferred` (work capacity, credit, cooldown, persistence
+  pending) and the bounded attempt deadline `DeliveryAttemptInterrupted("timeout")`
+  while the preflight waited. `prepareEventWrites` maps only these two classes
+  to `EventWritePending`, keeps the bounded `sync.event.preflight_failed` log,
+  and the HTTP layer answers **503** with `Retry-After` (whole seconds, at least
+  one, rounded up) and body `{ error: "Calendar writing is temporarily
+  unavailable. No changes were saved. Try again shortly.", code: "provider-busy",
+  localCommitted: false, retryAt }`. `retryAt` is the exact deferral eligibility
+  or, for the deadline, now plus five seconds. Nothing was committed and no outbox
+  row exists, so a client may retry the same event identity later; it must not
+  mint a new identity. Message strings, network codes such as `ETIMEDOUT`,
+  `AbortError`/`TimeoutError` names and SQL states are not classified: they stay
+  the 403 capability-unknown refusal. The scheduler's foreground reserve (one of
+  four regular permits is never taken by background pulls) removes the wait that
+  other accounts' pulls caused; a held pull of the same account still serializes
+  that account's own preflight and delivery. Every non-auxiliary request
+  submission is foreground-eligible, including preconnection discovery and
+  provider-wide revocation without a physical account row; only background
+  durable pulls are capped at three.
+- Whole-calendar ICS import creates its destination before event preflight.
+  If that preflight is deferred or times out, its 503 retains `provider-busy`,
+  `Retry-After` and `retryAt`, but says the calendar was created and remains empty,
+  with `localCommitted: true`, `calendar` and `imported: 0`. No events or event
+  outbox rows were admitted. The retry hint describes provider eligibility;
+  the whole import is not idempotent and must not be automatically repeated.
+  The same-event-identity retry rule above applies to individual event writes.
 - `ProviderEventWriteError` has `code`: `provider-conflict`,
   `provider-version-unavailable`, `event-diff-unavailable`, or `provider-write-failed`;
   `outcome`: `not-written` or `unconfirmed`; and optional `providerStatus` (412 for

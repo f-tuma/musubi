@@ -45,6 +45,8 @@ export async function runFairWorkScenario(scenario: FairWorkScenario): Promise<R
   let summary: Record<string, unknown>;
   if (scenario.id === "parked-foreground-serial") {
     summary = await parkedForegroundSerial();
+  } else if (RESERVE_SCENARIOS.includes(scenario.id)) {
+    summary = await foregroundReserveScenario(scenario.id);
   } else if (["parked-pull-request-preflight", "parked-pull-durable-delivery", "full-account-pull-queue-request"].includes(scenario.id)) {
     summary = await requestDuringParkedPull(scenario.id);
   } else if (["due-crosses-during-wake-scan", "parked-due-crosses-before-timer"].includes(scenario.id)) {
@@ -543,4 +545,183 @@ async function parkedForegroundSerial(): Promise<Record<string, unknown>> {
     firstGate.resolve(); await tick();
     return { secondBeforeFirstRelease, otherAccountCompleted, secondAfterFirstRelease: secondStarted, maxForegroundLogical };
   } finally { firstGate.resolve(); readGate.resolve(); await Promise.allSettled(jobs); coordinator.close(); }
+}
+
+const RESERVE_SCENARIOS = ["four-held-other-accounts-request", "four-held-other-accounts-durable-delivery", "four-parked-other-accounts-request",
+  "reserve-blocks-fourth-background-until-background-release", "reserve-same-account-held-pull-still-waits", "reserve-auxiliary-under-full-regular",
+  "reserve-foreground-deadline-cancel", "reserve-all-parked-with-foreground"];
+const OTHER_ACCOUNTS = ["other0", "other1", "other2", "other3"];
+
+/** The actual coordinator at the production capacity (4) through its clock,
+ * candidate and execute ports. `foregroundReserve` is the option under test;
+ * `0` is the shared-pool baseline that production ran before the reserve. */
+function reservePool(foregroundReserve: number, options: { nowMs?: () => number; offered?: WorkCandidate<string>[];
+  execute(c: WorkCandidate<string>, permit: WorkPermit, signal: AbortSignal, pool: ReservePool): Promise<WorkExecutionResult> }) {
+  let offered = false, backgroundLogical = 0;
+  const pool = { maxHeld: 0, maxRegularLogical: 0, maxBackgroundLogical: 0,
+    coordinator: undefined as unknown as ReturnType<typeof createFairWorkCoordinator<string>> };
+  const observe = () => { const state = pool.coordinator.snapshot(); pool.maxHeld = Math.max(pool.maxHeld, state.active);
+    pool.maxRegularLogical = Math.max(pool.maxRegularLogical, state.regularLogical); pool.maxBackgroundLogical = Math.max(pool.maxBackgroundLogical, backgroundLogical); };
+  pool.coordinator = createFairWorkCoordinator<string>({ capacity: 4, foregroundReserve, nowMs: options.nowMs ?? (() => 0), schedule: () => () => {}, host: {
+    async candidates() { if (offered || !options.offered) return { candidates: [] }; offered = true; return { candidates: options.offered }; },
+    async execute(c, permit, signal) {
+      const background = !c.auxiliary && c.family === "pull" && c.foreground !== true;
+      if (background) backgroundLogical++;
+      observe();
+      try { return await options.execute(c, permit, signal, { ...pool, observe } as ReservePool); }
+      finally { if (background) backgroundLogical--; }
+    },
+  } });
+  return { ...pool, get coordinator() { return pool.coordinator; }, observe,
+    get maxHeld() { return pool.maxHeld; }, get maxRegularLogical() { return pool.maxRegularLogical; }, get maxBackgroundLogical() { return pool.maxBackgroundLogical; } };
+}
+type ReservePool = { observe(): void; readonly coordinator: ReturnType<typeof createFairWorkCoordinator<string>>;
+  readonly maxHeld: number; readonly maxRegularLogical: number; readonly maxBackgroundLogical: number };
+const deferralReason = (error: unknown) => error instanceof ProviderDispatchDeferred ? error.deferral.reason : error instanceof Error ? error.message : "unexpected";
+
+async function foregroundReserveScenario(id: string): Promise<Record<string, unknown>> {
+  if (id === "four-held-other-accounts-request" || id === "four-held-other-accounts-durable-delivery") {
+    const family = id.endsWith("durable-delivery") ? "event-delivery" : "pull";
+    const run = async (reserve: number) => {
+      const releases = new Map(OTHER_ACCOUNTS.map(key => [key, deferred<void>()]));
+      let backgroundStarted = 0, requestStarted = false, rejection: string | null = null;
+      const pool = reservePool(reserve, { offered: OTHER_ACCOUNTS.map(key => candidate(key)), async execute(c) {
+        if (c.key === "request") { requestStarted = true; return settled; }
+        backgroundStarted++; await releases.get(c.key)!.promise; return settled;
+      } });
+      const { coordinator } = pool;
+      try {
+        coordinator.kick(); await tick();
+        const started = backgroundStarted, fourthBackgroundPending = coordinator.snapshot().pending === 1 && backgroundStarted === 3;
+        const request = family === "pull" ? { ...candidate("request", "mine"), foreground: true } : candidate("request", "mine", "event-delivery");
+        const job = coordinator.submit(request).catch(error => { rejection = deferralReason(error); });
+        await tick(); const startedWhileSaturated = requestStarted;
+        releases.get("other0")!.resolve(); await tick(); const admittedAfterOneRelease = requestStarted;
+        for (const release of releases.values()) release.resolve(); await job; await tick();
+        return reserve ? { backgroundStarted: started, fourthBackgroundPending, startedWhileSaturated, rejection, maxHeld: pool.maxHeld, maxRegularLogical: pool.maxRegularLogical }
+          : { backgroundStarted: started, startedWhileSaturated, rejection, admittedAfterOneRelease, maxHeld: pool.maxHeld, maxRegularLogical: pool.maxRegularLogical };
+      } finally { for (const release of releases.values()) release.resolve(); coordinator.close(); }
+    };
+    return { withReserve: await run(1), withoutReserve: await run(0) };
+  }
+  if (id === "four-parked-other-accounts-request") {
+    const run = async (reserve: number) => {
+      const release = deferred<void>(); let backgroundStarted = 0, foregroundStarted = false, rejection: string | null = null;
+      const jobs: Promise<unknown>[] = [];
+      const pool = reservePool(reserve, { async execute(c, permit, signal) {
+        if (c.key === "request") { foregroundStarted = true; return settled; }
+        backgroundStarted++; await pool.coordinator.parkUntil(permit, release.promise, signal); return settled;
+      } });
+      const { coordinator } = pool;
+      try {
+        for (const key of OTHER_ACCOUNTS) jobs.push(coordinator.submit(candidate(key))); await tick();
+        const parkedBackground = coordinator.snapshot().parked;
+        jobs.push(coordinator.submit({ ...candidate("request", "mine"), foreground: true }).catch(error => { rejection = deferralReason(error); })); await tick();
+        const summary = { backgroundStarted, parkedBackground, foregroundStarted, rejection };
+        release.resolve(); await Promise.allSettled(jobs); return summary;
+      } finally { release.resolve(); await Promise.allSettled(jobs); coordinator.close(); }
+    };
+    return { withReserve: await run(1), withoutReserve: await run(0) };
+  }
+  if (id === "reserve-blocks-fourth-background-until-background-release") {
+    const releases = new Map([...OTHER_ACCOUNTS, "request"].map(key => [key, deferred<void>()]));
+    let backgroundStarted = 0, requestStarted = false;
+    const pool = reservePool(1, { offered: OTHER_ACCOUNTS.map(key => candidate(key)), async execute(c) {
+      if (c.key === "request") requestStarted = true; else backgroundStarted++;
+      await releases.get(c.key)!.promise; return settled;
+    } });
+    const { coordinator } = pool;
+    try {
+      coordinator.kick(); await tick(); const started = () => backgroundStarted; assert.equal(started(), 3);
+      const job = coordinator.submit({ ...candidate("request", "mine"), foreground: true }); await tick();
+      const foregroundStartedWhileSaturated = requestStarted;
+      releases.get("request")!.resolve(); await job; await tick();
+      const fourthPendingAfterForegroundRelease = started() === 3 && coordinator.snapshot().pending === 1;
+      releases.get("other0")!.resolve(); await tick();
+      const fourthStartedAfterBackgroundRelease = started() === 4;
+      for (const release of releases.values()) release.resolve(); await tick();
+      return { foregroundStartedWhileSaturated, fourthPendingAfterForegroundRelease, fourthStartedAfterBackgroundRelease,
+        maxBackgroundLogical: pool.maxBackgroundLogical, maxHeld: pool.maxHeld, maxRegularLogical: pool.maxRegularLogical };
+    } finally { for (const release of releases.values()) release.resolve(); coordinator.close(); }
+  }
+  if (id === "reserve-same-account-held-pull-still-waits") {
+    const run = async (reserve: number) => {
+      const release = deferred<void>(); let foregroundStarted = false, rejection: string | null = null;
+      const pool = reservePool(reserve, { async execute(c) { if (c.key === "request") { foregroundStarted = true; return settled; } await release.promise; return settled; } });
+      const { coordinator } = pool;
+      const jobs: Promise<unknown>[] = [];
+      try {
+        jobs.push(coordinator.submit(candidate("own-pull", "mine"))); await tick();
+        jobs.push(coordinator.submit({ ...candidate("request", "mine"), foreground: true }).catch(error => { rejection = deferralReason(error); })); await tick();
+        const foregroundBeforeOwnPullRelease = foregroundStarted, spareRegularWhileWaiting = 4 - coordinator.snapshot().regularLogical;
+        release.resolve(); await Promise.allSettled(jobs); await tick();
+        return { foregroundBeforeOwnPullRelease, foregroundAfterOwnPullRelease: foregroundStarted, rejection, spareRegularWhileWaiting };
+      } finally { release.resolve(); await Promise.allSettled(jobs); coordinator.close(); }
+    };
+    return { withReserve: await run(1), withoutReserve: await run(0) };
+  }
+  if (id === "reserve-auxiliary-under-full-regular") {
+    const release = deferred<void>(), parentDependency = deferred<void>();
+    let auxiliaryStarted = false, regularLogicalAtAuxiliaryStart = 0, furtherPullStarted = false, furtherForegroundStarted = false;
+    const pool = reservePool(1, { async execute(c, permit, signal) {
+      // The refresh result arrives later: the parent stays parked, so the regular pool stays full.
+      if (c.auxiliary) { auxiliaryStarted = true; regularLogicalAtAuxiliaryStart = pool.coordinator.snapshot().regularLogical; return settled; }
+      if (c.key === "parent") { await pool.coordinator.parkUntil(permit, parentDependency.promise, signal); return settled; }
+      if (c.key === "further-pull") { furtherPullStarted = true; return settled; }
+      if (c.key === "further-foreground") { furtherForegroundStarted = true; return settled; }
+      await release.promise; return settled;
+    } });
+    const { coordinator } = pool;
+    const jobs: Promise<unknown>[] = [];
+    try {
+      jobs.push(coordinator.submit(candidate("parent", "A"))); await tick();
+      jobs.push(coordinator.submit(candidate("B")), coordinator.submit(candidate("C")), coordinator.submit({ ...candidate("D"), foreground: true })); await tick();
+      assert.equal(coordinator.snapshot().regularLogical, 4, "Three pulls (one parked) and one foreground fill the regular pool");
+      jobs.push(coordinator.submit(candidate("further-pull", "E")), coordinator.submit({ ...candidate("further-foreground", "F"), foreground: true })); await tick();
+      jobs.push(coordinator.submit({ ...candidate("aux-A", "A"), auxiliary: true })); await tick();
+      const summary = { auxiliaryStartedUnderFullRegular: auxiliaryStarted, regularLogicalAtAuxiliaryStart,
+        furtherPullStartedBeforeRelease: furtherPullStarted, furtherForegroundStartedBeforeRelease: furtherForegroundStarted };
+      release.resolve(); parentDependency.resolve(); const results = await Promise.allSettled(jobs); await tick();
+      return { ...summary, maxHeld: pool.maxHeld, completed: results.every(result => result.status === "fulfilled") && furtherPullStarted && furtherForegroundStarted };
+    } finally { release.resolve(); parentDependency.resolve(); await Promise.allSettled(jobs); coordinator.close(); }
+  }
+  if (id === "reserve-foreground-deadline-cancel") {
+    const run = async (reserve: number) => {
+      let time = 0, executions = 0, rejection: string | null = null;
+      const releases = new Map(OTHER_ACCOUNTS.map(key => [key, deferred<void>()]));
+      const pool = reservePool(reserve, { nowMs: () => time, async execute(c) { if (c.key === "request") { executions++; return settled; } await releases.get(c.key)!.promise; return settled; } });
+      const { coordinator } = pool;
+      const jobs: Promise<unknown>[] = [];
+      try {
+        for (const key of OTHER_ACCOUNTS) jobs.push(coordinator.submit(candidate(key))); await tick();
+        const request = coordinator.submit({ ...candidate("request", "mine"), foreground: true }).catch(error => { rejection = deferralReason(error); });
+        jobs.push(request); await tick();
+        const startedBeforeDeadline = executions === 1;
+        if (!startedBeforeDeadline) { time = 45_000; coordinator.cancel("request", new Error("Delivery attempt timeout.")); await request; }
+        releases.get("other0")!.resolve(); await tick();
+        const summary = reserve ? { startedBeforeDeadline, executions } : { startedBeforeDeadline, rejection, executionsAfterCancel: executions };
+        for (const release of releases.values()) release.resolve(); await Promise.allSettled(jobs); return summary;
+      } finally { for (const release of releases.values()) release.resolve(); await Promise.allSettled(jobs); coordinator.close(); }
+    };
+    return { withReserve: await run(1), withoutReserve: await run(0) };
+  }
+  if (id === "reserve-all-parked-with-foreground") {
+    const release = deferred<void>(); let rejection: string | null = null, retryDelayMs: number | null = null;
+    const pool = reservePool(1, { async execute(c, permit, signal) {
+      if (c.key === "late-foreground") throw new Error("A swept foreground must not execute");
+      await pool.coordinator.parkUntil(permit, release.promise, signal); return settled;
+    } });
+    const { coordinator } = pool;
+    const jobs: Promise<unknown>[] = [];
+    try {
+      for (const key of OTHER_ACCOUNTS.slice(0, 3)) jobs.push(coordinator.submit(candidate(key)));
+      jobs.push(coordinator.submit({ ...candidate("parked-foreground", "X"), foreground: true })); await tick();
+      const parkedRegular = coordinator.snapshot().parked, heldRegular = coordinator.snapshot().active;
+      jobs.push(coordinator.submit({ ...candidate("late-foreground", "Y"), foreground: true }).catch(error => {
+        rejection = deferralReason(error); if (error instanceof ProviderDispatchDeferred) retryDelayMs = error.deferral.retryAtMs; })); await tick();
+      const summary = { parkedRegular, heldRegular, rejection, retryDelayMs };
+      release.resolve(); await Promise.allSettled(jobs); return summary;
+    } finally { release.resolve(); await Promise.allSettled(jobs); coordinator.close(); }
+  }
+  throw new Error("Unknown fair work scenario.");
 }

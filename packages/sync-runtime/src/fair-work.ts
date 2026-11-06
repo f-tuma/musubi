@@ -40,6 +40,13 @@ export interface WorkHost<HostRef> {
 export interface FairWorkOptions<HostRef> {
   readonly capacity: number;
   readonly candidateLimit?: number;
+  /** Regular permits withheld from background pulls (held or parked) so a
+   * foreground request or durable delivery can still be admitted while other
+   * accounts' pulls saturate the pool. Integer, 0 <= reserve < capacity; 0 (the
+   * default) keeps the shared pool. Foreground, auxiliary, account and collision
+   * gates are unchanged, so a held same-account pull still serializes its own
+   * account's foreground work. */
+  readonly foregroundReserve?: number;
   readonly host: WorkHost<HostRef>;
   readonly nowMs?: () => number;
   readonly schedule?: (run: () => void, delayMs: number) => () => void;
@@ -61,6 +68,10 @@ export function createFairWorkCoordinator<H>(options: FairWorkOptions<H>) {
   if (!Number.isInteger(options.capacity) || options.capacity < 1 ||
       !Number.isInteger(options.candidateLimit ?? 80) || (options.candidateLimit ?? 80) < 1)
     throw new RangeError("Invalid fair work bounds.");
+  const foregroundReserve = options.foregroundReserve ?? 0;
+  if (!Number.isInteger(foregroundReserve) || foregroundReserve < 0 || foregroundReserve >= options.capacity)
+    throw new RangeError("Invalid foreground reserve.");
+  const backgroundCapacity = options.capacity - foregroundReserve;
   const now = options.nowMs ?? Date.now;
   const schedule = options.schedule ?? ((run, delay) => { const timer = setTimeout(run, Math.min(2_147_483_647, delay)); return () => clearTimeout(timer); });
   const pending = new Map<string | WorkPermit, Pending<H>>(), accounts = new Set<string>(), collisions = new Map<string, WorkPermit>();
@@ -119,8 +130,12 @@ export function createFairWorkCoordinator<H>(options: FairWorkOptions<H>) {
   function choose(atMs: number): Pending<H> | undefined {
     const regular = [...permits.values()].filter(state => !state.item.candidate.auxiliary).length;
     const auxiliary = active.size - regular;
+    // Background pulls, held or parked, stay below the reserve so a foreground
+    // request or durable delivery is admitted while other accounts saturate the pool.
+    const background = [...permits.values()].filter(state => !state.item.candidate.auxiliary && !foreground(state.item.candidate)).length;
     const eligible = [...pending.values()].filter(item => { const c = item.candidate; return c.dueAtMs <= atMs &&
-      (item.resume ? permits.has(item.resume.permit) : !active.has(c.key) && (c.auxiliary ? auxiliary : regular) < options.capacity) &&
+      (item.resume ? permits.has(item.resume.permit) : !active.has(c.key) && (c.auxiliary ? auxiliary : regular) < options.capacity &&
+        (c.auxiliary || foreground(c) || background < backgroundCapacity)) &&
       // One parked pull may coexist with one foreground operation. The held
       // account/collision gates below still serialize native work, while the
       // regular global capacity and independent OAuth reserve stay unchanged.
