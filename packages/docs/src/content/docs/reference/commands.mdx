@@ -240,7 +240,7 @@ and pnpm:
 - `version` is the user-visible SemVer release. `apps/client/app.config.ts`
   reads it directly for the native Expo version.
 - `packageManager` pins the pnpm version Corepack uses locally, in CI, and in
-  both Docker builds.
+  the Docker builds.
 - workspace manifests are private and intentionally have neither field.
 - EAS keeps platform build numbers remotely; those monotonically increasing
   numbers are separate from the user-visible product version.

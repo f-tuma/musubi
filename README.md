@@ -87,8 +87,9 @@ Follow the public [feedback and roadmap board](https://feedback.musubi.pro) for 
 
 ## Run it yourself
 
-**Requirements:** Node 22.12+, Corepack, Postgres 15+ (or just Docker). The
-repository selects the exact pnpm version.
+**Requirements:** the Node version in `.nvmrc` (the exact version the Docker
+images run; CI runs the current release of the same major), Corepack,
+Postgres 15+ (or just Docker). The repository selects the exact pnpm version.
 
 ```sh
 git clone https://github.com/f-tuma/musubi.git && cd musubi

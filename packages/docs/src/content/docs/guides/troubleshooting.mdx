@@ -36,14 +36,17 @@ sync, and the error middleware share that correlation value.
 
 **Symptom:** `Unsupported engine`, or the docs fail before compilation.
 
-Use Node **22.12+**. Astro 7 is the strictest workspace dependency:
+Compare `node --version` with `.nvmrc`. It names the exact version the Docker
+images run; CI runs the current release of the same major, and other majors
+are not verified:
 
 ```sh
 node --version
+cat .nvmrc
 pnpm --version
 ```
 
-The root manifest pins `pnpm@11.8.0` and is the only toolchain source:
+The root manifest pins `pnpm@11.8.0` and is the only pnpm source:
 
 ```sh
 corepack enable
