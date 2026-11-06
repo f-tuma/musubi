@@ -1,0 +1,25 @@
+{
+  "slice": "CP01 1.3 Node toolchain coherence",
+  "recordedAt": "2026-11-06",
+  "recordedBy": "Claude Fable 5.1, Orca task_d42b80dddbf8",
+  "approvedSubject": {
+    "description": "Brief v3 as reviewed (durable local copy outside git: backups/codex-cp01-20261105/reports/CP01-toolchain-approved-v3.md in the original checkout)",
+    "sha256": "a497f9b5f7ca3404b77f34b1ead87ac615ae0590705bee2e7352b7d9880d8ebb",
+    "lines": 79
+  },
+  "designReview": {
+    "path": "reviews/CP01-toolchain-design.md",
+    "verdict": "APPROVE",
+    "reviewer": "Claude Fable 5.1, Orca task_35c5e3f4fe61, fresh context, 2026-11-05",
+    "sha256": "520b7a3d59a12bb2c209adcd55f42e18939aa60937657c903691782b11955aa7",
+    "note": "Byte-identical copy of the review file; its own subject line names the reviewer's /tmp copy of the same bytes (hash matched above)."
+  },
+  "canonicalCheckpoint": {
+    "path": "checkpoints/CP01-toolchain-coherence.md",
+    "sha256": "c6b0e06ff9be40cf3f280faa29b40a056da7133a06c64718b906f501243a95c1",
+    "lines": 79,
+    "deltaFromApprovedSubject": "Only line 3 (the status paragraph) differs: it now records the accepted state, the review verdict and durable paths, the fulfilled prerequisites (PR #407 merged as e6015977adba39e909a0824787ac9adcb64a8e99, PR #408 as d9ff9dce) and the acceptance pointer, replacing the former pending-review text and /tmp disposition links. Lines 1-2 and 4-79 are byte-identical. Classified non-material under review finding R-06; the rule body, scope, branch map, verification steps, limits and stop/return are unchanged."
+  },
+  "implementationBase": "e6015977adba39e909a0824787ac9adcb64a8e99",
+  "branch": "codex/cp01-toolchain-coherence"
+}

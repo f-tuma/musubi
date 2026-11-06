@@ -13,7 +13,7 @@ you can run only the layer you are changing.
 
 | Tool | Version / notes |
 | --- | --- |
-| Node.js | **22.12 or newer**. Astro 7 requires it. |
+| Node.js | The version in `.nvmrc`: the exact version the Docker images run. CI runs the current release of the same major; other majors are not verified. EAS builds are not pinned by the repository. |
 | pnpm | Use Corepack; the root manifest activates exactly `pnpm@11.8.0`. |
 | PostgreSQL | 15+ locally, or Docker. The bundled Compose stack uses PostgreSQL 17. |
 | Git | Any recent version. |

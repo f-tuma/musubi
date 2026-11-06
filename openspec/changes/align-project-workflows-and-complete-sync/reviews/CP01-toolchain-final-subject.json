@@ -1,0 +1,19 @@
+{
+  "base": "e6015977adba39e909a0824787ac9adcb64a8e99",
+  "head": "ba139e83e2b3d5e9213e06f6a1bd6859eb636c4d",
+  "root": "/home/flamendrin/orca/workspaces/musubi/codex-cp01-toolchain-coherence",
+  "subject": {
+    ".nvmrc": "0c4bf84f9bedd485b2c4eac05f59e35addc86ce7dbf0d90435528e04384c6314",
+    "README.md": "1a2f0268b0a3e618bcc3b063f4890b39c190f34efd39212dd3177e9c987dd0ca",
+    "openspec/changes/align-project-workflows-and-complete-sync/audit-disposition.md": "f189dcb3d7251fd81b60c68a5b43d15edcef7bba6768d7fc4bbe3bd99b9b4de5",
+    "openspec/changes/align-project-workflows-and-complete-sync/checkpoints/CP01-toolchain-acceptance.md": "33ae3753b9ca80835600735f0294bf4c0857537085512b5f5488f249a9633310",
+    "openspec/changes/align-project-workflows-and-complete-sync/checkpoints/CP01-toolchain-coherence.md": "c6b0e06ff9be40cf3f280faa29b40a056da7133a06c64718b906f501243a95c1",
+    "openspec/changes/align-project-workflows-and-complete-sync/reviews/CP01-toolchain-design-subject.json": "df71b96c685da2ae4530fd01b04dab2f11721cdd071a42280c8855c0f69bb6e9",
+    "openspec/changes/align-project-workflows-and-complete-sync/reviews/CP01-toolchain-design.md": "520b7a3d59a12bb2c209adcd55f42e18939aa60937657c903691782b11955aa7",
+    "packages/docs/src/content/docs/guides/running-locally.mdx": "cb71b24e1eeb23baebd3c990dddee58bbe533b7d708029a35660f2280e762a84",
+    "packages/docs/src/content/docs/guides/troubleshooting.mdx": "3b4730b4afef8b7669b500dd7127fc3d38d1b687f738467c66fae92ad7992f00",
+    "packages/docs/src/content/docs/reference/commands.mdx": "965829ceef462cb0007a91db4e9b11d9f401031fa405cbf7e2b2c06805f50f33",
+    "scripts/verify-release.mjs": "13783706ccff13d917a7e52956a212baf1a8a7a12627dd136e456023fb1df30d",
+    "scripts/verify-release.test.mjs": "7ab3077e8a9edaa4491ed5f8c713fafcbc717361ba3dbe230c9180c3d56f4d16"
+  }
+}
