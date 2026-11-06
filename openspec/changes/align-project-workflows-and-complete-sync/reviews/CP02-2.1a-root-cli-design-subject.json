@@ -1,0 +1,54 @@
+{
+  "slice": "CP02 2.1a real root behavior CLI in the existing test + P1 post-merge evidence",
+  "recordedAt": "2026-11-06",
+  "recordedBy": "Claude Fable 5.1, Orca task_ea9c98e10954 (dispatch ctx_b9bb339a9b19)",
+  "approvedSubject": {
+    "description": "Brief v3 as reviewed (durable local copy outside git: backups/codex-cp01-20261105/reports/CP02.1a-brief-v3.md in the original checkout)",
+    "sha256": "d0a102384eff15e208147031823a99828be22843b111123ef0dc68d3eb030298",
+    "bytes": 27603,
+    "lines": 289
+  },
+  "designReview": {
+    "path": "reviews/CP02-2.1a-root-cli-design.md",
+    "verdict": "APPROVE",
+    "reviewer": "Claude Fable 5.1, Orca worker task_4016346106e0 (dispatch ctx_bbc9b810b8b0), fresh context, 2026-11-06",
+    "sha256": "1d6ecf3fd9592244688b0bed25d21c3c7a0a023b691cf175a68bbcf7099445d4",
+    "note": "Byte-identical copy of backups/codex-cp01-20261105/reports/CP02.1a-design-review-v3.md (same bytes as the reviewer's /tmp/musubi-cp02-1a-design-review-v3.md); contains no private advisory identifier (pattern scan: 0 matches)."
+  },
+  "coordinatorAdoption": {
+    "description": "backups/codex-cp01-20261105/reports/CP02.1a-v3-coordinator-adoption.json (outside git)",
+    "sha256": "b98ca3e9658d44b9e373e80b677283f0943ed52d39583015cecfe556b582ddf7",
+    "decision": "accepted exact v3 and explicit nonmaterial R01-R05 allowances",
+    "choices": {
+      "R01": "required-check state explicit in tasks definition",
+      "R02": "CP01 closure inherits actual historical limitations",
+      "R03": "Document existing 120s per child at executeChild port; use only explicitly reviewed test-level timeout allowance if needed; no production timeout changes.",
+      "R04": "cite independent current-tree probe but implement/verify own tests and mutations",
+      "R05": "canonical copy preserves exact approved body with separately identified adoption/addendum and precise diff"
+    }
+  },
+  "relatedRecordsOutsideGit": {
+    "CP02.1a-revision-v3.md": "fdab766c9e36968c33a6079079524177583d08320ab3c16638e119bc4975c33b",
+    "CP02.1a-baseline-v3.json": "97f3c5ea48f31a38be669bcf5a74d215e26ac0ef5a55402c1330c45f872a6fcb"
+  },
+  "canonicalCheckpoint": {
+    "path": "checkpoints/CP02-2.1a-root-cli.md",
+    "sha256": "da73f3d47510ecc6fdb9c7074a23d97081ba1e4758f6b1a71cf49e4f0a871d61",
+    "bytes": 31301,
+    "lines": 310,
+    "structure": "Lines 1-21 are a new prefix (title, acceptance status, R-01..R-05 disposition table, '<!-- subject-begin -->' marker). Lines 22-310 are the approved subject byte for byte, including its historical status sentence 'NAVRH v3, NESCHVALENY' and its /tmp references.",
+    "bodyVerification": "tail -c 27603 checkpoints/CP02-2.1a-root-cli.md | sha256sum == d0a102384eff15e208147031823a99828be22843b111123ef0dc68d3eb030298 (verified 2026-11-06)",
+    "deltaFromApprovedSubject": "Prefix only (prepended 3698 bytes, 21 lines); zero bytes of the subject changed, removed or reordered. The canonical file as a whole therefore has a different hash than the subject; the body hash above is the identity claim."
+  },
+  "implementationBase": "7128c651bf6e0b19a777711c9608315a775db737",
+  "implementationBaseTree": "781cb6ee1bc75d7d269ff49e453d45b3eab92db4",
+  "branch": "codex/cp02-root-behavior-cli",
+  "hashesAtBaseCitedByBrief": {
+    "scripts/test-behavior.mjs": "5b0ee60ffc3e29c87bb84f5e264d9f9e131ecb7f6313882f95771c48d28184ed",
+    "scripts/test-behavior.test.mjs": "32acd4f0dba4fb31f685a24deefbfeb709d443416b110a82ca86933bfb81a247",
+    ".spec-pilot.json": "099538b422408b9ea550ff548d0478e278e1e730ffc0ec81bfe2e35d70e610ae",
+    "openspec/changes/align-project-workflows-and-complete-sync/design.md": "c8bdc74d0afb244d32e3fd88f3d38cd774d07399c2e40e608ba967b6582d880a",
+    "openspec/changes/align-project-workflows-and-complete-sync/reviews/CP10-federation-transport-final.md": "b20e6f4af4315d3ce6352a3aa2e821ad2bd5cc0eea0cff9b8439f1f0c217f4fc",
+    "openspec/changes/align-project-workflows-and-complete-sync/checkpoints/CP10-federation-transport-acceptance.md": "bbce87b3468af041b5e0dcb03ab11ef55d9ac3eae1c3cd83a11aee09580a0fa4"
+  }
+}

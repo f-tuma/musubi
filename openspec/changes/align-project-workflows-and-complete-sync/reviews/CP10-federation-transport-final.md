@@ -42,3 +42,15 @@ Disposition návrhu „cache churn“ (seřadit/kanonizovat sadu před stavbou k
 ## 3. Vazba na aktuální historii větve
 
 Review se vztahuje k původnímu headu `13d00d3e…`. Po něm proběhla pouze dokumentační/privacy korekce (R-01, R-02) s přepisem nepublikované historie; strom mimo `openspec/` zůstal bajtově shodný s reviewovaným headem (ověřeno `git diff 13d00d3 <nový head> -- . ':!openspec'` prázdný). Aktuální head dosud nezávisle neposouzen; koordinátor si vyžádá úzký review těchto korekcí a nezměněného zdroje. Hashe nové historie: acceptance §7, `STATUS.json` (gitignored) a report koordinátora.
+
+## 4. Final review v2 a merge (dodatek, 2026-11-06; připojeno předkódovým commitem CP02 2.1a, §1–§3 beze změny)
+
+| Položka | Hodnota |
+| --- | --- |
+| Reviewer | Claude Fable 5.1, Orca worker `task_6029a3cfb41b` (dispatch `ctx_988ed215666f`), nezávislý read-only review v čerstvém kontextu, 2026-11-06 |
+| Report (mimo git, soukromý) | ignored `backups/codex-cp01-20261105/reports/CP10.3-final-review-194aaa66.md` v původním checkoutu, SHA256 `f5c159caf5ae3d6287c9c504451852020c81e585187756a699b7027d76471e97`; identifikátor soukromého advisory v něm není (hledán jen vzorem, vypisovány počty) |
+| Subjekt | přesný diff `047779c20adb53f52575876aa8b0c340539fb583 → 194aaa66a2643ed11871d66735f8520e31e2d185` (tree `781cb6ee1bc75d7d269ff49e453d45b3eab92db4`), tj. aktuální head po dokumentační/privacy korekci §3 |
+| Verdikt | **APPROVE, pouze code-review**, výslovně pro nový head `194aaa66`, ne jen historický `13d00d3e`: zdrojové, testovací, runnerové, závislostní a CI bajty hashově totožné se schváleným headem v1; pět změněných dokumentů řeší R-01 a R-02; žádný publikovatelný commit ani message nenese soukromý identifikátor; provenance přepisu nepublikované historie koherentní. Není to CI PASS, inspekce Quality, branch protection, merge, publikace advisory ani deployment. |
+| V2-R-01 (doporučení, úplnost tohoto záznamu) | §1 „Limity dle reviewera“ nevyjmenoval limit z reportu v1 §2: skill `.agents/skills/spec-review/SKILL.md` ve worktree `codex-federation-transport-pinning` **neexistoval**, review v1 se proto řídilo zadáním koordinátora a briefem §8; review v2 už postupoval podle skillu čteného z původního checkoutu `/home/flamendrin/workspace/musubi`. Tímto odstavcem doplněno; na verdikt ani kód bez vlivu. |
+
+Merge a post-merge evidence: Quality run 42213525733 attempt 1 21/21 na `194aaa66`, squash `7128c651bf6e0b19a777711c9608315a775db737` (tree `781cb6ee…` = tree schváleného headu = tree CI merge checkoutu `160127a1…`), merge receipt ignored `CP10.3-merge-receipt.json` SHA256 `19be0d05dcd8d44c4226c51020043e7a29e182482079d6342f04eb897518419c`; GitHub required checks not-configured/unknown (ne PASS); advisory nepublikováno, deployment žádný. Souhrn a limity: `../checkpoints/CP10-federation-transport-closure.md`.
