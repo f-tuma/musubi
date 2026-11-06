@@ -112,8 +112,9 @@ type MonthCalendarProps = EventActionHandlers & {
    * Move an event by the days dragged, keeping its time. The origin is the day
    * the block was grabbed on, not the event's first day: a multi-day bar
    * grabbed in the middle keeps that offset instead of restarting on the drop
-   * day, which is also what the preview draws. Absent leaves the month
-   * read-only for direct manipulation.
+   * day, which is also what the preview draws. A timed event reports the same
+   * shift from its start day instead. Absent leaves the month read-only for
+   * direct manipulation.
    */
   onMoveEventToDate?: (input: {
     dayKey: string;
@@ -216,26 +217,33 @@ export function MonthCalendar({
 
   const { begin: beginMonthDrag, drag } = useMonthDrag({
     onCommit: async ({ dayKey: targetKey, event, originDayKey }) => {
-      await onMoveEventToDate?.({ dayKey: targetKey, event, originDayKey });
+      // A timed event is restated from its start day, as when it could only be
+      // grabbed there: the same day shift, but a clock change between the
+      // grabbed and the dropped day no longer moves its start time.
+      const startKey = toDateKey(event.start);
+      await onMoveEventToDate?.(
+        event.isAllDay
+          ? { dayKey: targetKey, event, originDayKey }
+          : {
+              dayKey: shiftDayKey(startKey, dayDelta(originDayKey, targetKey)),
+              event,
+              originDayKey: startKey,
+            },
+      );
     },
     onError: eventActions.onNotice,
   });
   /**
    * Where the dragged event would land, as a day range — derived the way
    * draftRange derives the pill's, so a move previews across the days it takes
-   * instead of collapsing into the cell under the pointer.
-   *
-   * A timed event lives on its start day whatever hours it spans, because that
-   * is the only cell segmentEventsByDay gives it, so it is the only cell to
-   * preview.
+   * instead of collapsing into the cell under the pointer. Timed and all-day
+   * events take the same days here as their chips do in calendarLaneSpans.
    */
   const previewRange = useMemo(
     () =>
       drag
         ? movePreviewRange(
-            drag.event.isAllDay
-              ? eventDayKeys(drag.event)
-              : [drag.originDayKey],
+            eventDayKeys(drag.event, 3660),
             dayDelta(drag.originDayKey, drag.dayKey),
           )
         : undefined,
@@ -694,7 +702,7 @@ export function MonthCalendar({
                             } as CSSProperties
                           }
                         >
-                          {!drag.event.isAllDay ? (
+                          {!drag.event.isAllDay && dateKey === previewRange.from ? (
                             <span className="flex-none font-mono text-10 group-data-compact/month:hidden" data-event-time="">
                               {
                                 getEventRangeLabel(
@@ -740,12 +748,8 @@ export function MonthCalendar({
                               eventHomeCalendarId(event) ?? "",
                             )}
                             calendars={calendars}
-                            continuesAfter={
-                              event.isAllDay && dayIndex < span.endCol
-                            }
-                            continuesBefore={
-                              event.isAllDay && dayIndex > span.startCol
-                            }
+                            continuesAfter={dayIndex < span.endCol}
+                            continuesBefore={dayIndex > span.startCol}
                             ghost={drag?.event.id === event.id}
                             event={event}
                             pending={
@@ -775,6 +779,7 @@ export function MonthCalendar({
                             showLabel={
                               dayIndex === (labelColumn ?? span.startCol)
                             }
+                            showTime={dateKey === toDateKey(event.start)}
                             timeFormat={timeFormat}
                             weekStartsOn={weekStartsOn}
                             {...eventActions}
@@ -827,6 +832,9 @@ export function MonthCalendar({
                                         ))
                                     }
                                     showLabel
+                                    showTime={
+                                      dateKey === toDateKey(span.event.start)
+                                    }
                                     timeFormat={timeFormat}
                                     weekStartsOn={weekStartsOn}
                                     {...eventActions}

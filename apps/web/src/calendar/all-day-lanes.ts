@@ -39,9 +39,9 @@ export function calendarLaneSpans(
     if ((!event.isAllDay && !includeTimed) || seenEvents.has(event.id))
       continue;
     seenEvents.add(event.id);
-    const keys = event.isAllDay
-      ? eventDayKeys(event, 3660)
-      : [toDateKey(event.start)];
+    // Timed events cover every local day they touch, end exclusive, the way
+    // the time grid and the multi-week blocks draw them.
+    const keys = eventDayKeys(event, 3660);
     const range = visibleRange(keys, columns);
     if (!range) continue;
     spans.push({

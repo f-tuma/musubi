@@ -65,7 +65,12 @@ export function getEventRangeLabel(
 
 export function getEventDateLabel(event: Event): string {
   if (!event.isAllDay) {
-    return getLongDateLabel(event.start);
+    // The real end instant, not the exclusive last cell: 10:00 to the next
+    // midnight still ends on the next date.
+    const startLabel = getLongDateLabel(event.start);
+    return event.end > event.start && dayKey(event.end) !== dayKey(event.start)
+      ? `${startLabel} – ${getLongDateLabel(event.end)}`
+      : startLabel;
   }
 
   const start = eventDayDate(event.start, true);
