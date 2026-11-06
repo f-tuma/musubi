@@ -145,6 +145,8 @@ Požadavky: CL-01 až CL-05, ID-02. Stop: konkrétní klientský tok odpovídá 
 
 Požadavky: ID-06, WF-02. Stop: nastavený profil je explicitní, chyby rozlišitelné a upgrade neprovede skrytou změnu authority.
 
+Testovací sub-slice 10.3-T (checkpoints/CP10-federation-transport.md, přijatý brief v3): JSON suite `federation-transport` s vlastním driverem nad produkční `createFederationFetch` je vymezena jako vlastní testovací slice boxu 10.3, nikoli jeho nepozorované rozšíření; box 10.3 zůstává nezaškrtnutý do merge a acceptance.
+
 - [ ] 10.1 Sjednotit parse/validate nastavených booleans, intervalů a klíčů a zdroj env dokumentace; ověřit validní legacy hodnoty i konkrétní neplatné vstupy bez secret dumpu.
 - [ ] 10.2 Oddělit nebo výslovně deklarovat private-network/HTTPS výjimky s kompatibilní alias/deprecation politikou; ověřit prod/dev/self-host matrix a žádné tiché rozšíření cílové sítě.
 - [ ] 10.3 Sjednotit outbound guard skutečného připojení a redirectu pro federační cesty; ověřit kontrolovaný DNS rebinding/redirect port, native TLS chování a povolené privátní profily bez živého útoku.
