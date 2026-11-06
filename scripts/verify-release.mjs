@@ -193,6 +193,128 @@ for (const relativePath of [
   }
 }
 
+// Node toolchain coherence: `.nvmrc` is the one declared Node version. Every
+// other declaration has to agree with it or point at it, so a local
+// recommendation cannot drift from what the images and CI actually run. This
+// loop is separate from the HEALTHCHECK/USER/lockfile rules above on purpose:
+// it covers every Dockerfile, including the sync reference image that the
+// release rules do not build. Shapes it does not recognise fail closed; it
+// never guesses what an `ARG`, `--platform`, heredoc or lowercase `as` means.
+// Only `FROM` is classified; `COPY --from=` is assumed to name a stage.
+const nvmrcSource = existsSync(new URL(".nvmrc", root))
+  ? readFileSync(new URL(".nvmrc", root), "utf8")
+  : undefined;
+// Exactly one trailing newline (LF or CRLF) is tolerated; anything else is not
+// the exact `X.Y.Z` the images pin.
+const nodeVersion = nvmrcSource?.replace(/\r?\n$/, "");
+if (nvmrcSource === undefined) {
+  fail(".nvmrc is missing; it must declare the exact Node version X.Y.Z that the images run");
+} else if (!/^\d+\.\d+\.\d+$/.test(nodeVersion)) {
+  fail(`.nvmrc must contain an exact Node version X.Y.Z, received ${JSON.stringify(nvmrcSource)}`);
+} else {
+  const nodeMajor = nodeVersion.split(".")[0];
+  const pinnedStage = /^FROM node:(\d+\.\d+\.\d+)-alpine@sha256:[a-f0-9]{64} AS ([A-Za-z0-9_-]+)$/;
+  const aliasStage = /^FROM ([A-Za-z0-9_-]+) AS ([A-Za-z0-9_-]+)$/;
+  for (const relativePath of [
+    "apps/api/Dockerfile",
+    "apps/web/Dockerfile",
+    "packages/docs/Dockerfile",
+    "apps/sync-reference/Dockerfile",
+  ]) {
+    const stages = new Set();
+    let pinned = 0;
+    readFileSync(new URL(relativePath, root), "utf8").split("\n").forEach((line, index) => {
+      const text = line.trim();
+      if (!/^FROM\b/i.test(text)) return;
+      const where = `${relativePath}:${index + 1}`;
+      const image = text.match(pinnedStage);
+      if (image) {
+        if (image[1] !== nodeVersion) {
+          fail(`${where} pins Node ${image[1]}, but .nvmrc declares ${nodeVersion}: ${text}`);
+        }
+        stages.add(image[2]);
+        pinned += 1;
+        return;
+      }
+      const alias = text.match(aliasStage);
+      if (alias) {
+        if (!stages.has(alias[1])) {
+          fail(`${where} builds on undeclared stage "${alias[1]}"; an alias must name an earlier stage of the same file: ${text}`);
+        }
+        stages.add(alias[2]);
+        return;
+      }
+      fail(
+        `${where} must be "FROM node:${nodeVersion}-alpine@sha256:<digest> AS <stage>" (the .nvmrc version) ` +
+          `or "FROM <earlier stage> AS <stage>", received: ${text}`,
+      );
+    });
+    if (pinned === 0) {
+      fail(`${relativePath} must declare at least one digest-pinned node:${nodeVersion}-alpine stage matching .nvmrc`);
+    }
+  }
+
+  // CI floats on the patch level by design (`node-version: <major>`), so the
+  // check is major equality plus one `node-version` per `setup-node` step in
+  // each workflow; a step that resolves Node some other way is unknown shape.
+  const workflowDirectory = new URL(".github/workflows/", root);
+  const workflows = existsSync(workflowDirectory)
+    ? readdirSync(workflowDirectory).filter((name) => /\.ya?ml$/.test(name)).sort()
+    : [];
+  if (workflows.length === 0) fail(".github/workflows must contain the live workflow files");
+  for (const name of workflows) {
+    const relativePath = `.github/workflows/${name}`;
+    let setupNodeSteps = 0;
+    let nodeVersionLines = 0;
+    readFileSync(new URL(name, workflowDirectory), "utf8").split("\n").forEach((line, index) => {
+      if (/^\s*#/.test(line)) return;
+      if (line.includes("actions/setup-node@")) setupNodeSteps += 1;
+      if (!/^\s*node-version:/.test(line)) return;
+      nodeVersionLines += 1;
+      const where = `${relativePath}:${index + 1}`;
+      const bareMajor = line.match(/^\s*node-version:\s*(['"]?)(\d+)\1\s*(#.*)?$/);
+      if (!bareMajor) {
+        const value = line.replace(/^\s*node-version:\s*/, "").trim();
+        fail(`${where} node-version must be the bare major of .nvmrc (${nodeMajor}), received: ${value || "nothing"}`);
+      } else if (bareMajor[2] !== nodeMajor) {
+        fail(`${where} node-version ${bareMajor[2]} does not match .nvmrc major ${nodeMajor} (${nodeVersion})`);
+      }
+    });
+    if (setupNodeSteps !== nodeVersionLines) {
+      fail(
+        `${relativePath} declares actions/setup-node ${setupNodeSteps} time(s) but node-version ${nodeVersionLines} time(s); ` +
+          `every setup-node step must pin node-version to the .nvmrc major ${nodeMajor}`,
+      );
+    }
+  }
+
+  const alphaPins = readFileSync(new URL("scripts/sync-alpha-common.mjs", root), "utf8");
+  const alphaMajor = alphaPins.match(/nodeMajor:\s*(\d+)/)?.[1];
+  if (!alphaMajor) {
+    fail(`scripts/sync-alpha-common.mjs must declare PINS.nodeMajor equal to the .nvmrc major ${nodeMajor}`);
+  } else if (alphaMajor !== nodeMajor) {
+    fail(`scripts/sync-alpha-common.mjs declares PINS.nodeMajor ${alphaMajor}, but .nvmrc declares ${nodeVersion} (major ${nodeMajor})`);
+  }
+}
+
+// The guides point at `.nvmrc` instead of repeating a number; the literal
+// check only keeps the pointer present and the stale floor out, it does not
+// judge the sentence around it.
+for (const relativePath of [
+  "README.md",
+  "packages/docs/src/content/docs/guides/running-locally.mdx",
+  "packages/docs/src/content/docs/guides/troubleshooting.mdx",
+]) {
+  const guide = readFileSync(new URL(relativePath, root), "utf8");
+  if (!guide.includes(".nvmrc")) {
+    fail(`${relativePath} must point contributors at .nvmrc for the Node version`);
+  }
+  const stale = guide.split("\n").findIndex((line) => line.includes("22.12"));
+  if (stale !== -1) {
+    fail(`${relativePath}:${stale + 1} still names the stale Node floor 22.12; point at .nvmrc instead`);
+  }
+}
+
 if (!process.exitCode) {
   console.log(
     `Release metadata verified: Musubi ${rootPackage.version}, ${rootPackage.packageManager}`,
