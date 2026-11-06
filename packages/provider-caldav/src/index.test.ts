@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import "./create.test";
 import { readFile } from "node:fs/promises";
+import dns from "node:dns";
+import { createServer } from "node:http";
+import { syncBuiltinESMExports } from "node:module";
+import { type AddressInfo, isIP } from "node:net";
 import {
   createCaldavPersonalEventDeleteProvider, CaldavProviderError, strongCaldavEtag, selectCaldavEventMaster,
   type CaldavDeleteProviderPorts, type CaldavPersonalDelete, type CaldavRequestMetric, type CaldavNativeProfile,
@@ -295,6 +299,53 @@ test("shared pinned helper requires explicit leaf fetch and guard bounds redirec
   const guard = createGuardedCaldavFetch({ allowPrivate: false, lookupImpl: async () => [{ address: "203.0.113.10", family: 4 }],
     fetchPinnedImpl: async () => { redirects++; return response(null, 307, { location: "/loop" }); } });
   await assert.rejects(guard(target.resourceUrl), /Too many CalDAV redirects/); assert.equal(redirects, 6);
+});
+
+test("shared pinned leaf hands the whole accepted set to one Agent and keeps the single-address contract", async () => {
+  // Real undici Agent and real loopback sockets only; system DNS is refused and counted.
+  const dnsModule = dns as unknown as { lookup: unknown; promises: { lookup: unknown } };
+  const originalLookup = dnsModule.lookup, originalPromisesLookup = dnsModule.promises.lookup;
+  let systemLookups = 0;
+  const refuse = () => { systemLookups++; return new Error("system DNS lookup is not allowed in this test"); };
+  // Literal IPs never reach DNS (own listeners bind 127.0.0.1 through this path); every hostname is refused.
+  dnsModule.lookup = (...args: unknown[]) => {
+    if (typeof args[0] === "string" && isIP(args[0])) return (originalLookup as (...rest: unknown[]) => unknown)(...args);
+    const callback = args[args.length - 1]; if (typeof callback === "function") queueMicrotask(() => callback(refuse()));
+  };
+  dnsModule.promises.lookup = async (...args: unknown[]) => {
+    if (typeof args[0] === "string" && isIP(args[0])) return (originalPromisesLookup as (...rest: unknown[]) => unknown)(...args);
+    throw refuse();
+  };
+  syncBuiltinESMExports();
+  const seen: string[] = [];
+  const server = createServer((req, res) => { seen.push(req.headers.host ?? ""); res.writeHead(200, { "content-type": "text/plain" }); res.end("ok"); });
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  const port = (server.address() as AddressInfo).port;
+  const closed = createServer(); await new Promise<void>(resolve => closed.listen(0, "127.0.0.1", resolve));
+  const closedPort = (closed.address() as AddressInfo).port; await new Promise<void>(resolve => closed.close(() => resolve()));
+  try {
+    const pinned = createPinnedCaldavFetch(((url, init) => {
+      const dispatcher = (init as { dispatcher?: { dispatch?: unknown } } | undefined)?.dispatcher;
+      assert.ok(init && "dispatcher" in init && typeof dispatcher?.dispatch === "function", "pinned leaf called without dispatcher");
+      assert.ok([String(port), String(closedPort)].includes(new URL(String(url)).port), "leaf reaches only own loopback ports");
+      return globalThis.fetch(url, init);
+    }) as typeof globalThis.fetch);
+    // accepted-set-fallback (D-C): nothing listens on ::1 at this port, so Node's own happy-eyeballs
+    // falls back to 127.0.0.1 inside the accepted set; Host stays the original hostname.
+    const response = await pinned(new URL(`http://multi-fixture.invalid:${port}/`), {}, [{ address: "::1", family: 6 }, { address: "127.0.0.1", family: 4 }]);
+    assert.equal(response.status, 200); await response.text();
+    assert.deepEqual(seen, [`multi-fixture.invalid:${port}`]);
+    // single-address-no-fallback: the legacy CalDAV contract, a closed loopback port refuses.
+    await assert.rejects(pinned(new URL(`http://single-fixture.invalid:${closedPort}/`), {}, { address: "127.0.0.1", family: 4 }),
+      (error: unknown) => (error as { cause?: { code?: string } }).cause?.code === "ECONNREFUSED");
+    // An empty accepted set fails closed before any Agent exists.
+    assert.throws(() => pinned(new URL(`http://empty-fixture.invalid:${port}/`), {}, []), /at least one accepted address/);
+    assert.deepEqual(seen, [`multi-fixture.invalid:${port}`]);
+    assert.equal(systemLookups, 0);
+  } finally {
+    dnsModule.lookup = originalLookup; dnsModule.promises.lookup = originalPromisesLookup; syncBuiltinESMExports();
+    server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve()));
+  }
 });
 
 test("provider production sources have no app storage/auth/config or ambient fetch/DNS implementation", async () => {

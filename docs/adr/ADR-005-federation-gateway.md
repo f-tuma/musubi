@@ -94,6 +94,8 @@ Fáze 3 většinu z nich řeší strukturálně: jednotné tagování zapne exis
 | **Únik hlaviček** | Přeposlání domácích cookies/CSRF tokenů na B | Allowlist hlaviček směrem upstream; `Authorization` nahrazena; cookies zahozeny |
 | **Odvolaný/expirovaný token** | Uživatel byl na B kicknut nebo token vypršel | Upstream 401/403 se mapuje na per-server `reconnect_required` stav (fáze 3), ne na tiché selhání |
 
+**Dodatek 2026-11-06 k řádku „DNS rebinding“ (CP10 task 10.3, ID-06, TRUST-03):** zbytkové riziko výše už neplatí a věta „pinnutí IP by rozbilo TLS SNI“ byla mylná. Každý federační odchozí požadavek (gateway, preview, connect, peer probe, rotace tokenu, SSE stream) jde přes `federationFetch` (`apps/api/src/federation_origin.ts`), který hostname přeloží, celou odpověď prověří stávající private-network policy a **tutéž přijatou adresní sadu** předá sdílenému pinned leafu (`createPinnedCaldavFetch`, `packages/provider-caldav/src/network.ts`). Připnutí je v `lookup` undici Agenta, ne v URL: hostname zůstává v URL, `Host`, SNI i nativní ověření certifikátu jsou původní, socket hostname znovu nepřekládá, redirecty se nenásledují (`manual`) a abort/timeout platí i během čekání na DNS. Pre-check `assertPublicOrigin` zůstává (stejné chybové plochy); pinned fetch přidává svázané připojení. Doloženo testy na vlastních loopback listenerech (JSON suite `federation-transport`, `apps/api/src/federation_transport.test.ts`, `packages/provider-caldav/src/index.test.ts`); viz `openspec/changes/align-project-workflows-and-complete-sync/checkpoints/CP10-federation-transport.md`.
+
 ### Testovací požadavky
 
 - SSRF unit test: privátní rozsahy, IPv6, DNS rebinding (resolve→IP mismatch), URL s credentials, non-http scheme, path escape (`..`, absolutní URL v cestě).

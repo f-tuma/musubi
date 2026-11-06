@@ -21,6 +21,7 @@ pnpm test:behavior --suite app-links --scenario unconfigured-is-not-associated -
 pnpm test:behavior --suite web-edge --scenario worker-response-bypasses-caches --json
 pnpm test:behavior --suite postgres-restore --scenario create-failure --json
 pnpm test:behavior --suite project-news --scenario first-baseline --json
+pnpm test:behavior --suite federation-transport --scenario public-answer-pinned --json
 pnpm test:behavior --suite fair-work --scenario parked-pull-request-preflight --json
 pnpm test:behavior --suite fair-work --scenario due-crosses-during-wake-scan --json
 pnpm test:behavior --suite read-attempt --scenario steady-large-pagination --json
@@ -68,6 +69,7 @@ not committed. The root runner can also be called as
 | `web-edge` | Real worker route and push-registration function | Browser registration/push subscription ports | Vitest/jsdom; final Chromium test uses the actual served worker |
 | `postgres-restore` | Shipped restore shell helper, ownership, archive handling, deadlines and preservation comparison | Strict Docker/sleep command receipts | No Docker daemon; real database restore is a separate final check |
 | `project-news` | Actual common-news reader/cache, source schema, API baseline and legacy read-marker bridge | Fetch, clock and account-settings ports | None; no DB or external HTTP |
+| `federation-transport` | Production `createFederationFetch` factory: URL/credential/scheme/Request refusal, same-resolve address policy, the accepted address set handed to the pinned leaf, forced manual redirect and abort/timeout while DNS is pending | Injected lookup and pinned-leaf ports; the driver process fails closed on any ambient fetch or system DNS | None; the real loopback socket/TLS test `apps/api/src/federation_transport.test.ts` separately proves the pinned Agent, Host/SNI and native certificate verification |
 | `sync-outcome` | Actual account run and failure observers, explicit scheduler/budget deferral classification, severity and event selection | Native work result/error receipts, clock and telemetry sinks | None; the metrics contract separately uses the actual registry and DB fence class |
 | `collection-reads` | Production collection waiter and fair coordinator; nine same-account reads, exact deferrals and genuine failure precedence | Read receipts/errors at the existing waiter port | None; the initial CalDAV integration separately proves authenticated HTTP, real DB generations and ACKs |
 | `dav-response` | Production DAV validator and guarded client; CDATA, DTD/entity refusal, response bounds, exact multiget batches and late-batch failure | Synthetic XML response bytes; existing fetch port for the actual client | No DB or native network; native iCloud verification retains only structural diagnostics, never private XML |
