@@ -8,6 +8,8 @@ import { logger } from "@musubi/config";
 import {
   account,
   calendarEvents,
+  createCalendar,
+  eventOutbox,
   caldavAccounts,
   calendarMembers,
   clearCalendarEvents,
@@ -34,6 +36,7 @@ import { assertCanEditEvent, assertCanViewEvent } from "../permissions";
 import { handlerStream } from "../handlers/stream";
 import { getAdapter, syncProvider } from "./engine";
 import type { CalendarAdapter, NormalizedChange } from "./adapter";
+import { EventSchema, type ProviderEventState } from "@musubi/types";
 
 // Run only against a disposable, migrated test database. These fixtures use
 // real query/permission paths; no provider credentials or network calls.
@@ -128,6 +131,7 @@ async function main() {
       await checkMissingOrigin(fixture);
       await checkLegacyReset(fixture);
     }
+    await checkOwnMirrorRefresh(alice);
     console.log("external event authority DB integration self-check: OK");
   } finally {
     await db.delete(user).where(inArray(user.id, [alice, bob]));
@@ -613,6 +617,102 @@ async function checkLegacyReset(f: Fixture) {
     3,
     "Authoritative tombstones keep their links for client deltas",
   );
+}
+
+/** A copy Musubi itself created refreshes ONLY its validator when the provider
+ * changed nothing but its own metadata; every other observation keeps today's
+ * rejection. Synthetic identities only. */
+async function checkOwnMirrorRefresh(owner: string) {
+  const local = await createCalendar({ creatorID: owner, name: "Local", color: "#7A8BA3" });
+  const sources: Record<string, { calendarID: string; linkID: string; accountID: string; remote: string }> = {};
+  for (const provider of ["microsoft", "caldav", "google"] as const) {
+    const accountID = randomUUID(), remote = `mirror-${provider}-${randomUUID()}`;
+    if (provider === "caldav") await db.insert(caldavAccounts).values({ id: accountID, userID: owner, serverUrl: "https://fixture.invalid", username: accountID, encryptedPassword: "unused-fixture" });
+    else await db.insert(account).values({ id: randomUUID(), userId: owner, accountId: accountID, providerId: provider, scope: "fixture", refreshToken: "fixture-only", accessToken: "fixture-only", accessTokenExpiresAt: new Date(Date.now() + 3600000) });
+    const calendar = await importExternalCalendar(provider, owner, accountID, provider, { externalId: remote, name: provider, color: "#7A8BA3" });
+    const role = { microsoft: "microsoft:private=yes;edit=yes", caldav: "caldav:read=yes;freebusy=yes", google: "owner" }[provider];
+    const [link] = await db.update(externalCalendars).set({ providerAccessRole: role, providerAccessRevision: 1 }).where(eq(externalCalendars.calendarID, calendar.id)).returning();
+    sources[provider] = { calendarID: calendar.id, linkID: link!.id, accountID, remote };
+  }
+  const access = (provider: string) => ({ provider: provider as "google" | "caldav" | "microsoft", linkID: sources[provider]!.linkID, revision: 1, userID: owner, accountID: sources[provider]!.accountID, externalCalendarID: sources[provider]!.remote });
+  const content = { title: "Personal copy", color: "#7A8BA3", start: new Date("2026-03-01T10:00:00Z"), end: new Date("2026-03-01T10:05:00Z"), isAllDay: false, description: null, location: null, recurrence: null, url: null };
+  const states: Record<string, ProviderEventState> = {
+    microsoft: { provider: "microsoft", organizer: { address: "owner@outlook.example", name: "Owner", self: null }, isOrganizer: true, attendees: [], attendeesComplete: true, ownResponse: "organizer", reminders: { provider: "microsoft", isOn: true, minutesBeforeStart: 15 }, availability: "busy", privacy: "normal", status: "active", eventType: "singleInstance", conferenceURLs: [] },
+    caldav: { provider: "caldav", organizer: null, isOrganizer: null, attendees: [], attendeesComplete: true, ownResponse: null, reminders: { provider: "caldav", alarms: [] }, availability: null, privacy: null, status: null, eventType: null, conferenceURLs: [] },
+    google: { provider: "google", organizer: { address: "owner@example.test", name: null, self: true }, isOrganizer: true, attendees: [], attendeesComplete: true, ownResponse: null, reminders: { provider: "google", useDefault: true, overrides: [] }, availability: null, privacy: null, status: "confirmed", eventType: "default", conferenceURLs: [] },
+  };
+  const state = (provider: string, change: Partial<ProviderEventState> = {}) => ({ ...states[provider]!, ...change } as ProviderEventState);
+  const providerOrganizer = { microsoft: "owner@outlook.example", caldav: "", google: "owner@example.test" } as Record<string, string>;
+  const seed = async (provider: string, acknowledged = true) => {
+    const source = sources[provider]!, id = randomUUID(), externalID = `native-${randomUUID()}`;
+    await createEvent({ id, creatorID: owner, ...content, organizer: `${owner}@example.test` }, [local.id]);
+    await linkEventToCalendars(id, [source.calendarID]);
+    await importExternalEvent(provider, id, source.calendarID, source.remote, externalID, '"v1"', id);
+    if (acknowledged) await db.insert(eventOutbox).values({ id: randomUUID(), actorID: owner, mutationID: randomUUID(), position: 0, eventID: id, revision: 1, calendarID: source.calendarID, externalCalendarLinkID: source.linkID, provider, userID: owner, accountID: source.accountID, externalCalendarID: source.remote, externalEventID: externalID, action: "create", payload: { event: EventSchema.parse({ ...(await getEvent(id)), calendars: [local.id, source.calendarID] }) }, status: "completed", attempts: 1, resultRef: { externalEventId: externalID, etag: '"v1"', icalUid: id } });
+    return { id, externalID, provider, source };
+  };
+  const observe = (item: Awaited<ReturnType<typeof seed>>, options: { title?: string; state?: ProviderEventState; etag?: string; context?: boolean; time?: Parameters<typeof upsertExternalEvent>[9] } = {}) =>
+    upsertExternalEvent(item.provider, owner, item.source.calendarID, item.source.remote, item.externalID,
+      { ...content, title: options.title ?? content.title, organizer: providerOrganizer[item.provider]! }, options.etag ?? '"v2"', item.id,
+      undefined, options.time, undefined, options.state ?? state(item.provider), undefined, undefined, options.context === false ? undefined : access(item.provider));
+  const mapped = async (item: Awaited<ReturnType<typeof seed>>) => (await db.select().from(externalEvents).where(and(eq(externalEvents.eventID, item.id), eq(externalEvents.calendarID, item.source.calendarID))))[0]!;
+  const outboxCount = async (id: string) => (await db.select().from(eventOutbox).where(eq(eventOutbox.eventID, id))).length;
+  const info = logger.info, skipped: string[] = [];
+  logger.info = (message, fields) => { if (message === "sync.event.non_origin_validator_refresh_skipped") skipped.push(`${(fields as { guard: string }).guard}${(fields as { stateFields?: string[] }).stateFields ? `:${(fields as { stateFields: string[] }).stateFields.join(",")}` : ""}`); };
+  try {
+    // Accepted: Graph self organizer, CalDAV absent organizer, Google self.
+    for (const provider of ["microsoft", "caldav", "google"]) {
+      const item = await seed(provider), before = await getEvent(item.id), outbox = await outboxCount(item.id);
+      assert.equal(await observe(item), false, `${provider}: a metadata refresh wakes no reader`);
+      const mapping = await mapped(item);
+      assert.equal(mapping.etag, '"v2"', `${provider}: provider-only version change refreshes the copy validator`);
+      assert.deepEqual(mapping.providerState, state(provider), `${provider}: provider evidence becomes the copy baseline`);
+      assert.deepEqual(await getEvent(item.id), before, `${provider}: shared content, revision and timestamp are untouched`);
+      assert.equal(await outboxCount(item.id), outbox, `${provider}: no fanout or outbox row`);
+    }
+    const kept = async (item: Awaited<ReturnType<typeof seed>>, guard: string, options: Parameters<typeof observe>[1] = {}) => {
+      const before = await getEvent(item.id);
+      skipped.length = 0;
+      assert.equal(await observe(item, options), false);
+      assert.equal((await mapped(item)).etag, '"v1"', `${guard}: the copy validator is not refreshed`);
+      assert.deepEqual(await getEvent(item.id), before);
+      assert.deepEqual(skipped, [guard]);
+    };
+    await kept(await seed("microsoft"), "content", { title: "Edited in Outlook" });
+    await kept(await seed("microsoft"), "organizer", { state: state("microsoft", { isOrganizer: false }) });
+    await kept(await seed("caldav"), "organizer", { state: state("caldav", { organizer: { address: "mailto:host@example.test", name: null, self: null } }) });
+    await kept(await seed("microsoft"), "state", { state: state("microsoft", { attendees: [{ address: "guest@example.test", name: null, self: null, role: "required", response: null }] }) });
+    await kept(await seed("microsoft"), "baseline:privacy", { state: state("microsoft", { privacy: "private" }) });
+    await kept(await seed("microsoft", false), "acknowledged");
+    // Missing full-read evidence: no access context, as for a null role.
+    await kept(await seed("microsoft"), "access", { context: false });
+    // A stored baseline must be equal; changed field NAMES are reported.
+    const baseline = await seed("microsoft");
+    await observe(baseline);
+    skipped.length = 0;
+    await observe(baseline, { etag: '"v3"', state: state("microsoft", { reminders: { provider: "microsoft", isOn: true, minutesBeforeStart: 30 } }) });
+    assert.equal((await mapped(baseline)).etag, '"v2"');
+    assert.deepEqual(skipped, ["baseline:reminders"]);
+    // Time-edit flag shape (Google attaches a time model): fail closed, no throw.
+    await kept(await seed("google"), "series", { time: { timeModel: { kind: "zoned", timeZone: "Europe/Prague", startLocal: "2026-03-01T11:00:00", endLocal: "2026-03-01T11:05:00" } } });
+    // Redacted mirror: privacy restoration owns this observation.
+    const redacted = await seed("microsoft");
+    await db.update(externalEvents).set({ readRedactionRevision: 1 }).where(eq(externalEvents.externalEventID, redacted.externalID));
+    await kept(redacted, "privacy");
+    // Pending local work keeps priority: existing retention marks the
+    // unacknowledged write as a conflict and the validator stays.
+    const pending = await seed("microsoft"), pendingID = randomUUID();
+    await db.insert(eventOutbox).values({ id: pendingID, actorID: owner, mutationID: randomUUID(), position: 0, eventID: pending.id, revision: 1, calendarID: pending.source.calendarID, externalCalendarLinkID: pending.source.linkID, provider: "microsoft", userID: owner, accountID: pending.source.accountID, externalCalendarID: pending.source.remote, externalEventID: pending.externalID, expectedEtag: '"v1"', action: "update", payload: { event: EventSchema.parse({ ...(await getEvent(pending.id)), title: "Local pending", calendars: [local.id, pending.source.calendarID] }), patch: { title: "Local pending" } } });
+    skipped.length = 0;
+    assert.equal(await observe(pending), false);
+    assert.equal((await mapped(pending)).etag, '"v1"');
+    const [row] = await db.select().from(eventOutbox).where(eq(eventOutbox.id, pendingID));
+    assert.equal(row!.status, "conflict");
+    assert.equal(row!.remoteSnapshot?.etag, '"v2"');
+    assert.deepEqual(skipped, [], "retention precedes the refresh guards");
+  } finally {
+    logger.info = info;
+  }
 }
 
 main().catch((error) => {

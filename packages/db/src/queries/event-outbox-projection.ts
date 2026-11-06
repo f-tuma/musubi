@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import { hasKnownEventTime, EventTimeModelSchema, OccurrenceStartSchema, type ProviderRsvpInstance, type Event, type GoogleReminderWrite, type ProviderEventState } from "@musubi/types";
 
 type EventProjection = Pick<
@@ -106,4 +107,49 @@ export function matchesRsvpEventProjection(
       (!actual.seriesID && !actual.externalSeriesID) || (actual.seriesID && actual.seriesID !== instance.seriesID) ||
       (actual.externalSeriesID && actual.externalSeriesID !== instance.externalSeriesID)) return false;
   return matchesGoogleOccurrenceProjection(expected, actual);
+}
+
+type MirrorCanonical = EventProjection & Pick<Event, "organizer" | "url" | "seriesID" | "originalStart" | "isCanceled" | "hasAttendees"> & { deletedAt: Date | null };
+type MirrorObservation = EventProjection & Pick<Event, "organizer" | "url">;
+
+/** Provider-owned metadata of a copy Musubi wrote. Returns null only when the
+ * observation proves the same serialized content and the same personal,
+ * non-meeting shape; otherwise the first failing guard name and, for a changed
+ * baseline, its differing field NAMES. Never returns provider values. */
+export function ownMirrorMetadataMismatch(input: {
+  provider: string;
+  canonical: MirrorCanonical;
+  values: MirrorObservation;
+  state: ProviderEventState;
+  baseline: ProviderEventState | null;
+}): null | { guard: string; stateFields?: string[] } {
+  const { provider, canonical, values, state, baseline } = input;
+  if (!["google", "microsoft", "caldav"].includes(provider)) return { guard: "provider" };
+  if (!matchesEventProviderProjection(provider, canonical, values)) return { guard: "content" };
+  if (values.url !== null && values.url !== canonical.url) return { guard: "url" };
+  if (canonical.recurrence || values.recurrence || canonical.seriesID || canonical.originalStart || canonical.isCanceled || canonical.hasAttendees || canonical.deletedAt)
+    return { guard: "shape" };
+  const active = provider === "microsoft" ? state.status === "active" : provider === "google" ? state.status === "confirmed" : state.status === null || state.status.toUpperCase() === "CONFIRMED";
+  const type = provider === "microsoft" ? state.eventType === "singleInstance" : provider === "google" ? state.eventType === null || state.eventType === "default" : state.eventType === null;
+  if (state.provider !== provider || state.attendees.length || !state.attendeesComplete || state.conferenceURLs.length || !active || !type)
+    return { guard: "state" };
+  // Musubi never serializes an organizer for these providers. Only the
+  // provider's own self-organizer evidence may explain a different value.
+  if (values.organizer !== canonical.organizer) {
+    const self = provider === "caldav"
+      ? state.organizer === null && values.organizer === ""
+      : state.isOrganizer === true && !!state.organizer?.address && state.organizer.address.toLowerCase() === values.organizer.toLowerCase();
+    if (!self) return { guard: "organizer" };
+  }
+  if (baseline) {
+    if (!isDeepStrictEqual(state, baseline)) {
+      const fields = [...new Set([...Object.keys(state), ...Object.keys(baseline)])]
+        .filter(key => !isDeepStrictEqual(state[key as keyof ProviderEventState], baseline[key as keyof ProviderEventState])).sort();
+      return { guard: "baseline", stateFields: fields };
+    }
+  } else {
+    const defaultPrivacy = provider === "microsoft" ? state.privacy === "normal" : provider === "google" ? state.privacy === null || state.privacy === "default" : state.privacy === null || state.privacy.toUpperCase() === "PUBLIC";
+    if (!defaultPrivacy) return { guard: "baseline", stateFields: ["privacy"] };
+  }
+  return null;
 }

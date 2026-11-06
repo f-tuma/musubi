@@ -18,6 +18,7 @@ import { assertLegacyEventTimePatch } from "./event-time-write";
 import { appendEventOutbox, reserveEventMutation, type EventOutboxIntent } from "./event-outbox";
 import { retainPendingEventPull, retainUnmappedCreatePull, retainUnsupportedEventPull } from "./event-outbox-pull";
 import { appendInboundEventFanout } from "./event-outbox-fanout";
+import { ownMirrorMetadataMismatch } from "./event-outbox-projection";
 import { retainUnmappedEventDeletion, lockExternalEventAddress } from "./event-outbox-deletions";
 import { lockCalendarLifecycle, lockUserLifecycle } from "./calendar-lifecycle";
 import { retireExternalSourceReads } from "./source-read-lifecycle";
@@ -356,6 +357,7 @@ export async function getExternalLinkForCalendar(calendarID: string) {
       id: externalCalendars.id,
       disabled: externalCalendars.disabled,
       providerAccessRevision: externalCalendars.providerAccessRevision,
+      providerAccessRole: externalCalendars.providerAccessRole,
       provider: externalCalendars.provider,
       externalCalendarID: externalCalendars.externalCalendarID,
       supportsEvents: externalCalendars.supportsEvents,
@@ -705,6 +707,42 @@ async function isTrackedGraphMapping(tx: DbTransaction, provider: string, mapped
   return !!parent && root(parent);
 }
 
+/** First failing guard for a metadata-only refresh of a non-origin copy's
+ * validator, or null when every guard holds. Caller holds the event/mapping
+ * locks and has already run pending-outbox retention. Names only, no values. */
+async function nonOriginValidatorRefreshSkip(tx: DbTransaction, input: {
+  provider: string; userID: string; calendarID: string; externalEventID: string;
+  map: NonNullable<Awaited<ReturnType<typeof mappedEventForUpdate>>>;
+  values: EventValues; state: ProviderEventState | undefined; icalUid: string | null;
+  temporal: { timeModel: EventTimeModel; seriesID: string | null; originalStart: OccurrenceStart | null; isCanceled: boolean } | undefined;
+  expandedIdentity: unknown; externalSeriesID: string | null;
+  pending: boolean; privacy: boolean; accessRole: string | null | undefined;
+}): Promise<{ guard: string; stateFields?: string[] } | null> {
+  const { map, temporal } = input;
+  if (map.event.originCalendarID === null || map.event.originCalendarID === input.calendarID) return { guard: "origin" };
+  // Personally created copies only. Copies of another member's event remain
+  // fail-closed in this first repair.
+  if (map.event.creatorID !== input.userID) return { guard: "creator" };
+  if (input.pending) return { guard: "pending" };
+  if (input.privacy || map.readRedactionRevision !== null) return { guard: "privacy" };
+  if (input.expandedIdentity || map.externalSeriesID || map.originalStart || input.externalSeriesID ||
+    (temporal && !(sameTimeMetadata(map.event.timeModel, temporal.timeModel) && map.event.seriesID === temporal.seriesID && sameTimeMetadata(map.event.originalStart, temporal.originalStart) && map.event.isCanceled === temporal.isCanceled)))
+    return { guard: "series" };
+  if (!input.state) return { guard: "version" };
+  if (map.icalUid && input.icalUid && map.icalUid !== input.icalUid) return { guard: "uid" };
+  if (input.accessRole === undefined || !hasFullProviderReadAccess(input.provider, input.accessRole)) return { guard: "access" };
+  const [acknowledged] = await tx.select({ id: eventOutbox.id }).from(eventOutbox).where(and(
+    eq(eventOutbox.eventID, map.event.id), eq(eventOutbox.calendarID, input.calendarID), eq(eventOutbox.provider, input.provider),
+    eq(eventOutbox.action, "create"), eq(eventOutbox.status, "completed"),
+    sql`${eventOutbox.resultRef}->>'externalEventId' = ${input.externalEventID}`,
+  )).limit(1);
+  if (!acknowledged) return { guard: "acknowledged" };
+  return ownMirrorMetadataMismatch({
+    provider: input.provider, canonical: map.event, values: input.values, state: input.state,
+    baseline: map.providerState == null ? null : ProviderEventStateSchema.parse(map.providerState),
+  });
+}
+
 /**
  * Upsert a provider event. Returns TRUE when it actually wrote something —
  * the scheduled sync uses this to decide whether to wake connected clients.
@@ -1036,6 +1074,22 @@ export async function upsertExternalEventInTransaction(
           return incoming instanceof Date && current instanceof Date
             ? incoming.getTime() !== current.getTime()
             : incoming !== current;
+        });
+        // A copy Musubi itself created may refresh ONLY its write precondition
+        // when the provider changed nothing but its own metadata. Shared
+        // content, revision, delta and fanout stay untouched.
+        const versionChanged = etag !== null && map.etag !== null && etag !== map.etag;
+        const skip = versionChanged ? await nonOriginValidatorRefreshSkip(tx, {
+          provider, userID, calendarID, externalEventID, map, values, state, icalUid, temporal, expandedIdentity, externalSeriesID: time?.externalSeriesID ?? null,
+          pending: retained, privacy: !!readRecovery || restoringRead, accessRole: access ? access.role : undefined,
+        }) : { guard: "version" };
+        if (!skip) {
+          await tx.update(externalEvents).set({ etag, providerState: state, providerStateObservedAt: new Date(), icalUid: map.icalUid ?? icalUid }).where(eq(externalEvents.id, map.id));
+          logger.info("sync.event.non_origin_validator_refreshed", { provider, calendarId: calendarID, eventId: map.event.id });
+          return false;
+        }
+        if (versionChanged) logger.info("sync.event.non_origin_validator_refresh_skipped", {
+          provider, calendarId: calendarID, eventId: map.event.id, guard: skip.guard, ...(skip.stateFields ? { stateFields: skip.stateFields } : {}),
         });
         // A linked copy is not a second writer, even when the same user owns
         // both calendars. Unknown legacy origins must also fail closed. Leave

@@ -605,7 +605,8 @@ function caldavReadEventEvidence(data: string, ref: ExternalEventRef, etag: stri
     throw new ProviderEventWriteError("provider-conflict");
   const fields = veventToFields(selected.master);
   if (!fields) throw new ProviderEventWriteError("provider-write-failed");
-  const event = assertCreatedEventEvidence({ ...fields, externalId: ref.externalEventId, etag, icalUid: selected.uid, url: null, status: "active" });
+  // Read-only provider evidence, as on the pull path; never a write baseline.
+  const event = assertCreatedEventEvidence({ ...fields, externalId: ref.externalEventId, etag, icalUid: selected.uid, url: null, status: "active", providerState: caldavEventState(selected.master) });
   return { ref: { externalEventId: ref.externalEventId, etag, icalUid: selected.uid }, event };
 }
 

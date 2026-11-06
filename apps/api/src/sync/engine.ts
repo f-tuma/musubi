@@ -43,6 +43,7 @@ import {
   sweepExternalEvents,
   sweepExternalTasks,
   upsertExternalEventFromRead,
+  upsertExternalEvent,
   replaceExternalEventResource,
   upsertExternalTask,
 } from "@musubi/db";
@@ -67,7 +68,7 @@ import { SyncWorkDeferred, observeSyncRun, observeSyncFailure } from "./sync_out
 import { awaitCollectionReads } from "./collection_reads";
 export { SyncWorkDeferred } from "./sync_outcome";
 import { ProviderEventWriteError, requireEventPatch } from "./event_write";
-import { withDeliveryDeadline } from "./delivery_policy";
+import { withDeliveryDeadline, type DeliveryAttemptOptions } from "./delivery_policy";
 import { eventWritePending } from "./event_write_pending";
 import { describeSyncWorkFailure } from "./work_failure";
 import { type ProviderSyncOptions, runProviderSyncs } from "./orchestrator";
@@ -946,6 +947,56 @@ export class EventDeliveryError extends Error {
   }
 }
 
+/** After a strict write preflight reports provider-conflict, re-observe every
+ * NON-origin provider copy of the operation once, read-only, and pass each
+ * observation through the same guarded DB ingestion as a pull. Only a proven
+ * metadata-only change of a copy Musubi created can refresh its stored
+ * validator; content, revision and fanout never change here. One shared
+ * deadline bounds the whole loop. Every failure is swallowed: the caller always
+ * rethrows the original conflict and the user's next attempt runs the
+ * unchanged strict preflight. A missing copy is skipped, never unlinked. */
+export async function refreshNonOriginEventCopies(operation: CalendarEventWrite, deadline: DeliveryAttemptOptions = {}) {
+  const originCalendarID = operation.event.originCalendarID ?? null;
+  try {
+    await withDeliveryDeadline(async signal => {
+      for (const calendarID of new Set(operation.calendarIDs)) {
+        signal.throwIfAborted();
+        if (originCalendarID === null || calendarID === originCalendarID) continue;
+        try {
+          const link = await getExternalLinkForCalendar(calendarID);
+          if (!link || link.disabled || !link.supportsEvents) continue;
+          const adapter = getAdapter(link.provider);
+          if (!adapter?.readEvent) continue;
+          const external = await getExternalEvent(link.provider, operation.event.id, link.externalCalendarID, calendarID);
+          if (!external) continue;
+          const observed = await adapter.readEvent(link.userID, link.accountID, link.externalCalendarID, external, signal);
+          // Absence from a request-path read is not deletion evidence.
+          if (!observed) continue;
+          signal.throwIfAborted();
+          const event = observed.event;
+          const accessContext = (link.provider === "caldav" || ["google", "microsoft"].includes(link.provider) && link.providerAccessRole !== null)
+            ? { provider: link.provider as "google" | "caldav" | "microsoft", linkID: link.id, revision: link.providerAccessRevision, userID: link.userID, accountID: link.accountID, externalCalendarID: link.externalCalendarID }
+            : undefined;
+          await upsertExternalEvent(
+            link.provider, link.userID, calendarID, link.externalCalendarID, external.externalEventId,
+            toEventValues(event, operation.event.color), observed.ref.etag ?? null, observed.ref.icalUid ?? event.icalUid ?? null, undefined,
+            event.timeModel ? { timeModel: event.timeModel, externalSeriesID: event.externalSeriesID, originalStart: event.originalStart, isCanceled: event.isCanceled } : undefined,
+            event.providerOccurrence, event.providerState, event.reminderTimeEvidence, event.sourceSeriesID, accessContext,
+          );
+        } catch (error) {
+          if (signal.aborted) throw error;
+          logger.warn("sync.event.non_origin_refresh_failed", {
+            ...describeSyncWorkFailure(error, { phase: "execute", family: "event-delivery" }).fields,
+            calendarId: calendarID,
+          });
+        }
+      }
+    }, deadline);
+  } catch (error) {
+    logger.warn("sync.event.non_origin_refresh_failed", describeSyncWorkFailure(error, { phase: "execute", family: "event-delivery" }).fields);
+  }
+}
+
 /** Validate the ENTIRE operation before returning a delivery function. Handlers
  * call this before touching event/link rows, including before removed-copy deletes.
  * Mutating handlers pass a durable identity and store .outbox in their local
@@ -1009,6 +1060,8 @@ export async function prepareEventWrites(
           },
         ));
       } catch (error) {
+        if (error instanceof ProviderEventWriteError && error.code === "provider-conflict" && operation.action !== "create")
+          await refreshNonOriginEventCopies(operation);
         if (
           error instanceof EventWriteError ||
           error instanceof ProviderAuthError ||
