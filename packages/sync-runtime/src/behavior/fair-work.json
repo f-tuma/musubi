@@ -319,6 +319,135 @@
         "secondAfterFirstRelease": true,
         "maxForegroundLogical": 1
       }
+    },
+    {
+      "id": "four-held-other-accounts-request",
+      "title": "A foreground request is admitted while four other-account pulls are offered and held",
+      "expected": {
+        "withReserve": {
+          "backgroundStarted": 3,
+          "fourthBackgroundPending": true,
+          "startedWhileSaturated": true,
+          "rejection": null,
+          "maxHeld": 4,
+          "maxRegularLogical": 4
+        },
+        "withoutReserve": {
+          "backgroundStarted": 4,
+          "startedWhileSaturated": false,
+          "rejection": null,
+          "admittedAfterOneRelease": true,
+          "maxHeld": 4,
+          "maxRegularLogical": 4
+        }
+      }
+    },
+    {
+      "id": "four-held-other-accounts-durable-delivery",
+      "title": "Durable event delivery is admitted while four other-account pulls are offered and held",
+      "expected": {
+        "withReserve": {
+          "backgroundStarted": 3,
+          "fourthBackgroundPending": true,
+          "startedWhileSaturated": true,
+          "rejection": null,
+          "maxHeld": 4,
+          "maxRegularLogical": 4
+        },
+        "withoutReserve": {
+          "backgroundStarted": 4,
+          "startedWhileSaturated": false,
+          "rejection": null,
+          "admittedAfterOneRelease": true,
+          "maxHeld": 4,
+          "maxRegularLogical": 4
+        }
+      }
+    },
+    {
+      "id": "four-parked-other-accounts-request",
+      "title": "A foreground request is admitted instead of swept while other-account pulls are all parked",
+      "expected": {
+        "withReserve": {
+          "backgroundStarted": 3,
+          "parkedBackground": 3,
+          "foregroundStarted": true,
+          "rejection": null
+        },
+        "withoutReserve": {
+          "backgroundStarted": 4,
+          "parkedBackground": 4,
+          "foregroundStarted": false,
+          "rejection": "work-capacity"
+        }
+      }
+    },
+    {
+      "id": "reserve-blocks-fourth-background-until-background-release",
+      "title": "The reserved slot never admits a fourth background pull; a background release does",
+      "expected": {
+        "foregroundStartedWhileSaturated": true,
+        "fourthPendingAfterForegroundRelease": true,
+        "fourthStartedAfterBackgroundRelease": true,
+        "maxBackgroundLogical": 3,
+        "maxHeld": 4,
+        "maxRegularLogical": 4
+      }
+    },
+    {
+      "id": "reserve-same-account-held-pull-still-waits",
+      "title": "A held same-account pull still serializes the account's foreground request (known limitation)",
+      "expected": {
+        "withReserve": {
+          "foregroundBeforeOwnPullRelease": false,
+          "foregroundAfterOwnPullRelease": true,
+          "rejection": null,
+          "spareRegularWhileWaiting": 3
+        },
+        "withoutReserve": {
+          "foregroundBeforeOwnPullRelease": false,
+          "foregroundAfterOwnPullRelease": true,
+          "rejection": null,
+          "spareRegularWhileWaiting": 3
+        }
+      }
+    },
+    {
+      "id": "reserve-auxiliary-under-full-regular",
+      "title": "An auxiliary refresh is admitted under four regular permits; further pull and foreground wait",
+      "expected": {
+        "auxiliaryStartedUnderFullRegular": true,
+        "regularLogicalAtAuxiliaryStart": 4,
+        "furtherPullStartedBeforeRelease": false,
+        "furtherForegroundStartedBeforeRelease": false,
+        "maxHeld": 4,
+        "completed": true
+      }
+    },
+    {
+      "id": "reserve-foreground-deadline-cancel",
+      "title": "With the reserve a foreground request starts before its deadline; without it the cancelled request never executes",
+      "expected": {
+        "withReserve": {
+          "startedBeforeDeadline": true,
+          "executions": 1
+        },
+        "withoutReserve": {
+          "startedBeforeDeadline": false,
+          "rejection": "Delivery attempt timeout.",
+          "executionsAfterCancel": 0
+        }
+      }
+    },
+    {
+      "id": "reserve-all-parked-with-foreground",
+      "title": "Three parked pulls plus one parked foreground still sweep a further foreground (accepted bounded edge)",
+      "expected": {
+        "parkedRegular": 4,
+        "heldRegular": 0,
+        "rejection": "work-capacity",
+        "retryDelayMs": 1000
+      }
     }
   ]
 }

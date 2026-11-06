@@ -22,6 +22,24 @@ test("deferral rejects invalid time, reason and dimensions and owns bounded meta
   const dimensions: "account"[] = ["account"], error = new ProviderDispatchDeferred({ retryAtMs: 1, reason: "credit", blockedDimensions: dimensions });
   dimensions.length = 0; assert.deepEqual(error.deferral.blockedDimensions, ["account"]);
 });
+test("foreground reserve accepts only integers below capacity and defaults to the shared pool", async () => {
+  const host = { async execute() { return { kind: "settled" as const, changedCalendarIDs: [] }; } };
+  for (const [capacity, foregroundReserve] of [[1, 0], [4, 0], [4, 1], [4, 3]] as const) {
+    const coordinator = createFairWorkCoordinator<string>({ capacity, foregroundReserve, host }); coordinator.close();
+  }
+  for (const [capacity, foregroundReserve] of [[1, 1], [4, 4], [4, 5], [4, -1], [4, 0.5], [4, NaN], [4, Infinity]] as const)
+    assert.throws(() => createFairWorkCoordinator<string>({ capacity, foregroundReserve, host }), RangeError, `capacity ${capacity} reserve ${foregroundReserve}`);
+  // Undefined keeps the shared pool: four background pulls may hold all four regular permits.
+  const gate = deferred<void>(); let started = 0;
+  const shared = createFairWorkCoordinator<string>({ capacity: 4, host: { async execute() { started++; await gate.promise; return { kind: "settled", changedCalendarIDs: [] }; } } });
+  const reserved = createFairWorkCoordinator<string>({ capacity: 4, foregroundReserve: 1, host: { async execute() { started++; await gate.promise; return { kind: "settled", changedCalendarIDs: [] }; } } });
+  const pull = (key: string): WorkCandidate<string> => ({ key, family: "pull", accountFairnessKey: key, laneKey: key, dueAtMs: 0, orderKey: key, collisionKeys: [key], hostRef: key });
+  const jobs = ["a", "b", "c", "d"].flatMap(key => [shared.submit(pull(key)), reserved.submit(pull(key))]);
+  for (let i = 0; i < 20; i++) await Promise.resolve();
+  assert.equal(started, 7, "Shared pool admits four background pulls; the reserve admits three");
+  assert.equal(reserved.snapshot().pending, 1);
+  gate.resolve(); await Promise.all(jobs); shared.close(); reserved.close();
+});
 test("bootstrap failure stays fail-closed, schedules retry, and can recover through the same production port", async () => {
   const f = budgetFixture(); f.offline(true); await assert.rejects(f.budget.ready());
   assert.equal(f.budget.snapshot().persistenceBlocked, true);

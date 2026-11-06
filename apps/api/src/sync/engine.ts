@@ -68,6 +68,7 @@ import { awaitCollectionReads } from "./collection_reads";
 export { SyncWorkDeferred } from "./sync_outcome";
 import { ProviderEventWriteError, requireEventPatch } from "./event_write";
 import { withDeliveryDeadline } from "./delivery_policy";
+import { eventWritePending } from "./event_write_pending";
 import { describeSyncWorkFailure } from "./work_failure";
 import { type ProviderSyncOptions, runProviderSyncs } from "./orchestrator";
 import { createReadAttempt } from "./read_attempt";
@@ -1021,7 +1022,10 @@ export async function prepareEventWrites(
           provider: adapter.provider,
           action: operation.action,
         });
-        throw new EventWriteError("event-write", "unknown");
+        // No event has been admitted by this preflight. The deadline may
+        // follow read-only HTTP; callers retain any earlier calendar commit.
+        // Every other failure stays the fail-closed refusal.
+        throw eventWritePending(error) ?? new EventWriteError("event-write", "unknown");
       }
       prepared.push({
         operation,
