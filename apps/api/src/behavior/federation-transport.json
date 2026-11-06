@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "suite": "federation-transport",
+  "scenarios": [
+    {
+      "id": "literal-private-denied",
+      "title": "A literal link-local target is refused before any lookup or dispatch",
+      "input": "http://169.254.169.254/api/v1/server",
+      "allowPrivate": false,
+      "expect": { "outcome": "rejected", "rejectMessage": "internal address", "lookupCalls": 0, "leafCalls": 0 }
+    },
+    {
+      "id": "mixed-answer-denied",
+      "title": "A mixed public and loopback answer refuses the whole request without dispatch",
+      "input": "https://peer.invalid/api/v1/server",
+      "allowPrivate": false,
+      "lookup": { "addresses": [{ "address": "203.0.113.10", "family": 4 }, { "address": "127.0.0.1", "family": 4 }] },
+      "expect": { "outcome": "rejected", "rejectMessage": "internal address", "lookupCalls": 1, "leafCalls": 0 }
+    },
+    {
+      "id": "public-answer-pinned",
+      "title": "An accepted public answer is pinned into the leaf with the original URL, headers and manual redirect",
+      "input": "https://peer.invalid/api/v1/server",
+      "headers": { "accept": "application/json", "authorization": "Bearer fixture-member-token" },
+      "allowPrivate": false,
+      "lookup": { "addresses": [{ "address": "203.0.113.10", "family": 4 }] },
+      "leaf": { "status": 200 },
+      "expect": {
+        "outcome": "response", "status": 200, "lookupCalls": 1, "leafCalls": 1,
+        "pin": [{ "address": "203.0.113.10", "family": 4 }],
+        "urlUnchanged": true, "authorizationPreserved": true, "redirectManual": true
+      }
+    },
+    {
+      "id": "multi-answer-accepted-set",
+      "title": "Every accepted address reaches the leaf as one ordered set",
+      "input": "https://peer.invalid/api/v1/server",
+      "allowPrivate": false,
+      "lookup": { "addresses": [{ "address": "203.0.113.10", "family": 4 }, { "address": "203.0.113.11", "family": 4 }] },
+      "leaf": { "status": 200 },
+      "expect": {
+        "outcome": "response", "status": 200, "lookupCalls": 1, "leafCalls": 1,
+        "pin": [{ "address": "203.0.113.10", "family": 4 }, { "address": "203.0.113.11", "family": 4 }]
+      }
+    },
+    {
+      "id": "redirect-returned-not-followed",
+      "title": "A 302 from the leaf is returned as is and its Location is never resolved",
+      "input": "https://peer.invalid/api/v1/server",
+      "allowPrivate": false,
+      "lookup": { "addresses": [{ "address": "203.0.113.10", "family": 4 }] },
+      "leaf": { "status": 302, "headers": { "location": "http://127.0.0.1/x" } },
+      "expect": { "outcome": "response", "status": 302, "lookupCalls": 1, "leafCalls": 1, "redirectManual": true }
+    },
+    {
+      "id": "aborted-before-lookup",
+      "title": "An already aborted signal rejects with its own reason before any lookup",
+      "input": "https://peer.invalid/api/v1/server",
+      "allowPrivate": false,
+      "signal": { "abortedBefore": true },
+      "expect": { "outcome": "rejected", "rejectReason": "signal", "lookupCalls": 0, "leafCalls": 0 }
+    },
+    {
+      "id": "abort-during-lookup",
+      "title": "An abort while DNS is pending rejects with the identical reason object and removes the listener",
+      "input": "https://peer.invalid/api/v1/server",
+      "allowPrivate": false,
+      "lookup": { "never": true },
+      "signal": { "abortAfterMs": 20 },
+      "expect": { "outcome": "rejected", "rejectReason": "signal", "lookupCalls": 1, "leafCalls": 0, "noAbortListener": true }
+    },
+    {
+      "id": "abort-then-lookup-rejects",
+      "title": "A lookup that fails after the abort neither dispatches nor leaves an unhandled rejection",
+      "input": "https://peer.invalid/api/v1/server",
+      "allowPrivate": false,
+      "lookup": { "rejectAfterAbortMs": 20 },
+      "signal": { "abortAfterMs": 10 },
+      "expect": { "outcome": "rejected", "rejectReason": "signal", "lookupCalls": 1, "leafCalls": 0 }
+    },
+    {
+      "id": "timeout-during-lookup",
+      "title": "A timeout signal fires while DNS is pending and rejects with TimeoutError",
+      "input": "https://peer.invalid/api/v1/server",
+      "allowPrivate": false,
+      "lookup": { "never": true },
+      "signal": { "timeoutMs": 30 },
+      "expect": { "outcome": "rejected", "rejectReason": "timeout", "lookupCalls": 1, "leafCalls": 0 }
+    },
+    {
+      "id": "userinfo-rejected",
+      "title": "Credentials in the URL are refused before any lookup",
+      "input": "https://u:p@peer.invalid/api/v1/server",
+      "allowPrivate": false,
+      "expect": { "outcome": "rejected", "rejectMessage": "credentials", "lookupCalls": 0, "leafCalls": 0 }
+    },
+    {
+      "id": "scheme-rejected",
+      "title": "A non-http scheme is refused before any lookup",
+      "input": "ftp://peer.invalid/",
+      "allowPrivate": false,
+      "expect": { "outcome": "rejected", "rejectMessage": "http\\(s\\)", "lookupCalls": 0, "leafCalls": 0 }
+    },
+    {
+      "id": "request-input-rejected",
+      "title": "A Request object is refused with a TypeError before any lookup",
+      "input": { "request": "https://peer.invalid/api/v1/server" },
+      "allowPrivate": false,
+      "expect": { "outcome": "rejected", "rejectReason": "type-error", "lookupCalls": 0, "leafCalls": 0 }
+    },
+    {
+      "id": "private-profile-accepts-loopback",
+      "title": "The private profile pins an accepted loopback answer into the leaf",
+      "input": "http://loopback-peer.invalid/api/v1/server",
+      "allowPrivate": true,
+      "lookup": { "addresses": [{ "address": "127.0.0.1", "family": 4 }] },
+      "leaf": { "status": 200 },
+      "expect": { "outcome": "response", "status": 200, "lookupCalls": 1, "leafCalls": 1, "pin": [{ "address": "127.0.0.1", "family": 4 }] }
+    },
+    {
+      "id": "private-profile-off-denies-loopback",
+      "title": "The same loopback answer is refused when the private profile is off",
+      "input": "http://loopback-peer.invalid/api/v1/server",
+      "allowPrivate": false,
+      "lookup": { "addresses": [{ "address": "127.0.0.1", "family": 4 }] },
+      "expect": { "outcome": "rejected", "rejectMessage": "internal address", "lookupCalls": 1, "leafCalls": 0 }
+    }
+  ]
+}

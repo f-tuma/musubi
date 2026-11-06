@@ -18,7 +18,7 @@ import {
 	hashMemberToken,
 	issueMemberToken,
 } from "../federation_tokens";
-import { assertPublicOrigin, canonicalHttpOrigin } from "../federation_origin";
+import { assertPublicOrigin, canonicalHttpOrigin, federationFetch } from "../federation_origin";
 import { peerTooOld } from "../federation_peer";
 import { config, logger } from "@musubi/config";
 
@@ -183,7 +183,7 @@ export async function handlerFederationPreview(req: Request, res: Response) {
 
 	let upstream: globalThis.Response;
 	try {
-		upstream = await fetch(`${origin}/api/v1/calendars/tokens/${token}`, {
+		upstream = await federationFetch(`${origin}/api/v1/calendars/tokens/${token}`, {
 			headers: { accept: "application/json" },
 			redirect: "manual",
 			signal: AbortSignal.timeout(REMOTE_TIMEOUT_MS),
@@ -238,7 +238,7 @@ export async function handlerFederationConnect(req: Request, res: Response) {
 
 	let upstream: globalThis.Response;
 	try {
-		upstream = await fetch(`${origin}/api/v1/federation/accept`, {
+		upstream = await federationFetch(`${origin}/api/v1/federation/accept`, {
 			body: JSON.stringify({
 				profile: {
 					email: req.user!.email,

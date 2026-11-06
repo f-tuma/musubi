@@ -6,6 +6,7 @@ import {
   memberTokenIssuedAt,
   shouldRotateMemberToken,
 } from "@musubi/types";
+import { config } from "@musubi/config";
 import { canonicalHttpOrigin } from "./federation_origin";
 import {
   bearerMemberToken,
@@ -113,7 +114,11 @@ assert.equal(Object.prototype.hasOwnProperty.call(preview.events[0], "location")
 // reason; refusing on anything less would turn unfamiliar servers into dead
 // ends for no gain.
 
+// The federation fetch now resolves and pins every outbound origin, so the
+// fixture uses literal loopback origins (no DNS) under the private profile; the
+// fetch stub stays the leaf and ignores the dispatcher it is handed.
 const realFetch = globalThis.fetch;
+const previousPrivate = config.security.federationAllowPrivateHosts;
 const answering = (body: unknown, status = 200) => {
   globalThis.fetch = (async () =>
     new Response(JSON.stringify(body), {
@@ -124,33 +129,36 @@ const answering = (body: unknown, status = 200) => {
 
 // An IIFE, not top-level await: this file is transformed to CommonJS.
 void (async () => {
+  config.security.federationAllowPrivateHosts = true;
   answering({ version: "0.0.9" });
-  const refusal = await peerTooOld("https://old.example");
+  const refusal = await peerTooOld("http://127.0.0.1:65501");
   assert.match(String(refusal), /runs Musubi 0\.0\.9/);
   assert.match(String(refusal), /has to update it first/);
 
   answering({ version: "9.9.9" });
   assert.equal(
-    await peerTooOld("https://new.example"),
+    await peerTooOld("http://127.0.0.1:65502"),
     null,
     "a newer peer is fine",
   );
 
   // K06: compatibility must be established before handing a peer requests.
   answering({ ok: true });
-  assert.match(String(await peerTooOld("https://unversioned.example")), /could not be verified/);
+  assert.match(String(await peerTooOld("http://127.0.0.1:65503")), /could not be verified/);
 
   answering({}, 500);
-  assert.match(String(await peerTooOld("https://broken.example")), /could not be verified/);
+  assert.match(String(await peerTooOld("http://127.0.0.1:65504")), /could not be verified/);
 
   globalThis.fetch = (async () => {
     throw new Error("connection refused");
   }) as typeof fetch;
-  assert.match(String(await peerTooOld("https://down.example")), /could not be verified/);
+  assert.match(String(await peerTooOld("http://127.0.0.1:65505")), /could not be verified/);
 
-  globalThis.fetch = realFetch;
   console.log("federation security self-check: OK");
 })().catch((error) => {
   console.error(error);
   process.exitCode = 1;
+}).finally(() => {
+  globalThis.fetch = realFetch;
+  config.security.federationAllowPrivateHosts = previousPrivate;
 });

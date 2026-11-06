@@ -13,6 +13,7 @@ const SUITES = {
   "postgres-restore": "ops/behavior/postgres-restore.json",
   "web-edge": "apps/web/src/tests/behavior/web-edge.json",
   "project-news": "apps/api/src/behavior/project-news.json",
+  "federation-transport": "apps/api/src/behavior/federation-transport.json",
   "read-attempt": "apps/api/src/sync/behavior/read-attempt.json",
   "sync-outcome": "apps/api/src/sync/behavior/sync-outcome.json",
   "collection-reads": "apps/api/src/sync/behavior/collection-reads.json",
@@ -185,7 +186,7 @@ async function runSuite(selection, options, { root, execute, env }) {
       child = await execute(process.execPath, ["--import", "tsx", join(root, "packages/types/src/behavior/wire-timestamps-cli.ts"), "--json",
         ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });
       results = runtimeResults(child.stdout, selection);
-    } else if (["project-news", "api-json-body", "app-links"].includes(selection.name)) {
+    } else if (["project-news", "api-json-body", "app-links", "federation-transport"].includes(selection.name)) {
       child = await execute(process.execPath, ["--import", "tsx", join(root, `apps/api/src/behavior/${selection.name}-cli.ts`), "--json",
         ...(options.scenario ? ["--scenario", options.scenario] : [])], { cwd: root, env });
       results = runtimeResults(child.stdout, selection);
