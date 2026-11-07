@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { ReferenceBootstrapError } from "./database-fixture.mjs";
-import { parseArguments, validateManifest, caseIDs, selectCases, decodeJsonReport, decodeModuleReport, failedEntryResults, ConformanceError } from "../../../scripts/sync-conformance.mjs";
+import { parseArguments, validateManifest, caseIDs, selectCases, decodeJsonReport, decodeModuleReport, failedEntryResults, ConformanceError, runConformance } from "../../../scripts/sync-conformance.mjs";
 const manifest = JSON.parse(await readFile(new URL("./manifest.v1.json", import.meta.url), "utf8"));
 const rejects = (run, code) => assert.throws(run, error => error instanceof ConformanceError && error.code === code);
 test("manifest binds exact mode expansion and every declared profile entry", () => {
@@ -14,6 +15,19 @@ test("manifest binds exact mode expansion and every declared profile entry", () 
   const emptyProof = structuredClone(manifest), entry = emptyProof.entries.find(e => e.kind === "module");
   entry.requiredNodeCases = []; entry.requiredLogCases = []; entry.requiredCompletionMarkers = []; delete entry.supplemental;
   rejects(() => validateManifest(emptyProof), "missing-assertion-contract");
+});
+test("repository manifest lists every mode against the actual JSON corpora", async () => {
+  // Production list mode validates the manifest and each JSON corpus inventory
+  // without running cases; only the git identity port is replaced. The portable
+  // installed candidate ships no host source, so the non-portable mode is listed
+  // wherever that host checkout exists (the repository's own test run).
+  const identify = async () => ({ source: { head: "0".repeat(40), tree: "0".repeat(40) } });
+  const hostCheckout = existsSync(new URL("../../api/src/sync/behavior/", import.meta.url));
+  for (const mode of Object.keys(manifest.modes).filter(mode => manifest.modes[mode].portable || hostCheckout)) {
+    const report = await runConformance(parseArguments(["--mode", mode, "--list"]), { identify });
+    assert.equal(report.status, "listed", mode);
+    assert.deepEqual(report.inventory.requiredCaseIDs, manifest.modes[mode].requiredCaseIDs, mode);
+  }
 });
 test("portable mode cannot silently select a host-only API file", () => {
   const wrong = structuredClone(manifest); wrong.entries.find(e => e.mode === "deterministic").file = "apps/api/src/sync/engine.test.ts";
