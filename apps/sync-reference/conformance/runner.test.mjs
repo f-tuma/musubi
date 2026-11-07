@@ -110,3 +110,21 @@ test("failed bootstrap reconciliation evidence survives serialization after temp
   assert.equal(result.status, "failed"); assert.equal(result.errorCode, "db-bootstrap-allocation-failed");
   assert.deepEqual(result.cleanup, { required: true, completed: false }); assert.deepEqual(JSON.parse(JSON.stringify(result)).cleanupEvidence, evidence);
 });
+test("runner keeps only an allowlisted child termination reason and no child output", async () => {
+  const conformance = await import("../../../scripts/sync-conformance.mjs"), common = await import("../../../scripts/sync-alpha-common.mjs");
+  assert.deepEqual([...conformance.TERMINATION_REASONS].sort(), [...common.TERMINATION_REASONS].sort());
+  const entry = manifest.entries.find(e => e.mode === "deterministic" && e.kind === "module" && e.portable !== false && !e.file.startsWith("apps/api/"));
+  const identify = async () => ({ source: { head: "0".repeat(40), tree: "0".repeat(40) } });
+  for (const [terminationReason, expected] of [["timeout", "timeout"], ["output-overflow", "output-overflow"], ["descendants-survived", "descendants-survived"],
+    ["start-failed", "start-failed"], ["postgresql://owner:hunter2@host/db", undefined], [undefined, undefined]]) {
+    const run = async () => ({ exitCode: null, stdout: "STDOUT-SECRET", stderr: "STDERR-SECRET hunter2", groupReaped: true, ...(terminationReason ? { terminationReason } : {}) });
+    const report = await runConformance(parseArguments(["--mode", "deterministic", "--scenario", entry.id]), { identify, run });
+    assert.equal(report.status, "failed"); assert.equal(report.results.length, 1);
+    const [result] = report.results; assert.equal(result.errorCode, "child-exit-failed"); assert.equal(result.terminationReason, expected);
+    assert.equal(Object.hasOwn(result, "terminationReason"), expected !== undefined); assert.doesNotMatch(JSON.stringify(report), /SECRET|hunter2/);
+  }
+  const fail = new ConformanceError("child-exit-failed"); fail.terminationReason = "timeout";
+  assert.equal(failedEntryResults(entry, fail, 1)[0].terminationReason, "timeout");
+  const forged = new ConformanceError("child-exit-failed"); forged.terminationReason = "free text";
+  assert.equal(Object.hasOwn(failedEntryResults(entry, forged, 1)[0], "terminationReason"), false);
+});
